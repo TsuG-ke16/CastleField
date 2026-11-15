@@ -5,8 +5,7 @@
 // 捨てるカードを選ぶ画面もここで扱う。
 
 import { UI_CONFIG } from './config.js';
-import { KIND_LABEL, cardDescription, cardNumbers } from './text.js';
-import { src, cardArtKey, frameKey } from './assets.js';
+import { KIND_LABEL, cardDescription } from './text.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -36,7 +35,7 @@ export class HandView {
       app: $('app'),
       controls: $('controls'),
       hand: $('hand'),
-      board: $('board'),
+      field: $('field'),
       dropHint: $('drop-hint'),
       detail: $('card-detail'),
       detailKind: document.querySelector('#card-detail .detail-kind'),
@@ -87,29 +86,15 @@ export class HandView {
     this.updateDiscardBar();
   }
 
-  /** カード1枚：枠の画像に絵をはめ込み、下に名前、左上と右上のメダルに数字 */
   makeCardEl(card, isNew = false) {
     const def = this.cards[card.type] ?? { name: card.type };
     const el = document.createElement('div');
     el.className = `card ${def.kind ?? ''}`;
     el.dataset.id = card.cardId;
-    el.dataset.type = card.type;
-    const [left, right] = cardNumbers(def);
-    el.innerHTML =
-      '<img class="card-art" alt="" draggable="false">' +
-      '<img class="card-frame" alt="" draggable="false">' +
-      '<span class="card-name"></span>' +
-      `<span class="medal left ${left?.icon ?? ''}"><b class="outlined"></b><i class="icon"></i></span>` +
-      `<span class="medal right ${right?.icon ?? ''}"><b class="outlined"></b><i class="icon"></i></span>`;
-    el.querySelector('.card-art').src = src(cardArtKey(card.type));
-    el.querySelector('.card-frame').src = src(frameKey(def.kind));
-    const name = el.querySelector('.card-name');
-    name.textContent = def.name;
-    if ((def.name ?? '').length >= 6) name.classList.add('long');
-    el.querySelector('.medal.left b').textContent = left?.text ?? '';
-    el.querySelector('.medal.right b').textContent = right?.text ?? '';
-    el.querySelector('.medal.left').hidden = !left;
-    el.querySelector('.medal.right').hidden = !right;
+    el.innerHTML = '<span class="card-kind"></span><span class="card-name"></span><span class="card-desc"></span>';
+    el.querySelector('.card-kind').textContent = KIND_LABEL[def.kind] ?? '';
+    el.querySelector('.card-name').textContent = def.name;
+    el.querySelector('.card-desc').textContent = cardDescription(def, this.rules);
     if (isNew) el.classList.add('new');
     this.applyCardClasses(el);
     return el;
@@ -318,8 +303,9 @@ export class HandView {
   }
 
   overField(e) {
-    const board = this.el.board.getBoundingClientRect();
-    return e.clientY < board.bottom && e.clientY > board.top && e.clientX > board.left && e.clientX < board.right;
+    const r = this.el.field.getBoundingClientRect();
+    const board = document.getElementById('board').getBoundingClientRect();
+    return e.clientY < r.bottom && e.clientY > board.top && e.clientX > board.left && e.clientX < board.right;
   }
 
   cancelDrag() {
