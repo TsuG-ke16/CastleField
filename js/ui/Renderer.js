@@ -31,6 +31,7 @@ export class Renderer {
       castle: { me: $('castle-me'), opp: $('castle-opp') },
       castleLabel: { me: $('castle-me-label'), opp: $('castle-opp-label') },
       lane: { me: $('lane-me'), opp: $('lane-opp') },
+      extra: $('field-extra'),
     };
 
     this.buildLanes();
@@ -104,6 +105,33 @@ export class Renderer {
     this.setOppHandCount(model.players[opp].handCount);
     for (const id of ['p1', 'p2']) this.setCastleHp(id, model.players[id].castleHp, { instant: true });
     this.syncSoldiers(model);
+    this.renderExtras(model);
+  }
+
+  /** 魔物・コイン・城壁（STEP 2〜3）。状態から文字で出す */
+  renderExtras(model) {
+    const box = this.el.extra;
+    if (!box) return;
+    box.textContent = '';
+    const add = (cls, text) => {
+      const d = document.createElement('div');
+      d.className = cls;
+      d.textContent = text;
+      box.appendChild(d);
+    };
+    for (const m of model.monsters ?? []) {
+      const name = this.monsterNames?.[m.type] ?? m.type;
+      add('extra-monster', `👹 ${name} ❤${m.hp}/${m.maxHp} ⚔${m.attack}　放置すると${m.attackIn}周後に城へ${m.castleAttack ?? ''}`);
+    }
+    const me = model.players[this.viewerId];
+    const opp = model.players[this.opponentOf(this.viewerId)];
+    const parts = [];
+    if (me?.coins) parts.push(`🪙${me.coins}`);
+    if (me?.armor) parts.push(`🛡城壁${me.armor}`);
+    if (parts.length) add('extra-me', `あなた ${parts.join(' ')}`);
+    if (opp?.armor) add('extra-opp', `相手の城壁${opp.armor}`);
+    const shields = [...model.players.p1.soldiers, ...model.players.p2.soldiers].filter((s) => s.shield || s.weapon || s.statuses?.frozen || s.statuses?.poison);
+    if (shields.length) add('extra-soldiers', shields.map((s) => `${this.cards[s.type]?.name ?? s.type}${s.weapon ? '+' + (this.cards[s.weapon]?.name ?? s.weapon) : ''}${s.shield ? ' 盾' + s.shield : ''}${s.statuses?.poison ? ' 毒' : ''}${s.statuses?.frozen ? ' 凍結' : ''}`).join(' / '));
   }
 
   setTurnInfo(turn) {

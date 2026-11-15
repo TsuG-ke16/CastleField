@@ -727,3 +727,12 @@ button { font: inherit; color: inherit; }
 #lobby button:disabled { opacity: 0.5; cursor: default; }
 #lobby #lobby-local { margin-top: 6px; background: #334155; color: #e2e8f0; box-shadow: 0 4px 0 #1e293b; font-size: 15px; }
 #lobby-status { min-height: 22px; margin: 12px 0 8px; color: var(--muted); font-size: 14px; }
+
+/* ===== 魔物・コイン・強化（オンライン画面） ===== */
+#field-extra { position: absolute; left: 6px; right: 6px; top: 50%; transform: translateY(-50%); z-index: 5; pointer-events: none; display: flex; flex-direction: column; gap: 3px; align-items: center; font-size: 12px; font-weight: 700; }
+#field-extra > div { padding: 3px 8px; border-radius: 8px; background: rgba(15, 23, 42, 0.82); color: #f8fafc; }
+#field-extra .extra-monster { background: rgba(127, 29, 29, 0.9); }
+#upgrade-bar { display: flex; gap: 6px; padding: 4px 8px; overflow-x: auto; }
+#upgrade-bar[hidden] { display: none; }
+#upgrade-bar button { flex: none; padding: 7px 12px; border: none; border-radius: 10px; background: #f59e0b; color: #1f2937; font-weight: 800; cursor: pointer; }
+#upgrade-bar button:disabled { opacity: 0.4; cursor: default; }

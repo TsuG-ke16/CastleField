@@ -75,6 +75,7 @@ export class OnlineClient {
     } else if (msg.type === 'state') {
       const events = this.pending;
       this.pending = [];
+      this.lastState = msg.state;
       this.playable = new Map((msg.playable ?? []).map((p) => [p.cardId, p]));
       this.onBatch?.({ events, state: msg.state, playable: msg.playable ?? [], upgrades: msg.upgrades ?? {} });
     }
@@ -100,13 +101,23 @@ export class OnlineClient {
   playCard(cardId, target) {
     const info = this.playable.get(cardId);
     let t = target;
-    // 対象を選ぶ必要があっても、今の画面は選ぶ場所がないので「相手の城」にする
+    // 対象を選ぶ必要があっても、今の画面は選ぶ場所がないので、相手の城か、自分の先頭の兵士にする
     if (!t && info?.needsTarget) {
-      t = (info.targets ?? []).find((x) => x.playerId && x.playerId !== this.playerId);
+      const list = info.targets ?? [];
+      t = list.find((x) => x.playerId && x.playerId !== this.playerId) ?? this.frontSoldier(list);
     }
     return this.act('playCard', t ? [cardId, t] : [cardId]);
   }
 
+  /** 兵士を選ぶカード：自分の兵士のうち、いちばん相手の城に近いもの */
+  frontSoldier(list) {
+    const mine = new Map((this.lastState?.players?.[this.playerId]?.soldiers ?? []).map((s) => [s.soldierId, s.position]));
+    const cands = list.filter((x) => x.soldierId);
+    cands.sort((a, b) => (mine.get(b.soldierId) ?? 0) - (mine.get(a.soldierId) ?? 0));
+    return cands[0];
+  }
+
+  buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
   endTurn() { return this.act('endTurn'); }
   discard(cardIds) { return this.act('discard', [cardIds]); }
   rematch() { return this.act('rematch'); }

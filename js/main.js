@@ -50,6 +50,9 @@ const el = {
 
 let cards;
 let rules;
+let monsterDefs = null;
+let upgradeDefs = null;
+let lastUpgrades = {};
 let renderer;
 let handView;
 let anim;
@@ -87,8 +90,11 @@ async function boot() {
     return;
   }
 
+  // 魔物と強化の定義は、オンラインの画面に出すためだけに読む（なければ出さない）
+  [monsterDefs, upgradeDefs] = await Promise.all([loadJson('data/monsters.json').catch(() => null), loadJson('data/upgrades.json').catch(() => null)]);
   renderer = new Renderer({ cards, rules, onSoldierTap: showSoldierInfo });
   handView = new HandView({ cards, rules, onPlay: playCard, onDiscard: discard, onNotice: toast });
+  renderer.monsterNames = Object.fromEntries(Object.entries(monsterDefs ?? {}).map(([k, v]) => [k, v.name]));
   anim = new Animations({ renderer, handView, cards, rules });
 
   el.endTurn.addEventListener('click', endTurn);
@@ -168,8 +174,9 @@ async function joinOnline() {
 }
 
 /** サーバーから「イベントの列 + 状態」が届いたとき */
-async function handleBatch({ events, state }) {
+async function handleBatch({ events, state, upgrades }) {
   onlineState = state;
+  lastUpgrades = upgrades ?? {};
   viewerId = online.playerId;
   for (const c of state.players[viewerId]?.hand ?? []) knownCards.set(c.cardId, { ...c });
   const fresh = !model || events.length === 0 || (model.phase === 'gameOver' && state.phase !== 'gameOver');
@@ -253,6 +260,8 @@ function modelFromState(st) {
       castleHp: p.castleHp,
       handCount: p.handCount,
       playedThisTurn: p.playedThisTurn,
+      coins: p.coins ?? 0,
+      armor: p.armor ?? 0,
       soldiers: p.soldiers.map((s) => ({ ...s })),
     };
   }
@@ -263,6 +272,7 @@ function modelFromState(st) {
     winner: st.winner,
     deckCount: st.deckCount,
     discardCount: st.discardCount,
+    monsters: (st.monsters ?? []).map((m) => ({ ...m, castleAttack: monsterDefs?.[m.type]?.castleAttack })),
     discardRequired: model?.discardRequired ?? 0,
     players,
     hand: (st.players[viewerId]?.hand ?? []).map((c) => ({ ...c })),
@@ -342,6 +352,7 @@ async function settle() {
   }
 
   setBusy(false);
+  renderUpgrades(st);
   if (online && st.currentPlayer !== viewerId) {
     // 相手の番：見るだけ。手札は出せない理由つきで暗くしておく
     handView.exitDiscard();
@@ -406,6 +417,30 @@ async function endTurn() {
     return;
   }
   if (!online) drainAndSettle();
+}
+
+/** コインで買える強化のボタン（オンラインのみ。自分の番で、コインがあるときだけ出す） */
+function renderUpgrades(st) {
+  const bar = $('upgrade-bar');
+  const me = st.players[viewerId];
+  bar.textContent = '';
+  const show = online && upgradeDefs && me?.coins > 0 && st.phase === 'main' && st.currentPlayer === viewerId;
+  bar.hidden = !show;
+  if (!show) return;
+  for (const [id, def] of Object.entries(upgradeDefs)) {
+    const info = lastUpgrades[id] ?? { ok: false };
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = `${def.name} 🪙${def.cost}`;
+    b.disabled = !info.ok;
+    b.title = info.ok ? '' : reasonText(info.reason);
+    b.addEventListener('click', async () => {
+      if (busy) return;
+      const res = await online.buyUpgrade(id);
+      if (!res?.ok) toast(reasonText(res?.reason));
+    });
+    bar.appendChild(b);
+  }
 }
 
 async function rematch() {

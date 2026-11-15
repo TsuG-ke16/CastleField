@@ -187,6 +187,12 @@ export class Animations {
       case 'spellCast': return this.spellCast(p);
       case 'castleDamaged': return this.castleDamaged(p, model);
       case 'castleHealed': return this.castleHealed(p, model);
+      case 'weaponEquipped': this.banner('武器を装備！', UI_CONFIG.timing.shuffle); return this.delay(UI_CONFIG.timing.shuffle * 0.5);
+      case 'shieldAdded': this.banner('盾！', UI_CONFIG.timing.shuffle); return this.delay(UI_CONFIG.timing.shuffle * 0.5);
+      case 'castleArmored': this.banner('城壁！', UI_CONFIG.timing.shuffle); return this.delay(UI_CONFIG.timing.shuffle * 0.5);
+      case 'statusApplied': this.banner(p.status === 'poison' ? '毒！' : '凍結！', UI_CONFIG.timing.shuffle); return this.delay(UI_CONFIG.timing.shuffle * 0.5);
+      case 'monsterAppeared': this.banner('魔物が出た！', UI_CONFIG.timing.shuffle); return this.delay(UI_CONFIG.timing.shuffle * 0.5);
+      case 'monsterDefeated': this.banner('魔物を倒した！', UI_CONFIG.timing.shuffle); return this.delay(UI_CONFIG.timing.shuffle * 0.5);
       case 'gameOver':
         model.phase = 'gameOver';
         model.winner = p.winner;
