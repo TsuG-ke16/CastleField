@@ -496,7 +496,7 @@ export class Animations {
     for (const d of list) this.renderer.removeSoldier(d.soldierId);
   }
 
-  async spellCast({ playerId, type, target, targetKind }) {
+  async spellCast({ playerId, type, target, targetKind, roadId }) {
     const def = this.cards[type] ?? {};
     if (targetKind === 'monster') {
       const mEl = this.renderer.monsterEl(target);
@@ -505,18 +505,18 @@ export class Animations {
     }
     const enemy = typeof target === 'string' ? target : this.renderer.opponentOf(playerId);
     if (def.effect === 'damageEnemyCastle') return this.fireball(playerId, enemy);
-    if (def.effect === 'damageEnemySoldiers') return this.thunder(enemy);
-    if (SPELL_TINT[def.effect]) return this.mist(enemy, SPELL_TINT[def.effect]);
+    if (def.effect === 'damageEnemySoldiers') return this.thunder(enemy, roadId);
+    if (SPELL_TINT[def.effect]) return this.mist(enemy, SPELL_TINT[def.effect], roadId);
     // 回復などは castleHealed 側で見せる
     return undefined;
   }
 
   /** 毒の霧・氷の息：相手の兵士の列に色のついた霧をかける */
-  async mist(_targetId, color) {
+  async mist(_targetId, color, roadId) {
     if (this.skipping) return;
     sound.play(color === SPELL_TINT.freezeEnemySoldiers ? 'freeze' : 'poison');
     const app = this.el.app.getBoundingClientRect();
-    const r = this.renderer.roadEl().getBoundingClientRect();
+    const r = this.renderer.laneEl(roadId).getBoundingClientRect(); // レーンを選んだ魔法は、その道だけに霧をかける
     const fog = this.fx('fx-mist');
     fog.style.left = `${r.left - app.left}px`;
     fog.style.top = `${r.top - app.top}px`;
@@ -552,13 +552,13 @@ export class Animations {
   }
 
   /** 雷：相手の兵士1体ずつに落とす */
-  async thunder(targetId) {
+  async thunder(targetId, roadId) {
     if (this.skipping) return;
     sound.play('thunder');
     const app = this.el.app.getBoundingClientRect();
     const top = this.renderer.el.board.getBoundingClientRect().top - app.top;
     const dur = UI_CONFIG.timing.thunder;
-    const targets = this.renderer.soldierElsOf(targetId);
+    const targets = this.renderer.soldierElsOf(targetId, roadId);
     targets.forEach((el, i) => {
       const c = this.centerOf(el);
       const bolt = this.fx('fx-bolt');
