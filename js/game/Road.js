@@ -6,9 +6,13 @@ export class Road {
    * @param {string} a 席順が前の人
    * @param {string} b 席順が後ろの人
    * @param {number} length マスの数（rules.laneLength）
+   * @param {number} [lane] 同じ2人の間の何本目か（0から）
+   * @param {number} [laneCount] 同じ2人の間の道の本数（rules.laneCount）。2本以上なら roadId は "p1-p2#1" のように番号がつく
    */
-  constructor(a, b, length) {
-    this.roadId = `${a}-${b}`;
+  constructor(a, b, length, lane = 0, laneCount = 1) {
+    this.pairId = `${a}-${b}`;
+    this.roadId = laneCount === 1 ? this.pairId : `${this.pairId}#${lane + 1}`;
+    this.lane = lane;
     this.players = [a, b];
     this.length = length;
   }
@@ -33,6 +37,6 @@ export class Road {
   }
 
   toState() {
-    return { roadId: this.roadId, players: [...this.players], length: this.length };
+    return { roadId: this.roadId, players: [...this.players], length: this.length, lane: this.lane };
   }
 }

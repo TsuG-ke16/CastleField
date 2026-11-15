@@ -17,12 +17,48 @@ function view(game, pid) {
 }
 
 
-/** 対象を選んで出す。chooseTarget を省略すると最初の対象 */
+/** 今のターンのカード定義（レーンの選び方で、兵士か魔法かを見分けるのに使う） */
+let curCards = {};
+
+/**
+ * 道（レーン）を選ぶ（targets の中に roadId があるとき）。
+ *   兵士：相手の兵士が来ている道へ迎え撃ちに行く（いなければ魔物のいる道。ごほうびと、城を攻められる前に倒すため）
+ *   魔法：相手の兵士がいちばん多い道へ
+ * 同点のときは乱数で選ぶ。
+ */
+function pickLane(game, pid, cardId, targets) {
+  const withRoad = targets.filter((t) => t.roadId);
+  if (withRoad.length < 2) return withRoad[0] ?? targets[0];
+  const st = game.getState(pid);
+  const type = st.players[pid].hand.find((c) => c.cardId === cardId)?.type;
+  const isSoldier = curCards[type]?.kind === 'soldier';
+  const enemyCount = (roadId) => Object.entries(st.players)
+    .filter(([id]) => id !== pid)
+    .reduce((n, [, p]) => n + p.soldiers.filter((x) => x.roadId === roadId).length, 0);
+  const score = (t) => {
+    const monster = st.monsters.some((m) => m.roadId === t.roadId) ? 1 : 0;
+    // 兵士：相手の兵士が来ている道に出して迎え撃つ（いなければ、魔物のいない道）
+    return isSoldier ? enemyCount(t.roadId) * 2 + monster : enemyCount(t.roadId);
+  };
+  const best = Math.max(...withRoad.map(score));
+  const ties = withRoad.filter((t) => score(t) === best);
+  return ties[Math.floor(tieRng() * ties.length)];
+}
+
+/** 対象を選んで出す。chooseTarget を省略すると、いちばん城HPの割合が少ない相手（道は pickLane で選ぶ） */
 function playWith(game, cardId, chooseTarget) {
   const targets = game.getTargets(cardId);
   if (targets.length === 0) return false;
-  // 省略したら、いちばん城HPの割合が少ない相手（魔物は選ばない）
-  const t = chooseTarget ? chooseTarget(targets) : weakest(game, targets);
+  let t;
+  if (chooseTarget) t = chooseTarget(targets);
+  else {
+    // 省略したら、いちばん城HPの割合が少ない相手（魔物は選ばない）。道が何本かあるときは、その相手の道から選ぶ
+    t = weakest(game, targets);
+    if (t?.playerId) {
+      const lanes = targets.filter((x) => x.playerId === t.playerId && x.roadId);
+      if (lanes.length) t = pickLane(game, game.getState(null).currentPlayer, cardId, lanes);
+    }
+  }
   return t ? game.playCard(cardId, t).ok : false;
 }
 
@@ -243,6 +279,7 @@ export const STRATEGIES = Object.fromEntries(
       ...st,
       takeTurn(game, pid, rng, ctx) {
         tieRng = rng;
+        curCards = ctx.cards;
         return st.takeTurn(game, pid, rng, ctx);
       },
     },

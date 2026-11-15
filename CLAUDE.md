@@ -162,8 +162,8 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 - カードID（cardId）：山札の1枚1枚につく一意のID。例：`"c07"`。同じ種類のカードでもIDは別
 - 兵士ID（soldierId）：場に出た兵士につく一意のID。例：`"s03"`
 - カードIDは山札をシャッフルしたあとの順に振る。IDから種類は分からない
-- 道ID（roadId）：道のID。2人のときは2人のIDを席順で `-` でつなぐ（3人以上の道の形は STEP 5 で決める）。例：`"p1-p2"`。2人なら道は `"p1-p2"` の1本だけ
-- 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
+- 道ID（roadId）：道のID。2人のIDを席順で `-` でつなぐ（3人以上の道の形は STEP 5 で決める）。例：`"p1-p2"`。`rules.laneCount`（レーンの数）が2以上のときは、同じ2人の間に道が `laneCount` 本でき、`"p1-p2#1"`、`"p1-p2#2"` … のように番号がつく（1本のときは番号なし）
+- 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ playerId, roadId }`（レーンが2本以上のときの、兵士を出す道と、`scope: "lane"` の魔法で狙う道）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
 
 ### UIから呼ぶもの
 
@@ -207,7 +207,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   playerOrder: ["p1", "p2"],   // 席順（手番の順）。p1〜p8
   round: 2,                    // 周回（席順の最初の人のターンが始まるたびに1増える。start() の前は 0）
   monsters: [{ monsterId: "m01", type: "slime", roadId: "p1-p2", square: 1, hp: 4, maxHp: 4, attack: 1, element: "water", attackIn: 3, reward: 2, castleAttack: 2 }],
-  roads: [{ roadId: "p1-p2", players: ["p1", "p2"], length: 3 }],  // 道。length はいつも laneLength
+  roads: [{ roadId: "p1-p2#1", players: ["p1", "p2"], length: 3, lane: 0 }, /* laneCount 本ぶん */],  // 道。length はいつも laneLength。lane は同じ2人の間の何本目か（0から）
   turn: 3,                     // 通算ターン数（1から）
   currentPlayer: "p1",
   phase: "main",               // "ready"（start() の前）| "main" | "discard" | "gameOver"
@@ -268,7 +268,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
 | `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"`。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった） |
-| `spellCast` | `{ playerId, type, target, targetKind }` … `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
+| `spellCast` | `{ playerId, type, target, targetKind, roadId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）のときだけ入る。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
 | `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }` |
 | `castleHealed` | `{ playerId, amount, hp }` … `amount` は実際に増えた量（上限で止まったぶんは含まない） |
 | `weaponEquipped` | `{ playerId, soldierId, type, attack, element }` … 武器を持たせた。`attack` は持たせたあとの攻撃力 |
@@ -331,6 +331,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
   "firstTurnDraw": 1,
   "maxHand": 8,
   "laneLength": 3,
+  "laneCount": 3,
   "advanceAfterWin": false,
   "soldierCastleDamageMultiplier": 2,
   "elementBonus": 2,
@@ -355,6 +356,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 }
 ```
 
+- `laneCount`：同じ2人の間の道（レーン）の本数（1〜5。省略すると1）。兵士は出すときにどのレーンに出すかを選び、**兵士同士が戦うのは同じレーンの上だけ**。**魔物は2人の間に1体だけ**（どのレーンに出るかはランダム）。魔物のいないレーンの兵士は、魔物に止められず城へ進める。魔物を倒したあとの `monsterCooldownRounds` は、2人の間全体にかかる
+- カードの `scope`（`damageEnemySoldiers` / `poisonEnemySoldiers` / `freezeEnemySoldiers` の魔法だけ。省略すると `"all"`）：`"all"` は相手の全レーンの兵士に効く。`"lane"` は選んだ1レーンの相手の兵士だけに効く（対象は `{ playerId, roadId }`）。`laneCount` が1のときは `"lane"` でも `"all"` と同じ（対象を選ばない）
 - `monsterFirstRound`：魔物が出はじめる周回（省略すると3）。`monsterCooldownRounds`：魔物を倒した道に次の魔物が出ない周回の数（省略すると0）。`monsterSpawnChance`：周回の始めに、魔物がいない道ごとに魔物が出る確率（0〜1の数。省略すると0）
 - `elementBonus`：属性が強いときに増えるダメージ（省略すると0）
 - カードの `kind`：`soldier` / `spell` / `weapon`（`attackBonus`、`element`）/ `defense`（`effect`: `shieldSoldier` / `armorCastle`、`amount`）。魔法の `effect` に `poisonEnemySoldiers`（`amount`, `turns`）と `freezeEnemySoldiers`（`turns`）が増えた。`element` は `fire` / `water` / `wood`
@@ -444,6 +447,16 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 山札が尽きても止まらない
 - 手番交代で相手の手札が見えない
 - ブラウザのコンソールにエラーが出ない
+
+## レーン（STEP 2 の続き・仮）
+
+「魔物と戦うか、相手の攻撃を必ず受けるか」しか選べず戦略性が低かったので、城と城の間の道を3本（`rules.laneCount`）にして、**兵士を出すときにどの道に出すかを選べる**ようにした（人間に確認して決めた）。
+
+- 兵士は、出した道だけを進む。**兵士同士は同じ道の上でだけ戦う**。別の道なら、すれちがって城まで進む
+- 魔物は2人の間に1体だけで、出る道はランダム。魔物のいない道なら魔物に止められないので、「魔物を倒して稼ぐか」「魔物を避けて城を攻めるか」「相手の兵士を迎え撃つか」を選べる
+- 魔法は、カードごとに効く範囲を変える（`scope`）：サンダー・氷の息・猛毒は選んだ1レーンだけ（`"lane"`）、毒の霧・大雷・大氷結は全レーン（`"all"`）。範囲が狭いぶん、カードの数値は今のまま。ファイアボール・ヒールなど城に関する魔法は、レーンを選ばない
+- 確かめたこと（`node tests/sim/run.js --games 300`）：smart 同士の平均42手番（レーンなしは48）、p1 勝率50%。smart vs random 72%。CPU の兵士の出し先は `js/game/strategies.js`（相手の兵士が来ている道に迎え撃つ、なければ魔物のいる道）
+- 画面（レーンの描画・出す道の選択）は、次のPRで直す。それまでは、画面で兵士を出すとき道を選べない
 
 ## STEP 2：カード拡張（武器・防御・属性・状態異常）
 

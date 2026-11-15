@@ -6,6 +6,7 @@
   "firstTurnDraw": 1,
   "maxHand": 8,
   "laneLength": 3,
+  "laneCount": 3,
   "advanceAfterWin": false,
   "soldierCastleDamageMultiplier": 2,
   "elementBonus": 2,
