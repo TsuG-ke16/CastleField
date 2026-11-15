@@ -650,7 +650,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ### デッキ対戦（`rules.deckMode`）
 - `"shared"`（省略したとき）：今と同じ、全員共通の山札
-- デッキ（仮）：`balanced`（バランス）、`assault`（突撃：歩兵と武器が多い）、`siege`（籠城：盾・城壁・状態異常の魔法が多い）。smart 同士で、バランスに勝つ割合は、突撃48%・籠城45%（籠城はカード1枚で10%以上動く敏感なデッキで、47〜50%に収まる組み合わせは見つけていない。次に直す課題）
+- デッキ（仮）：`balanced`（バランス）、`assault`（突撃：歩兵と武器が多い）、`siege`（籠城：盾・城壁・状態異常の魔法が多い）。smart 同士で、バランスに勝つ割合は、突撃49%・籠城49%（籠城は盾5→4枚で直した。カード1枚で10%以上動く敏感なデッキなので、変えたら必ず2000試合で確かめる）
 - `"own"`：1人1つずつ山札・捨て札・使い切り置き場を持つ。中身は `data/decks.json` のデッキ（`{ name, cards: { type: 枚数 } }`）。席ごとに選ぶ：`setup: { decks: ["assault", "balanced"] }`。省略すると全員 `rules.defaultDeck`
   - `getState()`：`deckMode`。`"own"` のとき、いちばん上の `deckCount` / `discardCount` / `exhaustedCount` は viewer 本人の数（viewer がいなければ `null`）、`players.pX.deckCount` などにそれぞれの数。`"shared"` のときは `players.pX` の方が `null`
   - `deckShuffled` に `playerId`（`"own"` のとき、だれの山札か。`"shared"` のときは `null`）を足す
