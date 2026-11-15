@@ -192,7 +192,8 @@ async function boot() {
       notify: toast,
     });
     // コンソールから Game を触れるようにする（デバッグのときだけ）
-    window.castlefield = { game: () => game, seed: () => seed, renderer: () => renderer };
+    // refresh()：コンソールから debugSet… を直接呼んだあと、画面を合わせ直す
+    window.castlefield = { game: () => game, seed: () => seed, renderer: () => renderer, refresh: () => settleSafely() };
   }
 
   // デバッグ・シード指定のときは、同じ端末ですぐ始める。そうでなければタイトルを出す
