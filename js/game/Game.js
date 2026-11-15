@@ -1119,6 +1119,21 @@ export class Game {
     return false;
   }
 
+  /**
+   * 降参する。2人のときだけ使える（3人以上の降参は、まだ決めていない）。相手の勝ちで、すぐ終わる。
+   * 自分の番でなくても使える（オンラインで、相手の番を待たずに終われるように）。
+   * @param {string} playerId 降参する人
+   */
+  surrender(playerId) {
+    if (this.phase === 'gameOver') return fail('ゲームは終わっています');
+    if (this.phase === 'ready') return fail('まだゲームが始まっていません');
+    const alive = this.alivePlayerIds();
+    if (!alive.includes(playerId)) return fail('そのプレイヤーはいません');
+    if (alive.length !== 2) return fail('3人以上のときは降参できません');
+    this.finish(alive.find((id) => id !== playerId), 'surrender');
+    return { ok: true };
+  }
+
   finish(winner, reason) {
     this.winner = winner;
     this.phase = 'gameOver';

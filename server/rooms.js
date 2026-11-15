@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { filterEventFor } from '../js/game/visibility.js';
 
-const ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'rematch'];
+const ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'rematch', 'surrender', 'leave'];
 const MAX_ROOMS = 1000;
 
 export class Room {
@@ -18,7 +18,7 @@ export class Room {
     this.data = data;
     this.makeRng = makeRng;
     this.capacity = data.rules.playerCount ?? 2;
-    /** @type {{playerId: string, name: string, token: string, clients: Set<(msg: object) => void>}[]} */
+    /** @type {{playerId: string, name: string, token: string, left: boolean, clients: Set<(msg: object) => void>}[]} left：自分から部屋を出た */
     this.seats = [];
     this.game = null;
     this.rematchVotes = new Set();
@@ -35,6 +35,7 @@ export class Room {
       playerId: `p${this.seats.length + 1}`,
       name,
       token: randomBytes(16).toString('hex'),
+      left: false,
       clients: new Set(),
     };
     this.seats.push(seat);
@@ -82,6 +83,8 @@ export class Room {
     if (typeof method !== 'string' || !ACTIONS.includes(method)) return { ok: false, reason: `"${method}" という操作はありません` };
     if (!Array.isArray(args)) return { ok: false, reason: 'args は配列で送ってください' };
     if (method === 'rematch') return this.voteRematch(seat);
+    if (method === 'leave') return this.leave(seat);
+    if (method === 'surrender') return this.surrender(seat);
     if (!this.game) return { ok: false, reason: 'まだ全員そろっていません' };
     if (this.game.currentPlayer !== seat.playerId) return { ok: false, reason: 'あなたの番ではありません' };
     // 手札にないカードは、相手の手札にあってもなくても同じ文にする（文の違いから相手の手札が分からないように）
@@ -100,8 +103,30 @@ export class Room {
     return result;
   }
 
+  /** 自分から部屋を出る。もう戻れない。残った人には room の players[].left で伝わる（勝ち負けはつけない） */
+  leave(seat) {
+    seat.left = true;
+    this.rematchVotes.delete(seat.playerId);
+    this.broadcastRoom();
+    return { ok: true };
+  }
+
+  /** 部屋を出た人がいるか（いたら、この部屋ではもう遊べない） */
+  get abandoned() {
+    return this.seats.some((s) => s.left);
+  }
+
+  /** 降参する。自分の番でなくてもできる。相手の勝ちで終わる */
+  surrender(seat) {
+    if (!this.game) return { ok: false, reason: 'まだ全員そろっていません' };
+    const result = this.game.surrender(seat.playerId);
+    this.broadcastState();
+    return result;
+  }
+
   voteRematch(seat) {
     if (!this.game || this.game.phase !== 'gameOver') return { ok: false, reason: 'まだ試合が終わっていません' };
+    if (this.abandoned) return { ok: false, reason: '相手が部屋を出たので、もう1回はできません' };
     this.rematchVotes.add(seat.playerId);
     this.broadcastRoom();
     if (this.rematchVotes.size === this.seats.length) this.startGame();
@@ -129,7 +154,7 @@ export class Room {
   roomInfo() {
     return {
       roomId: this.roomId,
-      players: this.seats.map((s) => ({ playerId: s.playerId, name: s.name, connected: s.clients.size > 0 })),
+      players: this.seats.map((s) => ({ playerId: s.playerId, name: s.name, connected: s.clients.size > 0, left: s.left })),
       capacity: this.capacity,
       started: this.started,
       rematchVotes: [...this.rematchVotes],
@@ -170,6 +195,11 @@ export class Lobby {
     let room = this.rooms.get(key);
     // 始まる前に全員が帰ってしまった部屋（30秒以上だれもつないでいない）は作り直す
     if (room && !room.started && room.seats.every((s) => s.clients.size === 0) && Date.now() - room.lastActive > 30 * 1000) {
+      this.rooms.delete(key);
+      room = null;
+    }
+    // だれかが自分から出た部屋は、もう遊べないので作り直す（残った人は「相手が部屋を出ました」を見ている）
+    if (room && room.abandoned) {
       this.rooms.delete(key);
       room = null;
     }

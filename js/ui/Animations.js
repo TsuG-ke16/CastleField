@@ -3,7 +3,8 @@
 // 画面をタップすると skip() が呼ばれ、残りの演出は一瞬で終わる。
 
 import { UI_CONFIG, scaled } from './config.js';
-import { src } from './assets.js';
+import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
+import { sound } from './Sound.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -11,13 +12,15 @@ export class Animations {
   /**
    * @param {{ renderer: import('./Renderer.js').Renderer,
    *           handView: import('./HandView.js').HandView,
-   *           cards: object, rules: object }} opts
+   *           cards: object, rules: object, monsters?: object, upgrades?: object }} opts
    */
-  constructor({ renderer, handView, cards, rules }) {
+  constructor({ renderer, handView, cards, rules, monsters = null, upgrades = null }) {
     this.renderer = renderer;
     this.handView = handView;
     this.cards = cards;
     this.rules = rules;
+    this.monsterDefs = monsters;
+    this.upgradeDefs = upgrades;
     this.skipping = false;
     this.timers = new Set();     // 待っている delay
     this.running = new Set();    // 動いている Web Animation
@@ -33,7 +36,7 @@ export class Animations {
     root.setProperty('--t-deploy', `${t.deploy * UI_CONFIG.speed}ms`);
     root.setProperty('--t-death', `${t.soldierDeath * UI_CONFIG.speed}ms`);
     root.setProperty('--t-heal', `${t.heal * UI_CONFIG.speed}ms`);
-    root.setProperty('--t-pulse', `${t.centerPulse * UI_CONFIG.speed}ms`);
+    root.setProperty('--t-equip', `${t.equip * UI_CONFIG.speed}ms`);
   }
 
   // ---------- 飛ばす ----------
@@ -41,6 +44,7 @@ export class Animations {
   skip() {
     if (this.skipping) return;
     this.skipping = true;
+    sound.enabled = false; // 飛ばしているあいだは鳴らさない
     this.el.app.classList.add('skipping');
     for (const a of [...this.running]) {
       try { a.finish(); } catch { a.cancel(); }
@@ -54,6 +58,7 @@ export class Animations {
 
   endSkip() {
     this.skipping = false;
+    sound.enabled = true;
     this.el.app.classList.remove('skipping');
   }
 
@@ -118,41 +123,21 @@ export class Animations {
     return el;
   }
 
-  /** 盤面の中の px → #app の中の px */
-  boardToApp({ x, y }) {
-    const app = this.el.app.getBoundingClientRect();
-    const r = this.el.board.getBoundingClientRect();
-    return { x: x + r.left - app.left, y: y + r.top - app.top };
-  }
-
-  /** 画像の演出を1枚出す（#app の中の座標が中心） */
-  fxImage(key, { x, y }, width, className = '') {
-    const el = this.fx(`fx-img ${className}`, { x, y });
-    const img = document.createElement('img');
-    img.src = src(key);
-    img.alt = '';
-    el.appendChild(img);
-    el.style.width = `${width}px`;
-    return el;
-  }
-
-  /** 大きな数字を出す（待たない）。白抜きの太い数字が弾んで出る */
-  number(target, text, { size, duration, kind = 'damage' }) {
+  /** 大きな数字を出す（待たない） */
+  number(targetEl, text, { size, duration, kind = 'damage', dy = 0 }) {
     if (this.skipping) return;
-    const { x, y } = target instanceof Element ? this.centerOf(target) : target;
-    const el = this.fx(`fx-number ${kind}`, { x, y });
+    const c = this.centerOf(targetEl);
+    const x = c.x;
+    const y = c.y + dy;
+    const el = this.fx(`fx-number ${kind}${size < 30 ? ' small' : ''}`, { x, y });
     el.textContent = text;
     el.style.fontSize = `${size}px`;
-    const tilt = (Math.random() - 0.5) * 16;
-    const base = `translate(-50%, -50%) rotate(${tilt.toFixed(1)}deg)`;
+    const base = 'translate(-50%, -50%)';
     this.animate(el, [
-      { transform: `${base} scale(0.2)`, opacity: 0 },
-      { transform: `${base} scale(1.4)`, opacity: 1, offset: 0.1 },
-      { transform: `${base} scale(0.88)`, offset: 0.18 },
-      { transform: `${base} scale(1.08)`, offset: 0.26 },
-      { transform: `${base} scale(1)`, offset: 0.34 },
-      { transform: `${base} translateY(-6px) scale(1)`, opacity: 1, offset: 0.72 },
-      { transform: `${base} translateY(-34px) scale(0.92)`, opacity: 0 },
+      { transform: `${base} scale(2.4)`, opacity: 0 },
+      { transform: `${base} scale(1)`, opacity: 1, offset: 0.12 },
+      { transform: `${base} translateY(-8px) scale(1)`, opacity: 1, offset: 0.7 },
+      { transform: `${base} translateY(-36px) scale(0.9)`, opacity: 0 },
     ], { duration, easing: 'ease-out', fill: 'forwards' }).then(() => el.remove());
   }
 
@@ -161,9 +146,9 @@ export class Animations {
     return this.delay(ms).then(() => el.classList.remove(className));
   }
 
-  banner(text, ms) {
+  banner(text, ms, variant = '') {
     if (this.skipping) return;
-    const el = this.fx('fx-banner outlined');
+    const el = this.fx(`fx-banner ${variant}`.trim());
     el.textContent = text;
     this.animate(el, [
       { transform: 'scale(1.6)', opacity: 0 },
@@ -171,6 +156,30 @@ export class Animations {
       { transform: 'scale(1)', opacity: 1, offset: 0.75 },
       { transform: 'scale(0.95)', opacity: 0 },
     ], { duration: ms, fill: 'forwards' }).then(() => el.remove());
+  }
+
+  /** 火花・かけらを飛び散らせる（待たない） */
+  sparks({ x, y }, { count = 8, color = '#ffd93b', spread = 60, size = 8 } = {}) {
+    if (this.skipping) return;
+    for (let i = 0; i < count; i++) {
+      const el = this.fx('fx-spark', { x, y });
+      el.style.background = color;
+      el.style.width = el.style.height = `${size * (0.6 + Math.random() * 0.8)}px`;
+      const a = Math.random() * Math.PI * 2;
+      const d = spread * (0.5 + Math.random() * 0.7);
+      this.animate(el, [
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${Math.cos(a) * d}px), calc(-50% + ${Math.sin(a) * d + 20}px)) scale(0.2) rotate(${Math.random() * 360}deg)`, opacity: 0 },
+      ], { duration: 380 + Math.random() * 220, easing: 'cubic-bezier(.2, .7, .4, 1)', fill: 'forwards' }).then(() => el.remove());
+    }
+  }
+
+  /** 画面全体を一瞬光らせる（決着の一撃） */
+  screenFlash(color = '#fff', ms = 420) {
+    if (this.skipping) return;
+    const el = this.fx('fx-flash');
+    el.style.background = color;
+    this.animate(el, [{ opacity: 0.85 }, { opacity: 0 }], { duration: ms, easing: 'ease-out', fill: 'forwards' }).then(() => el.remove());
   }
 
   // ---------- イベントの再生 ----------
@@ -183,20 +192,26 @@ export class Animations {
    * @param {{ viewerId: string, lookupCard: (cardId:string)=>object|null }} ctx
    */
   async play(ev, queue, model, ctx) {
-    const p = ev.payload;
+    const p = ev.payload ?? {};
     switch (ev.type) {
       case 'turnStarted':
         model.turn = p.turn;
         model.currentPlayer = p.playerId;
-        for (const id of ['p1', 'p2']) model.players[id].playedThisTurn = false;
-        this.renderer.setTurnInfo(p.turn);
+        for (const pl of Object.values(model.players)) {
+          pl.playedThisTurn = false;
+          pl.cardsPlayedThisTurn = 0;
+        }
+        this.renderer.setTurnInfo(p.turn, model.round);
+        this.renderer.setCurrentPlayer(p.playerId);
         return;
+      case 'roundStarted': return this.roundStarted(p, model);
       case 'cardDrawn': return this.cardDrawn(p, model, ctx);
       case 'deckShuffled':
         model.deckCount = p.deckCount;
         model.discardCount = 0;
         this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
-        this.banner('山札をシャッフル！', UI_CONFIG.timing.shuffle);
+        sound.play('shuffle');
+        this.banner('山札をシャッフル！', UI_CONFIG.timing.shuffle, 'small');
         return this.delay(UI_CONFIG.timing.shuffle * 0.6);
       case 'cardPlayed': return this.cardPlayed(p, model, ctx);
       case 'discardRequired':
@@ -212,13 +227,92 @@ export class Animations {
       case 'spellCast': return this.spellCast(p);
       case 'castleDamaged': return this.castleDamaged(p, model);
       case 'castleHealed': return this.castleHealed(p, model);
+      case 'weaponEquipped': return this.weaponEquipped(p, model);
+      case 'shieldAdded': return this.shieldAdded(p, model);
+      case 'castleArmored': return this.castleArmored(p, model);
+      case 'armorExpired': return this.armorExpired(p, model);
+      case 'statusApplied': return this.statusesApplied(ev, queue, model);
+      case 'statusCleared': return this.statusCleared(p, model);
+      case 'monsterAppeared': return this.monsterAppeared(p, model);
+      case 'monsterAttackedCastle': return this.monsterAttackedCastle(p, model);
+      case 'monsterClashed': return this.monsterClashed(p);
+      case 'monsterDamaged': return this.monsterDamaged(p, model);
+      case 'monsterDefeated': return this.monsterDefeated(p, model);
+      case 'coinsChanged': return this.coinsChanged(p, model);
+      case 'upgradeBought': return this.upgradeBought(p);
+      case 'soldierBuffed': return this.soldiersBuffed(ev, queue, model);
       case 'gameOver':
         model.phase = 'gameOver';
         model.winner = p.winner;
+        model.gameOverReason = p.reason ?? null;
         return;
       default:
+        // 知らないイベント（3人以上の playerEliminated など）は演出しない。最後に getState() で合わせる
         return;
     }
+  }
+
+  /** first と、そのあとに続けて来た同じ種類のイベントを queue から取り出し、ペイロードの配列で返す */
+  takeRun(first, queue) {
+    const list = [first.payload];
+    while (queue[0]?.type === first.type) list.push(queue.shift().payload);
+    return list;
+  }
+
+  /** 表示用の状態の兵士を探す */
+  modelSoldier(model, playerId, soldierId) {
+    return model.players[playerId]?.soldiers.find((x) => x.soldierId === soldierId) ?? null;
+  }
+
+  modelMonster(model, monsterId) {
+    return model.monsters?.find((m) => m.monsterId === monsterId) ?? null;
+  }
+
+  /** 2つの要素の間に「ぶつかった」印を出す */
+  async clashBetween(aEl, bEl) {
+    if (this.skipping || !aEl || !bEl) return;
+    const a = this.centerOf(aEl);
+    const b = this.centerOf(bEl);
+    sound.play('clash');
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    this.sparks(mid, { count: 6, spread: 34, size: 6 });
+    const mark = this.fx('fx-clash', mid);
+    mark.textContent = ICON.clash;
+    const dur = UI_CONFIG.timing.clash;
+    this.animate(mark, [
+      { transform: 'translate(-50%, -50%) scale(0.3)', opacity: 0 },
+      { transform: 'translate(-50%, -50%) scale(1.4)', opacity: 1, offset: 0.35 },
+      { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 },
+    ], { duration: dur * 1.6, easing: 'ease-out', fill: 'forwards' }).then(() => mark.remove());
+    // おたがいに少し前へ飛び出す
+    const lunge = (el, to, from) => {
+      const dx = (to.x - from.x) * 0.25;
+      const dy = (to.y - from.y) * 0.25;
+      const token = el.querySelector('.soldier-token, .monster-token') ?? el;
+      return this.animate(token, [
+        { transform: 'translate(0, 0)' },
+        { transform: `translate(${dx}px, ${dy}px)`, offset: 0.4 },
+        { transform: 'translate(0, 0)' },
+      ], { duration: dur, easing: 'ease-out' });
+    };
+    await Promise.all([lunge(aEl, b, a), lunge(bEl, a, b)]);
+  }
+
+  soldiersClashed({ attacker, defender }) {
+    return this.clashBetween(this.renderer.soldierEl(attacker?.soldierId), this.renderer.soldierEl(defender?.soldierId));
+  }
+
+  monsterClashed({ attacker, monsterId }) {
+    return this.clashBetween(this.renderer.soldierEl(attacker?.soldierId), this.renderer.monsterEl(monsterId));
+  }
+
+  async roundStarted({ round }, model) {
+    model.round = round;
+    // 魔物の「城を攻めるまで」（attackIn）はイベントに入っていないので、演出のあとの getState で合わせる
+    this.renderer.setTurnInfo(model.turn, round);
+    if (round <= 1) return;
+    this.banner(`${ICON.round} ${round}周目`, UI_CONFIG.timing.round, 'small');
+    await this.delay(UI_CONFIG.timing.round * 0.5);
   }
 
   async cardDrawn({ playerId, cardIds }, model, ctx) {
@@ -232,6 +326,7 @@ export class Animations {
         if (card) {
           model.hand.push(card);
           this.handView.addCard(card);
+          sound.play('draw');
         }
       } else {
         this.renderer.setOppHandCount(pl.handCount);
@@ -243,14 +338,17 @@ export class Animations {
   async cardPlayed({ playerId, cardId, type }, model, ctx) {
     const pl = model.players[playerId];
     pl.handCount = Math.max(0, pl.handCount - 1);
-    pl.playedThisTurn = true;
-    model.discardCount += 1;
+    const def = this.cards[type] ?? {};
+    if (def.kind !== 'weapon' && def.kind !== 'defense') pl.playedThisTurn = true;
+    pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
+    if (!def.exhaust) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
     model.hand = model.hand.filter((c) => c.cardId !== cardId);
     let clone;
     let from;
     const app = this.el.app.getBoundingClientRect();
     if (playerId === ctx.viewerId) {
       const taken = this.handView.takeCard(cardId);
+      // 演出のあいだは手札を暗くしておく（出せるかどうかは、演出のあと main.js が canPlayCard で決め直す）
       this.handView.blockAll();
       if (taken) {
         clone = taken.clone;
@@ -265,26 +363,23 @@ export class Animations {
     }
     this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDiscard: true });
     if (this.skipping) return;
+    sound.play('card');
 
     clone.classList.remove('selected', 'dim', 'new', 'denied', 'drag-source', 'drag-ghost');
     clone.classList.add('fx-card');
     clone.style.left = `${from.x}px`;
     clone.style.top = `${from.y}px`;
     this.el.fx.appendChild(clone);
-    const to = this.centerOf(this.renderer.el.board);
+    const to = this.centerOf(this.renderer.el.field);
     const dx = to.x - from.x;
     const dy = to.y - from.y;
     const base = 'translate(-50%, -50%)';
     const dur = UI_CONFIG.timing.cardPlay;
-    // ぽよんと弾んでから、弧を描いて盤面へ飛ぶ
     this.animate(clone, [
-      { transform: `${base} translate(0, 0) scale(1, 1)` },
-      { transform: `${base} translate(0, 6px) scale(1.18, 0.82)`, offset: 0.1 },
-      { transform: `${base} translate(${dx * 0.3}px, ${dy * 0.3 - 40}px) scale(0.92, 1.12) rotate(-6deg)`, offset: 0.24 },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.75, 1.45) rotate(2deg)`, offset: 0.42 },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.55, 1.7)`, offset: 0.5 },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.62, 1.62)`, opacity: 1, offset: 0.76 },
-      { transform: `${base} translate(${dx}px, ${dy - 24}px) scale(0.4)`, opacity: 0 },
+      { transform: `${base} translate(0, 0) scale(1)` },
+      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, offset: 0.35 },
+      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75 },
+      { transform: `${base} translate(${dx}px, ${dy - 30}px) scale(1.4)`, opacity: 0 },
     ], { duration: dur, easing: 'ease-out', fill: 'forwards' }).then(() => clone.remove());
     // 消えきるのを待たずに、効果の演出へ進む
     await this.delay(dur * 0.7);
@@ -304,240 +399,232 @@ export class Animations {
       this.renderer.setOppHandCount(pl.handCount);
     }
     this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDiscard: true });
-    await this.delay(150);
+    await this.delay(UI_CONFIG.timing.discard);
   }
 
-  async soldierDeployed({ playerId, soldierId, type, position, hp, attack }, model) {
+  async soldierDeployed({ playerId, soldierId, type, position, hp, attack, roadId, targetId }, model) {
     const def = this.cards[type] ?? {};
-    const s = { soldierId, type, hp: hp ?? def.hp, attack: attack ?? def.attack, position };
+    const s = {
+      soldierId, type, hp: hp ?? def.hp, attack: attack ?? def.attack, position, roadId, targetId,
+      weapon: null, element: null, shield: 0, statuses: { poison: null, frozen: 0 },
+    };
     model.players[playerId].soldiers.push(s);
-    this.renderer.addSoldier(playerId, s, { appear: !this.skipping });
+    this.renderer.addSoldier(playerId, s, { appear: true });
+    sound.play('deploy');
+    const dEl = this.renderer.soldierEl(soldierId);
+    if (dEl && !this.skipping) this.sparks(this.centerOf(dEl), { count: 6, color: '#e9d3a6', spread: 30, size: 9 });
     await this.delay(UI_CONFIG.timing.deploy);
   }
 
-  /** 進軍：ひと続きの進軍はまとめて同時に動かす（城への攻撃はそのあと順番に）。1マスごとにぴょんと跳ねる */
+  /** 進軍：ひと続きの進軍はまとめて同時に動かす（城への攻撃はそのあと順番に） */
   async soldiersMoved(first, queue, model) {
     const moves = [first.payload];
+    // 戦い・魔物との戦いのイベントをはさんだ先の進軍は、まとめない（ぶつかる前に動いてしまうため）
     const related = new Set(['soldierMoved', 'castleDamaged', 'soldierDestroyed', 'gameOver']);
     for (let i = 0; i < queue.length && related.has(queue[i].type); ) {
       if (queue[i].type === 'soldierMoved') moves.push(queue.splice(i, 1)[0].payload);
       else i++;
     }
-    const L = this.rules.laneLength;
-    const paths = [];
     for (const m of moves) {
       const s = model.players[m.playerId].soldiers.find((x) => x.soldierId === m.soldierId);
       if (s) s.position = m.to;
-      const before = this.renderer.soldierPx(m.soldierId);
-      // 途中で通るマス（城に着いたら城の前まで）
-      const steps = [];
-      for (let p = m.from + 1; p <= Math.min(m.to, L); p++) steps.push(p);
-      if (!steps.length && m.to !== m.from) steps.push(m.to);
-      paths.push({ m, before, steps });
       this.renderer.moveSoldier(m.soldierId, m.to);
     }
     this.renderer.layoutStacks();
-    if (this.skipping) return;
-
-    const hop = UI_CONFIG.timing.soldierHop;
-    const jobs = paths.map(({ m, before, steps }) => {
-      const s = this.renderer.soldier(m.soldierId);
-      const after = this.renderer.soldierPx(m.soldierId);
-      if (!s || !before || !after || !steps.length) return null;
-      const points = [before];
-      steps.slice(0, -1).forEach((p) => points.push(this.renderer.toPx(this.renderer.soldierPoint(m.playerId, p))));
-      points.push(after);
-      const n = points.length - 1;
-      const frames = points.map((pt, i) => ({
-        transform: `translate(${(pt.x - after.x).toFixed(1)}px, ${(pt.y - after.y).toFixed(1)}px)`,
-        offset: i / n,
-      }));
-      const body = s.el.querySelector('.soldier-body');
-      return Promise.all([
-        this.animate(s.el, frames, { duration: hop * n, easing: 'linear' }),
-        this.animate(body, [
-          { transform: 'translateY(0) scale(1.12, 0.86)' },
-          { transform: 'translateY(-22px) scale(0.92, 1.1)', offset: 0.45, easing: 'ease-in' },
-          { transform: 'translateY(0) scale(1.16, 0.82)', offset: 0.88 },
-          { transform: 'translateY(0) scale(1, 1)' },
-        ], { duration: hop, iterations: n, easing: 'ease-out' }),
-      ]);
-    }).filter(Boolean);
-    if (jobs.length) await Promise.all(jobs);
-    else await this.delay(UI_CONFIG.timing.soldierMove);
+    sound.play('step');
+    await this.delay(UI_CONFIG.timing.soldierMove);
   }
 
-  /** 兵士同士がぶつかる：2体が前に飛び出してぶつかり、土けむり。ダメージの数字は続く soldierDamaged で出る */
-  async soldiersClashed({ attacker, defender }) {
-    if (this.skipping) return;
-    const a = this.renderer.soldierPx(attacker.soldierId);
-    const d = this.renderer.soldierPx(defender.soldierId);
-    const aEl = this.renderer.soldierEl(attacker.soldierId);
-    const dEl = this.renderer.soldierEl(defender.soldierId);
-    if (!a || !d || !aEl || !dEl) return;
-    const t = UI_CONFIG.timing;
-    const cfg = UI_CONFIG.clash;
-    let vx = d.x - a.x;
-    let vy = d.y - a.y;
-    let len = Math.hypot(vx, vy);
-    if (len < 4) {
-      // 同じ場所にいるときは、上下からぶつかる
-      vx = 0; vy = this.renderer.sideOf(attacker.playerId) === 'me' ? -1 : 1; len = 1;
-    }
-    const reach = Math.min(34, Math.max(10, len / 2 - 10));
-    const ux = (vx / len) * reach;
-    const uy = (vy / len) * reach;
-    const lunge = (el, sx, sy) => this.animate(el, [
-      { transform: 'translate(0, 0)' },
-      { transform: `translate(${-sx * 0.25}px, ${-sy * 0.25}px)`, offset: 0.35 },
-      { transform: `translate(${sx}px, ${sy}px)` },
-    ], { duration: t.clashLunge, easing: 'cubic-bezier(.6, 0, 1, 1)', fill: 'forwards' });
-    await Promise.all([lunge(aEl, ux, uy), lunge(dEl, -ux, -uy)]);
-
-    // ぶつかった瞬間：土けむり・一瞬止める・揺れ
-    const mid = this.boardToApp({ x: (a.x + d.x) / 2, y: (a.y + d.y) / 2 - UI_CONFIG.board.unitSize * 0.35 });
-    const dust = this.fxImage('fx:dust', mid, UI_CONFIG.board.unitSize * cfg.dustSize, 'dust');
-    this.animate(dust, [
-      { transform: 'translate(-50%, -50%) scale(0.3)', opacity: 1 },
-      { transform: 'translate(-50%, -50%) scale(1.1)', opacity: 1, offset: 0.35 },
-      { transform: 'translate(-50%, -60%) scale(1.35)', opacity: 0 },
-    ], { duration: t.clashReturn * 3, easing: 'ease-out', fill: 'forwards' }).then(() => dust.remove());
-    await this.hitstop(cfg.hitstop);
-    this.shake(this.el.board, cfg.shake, 220);
-
-    const back = (el, sx, sy) => this.animate(el, [
-      { transform: `translate(${sx}px, ${sy}px)` },
-      { transform: `translate(${-sx * 0.3}px, ${-sy * 0.3 - 6}px)`, offset: 0.5 },
-      { transform: 'translate(0, 0)' },
-    ], { duration: t.clashReturn, easing: 'ease-out' });
-    await Promise.all([back(aEl, ux, uy), back(dEl, -ux, -uy)]);
-    for (const a2 of [...aEl.getAnimations(), ...dEl.getAnimations()]) if (a2.playState === 'finished') a2.cancel();
-  }
-
-  /** 兵士へのダメージ：続けて来たものはまとめて同時に見せる */
+  /** 兵士へのダメージ：続けて来たものはまとめて同時に見せる。盾が受けたぶんと毒は見た目を変える */
   async soldiersDamaged(first, queue, model) {
-    const hits = [first.payload];
-    while (queue[0]?.type === 'soldierDamaged') hits.push(queue.shift().payload);
+    const hits = this.takeRun(first, queue);
     const cfg = UI_CONFIG.soldierHit;
+    const small = UI_CONFIG.smallNumber;
+    const shaken = [];
+    let anyHit = false;
+    let anyBlock = false;
+    let anyPoison = false;
     for (const h of hits) {
-      const s = model.players[h.playerId].soldiers.find((x) => x.soldierId === h.soldierId);
-      if (s) s.hp = h.hp;
-      this.renderer.setSoldierHp(h.soldierId, h.hp);
+      const blocked = h.blocked ?? 0;
+      const dealt = Math.max(0, (h.amount ?? 0) - blocked);
+      const s = this.modelSoldier(model, h.playerId, h.soldierId);
+      if (s) {
+        s.hp = h.hp;
+        s.shield = Math.max(0, (s.shield ?? 0) - blocked);
+        // 毒のダメージ1回で、毒の残りが1減る（0になれば statusCleared が来る）。量はここで分かる
+        if (h.cause === 'poison' && s.statuses?.poison) {
+          s.statuses = { ...s.statuses, poison: { amount: h.amount, turns: s.statuses.poison.turns - 1 } };
+        }
+      }
+      this.renderer.updateSoldier(h.soldierId, { hp: h.hp, shield: s?.shield ?? 0, ...(s ? { statuses: s.statuses } : {}) });
       const el = this.renderer.soldierEl(h.soldierId);
-      if (!el || this.skipping) continue;
-      el.classList.remove('hit');
-      void el.offsetWidth;
-      el.classList.add('hit');
-      const img = el.querySelector('.soldier-body');
-      this.number(img, `-${h.amount}`, { size: cfg.numberSize, duration: cfg.numberDuration });
+      if (!el) continue;
+      const poison = h.cause === 'poison';
+      if (dealt > 0) {
+        anyHit = true;
+        el.classList.add(poison ? 'hit-poison' : 'hit');
+        if (poison) anyPoison = true;
+        shaken.push(el.querySelector('.soldier-token'));
+        this.number(el, `${poison ? STATUS_ICON.poison : ''}-${dealt}`,
+          { size: cfg.numberSize, duration: cfg.numberDuration, kind: poison ? 'poison' : 'damage' });
+      }
+      if (blocked > 0) {
+        anyBlock = true;
+        el.classList.add('blocked');
+        this.number(el, `${ICON.shield}${blocked}`, { size: small.size, duration: small.duration, kind: 'block', dy: dealt > 0 ? -26 : 0 });
+      }
     }
-    await this.hitstop(cfg.hitstop);
-    this.shake(this.el.board, cfg.shake, 200);
-    await this.delay(200);
-    for (const h of hits) this.renderer.soldierEl(h.soldierId)?.classList.remove('hit');
+    if (anyHit) sound.play(anyPoison ? 'poison' : 'smallHit');
+    else if (anyBlock) sound.play('block');
+    if (anyHit) await this.hitstop(cfg.hitstop);
+    for (const h of hits) this.renderer.soldierEl(h.soldierId)?.classList.remove('hit', 'hit-poison', 'blocked');
+    for (const token of shaken) if (token) this.shake(token, cfg.shake, cfg.shakeDuration);
+    await this.delay(UI_CONFIG.timing.afterSoldierHit);
   }
 
   /** 兵士が消える：続けて来たものはまとめて同時に消す */
   async soldiersDestroyed(first, queue, model) {
-    const list = [first.payload];
-    while (queue[0]?.type === 'soldierDestroyed') list.push(queue.shift().payload);
+    const list = this.takeRun(first, queue);
     for (const d of list) {
       const pl = model.players[d.playerId];
       pl.soldiers = pl.soldiers.filter((x) => x.soldierId !== d.soldierId);
-      this.renderer.soldierEl(d.soldierId)?.classList.add(d.reason === 'reachedCastle' ? 'arrived' : 'dying');
+      const dyingEl = this.renderer.soldierEl(d.soldierId);
+      dyingEl?.classList.add(d.reason === 'reachedCastle' ? 'arrived' : 'dying');
+      if (dyingEl && d.reason !== 'reachedCastle' && !this.skipping) this.sparks(this.centerOf(dyingEl), { count: 7, color: '#fff', spread: 36, size: 9 });
     }
     await this.delay(UI_CONFIG.timing.soldierDeath);
     for (const d of list) this.renderer.removeSoldier(d.soldierId);
   }
 
-  async spellCast({ playerId, type, target }) {
+  async spellCast({ playerId, type, target, targetKind }) {
     const def = this.cards[type] ?? {};
-    const enemy = target ?? this.renderer.opponentOf(playerId);
+    if (targetKind === 'monster') {
+      const mEl = this.renderer.monsterEl(target);
+      if (mEl) return this.projectile(this.renderer.castleEl(playerId), mEl);
+      return undefined;
+    }
+    const enemy = typeof target === 'string' ? target : this.renderer.opponentOf(playerId);
     if (def.effect === 'damageEnemyCastle') return this.fireball(playerId, enemy);
     if (def.effect === 'damageEnemySoldiers') return this.thunder(enemy);
+    if (SPELL_TINT[def.effect]) return this.mist(enemy, SPELL_TINT[def.effect]);
     // 回復などは castleHealed 側で見せる
     return undefined;
   }
 
-  /** 火の玉が自分の城から相手の城へ飛ぶ（爆発は castleDamaged で出す） */
-  async fireball(fromId, toId) {
+  /** 毒の霧・氷の息：相手の兵士の列に色のついた霧をかける */
+  async mist(_targetId, color) {
     if (this.skipping) return;
-    const from = this.centerOf(this.renderer.castleImgEl(fromId));
-    const to = this.centerOf(this.renderer.castleImgEl(toId));
-    const size = UI_CONFIG.board.unitSize * 1.1;
-    const ball = this.fxImage('fx:fireball', from, size, 'fireball');
+    sound.play(color === SPELL_TINT.freezeEnemySoldiers ? 'freeze' : 'poison');
+    const app = this.el.app.getBoundingClientRect();
+    const r = this.renderer.roadEl().getBoundingClientRect();
+    const fog = this.fx('fx-mist');
+    fog.style.left = `${r.left - app.left}px`;
+    fog.style.top = `${r.top - app.top}px`;
+    fog.style.width = `${r.width}px`;
+    fog.style.height = `${r.height}px`;
+    fog.style.background = `radial-gradient(ellipse at 50% 50%, ${color}, transparent 75%)`;
+    const dur = UI_CONFIG.timing.status;
+    this.animate(fog, [{ opacity: 0 }, { opacity: 1, offset: 0.4 }, { opacity: 0 }],
+      { duration: dur * 1.6, fill: 'forwards' }).then(() => fog.remove());
+    await this.delay(dur * 0.5);
+  }
+
+  async fireball(fromId, toId) {
+    return this.projectile(this.renderer.castleEl(fromId), this.renderer.castleEl(toId));
+  }
+
+  /** 火の玉を fromEl から toEl へ飛ばす */
+  async projectile(fromEl, toEl) {
+    if (this.skipping) return;
+    const from = this.centerOf(fromEl);
+    const to = this.centerOf(toEl);
+    sound.play('fire');
+    const ball = this.fx('fx-fireball', from);
     const dx = to.x - from.x;
     const dy = to.y - from.y;
-    const side = dx === 0 ? 50 : 0;
+    const side = (dy < 0 ? 1 : -1) * 46; // 少し弧をえがいて飛ぶ
     await this.animate(ball, [
-      { transform: 'translate(-50%, -50%) scale(0.4) rotate(0deg)' },
-      { transform: `translate(calc(-50% + ${dx * 0.5 + side}px), calc(-50% + ${dy * 0.5}px)) scale(1) rotate(200deg)`, offset: 0.5 },
-      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.3) rotate(400deg)` },
-    ], { duration: UI_CONFIG.timing.spellProjectile, easing: 'cubic-bezier(.45, 0, .9, .6)', fill: 'forwards' });
+      { transform: 'translate(-50%, -50%) scale(0.5)' },
+      { transform: `translate(calc(-50% + ${dx * 0.5 + side}px), calc(-50% + ${dy * 0.5}px)) scale(1.3)`, offset: 0.5 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.7)` },
+    ], { duration: UI_CONFIG.timing.spellProjectile, easing: 'cubic-bezier(.5, 0, 1, 1)', fill: 'forwards' });
     ball.remove();
   }
 
-  /** 相手の兵士の上に雷を落とす（ダメージは続く soldierDamaged で出す） */
+  /** 雷：相手の兵士1体ずつに落とす */
   async thunder(targetId) {
     if (this.skipping) return;
+    sound.play('thunder');
+    const app = this.el.app.getBoundingClientRect();
+    const top = this.renderer.el.board.getBoundingClientRect().top - app.top;
     const dur = UI_CONFIG.timing.thunder;
-    const targets = [...this.renderer.soldiers.values()].filter((s) => s.playerId === targetId);
-    const points = targets.length
-      ? targets.map((s) => this.renderer.soldierPx(s.soldierId))
-      : [this.renderer.toPx(this.renderer.rowPoint((this.rules.laneLength - 1) / 2))];
-    const h = UI_CONFIG.board.unitSize * 2.2;
-    points.forEach((p, i) => {
-      const at = this.boardToApp({ x: p.x, y: p.y - h / 2 + 8 });
-      const bolt = this.fxImage('fx:lightning', at, h * 0.5, 'bolt');
+    const targets = this.renderer.soldierElsOf(targetId);
+    targets.forEach((el, i) => {
+      const c = this.centerOf(el);
+      const bolt = this.fx('fx-bolt');
+      bolt.style.left = `${c.x}px`;
+      bolt.style.top = `${top}px`;
+      bolt.style.height = `${Math.max(40, c.y - top)}px`;
       this.animate(bolt, [
-        { transform: 'translate(-50%, -50%) scaleY(0.2)', opacity: 0 },
-        { transform: 'translate(-50%, -50%) scaleY(1.05)', opacity: 1, offset: 0.15 },
-        { opacity: 0.25, offset: 0.35 },
-        { transform: 'translate(-50%, -50%) scaleY(1)', opacity: 1, offset: 0.5 },
-        { transform: 'translate(-50%, -50%) scaleY(1)', opacity: 0 },
-      ], { duration: dur, delay: i * 50 * UI_CONFIG.speed, fill: 'forwards' }).then(() => bolt.remove());
+        { opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 0.15, offset: 0.3 },
+        { opacity: 1, offset: 0.45 }, { opacity: 0 },
+      ], { duration: dur, delay: i * 40 * UI_CONFIG.speed, fill: 'forwards' }).then(() => bolt.remove());
+      this.sparks(c, { count: 5, color: '#ffe95a', spread: 30, size: 6 });
     });
-    this.flashScreen(dur * 0.5);
-    this.shake(this.el.board, 5, dur);
+    this.screenFlash('#fffbe0', dur * 0.6);
+    this.shake(this.renderer.el.field, 5, dur);
     await this.delay(dur * 0.6);
   }
 
-  /** 画面全体を一瞬白っぽくする（雷） */
-  flashScreen(ms) {
-    if (this.skipping) return;
-    const f = this.fx('fx-flash');
-    this.animate(f, [{ opacity: 0.55 }, { opacity: 0 }], { duration: ms, fill: 'forwards' }).then(() => f.remove());
+  async castleDamaged({ playerId, amount, hp, blocked = 0 }, model) {
+    const pl = model.players[playerId];
+    pl.castleHp = hp;
+    if (blocked > 0) {
+      pl.armor = Math.max(0, (pl.armor ?? 0) - blocked);
+      this.renderer.setArmor(playerId, pl.armor);
+    }
+    const dealt = Math.max(0, amount - blocked);
+    const castle = this.renderer.castleEl(playerId);
+    if (blocked > 0 && !this.skipping) {
+      const small = UI_CONFIG.smallNumber;
+      this.number(castle, `${ICON.armor}${blocked}ふせいだ`, { size: small.size, duration: small.duration, kind: 'block', dy: dealt > 0 ? -34 : 0 });
+    }
+    if (dealt <= 0) {
+      // 城壁がぜんぶ受けた：揺らさず、城壁が光るだけ
+      this.renderer.setCastleHp(playerId, hp);
+      if (this.skipping) return;
+      sound.play('block');
+      return this.flashClass(castle, 'armor-block', UI_CONFIG.timing.armor);
+    }
+    return this.castleHit(playerId, dealt, hp);
   }
 
-  async castleDamaged({ playerId, amount, hp, source }, model) {
-    model.players[playerId].castleHp = hp;
+  /** 城に当たったときの手応え（ヒットストップ・揺れ・大きな数字。強いほど大きく） */
+  async castleHit(playerId, amount, hp) {
     const cfg = UI_CONFIG.castleHit;
     const finish = hp <= 0;
     const castle = this.renderer.castleEl(playerId);
-    const img = this.renderer.castleImgEl(playerId);
     const stop = finish ? cfg.finishHitstop : scaled(cfg.hitstopBase, cfg.hitstopPerDamage, cfg.hitstopMax, amount);
     const amp = finish ? cfg.finishShake : scaled(cfg.shakeBase, cfg.shakePerDamage, cfg.shakeMax, amount);
     const size = scaled(cfg.numberBase, cfg.numberPerDamage, cfg.numberMax, amount) * (finish ? 1.3 : 1);
 
     this.renderer.setCastleHp(playerId, hp);
     if (this.skipping) return;
+    sound.play('hit', finish ? 1 : Math.min(1, amount / 12));
+    if (finish) this.screenFlash('#fff', 520);
 
-    // 1) 当たった瞬間：城を白く光らせる＋爆発
+    // 1) 当たった瞬間：白く光る＋爆発
     castle.classList.add('flash');
-    const center = this.centerOf(img);
-    const scale = Math.min(cfg.explosionMax, cfg.explosionBase + cfg.explosionPerDamage * amount) * (finish ? 1.3 : 1);
-    const width = img.getBoundingClientRect().width * scale * (source?.kind === 'soldier' ? 0.8 : 1);
-    const boom = this.fxImage('fx:explosion', center, width, 'explosion');
-    this.animate(boom, [
-      { transform: 'translate(-50%, -50%) scale(0.2) rotate(-10deg)', opacity: 1 },
-      { transform: 'translate(-50%, -50%) scale(1.05) rotate(4deg)', opacity: 1, offset: 0.3 },
-      { transform: 'translate(-50%, -50%) scale(1.2) rotate(8deg)', opacity: 0 },
-    ], { duration: stop + 320, easing: 'ease-out', fill: 'forwards' }).then(() => boom.remove());
+    const burst = this.fx('fx-burst', this.centerOf(castle));
+    burst.style.transform = `scale(${0.6 + Math.min(amount, 30) / 20})`;
     // 2) 一瞬止める（ダメージが大きいほど長く）
     await this.hitstop(stop);
     castle.classList.remove('flash');
     // 3) 揺れ＋大きな数字
-    this.number(img, `-${amount}`, { size, duration: cfg.numberDuration });
+    this.number(castle, `-${amount}`, { size, duration: cfg.numberDuration });
+    this.sparks(this.centerOf(castle), { count: finish ? 22 : 6 + Math.min(12, amount), color: '#d9cfbb', spread: finish ? 130 : 50 + amount * 3, size: finish ? 14 : 10 });
+    this.animate(burst, [{ opacity: 1 }, { opacity: 0, transform: `scale(${1 + Math.min(amount, 30) / 15})` }],
+      { duration: 260, fill: 'forwards' }).then(() => burst.remove());
     this.shake(this.el.board, amp, cfg.shakeDuration * (finish ? 1.6 : 1));
     await this.delay(cfg.shakeDuration * 0.7);
   }
@@ -545,22 +632,228 @@ export class Animations {
   async castleHealed({ playerId, amount, hp }, model) {
     model.players[playerId].castleHp = hp;
     const castle = this.renderer.castleEl(playerId);
-    const img = this.renderer.castleImgEl(playerId);
     this.renderer.setCastleHp(playerId, hp);
     if (this.skipping) return;
-    const dur = UI_CONFIG.timing.heal;
     castle.classList.remove('heal-glow');
     void castle.offsetWidth;
     castle.classList.add('heal-glow');
-    const sparkle = this.fxImage('fx:heal', this.centerOf(img), img.getBoundingClientRect().width * 1.1, 'heal');
-    this.animate(sparkle, [
-      { transform: 'translate(-50%, -30%) scale(0.5)', opacity: 0 },
-      { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 0.3 },
-      { transform: 'translate(-50%, -75%) scale(1.1)', opacity: 0 },
-    ], { duration: dur * 1.6, easing: 'ease-out', fill: 'forwards' }).then(() => sparkle.remove());
-    this.number(img, `+${amount}`, { kind: 'heal', size: UI_CONFIG.healNumber.size, duration: UI_CONFIG.healNumber.duration });
-    await this.delay(dur);
+    sound.play('heal');
+    this.sparks(this.centerOf(castle), { count: 10, color: '#7fe08a', spread: 60, size: 8 });
+    this.number(castle, `+${amount}`, { kind: 'heal', size: UI_CONFIG.healNumber.size, duration: UI_CONFIG.healNumber.duration });
+    await this.delay(UI_CONFIG.timing.heal);
     castle.classList.remove('heal-glow');
+  }
+
+  // ---------- 武器・防御・状態異常 ----------
+
+  /** 兵士の上に、色のついた光と短い文字を出す */
+  async soldierGlow(soldierId, { color, text, className = 'glow', ms }) {
+    const el = this.renderer.soldierEl(soldierId);
+    if (!el || this.skipping) return;
+    sound.play('equip');
+    el.style.setProperty('--glow', color);
+    if (text) {
+      const small = UI_CONFIG.smallNumber;
+      this.number(el, text, { size: small.size, duration: small.duration, kind: 'buff' });
+    }
+    await this.flashClass(el, className, ms);
+  }
+
+  async weaponEquipped({ playerId, soldierId, type, attack, element }, model) {
+    const s = this.modelSoldier(model, playerId, soldierId);
+    if (s) Object.assign(s, { weapon: type, attack, element: element ?? null });
+    this.renderer.updateSoldier(soldierId, { weapon: type, attack, element: element ?? null });
+    const look = ELEMENT_LOOK[element];
+    await this.soldierGlow(soldierId, {
+      color: look?.color ?? GLOW.weapon,
+      text: `${look?.icon ?? '⚔'}${this.cards[type]?.name ?? ''}`,
+      ms: UI_CONFIG.timing.equip,
+    });
+  }
+
+  async shieldAdded({ playerId, soldierId, amount, shield }, model) {
+    const s = this.modelSoldier(model, playerId, soldierId);
+    if (s) s.shield = shield;
+    this.renderer.updateSoldier(soldierId, { shield });
+    await this.soldierGlow(soldierId, { color: GLOW.shield, text: `${ICON.shield}+${amount}`, ms: UI_CONFIG.timing.equip });
+  }
+
+  /** とぎ石：続けて来たものはまとめて光らせる */
+  async soldiersBuffed(first, queue, model) {
+    const list = this.takeRun(first, queue);
+    const waits = [];
+    for (const b of list) {
+      const s = this.modelSoldier(model, b.playerId, b.soldierId);
+      const before = s?.attack ?? b.attack;
+      if (s) s.attack = b.attack;
+      this.renderer.updateSoldier(b.soldierId, { attack: b.attack });
+      const diff = b.attack - before;
+      waits.push(this.soldierGlow(b.soldierId, {
+        color: GLOW.buff, text: `⚔${diff > 0 ? `+${diff}` : b.attack}`, ms: UI_CONFIG.timing.equip,
+      }));
+    }
+    await Promise.all(waits);
+  }
+
+  async castleArmored({ playerId, armor }, model) {
+    model.players[playerId].armor = armor;
+    this.renderer.setArmor(playerId, armor);
+    if (this.skipping) return;
+    const castle = this.renderer.castleEl(playerId);
+    const small = UI_CONFIG.smallNumber;
+    sound.play('block');
+    this.number(castle, `${ICON.armor}+${armor}`, { size: small.size + 6, duration: small.duration, kind: 'block' });
+    await this.flashClass(castle, 'armor-up', UI_CONFIG.timing.armor);
+  }
+
+  async armorExpired({ playerId }, model) {
+    model.players[playerId].armor = 0;
+    if (this.skipping) {
+      this.renderer.setArmor(playerId, 0);
+      return;
+    }
+    const castle = this.renderer.castleEl(playerId);
+    castle.classList.add('armor-fade');
+    await this.delay(UI_CONFIG.timing.armor * 0.6);
+    castle.classList.remove('armor-fade');
+    this.renderer.setArmor(playerId, 0);
+  }
+
+  /** 毒・凍結がかかる：続けて来たものはまとめて見せる */
+  async statusesApplied(first, queue, model) {
+    const list = this.takeRun(first, queue);
+    for (const a of list) {
+      const s = this.modelSoldier(model, a.playerId, a.soldierId);
+      const statuses = { ...(s?.statuses ?? this.renderer.soldier(a.soldierId)?.statuses ?? { poison: null, frozen: 0 }) };
+      if (a.status === 'poison') {
+        // statusApplied に毒の量はない。量は推測せず（null）、毒のダメージを受けたときか getState で分かる
+        statuses.poison = { amount: statuses.poison?.amount ?? null, turns: a.turns };
+      } else if (a.status === 'frozen') {
+        statuses.frozen = a.turns;
+      }
+      if (s) s.statuses = statuses;
+      this.renderer.updateSoldier(a.soldierId, { statuses });
+    }
+    if (this.skipping) return;
+    const small = UI_CONFIG.smallNumber;
+    for (const a of list) {
+      const el = this.renderer.soldierEl(a.soldierId);
+      if (!el) continue;
+      const icon = STATUS_ICON[a.status] ?? '';
+      this.number(el, `${icon}${a.status === 'poison' ? '毒' : '凍結'}`, { size: small.size, duration: small.duration, kind: a.status });
+      el.classList.add(`apply-${a.status}`);
+    }
+    await this.delay(UI_CONFIG.timing.status);
+    for (const a of list) this.renderer.soldierEl(a.soldierId)?.classList.remove(`apply-${a.status}`);
+  }
+
+  async statusCleared({ playerId, soldierId, status }, model) {
+    const s = this.modelSoldier(model, playerId, soldierId);
+    const statuses = { ...(s?.statuses ?? this.renderer.soldier(soldierId)?.statuses ?? {}) };
+    if (status === 'poison') statuses.poison = null;
+    if (status === 'frozen') statuses.frozen = 0;
+    if (s) s.statuses = statuses;
+    this.renderer.updateSoldier(soldierId, { statuses });
+    await this.delay(UI_CONFIG.timing.statusCleared);
+  }
+
+  // ---------- 魔物とコイン ----------
+
+  async monsterAppeared(p, model) {
+    const def = this.monsterDefs?.[p.type] ?? {};
+    const m = {
+      monsterId: p.monsterId, type: p.type, roadId: p.roadId, square: p.square,
+      hp: p.hp, maxHp: p.hp, // 出たときは満タン
+      attack: p.attack, element: p.element ?? null,
+      attackIn: def.attackEvery ?? null, reward: def.reward ?? null, castleAttack: def.castleAttack ?? null,
+    };
+    model.monsters = [...(model.monsters ?? []).filter((x) => x.monsterId !== m.monsterId), m];
+    if (this.renderer.monster(m.monsterId)) this.renderer.updateMonster(m.monsterId, m);
+    else this.renderer.addMonster(m, { appear: true });
+    if (this.skipping) return;
+    sound.play('monster');
+    this.banner(`${def.name ?? '魔物'}があらわれた！`, UI_CONFIG.timing.monsterAppear, 'monster');
+    this.shake(this.renderer.el.field, 6, UI_CONFIG.timing.monsterAppear * 0.5);
+    await this.delay(UI_CONFIG.timing.monsterAppear);
+  }
+
+  async monsterAttackedCastle({ monsterId, playerId, amount, hp }, model) {
+    model.players[playerId].castleHp = hp;
+    const mEl = this.renderer.monsterEl(monsterId);
+    const castle = this.renderer.castleEl(playerId);
+    if (mEl && !this.skipping) {
+      sound.play('monster');
+      // 魔物が城へ飛びかかって戻る
+      const from = this.centerOf(mEl);
+      const to = this.centerOf(castle);
+      const token = mEl.querySelector('.monster-token');
+      const dx = (to.x - from.x) * 0.7;
+      const dy = (to.y - from.y) * 0.7;
+      await this.animate(token, [
+        { transform: 'translate(0, 0) scale(1)' },
+        { transform: `translate(${dx}px, ${dy}px) scale(1.3)`, offset: 0.6 },
+        { transform: `translate(${dx}px, ${dy}px) scale(1.3)` },
+      ], { duration: UI_CONFIG.timing.monsterAttack, easing: 'ease-in' });
+      this.animate(token, [
+        { transform: `translate(${dx}px, ${dy}px) scale(1.3)` },
+        { transform: 'translate(0, 0) scale(1)' },
+      ], { duration: UI_CONFIG.timing.monsterAttack, easing: 'ease-out' });
+    }
+    if (amount > 0) await this.castleHit(playerId, amount, hp);
+    else this.renderer.setCastleHp(playerId, hp);
+  }
+
+  async monsterDamaged({ monsterId, amount, hp }, model) {
+    const m = this.modelMonster(model, monsterId);
+    if (m) m.hp = hp;
+    this.renderer.updateMonster(monsterId, { hp });
+    const el = this.renderer.monsterEl(monsterId);
+    if (!el || this.skipping) return;
+    const cfg = UI_CONFIG.monsterHit;
+    el.classList.add('hit');
+    sound.play('smallHit');
+    this.number(el, `-${amount}`, { size: cfg.numberSize, duration: cfg.numberDuration });
+    await this.hitstop(cfg.hitstop);
+    el.classList.remove('hit');
+    this.shake(el.querySelector('.monster-token'), cfg.shake, cfg.shakeDuration);
+    await this.delay(UI_CONFIG.timing.afterMonsterHit);
+  }
+
+  async monsterDefeated({ monsterId, playerId, reward }, model) {
+    model.monsters = (model.monsters ?? []).filter((m) => m.monsterId !== monsterId);
+    const el = this.renderer.monsterEl(monsterId);
+    if (!el || this.skipping) {
+      this.renderer.removeMonster(monsterId);
+      return;
+    }
+    el.classList.add('dying');
+    sound.play('hit', 0.6);
+    this.sparks(this.centerOf(el), { count: 14, color: '#ffcf3f', spread: 70, size: 10 });
+    const who = playerId === this.renderer.viewerId ? 'あなた' : '相手';
+    this.banner(`とどめ！ ${who}に${ICON.coin}${reward}`, UI_CONFIG.timing.monsterDefeat);
+    await this.hitstop(UI_CONFIG.monsterHit.hitstop * 2);
+    await this.delay(UI_CONFIG.timing.monsterDefeat * 0.6);
+    this.renderer.removeMonster(monsterId);
+  }
+
+  async coinsChanged({ playerId, delta, coins }, model) {
+    model.players[playerId].coins = coins;
+    this.renderer.setCoins(playerId, coins, { bump: true });
+    if (this.skipping) return;
+    if (delta > 0) sound.play('coin');
+    const target = this.renderer.coinEl(playerId);
+    if (target && !target.hidden) {
+      const small = UI_CONFIG.smallNumber;
+      this.number(target, `${ICON.coin}${delta > 0 ? '+' : ''}${delta}`, { size: small.size, duration: small.duration, kind: delta > 0 ? 'coin' : 'block' });
+    }
+    await this.delay(UI_CONFIG.timing.coins);
+  }
+
+  async upgradeBought({ upgradeId }) {
+    const def = this.upgradeDefs?.[upgradeId];
+    sound.play('equip');
+    this.banner(`${upgradeIcon(upgradeId)} ${def?.name ?? '強化'}！`, UI_CONFIG.timing.upgrade, 'small');
+    await this.delay(UI_CONFIG.timing.upgrade * 0.5);
   }
 
   // ---------- 勝利 ----------

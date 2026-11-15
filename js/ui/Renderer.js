@@ -1,164 +1,149 @@
-// 盤面（城・1本の道・兵士・枚数表示）を描く。
+// 盤面（城・道・兵士・魔物・枚数表示）を描く。
 // ゲームの状態は書き換えない。main.js が持つ「表示用の状態」を受け取って描くだけ。
 //
-// 道は1本。マスの数は rules.laneLength から読む（決め打ちしない）。
-// 兵士は CLAUDE.md の「道のマス番号」（p1 の城側が 0）に直して置く：
-//   p1 の兵士 → position、p2 の兵士 → laneLength - 1 - position
-// 画面では、見ている人（手番の人）の城が下になるように上下を入れ替える。
+// 道は1本（rules.laneLength マス）で、上が相手の城・下が自分の城。
+// 同じマスに両方の兵士がいることがあるので、相手の兵士は道の左より・自分の兵士は右よりに置く。
+// 真ん中のマス（floor(laneLength / 2)）は魔物の居場所で、魔物は道のまん中に置く。
 
-import { UI_CONFIG } from './config.js';
 import { playerName } from './text.js';
-import { PLAYER_COLOR, src, aspect, castleKey, unitKey } from './assets.js';
+import { ELEMENT_LOOK } from './look.js';
+import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 
+/** 道の幅に対する、兵士を置く横の位置（%） */
+const X_ME = 74;
+const X_OPP = 26;
+
 export class Renderer {
   /**
-   * @param {{ cards: object, rules: object, onSoldierTap?: (info: object) => void }} opts
+   * @param {{ cards: object, rules: object, monsters?: object, showCoins?: boolean,
+   *           onSoldierTap?: (info: object) => void,
+   *           onMonsterTap?: (info: object) => void,
+   *           onTargetTap?: (target: object|null) => void }} opts
+   *   onTargetTap：対象を選んでいるときに盤面がタップされたら呼ぶ（光っていない所なら null）
+   *   showCoins：コインを出すか（自分と相手で同じ条件。main.js が決める）
    */
-  constructor({ cards, rules, onSoldierTap }) {
+  constructor({ cards, rules, monsters = null, showCoins = false, onSoldierTap, onMonsterTap, onTargetTap }) {
     this.cards = cards;
     this.rules = rules;
+    this.monsterDefs = monsters;
     this.onSoldierTap = onSoldierTap;
+    this.onMonsterTap = onMonsterTap;
+    this.onTargetTap = onTargetTap;
     this.viewerId = 'p1';
-    /** soldierId → { el, playerId, type, hp, attack, position } */
+    this.playerOrder = ['p1', 'p2'];
+    /** soldierId → { el, playerId, type, hp, attack, position, weapon, element, shield, statuses } */
     this.soldiers = new Map();
+    /** monsterId → { el, ...魔物の状態 } */
+    this.monsters = new Map();
+    /** 対象を選んでいるときの、光らせている対象（null なら選んでいない） */
+    this.targets = null;
 
     this.el = {
       app: $('app'),
       board: $('board'),
-      squares: $('squares'),
-      units: $('units'),
+      field: $('field'),
+      road: $('road'),
+      units: $('unit-layer'),
+      oppName: $('opp-name'),
       oppHandCount: $('opp-hand-count'),
+      oppCoins: $('opp-coins'),
+      myCoins: $('my-coins'),
       turnInfo: $('turn-info'),
       deckPile: $('deck-pile'),
       discardPile: $('discard-pile'),
       deckCount: $('deck-count'),
       discardCount: $('discard-count'),
       castle: { me: $('castle-me'), opp: $('castle-opp') },
+      castleLabel: { me: $('castle-me-label'), opp: $('castle-opp-label') },
     };
+    // コインは自分（「強化」ボタンの中）と相手（上のバー）を同じ条件で出す
+    this.el.oppCoins.hidden = !showCoins;
+    $('upgrade-open').hidden = !showCoins;
 
-    this.buildSquares();
-    this.layoutCastles();
+    // HTML に data-icon="heart" のように書いた所へ、小さな記号を入れる
+    for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = icon(el.dataset.icon);
+    this.buildScenery();
+    this.buildRoad();
 
-    this.el.units.addEventListener('click', (e) => {
-      const el = e.target.closest('.soldier');
-      if (!el || !this.onSoldierTap) return;
-      const s = this.soldiers.get(el.dataset.id);
-      if (s) this.onSoldierTap({ ...s, el: undefined, name: this.cards[s.type]?.name ?? s.type });
+    // 盤面のタップ：対象を選んでいるときは対象を、そうでなければ兵士・魔物の情報を出す
+    this.el.board.addEventListener('click', (e) => {
+      if (this.targets) {
+        this.onTargetTap?.(this.targetFromEl(e.target));
+        return;
+      }
+      const sEl = e.target.closest('.soldier');
+      if (sEl) {
+        const s = this.soldiers.get(sEl.dataset.id);
+        if (s) this.onSoldierTap?.({ ...s, el: undefined });
+        return;
+      }
+      const mEl = e.target.closest('.monster');
+      if (mEl) {
+        const m = this.monsters.get(mEl.dataset.id);
+        if (m) this.onMonsterTap?.({ ...m, el: undefined });
+      }
     });
+    window.addEventListener('resize', () => this.layoutStacks());
   }
 
   get laneLength() {
     return this.rules.laneLength;
   }
 
-  /** 真ん中のマス（道のマス番号）。マスが偶数で真ん中が1つに決まらなければ null */
-  get centerSquare() {
+  /** 道の真ん中のマス番号（魔物の居場所） */
+  get middleSquare() {
+    return Math.floor(this.laneLength / 2);
+  }
+
+  buildScenery() {
+    const box = $('scenery');
+    // [左%, 上%, 大きさpx]
+    const trees = [[-3, 17, 74], [84, 22, 64], [-5, 40, 60], [88, 45, 78], [-2, 58, 70], [86, 63, 58]];
+    box.innerHTML = trees.map(([x, y, s]) =>
+      `<div class="tree" style="left:${x}%;top:${y}%;width:${s}px">${treeArt()}</div>`).join('');
+  }
+
+  buildRoad() {
     const L = this.laneLength;
-    return L % 2 === 1 ? (L - 1) / 2 : null;
-  }
-
-  // ---------- 位置の計算 ----------
-
-  /**
-   * 画面上の位置（盤面の幅・高さに対する割合）。row は下から数えたマスの段（0 = いちばん下）
-   * @returns {{ x: number, y: number }}
-   */
-  rowPoint(row) {
-    const r = UI_CONFIG.board.road;
-    const L = this.laneLength;
-    const t = L > 1 ? row / (L - 1) : 0.5;
-    const y = r.bottom - t * (r.bottom - r.top);
-    const x = r.x + r.sway * Math.sin((t + r.swayPhase) * Math.PI * 2);
-    return { x, y };
-  }
-
-  /** 道のマス番号 → 下から数えた段。見ている人の城側が下 */
-  squareToRow(square) {
-    return this.viewerId === 'p1' ? square : this.laneLength - 1 - square;
-  }
-
-  /** 兵士の position → 道のマス番号（CLAUDE.md の式） */
-  squareOf(playerId, position) {
-    return playerId === 'p1' ? position : this.laneLength - 1 - position;
-  }
-
-  /** 兵士の位置（割合）。城に着いた兵士（position >= laneLength）は相手の城の前 */
-  soldierPoint(playerId, position) {
-    if (position >= this.laneLength) {
-      const c = UI_CONFIG.board.castle;
-      const enemyIsTop = this.sideOf(playerId) === 'me';
-      return { x: c.x, y: enemyIsTop ? c.topY + c.reachY : c.bottomY - c.reachY };
+    document.documentElement.style.setProperty('--cells', String(L));
+    const cells = this.el.road.querySelector('.cells');
+    cells.innerHTML = '';
+    for (let i = 0; i < L; i++) {
+      const cell = cells.appendChild(document.createElement('div'));
+      cell.className = 'cell';
+      cell.innerHTML = '<span class="stone"></span>';
     }
-    return this.rowPoint(this.squareToRow(this.squareOf(playerId, Math.max(0, position))));
-  }
-
-  /** 割合 → 盤面の中の px */
-  toPx({ x, y }) {
-    const r = this.el.board.getBoundingClientRect();
-    return { x: x * r.width, y: y * r.height };
-  }
-
-  // ---------- 盤面の部品 ----------
-
-  buildSquares() {
-    const box = this.el.squares;
-    box.innerHTML = '';
-    const size = UI_CONFIG.board.squareSize;
-    box.style.setProperty('--square-size', `${size}px`);
-    for (let sq = 0; sq < this.laneLength; sq++) {
-      const el = document.createElement('div');
-      el.className = 'square';
-      el.dataset.square = String(sq);
-      if (sq === this.centerSquare) el.classList.add('center');
-      el.innerHTML = `<span class="square-no">${sq}</span>`;
-      box.appendChild(el);
-    }
-    this.placeSquares();
-  }
-
-  placeSquares() {
-    for (const el of this.el.squares.children) {
-      const p = this.rowPoint(this.squareToRow(Number(el.dataset.square)));
-      el.style.left = `${p.x * 100}%`;
-      el.style.top = `${p.y * 100}%`;
-    }
-  }
-
-  layoutCastles() {
-    const c = UI_CONFIG.board.castle;
-    const root = this.el.board.style;
-    root.setProperty('--castle-h', `${c.height * 100}%`);
-    root.setProperty('--castle-x', `${c.x * 100}%`);
-    root.setProperty('--castle-top-y', `${c.topY * 100}%`);
-    root.setProperty('--castle-bottom-y', `${c.bottomY * 100}%`);
-    root.setProperty('--sign-left', `${(0.5 + c.signOffset) * 100}%`);
-    root.setProperty('--sign-h', `${c.signSize * 100}%`);
-    root.setProperty('--unit-size', `${UI_CONFIG.board.unitSize}px`);
-    root.setProperty('--castle-aspect', String(1 / aspect(castleKey('blue'))));
   }
 
   // ---------- 視点 ----------
 
-  /** 誰の視点で描くか。手番のプレイヤーが常に下（自分の城）になる */
+  /** 誰の視点で描くか。画面を見ている人の城がいつも下になる */
   setViewer(viewerId) {
-    if (this.viewerId !== viewerId) this.clearSoldiers();
+    if (this.viewerId !== viewerId) {
+      this.clearSoldiers();
+      this.clearMonsters();
+    }
     this.viewerId = viewerId;
     this.el.app.dataset.viewer = viewerId;
     const opp = this.opponentOf(viewerId);
+    this.el.oppName.textContent = '相手';
+    this.el.castleLabel.me.innerHTML = '<span class="you-tag">あなた</span><span class="castle-owner"></span>';
+    this.el.castleLabel.me.querySelector('.castle-owner').textContent = playerName(viewerId);
+    this.el.castleLabel.opp.textContent = playerName(opp);
     for (const [side, id] of [['me', viewerId], ['opp', opp]]) {
       const castle = this.el.castle[side];
-      castle.dataset.player = id;
-      castle.dataset.color = PLAYER_COLOR[id];
-      castle.querySelector('.castle-img').src = src(castleKey(PLAYER_COLOR[id]));
-      castle.querySelector('.castle-name').textContent = side === 'me' ? `${playerName(id)}\n（あなた）` : playerName(id);
+      castle.dataset.color = colorOf(id);
+      castle.querySelector('.castle-pic').innerHTML = castleArt(colorOf(id));
     }
-    this.placeSquares();
+    // 真ん中のマスは魔物の居場所だと分かるように、見た目を変える
+    const midRow = this.rowOfSquare(this.middleSquare);
+    this.el.road.querySelectorAll('.cell').forEach((cell, row) => cell.classList.toggle('mid', row === midRow));
   }
 
   opponentOf(playerId) {
-    return playerId === 'p1' ? 'p2' : 'p1';
+    return this.playerOrder.find((id) => id !== playerId) ?? (playerId === 'p1' ? 'p2' : 'p1');
   }
 
   sideOf(playerId) {
@@ -169,41 +154,72 @@ export class Renderer {
     return this.el.castle[this.sideOf(playerId)];
   }
 
-  /** 演出の的にする要素（城の絵） */
-  castleImgEl(playerId) {
-    return this.castleEl(playerId).querySelector('.castle-img');
+  /** 道（魔法の演出を重ねる場所） */
+  roadEl() {
+    return this.el.road;
   }
 
-  squareEl(square) {
-    return this.el.squares.querySelector(`.square[data-square="${square}"]`);
+  /** そのプレイヤーの兵士の要素（魔法が当たる相手を光らせる・雷を落とす） */
+  soldierElsOf(playerId) {
+    return [...this.soldiers.values()].filter((s) => s.playerId === playerId).map((s) => s.el);
+  }
+
+  /** 道のマス番号（players[0] の城側が 0）→ 上から数えた行。2人なら players[0] は p1 */
+  rowOfSquare(square) {
+    const L = this.laneLength;
+    const viewerPos = this.viewerId === this.playerOrder[0] ? square : L - 1 - square;
+    return L - 1 - viewerPos;
   }
 
   // ---------- まとめて描く ----------
 
   /** @param {object} model main.js の表示用の状態 */
   renderAll(model) {
-    this.setTurnInfo(model.turn);
+    if (model.playerOrder) this.playerOrder = model.playerOrder;
+    this.setTurnInfo(model.turn, model.round);
     this.setPiles(model.deckCount, model.discardCount);
     const opp = this.opponentOf(this.viewerId);
     this.setOppHandCount(model.players[opp].handCount);
-    for (const id of ['p1', 'p2']) this.setCastleHp(id, model.players[id].castleHp, { instant: true });
+    for (const id of this.playerOrder) {
+      const p = model.players[id];
+      this.setCastleHp(id, p.castleHp, { instant: true, max: p.castleMaxHp });
+      this.setArmor(id, p.armor);
+      this.setCoins(id, p.coins);
+    }
     this.syncSoldiers(model);
+    this.syncMonsters(model);
   }
 
-  setTurnInfo(turn) {
-    this.el.turnInfo.textContent = `ターン ${turn}`;
+  setTurnInfo(turn, round) {
+    this.el.turnInfo.textContent = round ? `${round}周目` : (turn ? `ターン${turn}` : '');
+    this.el.turnInfo.title = `通算ターン ${turn}`;
+  }
+
+  /** 手番の人の城を目立たせる */
+  setCurrentPlayer(playerId) {
+    for (const id of this.playerOrder) this.castleEl(id).classList.toggle('current', id === playerId);
   }
 
   setPiles(deckCount, discardCount, { bumpDeck = false, bumpDiscard = false } = {}) {
-    this.el.deckCount.textContent = String(deckCount);
-    this.el.discardCount.textContent = String(discardCount);
+    this.el.deckCount.textContent = String(deckCount ?? 0);
+    this.el.discardCount.textContent = String(discardCount ?? 0);
     if (bumpDeck) this.bump(this.el.deckPile);
     if (bumpDiscard) this.bump(this.el.discardPile);
   }
 
   setOppHandCount(count) {
     this.el.oppHandCount.textContent = String(count);
-    this.el.oppHandCount.closest('.opp-hand').dataset.count = String(Math.min(count, 3));
+  }
+
+  /** コインの表示（相手は上のバー、自分は「強化」ボタン） */
+  setCoins(playerId, coins, { bump = false } = {}) {
+    const el = playerId === this.viewerId ? this.el.myCoins : this.el.oppCoins.querySelector('b');
+    el.textContent = String(coins ?? 0);
+    if (bump) this.bump(this.coinEl(playerId));
+  }
+
+  coinEl(playerId) {
+    return playerId === this.viewerId ? $('upgrade-open') : this.el.oppCoins;
   }
 
   bump(el) {
@@ -212,43 +228,120 @@ export class Renderer {
     el.classList.add('bump');
   }
 
-  setCastleHp(playerId, hp, { instant = false } = {}) {
+  setCastleHp(playerId, hp, { instant = false, max } = {}) {
     const castle = this.castleEl(playerId);
-    const max = this.rules.castleMaxHp;
-    const value = castle.querySelector('.hp-value');
-    const shown = Math.max(0, hp);
-    const changed = value.textContent !== String(shown);
-    value.textContent = String(shown);
-    castle.classList.toggle('low', hp / max <= 0.25);
-    if (changed && !instant) this.bump(castle.querySelector('.hp-sign'));
+    if (max) castle.dataset.max = String(max);
+    const maxHp = Number(castle.dataset.max) || this.rules.castleMaxHp;
+    const ratio = Math.max(0, Math.min(1, hp / maxHp));
+    const fill = castle.querySelector('.hp-fill');
+    const lag = castle.querySelector('.hp-lag');
+    if (instant) {
+      fill.style.transition = lag.style.transition = 'none';
+      void fill.offsetWidth;
+    }
+    fill.style.width = `${ratio * 100}%`;
+    lag.style.width = `${ratio * 100}%`;
+    if (instant) {
+      void fill.offsetWidth;
+      fill.style.transition = lag.style.transition = '';
+    }
+    fill.classList.toggle('mid', ratio <= 0.5 && ratio > 0.25);
+    fill.classList.toggle('low', ratio <= 0.25);
+    castle.classList.toggle('danger', ratio <= 0.25 && ratio > 0);
+    // 城が壊れていく見た目（0：無傷 〜 3：落ちた）
+    castle.dataset.damage = String(ratio <= 0 ? 3 : ratio <= 0.34 ? 2 : ratio <= 0.67 ? 1 : 0);
+    castle.querySelector('.hp-value').textContent = String(Math.max(0, hp));
+    castle.querySelector('.hp-max').textContent = `/${maxHp}`;
+  }
+
+  /** 城壁（armor）の表示 */
+  setArmor(playerId, armor) {
+    const castle = this.castleEl(playerId);
+    const badge = castle.querySelector('.castle-armor');
+    const on = armor > 0;
+    castle.classList.toggle('armored', on);
+    badge.hidden = !on;
+    badge.innerHTML = on ? `${icon('wall')}<b></b>` : '';
+    if (on) badge.querySelector('b').textContent = `城壁 ${armor}`;
   }
 
   // ---------- 兵士 ----------
 
-  addSoldier(playerId, { soldierId, type, hp, attack, position }, { appear = false } = {}) {
-    const def = this.cards[type] ?? {};
+  /** 兵士の位置 → 道の上の top(%)。城に着いた兵士は相手の城に重なる位置 */
+  topPercent(playerId, position) {
+    const L = this.laneLength;
+    const pos = Math.max(0, Math.min(position, L));
+    const fromTop = this.sideOf(playerId) === 'me' ? L - 1 - pos : pos;
+    return ((fromTop + 0.5) / L) * 100;
+  }
+
+  place(s) {
+    const arrived = s.position >= this.laneLength;
+    s.el.style.top = `${this.topPercent(s.playerId, s.position)}%`;
+    // 城に着いた兵士は、城のまん中へ寄る
+    s.el.style.setProperty('--x', arrived ? '50%' : `${this.sideOf(s.playerId) === 'me' ? X_ME : X_OPP}%`);
+  }
+
+  addSoldier(playerId, st, { appear = false } = {}) {
+    const def = this.cards[st.type] ?? {};
     const el = document.createElement('div');
-    el.className = `soldier ${type} ${this.sideOf(playerId)}`;
-    el.dataset.id = soldierId;
-    el.dataset.player = playerId;
+    el.className = `soldier ${this.sideOf(playerId)} no-anim`;
+    el.dataset.id = st.soldierId;
+    el.dataset.color = colorOf(playerId);
     if (appear) el.classList.add('appear');
-    el.innerHTML =
-      '<div class="soldier-body"><img class="unit-img" alt=""></div>' +
-      '<div class="badges"><span class="badge hp"><i class="icon heart"></i><b class="outlined"></b></span>' +
-      '<span class="badge atk"><i class="icon sword"></i><b class="outlined"></b></span></div>';
-    el.querySelector('.unit-img').src = src(unitKey(type, PLAYER_COLOR[playerId]));
-    el.querySelector('.unit-img').alt = def.name ?? type;
+    el.innerHTML = '<div class="soldier-token"><div class="soldier-pic"></div>' +
+      '<span class="soldier-weapon" hidden></span><span class="soldier-shield" hidden></span><span class="soldier-status" hidden></span></div>' +
+      `<div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
+    el.querySelector('.soldier-pic').innerHTML = unitArt(st.type, colorOf(playerId), def.name ?? st.type);
     this.el.units.appendChild(el);
-    const s = { el, playerId, soldierId, type, hp: hp ?? def.hp, attack: attack ?? def.attack, position, offset: 0 };
-    this.soldiers.set(soldierId, s);
+    const s = {
+      el,
+      playerId,
+      soldierId: st.soldierId,
+      type: st.type,
+      hp: st.hp ?? def.hp,
+      attack: st.attack ?? def.attack,
+      position: st.position,
+      weapon: st.weapon ?? null,
+      element: st.element ?? null,
+      shield: st.shield ?? 0,
+      statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0 },
+    };
+    this.soldiers.set(st.soldierId, s);
     this.updateSoldierBadges(s);
+    this.place(s);
+    void el.offsetWidth; // 位置を確定させてからアニメーションを有効にする
+    el.classList.remove('no-anim');
     this.layoutStacks();
     return el;
   }
 
+  /** 兵士の見た目を、持っている値（HP・攻撃・武器・盾・状態異常）に合わせる */
   updateSoldierBadges(s) {
-    s.el.querySelector('.badge.hp b').textContent = String(Math.max(0, s.hp));
-    s.el.querySelector('.badge.atk b').textContent = String(s.attack);
+    const q = (sel) => s.el.querySelector(sel);
+    q('.st.hp b').textContent = String(Math.max(0, s.hp));
+    q('.st.atk b').textContent = String(s.attack);
+    const baseHp = this.cards[s.type]?.hp;
+    q('.st.hp').classList.toggle('hurt', baseHp != null && s.hp < baseHp);
+    const baseAtk = this.cards[s.type]?.attack;
+    q('.st.atk').classList.toggle('up', baseAtk != null && s.attack > baseAtk);
+    const look = ELEMENT_LOOK[s.element];
+    if (look) s.el.style.setProperty('--element', look.color);
+    else s.el.style.removeProperty('--element');
+    s.el.classList.toggle('has-element', Boolean(look));
+    const weapon = q('.soldier-weapon');
+    weapon.hidden = !s.weapon;
+    weapon.innerHTML = s.weapon ? icon(look?.iconName ?? 'sword') : '';
+    const shield = q('.soldier-shield');
+    shield.hidden = !(s.shield > 0);
+    shield.innerHTML = s.shield > 0 ? `${icon('shield')}<b>${Number(s.shield)}</b>` : '';
+    const poison = s.statuses?.poison;
+    const frozen = s.statuses?.frozen > 0;
+    const status = q('.soldier-status');
+    status.innerHTML = `${poison ? icon('skull') : ''}${frozen ? icon('snow') : ''}`;
+    status.hidden = !poison && !frozen;
+    s.el.classList.toggle('poisoned', Boolean(poison));
+    s.el.classList.toggle('frozen', frozen);
   }
 
   soldierEl(soldierId) {
@@ -259,34 +352,23 @@ export class Renderer {
     return this.soldiers.get(soldierId) ?? null;
   }
 
-  /** 兵士の今の位置（盤面の中の px。重なりのずれを含む） */
-  soldierPx(soldierId) {
+  /** 兵士の値を一部だけ変えて描き直す（例：{ shield: 3 }） */
+  updateSoldier(soldierId, patch) {
     const s = this.soldiers.get(soldierId);
-    if (!s) return null;
-    const p = this.toPx(this.soldierPoint(s.playerId, s.position));
-    return { x: p.x + s.offset, y: p.y };
+    if (!s) return;
+    Object.assign(s, patch);
+    this.updateSoldierBadges(s);
   }
 
   moveSoldier(soldierId, position) {
     const s = this.soldiers.get(soldierId);
     if (!s) return;
     s.position = position;
-    this.placeSoldier(s);
-  }
-
-  placeSoldier(s) {
-    const p = this.soldierPoint(s.playerId, s.position);
-    s.el.style.left = `calc(${p.x * 100}% + ${s.offset}px)`;
-    s.el.style.top = `${p.y * 100}%`;
-    // 下にいる兵士ほど手前に描く
-    s.el.style.zIndex = String(10 + Math.round(p.y * 100));
+    this.place(s);
   }
 
   setSoldierHp(soldierId, hp) {
-    const s = this.soldiers.get(soldierId);
-    if (!s) return;
-    s.hp = hp;
-    this.updateSoldierBadges(s);
+    this.updateSoldier(soldierId, { hp });
   }
 
   /** 画面から兵士を外す（消える演出は Animations が先にやる） */
@@ -303,24 +385,28 @@ export class Renderer {
     this.soldiers.clear();
   }
 
-  /** 同じマスにいる兵士を横に少しずつずらして重ねる（どちらのプレイヤーの兵士もまとめて数える） */
+  /** 同じマスにいる同じ人の兵士を、横に少しずつずらす（道の外側へ広げる） */
   layoutStacks() {
     const groups = new Map();
     for (const s of this.soldiers.values()) {
-      const key = s.position >= this.laneLength
-        ? `castle:${s.playerId}`
-        : `sq:${this.squareOf(s.playerId, Math.max(0, s.position))}`;
+      if (s.position >= this.laneLength) {
+        s.el.style.setProperty('--offset', '0px');
+        continue;
+      }
+      const key = `${s.playerId}:${s.position}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(s);
     }
-    const step = UI_CONFIG.board.stackOffset;
+    const width = this.el.units.clientWidth || 320;
+    const half = width * 0.5;
     for (const list of groups.values()) {
-      // 自分の兵士を右、相手の兵士を左に寄せて、敵味方が混ざって見えないようにする
-      list.sort((a, b) => (a.playerId === this.viewerId) - (b.playerId === this.viewerId));
-      const w = list.length > 3 ? step * 0.7 : step;
+      // 片側の幅（道の半分）に収まるように間をつめる
+      const token = list[0].el.offsetWidth || 56;
+      const room = Math.max(0, half - token - 8);
+      const step = list.length > 1 ? Math.min(token * 0.9, room / (list.length - 1)) : 0;
       list.forEach((s, i) => {
-        s.offset = (i - (list.length - 1) / 2) * w;
-        this.placeSoldier(s);
+        s.el.style.setProperty('--offset', `${(i - (list.length - 1) / 2) * step}px`);
+        s.el.style.zIndex = String(10 + i);
       });
     }
   }
@@ -328,7 +414,7 @@ export class Renderer {
   /** 表示用の状態に兵士を合わせる（足りなければ作り、余れば消す。動きはつけない） */
   syncSoldiers(model) {
     const alive = new Set();
-    for (const playerId of ['p1', 'p2']) {
+    for (const playerId of this.playerOrder) {
       for (const st of model.players[playerId].soldiers) {
         alive.add(st.soldierId);
         const s = this.soldiers.get(st.soldierId);
@@ -336,14 +422,129 @@ export class Renderer {
           this.addSoldier(playerId, st);
           continue;
         }
-        s.position = st.position;
-        s.hp = st.hp;
-        s.attack = st.attack;
+        s.el.classList.add('no-anim');
+        this.moveSoldier(st.soldierId, st.position);
+        Object.assign(s, {
+          hp: st.hp,
+          attack: st.attack,
+          weapon: st.weapon ?? null,
+          element: st.element ?? null,
+          shield: st.shield ?? 0,
+          statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0 },
+        });
         this.updateSoldierBadges(s);
-        s.el.classList.remove('hit', 'appear', 'dying', 'arrived');
+        void s.el.offsetWidth;
+        s.el.classList.remove('no-anim', 'hit', 'hit-poison', 'blocked', 'appear', 'glow');
       }
     }
     for (const id of [...this.soldiers.keys()]) if (!alive.has(id)) this.removeSoldier(id);
     this.layoutStacks();
+  }
+
+  // ---------- 魔物 ----------
+
+  addMonster(st, { appear = false } = {}) {
+    const def = this.monsterDefs?.[st.type] ?? {};
+    const el = document.createElement('div');
+    el.className = 'monster';
+    el.dataset.id = st.monsterId;
+    if (appear) el.classList.add('appear');
+    el.innerHTML = '<div class="monster-token"><div class="monster-pic"></div>' +
+      '<span class="monster-element" hidden></span><span class="monster-attack-in" hidden></span></div>' +
+      '<div class="monster-hp"><div class="monster-hp-fill"></div><span class="monster-hp-text"></span></div>' +
+      `<div class="monster-stats"><span class="st atk">${icon('sword')}<b></b></span></div>`;
+    el.querySelector('.monster-pic').innerHTML = monsterArt(st.type, def.name ?? st.type);
+    el.style.top = `${((this.rowOfSquare(st.square) + 0.5) / this.laneLength) * 100}%`;
+    this.el.units.appendChild(el);
+    const m = { ...st, el };
+    this.monsters.set(st.monsterId, m);
+    this.updateMonster(st.monsterId, {});
+    return el;
+  }
+
+  monsterEl(monsterId) {
+    return this.monsters.get(monsterId)?.el ?? null;
+  }
+
+  monster(monsterId) {
+    return this.monsters.get(monsterId) ?? null;
+  }
+
+  updateMonster(monsterId, patch) {
+    const m = this.monsters.get(monsterId);
+    if (!m) return;
+    Object.assign(m, patch);
+    const look = ELEMENT_LOOK[m.element];
+    if (look) m.el.style.setProperty('--element', look.color);
+    const elBadge = m.el.querySelector('.monster-element');
+    elBadge.hidden = !look;
+    elBadge.innerHTML = look ? icon(look.iconName) : '';
+    const ratio = Math.max(0, Math.min(1, m.hp / (m.maxHp || 1)));
+    m.el.querySelector('.monster-hp-fill').style.width = `${ratio * 100}%`;
+    m.el.querySelector('.monster-hp-text').textContent = `${Math.max(0, m.hp)}/${m.maxHp}`;
+    m.el.querySelector('.st.atk b').textContent = m.attack == null ? '?' : String(m.attack);
+    const attackIn = m.el.querySelector('.monster-attack-in');
+    attackIn.hidden = m.attackIn == null;
+    const soon = m.attackIn != null && m.attackIn <= 1;
+    attackIn.textContent = m.attackIn == null ? '' : (soon ? '次に城をおそう！' : `あと${m.attackIn}周でおそう`);
+    attackIn.classList.toggle('soon', soon);
+  }
+
+  removeMonster(monsterId) {
+    const m = this.monsters.get(monsterId);
+    if (!m) return;
+    this.monsters.delete(monsterId);
+    m.el.remove();
+  }
+
+  clearMonsters() {
+    for (const m of this.monsters.values()) m.el.remove();
+    this.monsters.clear();
+  }
+
+  syncMonsters(model) {
+    const alive = new Set();
+    for (const st of model.monsters ?? []) {
+      alive.add(st.monsterId);
+      if (!this.monsters.has(st.monsterId)) this.addMonster(st);
+      else {
+        this.monsters.get(st.monsterId).el.classList.remove('appear', 'hit');
+        this.updateMonster(st.monsterId, { ...st });
+      }
+    }
+    for (const id of [...this.monsters.keys()]) if (!alive.has(id)) this.removeMonster(id);
+  }
+
+  // ---------- 対象を選ぶ ----------
+
+  /** 対象（getTargets の結果）を光らせる。null で元に戻す */
+  setTargets(targets) {
+    this.targets = targets && targets.length ? targets : null;
+    this.el.app.classList.toggle('targeting', Boolean(this.targets));
+    for (const el of this.el.board.querySelectorAll('.targetable')) el.classList.remove('targetable');
+    if (!this.targets) return;
+    for (const t of this.targets) this.elOfTarget(t)?.classList.add('targetable');
+  }
+
+  elOfTarget(t) {
+    if (t.soldierId) return this.soldierEl(t.soldierId);
+    if (t.monsterId) return this.monsterEl(t.monsterId);
+    if (t.playerId) return this.castleEl(t.playerId);
+    return null;
+  }
+
+  /** タップされた要素 → 対象（光っている対象でなければ null） */
+  targetFromEl(node) {
+    if (!this.targets) return null;
+    const sEl = node.closest('.soldier');
+    const mEl = node.closest('.monster');
+    const cEl = node.closest('.castle');
+    let t = null;
+    if (sEl) t = { soldierId: sEl.dataset.id };
+    else if (mEl) t = { monsterId: mEl.dataset.id };
+    else if (cEl) t = { playerId: cEl === this.el.castle.me ? this.viewerId : this.opponentOf(this.viewerId) };
+    if (!t) return null;
+    const key = Object.keys(t)[0];
+    return this.targets.find((x) => x[key] === t[key]) ?? null;
   }
 }

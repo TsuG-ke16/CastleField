@@ -1,0 +1,150 @@
+// オンライン対戦のセッション。サーバー（CLAUDE.md「STEP 4」）と話して、画面に「まとまり」を渡す。
+// - 操作は POST /api/action（返事は Promise）
+// - 届くものは GET /api/stream（EventSource）。その操作のイベントを全部ためて、
+//   最後の `state` が届いたところで「イベントの列 + 状態」の1まとまり（batch）にして渡す
+// - 出せるカード・対象・買える強化は、サーバーが状態と一緒に送ってくる（ブラウザに Game はない）
+// UI はゲームの状態を直接書き換えない（サーバーの Game を操作するだけ）。
+// 呼び方は同じ端末のとき（Session.js の LocalSession）と同じ。
+
+async function postJson(path, body) {
+  let res;
+  try {
+    res = await fetch(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch {
+    return { ok: false, reason: 'サーバーにつながりません。電波のよい所でもう一度ためしてください', offline: true };
+  }
+  try {
+    const data = await res.json();
+    if (data && typeof data === 'object' && 'ok' in data) return data;
+  } catch { /* 下でまとめて返す */ }
+  // /api がないサーバー（python3 -m http.server など）で開いているとき
+  return { ok: false, reason: 'オンライン対戦のサーバーではありません（「node server/server.js」で起動した画面を開いてください）', noServer: true };
+}
+
+export class OnlineClient {
+  /**
+   * @param {object} h
+   * @param {(room: object) => void} h.onRoom 部屋の状態（人数・つながっているか・もう1回の投票）
+   * @param {(batch: {events: {type: string, payload: object}[], state: object, playable: object[], upgrades: object}) => void} h.onBatch
+   * @param {(connected: boolean, info: { fatal: boolean }) => void} h.onConnection fatal：もうつなぎ直せない（部屋がなくなった）
+   */
+  constructor({ onRoom, onBatch, onConnection }) {
+    this.online = true;
+    this.onRoom = onRoom;
+    this.onBatch = onBatch;
+    this.onConnection = onConnection;
+    this.token = null;
+    this.playerId = null;
+    this.source = null;
+    this.pending = [];
+    this.state = null;
+    this.playable = new Map();
+    this.upgrades = {};
+  }
+
+  /** 合言葉で部屋に入り、つなぐ。成功したら { ok: true, playerId, roomId } */
+  async join(passphrase, name) {
+    const res = await postJson('/api/join', { passphrase, name });
+    if (!res.ok) return res;
+    this.token = res.token;
+    this.playerId = res.playerId;
+    this.open();
+    return { ok: true, playerId: res.playerId, roomId: res.roomId };
+  }
+
+  /** 前に入った部屋へつなぎ直す（ページを読み直したあと）。部屋がもうなければ onConnection(false, { fatal: true }) が来る */
+  resume(token, playerId) {
+    this.token = token;
+    this.playerId = playerId;
+    this.open();
+  }
+
+  open() {
+    this.source?.close();
+    const es = new EventSource(`/api/stream?token=${encodeURIComponent(this.token)}`);
+    this.source = es;
+    es.onopen = () => this.onConnection?.(true, { fatal: false });
+    // EventSource は自分でつなぎ直す。CLOSED になったら、もうつなぎ直さない（サーバーが部屋を忘れた）
+    es.onerror = () => this.onConnection?.(false, { fatal: es.readyState === EventSource.CLOSED });
+    es.onmessage = (e) => {
+      let msg;
+      try {
+        msg = JSON.parse(e.data);
+      } catch {
+        return;
+      }
+      this.receive(msg);
+    };
+  }
+
+  close() {
+    this.source?.close();
+    this.source = null;
+    this.onRoom = this.onBatch = this.onConnection = null;
+  }
+
+  receive(msg) {
+    if (msg.type === 'room') {
+      this.onRoom?.(msg);
+    } else if (msg.type === 'event') {
+      this.pending.push(this.adapt(msg.event, msg.payload));
+    } else if (msg.type === 'state') {
+      const events = this.pending;
+      this.pending = [];
+      this.onBatch?.({ events, state: msg.state, playable: msg.playable ?? [], upgrades: msg.upgrades ?? {} });
+    }
+  }
+
+  /** 相手の cardDrawn は枚数だけ届く。画面は cardIds の個数で演出するので、ダミーのIDを入れる */
+  adapt(type, payload) {
+    if (type === 'cardDrawn' && !payload.cardIds) {
+      return { type, payload: { ...payload, cardIds: Array.from({ length: payload.count ?? 0 }, (_, i) => `hidden-${i}`) } };
+    }
+    return { type, payload };
+  }
+
+  /** 画面がそのまとまりを見せ始めるときに呼ぶ。ここから getState() などはこのまとまりの内容を返す */
+  commit(batch) {
+    this.state = batch.state;
+    this.playable = new Map((batch.playable ?? []).map((p) => [p.cardId, p]));
+    this.upgrades = batch.upgrades ?? {};
+  }
+
+  getState() {
+    return this.state;
+  }
+
+  /** そのカードを今出せるか（サーバーが状態と一緒に送ってきた結果） */
+  canPlayCard(cardId) {
+    const info = this.playable.get(cardId);
+    if (!info) return { ok: false, reason: 'そのカードは手札にありません' };
+    return info.ok ? { ok: true, needsTarget: Boolean(info.needsTarget) } : { ok: false, reason: info.reason };
+  }
+
+  getTargets(cardId) {
+    const info = this.playable.get(cardId);
+    return info?.ok ? (info.targets ?? []) : [];
+  }
+
+  canBuyUpgrade(upgradeId) {
+    return this.upgrades[upgradeId] ?? { ok: false, reason: 'いまは強化を買えません' };
+  }
+
+  act(method, args = []) {
+    return postJson('/api/action', { token: this.token, method, args });
+  }
+
+  playCard(cardId, target) { return this.act('playCard', target ? [cardId, target] : [cardId]); }
+  buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
+  endTurn() { return this.act('endTurn'); }
+  discard(cardIds) { return this.act('discard', [cardIds]); }
+  rematch() { return this.act('rematch'); }
+  /** 降参する（自分の番でなくてもできる。相手の勝ちで終わる） */
+  surrender() { return this.act('surrender'); }
+  /** 部屋を出る（もう戻らない。残った人に伝わる） */
+  leave() { return this.act('leave'); }
+}
