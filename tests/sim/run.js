@@ -55,4 +55,14 @@ if (args.includes('--json')) {
       `| ${r.strategies.join(' vs ')} | ${r.decided}/${r.games} | ${r.avgTurns?.toFixed(1)}（${r.medianTurns}・${r.maxTurns}） | ${pct(r.winRate.p1 || 0)}±${pct(r.p1Margin ?? 0)} | ${pct(r.soldierDamageShare)} | ${r.clashesPerGame.toFixed(1)} | ${r.monstersDefeatedPerGame.toFixed(1)} | ${r.monsterCastleDamagePerGame.toFixed(1)} | ${pct(r.endedByMonsterRate)} | ${pct(r.discardRate)} | ${pct(r.choiceRate)} |`,
     );
   }
+  // 防御（リアクション）。「迷う場面」は、採点が近い選び方が2つ以上ある場面の目安。人が本当に迷うかは、人が遊んで確かめる
+  console.log('');
+  console.log('防御の場面（相手に攻撃されて、使える防御カードがあった場面）');
+  console.log('| 組み合わせ | 場面/試合 | 防御した | 温存した | 防がないと城が落ちる場面 | 迷う場面の目安 | 防いだダメージ | 迎撃で倒す/試合 | 反撃のダメージ/試合 |');
+  console.log('|---|---|---|---|---|---|---|---|---|');
+  for (const r of rows) {
+    console.log(
+      `| ${r.strategies.join(' vs ')} | ${r.reactionWindowsPerGame.toFixed(1)} | ${pct(r.reactionUseRate)} | ${pct(r.heldBackRate)} | ${pct(r.lethalWindowRate)} | ${pct(r.closeCallRate)} | ${pct(r.reducedShare)} | ${r.interceptsPerGame.toFixed(1)} | ${r.counterDamagePerGame.toFixed(1)} |`,
+    );
+  }
 }

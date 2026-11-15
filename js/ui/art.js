@@ -210,6 +210,21 @@ const CARD_ART = {
     `<circle cx="40" cy="48" r="7" fill="#c9f26b" ${S} stroke-width="3"/><circle cx="62" cy="48" r="7" fill="#c9f26b" ${S} stroke-width="3"/>` +
     `<path d="M44 62 h4 v4 h4 v-4 h4" fill="none" ${S} stroke-width="3"/>` +
     `<circle cx="24" cy="86" r="5" fill="#c9f26b" ${S} stroke-width="2.5"/><circle cx="78" cy="84" r="3.5" fill="#c9f26b" ${S} stroke-width="2.5"/>`,
+  guard: () => bg('#d4e4f7', '#eef5fd') +
+    `<path d="M50 8 Q72 18 90 18 Q92 64 50 94 Q8 64 10 18 Q28 18 50 8 Z" fill="#8ab4e8" ${S} stroke-width="4"/>` +
+    `<path d="M50 20 Q64 27 78 28 Q78 58 50 80 Z" fill="#b3d0f3"/>` +
+    `<path d="M20 70 L40 52 M16 56 L34 44" stroke="#f2622e" stroke-width="6" stroke-linecap="round"/>` +
+    `<path d="M62 26 l5 -9 M72 32 l9 -4 M68 20 l2 -8" stroke="#ffd93b" stroke-width="4" stroke-linecap="round"/>`,
+  intercept: () => bg('#f3d3cf', '#fbeceb') +
+    `<path d="M14 86 L58 42" ${S} stroke-width="9"/><path d="M14 86 L58 42" stroke="#eef3f7" stroke-width="4.5" stroke-linecap="round"/>` +
+    `<path d="M86 86 L42 42" ${S} stroke-width="9"/><path d="M86 86 L42 42" stroke="#eef3f7" stroke-width="4.5" stroke-linecap="round"/>` +
+    `<path d="M50 6 L58 30 L82 30 L62 46 L70 70 L50 55 L30 70 L38 46 L18 30 L42 30 Z" fill="#ff6a4d" ${S} stroke-width="4"/>` +
+    `<circle cx="50" cy="40" r="7" fill="#fff3b0" ${S} stroke-width="3"/>`,
+  counter: () => bg('#f4dcc0', '#fcf0e1') +
+    `<path d="M10 62 Q30 18 62 24" fill="none" ${S} stroke-width="10"/><path d="M10 62 Q30 18 62 24" fill="none" stroke="#ffd93b" stroke-width="5" stroke-linecap="round"/>` +
+    `<path d="M56 10 L84 24 L58 40 Z" fill="#ffd93b" ${S} stroke-width="4"/>` +
+    `<path d="M30 70 L58 66 L46 94 Z" fill="#f2622e" ${S} stroke-width="4"/>` +
+    `<path d="M70 62 L90 60 L80 82 Z" fill="#f2622e" ${S} stroke-width="3"/>`,
   frostBreath: () => bg('#cfeefb', '#eefaff') +
     `<g ${S} stroke-width="6" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/><path d="M40 20 L50 30 L60 20 M40 80 L50 70 L60 80 M19 45 L32 40 L28 26 M81 55 L68 60 L72 74 M19 55 L32 60 L28 74 M81 45 L68 40 L72 26"/></g>` +
     `<g stroke="#8fdcff" stroke-width="2.5" stroke-linecap="round" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/></g>` +
@@ -240,6 +255,7 @@ const ICONS = {
   fire: `<path d="M12 2 Q14 7 18 9 Q22 14 19 19 Q16 23 12 22 Q6 23 4 17 Q3 12 7 9 Q8 12 10 11 Q9 6 12 2 Z" fill="#f2622e" ${S} stroke-width="2"/><path d="M12 12 Q15 15 14 18 Q12 20 10 18 Q9 15 12 12 Z" fill="#ffc83d"/>`,
   water: `<path d="M12 2 Q20 12 19 16 Q18 22 12 22 Q6 22 5 16 Q4 12 12 2 Z" fill="#4db8f0" ${S} stroke-width="2"/><path d="M9 14 q0 4 3 5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>`,
   wood: `<path d="M12 22 V12" ${S} stroke-width="2.4"/><path d="M12 14 Q2 14 3 3 Q13 3 12 14 Z M12 16 Q21 17 21 8 Q13 7 12 16 Z" fill="#7cc45a" ${S} stroke-width="2"/>`,
+  alert: `<path d="M12 2 L23 21 H1 Z" fill="#ffcf3f" ${S} stroke-width="2"/><path d="M12 9 V15" ${S} stroke-width="2.6"/><circle cx="12" cy="18" r="1.4" fill="${INK}"/>`,
   crown: `<path d="M3 19 L2 7 L8 12 L12 4 L16 12 L22 7 L21 19 Z" fill="#ffcf3f" ${S} stroke-width="2"/><circle cx="12" cy="15" r="1.8" fill="#e2475b"/>`,
   hammer: `<path d="M6 21 L14 11" ${S} stroke-width="4.4"/><path d="M6 21 L14 11" stroke="#a9753f" stroke-width="2" stroke-linecap="round"/><path d="M10 6 L15 2 L22 9 L18 13 Z" fill="${STEEL_D}" ${S} stroke-width="2"/>`,
   stone: `<path d="M3 17 L7 8 L16 6 L21 13 L18 19 L7 20 Z" fill="${STEEL}" ${S} stroke-width="2"/><path d="M8 11 L15 9" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`,

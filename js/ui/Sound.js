@@ -92,6 +92,11 @@ class Sound {
 }
 
 const SOUNDS = {
+  // 攻撃が来た：低いサイレン（2回下がる）
+  alert: (s) => {
+    s.tone({ freq: 620, endFreq: 380, dur: 0.18, type: 'sawtooth', gain: 0.16 });
+    s.tone({ freq: 620, endFreq: 380, dur: 0.18, type: 'sawtooth', gain: 0.16, at: 0.2 });
+  },
   tap: (s) => s.tone({ freq: 720, endFreq: 900, dur: 0.05, type: 'triangle', gain: 0.12 }),
   deny: (s) => {
     s.tone({ freq: 170, dur: 0.09, type: 'square', gain: 0.1 });

@@ -87,3 +87,10 @@ export const UPGRADE_ICON_NAME = {
   recruit: 'card',
   sharpen: 'stone',
 };
+
+/** 防御カードの効果ごとの色（演出の数字・光） */
+export const REACTION_COLOR = {
+  guard: '#7fb6f2',
+  intercept: '#ff6a4d',
+  counter: '#ffb03d',
+};

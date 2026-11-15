@@ -4,7 +4,9 @@ import { randomBytes } from 'node:crypto';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { filterEventFor } from '../js/game/visibility.js';
 
-const ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'rematch', 'surrender', 'leave'];
+const ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'rematch', 'surrender', 'leave', 'react'];
+/** 防御する人がカードを選ぶまで待つ時間（ミリ秒）。過ぎたら「防御せずに受ける」にする。0 なら待ち続ける */
+const REACTION_TIMEOUT_MS = 30 * 1000;
 const MAX_ROOMS = 1000;
 
 export class Room {
@@ -23,6 +25,9 @@ export class Room {
     this.game = null;
     this.rematchVotes = new Set();
     this.lastActive = Date.now();
+    this.reactionTimeoutMs = data.reactionTimeoutMs ?? REACTION_TIMEOUT_MS;
+    this.reactionTimer = null;
+    this.reactionDeadline = null; // 防御の待ち時間の終わり（epoch ミリ秒）
   }
 
   get started() {
@@ -86,7 +91,16 @@ export class Room {
     if (method === 'leave') return this.leave(seat);
     if (method === 'surrender') return this.surrender(seat);
     if (!this.game) return { ok: false, reason: 'まだ全員そろっていません' };
-    if (this.game.currentPlayer !== seat.playerId) return { ok: false, reason: 'あなたの番ではありません' };
+    // 防御の場面では、防御される側だけが react を送れる（ほかの操作は、だれも送れない）
+    if (this.game.phase === 'reaction') {
+      const defender = this.game.pending?.defenderId;
+      if (method !== 'react') return { ok: false, reason: '相手の攻撃に対する防御の場面です。防御が終わるまで待ってください' };
+      if (seat.playerId !== defender) return { ok: false, reason: 'あなたが防御する場面ではありません' };
+    } else if (method === 'react') {
+      return { ok: false, reason: 'いまは防御する場面ではありません' };
+    } else if (this.game.currentPlayer !== seat.playerId) {
+      return { ok: false, reason: 'あなたの番ではありません' };
+    }
     // 手札にないカードは、相手の手札にあってもなくても同じ文にする（文の違いから相手の手札が分からないように）
     if (method === 'playCard') {
       const hand = this.game.getState(seat.playerId).players[seat.playerId].hand || [];
@@ -136,9 +150,19 @@ export class Room {
   stateFor(playerId) {
     const game = this.game;
     const state = game.getState(playerId);
-    const myTurn = game.currentPlayer === playerId;
+    const reacting = game.phase === 'reaction';
+    const defending = reacting && game.pending?.defenderId === playerId;
+    const myTurn = game.currentPlayer === playerId && !reacting;
     const hand = state.players[playerId].hand || [];
     const playable = hand.map((c) => {
+      if (reacting) {
+        // 防御の場面：防御する人は、各カードを防御に使えるか（reaction）が分かる。ほかの操作はできない
+        const reaction = defending ? game.canReact(c.cardId) : { ok: false, reason: '相手が防御を選んでいます' };
+        return {
+          cardId: c.cardId, ok: false, reason: defending ? '防御の場面です。下の防御カードから選んでください' : '相手が防御を選んでいます',
+          needsTarget: false, targets: [], reaction: { ok: reaction.ok, reason: reaction.reason ?? null },
+        };
+      }
       if (!myTurn) return { cardId: c.cardId, ok: false, reason: 'あなたの番ではありません', needsTarget: false, targets: [] };
       const r = game.canPlayCard(c.cardId);
       return { cardId: c.cardId, ok: r.ok, reason: r.reason ?? null, needsTarget: !!r.needsTarget, targets: game.getTargets(c.cardId) };
@@ -148,7 +172,9 @@ export class Room {
       const r = myTurn ? game.canBuyUpgrade(id) : { ok: false, reason: 'あなたの番ではありません' };
       upgrades[id] = { ok: r.ok, reason: r.reason ?? null };
     }
-    return { state, playable, upgrades };
+    // 防御の待ち時間の残り（ミリ秒）。待ち時間がなければ null
+    const reactionDeadlineIn = reacting && this.reactionDeadline ? Math.max(0, this.reactionDeadline - Date.now()) : null;
+    return { state, playable, upgrades, reactionDeadlineIn };
   }
 
   roomInfo() {
@@ -170,7 +196,30 @@ export class Room {
     for (const seat of this.seats) this.send(seat, info);
   }
 
+  /** 防御の場面が始まったら待ち時間を数え始め、過ぎたら「防御せずに受ける」にする。終わったら止める */
+  syncReactionTimer() {
+    const pending = this.game?.phase === 'reaction' ? this.game.pending : null;
+    if (!pending) {
+      clearTimeout(this.reactionTimer);
+      this.reactionTimer = null;
+      this.reactionDeadline = null;
+      this.reactionTimerFor = null;
+      return;
+    }
+    if (this.reactionTimerFor === pending.id || this.reactionTimeoutMs <= 0) return;
+    clearTimeout(this.reactionTimer);
+    this.reactionTimerFor = pending.id;
+    this.reactionDeadline = Date.now() + this.reactionTimeoutMs;
+    this.reactionTimer = setTimeout(() => {
+      if (this.game?.pending?.id !== pending.id) return;
+      this.game.react([]); // 時間切れ：防御せずに受ける（勝ち負けは決めない）
+      this.broadcastState();
+    }, this.reactionTimeoutMs);
+    this.reactionTimer.unref?.();
+  }
+
   broadcastState() {
+    this.syncReactionTimer();
     for (const seat of this.seats) this.send(seat, { type: 'state', ...this.stateFor(seat.playerId) });
   }
 }

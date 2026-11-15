@@ -1,7 +1,7 @@
 // カード1枚。数値は data/cards.json の定義から受け取る（コードに数値を書かない）。
 // DOM は使わない（後でサーバーに移すため）。
 
-export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense'];
+export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense', 'reaction'];
 export const ELEMENTS = ['fire', 'water', 'wood'];
 
 /** effect ごとに、必要な数値のキー */
@@ -17,14 +17,21 @@ export const EFFECTS = {
     shieldSoldier: ['amount'],
     armorCastle: ['amount'],
   },
+  // 相手に攻撃されたときだけ使う（自分の番には出せない。js/game/Reaction.js）
+  reaction: {
+    guard: ['amount'], // 受け流し：この攻撃のダメージを amount 減らす
+    intercept: ['amount'], // 迎撃：攻撃してくる兵士に amount ダメージ。倒せれば攻撃は無効（魔法には使えない）
+    counter: ['amount', 'block'], // カウンター：ダメージを block 減らし、相手の城に amount ダメージ
+  },
 };
 
-/** kind → 出し方（slot）。main は1ターン1枚、addon と defense は何枚でも */
+/** kind → 出し方（slot）。main は1ターン1枚、addon と defense は何枚でも。reaction は相手の攻撃を受けたときだけ */
 export const SLOT_OF_KIND = {
   soldier: 'main',
   spell: 'main',
   weapon: 'addon',
   defense: 'defense',
+  reaction: 'reaction',
 };
 
 export class Card {
@@ -43,7 +50,7 @@ export class Card {
     return this.def.kind;
   }
 
-  /** "main" | "addon" | "defense" */
+  /** "main" | "addon" | "defense" | "reaction" */
   get slot() {
     return SLOT_OF_KIND[this.def.kind];
   }
@@ -54,6 +61,10 @@ export class Card {
 
   get isSpell() {
     return this.def.kind === 'spell';
+  }
+
+  get isReaction() {
+    return this.def.kind === 'reaction';
   }
 
   /** 使い切り（使ったら山札に戻らない）か */
@@ -94,6 +105,13 @@ export class Card {
       }
       if (def.element !== undefined && def.element !== null && !ELEMENTS.includes(def.element)) {
         throw new Error(`${where}: element は ${ELEMENTS.join(' / ')} のどれかにしてください（書かなければ属性なし）`);
+      }
+
+      if (def.unblockable !== undefined) {
+        if (def.kind !== 'spell' || def.effect !== 'damageEnemyCastle') {
+          throw new Error(`${where}: unblockable を書けるのは、城に直接ダメージを与える魔法（effect: "damageEnemyCastle"）だけです`);
+        }
+        if (typeof def.unblockable !== 'boolean') throw new Error(`${where}: unblockable は true か false にしてください`);
       }
 
       if (def.kind === 'soldier') {

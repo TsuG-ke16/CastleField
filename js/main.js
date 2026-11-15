@@ -11,6 +11,7 @@ import { HandView } from './ui/HandView.js';
 import { Animations } from './ui/Animations.js';
 import { DebugPanel } from './ui/DebugPanel.js';
 import { UpgradePanel } from './ui/UpgradePanel.js';
+import { ReactionPanel } from './ui/ReactionPanel.js';
 import { Targeting } from './ui/Targeting.js';
 import { LocalSession } from './ui/Session.js';
 import { OnlineClient } from './ui/OnlineClient.js';
@@ -70,6 +71,8 @@ let renderer;
 let handView;
 let anim;
 let upgradePanel = null;
+let reactionPanel = null;  // 防御の帯（js/ui/ReactionPanel.js）
+let reactionTick = 0;      // 防御の待ち時間を数える setInterval の番号
 let targeting = null;      // 対象を選ぶ（js/ui/Targeting.js）
 
 let game = null;           // 同じ端末のときの Game（オンラインでは null）
@@ -171,6 +174,11 @@ async function boot() {
   handView = new HandView({
     cards, rules, textOpts: { monsters: Boolean(monsters) },
     onPlay: playCard, onDiscard: discard, onNotice: toast,
+  });
+  reactionPanel = new ReactionPanel({
+    cards,
+    onPass: () => submitReaction([]),
+    onGo: () => submitReaction(handView.reactPicks),
   });
   anim = new Animations({ renderer, handView, cards, rules, monsters, upgrades });
   targeting = new Targeting({ renderer, handView, onChoose: (cardId, target) => doPlay(cardId, target) });
@@ -717,6 +725,7 @@ function modelFromState(st) {
     deckCount: st.deckCount,
     discardCount: st.discardCount,
     discardRequired: model?.discardRequired ?? 0,
+    reaction: st.reaction ? { ...st.reaction } : null,
     monsters: (st.monsters ?? []).map((m) => ({ ...m })),
     players,
     hand: (st.players[viewerId]?.hand ?? []).map((c) => ({ ...c })),
@@ -742,6 +751,7 @@ function setBusy(value) {
   el.app.classList.toggle('busy', value);
   handView.setLocked(value);
   if (value) {
+    exitReactionUI();
     cancelTargeting();
     upgradePanel?.setEnabled(false, { reason: upgradeOffReason(session?.getState(viewerId)) });
     el.endTurn.disabled = true;
@@ -756,6 +766,12 @@ async function drainEvents() {
   while (queue.length && g === gen) {
     const ev = queue.shift();
     try {
+      if (ev.type === 'reactionRequested' && usesHandover() && ev.payload.defenderId !== viewerId) {
+        // 1台で2人：攻撃された人に画面を渡す（手札を相手に見せないため）
+        await anim.play(ev, queue, model, { viewerId, lookupCard });
+        await handover(ev.payload.defenderId, model.turn, 'defend');
+        continue;
+      }
       if (ev.type === 'turnStarted' && usesHandover() && ev.payload.playerId !== viewerId) {
         await anim.play(ev, queue, model, { viewerId, lookupCard });
         await handover(ev.payload.playerId, ev.payload.turn);
@@ -805,9 +821,11 @@ function recover(err) {
 async function settle({ check = true } = {}) {
   if (!session) return;
   const st = readState();
-  if (usesHandover() && st.phase !== 'gameOver' && st.phase !== 'ready' && st.currentPlayer !== viewerId) {
-    // 手番が変わったのに turnStarted が来なかった場合の保険
-    await handover(st.currentPlayer, st.turn);
+  // いま操作する人：防御の場面では、攻撃された人。ふだんは手番の人
+  const actor = st.phase === 'reaction' ? st.reaction.defenderId : st.currentPlayer;
+  if (usesHandover() && st.phase !== 'gameOver' && st.phase !== 'ready' && actor !== viewerId) {
+    // 手番が変わったのに turnStarted が来なかった場合の保険（防御の場面でも使う）
+    await handover(actor, st.turn, st.phase === 'reaction' ? 'defend' : 'turn');
     return settle({ check });
   }
   // デバッグ：演出で進めた値と本当の状態がずれていないか（ずれていたら console.warn('[sync]', ...)）
@@ -822,6 +840,10 @@ async function settle({ check = true } = {}) {
   if (!sameHand) handView.render(me.hand);
   const blocked = playability(st);
   handView.setPlayability(blocked);
+  if (st.phase !== 'reaction') {
+    exitReactionUI();
+    renderer.clearAttack();
+  }
 
   if (st.phase === 'gameOver') {
     showResult(st.winner);
@@ -830,6 +852,10 @@ async function settle({ check = true } = {}) {
 
   setBusy(false);
   refreshUpgrades();
+  if (st.phase === 'reaction') {
+    settleReaction(st);
+    return;
+  }
   const myTurn = st.currentPlayer === viewerId;
   if (!myTurn) {
     // オンライン・CPU 戦の相手の番：見るだけ。手札は説明だけ読める
@@ -871,6 +897,94 @@ function playability(st) {
   return blocked;
 }
 
+// ---------- 防御（リアクション） ----------
+
+/** 防御の場面を画面に出す。防御される人は防御カードを選べる。攻撃した人は待つ */
+function settleReaction(st) {
+  const info = st.reaction;
+  const mine = info.defenderId === viewerId;
+  el.endTurn.disabled = false;
+  el.endTurn.classList.add('off');
+  handView.exitDiscard();
+  handView.setPlayability(new Map());
+  renderer.markAttack(info);
+  if (!mine) {
+    exitReactionUI();
+    setMessage(`${playerName(info.defenderId)}が防御を選んでいます…`);
+    startReactionTimer(false);
+    if (cpu && info.defenderId === cpu.id) cpuReact();
+    return;
+  }
+  renderer.markAttack(info);
+  const attacker = st.players[info.attackerId];
+  reactionPanel.open(info, { attackerName: playerName(info.attackerId), attackerCastleHp: attacker.castleHp });
+  handView.enterReaction({
+    canReact: (cardId) => session.canReact(cardId),
+    max: info.maxCards,
+    onChange: (ids) => reactionPanel.update(ids.map((id) => handView.hand.find((c) => c.cardId === id)).filter(Boolean)),
+  });
+  setMessage('防御に使うカードを選ぶ。使わずに「受ける」こともできます');
+  startReactionTimer(true);
+  if (!reactionPanel.isOpen) return;
+  sound.play('alert');
+}
+
+/** 防御の画面を片づける（帯・カード選び・待ち時間の数え） */
+function exitReactionUI() {
+  clearInterval(reactionTick);
+  reactionTick = 0;
+  reactionPanel?.close();
+  handView?.exitReaction();
+}
+
+/** オンラインの防御の待ち時間を、1秒に数回、画面に出す（防御する人は帯のバー、攻撃した人は文章） */
+function startReactionTimer(mine) {
+  clearInterval(reactionTick);
+  reactionTick = 0;
+  const left0 = session?.reactionDeadlineIn;
+  if (!session?.online || left0 == null) return;
+  const end = Date.now() + left0;
+  const tick = () => {
+    const left = end - Date.now();
+    if (mine) reactionPanel.setTimer(left, left0);
+    else setMessage(`${playerName(session.getState(viewerId).reaction?.defenderId)}が防御を選んでいます…（あと${Math.max(0, Math.ceil(left / 1000))}秒）`);
+    if (left <= 0) clearInterval(reactionTick);
+  };
+  tick();
+  reactionTick = setInterval(tick, 250);
+}
+
+/** 防御を決める（ids が空なら、防御せずに受ける） */
+async function submitReaction(ids) {
+  if (!session || session.getState(viewerId)?.phase !== 'reaction') return;
+  const res = await act(() => session.react([...ids]));
+  if (!res) return;
+  if (!res.ok) {
+    sound.play('deny');
+    toast(reasonText(res.reason));
+    return;
+  }
+  exitReactionUI(); // オンラインでは、結果が届くまでのあいだ、押せないようにする
+}
+
+/** CPU が防御する番：少し考える間をおいて、戦い方（js/game/strategies.js）に選んでもらう */
+async function cpuReact() {
+  const g = gen;
+  const me = cpu;
+  setBusy(true);
+  setMessage(`${playerName(me.id)}が防御を考えています…`);
+  await new Promise((r) => setTimeout(r, 750 * UI_CONFIG.speed));
+  if (g !== gen || cpu !== me || !game || game.getState(null).phase !== 'reaction') return;
+  let ids = [];
+  try {
+    ids = me.strategy.react(game, me.id, me.rng, { cards, rules, upgrades: upgrades ?? {} });
+  } catch (err) {
+    console.error('CPU の防御でエラーが起きました', err);
+  }
+  if (!game.react(ids).ok) game.react([]); // 選び方がおかしくても、止まらないように「受ける」
+  drainAndSettle();
+}
+
 // ---------- CPU（ひとりで遊ぶ） ----------
 
 /**
@@ -898,6 +1012,7 @@ async function cpuTurn() {
     if (st.phase === 'main' && st.currentPlayer === me.id) {
       me.strategy.takeTurn(game, me.id, me.rng, ctx);
       st = game.getState(me.id);
+      // 防御の場面で止まったら、終わるまで待つ（終わったら、また CPU の番に戻ってくる）
       if (st.phase === 'main' && st.currentPlayer === me.id) game.endTurn();
       discardIfNeeded();
     }
@@ -1029,7 +1144,9 @@ async function buyUpgrade(upgradeId) {
 async function endTurn() {
   if (busy || sending || !session) return;
   if (el.endTurn.classList.contains('off')) {
-    toast('いまは相手の番です', 'info');
+    const st = session.getState(viewerId);
+    if (st?.phase === 'reaction') toast(st.reaction.defenderId === viewerId ? '防御の場面です。カードを選ぶか「受ける」を押してください' : '相手が防御を選んでいます', 'info');
+    else toast('いまは相手の番です', 'info');
     return;
   }
   cancelTargeting();
@@ -1066,13 +1183,13 @@ async function rematch() {
 // ---------- 交代・勝敗 ----------
 
 /** 画面を隠して「プレイヤー2の番です」を出し、タップされたら新しい視点で表示する */
-function handover(playerId, turn) {
+function handover(playerId, turn, kind = 'turn') {
   anim.endSkip();
   handView.clear();
   setBusy(true);
   el.handover.dataset.player = playerId;
-  el.handoverTurn.textContent = `ターン ${turn}`;
-  el.handoverTitle.textContent = `${playerName(playerId)}の番です`;
+  el.handoverTurn.textContent = kind === 'defend' ? '攻撃された！' : `ターン ${turn}`;
+  el.handoverTitle.textContent = `${playerName(playerId)}の${kind === 'defend' ? '防御です' : '番です'}`;
   el.handoverPic.innerHTML = castleArt(colorOf(playerId));
   el.handover.hidden = false;
 

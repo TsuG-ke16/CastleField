@@ -95,7 +95,7 @@ export class OnlineClient {
     } else if (msg.type === 'state') {
       const events = this.pending;
       this.pending = [];
-      this.onBatch?.({ events, state: msg.state, playable: msg.playable ?? [], upgrades: msg.upgrades ?? {} });
+      this.onBatch?.({ events, state: msg.state, playable: msg.playable ?? [], upgrades: msg.upgrades ?? {}, reactionDeadlineIn: msg.reactionDeadlineIn ?? null });
     }
   }
 
@@ -112,6 +112,7 @@ export class OnlineClient {
     this.state = batch.state;
     this.playable = new Map((batch.playable ?? []).map((p) => [p.cardId, p]));
     this.upgrades = batch.upgrades ?? {};
+    this.reactionDeadlineIn = batch.reactionDeadlineIn ?? null; // 防御の待ち時間の残り（ミリ秒）
   }
 
   getState() {
@@ -140,6 +141,13 @@ export class OnlineClient {
 
   playCard(cardId, target) { return this.act('playCard', target ? [cardId, target] : [cardId]); }
   buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
+  /** 防御の場面で、そのカードを防御に使えるか（サーバーが状態と一緒に送ってきた結果） */
+  canReact(cardId) {
+    const info = this.playable.get(cardId);
+    return info?.reaction ?? { ok: false, reason: 'そのカードは手札にありません' };
+  }
+  /** 防御する（空の配列なら、防御せずに受ける） */
+  react(cardIds) { return this.act('react', [cardIds]); }
   endTurn() { return this.act('endTurn'); }
   discard(cardIds) { return this.act('discard', [cardIds]); }
   rematch() { return this.act('rematch'); }

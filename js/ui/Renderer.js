@@ -270,6 +270,8 @@ export class Renderer {
   /** 兵士の位置 → 道の上の top(%)。城に着いた兵士は相手の城に重なる位置 */
   topPercent(playerId, position) {
     const L = this.laneLength;
+    // 城に着いた兵士は、道のはしの城の前に立つ（城の絵の下にかくれないように。防御を考えるときも見える）
+    if (position >= L) return this.sideOf(playerId) === 'me' ? 4 : 96;
     const pos = Math.max(0, Math.min(position, L));
     const fromTop = this.sideOf(playerId) === 'me' ? L - 1 - pos : pos;
     return ((fromTop + 0.5) / L) * 100;
@@ -513,6 +515,20 @@ export class Renderer {
       }
     }
     for (const id of [...this.monsters.keys()]) if (!alive.has(id)) this.removeMonster(id);
+  }
+
+  // ---------- 防御の場面 ----------
+
+  /** 攻撃してくる兵士と、狙われている城を目立たせる（info は getState().reaction） */
+  markAttack(info) {
+    this.clearAttack();
+    if (!info) return;
+    if (info.soldier) this.soldierEl(info.soldier.soldierId)?.classList.add('attacking');
+    this.castleEl(info.defenderId).classList.add('under-attack');
+  }
+
+  clearAttack() {
+    for (const el of this.el.board.querySelectorAll('.attacking, .under-attack')) el.classList.remove('attacking', 'under-attack');
   }
 
   // ---------- 対象を選ぶ ----------

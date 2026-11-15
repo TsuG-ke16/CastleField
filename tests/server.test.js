@@ -111,6 +111,15 @@ test('2人ぶんの接続で1試合を最後まで遊ぶ。相手の手札は届
     for (let step = 0; step < 3000 && !over; step++) {
       const st = ca.lastState().state;
       if (st.phase === 'gameOver') { over = st; break; }
+      // 防御の場面：攻撃された側が、防御カードを使うか、受ける
+      if (st.phase === 'reaction') {
+        const d = st.reaction.defenderId;
+        const options = me[d].c.lastState().playable.filter((p) => p.reaction?.ok);
+        const use = options.length && rng() < 0.6 ? [[options[Math.floor(rng() * options.length)].cardId]] : [[]];
+        const r = await act(me[d].token, 'react', use);
+        assert.equal(r.ok, true, r.reason);
+        continue;
+      }
       const pid = st.currentPlayer;
       const { token, c } = me[pid];
       const mine = c.lastState();
