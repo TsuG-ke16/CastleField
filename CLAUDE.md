@@ -74,7 +74,7 @@ YouTube「桜井政博のゲーム作るには」の考え方を、このゲー�
 - バランスのシミュレーション：`node tests/sim/run.js`（いろいろな戦い方の組み合わせで各1000試合）。乱数はシード付きなので、同じ引数なら誰が回しても同じ結果になる
   - `--games 200`（試合数）、`--seed 7`、`--match smart,random`（1つの組み合わせだけ）、`--rules '{"castleMaxHp":30}'`・`--cards '{"fireball":{"count":3}}'`（`data/` を書き換えずに一部の値だけ試す）、`--json`
   - 「出せる種類が2以上」の列は、出せるカードが2種類以上あったターンの割合（目安）。本当に迷うかは人が遊んで確かめる
-  - 戦い方（`tests/sim/strategies.js`）：`random`（出せるカードからランダム）、`aggro`（城への魔法 → 兵士）、`smart`（ほどよく考える）、`defensive`（守り優先）、`guard`（兵士で守る）、`pass`（何も出さない）
+  - 戦い方（`tests/sim/strategies.js`）：`random`（出せるカードからランダム）、`aggro`（城への魔法 → 兵士）、`smart`（ほどよく考える）、`defensive`（守り優先）、`rush`（攻め重視：城への魔法 → 兵士。武器・盾・強化は使うが回復はしない）、`guard`（兵士で守る）、`pass`（何も出さない）
 - 数値はコードに直接書かない（バランス調整をJSONだけでできるようにするため）
   - カードの数値 → `data/cards.json`
   - ルールの数値（城HP、手札枚数、道の長さ `laneLength` など）→ `data/rules.json`
@@ -344,9 +344,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 {
   "infantry":  { "name": "歩兵", "kind": "soldier", "hp": 5, "attack": 3, "speed": 2, "count": 10 },
   "knight":    { "name": "騎士", "kind": "soldier", "hp": 4, "attack": 5, "speed": 3, "count": 6 },
-  "fireball":  { "name": "ファイアボール", "kind": "spell", "effect": "damageEnemyCastle", "amount": 8, "count": 4 },
+  "fireball":  { "name": "ファイアボール", "kind": "spell", "effect": "damageEnemyCastle", "amount": 8, "count": 6 },
   "thunder":   { "name": "サンダー", "kind": "spell", "effect": "damageEnemySoldiers", "amount": 3, "count": 6 },
-  "heal":      { "name": "ヒール", "kind": "spell", "effect": "healOwnCastle", "amount": 10, "count": 6, "exhaust": true },
+  "heal":      { "name": "ヒール", "kind": "spell", "effect": "healOwnCastle", "amount": 10, "count": 3, "exhaust": true },
   "flameSword":  { "name": "炎の剣", "kind": "weapon", "attackBonus": 1, "element": "fire", "count": 2 },
   "shield":      { "name": "盾", "kind": "defense", "effect": "shieldSoldier", "amount": 3, "count": 3 },
   "poisonMist":  { "name": "毒の霧", "kind": "spell", "effect": "poisonEnemySoldiers", "amount": 1, "turns": 3, "count": 3 }
@@ -404,9 +404,9 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 |---|---|---|---|
 | 歩兵 | 兵士 | HP5・攻撃3（城には6）・1ターンに2マス進む（遅いけど打たれ強い。サンダーに耐える） | 10 |
 | 騎士 | 兵士 | HP4・攻撃5（城には10）・1ターンに3マス進む（速くて強いけど、歩兵より打たれ弱い） | 6 |
-| ファイアボール | 魔法 | 相手の城に8ダメージ（すぐ効いて防げないので、枚数を少なくしている） | 4 |
+| ファイアボール | 魔法 | 相手の城に8ダメージ（すぐ効いて防げないので、枚数は抑える。回復を減らしたぶん、攻めが報われるよう4→6枚） | 6 |
 | サンダー | 魔法 | 道の上にいる相手の兵士全員に3ダメージ | 6 |
-| ヒール | 魔法 | 自分の城HP+10（上限はその城の上限）。**使い切り** | 6 |
+| ヒール | 魔法 | 自分の城HP+10（上限はその城の上限）。**使い切り**（回復が強すぎて攻めが報われなかったため、6→3枚） | 3 |
 
 ### STEP 1 の画面
 
@@ -470,7 +470,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - 付加・防御を出せば、そのぶん手札が減る。これが付加・防御を出すときの代わり（コスト）になる（レビューで決めた）
 
 ### STEP 2 のカード（仮）
-枚数：炎の剣・水の槍・木の斧 各2、盾・城壁・毒の霧・氷の息 各3（山札は32 → 50枚）。
+枚数：炎の剣・水の槍・木の斧 各2、盾・城壁・毒の霧・氷の息 各3（山札は32 → 50枚。調整後は、ファイアボール6・ヒール3に変えたので49枚）。
 
 | 名前（type） | 種類 | 効果 | 長所 | 短所 |
 |---|---|---|---|---|
@@ -642,15 +642,15 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | type | 名前 | 長所 | 短所 |
 |---|---|---|---|
 | `standard` | ふつうの城 | — | — |
-| `fortress` | とりで | 城HP+4 | 手札の上限−2 |
-| `tower` | 魔法の塔 | 城への魔法+2 | 城HP−4 |
-| `barracks` | 兵舎 | 出す兵士の攻撃+1（城には×2なので+2） | 城HP−15 |
+| `fortress` | とりで | 城HP+2 | 手札の上限−2 |
+| `tower` | 魔法の塔 | 城への魔法+2 | 城HP−6 |
+| `barracks` | 兵舎 | 出す兵士の攻撃+1（城には×2なので+2） | 城HP−12 |
 
-- 道3マス・兵士の城ダメージ×2（#18）に合わせて数値を直した。smart 同士で、ふつうの城に勝つ割合はどれも48〜54%（`node tests/sim/castles.js`）
+- 道3マス・兵士の城ダメージ×2（#18）に合わせて数値を直した。smart 同士で、ふつうの城に勝つ割合はどれも48〜51%（`node tests/sim/castles.js`。ヒール・ファイアボールの枚数調整のあとに直した）
 
 ### デッキ対戦（`rules.deckMode`）
 - `"shared"`（省略したとき）：今と同じ、全員共通の山札
-- デッキ（仮）：`balanced`（バランス）、`assault`（突撃：歩兵と武器が多い）、`siege`（籠城：盾・城壁・状態異常の魔法が多い）。smart 同士で、バランスに勝つ割合はどれも47〜50%（道3マス・落とし穴なしに合わせて直した）
+- デッキ（仮）：`balanced`（バランス）、`assault`（突撃：歩兵と武器が多い）、`siege`（籠城：盾・城壁・状態異常の魔法が多い）。smart 同士で、バランスに勝つ割合は、突撃49%・籠城49%（籠城は盾5→4枚で直した。カード1枚で10%以上動く敏感なデッキなので、変えたら必ず2000試合で確かめる）
 - `"own"`：1人1つずつ山札・捨て札・使い切り置き場を持つ。中身は `data/decks.json` のデッキ（`{ name, cards: { type: 枚数 } }`）。席ごとに選ぶ：`setup: { decks: ["assault", "balanced"] }`。省略すると全員 `rules.defaultDeck`
   - `getState()`：`deckMode`。`"own"` のとき、いちばん上の `deckCount` / `discardCount` / `exhaustedCount` は viewer 本人の数（viewer がいなければ `null`）、`players.pX.deckCount` などにそれぞれの数。`"shared"` のときは `players.pX` の方が `null`
   - `deckShuffled` に `playerId`（`"own"` のとき、だれの山札か。`"shared"` のときは `null`）を足す
