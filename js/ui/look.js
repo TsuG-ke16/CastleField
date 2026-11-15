@@ -12,6 +12,9 @@ export const ELEMENT_LOOK = {
 export const SOLDIER_MARK = {
   infantry: '歩',
   knight: '騎',
+  spearman: '槍',
+  heavy: '重',
+  giant: '巨',
 };
 
 /** 武器の絵文字（なければ属性の絵文字） */
@@ -19,6 +22,7 @@ export const WEAPON_ICON = {
   flameSword: '🗡️',
   waterSpear: '🔱',
   woodAxe: '🪓',
+  ironSword: '⚔️',
 };
 
 /** 魔物の絵文字 */

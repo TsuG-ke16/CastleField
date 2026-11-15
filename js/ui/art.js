@@ -214,6 +214,37 @@ const CARD_ART = {
     `<g ${S} stroke-width="6" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/><path d="M40 20 L50 30 L60 20 M40 80 L50 70 L60 80 M19 45 L32 40 L28 26 M81 55 L68 60 L72 74 M19 55 L32 60 L28 74 M81 45 L68 40 L72 26"/></g>` +
     `<g stroke="#8fdcff" stroke-width="2.5" stroke-linecap="round" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/></g>` +
     `<circle cx="50" cy="50" r="8" fill="#e9faff" ${S} stroke-width="3"/>`,
+  // 追加カード：もとの絵を使い回し、背景の色と一部の飾りで見分ける（専用の絵ができたら差しかえる）
+  spearman: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${infantryBody(c)}</g>` +
+    `<path d="M88 92 L72 14" ${S} stroke-width="8"/><path d="M88 92 L72 14" stroke="#c99a5b" stroke-width="4" stroke-linecap="round"/><path d="M72 4 L79 20 L65 20 Z" fill="${STEEL}" ${S} stroke-width="3"/>`,
+  heavy: (c) => bg('#d6dbe3', '#eef1f5') + `<g transform="translate(6 8) scale(.88)">${infantryBody(c)}</g>` +
+    `<path d="M62 52 Q78 56 86 52 Q86 74 74 86 Q62 74 62 52 Z" fill="${STEEL}" ${S} stroke-width="4"/>`,
+  giant: (c) => bg('#e8d3b8', '#f7ecdd') + `<g transform="translate(-8 -4) scale(1.1)">${knightBody(c)}</g>`,
+  meteor: () => bg('#ffc9a0', '#ffe9d2') +
+    `<path d="M84 8 L30 56" stroke="#f2622e" stroke-width="14" stroke-linecap="round" opacity=".55"/>` +
+    `<circle cx="34" cy="62" r="26" fill="#8a6a50" ${S} stroke-width="4"/><circle cx="26" cy="56" r="6" fill="#6b4f3a"/><circle cx="42" cy="72" r="5" fill="#6b4f3a"/>` +
+    `<path d="M16 40 q-6 -14 4 -22 q0 8 6 8 q-2 -8 4 -12 q-2 10 4 14 Z" fill="#ffc83d" ${S} stroke-width="2.5"/>`,
+  bigThunder: () => bg('#8f9bd0', '#c9d1f0') +
+    `<path d="M22 46 Q8 44 12 30 Q16 18 30 22 Q36 8 52 12 Q66 8 72 22 Q90 20 90 36 Q90 48 76 48 Z" fill="#4c5578" ${S} stroke-width="4"/>` +
+    `<path d="M48 36 L26 68 H42 L32 94 L66 54 H50 L62 36 Z" fill="#ffe94d" ${S} stroke-width="4"/>`,
+  venom: () => bg('#c2e08a', '#e4f4c4') +
+    `<path d="M50 10 Q74 40 74 60 Q74 86 50 88 Q26 86 26 60 Q26 40 50 10 Z" fill="#8fd13a" ${S} stroke-width="4"/>` +
+    `<circle cx="42" cy="56" r="5" fill="${INK}"/><circle cx="58" cy="56" r="5" fill="${INK}"/><path d="M42 72 h16" ${S} stroke-width="3"/>`,
+  deepFreeze: () => bg('#a9dcf5', '#e2f5ff') +
+    `<path d="M50 6 L70 38 L94 50 L70 62 L50 94 L30 62 L6 50 L30 38 Z" fill="#bfeaff" ${S} stroke-width="4"/>` +
+    `<path d="M50 20 L50 80 M20 50 H80" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".9"/>`,
+  ironSword: () => bg('#dfe3ea', '#f3f5f8') +
+    `<path d="M24 80 L70 18 Q84 10 80 28 L34 88 Z" fill="${STEEL}" ${S} stroke-width="4"/>` +
+    `<path d="M34 76 L72 26" stroke="#fff" stroke-width="5" stroke-linecap="round"/>` +
+    `<path d="M14 62 L44 92" ${S} stroke-width="10"/><path d="M14 62 L44 92" stroke="#f2c14e" stroke-width="5" stroke-linecap="round"/>` +
+    `<path d="M22 86 L12 94" ${S} stroke-width="9"/><path d="M22 86 L12 94" stroke="#8a5a32" stroke-width="4.5" stroke-linecap="round"/>`,
+  bigShield: () => bg('#b7cdea', '#dbe8f7') +
+    `<path d="M50 4 Q72 16 94 16 Q96 66 50 96 Q4 66 6 16 Q28 16 50 4 Z" fill="#4f82c4" ${S} stroke-width="4"/>` +
+    `<path d="M50 20 l8 17 l18 2 l-14 12 l5 18 l-17 -10 l-17 10 l5 -18 l-14 -12 l18 -2 Z" fill="#ffd93b" ${S} stroke-width="3"/>`,
+  sandbag: () => bg('#eadfc6', '#f8f1df') +
+    `<path d="M8 86 Q6 66 22 62 H46 Q62 66 60 86 Z" fill="#d7bf8a" ${S} stroke-width="4"/>` +
+    `<path d="M40 62 Q38 42 54 38 H76 Q92 42 90 62 Z" fill="#c9ae74" ${S} stroke-width="4"/>` +
+    `<path d="M28 74 h18 M58 52 h18" stroke="#a88f58" stroke-width="3" stroke-linecap="round"/>`,
 };
 
 /** カードの絵（知らない種類は、名前の1文字目を出す） */
