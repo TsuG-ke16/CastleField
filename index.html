@@ -108,6 +108,20 @@
       </div>
     </div>
 
+    <!-- 入口：同じ端末で遊ぶか、合言葉でオンライン対戦 -->
+    <div id="lobby" class="screen" hidden>
+      <div class="screen-box lobby-box">
+        <p class="lobby-title">キャッスルフィールド</p>
+        <form id="lobby-form" autocomplete="off">
+          <input id="lobby-name" type="text" maxlength="16" placeholder="あなたの名前" aria-label="あなたの名前">
+          <input id="lobby-pass" type="text" maxlength="32" placeholder="合言葉（相手と同じもの）" aria-label="合言葉">
+          <button type="submit" id="lobby-join">オンラインで遊ぶ</button>
+        </form>
+        <p id="lobby-status" role="status"></p>
+        <button type="button" id="lobby-local">同じ端末で2人で遊ぶ</button>
+      </div>
+    </div>
+
     <div id="error" hidden></div>
   </div>
 

@@ -699,3 +699,31 @@ button { font: inherit; color: inherit; }
   :root { --castle-h: 56px; --card-h: 100px; --card-w: 78px; }
   .card-desc { display: none; }
 }
+
+/* ===== 入口（同じ端末 / オンライン） ===== */
+#lobby { cursor: default; z-index: 70; background: radial-gradient(circle at 50% 40%, #1e293b, #0b0f18 70%); }
+.lobby-box { width: min(92%, 360px); }
+.lobby-title { margin: 0 0 22px; font-size: 28px; font-weight: 900; }
+#lobby-form { display: flex; flex-direction: column; gap: 10px; }
+#lobby input {
+  padding: 13px 14px;
+  border: 2px solid #334155;
+  border-radius: 12px;
+  background: #0f172a;
+  color: #f8fafc;
+  font-size: 16px;
+}
+#lobby button {
+  padding: 14px;
+  border: none;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #b45309;
+}
+#lobby button:disabled { opacity: 0.5; cursor: default; }
+#lobby #lobby-local { margin-top: 6px; background: #334155; color: #e2e8f0; box-shadow: 0 4px 0 #1e293b; font-size: 15px; }
+#lobby-status { min-height: 22px; margin: 12px 0 8px; color: var(--muted); font-size: 14px; }

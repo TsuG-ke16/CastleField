@@ -10,6 +10,7 @@ import { Renderer } from './ui/Renderer.js';
 import { HandView } from './ui/HandView.js';
 import { Animations } from './ui/Animations.js';
 import { DebugPanel } from './ui/DebugPanel.js';
+import { OnlineClient } from './ui/OnlineClient.js';
 import { UI_CONFIG } from './ui/config.js';
 import { playerName, reasonText } from './ui/text.js';
 
@@ -38,6 +39,13 @@ const el = {
   confetti: document.querySelector('#result .confetti'),
   rematch: $('rematch'),
   error: $('error'),
+  lobby: $('lobby'),
+  lobbyLocal: $('lobby-local'),
+  lobbyForm: $('lobby-form'),
+  lobbyName: $('lobby-name'),
+  lobbyPass: $('lobby-pass'),
+  lobbyStatus: $('lobby-status'),
+  lobbyJoin: $('lobby-join'),
 };
 
 let cards;
@@ -53,6 +61,10 @@ let model = null;          // 表示用の状態（演出の進みに合わせ�
 let queue = [];            // まだ演出していないイベント
 let busy = true;           // 演出中・交代画面中は true
 let knownCards = new Map(); // cardId → { cardId, type }（viewer の手札の中身）
+let online = null;         // オンライン対戦のときの OnlineClient（同じ端末のときは null）
+let onlineState = null;    // オンライン：サーバーから届いた最新の getState(自分)
+let onlineChain = Promise.resolve(); // オンライン：届いたまとまりを順番に処理する
+let rematchSent = false;
 const listeners = [];
 
 // ---------- 起動 ----------
@@ -80,7 +92,13 @@ async function boot() {
   anim = new Animations({ renderer, handView, cards, rules });
 
   el.endTurn.addEventListener('click', endTurn);
-  el.rematch.addEventListener('click', (e) => { e.stopPropagation(); newGame(); });
+  el.rematch.addEventListener('click', (e) => { e.stopPropagation(); rematch(); });
+  el.lobbyLocal.addEventListener('click', () => { el.lobby.hidden = true; newGame(); });
+  el.lobbyForm.addEventListener('submit', (e) => { e.preventDefault(); joinOnline(); });
+  try {
+    el.lobbyName.value = localStorage.getItem('cf-name') ?? '';
+    el.lobbyPass.value = localStorage.getItem('cf-pass') ?? '';
+  } catch { /* 保存できなくても困らない */ }
   // 演出中に画面をタップしたら飛ばす（交代画面・勝敗画面は除く）
   el.app.addEventListener('pointerdown', (e) => {
     if (busy && el.handover.hidden && el.result.hidden && !e.target.closest('#debug-panel, #debug-toggle')) anim.skip();
@@ -99,7 +117,83 @@ async function boot() {
     });
   }
 
-  newGame();
+  // デバッグ・シード指定のときは、これまでどおり同じ端末ですぐ始める。そうでなければ入口の画面を出す
+  if (DEBUG || URL_SEED !== null || params.get('local') === '1') {
+    el.lobby.hidden = true;
+    newGame();
+  } else {
+    setBusy(true);
+    el.lobby.hidden = false;
+  }
+}
+
+// ---------- オンライン ----------
+
+async function joinOnline() {
+  const name = el.lobbyName.value.trim();
+  const pass = el.lobbyPass.value.trim();
+  if (!name || !pass) {
+    el.lobbyStatus.textContent = '名前と合言葉を入れてください';
+    return;
+  }
+  try {
+    localStorage.setItem('cf-name', name);
+    localStorage.setItem('cf-pass', pass);
+  } catch { /* 保存できなくても困らない */ }
+  el.lobbyJoin.disabled = true;
+  el.lobbyStatus.textContent = 'つないでいます…';
+  online = new OnlineClient({
+    onRoom: (room) => {
+      if (!room.started) {
+        el.lobbyStatus.textContent = `相手を待っています（${room.players.length}/${room.capacity}）。同じ合言葉を入れてもらってください`;
+      }
+      const others = room.players.filter((p) => p.playerId !== online.playerId);
+      if (room.started && others.some((p) => !p.connected)) toast('相手の接続が切れています', 'info');
+      if (room.rematchVotes?.includes(online.playerId) && !el.result.hidden) {
+        el.rematch.textContent = '相手を待っています…';
+      }
+    },
+    onBatch: (batch) => { onlineChain = onlineChain.then(() => handleBatch(batch)).catch((err) => console.error(err)); },
+    onConnection: (ok) => { if (!ok && !el.lobby.hidden) el.lobbyStatus.textContent = 'つなぎ直しています…'; },
+  });
+  const res = await online.join(pass, name);
+  if (!res.ok) {
+    online = null;
+    el.lobbyJoin.disabled = false;
+    el.lobbyStatus.textContent = res.reason ?? '入れませんでした';
+    return;
+  }
+  viewerId = res.playerId;
+  el.lobbyStatus.textContent = '相手を待っています…';
+}
+
+/** サーバーから「イベントの列 + 状態」が届いたとき */
+async function handleBatch({ events, state }) {
+  onlineState = state;
+  viewerId = online.playerId;
+  for (const c of state.players[viewerId]?.hand ?? []) knownCards.set(c.cardId, { ...c });
+  const fresh = !model || events.length === 0 || (model.phase === 'gameOver' && state.phase !== 'gameOver');
+  el.lobby.hidden = true;
+  if (fresh) {
+    // つないだとき・つなぎ直したとき・新しい試合：状態から描き直す
+    anim.skip();
+    anim.endSkip();
+    queue = [];
+    el.result.hidden = true;
+    el.confetti.innerHTML = '';
+    el.rematch.textContent = 'もう1回';
+    rematchSent = false;
+    knownCards = new Map((state.players[viewerId]?.hand ?? []).map((c) => [c.cardId, { ...c }]));
+    renderer.setViewer(viewerId);
+    model = modelFromState(state);
+    renderer.renderAll(model);
+    handView.render(model.hand);
+    await settle();
+    return;
+  }
+  queue.push(...events);
+  await drainEvents();
+  await settle();
 }
 
 /** 乱数（シードが同じなら同じ順番になる） */
@@ -114,6 +208,7 @@ function mulberry32(a) {
 }
 
 function newGame(seedOverride) {
+  online = null;
   for (const [type, h] of listeners.splice(0)) game?.off(type, h);
   anim.skip();
   anim.endSkip();
@@ -176,7 +271,7 @@ function modelFromState(st) {
 
 /** viewer の手札の中身を覚えておく（引いたカードの種類を知るため） */
 function readState() {
-  const st = game.getState(viewerId);
+  const st = online ? onlineState : game.getState(viewerId);
   for (const c of st.players[viewerId]?.hand ?? []) knownCards.set(c.cardId, { ...c });
   return st;
 }
@@ -204,7 +299,7 @@ async function drainEvents() {
   while (queue.length) {
     const ev = queue.shift();
     try {
-      if (ev.type === 'turnStarted' && ev.payload.playerId !== viewerId) {
+      if (!online && ev.type === 'turnStarted' && ev.payload.playerId !== viewerId) {
         await anim.play(ev, queue, model, { viewerId, lookupCard });
         await handover(ev.payload.playerId, ev.payload.turn);
         continue;
@@ -226,7 +321,7 @@ async function drainAndSettle() {
 /** 演出が終わったら、本当の状態（getState）で画面を合わせ、次の操作を待つ */
 async function settle() {
   const st = readState();
-  if (st.phase !== 'gameOver' && st.phase !== 'ready' && st.currentPlayer !== viewerId) {
+  if (!online && st.phase !== 'gameOver' && st.phase !== 'ready' && st.currentPlayer !== viewerId) {
     // 手番が変わったのに turnStarted が来なかった場合の保険
     await handover(st.currentPlayer, st.turn);
     return settle();
@@ -247,6 +342,14 @@ async function settle() {
   }
 
   setBusy(false);
+  if (online && st.currentPlayer !== viewerId) {
+    // 相手の番：見るだけ。手札は出せない理由つきで暗くしておく
+    handView.exitDiscard();
+    el.endTurn.disabled = true;
+    el.endTurn.classList.remove('ready');
+    setMessage(st.phase === 'discard' ? '相手が手札を捨てています…' : '相手の番です');
+    return;
+  }
   if (st.phase === 'discard') {
     const count = model.discardRequired || Math.max(1, me.handCount - rules.maxHand);
     handView.enterDiscard(count);
@@ -268,7 +371,10 @@ function playability(st) {
   const me = st.players[viewerId];
   if (st.phase !== 'main') return blocked;
   for (const c of me.hand) {
-    if (typeof game.canPlayCard === 'function') {
+    if (online) {
+      const res = online.canPlayCard(c.cardId);
+      if (!res.ok) blocked.set(c.cardId, reasonText(res.reason));
+    } else if (typeof game.canPlayCard === 'function') {
       const res = game.canPlayCard(c.cardId);
       if (res && !res.ok) blocked.set(c.cardId, reasonText(res.reason));
     } else if (me.playedThisTurn) {
@@ -280,35 +386,52 @@ function playability(st) {
 
 // ---------- 操作 ----------
 
-function playCard(cardId) {
-  if (busy || !game) return;
-  const res = game.playCard(cardId);
+async function playCard(cardId) {
+  if (busy || !(game || online)) return;
+  const res = online ? await online.playCard(cardId) : game.playCard(cardId);
   if (!res?.ok) {
     handView.deny(cardId);
     toast(reasonText(res?.reason));
     return;
   }
-  drainAndSettle();
+  // オンラインでは、結果のイベントが届いたときに演出する（handleBatch）
+  if (!online) drainAndSettle();
 }
 
-function endTurn() {
-  if (busy || !game) return;
-  const res = game.endTurn();
+async function endTurn() {
+  if (busy || !(game || online)) return;
+  const res = online ? await online.endTurn() : game.endTurn();
   if (!res?.ok) {
     toast(reasonText(res?.reason));
     return;
   }
-  drainAndSettle();
+  if (!online) drainAndSettle();
+}
+
+async function rematch() {
+  if (!online) {
+    newGame();
+    return;
+  }
+  if (rematchSent) return;
+  const res = await online.rematch();
+  if (!res?.ok) {
+    toast(reasonText(res?.reason));
+    return;
+  }
+  rematchSent = true;
+  el.rematch.textContent = '相手を待っています…';
 }
 
 async function discard(cardIds) {
-  if (busy || !game) return;
+  if (busy || !(game || online)) return;
   const turnBefore = model.turn;
-  const res = game.discard(cardIds);
+  const res = online ? await online.discard(cardIds) : game.discard(cardIds);
   if (!res?.ok) {
     toast(reasonText(res?.reason));
     return;
   }
+  if (online) return; // 続きは、結果のイベントが届いたときに演出する（handleBatch）
   await drainEvents();
   // 捨て終わっても次の人の番にならなかったら、こちらでターンを終える
   const st = readState();
@@ -360,7 +483,9 @@ async function showResult(winner) {
   setBusy(true);
   await anim.delay(UI_CONFIG.timing.gameOverDelay);
   el.result.dataset.player = winner;
-  el.resultTitle.textContent = `${playerName(winner)}の勝ち！`;
+  el.resultTitle.textContent = online
+    ? (winner === viewerId ? 'あなたの勝ち！' : '負けました…')
+    : `${playerName(winner)}の勝ち！`;
   el.resultSub.textContent = `${model.turn}ターンで決着`;
   const colors = winner === 'p1'
     ? ['#3b82f6', '#93c5fd', '#fbbf24', '#ffffff']
