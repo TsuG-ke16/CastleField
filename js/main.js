@@ -397,9 +397,49 @@ function playability(st) {
 
 // ---------- 操作 ----------
 
+/** 対象が2つ以上あるカード：選ぶボタンを出す（ファイアボールで城か魔物か、武器をどの兵士に、など） */
+function chooseTarget(cardId) {
+  const bar = $('target-bar');
+  const st = readState();
+  const label = (t) => {
+    if (t.monsterId) {
+      const m = st.monsters.find((x) => x.monsterId === t.monsterId);
+      return `👹 ${monsterDefs?.[m?.type]?.name ?? '魔物'}（HP${m?.hp ?? '?'}）`;
+    }
+    if (t.soldierId) {
+      const s = Object.values(st.players).flatMap((p) => p.soldiers).find((x) => x.soldierId === t.soldierId);
+      return `${cards[s?.type]?.name ?? '兵士'}（HP${s?.hp ?? '?'}・位置${s?.position ?? '?'}）`;
+    }
+    return t.playerId === viewerId ? '自分' : `${playerName(t.playerId)}の城`;
+  };
+  return new Promise((resolve) => {
+    bar.textContent = '';
+    const close = (value) => { bar.hidden = true; bar.textContent = ''; resolve(value); };
+    for (const t of online.choices(cardId)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = label(t);
+      b.addEventListener('click', () => close(t));
+      bar.appendChild(b);
+    }
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'cancel';
+    cancel.textContent = 'やめる';
+    cancel.addEventListener('click', () => close(null));
+    bar.appendChild(cancel);
+    bar.hidden = false;
+  });
+}
+
 async function playCard(cardId) {
   if (busy || !(game || online)) return;
-  const res = online ? await online.playCard(cardId) : game.playCard(cardId);
+  let target;
+  if (online && online.choices(cardId).length > 1) {
+    target = await chooseTarget(cardId);
+    if (!target) return;
+  }
+  const res = online ? await online.playCard(cardId, target) : game.playCard(cardId);
   if (!res?.ok) {
     handView.deny(cardId);
     toast(reasonText(res?.reason));

@@ -98,6 +98,12 @@ export class OnlineClient {
     return postJson('/api/action', { token: this.token, method, args });
   }
 
+  /** 選ぶ必要がある対象の一覧（2つ以上あるときだけ） */
+  choices(cardId) {
+    const info = this.playable.get(cardId);
+    return info?.ok && info.needsTarget ? (info.targets ?? []) : [];
+  }
+
   playCard(cardId, target) {
     const info = this.playable.get(cardId);
     let t = target;

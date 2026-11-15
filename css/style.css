@@ -736,3 +736,8 @@ button { font: inherit; color: inherit; }
 #upgrade-bar[hidden] { display: none; }
 #upgrade-bar button { flex: none; padding: 7px 12px; border: none; border-radius: 10px; background: #f59e0b; color: #1f2937; font-weight: 800; cursor: pointer; }
 #upgrade-bar button:disabled { opacity: 0.4; cursor: default; }
+
+#target-bar { display: flex; gap: 6px; padding: 4px 8px; overflow-x: auto; }
+#target-bar[hidden] { display: none; }
+#target-bar button { flex: none; padding: 8px 12px; border: none; border-radius: 10px; background: #38bdf8; color: #0f172a; font-weight: 800; cursor: pointer; }
+#target-bar button.cancel { background: #475569; color: #e2e8f0; }
