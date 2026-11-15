@@ -7,6 +7,7 @@
   "maxHand": 8,
   "laneLength": 3,
   "laneCount": 3,
+  "defenseReaction": true,
   "advanceAfterWin": false,
   "soldierCastleDamageMultiplier": 2,
   "elementBonus": 2,

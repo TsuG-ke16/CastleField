@@ -178,6 +178,9 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 | `game.discard(cardIds)` | 手札を捨てる。`phase` が `"discard"` のときだけ使える。捨てる必要がある枚数ちょうどを1回で渡す（多い・少ない・重複・手札にないカードは `{ ok: false }`）。捨て終わったら、自動で次の人のターンが始まる（`endTurn()` を呼び直さない） |
 | `game.canBuyUpgrade(upgradeId)` | 強化を今買えるか（読むだけ）。`{ ok }` か `{ ok: false, reason }` |
 | `game.buyUpgrade(upgradeId)` | コインで強化を買う。自分のメインの場面（`phase` が `"main"`）で何回でも。メインの1枚とは別 |
+| `game.canDefend(cardId, target)` / `game.getDefenseTargets(cardId)` | 攻撃を受けているとき（`phase` が `"defend"`）に、その防御カードを今出せるか／出せる対象の一覧（読むだけ）。`canPlayCard` / `getTargets` の防御版。出せるのは `getState().defense.defenderId` の手札だけ |
+| `game.defend(cardId, target)` | 攻撃を受けた人が、防御カードをその場で出す（何枚でも）。出せるカードがなくなったら、自動で攻撃を受ける。対象が1つなら `target` は省略できる |
+| `game.passDefense()` | 防御しないで（これ以上出さずに）攻撃を受ける |
 | `game.endTurn()` | ターンを終える。手札が上限を超えていたら `phase` が `"discard"` になり、捨て終わるまで次の人の番にならない |
 | `game.surrender(playerId)` | 降参する。`playerId` の負けで、相手の勝ちですぐ終わる（`gameOver` の `reason` は `"surrender"`）。自分の番でなくても使える。2人のときだけ（3人以上は `{ ok: false }`。まだ決めていない） |
 | `game.on(type, handler)` / `game.off(type, handler)` | イベントの購読と解除。`handler` はペイロードのオブジェクトを1つ受け取る。表にない `type` を渡すと `{ ok: false }` |
@@ -210,7 +213,8 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   roads: [{ roadId: "p1-p2#1", players: ["p1", "p2"], length: 3, lane: 0 }, /* laneCount 本ぶん */],  // 道。length はいつも laneLength。lane は同じ2人の間の何本目か（0から）
   turn: 3,                     // 通算ターン数（1から）
   currentPlayer: "p1",
-  phase: "main",               // "ready"（start() の前）| "main" | "discard" | "gameOver"
+  phase: "main",               // "ready"（start() の前）| "main" | "discard" | "defend"（攻撃を受ける人の防御待ち）| "gameOver"
+  defense: null,               // "defend" のときだけ { defenderId, attackerId, kind: "castle" | "soldiers", amount, soldierIds }
   winner: null,                // 決着したら勝った人のID（"p1"〜"p8"）
   deckCount: 18,               // "own" のときは viewer 本人の山札の数（viewer がいなければ null）
   discardCount: 5,
@@ -287,6 +291,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `upgradeBought` | `{ playerId, upgradeId, cost }` … このあと効果のイベント（`castleHealed` / `cardDrawn` / `soldierBuffed`） |
 | `soldierBuffed` | `{ playerId, soldierId, attack }` … とぎ石で攻撃力が上がった |
 | `playerEliminated` | `{ playerId, by }` … 城が落ちて抜けた（`lastStanding`）。`by` は落とした人 |
+| `defenseRequested` | `{ defenderId, attackerId, kind, amount, soldierIds? }` … 攻撃が当たる前に、受ける人に防御を聞く。`kind` は `"castle"`（城に当たる）か `"soldiers"`（兵士に当たる。`soldierIds` が当たる兵士）。このあと `defend()` / `passDefense()` が来るまで止まる |
+| `defenseEnded` | `{ defenderId }` … 防御が終わった。このあと攻撃が当たる（`castleDamaged` / `soldierDamaged` …） |
 | `roadClosed` | `{ roadId, monsterIds }` … 道がなくなった。その道の魔物（`monsterIds`）も消える |
 | `roadOpened` | `{ roadId, players }` … 抜けた人の両どなりをつなぐ道ができた |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
@@ -434,8 +440,8 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | 強さ | 戦い方 | random（ランダムに出す）に勝つ割合 |
 |---|---|---|
 | よわい（`easy`） | `rush`（攻め重視。守らない） | 約32% |
-| ふつう（`normal`） | `defensive`（守り優先） | 約48% |
-| つよい（`hard`） | `smart`（ほどよく考える） | 約63% |
+| ふつう（`normal`） | `defensive`（守り優先） | 約55% |
+| つよい（`hard`） | `smart`（ほどよく考える） | 約70% |
 
 - 先攻・後攻は毎回ランダム（後攻は今のルールどおり城HP+1）。「もう1回」は同じ強さで始まる
 - 交代の画面は出さない（オンラインと同じく、だれの番かを帯で知らせる）。メニューから降参できる
@@ -546,6 +552,20 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 確かめたこと（`node tests/sim/run.js --games 400`）：全組み合わせが決着。smart 同士は平均51手番（半々にする前は42）。CPU の強さの順は変わらない（rush 32%・defensive 48%・smart 63%、いずれも random に勝つ割合）
 - 防御が増えたぶん試合は少し長くなる。決着しない試合は、周回の上限（`maxRounds`）で必ず終わる
 - デッキ対戦（`data/decks.json`）は、バランスが攻撃23・防御17、突撃が攻撃22・防御13、籠城が攻撃21・防御17。デッキは役割の違いを残すため、半々にはしていない（`node tests/sim/castles.js`：バランスに勝つ割合は突撃55%・籠城53%）
+
+## 攻撃を受けたときの防御（STEP 2 の続き）
+
+企画書の「相手の対応：攻撃されたら、防御カードを何枚でも出して受けられる」を入れた（人間に確認して決めた）。`rules.defenseReaction: true` のとき（省略すると `false`）。
+
+- **聞くとき**：兵士が城に着いたとき（城にダメージ）／ファイアボール・隕石が城に当たるとき／サンダー・大雷が兵士に当たるとき。毒・凍結は、防御カードで防げないので聞かない。兵士同士の戦い・魔物の城への攻撃も聞かない
+- **出せるカード**：城に当たるなら城壁・土嚢（`armorCastle`）。兵士に当たるなら盾・大盾（`shieldSoldier`。当たる兵士だけ）。ヒールなどは今までどおり自分のターン。自分のターンに前もって盾・城壁を出すのも今までどおりできる
+- **手札になければ止まらない**：出せる防御カードが手札になければ、聞かずにそのまま当たる
+- **流れ**：攻撃が当たる前に `phase` が `"defend"` になる（`currentPlayer` は攻める人のまま）。受ける人は `defend()` を何枚でも → `passDefense()`（出せるカードがなくなったら自動）。攻める人はそのあいだ何もできない（`playCard` / `endTurn` は `{ ok: false, reason: "相手が防御を選んでいます" }`）。降参はできる。返事が来たら攻撃が当たり、残りの進軍・ターンが続く
+- **イベントの順番**：`spellCast`（魔法のとき）→ `defenseRequested` → `cardPlayed`（防御カード）→ `castleArmored` / `shieldAdded` … → `defenseEnded` → `castleDamaged` / `soldierDamaged` …。兵士が城に着くときは、`soldierMoved` → `defenseRequested` → … → `defenseEnded` → `castleDamaged` → `soldierDestroyed`
+- **オンライン**：`POST /api/action` の `method` に `defend` / `passDefense` を足した（攻撃を受ける人だけが、自分の番でなくても送れる）。`state` の `playable` は、防御を選ぶあいだ、受ける人には「防御カードを出せるか」を、ほかの人には全部 `ok: false`（「相手が防御を選んでいます」）を返す
+- **画面**：受ける人には「防御のチャンス！」の帯を出し、「ターン終了」ボタンが「防御しない」になる。出せる防御カードだけが光る。2人で交代して遊ぶ（ひとつの端末）ときは、手札を見せ合えないので聞かない（`defenseReaction` を切る）
+- **CPU**：戦い方に `respond(game, pid, rng, ctx)` を足した。`never`（aggro・rush・pass：防御しない）、`always`（defensive：出せるなら出す）、`smart`（smart・guard：城HPが半分を切りそう・大きなダメージ・兵士がやられそうなときだけ）、`random`（半分の確率）
+- 確かめたこと（`node tests/sim/run.js --games 400`）：全組み合わせが決着。smart 同士は平均61手番（防御なしは51）。CPU の強さの順は変わらない（rush 32%・defensive 55%・smart 70%、いずれも random に勝つ割合）。**試合は長くなる**（1試合10分前後の目安に対して長めなので、遊んで確かめる）
 
 ### ロジックとUIの約束に足すもの（STEP 2）
 - `getState()`
@@ -666,7 +686,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | URL | 送る JSON | 返る JSON |
 |---|---|---|
 | `POST /api/join` | `{ passphrase, name }` … 合言葉（1〜32文字）と表示名（1〜16文字） | `{ ok: true, roomId, playerId, token }` か `{ ok: false, reason }`。`token` はその人だけの鍵（以後ずっと使う） |
-| `POST /api/action` | `{ token, method, args }` … `method` は `playCard` / `discard` / `endTurn` / `buyUpgrade` / `rematch` / `surrender` / `leave` のどれか（`rematch`・`surrender`・`leave` は自分の番でなくても送れる）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
+| `POST /api/action` | `{ token, method, args }` … `method` は `playCard` / `discard` / `endTurn` / `buyUpgrade` / `defend` / `passDefense` / `rematch` / `surrender` / `leave` のどれか（`rematch`・`surrender`・`leave` は自分の番でなくても送れる。`defend`・`passDefense` は攻撃を受ける人だけが送れる）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
 
 - `rematch`：全員が送ったら、同じ部屋・同じ席で新しい試合が始まる（負けた人もすぐ「もう1回」できるように）
 

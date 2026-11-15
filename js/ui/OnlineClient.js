@@ -141,6 +141,9 @@ export class OnlineClient {
   playCard(cardId, target) { return this.act('playCard', target ? [cardId, target] : [cardId]); }
   buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
   endTurn() { return this.act('endTurn'); }
+  /** 攻撃を受けたとき、防御カードを出す／防御しない（自分の番でなくても送れる） */
+  defend(cardId, target) { return this.act('defend', target ? [cardId, target] : [cardId]); }
+  passDefense() { return this.act('passDefense'); }
   discard(cardIds) { return this.act('discard', [cardIds]); }
   rematch() { return this.act('rematch'); }
   /** 降参する（自分の番でなくてもできる。相手の勝ちで終わる） */

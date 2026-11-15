@@ -229,6 +229,13 @@ export class Animations {
       case 'castleHealed': return this.castleHealed(p, model);
       case 'weaponEquipped': return this.weaponEquipped(p, model);
       case 'shieldAdded': return this.shieldAdded(p, model);
+      case 'defenseRequested':
+        model.phase = 'defend';
+        if (p.defenderId === ctx.viewerId) this.banner('防御のチャンス！', 700, 'turn mine');
+        return this.delay(p.defenderId === ctx.viewerId ? 500 : 150);
+      case 'defenseEnded':
+        model.phase = 'main';
+        return undefined;
       case 'castleArmored': return this.castleArmored(p, model);
       case 'armorExpired': return this.armorExpired(p, model);
       case 'statusApplied': return this.statusesApplied(ev, queue, model);
