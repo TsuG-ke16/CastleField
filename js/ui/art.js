@@ -119,6 +119,32 @@ const MONSTER_ART = {
     `<ellipse cx="40" cy="43" rx="4" ry="5" fill="#fff36b" ${S} stroke-width="2.5"/><ellipse cx="60" cy="43" rx="4" ry="5" fill="#fff36b" ${S} stroke-width="2.5"/>` +
     `<ellipse cx="40" cy="43" rx="1.2" ry="4" fill="${INK}"/><ellipse cx="60" cy="43" rx="1.2" ry="4" fill="${INK}"/>` +
     `<circle cx="45" cy="56" r="1.8" fill="${INK}"/><circle cx="55" cy="56" r="1.8" fill="${INK}"/>`,
+  bat: () =>
+    `<ellipse cx="50" cy="94" rx="24" ry="4" fill="#000" opacity=".15"/>` +
+    `<path d="M50 50 Q30 22 4 34 Q14 46 12 62 Q26 54 34 66 Q42 58 50 66 Q58 58 66 66 Q74 54 88 62 Q86 46 96 34 Q70 22 50 50 Z" fill="#6b5a99" ${S} stroke-width="3.5"/>` +
+    `<circle cx="50" cy="56" r="20" fill="#8a77bd" ${S} stroke-width="3.5"/><path d="M36 42 L34 26 L46 38 Z M64 42 L66 26 L54 38 Z" fill="#8a77bd" ${S} stroke-width="3"/>` +
+    `<circle cx="43" cy="54" r="4" fill="#ffe94d" ${S} stroke-width="2"/><circle cx="57" cy="54" r="4" fill="#ffe94d" ${S} stroke-width="2"/><path d="M45 66 l2 5 l3 -5 l3 5 l2 -5" fill="#fff" ${S} stroke-width="2"/>`,
+  skeleton: () =>
+    `<ellipse cx="50" cy="94" rx="26" ry="4" fill="#000" opacity=".15"/>` +
+    `<path d="M34 92 V70 Q50 60 66 70 V92 Z" fill="#efe9d8" ${S} stroke-width="3.5"/><path d="M38 76 H62 M38 84 H62" stroke="${INK}" stroke-width="3"/>` +
+    `<path d="M26 46 Q24 14 50 14 Q76 14 74 46 Q74 62 62 62 H38 Q26 62 26 46 Z" fill="#f6f1e2" ${S} stroke-width="3.5"/>` +
+    `<ellipse cx="40" cy="42" rx="7" ry="9" fill="${INK}"/><ellipse cx="60" cy="42" rx="7" ry="9" fill="${INK}"/><path d="M50 50 l-3 7 h6 Z" fill="${INK}"/>` +
+    `<path d="M40 62 V54 M50 62 V54 M60 62 V54" stroke="${INK}" stroke-width="2.5"/>`,
+  golem: () =>
+    `<ellipse cx="50" cy="94" rx="34" ry="5" fill="#000" opacity=".18"/>` +
+    `<path d="M16 90 Q10 52 30 46 H70 Q90 52 84 90 Z" fill="#9a8a6c" ${S} stroke-width="4"/>` +
+    `<rect x="30" y="14" width="40" height="36" rx="8" fill="#b3a280" ${S} stroke-width="4"/>` +
+    `<rect x="37" y="26" width="9" height="7" rx="2" fill="#7cdc5a" ${S} stroke-width="2.5"/><rect x="54" y="26" width="9" height="7" rx="2" fill="#7cdc5a" ${S} stroke-width="2.5"/>` +
+    `<path d="M24 62 L34 70 M76 60 L68 72" stroke="#6b5f48" stroke-width="3"/><path d="M42 42 h16" ${S} stroke-width="3"/>` +
+    `<path d="M20 52 q-4 -6 2 -8 M80 52 q4 -6 -2 -8" fill="none" stroke="#5fae4e" stroke-width="4" stroke-linecap="round"/>`,
+  demon: () =>
+    `<ellipse cx="50" cy="94" rx="28" ry="5" fill="#000" opacity=".18"/>` +
+    `<path d="M24 62 Q4 44 12 20 Q24 38 38 44 Z" fill="#6a2f7a" ${S} stroke-width="3.5"/><path d="M76 62 Q96 44 88 20 Q76 38 62 44 Z" fill="#6a2f7a" ${S} stroke-width="3.5"/>` +
+    `<path d="M30 92 Q26 62 50 60 Q74 62 70 92 Z" fill="#8f3f9e" ${S} stroke-width="3.5"/>` +
+    `<path d="M30 24 L22 6 L40 18 Z M70 24 L78 6 L60 18 Z" fill="#ffd98a" ${S} stroke-width="3"/>` +
+    `<path d="M26 44 Q24 16 50 16 Q76 16 74 44 Q74 64 50 64 Q26 64 26 44 Z" fill="#b45bc6" ${S} stroke-width="3.5"/>` +
+    `<path d="M32 34 L46 42 M68 34 L54 42" ${S} stroke-width="3.5"/><circle cx="40" cy="44" r="4" fill="#ff5a4a" ${S} stroke-width="2"/><circle cx="60" cy="44" r="4" fill="#ff5a4a" ${S} stroke-width="2"/>` +
+    `<path d="M38 56 Q50 64 62 56" fill="none" ${S} stroke-width="3"/>`,
 };
 
 export function monsterArt(type, name = '') {

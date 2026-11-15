@@ -30,6 +30,10 @@ export const MONSTER_ICON = {
   slime: '🫧',
   goblin: '👺',
   dragon: '🐉',
+  bat: '🦇',
+  skeleton: '💀',
+  golem: '🗿',
+  demon: '😈',
 };
 export const MONSTER_ICON_DEFAULT = '👾';
 
@@ -44,6 +48,9 @@ export const UPGRADE_ICON = {
   repair: '🔨',
   recruit: '🃏',
   sharpen: '🪨',
+  greatRepair: '🏗️',
+  greatRecruit: '📚',
+  whetstone: '💎',
 };
 export const UPGRADE_ICON_DEFAULT = '⭐';
 
