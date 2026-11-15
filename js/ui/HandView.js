@@ -5,7 +5,9 @@
 // 捨てるカードを選ぶ画面もここで扱う。
 
 import { UI_CONFIG } from './config.js';
-import { KIND_LABEL, cardDescription, slotNote } from './text.js';
+import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
+import { cardArt, icon } from './art.js';
+import { sound } from './Sound.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -61,6 +63,7 @@ export class HandView {
       else this.onDiscard([...this.discardPicks]);
     });
     // 手札の外をタップしたら選択をやめる
+    window.addEventListener('resize', () => this.layout());
     this.el.app.addEventListener('click', (e) => {
       if (this.selectedId && !e.target.closest('#hand, #card-detail, #debug-panel, #debug-toggle')) this.select(null);
     });
@@ -83,8 +86,32 @@ export class HandView {
       box.innerHTML = '<div class="hand-empty">手札がありません</div>';
     }
     for (const card of this.hand) box.appendChild(this.makeCardEl(card, fresh.has(card.cardId)));
+    this.layout();
     this.updateDetail();
     this.updateDiscardBar();
+  }
+
+  /**
+   * 手札が画面の幅に収まるように、カードを重ねる（全部のカードがいつも見えるように）。
+   * 重ねても収まらないほど多いときは、左右にスライドできる。
+   */
+  layout() {
+    const box = this.el.hand;
+    const cardEls = box.querySelectorAll('.card');
+    const n = cardEls.length;
+    let gap = 8;
+    if (n > 1) {
+      const cw = cardEls[0].offsetWidth || 86;
+      const room = box.clientWidth - 24;
+      const minStrip = 38; // 重ねたときに、最低これだけは見せる(px)
+      gap = Math.min(8, Math.max(minStrip - cw, (room - n * cw) / (n - 1)));
+    }
+    box.style.setProperty('--gap', `${Math.floor(gap)}px`);
+  }
+
+  /** カードの色（兵士の絵を、持ち主の色で描く） */
+  setColor(color) {
+    this.color = color;
   }
 
   makeCardEl(card, isNew = false) {
@@ -92,10 +119,22 @@ export class HandView {
     const el = document.createElement('div');
     el.className = `card ${def.kind ?? ''}${def.exhaust ? ' exhaust' : ''}`;
     el.dataset.id = card.cardId;
-    el.innerHTML = '<span class="card-kind"></span><span class="card-name"></span><span class="card-desc"></span>';
+    if (def.element) el.dataset.element = def.element;
+    el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
+      '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
     el.querySelector('.card-kind').textContent = KIND_LABEL[def.kind] ?? '';
-    el.querySelector('.card-name').textContent = def.name;
-    el.querySelector('.card-desc').textContent = cardDescription(def, this.rules, this.textOpts);
+    el.querySelector('.card-art').innerHTML = cardArt(card.type, this.color ?? 'blue', def.name ?? '');
+    const name = el.querySelector('.card-name');
+    name.textContent = def.name;
+    if (String(def.name ?? '').length >= 6) name.classList.add('long');
+    const short = el.querySelector('.card-short');
+    for (const part of cardShort(def)) {
+      const span = document.createElement('span');
+      span.innerHTML = icon(part.icon);
+      span.appendChild(document.createTextNode(String(part.text)));
+      short.appendChild(span);
+    }
+    el.title = cardDescription(def, this.rules, this.textOpts);
     if (isNew) el.classList.add('new');
     this.applyCardClasses(el);
     return el;
@@ -159,6 +198,7 @@ export class HandView {
     if (this.hand.length === 0 && !this.el.hand.querySelector('.hand-empty')) {
       this.el.hand.innerHTML = '<div class="hand-empty">手札がありません</div>';
     }
+    this.layout();
     this.updateDetail();
     return info;
   }
@@ -169,11 +209,12 @@ export class HandView {
     this.hand.push({ ...card });
     const el = this.makeCardEl(card, true);
     this.el.hand.appendChild(el);
-    el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    this.layout();
   }
 
   /** 出せなかったカードを揺らす */
   deny(cardId) {
+    sound.play('deny');
     const el = this.cardEl(cardId);
     if (!el) return;
     el.classList.remove('denied');
@@ -184,6 +225,7 @@ export class HandView {
   // ---------- 選択と「使う」 ----------
 
   select(cardId) {
+    if (cardId && cardId !== this.selectedId) sound.play('tap');
     this.selectedId = cardId;
     this.refreshClasses();
     this.updateDetail();
@@ -205,13 +247,10 @@ export class HandView {
     this.el.detailKind.textContent = KIND_LABEL[def.kind] ?? '';
     this.el.detailName.textContent = def.name;
     this.el.detailDesc.textContent = cardDescription(def, this.rules, this.textOpts);
-    const hints = [];
-    if (input.tapAgain) hints.push('もう一度タップ');
-    if (input.dragToPlay) hints.push('盤面へドラッグ');
     const reason = this.blocked.get(card.cardId);
     this.el.detailHint.classList.toggle('warn', Boolean(reason));
     if (reason) this.el.detailHint.textContent = `いまは出せません：${reason}`;
-    else this.el.detailHint.textContent = `${slotNote(def)}${hints.length ? `。${hints.join('・')}でも使えます` : ''}`;
+    else this.el.detailHint.textContent = slotNote(def);
     this.el.detailUse.hidden = !input.useButton;
     this.el.detailUse.classList.toggle('blocked', Boolean(reason) || this.blocked.has(card.cardId));
     this.el.detail.hidden = false;
@@ -323,7 +362,9 @@ export class HandView {
 
   // ---------- 捨てるカードを選ぶ ----------
 
-  enterDiscard(count) {
+  /** @param {number} count 捨てる枚数 @param {number} [maxHand] 手札の上限（城の種類で変わる） */
+  enterDiscard(count, maxHand) {
+    this.maxHand = maxHand;
     this.discardCount = count;
     this.discardPicks.clear();
     this.select(null);
@@ -360,7 +401,7 @@ export class HandView {
     }
     const left = this.discardCount - this.discardPicks.size;
     this.el.discardMsg.textContent = left > 0
-      ? `手札が${this.rules.maxHand}枚を超えています。捨てるカードをあと${left}枚えらんでください`
+      ? `手札が${this.maxHand ?? this.rules.maxHand}枚を超えています。捨てるカードをあと${left}枚えらんでください`
       : `この${this.discardCount}枚を捨てます`;
     this.el.discardOk.textContent = `捨てる（${this.discardPicks.size}/${this.discardCount}）`;
     this.el.discardOk.classList.toggle('not-ready', left > 0);

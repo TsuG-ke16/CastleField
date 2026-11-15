@@ -2,110 +2,105 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#151a26">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#7cc0f0">
   <title>キャッスルフィールド</title>
   <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <div id="app">
-    <!-- 上：相手の情報と、山札・捨て札 -->
-    <header id="top-bar">
-      <div class="opp-info">
+    <div id="scenery" aria-hidden="true"></div>
+
+    <!-- 上：相手の情報・ターン・山札と捨て札・メニュー -->
+    <header id="hud">
+      <div class="hud-opp">
         <span class="player-name" id="opp-name"></span>
-        <span class="opp-hand" title="相手の手札">
-          <span class="card-back-icon" aria-hidden="true"></span>
-          <b id="opp-hand-count">0</b>枚
-        </span>
-        <span class="coins" id="opp-coins" title="相手のコイン" hidden><span class="coin-icon" aria-hidden="true"></span><b>0</b></span>
+        <span class="chip opp-hand" title="相手の手札"><span class="chip-icon" data-icon="card"></span><b id="opp-hand-count">0</b></span>
+        <span class="chip coins" id="opp-coins" title="相手のコイン" hidden><span class="chip-icon" data-icon="coin"></span><b>0</b></span>
       </div>
-      <div class="turn-info" id="turn-info"></div>
-      <div class="pile-info">
-        <span class="pile" id="deck-pile">山札 <b id="deck-count">0</b></span>
-        <span class="pile" id="discard-pile">捨て札 <b id="discard-count">0</b></span>
+      <div class="chip turn-info" id="turn-info"></div>
+      <div class="hud-right">
+        <span class="chip pile" id="deck-pile" title="山札"><span class="chip-icon" data-icon="card"></span>山<b id="deck-count">0</b></span>
+        <span class="chip pile" id="discard-pile" title="捨て札">捨<b id="discard-count">0</b></span>
+        <button type="button" id="menu-open" class="round-btn" aria-label="メニュー">≡</button>
       </div>
     </header>
+    <div id="net-status" role="status" hidden></div>
 
-    <!-- 盤面：相手の城 / 1本の道（左が相手の兵士・右が自分の兵士） / 自分の城 -->
+    <!-- 盤面：相手の城 / 1本の道（左が相手の兵士・右が自分の兵士・真ん中に魔物） / 自分の城 -->
     <main id="board">
       <section class="castle" id="castle-opp" data-side="opp">
-        <div class="castle-body">
-          <div class="castle-wall" aria-hidden="true"></div>
+        <div class="castle-side">
           <div class="castle-label" id="castle-opp-label"></div>
           <div class="castle-armor" hidden></div>
-          <div class="hp-row">
-            <div class="hp-bar"><div class="hp-lag"></div><div class="hp-fill"></div></div>
-            <div class="hp-text"><b class="hp-value">0</b><span class="hp-max"></span></div>
-          </div>
+        </div>
+        <div class="castle-pic"></div>
+        <div class="castle-hp">
+          <div class="hp-text"><span class="hp-heart" data-icon="heart"></span><b class="hp-value">0</b><span class="hp-max"></span></div>
+          <div class="hp-bar"><div class="hp-lag"></div><div class="hp-fill"></div></div>
         </div>
       </section>
 
       <section id="field">
-        <div class="lane" id="lane-opp" data-side="opp">
-          <div class="lane-label"></div>
-          <div class="cells"></div>
-          <div class="soldier-layer"></div>
-        </div>
-        <div class="lane" id="lane-me" data-side="me">
-          <div class="lane-label"></div>
-          <div class="cells"></div>
-          <div class="soldier-layer"></div>
-        </div>
-        <div id="monster-layer"></div>
+        <div id="road"><div class="cells"></div></div>
+        <div id="unit-layer"></div>
         <div id="drop-hint" hidden>ここで離すと使う</div>
       </section>
 
       <section class="castle" id="castle-me" data-side="me">
-        <div class="castle-body">
-          <div class="castle-wall" aria-hidden="true"></div>
+        <div class="castle-side">
           <div class="castle-label" id="castle-me-label"></div>
           <div class="castle-armor" hidden></div>
-          <div class="hp-row">
-            <div class="hp-bar"><div class="hp-lag"></div><div class="hp-fill"></div></div>
-            <div class="hp-text"><b class="hp-value">0</b><span class="hp-max"></span></div>
-          </div>
+        </div>
+        <div class="castle-pic"></div>
+        <div class="castle-hp">
+          <div class="hp-text"><span class="hp-heart" data-icon="heart"></span><b class="hp-value">0</b><span class="hp-max"></span></div>
+          <div class="hp-bar"><div class="hp-lag"></div><div class="hp-fill"></div></div>
         </div>
       </section>
     </main>
 
     <!-- 下：自分の操作 -->
     <footer id="controls">
-      <div id="card-detail" hidden>
+      <div id="card-detail" class="panel" hidden>
         <div class="detail-text">
           <div class="detail-head"><span class="detail-kind"></span><b class="detail-name"></b></div>
           <div class="detail-desc"></div>
           <div class="detail-hint"></div>
         </div>
-        <button type="button" class="detail-use">使う</button>
+        <button type="button" class="detail-use plank-btn">使う</button>
       </div>
-      <div id="target-bar" hidden>
+      <div id="target-bar" class="panel" hidden>
         <span class="target-msg"></span>
-        <button type="button" class="target-cancel">やめる</button>
+        <button type="button" class="target-cancel small-btn">やめる</button>
       </div>
-      <div id="discard-bar" hidden>
+      <div id="discard-bar" class="panel" hidden>
         <span class="discard-msg"></span>
-        <button type="button" class="discard-ok">捨てる</button>
+        <button type="button" class="discard-ok plank-btn">捨てる</button>
       </div>
       <div class="control-row">
         <p id="message"></p>
         <button id="upgrade-open" type="button" title="コインで強化を買う" hidden>
-          <span class="coin-icon" aria-hidden="true"></span><b id="my-coins">0</b><span class="upgrade-open-label">強化</span>
+          <span class="chip-icon" data-icon="coin"></span><b id="my-coins">0</b><span class="upgrade-open-label">強化</span>
         </button>
-        <button id="end-turn" type="button">ターン終了</button>
+        <button id="end-turn" type="button" class="plank-btn">ターン終了</button>
       </div>
       <div id="hand"></div>
     </footer>
 
     <!-- コインで買う強化 -->
-    <div id="upgrade-panel" hidden>
+    <div id="upgrade-panel" class="panel" hidden>
       <div class="upgrade-head">
         <b>強化を買う</b>
         <span class="upgrade-coins"></span>
-        <button type="button" class="upgrade-close" aria-label="閉じる">✕</button>
+        <button type="button" class="upgrade-close round-btn" aria-label="閉じる">✕</button>
       </div>
       <div class="upgrade-list"></div>
-      <p class="upgrade-note">コインは魔物にとどめを刺すともらえます。強化はメインの1枚とは別に、何回でも買えます</p>
+      <p class="upgrade-note">コインは魔物にとどめを刺すともらえます。強化はメインの1枚とは別に買えます</p>
     </div>
 
     <div id="toast" role="status" aria-live="polite"></div>
@@ -113,21 +108,72 @@
 
     <!-- 手番交代：相手の手札を隠す -->
     <div id="handover" class="screen" hidden>
-      <div class="screen-box">
+      <div class="screen-box parchment">
         <p class="handover-turn"></p>
+        <div class="handover-pic"></div>
         <p class="handover-title"></p>
-        <p class="screen-sub">タップして始める</p>
+        <p class="screen-sub blink">タップして始める</p>
       </div>
     </div>
 
     <!-- 勝敗 -->
     <div id="result" class="screen" hidden>
       <div class="confetti" aria-hidden="true"></div>
+      <div class="result-rays" aria-hidden="true"></div>
       <div class="screen-box">
-        <p class="result-crown" aria-hidden="true">👑</p>
+        <p class="result-crown" aria-hidden="true" data-icon="crown"></p>
+        <div class="result-pic"></div>
         <p class="result-title"></p>
         <p class="result-sub"></p>
-        <button type="button" id="rematch">もう1回</button>
+        <button type="button" id="rematch" class="plank-btn big">もう1回</button>
+        <button type="button" id="result-title-btn" class="small-btn">タイトルへ</button>
+      </div>
+    </div>
+
+    <!-- メニュー -->
+    <div id="menu" class="screen dim" hidden>
+      <div class="screen-box parchment menu-box">
+        <p class="menu-title">メニュー</p>
+        <button type="button" id="menu-sound" class="small-btn wide"></button>
+        <button type="button" id="menu-help" class="small-btn wide">遊び方</button>
+        <button type="button" id="menu-title-btn" class="small-btn wide">タイトルへ戻る</button>
+        <button type="button" id="menu-close" class="plank-btn">ゲームに戻る</button>
+      </div>
+    </div>
+
+    <!-- 遊び方 -->
+    <div id="help" class="screen dim" hidden>
+      <div class="screen-box parchment help-box">
+        <p class="menu-title">遊び方</p>
+        <ol class="help-list">
+          <li><b>相手の城を落としたら勝ち。</b>城HPを0にしよう</li>
+          <li>自分の番に<b>カードを1枚</b>出せる（武器と防御は何枚でも）</li>
+          <li><b>兵士</b>は毎ターン勝手に進み、相手の城に着くと大ダメージ</li>
+          <li>道でぶつかった兵士どうしは戦う。<b>魔法</b>で助けよう</li>
+          <li id="help-monster">まん中に出る<b>魔物</b>を倒すとコイン。コインで強化を買える</li>
+        </ol>
+        <p class="help-note">カードをタップすると説明が出ます。出せないカードは理由が出ます</p>
+        <button type="button" id="help-close" class="plank-btn">わかった</button>
+      </div>
+    </div>
+
+    <!-- タイトル：同じ端末で遊ぶか、合言葉でオンライン対戦 -->
+    <div id="title" class="screen" hidden>
+      <div class="title-box">
+        <h1 class="title-logo"><span>キャッスル</span><span>フィールド</span></h1>
+        <div class="title-pic" aria-hidden="true"></div>
+        <div id="title-main">
+          <button type="button" id="title-local" class="plank-btn big">ふたりで遊ぶ<small>この端末で交代しながら</small></button>
+          <button type="button" id="title-online" class="plank-btn big alt">オンラインで遊ぶ<small>合言葉で友だちと</small></button>
+          <button type="button" id="title-help" class="small-btn">遊び方</button>
+        </div>
+        <form id="title-form" class="parchment" autocomplete="off" hidden>
+          <label>あなたの名前<input id="title-name" type="text" maxlength="16" placeholder="なまえ" enterkeyhint="next"></label>
+          <label>合言葉（相手と同じもの）<input id="title-pass" type="text" maxlength="32" placeholder="あいことば" enterkeyhint="go"></label>
+          <p id="title-status" role="status"></p>
+          <button type="submit" id="title-join" class="plank-btn">部屋に入る</button>
+          <button type="button" id="title-back" class="small-btn">もどる</button>
+        </form>
       </div>
     </div>
 

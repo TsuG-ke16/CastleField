@@ -2,9 +2,17 @@
 
 import { ELEMENT_LOOK, STATUS_ICON, ICON } from './look.js';
 
-/** "p1" → "プレイヤー1" */
+// オンライン対戦では、部屋に入るときに入れた名前を出す（同じ端末のときは空）
+let customNames = {};
+
+/** @param {{ [playerId: string]: string }} names 空のオブジェクトで元に戻る */
+export function setPlayerNames(names) {
+  customNames = { ...names };
+}
+
+/** "p1" → "プレイヤー1"（オンラインでは入れた名前） */
 export function playerName(playerId) {
-  return `プレイヤー${String(playerId).replace(/^p/, '')}`;
+  return customNames[playerId] || `プレイヤー${String(playerId).replace(/^p/, '')}`;
 }
 
 export const KIND_LABEL = {
@@ -69,6 +77,30 @@ export function cardDescription(def, rules, opts = {}) {
   return text;
 }
 
+/**
+ * カードの上に出す短い表示（数字と記号）。[{ icon, text }] の並び。icon は art.js の icon() の名前
+ * @param {object} def cards.json のカード
+ */
+export function cardShort(def) {
+  if (!def) return [];
+  if (def.kind === 'soldier') return [{ icon: 'sword', text: def.attack }, { icon: 'heart', text: def.hp }, { icon: 'boot', text: def.speed }];
+  if (def.kind === 'weapon') {
+    const list = [{ icon: 'sword', text: `+${def.attackBonus}` }];
+    if (ELEMENT_LOOK[def.element]) list.push({ icon: ELEMENT_LOOK[def.element].iconName, text: ELEMENT_LOOK[def.element].name });
+    return list;
+  }
+  switch (def.effect) {
+    case 'damageEnemyCastle': return [{ icon: 'fire', text: `城 -${def.amount}` }];
+    case 'damageEnemySoldiers': return [{ icon: 'sword', text: `兵士 -${def.amount}` }];
+    case 'healOwnCastle': return [{ icon: 'heart', text: `城 +${def.amount}` }];
+    case 'poisonEnemySoldiers': return [{ icon: 'skull', text: `毒 ${def.amount}×${def.turns}` }];
+    case 'freezeEnemySoldiers': return [{ icon: 'snow', text: `${def.turns}回休み` }];
+    case 'shieldSoldier': return [{ icon: 'shield', text: `盾 +${def.amount}` }];
+    case 'armorCastle': return [{ icon: 'wall', text: `城壁 ${def.amount}` }];
+    default: return [];
+  }
+}
+
 /** 強化の説明文（upgrades.json の effect と amount から） */
 const UPGRADE_TEXT = {
   repairCastle: (u) => `自分の城HP+${u.amount}（上限まで）`,
@@ -114,6 +146,14 @@ export function monsterInfo(m, { monsters }) {
   }
   return parts.join('・');
 }
+
+/** 負けた人に出す、負け方の説明（オンラインで、自分が負けたとき） */
+export const GAME_OVER_TEXT_LOST = {
+  castleDestroyed: '城を落とされた…',
+  monsterDestroyed: '魔物に城を落とされた…',
+  lastStanding: '城を落とされた…',
+  roundLimit: '周回の上限：城HPの残りが少なかった',
+};
 
 /** 勝ち方の説明（gameOver の reason） */
 export const GAME_OVER_TEXT = {

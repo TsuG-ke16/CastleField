@@ -1,20 +1,28 @@
-// オンライン対戦のクライアント。サーバー（CLAUDE.md「STEP 4」）と話して、画面に「まとまり」を渡す。
+// オンライン対戦のセッション。サーバー（CLAUDE.md「STEP 4」）と話して、画面に「まとまり」を渡す。
 // - 操作は POST /api/action（返事は Promise）
 // - 届くものは GET /api/stream（EventSource）。その操作のイベントを全部ためて、
 //   最後の `state` が届いたところで「イベントの列 + 状態」の1まとまり（batch）にして渡す
+// - 出せるカード・対象・買える強化は、サーバーが状態と一緒に送ってくる（ブラウザに Game はない）
 // UI はゲームの状態を直接書き換えない（サーバーの Game を操作するだけ）。
+// 呼び方は同じ端末のとき（Session.js の LocalSession）と同じ。
 
 async function postJson(path, body) {
+  let res;
   try {
-    const res = await fetch(path, {
+    res = await fetch(path, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-    return await res.json();
   } catch {
-    return { ok: false, reason: 'サーバーにつながりません' };
+    return { ok: false, reason: 'サーバーにつながりません。電波のよい所でもう一度ためしてください', offline: true };
   }
+  try {
+    const data = await res.json();
+    if (data && typeof data === 'object' && 'ok' in data) return data;
+  } catch { /* 下でまとめて返す */ }
+  // /api がないサーバー（python3 -m http.server など）で開いているとき
+  return { ok: false, reason: 'オンライン対戦のサーバーではありません（「node server/server.js」で起動した画面を開いてください）', noServer: true };
 }
 
 export class OnlineClient {
@@ -22,9 +30,10 @@ export class OnlineClient {
    * @param {object} h
    * @param {(room: object) => void} h.onRoom 部屋の状態（人数・つながっているか・もう1回の投票）
    * @param {(batch: {events: {type: string, payload: object}[], state: object, playable: object[], upgrades: object}) => void} h.onBatch
-   * @param {(connected: boolean) => void} h.onConnection
+   * @param {(connected: boolean, info: { fatal: boolean }) => void} h.onConnection fatal：もうつなぎ直せない（部屋がなくなった）
    */
   constructor({ onRoom, onBatch, onConnection }) {
+    this.online = true;
     this.onRoom = onRoom;
     this.onBatch = onBatch;
     this.onConnection = onConnection;
@@ -32,10 +41,12 @@ export class OnlineClient {
     this.playerId = null;
     this.source = null;
     this.pending = [];
+    this.state = null;
     this.playable = new Map();
+    this.upgrades = {};
   }
 
-  /** 合言葉で部屋に入り、つなぐ。成功したら { ok: true } */
+  /** 合言葉で部屋に入り、つなぐ。成功したら { ok: true, playerId, roomId } */
   async join(passphrase, name) {
     const res = await postJson('/api/join', { passphrase, name });
     if (!res.ok) return res;
@@ -49,8 +60,9 @@ export class OnlineClient {
     this.source?.close();
     const es = new EventSource(`/api/stream?token=${encodeURIComponent(this.token)}`);
     this.source = es;
-    es.onopen = () => this.onConnection?.(true);
-    es.onerror = () => this.onConnection?.(false);
+    es.onopen = () => this.onConnection?.(true, { fatal: false });
+    // EventSource は自分でつなぎ直す。CLOSED になったら、もうつなぎ直さない（サーバーが部屋を忘れた）
+    es.onerror = () => this.onConnection?.(false, { fatal: es.readyState === EventSource.CLOSED });
     es.onmessage = (e) => {
       let msg;
       try {
@@ -65,6 +77,7 @@ export class OnlineClient {
   close() {
     this.source?.close();
     this.source = null;
+    this.onRoom = this.onBatch = this.onConnection = null;
   }
 
   receive(msg) {
@@ -75,8 +88,6 @@ export class OnlineClient {
     } else if (msg.type === 'state') {
       const events = this.pending;
       this.pending = [];
-      this.lastState = msg.state;
-      this.playable = new Map((msg.playable ?? []).map((p) => [p.cardId, p]));
       this.onBatch?.({ events, state: msg.state, playable: msg.playable ?? [], upgrades: msg.upgrades ?? {} });
     }
   }
@@ -89,40 +100,38 @@ export class OnlineClient {
     return { type, payload };
   }
 
+  /** 画面がそのまとまりを見せ始めるときに呼ぶ。ここから getState() などはこのまとまりの内容を返す */
+  commit(batch) {
+    this.state = batch.state;
+    this.playable = new Map((batch.playable ?? []).map((p) => [p.cardId, p]));
+    this.upgrades = batch.upgrades ?? {};
+  }
+
+  getState() {
+    return this.state;
+  }
+
   /** そのカードを今出せるか（サーバーが状態と一緒に送ってきた結果） */
   canPlayCard(cardId) {
-    return this.playable.get(cardId) ?? { ok: false, reason: 'そのカードは手札にありません' };
+    const info = this.playable.get(cardId);
+    if (!info) return { ok: false, reason: 'そのカードは手札にありません' };
+    return info.ok ? { ok: true, needsTarget: Boolean(info.needsTarget) } : { ok: false, reason: info.reason };
+  }
+
+  getTargets(cardId) {
+    const info = this.playable.get(cardId);
+    return info?.ok ? (info.targets ?? []) : [];
+  }
+
+  canBuyUpgrade(upgradeId) {
+    return this.upgrades[upgradeId] ?? { ok: false, reason: 'いまは強化を買えません' };
   }
 
   act(method, args = []) {
     return postJson('/api/action', { token: this.token, method, args });
   }
 
-  /** 選ぶ必要がある対象の一覧（2つ以上あるときだけ） */
-  choices(cardId) {
-    const info = this.playable.get(cardId);
-    return info?.ok && info.needsTarget ? (info.targets ?? []) : [];
-  }
-
-  playCard(cardId, target) {
-    const info = this.playable.get(cardId);
-    let t = target;
-    // 対象を選ぶ必要があっても、今の画面は選ぶ場所がないので、相手の城か、自分の先頭の兵士にする
-    if (!t && info?.needsTarget) {
-      const list = info.targets ?? [];
-      t = list.find((x) => x.playerId && x.playerId !== this.playerId) ?? this.frontSoldier(list);
-    }
-    return this.act('playCard', t ? [cardId, t] : [cardId]);
-  }
-
-  /** 兵士を選ぶカード：自分の兵士のうち、いちばん相手の城に近いもの */
-  frontSoldier(list) {
-    const mine = new Map((this.lastState?.players?.[this.playerId]?.soldiers ?? []).map((s) => [s.soldierId, s.position]));
-    const cands = list.filter((x) => x.soldierId);
-    cands.sort((a, b) => (mine.get(b.soldierId) ?? 0) - (mine.get(a.soldierId) ?? 0));
-    return cands[0];
-  }
-
+  playCard(cardId, target) { return this.act('playCard', target ? [cardId, target] : [cardId]); }
   buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
   endTurn() { return this.act('endTurn'); }
   discard(cardIds) { return this.act('discard', [cardIds]); }

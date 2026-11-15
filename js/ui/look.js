@@ -1,11 +1,11 @@
 // 見た目の割り当て（種類 → 絵文字・色）。画像に差しかえるときは、ここだけを直す。
 // ゲームのルールの数値は data/ にある。ここには見た目だけを書く。
 
-/** 属性：名前・絵文字・色 */
+/** 属性：名前・絵文字（飛び出す文字用）・記号の名前（art.js の icon()）・色 */
 export const ELEMENT_LOOK = {
-  fire: { name: '火', icon: '🔥', color: '#f97316' },
-  water: { name: '水', icon: '💧', color: '#38bdf8' },
-  wood: { name: '木', icon: '🌿', color: '#4ade80' },
+  fire: { name: '火', icon: '🔥', iconName: 'fire', color: '#f97316' },
+  water: { name: '水', icon: '💧', iconName: 'water', color: '#38bdf8' },
+  wood: { name: '木', icon: '🌿', iconName: 'wood', color: '#4ade80' },
 };
 
 /** 兵士の駒に出す文字（なければカード名の1文字目） */
@@ -80,3 +80,10 @@ export function monsterIcon(type) {
 export function upgradeIcon(id) {
   return UPGRADE_ICON[id] ?? UPGRADE_ICON_DEFAULT;
 }
+
+/** 強化の記号（art.js の icon() の名前） */
+export const UPGRADE_ICON_NAME = {
+  repair: 'hammer',
+  recruit: 'card',
+  sharpen: 'stone',
+};

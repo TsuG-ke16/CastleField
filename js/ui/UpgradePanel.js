@@ -2,7 +2,8 @@
 // 買えるかどうかと理由は main.js が game.canBuyUpgrade() で調べて渡す。ここでは状態を書き換えない。
 
 import { upgradeDescription } from './text.js';
-import { upgradeIcon, ICON } from './look.js';
+import { UPGRADE_ICON_NAME } from './look.js';
+import { icon } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -73,10 +74,10 @@ export class UpgradePanel {
   /**
    * @param {number} coins 自分のコイン
    * @param {{ [upgradeId: string]: { ok: boolean, reason?: string } }} status canBuyUpgrade の結果
-   * @param {{ [upgradeId: string]: number }} bought このゲームで買った回数
+   * @param {{ [upgradeId: string]: number }|null} bought このゲームで買った回数（分からないときは null）
    */
   refresh(coins, status, bought) {
-    this.el.coins.textContent = `${ICON.coin}${coins}`;
+    this.el.coins.innerHTML = `${icon('coin')}<b>${Number(coins)}</b>`;
     const list = this.el.list;
     list.innerHTML = '';
     for (const [id, def] of Object.entries(this.upgrades)) {
@@ -87,13 +88,14 @@ export class UpgradePanel {
       btn.dataset.id = id;
       btn.innerHTML = '<span class="upgrade-icon"></span><span class="upgrade-text"><b class="upgrade-name"></b>' +
         '<span class="upgrade-desc"></span><span class="upgrade-reason"></span></span><span class="upgrade-cost"></span>';
-      btn.querySelector('.upgrade-icon').textContent = upgradeIcon(id);
+      btn.querySelector('.upgrade-icon').innerHTML = icon(UPGRADE_ICON_NAME[id] ?? 'crown');
       btn.querySelector('.upgrade-name').textContent = def.name;
       let desc = upgradeDescription(def);
-      if (def.limit !== undefined) desc += `（あと${Math.max(0, def.limit - (bought[id] ?? 0))}回）`;
+      // 買った回数が分からないとき（オンラインでつなぎ直したあと）は、上限だけ出す
+      if (def.limit !== undefined) desc += bought ? `（あと${Math.max(0, def.limit - (bought[id] ?? 0))}回）` : `（1試合${def.limit}回まで）`;
       btn.querySelector('.upgrade-desc').textContent = desc;
       btn.querySelector('.upgrade-reason').textContent = st.ok ? '' : (st.reason ?? '');
-      btn.querySelector('.upgrade-cost').textContent = `${ICON.coin}${def.cost}`;
+      btn.querySelector('.upgrade-cost').innerHTML = `${icon('coin')}<b>${Number(def.cost)}</b>`;
       list.appendChild(btn);
     }
   }
