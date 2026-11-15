@@ -74,7 +74,7 @@ YouTube「桜井政博のゲーム作るには」の考え方を、このゲー�
 - バランスのシミュレーション：`node tests/sim/run.js`（いろいろな戦い方の組み合わせで各1000試合）。乱数はシード付きなので、同じ引数なら誰が回しても同じ結果になる
   - `--games 200`（試合数）、`--seed 7`、`--match smart,random`（1つの組み合わせだけ）、`--rules '{"castleMaxHp":30}'`・`--cards '{"fireball":{"count":3}}'`（`data/` を書き換えずに一部の値だけ試す）、`--json`
   - 「出せる種類が2以上」の列は、出せるカードが2種類以上あったターンの割合（目安）。本当に迷うかは人が遊んで確かめる
-  - 戦い方（`tests/sim/strategies.js`）：`random`（出せるカードからランダム）、`aggro`（城への魔法 → 兵士）、`smart`（ほどよく考える）、`defensive`（守り優先）、`rush`（攻め重視：城への魔法 → 兵士。武器・盾・強化は使うが回復はしない）、`guard`（兵士で守る）、`pass`（何も出さない）
+  - 戦い方（`js/game/strategies.js`。ひとりで遊ぶモードの CPU も同じものを使う）：`random`（出せるカードからランダム）、`aggro`（城への魔法 → 兵士）、`smart`（ほどよく考える）、`defensive`（守り優先）、`rush`（攻め重視：城への魔法 → 兵士。武器・盾・強化は使うが回復はしない）、`guard`（兵士で守る）、`pass`（何も出さない）
 - 数値はコードに直接書かない（バランス調整をJSONだけでできるようにするため）
   - カードの数値 → `data/cards.json`
   - ルールの数値（城HP、手札枚数、道の長さ `laneLength` など）→ `data/rules.json`
@@ -99,6 +99,7 @@ js/
     Monster.js     … 魔物と、強化のデータのチェック
     Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
+    strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
   ui/              … 画面表示と入力
     Renderer.js
     HandView.js
@@ -116,7 +117,7 @@ tests/             … 自動テスト（node --test）。Node.js だけで動�
   *.test.js        … テスト本体
   sim/             … バランス確認のシミュレーション
     sim.js         … 1試合・何試合も回して数字を集める
-    strategies.js  … 戦い方（random / aggro / smart / defensive / guard / pass）
+    strategies.js  … js/game/strategies.js をそのまま出すだけ（戦い方の本体はそちら）
     run.js         … 表を出すコマンド（2人）
     multi.js       … 2人・4人・8人で、勝利条件と魔法の届く相手を比べる
     castles.js     … 城の種類・デッキの勝率
@@ -178,6 +179,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 | `game.canBuyUpgrade(upgradeId)` | 強化を今買えるか（読むだけ）。`{ ok }` か `{ ok: false, reason }` |
 | `game.buyUpgrade(upgradeId)` | コインで強化を買う。自分のメインの場面（`phase` が `"main"`）で何回でも。メインの1枚とは別 |
 | `game.endTurn()` | ターンを終える。手札が上限を超えていたら `phase` が `"discard"` になり、捨て終わるまで次の人の番にならない |
+| `game.surrender(playerId)` | 降参する。`playerId` の負けで、相手の勝ちですぐ終わる（`gameOver` の `reason` は `"surrender"`）。自分の番でなくても使える。2人のときだけ（3人以上は `{ ok: false }`。まだ決めていない） |
 | `game.on(type, handler)` / `game.off(type, handler)` | イベントの購読と解除。`handler` はペイロードのオブジェクトを1つ受け取る。表にない `type` を渡すと `{ ok: false }` |
 
 - 操作が許されないとき（自分の番でない、1ターンに2枚目を出した、など）は例外を投げず、`{ ok: false, reason: "..." }` を返す。成功したら `{ ok: true }`。`reason` はそのまま画面に出せる日本語の文
@@ -287,7 +289,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `playerEliminated` | `{ playerId, by }` … 城が落ちて抜けた（`lastStanding`）。`by` は落とした人 |
 | `roadClosed` | `{ roadId, monsterIds }` … 道がなくなった。その道の魔物（`monsterIds`）も消える |
 | `roadOpened` | `{ roadId, players }` … 抜けた人の両どなりをつなぐ道ができた |
-| `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` |
+| `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
 
 #### イベントの順番
 
@@ -420,6 +422,21 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 相手の手札は枚数だけ表示する
 - 捨てる必要があるときは、手札から選ぶ画面を出す
 - 山札と捨て札の枚数を表示する
+
+### ひとりで遊ぶ（CPU と対戦）
+
+- タイトルの「ひとりで遊ぶ」から、CPU の強さを3段階で選ぶ。URL に `?local=1&cpu=hard`（`easy` / `normal` / `hard`）でもすぐ始まる
+- CPU は `js/game/strategies.js` の戦い方をそのまま使う。Game の公開メソッドだけを使い、自分の手札しか見ない（ずるをしない）
+
+| 強さ | 戦い方 | random（ランダムに出す）に勝つ割合 |
+|---|---|---|
+| よわい（`easy`） | `rush`（攻め重視。守らない） | 約34% |
+| ふつう（`normal`） | `defensive`（守り優先） | 約53% |
+| つよい（`hard`） | `smart`（ほどよく考える） | 約70% |
+
+- 先攻・後攻は毎回ランダム（後攻は今のルールどおり城HP+1）。「もう1回」は同じ強さで始まる
+- 交代の画面は出さない（オンラインと同じく、だれの番かを帯で知らせる）。メニューから降参できる
+- 強さの割り当ては `js/main.js` の `CPU_LEVELS`。カードや数値を変えたら、`node tests/sim/run.js --match rush,random` などで弱い順が変わっていないか確かめる
 
 ## 完成の目安（STEP 1）
 
@@ -582,7 +599,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | URL | 送る JSON | 返る JSON |
 |---|---|---|
 | `POST /api/join` | `{ passphrase, name }` … 合言葉（1〜32文字）と表示名（1〜16文字） | `{ ok: true, roomId, playerId, token }` か `{ ok: false, reason }`。`token` はその人だけの鍵（以後ずっと使う） |
-| `POST /api/action` | `{ token, method, args }` … `method` は `playCard` / `discard` / `endTurn` / `buyUpgrade` / `rematch` のどれか。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
+| `POST /api/action` | `{ token, method, args }` … `method` は `playCard` / `discard` / `endTurn` / `buyUpgrade` / `rematch` / `surrender` / `leave` のどれか（`rematch`・`surrender`・`leave` は自分の番でなくても送れる）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
 
 - `rematch`：全員が送ったら、同じ部屋・同じ席で新しい試合が始まる（負けた人もすぐ「もう1回」できるように）
 
@@ -591,7 +608,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 | `type` | 中身 | いつ |
 |---|---|---|
-| `room` | `{ roomId, players: [{ playerId, name, connected }], capacity, started, rematchVotes }` … `rematchVotes` は「もう1回」を送った人のIDの配列（新しい試合が始まると空に戻る） | 入ったとき・誰かが入った／抜けたとき |
+| `room` | `{ roomId, players: [{ playerId, name, connected, left }], capacity, started, rematchVotes }` … `left` は自分から部屋を出たか。`rematchVotes` は「もう1回」を送った人のIDの配列（新しい試合が始まると空に戻る） | 入ったとき・誰かが入った／抜けたとき |
 | `event` | `{ event, payload }` … Game のイベント（「Gameが出すイベント」の表）を、その人向けに隠したもの | 起きた順に |
 | `state` | `{ state, playable, upgrades }` … `state` は `getState(自分)`。`playable` は自分の手札の各カードの `{ cardId, ok, reason, needsTarget, targets }`（自分の番でないときは全部 `ok: false`）。`upgrades` は `{ upgradeId: { ok, reason } }` | 操作のたび（その操作のイベントを全部送ったあと）・つないだとき |
 
@@ -602,7 +619,11 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - エラーの返事：壊れた JSON は 400、大きすぎる本文（16KB 超）は 413、知らない token は 403。どれも `{ ok: false, reason }`
 - 手札にないカードを出そうとしたときの理由は、相手の手札にあるかどうかにかかわらず「そのカードは手札にありません」（文の違いから相手の手札が分からないように）
 - 始まる前に全員が帰った部屋（30秒だれもつないでいない）は、次に同じ合言葉で入った人のために作り直す。30分だれもつないでいない部屋は消す。部屋は全部で1000まで
-- 試合中に相手が抜けたときの扱い（待つ時間の上限・降参）はまだ決めていない
+- **試合中に相手が抜けたとき**（決めた）
+  - 接続が切れただけなら、**自動では決着しない**（待つ時間の上限はない）。残った人には「接続が切れています。戻るのを待っています…」と「やめる」ボタンを出す。「やめる」は部屋を出てタイトルへ戻る（勝ち負けはつかない）
+  - ページを読み直した・閉じて開き直した人は、同じタブなら元の部屋につなぎ直す（画面が `token` を `sessionStorage` に覚えておく）
+  - **自分から部屋を出る**（`leave`。「タイトルへ戻る」を押したとき）：もう戻れない。残った人には `room` の `players[].left` で伝わり、「○○さんが部屋を出ました」と出る。出た人がいる部屋では「もう1回」はできず、同じ合言葉で入ると新しい部屋になる
+  - **降参**（`surrender`。メニューから、確認のため2回押す）：自分の番でなくてもできる。相手の勝ちで終わる（`gameOver` の `reason` は `"surrender"`）。2人のときだけ（3人以上はまだ決めていない）
 - 画面は、イベントで演出し、`state` で答え合わせをする（同じ端末のときと同じ）。出せない理由は `playable` を使う（ブラウザに Game はない）
 
 ### 隠す情報（`js/game/visibility.js`）

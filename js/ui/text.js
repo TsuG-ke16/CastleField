@@ -153,6 +153,7 @@ export const GAME_OVER_TEXT_LOST = {
   monsterDestroyed: '魔物に城を落とされた…',
   lastStanding: '城を落とされた…',
   roundLimit: '周回の上限：城HPの残りが少なかった',
+  surrender: '降参した',
 };
 
 /** 勝ち方の説明（gameOver の reason） */
@@ -161,6 +162,7 @@ export const GAME_OVER_TEXT = {
   monsterDestroyed: '魔物が城を落とした！', // 画面だけの値（最後の城ダメージが魔物の攻撃だったとき）
   lastStanding: '最後まで城が残った！',
   roundLimit: '周回の上限：城HPの残りが多い方の勝ち',
+  surrender: '相手が降参した！',
 };
 
 // ロジックが reason をコード（英字）で返した場合の言いかえ。日本語の文が来たらそのまま出す。

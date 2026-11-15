@@ -56,6 +56,13 @@ export class OnlineClient {
     return { ok: true, playerId: res.playerId, roomId: res.roomId };
   }
 
+  /** 前に入った部屋へつなぎ直す（ページを読み直したあと）。部屋がもうなければ onConnection(false, { fatal: true }) が来る */
+  resume(token, playerId) {
+    this.token = token;
+    this.playerId = playerId;
+    this.open();
+  }
+
   open() {
     this.source?.close();
     const es = new EventSource(`/api/stream?token=${encodeURIComponent(this.token)}`);
@@ -136,4 +143,8 @@ export class OnlineClient {
   endTurn() { return this.act('endTurn'); }
   discard(cardIds) { return this.act('discard', [cardIds]); }
   rematch() { return this.act('rematch'); }
+  /** 降参する（自分の番でなくてもできる。相手の勝ちで終わる） */
+  surrender() { return this.act('surrender'); }
+  /** 部屋を出る（もう戻らない。残った人に伝わる） */
+  leave() { return this.act('leave'); }
 }

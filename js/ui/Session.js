@@ -17,6 +17,11 @@ export class LocalSession {
     this.online = false;
   }
 
+  /** 降参する（ひとりで遊ぶとき） */
+  async surrender(playerId) {
+    return this.game.surrender(playerId);
+  }
+
   getState(viewerId) {
     return this.game.getState(viewerId);
   }

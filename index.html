@@ -29,7 +29,7 @@
         <button type="button" id="menu-open" class="round-btn" aria-label="メニュー">≡</button>
       </div>
     </header>
-    <div id="net-status" role="status" hidden></div>
+    <div id="net-status" role="status" hidden><span class="net-text"></span><button type="button" id="net-leave" class="small-btn" hidden>タイトルへ</button></div>
 
     <!-- 盤面：相手の城 / 1本の道（左が相手の兵士・右が自分の兵士・真ん中に魔物） / 自分の城 -->
     <main id="board">
@@ -136,6 +136,7 @@
         <p class="menu-title">メニュー</p>
         <button type="button" id="menu-sound" class="small-btn wide"></button>
         <button type="button" id="menu-help" class="small-btn wide">遊び方</button>
+        <button type="button" id="menu-surrender" class="small-btn wide danger" hidden>降参する</button>
         <button type="button" id="menu-title-btn" class="small-btn wide">タイトルへ戻る</button>
         <button type="button" id="menu-close" class="plank-btn">ゲームに戻る</button>
       </div>
@@ -163,9 +164,17 @@
         <h1 class="title-logo"><span>キャッスル</span><span>フィールド</span></h1>
         <div class="title-pic" aria-hidden="true"></div>
         <div id="title-main">
-          <button type="button" id="title-local" class="plank-btn big">ふたりで遊ぶ<small>この端末で交代しながら</small></button>
+          <button type="button" id="title-solo" class="plank-btn big">ひとりで遊ぶ<small>CPU と対戦</small></button>
+          <button type="button" id="title-local" class="plank-btn big alt2">ふたりで遊ぶ<small>この端末で交代しながら</small></button>
           <button type="button" id="title-online" class="plank-btn big alt">オンラインで遊ぶ<small>合言葉で友だちと</small></button>
           <button type="button" id="title-help" class="small-btn">遊び方</button>
+        </div>
+        <div id="title-levels" class="parchment" hidden>
+          <p class="levels-title">CPU の強さ</p>
+          <button type="button" class="plank-btn big level" data-level="easy">よわい<small>はじめての人むけ</small></button>
+          <button type="button" class="plank-btn big level" data-level="normal">ふつう<small>守りながら戦う</small></button>
+          <button type="button" class="plank-btn big level" data-level="hard">つよい<small>よく考えて戦う</small></button>
+          <button type="button" id="levels-back" class="small-btn">もどる</button>
         </div>
         <form id="title-form" class="parchment" autocomplete="off" hidden>
           <label>あなたの名前<input id="title-name" type="text" maxlength="16" placeholder="なまえ" enterkeyhint="next"></label>
