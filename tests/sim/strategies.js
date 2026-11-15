@@ -150,6 +150,17 @@ const RAW_STRATEGIES = {
     chooseDiscard: randomDiscard,
   },
 
+  /** 攻め重視：城への魔法 → 兵士。回復はしない。武器・盾・強化は使う（aggro は付加・防御・強化を使わない素朴な型） */
+  rush: {
+    takeTurn(game, pid, rng, ctx) {
+      buyUpgrades(game, pid, ctx);
+      const { playable } = view(game, pid);
+      playFirst(game, playable, [...typesWithEffect(ctx, 'damageEnemyCastle'), ...soldierTypes(ctx)]);
+      playSupports(game, pid, ctx);
+    },
+    chooseDiscard: randomDiscard,
+  },
+
   /** 何も出さない */
   pass: {
     takeTurn() {},
