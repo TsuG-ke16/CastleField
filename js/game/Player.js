@@ -19,8 +19,6 @@ export class Player {
     this.eliminated = false;
     /** このターンに出したカードの枚数（メイン・付加・防御すべて） */
     this.cardsPlayedThisTurn = 0;
-    /** 城壁の残り。次の自分のターンの始めに消える */
-    this.armor = 0;
     /** コイン（魔物のとどめでもらう） */
     this.coins = 0;
     /** 強化ID → 買った回数 */
@@ -32,6 +30,15 @@ export class Player {
     this.armyHp = 0;
     /** 今来ている精霊（1人1体まで）。{ type, spirit, amount, turns, targetId, fresh } か null */
     this.spirit = null;
+  }
+
+  /** 城壁の残り。次の自分のターンの始めに消える（城に置く。チーム戦では城を共有するので、城壁もチームで共有） */
+  get armor() {
+    return this.castle.armor;
+  }
+
+  set armor(value) {
+    this.castle.armor = value;
   }
 
   findInHand(cardId) {

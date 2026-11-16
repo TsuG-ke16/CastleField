@@ -24,6 +24,7 @@ import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
+import { Castle } from './Castle.js';
 
 /** 2人のときのプレイヤーID（人数は rules.playerCount。3人以上は p3〜p8 が続く） */
 export const PLAYER_IDS = ['p1', 'p2'];
@@ -121,12 +122,22 @@ const CHOICE_RULES = {
   deckMode: ['shared', 'own'],
   // 3人以上の道の形："ring"（となりの席どうし）か "plaza"（真ん中の広場を通って、だれの城へも行ける）。2人ならどちらも同じ
   roadLayout: ['ring', 'plaza'],
+  // チーム戦の手番："rotate"（チームを交互に、1回の手番はメンバー1人。A1 → B1 → A2 → B2 …）か
+  // "all"（チームの手番でメンバー全員が順に動く。A1 → A2 → B1 → B2 …）
+  teamTurns: ['rotate', 'all'],
 };
 /** 0以上1以下の数（整数でなくてよい）の省略できる項目 */
 const OPTIONAL_RATE_RULES = {
   monsterSpawnChance: 0, // 周回の始めに、魔物がいない道ごとに魔物が出る確率
   rewardLuckyChance: 0, // 魔物のごほうびが、1つ上のレアリティになる確率（ラッキー）
+  // チーム戦の城HP ＝ 代表の城HP ＋ この割合 × ほかのメンバーの城HPの合計（1 なら人数ぶん、0 なら1人ぶん）
+  teamCastleHpShare: 1,
 };
+
+/** チームのID（最大4チーム） */
+export const TEAM_IDS = ['t1', 't2', 't3', 't4'];
+/** 1チームの最大人数 */
+export const MAX_TEAM_SIZE = 7;
 
 /** 広場の魔物の roadId */
 export const PLAZA = 'plaza';
@@ -173,9 +184,6 @@ export class Game {
       playerCount: 2,
       ...rules,
     };
-    /** 真ん中の広場を通る道か（3人以上で roadLayout が "plaza" のとき）。広場では道（レーン）は1本 */
-    this.plaza = this.rules.roadLayout === 'plaza' && this.rules.playerCount >= 3;
-    if (this.plaza) this.rules.laneCount = 1;
     this.castleDefs = castles;
     this.deckDefs = decks;
     this.rng = rng;
@@ -210,6 +218,20 @@ export class Game {
       player.maxHand = Math.max(0, this.rules.maxHand + (cdef.maxHandBonus ?? 0));
       this.players[id] = player;
     });
+    // チーム戦：setup.teams（席ごとのチームID）。チームの城はメンバー全員で1つ（代表＝チームでいちばん前の席の人の城）
+    /** @type {Map<string, string>|null} プレイヤーID → チームID */
+    this.teamOf = null;
+    /** @type {string[]|null} チームの順（代表の席順）。手番はこの順にチームを回す */
+    this.teamOrder = null;
+    /** @type {Map<string, string[]>} チームID → メンバー（席順） */
+    this.teamMembers = new Map();
+    /** @type {Map<string, number>} チームID → 最後に手番だったメンバーの番号（members の何番目か） */
+    this.teamCursor = new Map();
+    if (setup.teams !== undefined) this.setupTeams(setup.teams, castles);
+
+    /** 真ん中の広場を通る道か（城が3つ以上で roadLayout が "plaza" のとき）。広場では道（レーン）は1本 */
+    this.plaza = this.rules.roadLayout === 'plaza' && this.aliveSides().length >= 3;
+    if (this.plaza) this.rules.laneCount = 1;
     /** @type {Road[]} */
     this.roads = [];
     this.rebuildRoads();
@@ -239,6 +261,7 @@ export class Game {
     this.currentPlayer = this.playerOrder[0];
     this.phase = 'ready';
     this.winner = null;
+    this.winnerTeam = null;
     this.discardCount = 0; // phase "discard" のときに捨てる必要がある枚数
 
     // 初期手札（ゲーム開始前なのでイベントは出さない）
@@ -250,6 +273,51 @@ export class Game {
         this.players[id].hand.push(card);
       }
     }
+  }
+
+  /**
+   * チームを作る。teams は席ごとのチームID（"t1"〜"t4"）。2チーム以上・1チーム7人まで。
+   * 城HPは、メンバーそれぞれの城HP（castleMaxHp ＋ 自分の城の種類の hpBonus）の合計。席ごとの城ボーナスは使わない。
+   * 城の種類のほかの効果（城への魔法・兵士の攻撃・手札の上限）は、メンバーごとに自分が選んだ城のもの。
+   */
+  setupTeams(teams, castles) {
+    const n = this.rules.playerCount;
+    if (!Array.isArray(teams) || teams.length !== n) throw new Error(`setup.teams は人数ぶん（${n}個）の配列にしてください`);
+    for (const t of teams) if (!TEAM_IDS.includes(t)) throw new Error(`setup.teams：チームは ${TEAM_IDS.join(' / ')} のどれかにしてください`);
+    const order = [...new Set(teams)];
+    if (order.length < 2) throw new Error('setup.teams：チームは2つ以上にしてください');
+    this.teamOf = new Map();
+    for (const t of order) {
+      const members = this.playerOrder.filter((_, seat) => teams[seat] === t);
+      if (members.length > MAX_TEAM_SIZE) throw new Error(`setup.teams：1チームは${MAX_TEAM_SIZE}人までです`);
+      this.teamMembers.set(t, members);
+      this.teamCursor.set(t, -1);
+      for (const id of members) this.teamOf.set(id, t);
+      const hpOf = (id) => Math.max(1, this.rules.castleMaxHp + (this.players[id].castleDef.hpBonus ?? 0));
+      const others = members.slice(1).reduce((sum, id) => sum + hpOf(id), 0);
+      const hp = Math.max(1, Math.round(hpOf(members[0]) + this.rules.teamCastleHpShare * others));
+      const leader = this.players[members[0]];
+      leader.castle = new Castle(hp);
+      for (const id of members) this.players[id].castle = leader.castle;
+    }
+    this.teamOrder = order;
+  }
+
+  /** 城の持ち主（盤面の上の「陣地」）。チーム戦ならチームの代表、そうでなければ本人 */
+  side(playerId) {
+    if (!this.teamOf) return playerId;
+    return this.teamMembers.get(this.teamOf.get(playerId))[0];
+  }
+
+  /** まだ負けていない陣地（城の持ち主のID。席順） */
+  aliveSides() {
+    return [...new Set(this.alivePlayerIds().map((id) => this.side(id)))];
+  }
+
+  /** playerId から見た、まだ負けていない相手の陣地（城の持ち主の Player。席順） */
+  enemySides(playerId) {
+    const me = this.side(playerId);
+    return this.aliveSides().filter((id) => id !== me).map((id) => this.players[id]);
   }
 
   /** 席ごとの城ボーナス */
@@ -426,23 +494,27 @@ export class Game {
 
   /** playerId から見た、まだ負けていない相手全員（席順） */
   opponentsOf(playerId) {
-    return this.alivePlayerIds().filter((id) => id !== playerId).map((id) => this.players[id]);
+    const me = this.side(playerId);
+    return this.alivePlayerIds().filter((id) => this.side(id) !== me).map((id) => this.players[id]);
   }
 
   /** playerId と道でつながっている相手（となりの席） */
   neighborsOf(playerId) {
-    const ids = new Set(this.roads.filter((r) => r.has(playerId)).map((r) => r.otherSide(playerId)));
+    const me = this.side(playerId);
+    const ids = new Set(this.roads.filter((r) => r.has(me)).map((r) => r.otherSide(me)));
     return [...ids].map((id) => this.players[id]);
   }
 
   /** 2人の間の道（なければ null）。道が何本かあるときは最初の1本 */
   roadBetween(a, b) {
-    return this.roads.find((r) => r.has(a) && r.has(b)) || null;
+    const [x, y] = [this.side(a), this.side(b)];
+    return this.roads.find((r) => r.has(x) && r.has(y)) || null;
   }
 
   /** 2人の間の道すべて（rules.laneCount 本。つながっていなければ空） */
   roadsBetween(a, b) {
-    return this.roads.filter((r) => r.has(a) && r.has(b));
+    const [x, y] = [this.side(a), this.side(b)];
+    return this.roads.filter((r) => r.has(x) && r.has(y));
   }
 
   /** そのカードが「選んだ1レーンだけに効く」魔法か（道が1本のときはふつうの魔法と同じ） */
@@ -460,7 +532,7 @@ export class Game {
    * @returns {{opened: Road[], closed: Road[]}}
    */
   rebuildRoads() {
-    const alive = this.alivePlayerIds();
+    const alive = this.aliveSides();
     const pairs = [];
     if (this.plaza) {
       // 広場：だれの城へも行けるので、まだ負けていない2人ずつの組すべてに「通り道」がある（広場で重なっている）
@@ -492,6 +564,21 @@ export class Game {
 
   /** 席順で次の手番の人（負けた人は飛ばす） */
   nextPlayerAfter(playerId) {
+    if (this.teamOrder) {
+      // チーム戦：チームを順に回す（A → B → A …）。チームの中は、前に手番だった人の次のメンバー
+      const teams = this.aliveTeams();
+      const mine = this.teamOf.get(playerId);
+      // "all"：チームのメンバーがまだ残っていれば、同じチームの次の人
+      if (this.rules.teamTurns === 'all') {
+        const members = this.teamMembers.get(mine);
+        const rest = members.slice(members.indexOf(playerId) + 1).find((id) => !this.players[id].eliminated);
+        if (rest) return rest;
+        this.teamCursor.set(mine, -1);
+      }
+      const at = teams.indexOf(mine);
+      const team = teams[(at + 1) % teams.length];
+      return this.nextMemberOf(team);
+    }
     const n = this.playerOrder.length;
     const start = this.playerOrder.indexOf(playerId);
     for (let i = 1; i <= n; i++) {
@@ -499,6 +586,22 @@ export class Game {
       if (!this.players[id].eliminated) return id;
     }
     return playerId;
+  }
+
+  /** まだ負けていないメンバーがいるチーム（チームの順） */
+  aliveTeams() {
+    return this.teamOrder.filter((t) => this.teamMembers.get(t).some((id) => !this.players[id].eliminated));
+  }
+
+  /** そのチームで、次に手番になるメンバー（前に手番だった人の次。負けた人は飛ばす） */
+  nextMemberOf(team) {
+    const members = this.teamMembers.get(team);
+    const last = this.teamCursor.get(team);
+    for (let i = 1; i <= members.length; i++) {
+      const id = members[(last + i) % members.length];
+      if (!this.players[id].eliminated) return id;
+    }
+    return members[0];
   }
 
   // ================= ターン進行 =================
@@ -514,13 +617,17 @@ export class Game {
   beginTurn(playerId, { continueRound = false } = {}) {
     // 周回の上限：その周回を全員が終えたら、城HPの割合で決着
     // continueRound：周回の始めに手番の人が抜けて、同じ周回のまま次の人に回すとき
-    const isRoundStart = !continueRound && playerId === this.alivePlayerIds()[0];
+    // チーム戦は、最初のチームの手番が来るたびに周回が変わる
+    const isRoundStart = !continueRound && (this.teamOrder
+      ? this.teamOf.get(playerId) === this.aliveTeams()[0] && (this.rules.teamTurns === 'rotate' || this.teamCursor.get(this.teamOf.get(playerId)) === -1)
+      : playerId === this.alivePlayerIds()[0]);
     if (isRoundStart && this.rules.maxRounds > 0 && this.round >= this.rules.maxRounds) {
       this.finishByRoundLimit();
       return;
     }
     const player = this.players[playerId];
     this.currentPlayer = playerId;
+    if (this.teamOrder) this.teamCursor.set(this.teamOf.get(playerId), this.teamMembers.get(this.teamOf.get(playerId)).indexOf(playerId));
     this.turn += 1;
     this.phase = 'main';
     player.playedThisTurn = false;
@@ -713,24 +820,32 @@ export class Game {
   findClashTarget(soldier, owner) {
     const { laneLength } = this.rules;
     const here = soldier.position;
-    if (!this.plaza) {
-      const enemy = this.players[soldier.targetId];
-      const found = enemy.soldiers.find((e) => {
-        if (e.roadId !== soldier.roadId) return false;
-        const q = laneLength - 1 - e.position; // 相手の兵士の位置を、soldier から数えた位置に直す
-        return q === here || q === here + 1;
-      });
-      return found ? { owner: enemy, soldier: found } : null;
-    }
+    const mine = this.side(owner.id);
     let best = null;
+    const consider = (other, e) => {
+      if (!best || soldierNumber(e) < soldierNumber(best.soldier)) best = { owner: other, soldier: e };
+    };
+    if (!this.plaza) {
+      // 道の向こうの陣地（チーム戦ならそのチームのメンバー全員）の兵士で、同じ道の上にいるもの
+      for (const id of this.alivePlayerIds()) {
+        if (this.side(id) !== soldier.targetId) continue;
+        const other = this.players[id];
+        for (const e of other.soldiers) {
+          if (e.roadId !== soldier.roadId) continue;
+          const q = laneLength - 1 - e.position; // 相手の兵士の位置を、soldier から数えた位置に直す
+          if (q === here || q === here + 1) consider(other, e);
+        }
+      }
+      return best;
+    }
     for (const id of this.alivePlayerIds()) {
-      if (id === owner.id) continue;
+      const theirs = this.side(id);
+      if (theirs === mine) continue; // 味方とは戦わない
       const other = this.players[id];
       for (const e of other.soldiers) {
-        if (e.targetId !== owner.id && soldier.targetId !== id) continue;
-        const q = this.coordOnPath(owner.id, soldier.targetId, this.placeOf(id, e));
-        if (q !== here && q !== here + 1) continue;
-        if (!best || soldierNumber(e) < soldierNumber(best.soldier)) best = { owner: other, soldier: e };
+        if (e.targetId !== mine && soldier.targetId !== theirs) continue;
+        const q = this.coordOnPath(mine, soldier.targetId, this.placeOf(id, e));
+        if (q === here || q === here + 1) consider(other, e);
       }
     }
     return best;
@@ -745,7 +860,7 @@ export class Game {
     const mid = this.middleSquare();
     const p = soldier.position;
     if (p >= laneLength) return null;
-    if (p < mid) return { at: 'spoke', playerId: ownerId, square: p };
+    if (p < mid) return { at: 'spoke', playerId: this.side(ownerId), square: p };
     if (p === mid) return { at: 'plaza' };
     return { at: 'spoke', playerId: soldier.targetId, square: laneLength - 1 - p };
   }
@@ -774,7 +889,7 @@ export class Game {
         // 広場の魔物は、どの通り道からも真ん中のマスにいる
         if (m.roadId === PLAZA) return soldier.position === m.square || soldier.position + 1 === m.square;
         if (m.roadId !== road.roadId) return false;
-        const q = road.toPosition(owner.id, m.square);
+        const q = road.toPosition(this.side(owner.id), m.square);
         return q === soldier.position || q === soldier.position + 1;
       }) || null
     );
@@ -793,7 +908,7 @@ export class Game {
       // 攻める城：道の両はしのどちらか1つ。広場の魔物は、人数の半分（切り上げ）の城をランダムに選ぶ（2人のときの「2人に1人」と同じ割合）
       let victims;
       if (m.roadId === PLAZA) {
-        const pool = this.alivePlayerIds();
+        const pool = this.aliveSides();
         victims = [];
         for (let k = Math.ceil(pool.length / 2); k > 0 && pool.length > 0; k--) victims.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0]);
         victims.sort((a, b) => this.playerOrder.indexOf(a) - this.playerOrder.indexOf(b));
@@ -894,7 +1009,7 @@ export class Game {
       attacker: { playerId: player.id, soldierId: soldier.soldierId },
       monsterId: monster.monsterId,
       roadId: road.roadId,
-      square: road.toSquare(player.id, soldier.position),
+      square: road.toSquare(this.side(player.id), soldier.position),
     });
     const toMonster = this.fightDamage(soldier, monster);
     const toSoldier = this.reduceDamage(player, this.fightDamage(monster, soldier));
@@ -1041,7 +1156,7 @@ export class Game {
       attacker: { playerId: player.id, soldierId: attacker.soldierId },
       defender: { playerId: enemy.id, soldierId: defender.soldierId },
       roadId: road.roadId,
-      square: road.toSquare(player.id, attacker.position), // 攻める側が止まったマス
+      square: road.toSquare(this.side(player.id), attacker.position), // 攻める側が止まったマス
     });
 
     const toDefender = this.reduceDamage(enemy, this.fightDamage(attacker, defender));
@@ -1093,20 +1208,23 @@ export class Game {
     // 選んだ1レーンだけに効く魔法：自分の道ごとに、相手の兵士がいる（効き目が変わる兵士がいる）道が対象
     if (this.isLaneScoped(def) && LANE_SCOPE_EFFECTS.includes(def.effect)) {
       const changes = this.changesSoldier(def);
-      const mine = this.roads.filter((r) => r.has(player.id));
-      const withSoldiers = mine.filter((r) => this.players[r.otherSide(player.id)].soldiers.some((x) => x.roadId === r.roadId));
-      const targets = withSoldiers
-        .filter((r) => this.players[r.otherSide(player.id)].soldiers.some((x) => x.roadId === r.roadId && changes(x)))
-        .map((r) => ({ playerId: r.otherSide(player.id), roadId: r.roadId }));
+      // 道の向こうの陣地の人（チーム戦ならメンバーごと）×道。その道にその人の兵士がいるもの
+      const me = this.side(player.id);
+      const pairs = this.roads.filter((r) => r.has(me)).flatMap((r) =>
+        this.opponentsOf(player.id).filter((p) => this.side(p.id) === r.otherSide(me)).map((p) => ({ p, r, on: p.soldiers.filter((x) => x.roadId === r.roadId) })),
+      );
+      const withSoldiers = pairs.filter((x) => x.on.length > 0);
+      const targets = withSoldiers.filter((x) => x.on.some(changes)).map((x) => ({ playerId: x.p.id, roadId: x.r.roadId }));
       return { targets, reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません' };
     }
     switch (def.effect) {
       case 'damageEnemyCastle':
         return {
           targets: [
-            ...playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.opponentsOf(player.id)),
+            // 城は陣地ごとに1つ（チーム戦ならチームの代表）
+            ...playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id)),
             // 魔物は、自分の道（自分が両はしのどちらか）にいるものだけ。広場の魔物はだれからでも狙える
-            ...this.monsters.filter((m) => m.roadId === PLAZA || this.findRoad(m.roadId).has(player.id)).map((m) => ({ monsterId: m.monsterId })),
+            ...this.monsters.filter((m) => m.roadId === PLAZA || this.findRoad(m.roadId).has(this.side(player.id))).map((m) => ({ monsterId: m.monsterId })),
           ],
           reason: '相手がいません',
         };
@@ -1148,7 +1266,7 @@ export class Game {
         if (player.spirit?.type === card.type) return { targets: [], reason: '同じ精霊がもう来ています' };
         // 火の精霊は、毎ターン城を攻める相手を選ぶ。ほかは自分
         if (def.spirit === 'fire') {
-          const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.opponentsOf(player.id);
+          const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
           return { targets: playerTargets(foes), reason: '相手がいません' };
         }
         return { targets: [{ playerId: player.id }], reason: '' };
@@ -1438,7 +1556,7 @@ export class Game {
         this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
       }
     } else if (sp.spirit === 'fire') {
-      const foes = this.opponentsOf(player.id);
+      const foes = this.enemySides(player.id);
       const target = foes.find((p) => p.id === sp.targetId) ?? foes[0];
       if (!target) return false;
       this.emit('spiritTriggered', { playerId: player.id, type: sp.type, spirit: 'fire', amount: sp.amount, targetId: target.id });
@@ -1731,8 +1849,9 @@ export class Game {
     }
     for (const id of fallen) this.eliminate(this.players[id], this.currentPlayer);
     const alive = this.alivePlayerIds();
-    if (alive.length <= 1) {
-      this.finish(alive[0] ?? this.currentPlayer, 'lastStanding');
+    if (this.aliveSides().length <= 1) {
+      // 残った陣地の勝ち（チーム戦なら、手番の人が残っていれば手番の人、そうでなければいちばん前の席の人）
+      this.finish(alive.includes(this.currentPlayer) ? this.currentPlayer : alive[0] ?? this.currentPlayer, 'lastStanding');
       return true;
     }
     return false;
@@ -1755,9 +1874,11 @@ export class Game {
 
   finish(winner, reason) {
     this.winner = winner;
+    this.winnerTeam = this.teamOf?.get(winner) ?? null;
     this.pending = null;
     this.phase = 'gameOver';
-    this.emit('gameOver', { winner, reason });
+    // チーム戦のときだけ、勝ったチーム（winnerTeam）を付ける
+    this.emit('gameOver', { winner, reason, ...(this.teamOf ? { winnerTeam: this.winnerTeam } : {}) });
   }
 
   /** 城が落ちた人を抜けさせる（lastStanding）。兵士は消え、手札は捨て札へ。道をつなぎ直す */
@@ -1815,6 +1936,8 @@ export class Game {
       }
       players[id] = {
         ...base,
+        team: this.teamOf?.get(id) ?? null,
+        castleOwner: this.side(id),
         castleType: p.castleType,
         maxHand: p.maxHand,
         deckId: p.deckId ?? null,
@@ -1828,6 +1951,11 @@ export class Game {
     return {
       deckMode: this.rules.deckMode,
       layout: this.plaza ? 'plaza' : 'lanes',
+      // チーム戦のとき { t1: { members, castleOwner, size } … }（チームの順）。チーム戦でなければ null
+      teams: this.teamOrder
+        ? Object.fromEntries(this.teamOrder.map((t) => [t, { members: [...this.teamMembers.get(t)], castleOwner: this.teamMembers.get(t)[0], size: this.teamMembers.get(t).length }]))
+        : null,
+      winnerTeam: this.winnerTeam,
       playerOrder: [...this.playerOrder],
       round: this.round,
       monsters: this.monsters.map((m) => m.toState()),

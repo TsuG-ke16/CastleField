@@ -28,5 +28,7 @@
   "coinPerTurn": 1,
   "monsterAttackGrowth": 1,
   "rewardLuckyChance": 0.15,
-  "roadLayout": "plaza"
+  "roadLayout": "plaza",
+  "teamTurns": "rotate",
+  "teamCastleHpShare": 0.25
 }
