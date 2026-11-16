@@ -5,5 +5,10 @@
   "bat": {"name": "コウモリ", "hp": 3, "attack": 2, "castleAttack": 1, "attackEvery": 2, "weight": 4, "rewardRarity": "common"},
   "skeleton": {"name": "スケルトン", "hp": 6, "attack": 3, "castleAttack": 2, "attackEvery": 2, "weight": 3, "rewardRarity": "uncommon"},
   "golem": {"name": "ゴーレム", "hp": 14, "attack": 2, "element": "earth", "castleAttack": 3, "attackEvery": 4, "weight": 2, "rewardRarity": "rare"},
-  "demon": {"name": "デーモン", "hp": 10, "attack": 4, "element": "fire", "castleAttack": 4, "attackEvery": 2, "weight": 1, "rewardRarity": "rare"}
+  "demon": {"name": "デーモン", "hp": 10, "attack": 4, "element": "fire", "castleAttack": 4, "attackEvery": 2, "weight": 1, "rewardRarity": "rare"},
+  "ghost": {"name": "ゴースト", "hp": 5, "attack": 3, "rewardRarity": "uncommon", "castleAttack": 2, "attackEvery": 2, "weight": 3},
+  "treant": {"name": "トレント", "hp": 9, "attack": 2, "element": "earth", "rewardRarity": "uncommon", "castleAttack": 2, "attackEvery": 3, "weight": 3},
+  "mimic": {"name": "ミミック", "hp": 8, "attack": 1, "rewardRarity": "rare", "castleAttack": 1, "attackEvery": 4, "weight": 2},
+  "vampire": {"name": "ヴァンパイア", "hp": 11, "attack": 4, "element": "water", "rewardRarity": "epic", "castleAttack": 4, "attackEvery": 2, "weight": 1},
+  "demonKing": {"name": "魔王", "hp": 20, "attack": 6, "element": "fire", "rewardRarity": "legendary", "castleAttack": 6, "attackEvery": 2, "weight": 1}
 }
