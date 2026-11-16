@@ -165,3 +165,15 @@ ChatGPT（OpenAI の画像生成）で、`assets/STYLE.md` の共通指示文と
 | `units/hero-blue.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
 | `units/hero-orange.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
 | `fx/lucky-reward.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+
+## 兵士4系統の追加素材（2026-11-16）
+
+- 道具：Codex によるオリジナルのベクター描画（`js/ui/art.js` の `lineBody`）。Chromium Canvas で透明PNGへ書き出し。外部素材・画像生成AIの素材は使っていません。既存のSVGと同じこげ茶の輪郭線・ちびキャラ・明るい配色を使用。`assets/STYLE.md` の共通指示文を描画コード先頭に記載。
+- 利用条件：このプロジェクト用のオリジナル素材。第三者素材の追加ライセンスなし。
+- 各行に対応する `cards/card-<名前>.png` は512×512、`units/<名前>-blue.png` / `units/<名前>-orange.png` は256×256、すべて背景透明・300KB以下。
+
+| 系統 | ファイル名の `<名前>` |
+|---|---|
+| 騎兵 | scout, cavalry, paladin, dragon-knight |
+| 弓兵 | apprentice-archer, archer, longbowman, sniper, sky-archer |
+| 魔法使い | apprentice-mage, mage, sorcerer, archmage, sage |

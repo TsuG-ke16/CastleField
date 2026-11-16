@@ -2,6 +2,9 @@
 // 時間はすべてミリ秒。speed を 2 にすると全部の演出が倍の長さになる。
 
 export const UI_CONFIG = {
+  plazaSize: 640, plazaSizeCompact: 480,
+  teamColors: Object.assign(['#4da3e8','#f5923e','#9c73d8','#41a589','#e27299','#a88d45','#6984c9','#b37b60'], {t1:'#4da3e8', t2:'#f5923e', t3:'#9c73d8', t4:'#41a589'}),
+  castleTiers: [{min:1,name:'castle',towers:false}, {min:2,name:'towers',towers:true}, {min:4,name:'walls',towers:true,wall:true}, {min:6,name:'fortress',towers:true,wall:true,fortress:true}],
   // 全演出の速さの倍率（大きいほどゆっくり。デバッグパネルから変えられる）
   // 1 だと短すぎて何が起きたか分からなかった（人間の指示）ので 1.8 にした。演出はタップで早送りできる
   speed: 1.8,
@@ -10,6 +13,8 @@ export const UI_CONFIG = {
   timing: {
     fusion: 900,
     reward: 1100,        // 魔物報酬のレアリティを読む時間
+    soldierShot: 520,
+    soldierReturn: 650,
     soldierMove: 280,      // 兵士が進む
     deploy: 240,           // 兵士が出てくる
     defenseResult: 900,   // 反射・身代わりの帯（カード拡大が終わってから表示）

@@ -1,0 +1,112 @@
+// サーバーが送る選択肢と席だけで部屋を描く。名前は必ず textContent。
+export class RoomView {
+  constructor({ onAction, onLeave }) {
+    this.onAction = onAction;
+    this.onLeave = onLeave;
+    this.el = document.createElement('section');
+    this.el.id = 'room-screen';
+    this.el.className = 'screen';
+    this.el.hidden = true;
+    document.getElementById('app').append(this.el);
+    this.pending = false;
+    this.level = null;
+  }
+  hide() { this.el.hidden = true; }
+  node(tag, text, cls) {
+    const el = document.createElement(tag);
+    if (text != null) el.textContent = text;
+    if (cls) el.className = cls;
+    return el;
+  }
+  async act(method, args) {
+    if (this.pending) return;
+    this.pending = true;
+    this.render(this.room, this.passphrase);
+    try {
+      const res = await this.onAction(method, args);
+      this.notice = res?.ok ? '' : (res?.reason ?? '送信できませんでした');
+    } catch { this.notice = '接続を確認して、もう一度ためしてください'; }
+    this.pending = false;
+    if (!this.el.hidden) this.render(this.room, this.passphrase);
+  }
+  select(parent, label, choices, value, editable, change) {
+    const row = this.node('label', null, 'room-select');
+    row.append(this.node('span', label));
+    if (editable) {
+      const input = this.node('select');
+      for (const choice of choices ?? []) {
+        const opt = this.node('option', choice.name);
+        opt.value = choice.id;
+        input.append(opt);
+      }
+      input.value = value ?? '';
+      input.disabled = this.pending;
+      input.addEventListener('change', () => change(input.value));
+      row.append(input);
+    } else {
+      row.append(this.node('b', choices?.find(c => c.id === value)?.name ?? '—'));
+    }
+    parent.append(row);
+  }
+  button(parent, text, action, disabled = false, cls = 'small-btn') {
+    const btn = this.node('button', text, cls);
+    btn.type = 'button'; btn.disabled = disabled || this.pending;
+    btn.addEventListener('click', action); parent.append(btn);
+    return btn;
+  }
+  render(room, passphrase) {
+    this.room = room; this.passphrase = passphrase;
+    this.el.hidden = false; this.el.replaceChildren();
+    const box = this.node('div', null, 'room-box'); this.el.append(box);
+    const host = room.you === room.hostId;
+    const choices = room.choices ?? {};
+    box.append(this.node('p', 'CASTLE FIELD / 対戦の準備', 'room-eyebrow'));
+    box.append(this.node('h1', 'みんなの部屋'));
+    box.append(this.node('p', '合言葉を伝えて、仲間を招待しよう', 'room-note'));
+    box.append(this.node('strong', passphrase || room.roomId, 'room-passphrase'));
+    const head = this.node('div', null, 'room-heading');
+    head.append(this.node('h2', `参加者 ${room.players.length} / ${room.capacity}`));
+    this.button(head, '部屋を出る', this.onLeave); box.append(head);
+    const seats = this.node('div', null, 'room-seats'); box.append(seats);
+    for (const p of room.players) {
+      const seat = this.node('article', null, 'room-seat');
+      seat.classList.toggle('room-self', p.playerId === room.you);
+      seat.dataset.team = room.settings.teams === 'choose' ? (p.team ?? '') : '';
+      const title = this.node('h3', p.name);
+      if (p.playerId === room.you) title.append(this.node('small', 'あなた'));
+      if (p.playerId === room.hostId) title.append(this.node('small', '部屋主'));
+      seat.append(title);
+      const level = choices.cpuLevels?.find(c => c.id === p.cpu)?.name;
+      seat.append(this.node('p', `${p.cpu ? `CPU · ${level ?? p.cpu}` : 'プレイヤー'} · ${p.connected ? '接続中' : '再接続を待っています'}`, 'room-note'));
+      const edit = p.playerId === room.you || (host && Boolean(p.cpu));
+      const set = (patch) => this.act('setSeat', p.playerId === room.you ? [patch] : [patch, p.playerId]);
+      this.select(seat, '城', choices.castles, p.castle, edit, v => set({castle:v}));
+      this.select(seat, 'デッキ', choices.decks, p.deck, edit && room.settings.deckMode === 'own', v => set({deck:v}));
+      if (room.settings.deckMode !== 'own') seat.append(this.node('small', '共通の山札を使います', 'room-note'));
+      if (room.settings.teams === 'choose') this.select(seat, 'チーム', choices.teams, p.team, edit, v => set({team:v}));
+      else seat.append(this.node('small', room.settings.teams === 'auto' ? '開始時にチームを分けます' : '個人戦', 'room-note'));
+      if (host && p.cpu) this.button(seat, 'CPUを外す', () => this.act('removeCpu', [p.playerId]));
+      seats.append(seat);
+    }
+    const settings = this.node('section', null, 'room-settings'); box.append(settings);
+    settings.append(this.node('h2', '対戦ルール'));
+    if (!host) settings.append(this.node('p', 'ルールとCPUは部屋主が選びます。自分の城・デッキは変更できます。', 'room-note'));
+    for (const [key,label,list] of [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes']]) {
+      this.select(settings, label, choices[list], room.settings[key], host, v => this.act('setRules', [{[key]:v}]));
+    }
+    if (host) {
+      this.level ??= choices.cpuLevels?.[0]?.id;
+      this.select(settings, '追加するCPUの強さ', choices.cpuLevels, this.level, true, v => {this.level=v;});
+      this.button(settings, 'CPUを追加', () => this.act('addCpu', [this.level]), room.players.length >= room.capacity);
+      if (room.players.length >= room.capacity) settings.append(this.node('p', '満員のためCPUを追加できません', 'room-note'));
+    }
+    let reason = '';
+    if (room.players.length < room.minPlayers) reason = `開始には${room.minPlayers}人必要です。仲間を招待するかCPUを追加してください。`;
+    else if (room.settings.teams === 'choose' && new Set(room.players.map(p => p.team)).size < 2) reason = '2つ以上のチームに分かれてください。';
+    else if (room.settings.teams === 'choose' && room.players.some(p => room.players.filter(q => q.team === p.team).length > 7)) reason = '1チームは7人までです。';
+    box.append(this.node('p', host ? reason || '準備ができたら、対戦を始めよう！' : '部屋主が対戦を始めるのを待っています', 'room-note'));
+    if (host) this.button(box, '対戦をはじめる', () => this.act('start', []), Boolean(reason), 'plank-btn room-start');
+    const status = this.node('p', this.pending ? '送信しています…' : this.notice ?? '', 'room-status');
+    status.setAttribute('role', 'status'); box.append(status);
+  }
+}

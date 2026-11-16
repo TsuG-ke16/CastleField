@@ -230,6 +230,7 @@ export class Animations {
         return;
       case 'cardDiscarded': return this.cardDiscarded(p, model, ctx);
       case 'soldierDeployed': return this.soldierDeployed(p, model);
+      case 'soldierShot': return this.soldierShot(p, model);
       case 'soldierMoved': return this.soldiersMoved(ev, queue, model);
       case 'soldiersClashed': return this.soldiersClashed(p);
       case 'soldierDamaged': return this.soldiersDamaged(ev, queue, model);
@@ -267,6 +268,7 @@ export class Animations {
       case 'gameOver':
         model.phase = 'gameOver';
         model.winner = p.winner;
+        model.winnerTeam = p.winnerTeam;
         model.gameOverReason = p.reason ?? null;
         return;
       default:
@@ -500,6 +502,7 @@ export class Animations {
   async soldierDeployed({ playerId, soldierId, type, position, hp, attack, roadId, targetId }, model) {
     const def = this.cards[type] ?? {};
     const s = {
+      role: def.role ?? 'melee', range: def.range, turnsLeft: def.stay ?? null,
       soldierId, type, hp: hp ?? def.hp, attack: attack ?? def.attack, position, roadId, targetId,
       weapon: null, element: null, shield: 0, statuses: { poison: null, frozen: 0 },
     };
@@ -520,14 +523,21 @@ export class Animations {
       if (queue[i].type === 'soldierMoved') moves.push(queue.splice(i, 1)[0].payload);
       else i++;
     }
+    let duration = 0;
     for (const m of moves) {
       const s = model.players[m.playerId].soldiers.find((x) => x.soldierId === m.soldierId);
-      if (s) s.position = m.to;
+      if (s) {s.position = m.to; s.place = null;}
+      const el = this.renderer.soldierEl(m.soldierId);
+      const speed = this.cards[s?.type]?.speed ?? 1;
+      const ms = UI_CONFIG.timing.soldierMove * Math.max(.65, Math.abs(m.to-m.from)/Math.max(speed,1));
+      duration = Math.max(duration, ms);
+      if (el) el.style.transitionDuration = `${ms*UI_CONFIG.speed}ms`;
       this.renderer.moveSoldier(m.soldierId, m.to);
     }
     this.renderer.layoutStacks();
     sound.play('step');
-    await this.delay(UI_CONFIG.timing.soldierMove);
+    await this.delay(duration || UI_CONFIG.timing.soldierMove);
+    for (const m of moves) this.renderer.soldierEl(m.soldierId)?.style.removeProperty('transition-duration');
   }
 
   /** 兵士へのダメージ：続けて来たものはまとめて同時に見せる。盾が受けたぶんと毒は見た目を変える */
@@ -577,18 +587,50 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.afterSoldierHit);
   }
 
-  /** 兵士が消える：続けて来たものはまとめて同時に消す */
+  async soldierShot({ playerId, soldierId, role, target }, model) {
+    const from = this.renderer.soldierEl(soldierId);
+    const to = target.kind === 'soldier' ? this.renderer.soldierEl(target.soldierId)
+      : target.kind === 'monster' ? this.renderer.monsterEl(target.monsterId) : this.renderer.castleEl(target.playerId);
+    if (!from || !to) return;
+    const a = this.centerOf(from), b = this.centerOf(to);
+    const projectile = this.fx(role === 'mage' ? 'shot-magic' : 'shot-arrow', a);
+    const angle = Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+    sound.play(role === 'mage' ? 'spell' : 'step');
+    await this.animate(projectile, [
+      {transform:`translate(-50%,-50%) rotate(${angle}deg)`,opacity:1},
+      {transform:`translate(calc(-50% + ${b.x-a.x}px),calc(-50% + ${b.y-a.y}px)) rotate(${angle}deg)`,opacity:1},
+    ], {duration:UI_CONFIG.timing.soldierShot,easing:'ease-in',fill:'forwards'});
+    projectile.remove();
+    const soldier = this.modelSoldier(model,playerId,soldierId);
+    if(soldier?.turnsLeft != null) {
+      soldier.turnsLeft = Math.max(0,soldier.turnsLeft-1);
+      this.renderer.updateSoldier(soldierId,{turnsLeft:soldier.turnsLeft});
+    }
+  }
+
+  /** 帰還は城へ飛んで消える。倒れた兵士はその場で消える。 */
   async soldiersDestroyed(first, queue, model) {
     const list = this.takeRun(first, queue);
-    for (const d of list) {
+    await Promise.all(list.map(async d => {
       const pl = model.players[d.playerId];
-      pl.soldiers = pl.soldiers.filter((x) => x.soldierId !== d.soldierId);
-      const dyingEl = this.renderer.soldierEl(d.soldierId);
-      dyingEl?.classList.add(d.reason === 'reachedCastle' ? 'arrived' : 'dying');
-      if (dyingEl && d.reason !== 'reachedCastle' && !this.skipping) this.sparks(this.centerOf(dyingEl), { count: 7, color: '#fff', spread: 36, size: 9 });
-    }
-    await this.delay(UI_CONFIG.timing.soldierDeath);
-    for (const d of list) this.renderer.removeSoldier(d.soldierId);
+      pl.soldiers = pl.soldiers.filter(x => x.soldierId !== d.soldierId);
+      const el = this.renderer.soldierEl(d.soldierId);
+      if (el && d.reason === 'returned') {
+        const a = this.centerOf(el), b = this.centerOf(this.renderer.castleEl(d.playerId));
+        const scale = this.renderer.isPlaza ? this.renderer.plazaScale || 1 : 1;
+        b.x = a.x+(b.x-a.x)/scale; b.y = a.y+(b.y-a.y)/scale;
+        this.number(el,'帰還！',{kind:'heal',size:20,duration:UI_CONFIG.timing.soldierReturn});
+        await this.animate(el,[
+          {transform:'translate(-50%,-50%) scale(1)',opacity:1},
+          {transform:`translate(calc(-50% + ${b.x-a.x}px),calc(-50% + ${b.y-a.y}px)) scale(.3)`,opacity:0},
+        ],{duration:UI_CONFIG.timing.soldierReturn,easing:'ease-in',fill:'forwards'});
+      } else {
+        el?.classList.add(d.reason === 'reachedCastle' ? 'arrived' : 'dying');
+        if (el && d.reason !== 'reachedCastle' && !this.skipping) this.sparks(this.centerOf(el),{count:7,color:'#fff',spread:36,size:9});
+        await this.delay(UI_CONFIG.timing.soldierDeath);
+      }
+      this.renderer.removeSoldier(d.soldierId);
+    }));
   }
 
   async spellCast({ playerId, type, target, targetKind, roadId }) {
@@ -734,11 +776,18 @@ export class Animations {
     await this.delay(dur * 0.6);
   }
 
+  patchCastle(model, id, patch) {
+    const owner = model.players[id]?.castleOwner ?? id;
+    for (const [pid, player] of Object.entries(model.players)) {
+      if ((player.castleOwner ?? pid) === owner) Object.assign(player,patch);
+    }
+  }
+
   async castleDamaged({ playerId, amount, hp, blocked = 0 }, model) {
     const pl = model.players[playerId];
-    pl.castleHp = hp;
+    this.patchCastle(model, playerId, {castleHp:hp});
     if (blocked > 0) {
-      pl.armor = Math.max(0, (pl.armor ?? 0) - blocked);
+      this.patchCastle(model, playerId, {armor:Math.max(0,(pl.armor ?? 0)-blocked)});
       this.renderer.setArmor(playerId, pl.armor);
     }
     const dealt = Math.max(0, amount - blocked);
@@ -788,7 +837,7 @@ export class Animations {
   }
 
   async castleHealed({ playerId, amount, hp }, model) {
-    model.players[playerId].castleHp = hp;
+    this.patchCastle(model, playerId, {castleHp:hp});
     const castle = this.renderer.castleEl(playerId);
     this.renderer.setCastleHp(playerId, hp);
     if (this.skipping) return;
@@ -856,7 +905,7 @@ export class Animations {
   }
 
   async castleArmored({ playerId, armor }, model) {
-    model.players[playerId].armor = armor;
+    this.patchCastle(model, playerId, {armor});
     this.renderer.setArmor(playerId, armor);
     if (this.skipping) return;
     const castle = this.renderer.castleEl(playerId);
@@ -867,7 +916,7 @@ export class Animations {
   }
 
   async armorExpired({ playerId }, model) {
-    model.players[playerId].armor = 0;
+    this.patchCastle(model, playerId, {armor:0});
     if (this.skipping) {
       this.renderer.setArmor(playerId, 0);
       return;
@@ -938,7 +987,7 @@ export class Animations {
   }
 
   async monsterAttackedCastle({ monsterId, playerId, amount, hp }, model) {
-    model.players[playerId].castleHp = hp;
+    this.patchCastle(model, playerId, {castleHp:hp});
     const m = this.modelMonster(model, monsterId);
     if (m && m.castleAttack != null) { m.castleAttack += this.rules.monsterAttackGrowth ?? 0; this.renderer.updateMonster(monsterId, { castleAttack: m.castleAttack }); }
     const mEl = this.renderer.monsterEl(monsterId);

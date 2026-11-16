@@ -42,6 +42,9 @@ export class Renderer {
     this.monsters = new Map();
     /** 対象を選んでいるときの、光らせている対象（null なら選んでいない） */
     this.targets = null;
+    this.players = {};
+    this.castles = new Map();
+    this.zoom = 1;
 
     this.el = {
       app: $('app'),
@@ -71,6 +74,7 @@ export class Renderer {
     this.buildRoad();
 
     // 盤面のタップ：対象を選んでいるときは対象を、そうでなければ兵士・魔物の情報を出す
+    this.el.board.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.targetable')) { e.preventDefault(); e.target.click(); } });
     this.el.board.addEventListener('click', (e) => {
       if (this.targets) {
         this.onTargetTap?.(this.targetFromEl(e.target));
@@ -88,7 +92,8 @@ export class Renderer {
         if (m) this.onMonsterTap?.({ ...m, el: undefined });
       }
     });
-    window.addEventListener('resize', () => this.layoutStacks());
+    window.addEventListener('resize', () => { this.layoutStacks(); this.fitPlaza(); });
+    this.buildPlazaControls();
   }
 
   get laneLength() {
@@ -176,20 +181,150 @@ export class Renderer {
   }
 
   opponentOf(playerId) {
-    return this.playerOrder.find((id) => id !== playerId) ?? (playerId === 'p1' ? 'p2' : 'p1');
+    return this.playerOrder.find((id) => this.ownerOf(id) !== this.ownerOf(playerId)) ?? (playerId === 'p1' ? 'p2' : 'p1');
   }
 
   sideOf(playerId) {
-    return playerId === this.viewerId ? 'me' : 'opp';
+    return this.ownerOf(playerId) === this.ownerOf(this.viewerId) ? 'me' : 'opp';
   }
 
   castleEl(playerId) {
-    return this.el.castle[this.sideOf(playerId)];
+    return this.castles.get(this.ownerOf(playerId)) ?? this.el.castle[this.sideOf(playerId)];
+  }
+
+  ownerOf(id) { return this.players[id]?.castleOwner ?? id; }
+
+  castlePicture(id, damage = 0) {
+    const size = this.teamSize(id);
+    const tier = UI_CONFIG.castleTiers.filter(t => size >= t.min).at(-1);
+    const art = castleArt(colorOf(this.ownerOf(id)), damage);
+    return `${tier.towers ? `<span class="extra-tower tower-left">${art}</span><span class="extra-tower tower-right">${art}</span>` : ''}${art}${tier.wall ? '<span class="team-wall"></span>' : ''}${tier.fortress ? '<span class="fortress-flags">⚑ ⚑ ⚑</span>' : ''}`;
+  }
+  teamSize(id) { return this.teams?.[this.players[id]?.team]?.size ?? (Object.values(this.players).filter(p => p.castleOwner === this.ownerOf(id)).length || 1); }
+
+  configureBoard(model) {
+    this.players = model.players;
+    this.teams = model.teams;
+    this.playerOrder = model.playerOrder;
+    this.isPlaza = model.layout === 'plaza';
+    this.owners = [...new Set(model.playerOrder.map(id => this.ownerOf(id)))];
+    const key = JSON.stringify([this.isPlaza, this.owners, this.viewerId]);
+    if (key !== this.boardKey) {
+      this.boardKey = key;
+      this.clearSoldiers(); this.clearMonsters(); this.castles.clear();
+      this.plazaStage.querySelectorAll('.plaza-castle').forEach(el => el.remove());
+      this.el.board.classList.toggle('plaza-board', this.isPlaza);
+      this.plazaViewport.hidden = !this.isPlaza;
+      this.zoomBar.hidden = !this.isPlaza;
+      this.el.castle.me.hidden = this.el.castle.opp.hidden = this.isPlaza;
+      this.el.field.hidden = this.isPlaza;
+      if (this.isPlaza) {
+        this.zoom = 1;
+        this.plazaSize = this.owners.length <= 4 ? UI_CONFIG.plazaSizeCompact : UI_CONFIG.plazaSize;
+        this.plazaStage.style.width = this.plazaStage.style.height = `${this.plazaSize}px`;
+        this.plazaStage.append(this.el.units);
+        this.plazaStage.querySelectorAll('.spoke-dot').forEach(el => el.remove());
+        this.owners.forEach(id => {
+          const castle = this.el.castle.me.cloneNode(true);
+          castle.removeAttribute('id'); castle.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+          castle.hidden = false; castle.classList.add('plaza-castle');
+          const p = this.castlePoint(id);
+          castle.style.left = `${p.x}%`; castle.style.top = `${p.y}%`;
+          this.plazaStage.append(castle); this.castles.set(id, castle);
+          for (let n = 0; n < this.middleSquare; n++) {
+            const dot = document.createElement('span'); dot.className = 'spoke-dot';
+            const t = (n + .7) / (this.middleSquare + .7);
+            dot.style.left = `${p.x + (50-p.x)*t}%`; dot.style.top = `${p.y+(50-p.y)*t}%`;
+            this.plazaStage.prepend(dot);
+          }
+        });
+      } else {
+        this.el.field.append(this.el.units);
+        const me = this.ownerOf(this.viewerId);
+        this.castles.set(me, this.el.castle.me);
+        this.castles.set(this.owners.find(id => id !== me) ?? me, this.el.castle.opp);
+        this.buildRoad();
+      }
+      this.fitPlaza();
+    }
+    const palette = UI_CONFIG.teamColors;
+    for (const id of this.owners) {
+      const castle = this.castleEl(id);
+      const members = model.playerOrder.filter(p => this.ownerOf(p) === id);
+      const label = members.map(playerName).join('・');
+      const team = this.players[id]?.team;
+      castle.dataset.playerId = id;
+      castle.setAttribute('aria-label', label);
+      castle.setAttribute('role','button');
+      castle.tabIndex = 0;
+      castle.dataset.color = colorOf(id);
+      castle.style.setProperty('--team-color', palette[team] ?? palette[this.owners.indexOf(id) % palette.length]);
+      castle.querySelector('.castle-label').textContent = `${members.includes(this.viewerId) ? 'あなたの城 · ' : ''}${label}`;
+      castle.querySelector('.castle-label').title = label;
+      castle.classList.toggle('eliminated', Boolean(this.players[id]?.eliminated));
+      const tier = UI_CONFIG.castleTiers.filter(t => members.length >= t.min).at(-1);
+      if (castle.dataset.tier !== tier.name || castle.dataset.artColor !== colorOf(id)) {
+        castle.dataset.tier = tier.name;
+        castle.dataset.artColor = colorOf(id);
+        castle.querySelector('.castle-pic').innerHTML = this.castlePicture(id, Number(castle.dataset.damage ?? 0));
+      }
+    }
+  }
+
+  castlePoint(id) {
+    const viewer = this.owners.indexOf(this.ownerOf(this.viewerId));
+    const index = this.owners.indexOf(this.ownerOf(id));
+    const angle = Math.PI / 2 + (index - viewer) * Math.PI * 2 / this.owners.length;
+    return { x: 50 + Math.cos(angle)*39, y: 50 + Math.sin(angle)*39 };
+  }
+  plazaPoint(playerId, position, targetId) {
+    const from = this.castlePoint(playerId);
+    const target = this.castlePoint(targetId ?? this.opponentOf(playerId));
+    const mid = this.middleSquare;
+    if (position >= this.laneLength) return target;
+    const square = position < mid ? position : this.laneLength - 1 - position;
+    const t = (square + .65)/(mid + .65);
+    const castle = position < mid ? from : target;
+    return position === mid ? {x:50,y:50} : {x:castle.x+(50-castle.x)*t,y:castle.y+(50-castle.y)*t};
+  }
+
+  fitPlaza() {
+    if (!this.isPlaza) return;
+    const fit = Math.min(this.plazaViewport.clientWidth, this.plazaViewport.clientHeight) / (this.plazaSize ?? UI_CONFIG.plazaSize);
+    this.plazaScale = fit*this.zoom;
+    this.plazaStage.style.transform = `translate(-50%, -50%) scale(${this.plazaScale})`;
+    this.zoomText.textContent = `${Math.round(this.zoom*100)}%`;
+  }
+  buildPlazaControls() {
+    this.plazaViewport = document.createElement('div'); this.plazaViewport.className = 'plaza-viewport'; this.plazaViewport.hidden = true;
+    this.plazaStage = document.createElement('div'); this.plazaStage.className = 'plaza-stage';
+    this.plazaStage.style.width = this.plazaStage.style.height = `${UI_CONFIG.plazaSize}px`;
+    const hub = document.createElement('div'); hub.className = 'plaza-hub'; hub.textContent = '広場';
+    this.plazaStage.append(hub); this.plazaViewport.append(this.plazaStage); this.el.board.append(this.plazaViewport);
+    this.zoomBar = document.createElement('div'); this.zoomBar.className = 'plaza-zoom'; this.zoomBar.hidden = true;
+    this.zoomText = document.createElement('span');
+    for (const [text, delta] of [['−',-.15],['＋',.15]]) {
+      const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'small-btn'; btn.textContent = text;
+      btn.setAttribute('aria-label', delta < 0 ? '盤面を縮小' : '盤面を拡大');
+      btn.addEventListener('click', () => {this.zoom = Math.min(1.6,Math.max(.65,this.zoom+delta)); this.fitPlaza();});
+      this.zoomBar.append(btn);
+    }
+    this.zoomBar.append(this.zoomText); this.el.board.append(this.zoomBar);
+    let startDistance = 0, startZoom = 1;
+    this.plazaViewport.addEventListener('touchstart', e => {
+      if(e.touches.length !== 2) return;
+      startDistance = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY); startZoom = this.zoom;
+    }, {passive:true});
+    this.plazaViewport.addEventListener('touchmove', e => {
+      if(e.touches.length !== 2 || !startDistance) return;
+      e.preventDefault(); const d = Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
+      this.zoom = Math.min(1.6,Math.max(.65,startZoom*d/startDistance)); this.fitPlaza();
+    }, {passive:false});
   }
 
   /** 道（魔法の演出を重ねる場所） */
   roadEl() {
-    return this.el.road;
+    return this.isPlaza ? this.plazaStage : this.el.road;
   }
 
   /** そのプレイヤーの兵士の要素（魔法が当たる相手を光らせる・雷を落とす） */
@@ -210,11 +345,13 @@ export class Renderer {
 
   /** @param {object} model main.js の表示用の状態 */
   renderAll(model) {
+    this.configureBoard(model);
     if (model.playerOrder) this.playerOrder = model.playerOrder;
     this.setTurnInfo(model.turn, model.round);
     this.setPiles(model.deckCount, model.discardCount);
     const opp = this.opponentOf(this.viewerId);
-    this.setOppHandCount(model.players[opp].handCount);
+    this.setOppHandCount(model.players[opp]?.handCount ?? 0);
+    this.el.oppName.textContent = this.playerOrder.length > 2 ? `${this.owners.length}つの城` : playerName(opp);
     for (const id of this.playerOrder) {
       const p = model.players[id];
       this.setCastleHp(id, p.castleHp, { instant: true, max: p.castleMaxHp });
@@ -234,7 +371,7 @@ export class Renderer {
 
   /** 手番の人の城を目立たせる */
   setCurrentPlayer(playerId) {
-    for (const id of this.playerOrder) this.castleEl(id).classList.toggle('current', id === playerId);
+    for (const id of this.owners ?? this.playerOrder) this.castleEl(id).classList.toggle('current', id === this.ownerOf(playerId));
   }
 
   setPiles(deckCount, discardCount, { bumpDeck = false, bumpDiscard = false } = {}) {
@@ -245,12 +382,16 @@ export class Renderer {
   }
 
   setOppHandCount(count) {
+    if (this.playerOrder.length > 2) count = this.playerOrder.filter(id => id !== this.viewerId).reduce((n,id) => n+(this.players[id]?.handCount ?? 0),0);
+    this.el.oppHandCount.parentElement.title = this.playerOrder.length > 2 ? 'ほかの人の手札（合計）' : '相手の手札';
     this.el.oppHandCount.textContent = String(count);
   }
 
   /** コインの表示（相手は上のバー、自分は「強化」ボタン） */
   setCoins(playerId, coins, { bump = false } = {}) {
     const el = playerId === this.viewerId ? this.el.myCoins : this.el.oppCoins.querySelector('b');
+    if (playerId !== this.viewerId && this.playerOrder.length > 2) coins = this.playerOrder.filter(id => id !== this.viewerId).reduce((n,id) => n+(this.players[id]?.coins ?? 0),0);
+    this.el.oppCoins.title = this.playerOrder.length > 2 ? 'ほかの人のコイン（合計）' : '相手のコイン';
     el.textContent = String(coins ?? 0);
     if (bump) this.bump(this.coinEl(playerId));
   }
@@ -289,7 +430,7 @@ export class Renderer {
     // 城が壊れていく見た目（0：無傷 〜 3：落ちた）
     const damage = String(ratio <= 0 ? 3 : ratio <= 0.34 ? 2 : ratio <= 0.67 ? 1 : 0);
     if (castle.querySelector('.castle-pic > .castle-art')?.dataset.damageStage !== damage) {
-      castle.querySelector('.castle-pic').innerHTML = castleArt(colorOf(playerId), Number(damage));
+      castle.querySelector('.castle-pic').innerHTML = this.castlePicture(playerId, Number(damage));
     }
     castle.dataset.damage = damage;
     castle.querySelector('.hp-value').textContent = String(Math.max(0, hp));
@@ -312,6 +453,18 @@ export class Renderer {
   setSpirit(playerId, spirit) {
     const badge = this.castleEl(playerId).querySelector('.castle-spirit');
     if (!badge) return;
+    if (this.teamSize(playerId) > 1) {
+      if (this.players[playerId]) this.players[playerId].spirit = spirit;
+      const spirits = Object.entries(this.players).filter(([id,p]) => this.ownerOf(id) === this.ownerOf(playerId) && p.spirit);
+      badge.hidden = !spirits.length; badge.replaceChildren();
+      for (const [id,p] of spirits) {
+        const label = document.createElement('span');
+        label.textContent = `${playerName(id)}：${this.cards[p.spirit.type]?.name ?? ''} あと${p.spirit.turns}回`;
+        badge.append(label);
+      }
+      badge.title = [...badge.children].map(el => el.textContent).join(' / ');
+      return;
+    }
     badge.hidden = !spirit;
     badge.replaceChildren();
     if (spirit) {
@@ -344,6 +497,15 @@ export class Renderer {
   }
 
   place(s) {
+    if (this.isPlaza) {
+      let p = this.plazaPoint(s.playerId, s.position, s.targetId);
+      if (s.place?.at === 'plaza') p = {x:50,y:50};
+      else if(s.place?.at === 'spoke') {
+        const castle = this.castlePoint(s.place.playerId), t = (s.place.square+.65)/(this.middleSquare+.65);
+        p = {x:castle.x+(50-castle.x)*t,y:castle.y+(50-castle.y)*t};
+      }
+      s.el.style.top = `${p.y}%`; s.el.style.setProperty('--x', `${p.x}%`); return;
+    }
     const arrived = s.position >= this.laneLength;
     s.el.style.top = `${this.topPercent(s.playerId, s.position)}%`;
     // レーンの中で、自分は右より・相手は左より。城に着いた兵士は、そのレーンのまん中へ寄る
@@ -357,18 +519,23 @@ export class Renderer {
     const el = document.createElement('div');
     el.className = `soldier ${this.sideOf(playerId)} no-anim`;
     el.dataset.id = st.soldierId;
+    el.dataset.role = st.role ?? def.role ?? 'melee';
+    const team = this.players[playerId]?.team;
+    el.dataset.team = team ?? '';
+    el.style.setProperty('--team-color', UI_CONFIG.teamColors[team] ?? UI_CONFIG.teamColors[this.playerOrder.indexOf(playerId)]);
     el.dataset.color = colorOf(playerId);
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="soldier-token"><div class="soldier-pic"></div>' +
       '<span class="soldier-weapon" hidden></span><span class="soldier-shield" hidden></span><span class="soldier-status" hidden></span></div>' +
       `<div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
     el.querySelector('.soldier-pic').innerHTML = unitArt(st.type, colorOf(playerId), def.name ?? st.type);
+    const turns = document.createElement('span'); turns.className = 'soldier-turns'; el.append(turns);
     this.el.units.appendChild(el);
     const s = {
       el,
       playerId,
       soldierId: st.soldierId,
-      roadId: st.roadId,
+      roadId: st.roadId, targetId: st.targetId, place: st.place, role: st.role ?? def.role ?? 'melee', turnsLeft: st.turnsLeft ?? def.stay ?? null,
       type: st.type,
       hp: st.hp ?? def.hp,
       attack: st.attack ?? def.attack,
@@ -390,6 +557,9 @@ export class Renderer {
   /** 兵士の見た目を、持っている値（HP・攻撃・武器・盾・状態異常）に合わせる */
   updateSoldierBadges(s) {
     const q = (sel) => s.el.querySelector(sel);
+    q('.soldier-turns').hidden = s.turnsLeft == null;
+    q('.soldier-turns').textContent = `${s.role === 'mage' ? '✦' : '➶'} あと${s.turnsLeft}回`;
+    s.el.title = `${this.cards[s.type]?.name ?? ''} · ${playerName(s.playerId)}${s.turnsLeft == null ? '' : ` · あと${s.turnsLeft}回`}`;
     q('.st.hp b').textContent = String(Math.max(0, s.hp));
     q('.st.atk b').textContent = String(s.attack);
     const baseHp = this.cards[s.type]?.hp;
@@ -435,6 +605,7 @@ export class Renderer {
     const s = this.soldiers.get(soldierId);
     if (!s) return;
     s.position = position;
+    s.place = null;
     this.place(s);
   }
 
@@ -464,12 +635,13 @@ export class Renderer {
         s.el.style.setProperty('--offset', '0px');
         continue;
       }
-      const key = `${s.playerId}:${s.roadId}:${s.position}`;
+      const point = this.isPlaza ? this.plazaPoint(s.playerId, s.position, s.targetId) : null;
+      const key = point ? `${point.x.toFixed(1)}:${point.y.toFixed(1)}` : `${s.playerId}:${s.roadId}:${s.position}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(s);
     }
     const width = (this.el.units.clientWidth || 320) / this.laneCount; // 1レーンの幅
-    const half = width * 0.5;
+    const half = this.isPlaza ? 110 : width * 0.5;
     for (const list of groups.values()) {
       // 片側の幅（道の半分）に収まるように間をつめる
       const token = list[0].el.offsetWidth || 56;
@@ -496,6 +668,7 @@ export class Renderer {
         s.el.classList.add('no-anim');
         this.moveSoldier(st.soldierId, st.position);
         Object.assign(s, {
+          role: st.role, turnsLeft: st.turnsLeft, place: st.place, targetId: st.targetId,
           hp: st.hp,
           attack: st.attack,
           weapon: st.weapon ?? null,
@@ -504,6 +677,7 @@ export class Renderer {
           statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0 },
         });
         this.updateSoldierBadges(s);
+        this.place(s);
         void s.el.offsetWidth;
         s.el.classList.remove('no-anim', 'hit', 'hit-poison', 'blocked', 'appear', 'glow');
       }
@@ -527,6 +701,7 @@ export class Renderer {
     el.querySelector('.monster-pic').innerHTML = monsterArt(st.type, def.name ?? st.type);
     el.style.top = `${((this.rowOfSquare(st.square) + 0.5) / this.laneLength) * 100}%`;
     el.style.left = `${this.laneCenter(this.laneOf(st.roadId))}%`;
+    if (st.roadId === 'plaza') { el.style.top = '50%'; el.style.left = '50%'; }
     this.el.units.appendChild(el);
     const m = { ...st, el };
     this.monsters.set(st.monsterId, m);
@@ -575,7 +750,7 @@ export class Renderer {
 
   updateThreatWarnings() {
     const near = [...this.monsters.values()].some((m) => m.attackIn != null && m.attackIn <= 1);
-    for (const castle of Object.values(this.el.castle)) {
+    for (const castle of new Set([...Object.values(this.el.castle), ...this.castles.values()])) {
       const hp = Number(castle.dataset.hp), max = Number(castle.dataset.max);
       const on = near && hp > 0 && max > 0 && hp / max <= UI_CONFIG.warningHpRatio;
       castle.classList.toggle('under-threat', on);
@@ -636,11 +811,12 @@ export class Renderer {
     const mEl = node.closest('.monster');
     const cEl = node.closest('.castle');
     const lEl = node.closest('.lane');
-    if (sEl) return this.targets.find((x) => x.soldierId === sEl.dataset.id) ?? null;
-    if (mEl) return this.targets.find((x) => x.monsterId === mEl.dataset.id) ?? null;
+    if (sEl) return this.targets.find(x => x.soldierId === sEl.dataset.id) ?? (!this.isPlaza ? this.targets.find(x => x.roadId && this.laneOf(x.roadId) === this.laneOf(this.soldier(sEl.dataset.id)?.roadId)) : null) ?? null;
+    if (mEl) return this.targets.find(x => x.monsterId === mEl.dataset.id) ?? (!this.isPlaza ? this.targets.find(x => x.roadId && this.laneOf(x.roadId) === this.laneOf(this.monster(mEl.dataset.id)?.roadId)) : null) ?? null;
     if (cEl) {
-      const playerId = cEl === this.el.castle.me ? this.viewerId : this.opponentOf(this.viewerId);
-      return this.targets.find((x) => x.playerId === playerId && !x.roadId && !x.soldierId && !x.monsterId) ?? null;
+      const playerId = cEl.dataset.playerId ?? (cEl === this.el.castle.me ? this.viewerId : this.opponentOf(this.viewerId));
+      const options = this.targets.filter(x => this.ownerOf(x.playerId) === playerId && !x.roadId && !x.soldierId && !x.monsterId);
+      return options.length > 1 ? {options} : options[0] ?? null;
     }
     if (lEl) return this.targets.find((x) => x.roadId && this.laneOf(x.roadId) === Number(lEl.dataset.lane)) ?? null;
     return null;

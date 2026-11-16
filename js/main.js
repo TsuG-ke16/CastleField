@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { RoomView } from './ui/RoomView.js';
 import { CardGuide } from './ui/CardGuide.js';
 import { ProgressPanel } from './ui/ProgressPanel.js';
 import { Game, EVENT_TYPES } from './game/Game.js';
@@ -20,7 +21,7 @@ import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
 import { sound } from './ui/Sound.js';
-import { castleArt, unitArt, icon, colorOf, preloadAssets } from './ui/art.js';
+import { castleArt, unitArt, icon, colorOf, preloadAssets, isAssetReady } from './ui/art.js';
 import { playerName, setPlayerNames, reasonText, soldierInfo, monsterInfo, GAME_OVER_TEXT, GAME_OVER_TEXT_LOST } from './ui/text.js';
 
 const params = new URLSearchParams(location.search);
@@ -103,6 +104,8 @@ let cpu = null;            // { id, level, strategy, rng }（ひとりで遊ぶ�
 
 // オンライン
 const SESSION_KEY = 'cf-online'; // つなぎ直し用に、部屋の鍵をこのタブに覚えておく（sessionStorage）
+let roomView;
+let roomPassphrase = '';
 let room = null;           // サーバーから届いた部屋の状態
 let batches = [];          // 届いた「イベントの列 + 状態」。順番に見せる
 let pumping = false;
@@ -179,6 +182,11 @@ async function boot() {
     onMonsterTap: (m) => toast(monsterInfo(m, { monsters }), 'info'),
     onTargetTap: (target) => { if (!busy) targeting.tap(target); },
   });
+  roomView = new RoomView({ onAction: (method, args) => session.act(method, args), onLeave: () => showTitle() });
+  $('back-to-room').addEventListener('click', async () => {
+    const res = await session?.act('backToRoom');
+    if (!res?.ok) toast(res?.reason ?? '部屋に戻れませんでした');
+  });
   handView = new HandView({
     cards, rules, rarities, getContext: uiContext, textOpts: { monsters: Boolean(monsters), debug: DEBUG },
     onPlay: playCard, onDiscard: discard, onNotice: toast,
@@ -221,6 +229,10 @@ async function boot() {
   if (DEBUG) {
     new DebugPanel({
       cards,
+      getPlaceholders: () => ({
+        missing: Object.keys(cards).map(type => `cards/card-${type.replace(/[A-Z]/g, c => `-${c.toLowerCase()}`)}.png`).filter(path => !isAssetReady(path)),
+        standIns: [],
+      }),
       getGame: () => game,
       getSeed: () => seed,
       getViewerId: () => viewerId,
@@ -539,6 +551,7 @@ async function joinOnline() {
   batches = [];
   room = null;
   connected = true;
+  roomPassphrase = pass;
   const res = await client.join(pass, name);
   el.titleJoin.disabled = false;
   if (session !== client) return; // 待っているあいだに「もどる」を押した
@@ -557,7 +570,7 @@ async function joinOnline() {
 
 function saveOnlineSession(client) {
   try {
-    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token: client.token, playerId: client.playerId }));
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token: client.token, playerId: client.playerId, passphrase: roomPassphrase }));
   } catch { /* 覚えられなければ、読み直したときにつなぎ直せないだけ */ }
 }
 
@@ -588,6 +601,7 @@ function resumeOnline() {
   room = null;
   connected = true;
   viewerId = saved.playerId;
+  roomPassphrase = saved.passphrase ?? '';
   el.titleMain.hidden = true;
   el.titleForm.hidden = false;
   setTitleWaiting(true);
@@ -596,6 +610,7 @@ function resumeOnline() {
 }
 
 function leaveOnline() {
+  roomView?.hide();
   if (session?.online) {
     // 自分から出る：サーバーに知らせる（残った人に「部屋を出ました」と出る）。返事は待たない
     if (session.token) session.leave();
@@ -613,10 +628,14 @@ function leaveOnline() {
 
 function onRoom(r) {
   room = r;
+  if (r.you) { viewerId = r.you; session.playerId = r.you; saveOnlineSession(session); }
   setPlayerNames(Object.fromEntries(r.players.map((p) => [p.playerId, p.name])));
   if (!r.started) {
-    el.titleStatus.textContent = `相手を待っています…（${r.players.length}/${r.capacity}人）同じ合言葉を入れてもらってください`;
-  }
+    gen++; anim.skip(); queue = []; batches = []; model = null;
+    el.result.hidden = true; el.title.hidden = true;
+    roomView.render(r, roomPassphrase);
+  } else roomView.hide();
+  $('back-to-room').hidden = r.you !== r.hostId;
   updateNetStatus();
   // もう1回：自分が押したら相手を待つ。相手が先に押していたら知らせる
   const votes = r.rematchVotes ?? [];
@@ -705,6 +724,7 @@ async function showBatch(batch) {
     resetForNewGame();
     for (const c of st.players[viewerId]?.hand ?? []) knownCards.set(c.cardId, { ...c });
     el.title.hidden = true;
+    roomView.hide();
     renderer.setViewer(viewerId);
     handView.setColor(colorOf(viewerId));
     model = modelFromState(st);
@@ -732,6 +752,7 @@ function modelFromState(st) {
   for (const id of st.playerOrder) {
     const p = st.players[id];
     players[id] = {
+      team: p.team, castleOwner: p.castleOwner ?? id, eliminated: p.eliminated,
       castleHp: p.castleHp,
       castleMaxHp: p.castleMaxHp,
       armor: p.armor ?? 0,
@@ -746,6 +767,7 @@ function modelFromState(st) {
     };
   }
   return {
+    layout: st.layout, roads: structuredClone(st.roads ?? []), teams: structuredClone(st.teams ?? null), winnerTeam: st.winnerTeam,
     playerOrder: [...st.playerOrder],
     turn: st.turn,
     round: st.round ?? 0,
@@ -1227,10 +1249,13 @@ async function showResult(winner) {
   await anim.delay(UI_CONFIG.timing.gameOverDelay);
   if (s !== session) return; // 待っているあいだにタイトルへ戻った
   const online = !usesHandover(); // オンライン・CPU 戦：画面を見ている人から見た勝ち負けを出す
-  const won = !online || winner === viewerId;
+  const winningTeam = model.teams?.[model.winnerTeam];
+  const won = !online || winner === viewerId || Boolean(winningTeam?.members.includes(viewerId));
   el.result.dataset.player = winner;
   el.result.classList.toggle('lost', !won);
   el.resultTitle.textContent = online ? (won ? 'あなたの勝ち！' : '負けてしまった…') : `${playerName(winner)}の勝ち！`;
+  if (winningTeam) el.resultTitle.textContent = `${winningTeam.members.map(playerName).join('・')}のチームが勝利！`;
+  $('back-to-room').hidden = !session?.online || room?.hostId !== viewerId;
   const how = (won ? GAME_OVER_TEXT : GAME_OVER_TEXT_LOST)[model.gameOverReason] ?? '';
   el.resultSub.textContent = `${how ? `${how}　` : ''}${model.turn}ターンで決着`;
   el.resultPic.innerHTML = castleArt(colorOf(winner)) + unitArt('knight', colorOf(winner));
