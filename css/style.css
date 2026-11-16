@@ -1104,3 +1104,4 @@ html, body { background: radial-gradient(ellipse at top, #a9d4e4, #294957); }
 .castle-spirit { display: grid; grid-template-columns: 18px 1fr; align-items: center; column-gap: 4px; }
 .castle-spirit .spirit-symbol { grid-row: span 2; width: 18px; height: 18px; font-size: 18px; }
 .castle-spirit > span:last-child { grid-column: 2; }
+
