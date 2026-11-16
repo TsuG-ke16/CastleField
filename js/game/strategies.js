@@ -168,7 +168,9 @@ function respondDefense(game, pid, rng, ctx, policy) {
       // 城：城HPが半分を切りそうなとき、または大きなダメージのときに城壁を出す
       const worth = policy === 'always' || d.amount >= 6 || me.castleHp - d.amount <= me.castleMaxHp / 2;
       if (!worth) break;
-      card = options[0];
+      // 反射・身代わりは、攻撃そのものを止める（使えるなら城壁より先に出す）
+      const counter = options.find((c) => ['reflectSpell', 'nullifySoldier'].includes(ctx.cards[c.type].effect));
+      card = counter ?? options[0];
     } else {
       // 兵士：やられそうな兵士（いちばん強いもの）に、それを守れる盾を出す
       const victims = me.soldiers.filter((x) => d.soldierIds.includes(x.soldierId)).sort((a, b) => b.attack - a.attack);
@@ -331,12 +333,17 @@ function smartTurn(game, pid, ctx) {
   const threat = enemy && enemy.soldiers.some((s) => s.position + ctx.cards[s.type].speed >= L);
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'freezeEnemySoldiers'))) return;
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'poisonEnemySoldiers'))) return;
-  playFirst(game, playable, [
+  const played = playFirst(game, playable, [
     ...soldierTypes(ctx),
     ...castleSpells,
     ...typesWithEffect(ctx, 'damageEnemySoldiers'),
     ...typesWithEffect(ctx, 'healOwnCastle'),
   ]);
+  if (played) return;
+  // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み
+  if (enemy && enemy.handCount >= 3 && playFirst(game, playable, typesWithEffect(ctx, 'stealCard'))) return;
+  if (me.hand.length >= 4 && playFirst(game, playable, typesWithEffect(ctx, 'redrawHand'))) return;
+  playFirst(game, playable, typesWithEffect(ctx, 'randomEffect'));
 }
 
 /** どの戦い方も、ターンの最初に同点の選び方の乱数を入れる */
