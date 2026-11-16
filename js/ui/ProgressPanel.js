@@ -1,4 +1,3 @@
-import { dropRates, rewardOdds } from '../game/Setup.js';
 import { setRarities } from './rarity.js';
 import { cardArt } from './art.js';
 
@@ -10,8 +9,8 @@ const make = (tag, cls, text) => {
 };
 
 export class ProgressPanel {
-  constructor({ cards, rarities, rules, monsters, getContext, onFuse }) {
-    Object.assign(this, { cards, rarities, rules, monsters, getContext, onFuse });
+  constructor({ cards, rarities, rules, monsters, getContext, onFuse, onRates }) {
+    Object.assign(this, { cards, rarities, rules, monsters, getContext, onFuse, onRates });
     setRarities(rarities);
     this.openButton = document.getElementById('fusion-open');
     this.status = document.getElementById('economy-status');
@@ -63,14 +62,14 @@ export class ProgressPanel {
     return { ...ctx, state: ctx.session?.getState(ctx.viewerId) };
   }
   pairs() {
-    const { state, viewerId, busy, sending } = this.state();
+    const { state, viewerId, busy, sending, session } = this.state();
     if (!state || state.phase !== 'main' || state.currentPlayer !== viewerId || busy || sending) return [];
     const groups = new Map();
     for (const card of state.players[viewerId]?.hand ?? []) {
       if (!this.cards[card.type]?.fuseTo) continue;
       const list = groups.get(card.type) ?? []; list.push(card); groups.set(card.type, list);
     }
-    return [...groups.values()].filter((list) => list.length >= 2);
+    return [...groups.values()].filter((list) => list.length >= 2 && (!session.canFuse || session.canFuse(list[0].cardId, list[1].cardId).ok));
   }
   refresh() {
     const { state, viewerId } = this.state();
@@ -102,33 +101,5 @@ export class ProgressPanel {
       this.content.append(btn);
     }
   }
-  showRates() {
-    this.open('rates', '排出率を見る');
-    if (!this.rarities) { this.content.append(make('p', '', '排出率データがありません。')); return; }
-    const { state, viewerId } = this.state();
-    const luck = state?.players[viewerId]?.luck;
-    const boost = luck ? { from: this.getLuckRarity(), multiplier: luck.boost } : null;
-    const rates = dropRates(this.cards, this.rarities, boost);
-    this.content.append(make('p', 'progress-note', luck ? `運命の祈り中：次の${luck.draws}枚の確率です。` : '通常抽選の確率です。入手券は指定レアリティ、合成は表示されたカードを獲得します。小数点以下の丸めで合計がずれる場合があります。'));
-    for (const [id, rarity] of Object.entries(this.rarities)) {
-      const group = make('details', 'rate-group');
-      const members = Object.entries(this.cards).filter(([, c]) => c.rarity === id);
-      const total = members.reduce((sum, [key]) => sum + rates[key], 0);
-      group.style.setProperty('--rarity', rarity.color);
-      group.append(make('summary', '', `${rarity.name}　${total.toFixed(2)}%`));
-      for (const [type, def] of members) {
-        const row = make('div', 'rate-row'); row.append(make('span', '', def.name), make('b', '', `${rates[type].toFixed(3)}%`)); group.append(row);
-      }
-      this.content.append(group);
-    }
-    this.content.append(make('h3', '', '魔物の報酬（とどめを刺した人に1枚）'));
-    for (const monster of Object.values(this.monsters ?? {})) {
-      if (!monster.rewardRarity) continue;
-      const odds = rewardOdds(this.cards, this.rarities, monster.rewardRarity, this.rules.rewardLuckyChance ?? 0);
-      const row = make('div', 'reward-row');
-      row.append(make('b', '', monster.name), make('span', '', odds.map((o) => `${this.rarities[o.rarity].name} ${o.rate.toFixed(1)}%${o.lucky ? '（ラッキー）' : ''}`).join(' ／ ')));
-      this.content.append(row);
-    }
-  }
-  getLuckRarity() { return this.getContext().luckFrom ?? 'rare'; }
+  showRates() { this.onRates?.(); }
 }

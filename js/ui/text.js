@@ -41,6 +41,7 @@ export function elementName(element) {
 const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 // 効果（cards.json の effect）ごとの説明文の型
+const missingDescriptions = new Set();
 const EFFECT_TEXT = {
   gainCoins: (c) => `コインを${c.amount}獲得（メインの1枚）`,
   damageEnemyCastle: (c, rules, opts) => `相手の城に${c.amount}ダメージ${opts.monsters ? '（魔物も狙える）' : ''}`,
@@ -88,6 +89,13 @@ export function cardDescription(def, rules, opts = {}) {
   }
   // レーンを選ぶ魔法は、選んだ1レーンの兵士だけに効く（rules.laneCount が2以上のとき）
   if (def.scope === 'lane' && (rules?.laneCount ?? 1) > 1) text = text.replace('相手の兵士全員', '選んだ1レーンの相手の兵士');
+  if (!text) {
+    if (opts.debug && !missingDescriptions.has(def.effect ?? def.name)) {
+      missingDescriptions.add(def.effect ?? def.name);
+      console.warn('[description]', def.name, def.effect);
+    }
+    return '効果の詳細を確認できません。';
+  }
   if (def.exhaust) text += '。使い切り';
   return text;
 }
@@ -105,6 +113,7 @@ export function cardShort(def) {
     return list;
   }
   switch (def.effect) {
+    case 'summonSpirit': return [{ icon: ELEMENT_LOOK[def.spirit]?.iconName ?? 'crown', text: `${def.amount}・${def.turns}回` }];
     case 'gainCoins': return [{ icon: 'coin', text: `+${def.amount}` }];
     case 'damageEnemyCastle': return [{ icon: 'fire', text: `城 -${def.amount}` }];
     case 'damageEnemySoldiers': return [{ icon: 'sword', text: `兵士 -${def.amount}` }];

@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { CardGuide } from './ui/CardGuide.js';
 import { ProgressPanel } from './ui/ProgressPanel.js';
 import { Game, EVENT_TYPES } from './game/Game.js';
 import { Renderer } from './ui/Renderer.js';
@@ -67,6 +68,7 @@ const el = {
 
 let rarities = null;
 let progressPanel;
+let cardGuide;
 let cards;
 let rules;
 let monsters = null;  // data/monsters.json（読めなければ null：魔物は出ない）
@@ -138,6 +140,8 @@ async function loadOptionalJson(path) {
   }
 }
 
+function uiContext() { return { session, viewerId, busy, sending, luckFrom: upgrades?.luck?.fromRarity }; }
+
 async function boot() {
   try {
     [cards, rules, monsters, upgrades, rarities] = await Promise.all([
@@ -176,13 +180,13 @@ async function boot() {
     onTargetTap: (target) => { if (!busy) targeting.tap(target); },
   });
   handView = new HandView({
-    cards, rules, rarities, textOpts: { monsters: Boolean(monsters) },
+    cards, rules, rarities, getContext: uiContext, textOpts: { monsters: Boolean(monsters), debug: DEBUG },
     onPlay: playCard, onDiscard: discard, onNotice: toast,
   });
   anim = new Animations({ renderer, handView, cards, rules, monsters, upgrades, rarities });
   targeting = new Targeting({ renderer, handView, onChoose: (cardId, target) => doPlay(cardId, target) });
   if (upgrades && Object.keys(upgrades).length) {
-    upgradePanel = new UpgradePanel({ upgrades, onBuy: buyUpgrade, onOpen: refreshUpgrades, onDenied: (r) => toast(r, 'info') });
+    upgradePanel = new UpgradePanel({ upgrades, rarities, onBuy: buyUpgrade, onOpen: refreshUpgrades, onDenied: (r) => toast(r, 'info') });
   } else {
     // 強化のデータがないときも、コインのボタンを押したら理由を出す
     el.upgradeOpen.addEventListener('click', (e) => {
@@ -201,9 +205,12 @@ async function boot() {
     if (busy && !e.target.closest('.screen, #debug-panel, #debug-toggle, #menu-open')) anim.skip();
   }, true);
 
+  cardGuide = new CardGuide({ cards, rarities, rules, monsters, getContext: uiContext, debug: DEBUG });
   progressPanel = new ProgressPanel({ cards, rarities, rules, monsters,
-    getContext: () => ({ session, viewerId, busy, sending, luckFrom: upgrades?.luck?.fromRarity }),
+    getContext: uiContext, onRates: () => cardGuide.open('rates'),
     onFuse: async (a, b) => {
+      const check = session.canFuse?.(a, b);
+      if (check && !check.ok) { toast(reasonText(check.reason)); return; }
       const res = await act(() => session.fuse(a, b));
       if (res && !res.ok) toast(reasonText(res.reason));
     },

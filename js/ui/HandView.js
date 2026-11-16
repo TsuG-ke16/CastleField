@@ -4,6 +4,7 @@
 //   3. カードを上（盤面）へドラッグして離す
 // 捨てるカードを選ぶ画面もここで扱う。
 
+import { currentRates } from './CardInfo.js';
 import { UI_CONFIG } from './config.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
@@ -18,8 +19,9 @@ export class HandView {
    *           onDiscard: (cardIds: string[]) => void,
    *           onNotice: (text: string) => void }} opts
    */
-  constructor({ cards, rules, rarities = null, textOpts = {}, onPlay, onDiscard, onNotice }) {
+  constructor({ cards, rules, rarities = null, textOpts = {}, getContext = () => ({}), onPlay, onDiscard, onNotice }) {
     this.rarities = rarities;
+    this.getContext = getContext;
     this.cards = cards;
     this.rules = rules;
     this.textOpts = textOpts; // 説明文の切りかえ（魔物が出るゲームか など）
@@ -52,6 +54,20 @@ export class HandView {
       discardOk: document.querySelector('#discard-bar .discard-ok'),
     };
 
+    this.el.detail.querySelector('.detail-close').onclick = () => this.select(null);
+    let press;
+    const stopPress = () => { clearTimeout(press?.timer); press = null; };
+    this.el.hand.addEventListener('pointerdown', (e) => {
+      this.suppressClick = false;
+      const card = e.target.closest('.card'); if (!card || this.discardCount || (e.button !== undefined && e.button !== 0)) return;
+      stopPress();
+      press = { x: e.clientX, y: e.clientY, timer: setTimeout(() => {
+        this.select(card.dataset.id); this.suppressClick = true; this.cancelDrag();
+      }, UI_CONFIG.input.longPress) };
+    });
+    this.el.hand.addEventListener('pointermove', (e) => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > UI_CONFIG.input.dragStartDistance) stopPress(); });
+    for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) this.el.hand.addEventListener(event, stopPress);
+    this.el.hand.addEventListener('contextmenu', (e) => e.preventDefault());
     const refill = $('hand-refill');
     if (refill) refill.textContent = rules.drawUntilHand > 0 ? `毎ターン${rules.drawUntilHand}枚まで補充` : '';
     this.el.hand.addEventListener('keydown', (e) => {
@@ -95,6 +111,12 @@ export class HandView {
       box.innerHTML = '<div class="hand-empty">手札がありません</div>';
     }
     for (const card of this.hand) box.appendChild(this.makeCardEl(card, fresh.has(card.cardId)));
+    const counts = new Map();
+    for (const c of this.hand) counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
+    for (const el of box.querySelectorAll('.card')) {
+      const c = this.hand.find((c) => c.cardId === el.dataset.id);
+      el.classList.toggle('can-fuse', counts.get(c.type) >= 2 && Boolean(this.cards[c.type]?.fuseTo));
+    }
     this.layout();
     this.updateDetail();
     this.updateDiscardBar();
@@ -273,17 +295,29 @@ export class HandView {
     this.el.detailHint.classList.toggle('warn', Boolean(reason));
     if (reason) this.el.detailHint.textContent = `いまは出せません：${reason}`;
     else this.el.detailHint.textContent = slotNote(def);
+    const rarity = this.rarities?.[def.rarity];
+    const badge = this.el.detail.querySelector('.detail-rarity');
+    badge.textContent = rarity?.name ?? '';
+    badge.style.setProperty('--rarity', rarity?.color ?? '#999');
+    const meta = this.el.detail.querySelector('.detail-meta');
+    const context = this.getContext();
+    const rates = currentRates(context, this.cards, this.rarities);
+    const boosted = Boolean(context.session?.getState(context.viewerId)?.players[context.viewerId]?.luck);
+    const next = def.fuseTo ? this.cards[def.fuseTo]?.name : null;
+    meta.textContent = `${next ? `合成先：${next}（同じカード2枚）` : '合成：これ以上合成できません'} ／ 排出率${boosted ? '（祈り中）' : ''} ${Number(rates[card.type] ?? 0).toFixed(3)}%`;
+    this.el.detailUse.disabled = this.locked;
     this.el.detailUse.hidden = !input.useButton;
     this.el.detailUse.classList.toggle('blocked', Boolean(reason) || this.blocked.has(card.cardId));
     this.el.detail.hidden = false;
   }
 
   handleClick(e) {
-    if (this.locked) return;
+    if (this.suppressClick) { this.suppressClick = false; return; }
     if (this.drag?.moved) return;
     const el = e.target.closest('.card');
     if (!el) return;
     const id = el.dataset.id;
+    if (this.locked) { this.select(id); return; }
 
     if (this.discardCount) {
       this.toggleDiscard(id);

@@ -70,11 +70,16 @@ export const UI_CONFIG = {
   // 回復の数字
   healNumber: { size: 40, duration: 800 },
 
+  rewardFx: { base: 650, perRank: 175, luckyExtra: 180, max: 1600, collapse: 160, sparksBase: 6, sparksPerRank: 5 },
+  coinFx: { turnScale: .7, cardScale: 1.4, turnDuration: 400, cardDuration: 900 },
+  warningHpRatio: .25,
+
   // コイン・盾・城壁などの小さな数字
   smallNumber: { size: 22, duration: 700 },
 
   // カードの使い方（どれも同時に有効にできる。デバッグパネルから切り替えられる）
   input: {
+    longPress: 450,
     useButton: true,      // タップで選ぶ →「使う」ボタン
     tapAgain: true,       // 選んだカードをもう一度タップ
     dragToPlay: true,     // カードを盤面まで上にドラッグして離す

@@ -23,6 +23,8 @@ export class LocalSession {
     return this.game.surrender(playerId);
   }
 
+  getDropRates() { return this.game.getDropRates(); }
+  canFuse(a, b) { return this.game.canFuse(a, b); }
   async fuse(a, b) { return this.game.fuse(a, b); }
 
   getState(viewerId) {

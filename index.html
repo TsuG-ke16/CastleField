@@ -8,6 +8,7 @@
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/theme.css">
+  <link rel="stylesheet" href="css/rarity-fx.css">
 </head>
 <body>
   <div id="app">
@@ -71,9 +72,11 @@
       <div id="card-detail" class="panel" hidden>
         <div class="detail-text">
           <div class="detail-head"><span class="detail-kind"></span><b class="detail-name"></b></div>
-          <div class="detail-desc"></div>
+          <span class="detail-rarity"></span><div class="detail-desc"></div>
+          <div class="detail-meta"></div>
           <div class="detail-hint"></div>
         </div>
+        <button type="button" class="detail-close round-btn" aria-label="カード説明を閉じる">×</button>
         <button type="button" class="detail-use plank-btn">使う</button>
       </div>
       <div id="target-bar" class="panel" hidden>
@@ -140,6 +143,7 @@
       <div class="screen-box parchment menu-box">
         <p class="menu-title">メニュー</p>
         <button type="button" id="menu-sound" class="small-btn wide"></button>
+        <button type="button" id="menu-catalog" class="small-btn wide">カード・魔物一覧</button>
         <button type="button" id="menu-rates" class="small-btn wide">排出率を見る</button>
         <button type="button" id="menu-help" class="small-btn wide">遊び方</button>
         <button type="button" id="menu-surrender" class="small-btn wide danger" hidden>降参する</button>
@@ -177,6 +181,7 @@
             <button type="button" id="title-solo" class="plank-btn big mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m0 1c5-4 7 4 13 0v10c-6 4-8-4-13 0"/></svg></span><span><strong>ひとりで遊ぶ</strong><small>自分のペースで、CPUに挑戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
             <button type="button" id="title-local" class="plank-btn big alt2 mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M2 20v-2a6 6 0 0 1 12 0v2m2-15a3 3 0 0 1 0 6m1 3a5 5 0 0 1 5 5v1"/></svg></span><span><strong>ふたりで遊ぶ</strong><small>ひとつの画面で、交代しながら</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
             <button type="button" id="title-online" class="plank-btn big alt mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></span><span><strong>オンラインで遊ぶ</strong><small>合言葉を決めて、友だちと対戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
+            <button type="button" id="title-catalog" class="small-btn">カード・魔物一覧</button>
             <button type="button" id="title-help" class="small-btn">遊び方</button>
           </div>
           <div id="title-levels" class="parchment" hidden>

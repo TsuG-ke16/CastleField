@@ -5,7 +5,7 @@
 import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
-import { imageArt } from './art.js';
+import { cardArt, icon, imageArt } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -348,14 +348,60 @@ export class Animations {
     } else this.renderer.setOppHandCount(pl.handCount);
     if (this.skipping) return;
     sound.play('equip');
-    const glow = this.fx('fx-fusion-glow', this.centerOf(this.renderer.el.field));
-    glow.innerHTML = imageArt('fx/fusion.png', '', 'art');
-    this.animate(glow, [{ opacity: 0, transform: 'scale(.5)' }, { opacity: 1, offset: .3 }, { opacity: 0, transform: 'scale(1.4)' }], { duration: UI_CONFIG.timing.fusion, fill: 'forwards' }).then(() => glow.remove());
-    await this.banner(playerId === ctx.viewerId ? `${this.cards[from]?.name ?? ''} ×2 → ${this.cards[to]?.name ?? ''}` : '相手がカードを合成！', UI_CONFIG.timing.fusion, 'fusion');
+    if (playerId !== ctx.viewerId) { await this.banner('相手がカードを合成！', UI_CONFIG.timing.fusion, 'fusion'); return; }
+    const stage = this.fx('fx-fusion-stage', this.centerOf(this.renderer.el.field));
+    const rank = this.rarities?.[this.cards[to]?.rarity];
+    stage.style.setProperty('--rarity', rank?.color ?? '#d6b354');
+    for (const side of [0, 1]) {
+      const el = this.effectCard(from, this.cards[from]?.name); stage.append(el);
+      this.animate(el, [
+        { transform: `translate(${side ? 80 : -80}px, 0) rotate(${side ? 12 : -12}deg)`, opacity: 1 },
+        { transform: 'translate(0, 0) scale(.7)', opacity: 1, offset: .45 },
+        { transform: 'scale(.2)', opacity: 0, offset: .6 }, { opacity: 0 },
+      ], { duration: UI_CONFIG.timing.fusion, fill: 'forwards' });
+    }
+    const result = this.effectCard(to, this.cards[to]?.name); stage.append(result);
+    await this.animate(result, [{ transform: 'scale(.1)', opacity: 0 }, { transform: 'scale(.1)', opacity: 0, offset: .4 }, { transform: 'scale(1.15)', opacity: 1, offset: .65 }, { transform: 'scale(1)', opacity: 1, offset: .85 }, { transform: 'translateY(40px) scale(.6)', opacity: 0 }], { duration: UI_CONFIG.timing.fusion, fill: 'forwards' });
+    stage.remove();
+  }
+
+  effectCard(type, name) {
+    const el = document.createElement('div'); el.className = 'effect-card';
+    const art = document.createElement('div'); art.className = 'effect-card-art';
+    art.innerHTML = type ? cardArt(type, 'blue', name ?? '') : icon('card');
+    const label = document.createElement('b'); label.textContent = name ?? '相手の報酬カード';
+    el.append(art, label); return el;
+  }
+
+  async revealReward(reward, cardId, ctx) {
+    if (this.skipping) return;
+    const mine = reward.playerId === ctx.viewerId;
+    const card = mine ? ctx.lookupCard(cardId) : null;
+    const rarity = this.rarities?.[reward.rarity];
+    const rank = Math.max(0, Object.keys(this.rarities ?? {}).indexOf(reward.rarity));
+    const cfg = UI_CONFIG.rewardFx;
+    const duration = Math.min(cfg.max, cfg.base + rank * cfg.perRank + (reward.lucky ? cfg.luckyExtra : 0));
+    const stage = this.fx(`fx-reward-stage${reward.lucky ? ' lucky' : ''}`, this.centerOf(this.renderer.el.field));
+    stage.style.setProperty('--rarity', rarity?.color ?? '#d6b354');
+    stage.dataset.rarity = reward.rarity;
+    const heading = document.createElement('strong'); heading.className = 'reward-heading';
+    heading.textContent = reward.lucky ? `ラッキー！ ${this.rarities?.[reward.base]?.name ?? ''} → ${rarity?.name ?? ''}` : `${mine ? 'あなた' : '相手'}が${rarity?.name ?? ''}カード獲得！`;
+    stage.append(heading, this.effectCard(card?.type, card ? this.cards[card.type]?.name : '相手の報酬カード'));
+    const badge = document.createElement('span'); badge.className = 'reward-rarity'; badge.textContent = rarity?.name ?? ''; stage.append(badge);
+    sound.play('equip');
+    this.sparks(this.centerOf(this.renderer.el.field), { count: cfg.sparksBase + rank * cfg.sparksPerRank, color: rarity?.color ?? '#ffdf82', spread: 50 + rank * 20, size: 6 + rank });
+    if (rank === Object.keys(this.rarities ?? {}).length - 1) this.screenFlash(rarity.color, duration * .4);
+    try {
+      await this.animate(stage, [{ opacity: 0, transform: 'translate(-50%, -50%) scale(.4)' }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1.08)', offset: .18 }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: .8 }, { opacity: 0, transform: `translate(-50%, calc(-50% + ${mine ? 65 : -65}px)) scale(.5)` }], { duration, fill: 'forwards' });
+    } finally { stage.remove(); }
   }
 
   async cardDrawn({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
+    if (pl.pendingReward) {
+      const reward = pl.pendingReward; delete pl.pendingReward;
+      await this.revealReward(reward, cardIds[0], ctx);
+    }
     for (const cardId of cardIds) {
       pl.handCount += 1;
       if (pl.generatedDraws > 0) pl.generatedDraws -= 1;
@@ -893,6 +939,8 @@ export class Animations {
 
   async monsterAttackedCastle({ monsterId, playerId, amount, hp }, model) {
     model.players[playerId].castleHp = hp;
+    const m = this.modelMonster(model, monsterId);
+    if (m && m.castleAttack != null) { m.castleAttack += this.rules.monsterAttackGrowth ?? 0; this.renderer.updateMonster(monsterId, { castleAttack: m.castleAttack }); }
     const mEl = this.renderer.monsterEl(monsterId);
     const castle = this.renderer.castleEl(playerId);
     if (mEl && !this.skipping) {
@@ -933,24 +981,26 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.afterMonsterHit);
   }
 
-  async monsterDefeated({ monsterId, playerId, reward, rewardRarity, lucky }, model) {
-    if (rewardRarity) model.players[playerId].generatedDraws = (model.players[playerId].generatedDraws ?? 0) + 1;
+  async monsterDefeated({ monsterId, playerId, reward, rewardRarity, baseRarity, lucky }, model) {
+    if (rewardRarity) {
+      model.players[playerId].generatedDraws = (model.players[playerId].generatedDraws ?? 0) + 1;
+      model.players[playerId].pendingReward = { playerId, rarity: rewardRarity, base: baseRarity, lucky };
+    }
     model.monsters = (model.monsters ?? []).filter((m) => m.monsterId !== monsterId);
     const el = this.renderer.monsterEl(monsterId);
     if (!el || this.skipping) {
       this.renderer.removeMonster(monsterId);
       return;
     }
-    el.classList.add('dying');
     sound.play('hit', 0.6);
-    this.sparks(this.centerOf(el), { count: 14, color: '#ffcf3f', spread: 70, size: 10 });
-    const who = playerId === this.renderer.viewerId ? 'あなた' : '相手';
-    await this.hitstop(UI_CONFIG.monsterHit.hitstop * 2);
-    await this.banner(rewardRarity ? `${lucky ? 'ラッキー！ ' : 'とどめ！ '}${who}に${this.rarities?.[rewardRarity]?.name ?? rewardRarity}カード！` : `とどめ！ ${who}に${ICON.coin}${reward}`, UI_CONFIG.timing.reward, lucky ? 'reward lucky' : 'reward');
+    this.sparks(this.centerOf(el), { count: 12, color: this.rarities?.[rewardRarity]?.color ?? '#ffcf3f', spread: 55, size: 8 });
+    if (!rewardRarity) this.banner(`とどめ！ ${ICON.coin}${reward}`, UI_CONFIG.timing.reward, 'reward');
+    await this.hitstop(UI_CONFIG.monsterHit.hitstop);
+    await this.animate(el, [{ opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }, { opacity: 0, transform: 'translate(-50%, -50%) scale(.1) rotate(25deg)' }], { duration: UI_CONFIG.rewardFx.collapse, fill: 'forwards' });
     this.renderer.removeMonster(monsterId);
   }
 
-  async coinsChanged({ playerId, delta, coins }, model) {
+  async coinsChanged({ playerId, delta, coins, reason }, model) {
     model.players[playerId].coins = coins;
     this.renderer.setCoins(playerId, coins, { bump: true });
     if (this.skipping) return;
@@ -958,7 +1008,8 @@ export class Animations {
     const target = this.renderer.coinEl(playerId);
     if (target && !target.hidden) {
       const small = UI_CONFIG.smallNumber;
-      this.number(target, `${ICON.coin}${delta > 0 ? '+' : ''}${delta}`, { size: small.size, duration: small.duration, kind: delta > 0 ? 'coin' : 'block' });
+      const fx = UI_CONFIG.coinFx;
+      this.number(target, `${ICON.coin}${delta > 0 ? '+' : ''}${delta}`, { size: small.size * (reason === 'card' ? fx.cardScale : reason === 'turn' ? fx.turnScale : 1), duration: reason === 'card' ? fx.cardDuration : reason === 'turn' ? fx.turnDuration : small.duration, kind: delta > 0 ? 'coin' : 'block' });
     }
     await this.delay(UI_CONFIG.timing.coins);
   }
