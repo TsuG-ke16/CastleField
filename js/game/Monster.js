@@ -66,7 +66,7 @@ export class Monster {
   }
 }
 
-export const UPGRADE_EFFECTS = ['repairCastle', 'drawCards', 'sharpenSoldiers', 'boostDrops'];
+export const UPGRADE_EFFECTS = ['repairCastle', 'drawCards', 'sharpenSoldiers', 'boostDrops', 'gainCard'];
 
 /** upgrades.json の中身をチェックする（間違いは例外） */
 export function validateUpgrades(upgrades) {
@@ -85,6 +85,7 @@ export function validateUpgrades(upgrades) {
       if (typeof def.fromRarity !== 'string') throw new Error(`${where}: fromRarity（この以上のレアリティが出やすくなる）を書いてください`);
       if (typeof def.boost !== 'number' || def.boost < 1) throw new Error(`${where}: boost は1以上の数にしてください`);
     }
+    if (def.effect === 'gainCard' && typeof def.rarity !== 'string') throw new Error(`${where}: rarity（手に入るカードのレアリティ）を書いてください`);
     if (def.limit !== undefined && (!Number.isInteger(def.limit) || def.limit < 1)) {
       throw new Error(`${where}: limit（1試合に買える回数）は1以上の整数にしてください（書かなければ何回でも）`);
     }

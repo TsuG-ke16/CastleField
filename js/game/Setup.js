@@ -107,3 +107,15 @@ export function sampleType(cards, rarities, rng, boost = null) {
   }
   return entries[entries.length - 1][0];
 }
+
+/** 指定したレアリティのカードを、weight の重みで1種類引き当てる（そのレアリティのカードがなければ null） */
+export function sampleTypeOfRarity(cards, rarity, rng) {
+  const entries = Object.entries(cards).filter(([, d]) => d.rarity === rarity && (d.weight ?? 1) > 0);
+  const total = entries.reduce((n, [, d]) => n + (d.weight ?? 1), 0);
+  if (total <= 0) return null;
+  let x = rng() * total;
+  for (const [type, d] of entries) {
+    if ((x -= d.weight ?? 1) < 0) return type;
+  }
+  return entries[entries.length - 1][0];
+}

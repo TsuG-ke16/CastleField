@@ -867,7 +867,11 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 ### コインの入手手段を増やした（人間の指示）
 コインが魔物のとどめだけでは少なかったので、次の2つとカードを足した（**数値はすべて仮**）。
 - **最初に5枚**（`rules.initialCoins`、省略すると0）／**自分のターンの始めに1枚**（`rules.coinPerTurn`、省略すると0。`turnStarted` の後、ドローの前。`coinsChanged` の `reason` は `"turn"`）
-- **コインを増やすカード**（`effect: "gainCoins"`、`amount`。魔法なのでメインを使う）。5段階の系統：小銭袋（コモン+2）→金貨（アンコモン+3）→財宝（レア+5）→金脈（エピック+8）→王の財宝（レジェンド+12）。`coinsChanged` の `reason` は `"card"`。CPU（`smart` 系）は、ほかに出すものがないときに出す
+- **コインを増やすカード**（`effect: "gainCoins"`、`amount`。魔法なのでメインを使う）。5段階の系統：小銭袋（コモン+1）→金貨（アンコモン+3）→財宝（レア+8）→金脈（エピック+20）→王の財宝（レジェンド+50）。`coinsChanged` の `reason` は `"card"`。CPU（`smart` 系）は、ほかに出すものがないときに出す
+- **コインで買えるもの（強化）を足した**（`upgrades.json`。数値はすべて仮）：
+  - 入手券（`effect: "gainCard"`、`rarity`）：買うと、そのレアリティのカードを1枚（`weight` の重みで）手札に加える（`cardDrawn` が出る）。コモン2（5回まで）・アンコモン6（3回）・レア15（2回）・エピック35（1回）・レジェンド80（1回）。`rarities` を渡していないと買えない
+  - 超修理：城HP+20、20コイン、1回／大量補充：5枚引く、12コイン、1回
+  - CPU（`smart` 系）は、買える入手券のうち高いものを先に買う
 - `coinsChanged.reason` は `"reward"` / `"upgrade"` / `"turn"` / `"card"`
 - 確かめたこと：`node tests/sim/run.js --games 300`：smart 同士は平均43手番・周回上限で終わる6.7%・p1 勝率52%（変更前とほぼ同じ）。**CPU の強さの順が変わった**（先攻のとき random に勝つ割合：rush 44%・defensive 30%・smart 89%。以前は rush < defensive < smart）。強い CPU がコインで強化を買うため smart が大きく伸びた。`CPU_LEVELS`（`js/main.js`）の割り当てを見直すか決める必要がある
 

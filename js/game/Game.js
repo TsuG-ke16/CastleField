@@ -20,7 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType } from './Setup.js';
+import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -827,6 +827,10 @@ export class Game {
     if (def.effect === 'repairCastle' && player.castle.isFull) return fail('城のHPが満タンです');
     const pile = this.pileOf(player.id);
     if (def.effect === 'drawCards' && pile.deck.length + pile.discard.length === 0) return fail('山札も捨て札もありません');
+    if (def.effect === 'gainCard') {
+      if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
+      if (!Object.values(this.cardDefs).some((d) => d.rarity === def.rarity && (d.weight ?? 1) > 0)) return fail('その強化はありません');
+    }
     if (def.effect === 'boostDrops') {
       if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
       if (!Object.hasOwn(this.rarityDefs, def.fromRarity)) return fail('その強化はありません');
@@ -850,6 +854,14 @@ export class Game {
       this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
     } else if (def.effect === 'drawCards') {
       this.drawCards(player, def.amount);
+    } else if (def.effect === 'gainCard') {
+      const cardIds = [];
+      for (let i = 0; i < def.amount; i++) {
+        const card = this.createCard(sampleTypeOfRarity(this.cardDefs, def.rarity, this.rng));
+        player.hand.push(card);
+        cardIds.push(card.cardId);
+      }
+      this.emit('cardDrawn', { playerId: player.id, cardIds });
     } else if (def.effect === 'boostDrops') {
       player.luck = { draws: def.amount, boost: def.boost, from: def.fromRarity };
     } else if (def.effect === 'sharpenSoldiers') {

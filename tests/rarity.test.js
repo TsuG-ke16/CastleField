@@ -136,3 +136,23 @@ test('コイン：最初に initialCoins、自分のターンの始めに coinPe
   g.endTurn(); // p2 のターン
   assert.equal(g.getState('p1').players.p2.coins, 6);
 });
+
+test('入手券：コインで、指定したレアリティのカードを1枚手に入れる', () => {
+  const upgrades = loadJson('upgrades.json');
+  const g = make({ upgrades });
+  g.start();
+  g.players.p1.coins = 100;
+  const before = g.getState('p1').players.p1.hand.length;
+  const log = recordEvents(g, ['cardDrawn']);
+  assert.equal(g.buyUpgrade('ticketRare').ok, true);
+  const hand = g.getState('p1').players.p1.hand;
+  assert.equal(hand.length, before + 1);
+  assert.equal(loadJson('cards.json')[hand.at(-1).type].rarity, 'rare');
+  assert.equal(log.length, 1);
+  assert.equal(g.getState('p1').players.p1.coins, 100 - upgrades.ticketRare.cost);
+});
+
+test('コインのカードの値：コモン1・アンコモン3・レア8・エピック20・レジェンド50', () => {
+  const c = loadJson('cards.json');
+  assert.deepEqual(['coinPouch', 'goldCoin', 'treasure', 'goldVein', 'kingTreasure'].map((t) => c[t].amount), [1, 3, 8, 20, 50]);
+});
