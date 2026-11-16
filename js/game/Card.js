@@ -2,7 +2,7 @@
 // DOM は使わない（後でサーバーに移すため）。
 
 export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense'];
-export const ELEMENTS = ['fire', 'water', 'wood'];
+export const ELEMENTS = ['fire', 'water', 'wind', 'earth'];
 /** 精霊の種類：fire=毎ターン敵の城を攻める／water=毎ターン城を回復／wind=兵士の速さの最低値／earth=受けるダメージを軽くする */
 export const SPIRIT_KINDS = ['fire', 'water', 'wind', 'earth'];
 

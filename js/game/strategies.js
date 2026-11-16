@@ -90,7 +90,7 @@ function playFirst(game, playable, typesInOrder) {
   return false;
 }
 
-const ELEMENT_BEATS = { water: 'fire', fire: 'wood', wood: 'water' };
+const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 /**
  * メイン以外（付加・防御）のカードを、役に立つときに出す（ほどよく考える戦い方で使う）

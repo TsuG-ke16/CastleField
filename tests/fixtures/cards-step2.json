@@ -51,12 +51,19 @@
     "element": "water",
     "count": 2
   },
-  "woodAxe": {
-    "name": "木の斧",
+  "windBow": {
+    "name": "風の弓",
     "kind": "weapon",
     "attackBonus": 1,
-    "element": "wood",
-    "count": 2
+    "element": "wind",
+    "count": 1
+  },
+  "earthHammer": {
+    "name": "土の槌",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "earth",
+    "count": 1
   },
   "shield": {
     "name": "盾",

@@ -36,8 +36,8 @@ export function elementName(element) {
   return ELEMENT_LOOK[element]?.name ?? '';
 }
 
-/** その属性が強い相手の属性（水は火に強い、火は木に強い、木は水に強い） */
-const ELEMENT_BEATS = { water: 'fire', fire: 'wood', wood: 'water' };
+/** その属性が強い相手の属性（水は火に強い、火は風に強い、風は土に強い、土は水に強い） */
+const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 // 効果（cards.json の effect）ごとの説明文の型
 const EFFECT_TEXT = {

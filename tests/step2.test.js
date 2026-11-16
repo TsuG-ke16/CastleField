@@ -197,15 +197,18 @@ test('毒の最後の1回で消えるときは statusCleared を出さない', (
   assert.equal(log[k - 1].cause, 'poison');
   assert.ok(!log.some((e) => e.event === 'statusCleared'));
 });
-test('属性：火は木に強く、木は水に強い。城へのダメージには属性が乗らない', () => {
+test('属性：水は火に、火は風に、風は土に、土は水に強い。城へのダメージには属性が乗らない', () => {
   const { game } = setup();
-  const fire = { attack: 3, element: 'fire' };
-  const wood = { attack: 3, element: 'wood' };
-  const water = { attack: 3, element: 'water' };
-  assert.equal(game.fightDamage(fire, wood), 5);
-  assert.equal(game.fightDamage(wood, water), 5);
-  assert.equal(game.fightDamage(wood, fire), 3);
-  assert.equal(game.fightDamage(fire, { attack: 3, element: null }), 3);
+  const e = (element) => ({ attack: 3, element });
+  const ring = [['water', 'fire'], ['fire', 'wind'], ['wind', 'earth'], ['earth', 'water']];
+  for (const [strong, weak] of ring) {
+    assert.equal(game.fightDamage(e(strong), e(weak)), 5, `${strong} は ${weak} に強い`);
+    assert.equal(game.fightDamage(e(weak), e(strong)), 3, `${weak} は ${strong} に弱い（増えない）`);
+  }
+  // 向かい合う属性（火と土・水と風）は、どちらも増えない
+  assert.equal(game.fightDamage(e('fire'), e('earth')), 3);
+  assert.equal(game.fightDamage(e('water'), e('wind')), 3);
+  assert.equal(game.fightDamage(e('fire'), e(null)), 3);
 });
 
 test('cards の間違い：兵士に element', () => {

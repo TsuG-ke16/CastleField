@@ -218,11 +218,15 @@ const CARD_ART = {
     `<path d="M58 40 Q52 20 70 8 Q72 22 84 22 Q90 28 76 40 Q70 46 58 40 Z" fill="#4db8f0" ${S} stroke-width="4"/>` +
     `<path d="M66 30 Q66 20 72 16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".85"/>` +
     `<path d="M28 34 q-7 10 0 14 q7 -4 0 -14 Z M84 58 q-6 9 0 12 q6 -3 0 -12 Z" fill="#7fd0f7" ${S} stroke-width="2.5"/>`,
-  woodAxe: () => bg('#cdecb4', '#eaf8dc') +
-    `<path d="M26 92 L64 22" ${S} stroke-width="10"/><path d="M26 92 L64 22" stroke="#a9753f" stroke-width="5" stroke-linecap="round"/>` +
-    `<path d="M50 20 Q70 4 90 24 Q84 44 62 46 Q66 32 50 20 Z" fill="#7cc45a" ${S} stroke-width="4"/>` +
-    `<path d="M62 20 Q72 14 82 24" fill="none" stroke="#d4f2bf" stroke-width="4" stroke-linecap="round"/>` +
-    `<path d="M20 44 Q12 30 26 22 Q36 34 20 44 Z" fill="#5fae4e" ${S} stroke-width="3"/><path d="M21 42 L25 26" stroke="${INK}" stroke-width="2"/>`,
+  windBow: () => bg('#d8f5e6', '#f0fff8') +
+    `<path d="M24 12 Q80 50 24 88" fill="none" ${S} stroke-width="9"/><path d="M24 12 Q80 50 24 88" fill="none" stroke="#c99a5b" stroke-width="4.5" stroke-linecap="round"/>` +
+    `<path d="M24 12 L24 88" stroke="${INK}" stroke-width="2.5"/><path d="M24 50 H88" ${S} stroke-width="5"/><path d="M88 50 l-10 -7 v14 Z" fill="${STEEL}" ${S} stroke-width="3"/>` +
+    `<path d="M40 24 q12 -8 24 0 M46 76 q12 8 24 0" fill="none" stroke="#5fd0a0" stroke-width="4" stroke-linecap="round"/>`,
+  earthHammer: () => bg('#ecdcc2', '#f6ead4') +
+    `<path d="M26 92 L58 40" ${S} stroke-width="10"/><path d="M26 92 L58 40" stroke="#a9753f" stroke-width="5" stroke-linecap="round"/>` +
+    `<path d="M40 30 L60 12 L90 36 L72 56 Z" fill="#b0834f" ${S} stroke-width="4"/>` +
+    `<path d="M52 28 L64 20" stroke="#e4c79a" stroke-width="4" stroke-linecap="round"/>` +
+    `<path d="M14 84 l8 -8 l8 8 M70 86 l6 -6 l6 6" fill="none" stroke="#8a6a3f" stroke-width="3.5" stroke-linecap="round"/>`,
   shield: () => bg('#cfe0f2', '#eaf2fb') +
     `<path d="M50 10 Q68 20 84 20 Q86 62 50 90 Q14 62 16 20 Q32 20 50 10 Z" fill="#6f9fd8" ${S} stroke-width="4"/>` +
     `<path d="M50 20 Q62 27 74 28 Q74 56 50 78 Z" fill="#8fb8e8"/>` +
@@ -352,7 +356,8 @@ const ICONS = {
   snow: `<g ${S} stroke-width="3.6" fill="none"><path d="M12 2 V22 M3.5 7 L20.5 17 M3.5 17 L20.5 7"/></g><g stroke="#8fdcff" stroke-width="1.5" stroke-linecap="round"><path d="M12 2 V22 M3.5 7 L20.5 17 M3.5 17 L20.5 7"/></g>`,
   fire: `<path d="M12 2 Q14 7 18 9 Q22 14 19 19 Q16 23 12 22 Q6 23 4 17 Q3 12 7 9 Q8 12 10 11 Q9 6 12 2 Z" fill="#f2622e" ${S} stroke-width="2"/><path d="M12 12 Q15 15 14 18 Q12 20 10 18 Q9 15 12 12 Z" fill="#ffc83d"/>`,
   water: `<path d="M12 2 Q20 12 19 16 Q18 22 12 22 Q6 22 5 16 Q4 12 12 2 Z" fill="#4db8f0" ${S} stroke-width="2"/><path d="M9 14 q0 4 3 5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>`,
-  wood: `<path d="M12 22 V12" ${S} stroke-width="2.4"/><path d="M12 14 Q2 14 3 3 Q13 3 12 14 Z M12 16 Q21 17 21 8 Q13 7 12 16 Z" fill="#7cc45a" ${S} stroke-width="2"/>`,
+  wind: `<path d="M3 8 H14 Q18 8 18 5 Q18 3 15.5 3 M3 13 H18 Q22 13 22 16 Q22 19 19 19 M3 18 H10" fill="none" ${S} stroke-width="2.4"/><path d="M3 8 H14 M3 13 H18" fill="none" stroke="#5fd0a0" stroke-width="1.2" stroke-linecap="round"/>`,
+  earth: `<path d="M2 21 L9 7 L13 13 L16 9 L22 21 Z" fill="#b0834f" ${S} stroke-width="2"/><path d="M9 7 L10.5 11 L7.5 11 Z" fill="#f6ead4"/>`,
   crown: `<path d="M3 19 L2 7 L8 12 L12 4 L16 12 L22 7 L21 19 Z" fill="#ffcf3f" ${S} stroke-width="2"/><circle cx="12" cy="15" r="1.8" fill="#e2475b"/>`,
   hammer: `<path d="M6 21 L14 11" ${S} stroke-width="4.4"/><path d="M6 21 L14 11" stroke="#a9753f" stroke-width="2" stroke-linecap="round"/><path d="M10 6 L15 2 L22 9 L18 13 Z" fill="${STEEL_D}" ${S} stroke-width="2"/>`,
   stone: `<path d="M3 17 L7 8 L16 6 L21 13 L18 19 L7 20 Z" fill="${STEEL}" ${S} stroke-width="2"/><path d="M8 11 L15 9" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`,

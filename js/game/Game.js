@@ -73,8 +73,8 @@ export const EVENT_TYPES = [
   'gameOver',
 ];
 
-/** 属性の強い・弱い：キーの属性は、値の属性に強い（水は火に強い、火は木に強い、木は水に強い） */
-export const ELEMENT_BEATS = { water: 'fire', fire: 'wood', wood: 'water' };
+/** 属性の強い・弱い：キーの属性は、値の属性に強い（水は火に強い、火は風に強い、風は土に強い、土は水に強い） */
+export const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 /** rules.json に必要な項目と、許される最小値 */
 const RULE_KEYS = {
