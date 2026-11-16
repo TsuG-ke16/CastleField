@@ -290,3 +290,6 @@ body { position: fixed; inset: 0; height: auto; }
   #end-turn { min-width: 100px; padding-inline: 9px; font-size: 12px; }
 }
 @media (min-width: 900px) and (min-height: 650px) { .control-row { grid-template-columns: auto 1fr; }.control-row #message { grid-column: 1 / -1; }.control-row #fusion-open { grid-column: 1; }.control-row #upgrade-open { grid-column: 2; justify-self: start; }.control-row #end-turn { grid-column: 1 / -1; width: 100%; } }
+
+.fx-fusion-glow { position: absolute; width: 160px; height: 160px; margin: -80px 0 0 -80px; }
+.fx-banner.lucky::before { content: ""; position: absolute; left: calc(50% - 50px); bottom: 100%; width: 100px; height: 100px; background: url("../assets/fx/lucky-reward.png") center / contain no-repeat; }

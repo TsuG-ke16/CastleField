@@ -118,3 +118,50 @@ ChatGPT（OpenAI の画像生成）で、`assets/STYLE.md` の共通指示文と
 | `ui/btn-orange.png`・`ui/btn-cream.png`・`ui/btn-round.png`・`ui/tap-plate.png` | ChatGPT 画像生成 | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `ui/btn-green.png`・`ui/btn-blue.png`・`ui/btn-red.png` | `btn-orange.png` の色違い（Claude Code が色相を変えた） | 同上 | 2026-11-16 |
 | `ui/icon-mode-solo.png`・`ui/icon-mode-local.png`・`ui/icon-mode-online.png`・`ui/icon-help.png` | ChatGPT 画像生成 | 上記OpenAI規約・AI生成 | 2026-11-16 |
+
+## PR42対応の上位カード・魔物（2026-11-16）
+
+前記と同じOpenAI画像生成ツール・利用条件。STYLE.mdの共通指示文と既存のstyle-reference.pngを使用。アトラスから切り出して透過PNGを圧縮。白い背景が残ったアトラスは同ツールで背景を除去した。
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `cards/card-hero.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-inferno.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-starfall.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-apocalypse.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-raijin.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-judgment.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-great-heal.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-holy-light.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-goddess.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-death-mist.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-plague.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-absolute-zero.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-frozen-world.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-magic-sword.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-holy-sword.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-god-sword.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-steel-shield.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-holy-shield.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-god-shield.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-stone-wall.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-gate.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-barrier.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-fire-king.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-water-king.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-wind-king.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-earth-king.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-coin-pouch.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-gold-coin.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-treasure.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-gold-vein.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-king-treasure.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `fx/fusion.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/monster-ghost.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/monster-treant.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/monster-mimic.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/monster-vampire.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/monster-demon-king.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/hero-blue.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/hero-orange.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+| `fx/lucky-reward.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |

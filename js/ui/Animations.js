@@ -346,6 +346,9 @@ export class Animations {
     } else this.renderer.setOppHandCount(pl.handCount);
     if (this.skipping) return;
     sound.play('equip');
+    const glow = this.fx('fx-fusion-glow', this.centerOf(this.renderer.el.field));
+    glow.innerHTML = imageArt('fx/fusion.png', '', 'art');
+    this.animate(glow, [{ opacity: 0, transform: 'scale(.5)' }, { opacity: 1, offset: .3 }, { opacity: 0, transform: 'scale(1.4)' }], { duration: UI_CONFIG.timing.fusion, fill: 'forwards' }).then(() => glow.remove());
     await this.banner(playerId === ctx.viewerId ? `${this.cards[from]?.name ?? ''} ×2 → ${this.cards[to]?.name ?? ''}` : '相手がカードを合成！', UI_CONFIG.timing.fusion, 'fusion');
   }
 
