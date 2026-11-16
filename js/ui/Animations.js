@@ -5,6 +5,7 @@
 import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
+import { imageArt } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -117,6 +118,11 @@ export class Animations {
   fx(className, { x, y } = {}) {
     const el = document.createElement('div');
     el.className = className;
+    const sprites = { 'fx-fireball': 'fireball', 'fx-burst': 'explosion', 'fx-bolt': 'lightning', 'fx-heal-sprite': 'heal' };
+    if (sprites[className]) {
+      el.classList.add('sprite-fx');
+      el.innerHTML = imageArt(`fx/${sprites[className]}.png`, '', 'art');
+    }
     if (x != null) el.style.left = `${x}px`;
     if (y != null) el.style.top = `${y}px`;
     this.el.fx.appendChild(el);
@@ -290,7 +296,7 @@ export class Animations {
     const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     this.sparks(mid, { count: 6, spread: 34, size: 6 });
     const mark = this.fx('fx-clash', mid);
-    mark.textContent = ICON.clash;
+    mark.innerHTML = imageArt('fx/dust.png', ICON.clash, 'art');
     const dur = UI_CONFIG.timing.clash;
     this.animate(mark, [
       { transform: 'translate(-50%, -50%) scale(0.3)', opacity: 0 },
@@ -598,6 +604,7 @@ export class Animations {
     const app = this.el.app.getBoundingClientRect();
     const r = this.renderer.laneEl(roadId).getBoundingClientRect(); // レーンを選んだ魔法は、その道だけに霧をかける
     const fog = this.fx('fx-mist');
+    fog.innerHTML = imageArt(`fx/${color === SPELL_TINT.freezeEnemySoldiers ? 'ice' : 'poison'}.png`, '', 'art');
     fog.style.left = `${r.left - app.left}px`;
     fog.style.top = `${r.top - app.top}px`;
     fog.style.width = `${r.width}px`;
@@ -718,6 +725,8 @@ export class Animations {
     void castle.offsetWidth;
     castle.classList.add('heal-glow');
     sound.play('heal');
+    const aura = this.fx('fx-heal-sprite', this.centerOf(castle));
+    this.animate(aura, [{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, offset: .3 }, { opacity: 0, transform: 'scale(1.3)' }], { duration: UI_CONFIG.timing.heal, fill: 'forwards' }).then(() => aura.remove());
     this.sparks(this.centerOf(castle), { count: 10, color: '#7fe08a', spread: 60, size: 8 });
     this.number(castle, `+${amount}`, { kind: 'heal', size: UI_CONFIG.healNumber.size, duration: UI_CONFIG.healNumber.duration });
     await this.delay(UI_CONFIG.timing.heal);

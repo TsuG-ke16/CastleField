@@ -127,6 +127,12 @@ export class HandView {
     if (def.element) el.dataset.element = def.element;
     el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
       '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
+    const frame = document.createElement('img');
+    frame.className = 'card-frame';
+    frame.src = `assets/cards/frame-${def.kind}.png`;
+    frame.alt = '';
+    frame.draggable = false;
+    if (['soldier', 'spell', 'weapon', 'defense'].includes(def.kind)) el.prepend(frame);
     el.querySelector('.card-kind').textContent = KIND_LABEL[def.kind] ?? '';
     el.querySelector('.card-art').innerHTML = cardArt(card.type, this.color ?? 'blue', def.name ?? '');
     const name = el.querySelector('.card-name');
