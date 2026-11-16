@@ -196,3 +196,4 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 | `ui/btn-red.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
 | `ui/btn-round.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
 | `ui/button-end-turn.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `bg/board-meadow.png` | `bg/board.png`（OpenAI画像生成）の3本の道を、同じ絵の草の部分で塗りつぶして作成 | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |

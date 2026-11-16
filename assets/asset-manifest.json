@@ -179,5 +179,6 @@
   "ui/btn-green.png": "openai-rarity-ui-atlas-2026-11-16.png",
   "ui/btn-orange.png": "openai-rarity-ui-atlas-2026-11-16.png",
   "ui/btn-red.png": "openai-rarity-ui-atlas-2026-11-16.png",
-  "ui/btn-round.png": "openai-rarity-ui-atlas-2026-11-16.png"
+  "ui/btn-round.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "bg/board-meadow.png": "bg/board.png（道を消した版）"
 }
