@@ -6,6 +6,7 @@
 // 真ん中のマス（floor(laneLength / 2)）は魔物の居場所で、魔物はそのレーンのまん中に置く。
 // レーンは roadId の「#番号」で決まる（番号なしなら1本目）。
 
+import { RARITY_NAMES } from './rarity.js';
 import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
 import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf } from './art.js';
@@ -551,7 +552,11 @@ export class Renderer {
     const attackIn = m.el.querySelector('.monster-attack-in');
     attackIn.hidden = m.attackIn == null;
     const soon = m.attackIn != null && m.attackIn <= 1;
-    attackIn.textContent = m.attackIn == null ? '' : (soon ? '次に城をおそう！' : `あと${m.attackIn}周でおそう`);
+    attackIn.textContent = m.attackIn == null ? '' : `${soon ? '次に' : `あと${m.attackIn}周で`}城へ${m.castleAttack ?? '?'}ダメージ`;
+    m.el.dataset.danger = String(soon);
+    let reward = m.el.querySelector('.monster-reward');
+    if (!reward) { reward = document.createElement('div'); reward.className = 'monster-reward'; m.el.appendChild(reward); }
+    reward.textContent = m.rewardRarity ? `${RARITY_NAMES[m.rewardRarity] ?? m.rewardRarity}カード` : `コイン${m.reward ?? 0}`;
     attackIn.classList.toggle('soon', soon);
   }
 

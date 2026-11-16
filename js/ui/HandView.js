@@ -18,7 +18,8 @@ export class HandView {
    *           onDiscard: (cardIds: string[]) => void,
    *           onNotice: (text: string) => void }} opts
    */
-  constructor({ cards, rules, textOpts = {}, onPlay, onDiscard, onNotice }) {
+  constructor({ cards, rules, rarities = null, textOpts = {}, onPlay, onDiscard, onNotice }) {
+    this.rarities = rarities;
     this.cards = cards;
     this.rules = rules;
     this.textOpts = textOpts; // 説明文の切りかえ（魔物が出るゲームか など）
@@ -127,6 +128,14 @@ export class HandView {
     if (def.element) el.dataset.element = def.element;
     el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
       '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
+    if (def.rarity && this.rarities?.[def.rarity]) {
+      el.dataset.rarity = def.rarity;
+      el.style.setProperty('--rarity', this.rarities[def.rarity].color);
+      const badge = document.createElement('span');
+      badge.className = 'card-rarity';
+      badge.textContent = this.rarities[def.rarity].name;
+      el.appendChild(badge);
+    }
     const frame = document.createElement('img');
     frame.className = 'card-frame';
     frame.src = `assets/cards/frame-${def.kind}.png`;

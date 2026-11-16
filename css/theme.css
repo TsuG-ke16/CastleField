@@ -267,3 +267,26 @@ body { position: fixed; inset: 0; height: auto; }
   .title-box { display: grid; grid-template-columns: 1.2fr 1fr; grid-template-rows: 1fr; align-items: center; padding: 32px 56px; }
   .title-logo { width: min(100%, 520px); }
 }
+/* Rarity and progression: names accompany colors. */
+.card[data-rarity] { border-color: var(--rarity); border-bottom-width: 3px; }
+.card-rarity { position: absolute; top: 7px; right: 7px; z-index: 4; border-radius: 4px; padding: 2px 4px; background: #fffdf3ed; color: #33483d; font-size: 7px; box-shadow: inset 0 -2px var(--rarity); }
+#fusion-open { min-height: 40px; padding: 5px 10px; }
+#fusion-open.ready { border-color: #b78c37; background: #fff0bd; }
+.economy-status { padding: 5px 12px; font-size: 10px; color: #4e6750; background: #f0ead4; }
+.progress-screen { z-index: 85; }.progress-box { width: min(100%, 500px); max-height: calc(100% - 20px); display: flex; flex-direction: column; text-align: left; padding: 18px; }
+.progress-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; }.progress-head .menu-title { margin: 0; font-size: 20px; }
+.progress-content { overflow-y: auto; min-height: 0; padding: 12px 2px 2px; }.progress-note, .progress-empty { font-size: 12px; line-height: 1.8; color: #67765e; }.progress-empty { padding: 18px 0; }
+.fusion-pair { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid var(--rarity); border-radius: 12px; background: #fffdf6; width: 100%; margin-top: 10px; text-align: left; }.fusion-art { width: 64px; height: 64px; flex: none; }.fusion-text { display: grid; gap: 3px; flex: 1; }.fusion-text span, .fusion-text small { font-size: 10px; color: #71806b; }.fusion-label { font-size: 11px; color: #846324; }
+.rate-group { border: 1px solid #ddd5c0; border-left: 4px solid var(--rarity); border-radius: 8px; margin-bottom: 9px; }.rate-group summary { padding: 12px; cursor: pointer; font-size: 13px; }.rate-row { display: flex; justify-content: space-between; padding: 8px 12px; border-top: 1px solid #ece6d8; font-size: 12px; }.progress-content h3 { font-size: 14px; margin-top: 24px; }.reward-row { display: grid; gap: 4px; padding: 10px 0; border-bottom: 1px solid #dfd6c1; font-size: 12px; }.reward-row span { font-size: 11px; color: #71806b; }
+.upgrade-category { font-size: 12px; margin: 12px 0 3px; color: #8c763e; }.upgrade-list { max-height: 45dvh; overflow-y: auto; }.upgrade-desc { line-height: 1.6; }
+.monster-reward { position: absolute; top: calc(100% + 2px); left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 9px; background: #fffae6; border: 1px solid #d5ba72; border-radius: 5px; padding: 2px 4px; pointer-events: none; }.monster[data-danger=true] .monster-attack-in { background: #a63e35; color: white; }.fx-banner.reward { color: #ffe084; font-size: 22px; }.fx-banner.lucky { background: #5f4085ed; }.fx-banner.fusion { background: #244d45ed; font-size: 22px; color: #fff0af; z-index: 56; }
+@media (min-width: 900px) and (min-height: 650px) { .economy-status { order: 3; margin-inline: 12px; }.progress-box { width: 500px; } }
+@media (max-width: 420px) {
+  .control-row { gap: 5px; padding-inline: 8px; }
+  #fusion-open { min-width: 44px; padding-inline: 7px; font-size: 11px; }
+  #hand-toggle { min-width: 60px; padding-inline: 8px; font-size: 12px; }
+  #upgrade-open { padding-inline: 6px; gap: 2px; }
+  #upgrade-open .upgrade-open-label { font-size: 9px; }
+  #end-turn { min-width: 100px; padding-inline: 9px; font-size: 12px; }
+}
+@media (min-width: 900px) and (min-height: 650px) { .control-row { grid-template-columns: auto 1fr; }.control-row #message { grid-column: 1 / -1; }.control-row #fusion-open { grid-column: 1; }.control-row #upgrade-open { grid-column: 2; justify-self: start; }.control-row #end-turn { grid-column: 1 / -1; width: 100%; } }

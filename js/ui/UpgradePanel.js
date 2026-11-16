@@ -80,7 +80,11 @@ export class UpgradePanel {
     this.el.coins.innerHTML = `${icon('coin')}<b>${Number(coins)}</b>`;
     const list = this.el.list;
     list.innerHTML = '';
-    for (const [id, def] of Object.entries(this.upgrades)) {
+    const category = (def) => ['gainCard', 'boostDrops'].includes(def.effect) ? 'カード・運命' : ['trainArmy', 'fortifyArmy', 'sharpenSoldiers'].includes(def.effect) ? '兵士の育成' : '回復・補充';
+    let group;
+    const entries = Object.entries(this.upgrades).sort(([, a], [, b]) => category(a).localeCompare(category(b), 'ja'));
+    for (const [id, def] of entries) {
+      if (category(def) !== group) { group = category(def); const heading = document.createElement('h3'); heading.className = 'upgrade-category'; heading.textContent = group; list.append(heading); }
       const st = status[id] ?? { ok: false, reason: '' };
       const btn = document.createElement('button');
       btn.type = 'button';

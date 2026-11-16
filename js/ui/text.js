@@ -1,3 +1,4 @@
+import { RARITY_NAMES } from './rarity.js';
 // 画面に出す文章。カード名と数値は cards.json / rules.json / monsters.json / upgrades.json から入れる。
 
 import { ELEMENT_LOOK, STATUS_ICON, ICON } from './look.js';
@@ -41,6 +42,7 @@ const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'wate
 
 // 効果（cards.json の effect）ごとの説明文の型
 const EFFECT_TEXT = {
+  gainCoins: (c) => `コインを${c.amount}獲得（メインの1枚）`,
   damageEnemyCastle: (c, rules, opts) => `相手の城に${c.amount}ダメージ${opts.monsters ? '（魔物も狙える）' : ''}`,
   damageEnemySoldiers: (c) => `相手の兵士全員に${c.amount}ダメージ`,
   healOwnCastle: (c) => `自分の城HP+${c.amount}（上限まで）`,
@@ -103,6 +105,7 @@ export function cardShort(def) {
     return list;
   }
   switch (def.effect) {
+    case 'gainCoins': return [{ icon: 'coin', text: `+${def.amount}` }];
     case 'damageEnemyCastle': return [{ icon: 'fire', text: `城 -${def.amount}` }];
     case 'damageEnemySoldiers': return [{ icon: 'sword', text: `兵士 -${def.amount}` }];
     case 'healOwnCastle': return [{ icon: 'heart', text: `城 +${def.amount}` }];
@@ -124,6 +127,10 @@ const UPGRADE_TEXT = {
 export function upgradeDescription(def) {
   if (!def) return '';
   if (def.description) return def.description;
+  if (def.effect === 'gainCard') return `${RARITY_NAMES[def.rarity] ?? def.rarity}のカードを${def.amount}枚入手`;
+  if (def.effect === 'boostDrops') return `次の${def.amount}枚は${RARITY_NAMES[def.fromRarity] ?? def.fromRarity}以上の抽選比率${def.boost}倍（全体を100%に再計算）`;
+  if (def.effect === 'trainArmy') return `今いる兵士と今後出す兵士の攻撃+${def.amount}（この試合中）`;
+  if (def.effect === 'fortifyArmy') return `今いる兵士と今後出す兵士のHP+${def.amount}（この試合中）`;
   return UPGRADE_TEXT[def.effect]?.(def) ?? '';
 }
 
@@ -152,7 +159,8 @@ export function monsterInfo(m, { monsters }) {
   const def = monsters?.[m.type] ?? {};
   const el = m.element ? `（${elementName(m.element)}属性）` : '';
   const parts = [`${def.name ?? m.type}${el}`, `HP${m.hp}/${m.maxHp}`, `攻撃${m.attack}`];
-  if (m.reward != null) parts.push(`とどめで${ICON.coin}${m.reward}`);
+  if (m.rewardRarity) parts.push(`とどめで${RARITY_NAMES[m.rewardRarity] ?? m.rewardRarity}カード`);
+  else if (m.reward > 0) parts.push(`とどめで${ICON.coin}${m.reward}`);
   if (m.attackIn != null && m.castleAttack != null) {
     parts.push(m.attackIn <= 1 ? `次の周回でどちらかの城に${m.castleAttack}ダメージ`
       : `あと${m.attackIn}周でどちらかの城に${m.castleAttack}ダメージ`);

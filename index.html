@@ -85,7 +85,9 @@
         <button type="button" class="discard-ok plank-btn">捨てる</button>
       </div>
       <p id="message" role="status" aria-live="polite"></p>
+      <div class="economy-status" id="economy-status" role="status"></div>
       <div class="control-row">
+        <button id="fusion-open" type="button" class="small-btn">合成</button>
         <button id="hand-toggle" type="button" class="small-btn" aria-controls="hand" aria-expanded="true">手札 ▾</button>
         <button id="upgrade-open" type="button" title="コインで強化を買う" hidden>
           <span class="chip-icon" data-icon="coin"></span><b id="my-coins">0</b><span class="upgrade-open-label">強化</span>
@@ -103,7 +105,7 @@
         <button type="button" class="upgrade-close round-btn" aria-label="閉じる">✕</button>
       </div>
       <div class="upgrade-list"></div>
-      <p class="upgrade-note">コインは魔物にとどめを刺すともらえます。強化はメインの1枚とは別に買えます</p>
+      <p class="upgrade-note">コインは毎ターンとカードで獲得。購入と合成はメインの1枚とは別です。</p>
     </div>
 
     <div id="toast" role="status" aria-live="polite"></div>
@@ -138,6 +140,7 @@
       <div class="screen-box parchment menu-box">
         <p class="menu-title">メニュー</p>
         <button type="button" id="menu-sound" class="small-btn wide"></button>
+        <button type="button" id="menu-rates" class="small-btn wide">排出率を見る</button>
         <button type="button" id="menu-help" class="small-btn wide">遊び方</button>
         <button type="button" id="menu-surrender" class="small-btn wide danger" hidden>降参する</button>
         <button type="button" id="menu-title-btn" class="small-btn wide">タイトルへ戻る</button>
@@ -155,7 +158,7 @@
           <li>自分の番に<b>カードを1枚</b>出せる（武器と防御は何枚でも）</li>
           <li><b>兵士</b>は毎ターン勝手に進み、相手の城に着くと大ダメージ</li>
           <li>道でぶつかった兵士どうしは戦う。<b>魔法</b>で助けよう</li>
-          <li id="help-monster">まん中に出る<b>魔物</b>を倒すとコイン。コインで強化を買える</li>
+          <li id="help-monster">まん中に出る<b>魔物</b>を倒すとカード。放置すると城への攻撃が強くなる</li>
         </ol>
         <p class="help-note">カードをタップすると説明が出ます。出せないカードは理由が出ます</p>
         <button type="button" id="help-close" class="plank-btn">わかった</button>
@@ -178,8 +181,8 @@
           </div>
           <div id="title-levels" class="parchment" hidden>
             <p class="levels-title">CPU の強さ</p>
-            <button type="button" class="plank-btn big level" data-level="easy">よわい<small>はじめての人むけ</small></button>
-            <button type="button" class="plank-btn big level" data-level="normal">ふつう<small>守りながら戦う</small></button>
+            <button type="button" class="plank-btn big level" data-level="easy">よわい<small>守りを中心に戦う</small></button>
+            <button type="button" class="plank-btn big level" data-level="normal">ふつう<small>攻めを中心に戦う</small></button>
             <button type="button" class="plank-btn big level" data-level="hard">つよい<small>よく考えて戦う</small></button>
             <button type="button" id="levels-back" class="small-btn">もどる</button>
           </div>
