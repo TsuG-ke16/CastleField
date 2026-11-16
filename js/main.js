@@ -25,7 +25,7 @@ import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
 import { sound } from './ui/Sound.js';
-import { castleArt, unitArt, icon, colorOf, preloadAssets, isAssetReady } from './ui/art.js';
+import { castleArt, unitArt, imageArt, icon, colorOf, preloadAssets, isAssetReady } from './ui/art.js';
 import { playerName, setPlayerNames, reasonText, soldierInfo, monsterInfo, GAME_OVER_TEXT, GAME_OVER_TEXT_LOST } from './ui/text.js';
 
 const params = new URLSearchParams(location.search);
@@ -77,6 +77,8 @@ let replayTutorial = false;
 let settings;
 let localSetup;
 let lastLocalOptions = null;
+let battleAssetsPromise = null;
+let startRequest = 0;
 let castles = null;
 let decks = null;
 let rarities = null;
@@ -185,7 +187,7 @@ async function boot() {
 
   setLoading(0.05, 'データを読み込みました');
   // 画像を先に読み込む（読み込み中に代わりの絵が見えないように）。進み具合は読み込み画面に出す
-  await preloadAssets(8000, (done, total) => setLoading(0.05 + 0.9 * done / total, `画像を読み込み中… ${done} / ${total}`));
+  await preloadAssets(8000, (done, total) => setLoading(0.05 + 0.9 * done / total, `タイトルを準備中… ${done} / ${total}`), {phase:'title'});
   setLoading(1, 'はじめます');
 
   // デバッグ：URL の rules={"monsterFirstRound":1,...} で、ルールの一部だけ変えて試せる（data/ は書き換えない）
@@ -286,14 +288,30 @@ async function boot() {
     resumeOnline(); // ページを読み直したとき：前の部屋が残っていれば、つなぎ直す
   }
   hideLoading();
+  setTimeout(() => { prepareBattleAssets(); setupOffline(); }, 1000);
+}
+
+function prepareBattleAssets() {
+  return battleAssetsPromise ??= preloadAssets(8000, (done,total) => { $('asset-loading-text').textContent=`対戦の絵を準備中… ${done} / ${total}`; });
+}
+async function setupOffline() {
+  if (!('serviceWorker' in navigator) || !['http:','https:'].includes(location.protocol)) return;
+  try {
+    const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+    const status=$('offline-status');
+    status.textContent='オフラインの準備中…';
+    await navigator.serviceWorker.ready;
+    status.textContent='ひとりで遊ぶ：オフラインでもOK';
+    reg.addEventListener('updatefound',()=>{const worker=reg.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)status.textContent='更新の準備ができました。次の起動で新しくなります';});});
+  } catch { $('offline-status').textContent='オフライン保存は利用できません'; }
 }
 
 // ---------- タイトル・メニュー ----------
 
 function setupTitle() {
   document.querySelector('#title .title-pic').innerHTML =
-    `<div class="title-castle left">${castleArt('blue')}</div><div class="title-unit left">${unitArt('knight', 'blue')}</div>` +
-    `<div class="title-unit right">${unitArt('infantry', 'orange')}</div><div class="title-castle right">${castleArt('orange')}</div>`;
+    `<div class="title-castle left">${imageArt('ui/title-castle-blue.png', '', 'art castle-art')}</div><div class="title-unit left">${imageArt('ui/title-knight-blue.png', '', 'art unit-art')}</div>` +
+    `<div class="title-unit right">${imageArt('ui/title-infantry-orange.png', '', 'art unit-art')}</div><div class="title-castle right">${imageArt('ui/title-castle-orange.png', '', 'art castle-art')}</div>`;
   localSetup = new LocalSetup({castles,decks,rules,onStart:(level,options)=>startLocal(undefined,level,options)});
   $('title-local').addEventListener('click', () => { sound.play('tap'); localSetup.open('local'); el.titleMain.hidden=true; el.titleLevels.hidden=false; });
   $('title-solo').addEventListener('click', () => {
@@ -336,6 +354,9 @@ function setupTitle() {
 
 /** タイトルへ戻る（遊んでいた試合はやめる） */
 function showTitle() {
+  startRequest++;
+  document.documentElement.classList.add('at-title');
+  $('asset-loading').hidden=true;
   sound.setScene('title');
   tutorial.close();
   gen += 1;
@@ -487,7 +508,13 @@ function resetForNewGame() {
  * @param {number} [seedOverride] 乱数シード
  * @param {string|null} [cpuLevel] "easy" / "normal" / "hard" なら、ひとりで遊ぶ（CPU と対戦）。省略すると2人で交代
  */
-function startLocal(seedOverride, cpuLevel = null, options = null) {
+async function startLocal(seedOverride, cpuLevel = null, options = null) {
+  const request=++startRequest;
+  $('asset-loading').hidden=false;
+  await prepareBattleAssets();
+  if(request!==startRequest)return;
+  $('asset-loading').hidden=true;
+  document.documentElement.classList.remove('at-title');
   lastLocalOptions = options ? structuredClone(options) : null;
   leaveOnline();
   stopLocal();
@@ -778,6 +805,10 @@ async function pump() {
 }
 
 async function showBatch(batch) {
+  $('asset-loading').hidden=false;
+  await prepareBattleAssets();
+  $('asset-loading').hidden=true;
+  document.documentElement.classList.remove('at-title');
   const client = session;
   const st = batch.state;
   client.commit(batch);

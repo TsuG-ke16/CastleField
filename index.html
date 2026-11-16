@@ -1,8 +1,10 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="at-title">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/ui/app-icon-192.png">
   <meta name="theme-color" content="#193f42">
   <title>キャッスルフィールド</title>
   <link rel="icon" href="data:,">
@@ -24,6 +26,7 @@
         <div class="loading-text" id="loading-text">読み込み中…</div>
       </div>
     </div>
+    <div id="asset-loading" class="screen dim" role="status" aria-live="polite" hidden><div class="screen-box parchment"><p id="asset-loading-text">対戦の絵を準備中…</p></div></div>
     <div id="scenery" aria-hidden="true"></div>
 
     <div class="game-brand"><span class="brand-seal" aria-hidden="true">✦</span><span>CASTLE FIELD</span><span class="brand-caption">城攻めカードバトル</span></div>
@@ -198,6 +201,7 @@
             <button type="button" id="title-solo" class="plank-btn big mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m0 1c5-4 7 4 13 0v10c-6 4-8-4-13 0"/></svg></span><span><strong>ひとりで遊ぶ</strong><small>自分のペースで、CPUに挑戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
             <button type="button" id="title-local" class="plank-btn big alt2 mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M2 20v-2a6 6 0 0 1 12 0v2m2-15a3 3 0 0 1 0 6m1 3a5 5 0 0 1 5 5v1"/></svg></span><span><strong>ふたりで遊ぶ</strong><small>ひとつの画面で、交代しながら</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
             <button type="button" id="title-online" class="plank-btn big alt mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></span><span><strong>オンラインで遊ぶ</strong><small>合言葉を決めて、友だちと対戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
+            <p id="offline-status" role="status"></p>
             <p id="title-record" aria-live="polite"></p><button type="button" id="record-clear" class="small-btn">戦績を消す</button>
             <button type="button" id="title-catalog" class="small-btn">カード・魔物一覧</button>
             <button type="button" id="title-settings" class="small-btn">設定</button>

@@ -135,4 +135,4 @@
 /* ターン終了：左の旗と右の月桂樹にかからないよう、幅をとって文字を真ん中寄りに */
 #end-turn { min-width: 140px; padding: 8px 18px 8px 48px; font-size: 13px; }
 /* 背景の道（3マス）を消した草原にする。道は #road のレーンだけで描く（5マスと合わないため） */
-#scenery { background-image: url('../assets/bg/board-meadow.png'); }
+#scenery { background-image: url('../assets/bg/board-meadow-compact.png'); }

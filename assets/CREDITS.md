@@ -259,3 +259,9 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 
 ### 結果画面の確認画像（2026-11-16）
 - `review/results/summary.png`：Playwright同梱Chromiumで本ゲームの試合集計を撮影。ゲーム内素材の条件は本ファイルの各項を参照。
+
+### 読み込み・オフライン対応（2026-11-16）
+- `bg/title-compact.png`、`bg/board-meadow-compact.png`：既存の `bg/title.png`、`bg/board-meadow.png` をPillowで縮小・パレット圧縮。元画像の出どころ・利用条件を継承（本ファイルの元画像の項を参照）。新しい絵の生成は行っていません。
+- `ui/title-castle-blue.png`、`ui/title-castle-orange.png`、`ui/title-knight-blue.png`、`ui/title-infantry-orange.png`：既存の同名の城・兵士PNGのタイトル用縮小版。Pillowでリサイズ・圧縮。元画像の出どころ・利用条件を継承。
+- `ui/app-icon-192.png`、`ui/app-icon-512.png`：既存の `ui/icon-mode-solo.png` をPillowでリサイズ・圧縮。元画像の出どころ・利用条件を継承。
+- `review/offline/*.png`：Playwright同梱Chromiumで保存状態・オフラインCPU戦・決着を撮影。ゲーム内素材の条件は各項を参照。
