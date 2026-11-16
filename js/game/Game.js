@@ -72,6 +72,7 @@ export const EVENT_TYPES = [
   'spiritSummoned',
   'spiritTriggered',
   'spiritEnded',
+  'soldierShot',
   'gameOver',
 ];
 
@@ -709,6 +710,14 @@ export class Game {
         if (soldier.frozen === 0) {
           this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'frozen' });
         }
+        // 凍った弓兵・魔法使いは撃てないが、ターンは過ぎる
+        if (soldier.role !== 'melee') this.tickRanged(player, soldier);
+        continue;
+      }
+
+      // 弓兵・魔法使いは動かずに撃つ
+      if (soldier.role !== 'melee') {
+        if (this.shoot(player, soldier)) return;
         continue;
       }
 
@@ -818,37 +827,90 @@ export class Game {
    *                  それ以外の人の兵士は関係ないので、同じマスにいても戦わずにすれちがう
    */
   findClashTarget(soldier, owner) {
-    const { laneLength } = this.rules;
     const here = soldier.position;
-    const mine = this.side(owner.id);
     let best = null;
-    const consider = (other, e) => {
-      if (!best || soldierNumber(e) < soldierNumber(best.soldier)) best = { owner: other, soldier: e };
-    };
-    if (!this.plaza) {
-      // 道の向こうの陣地（チーム戦ならそのチームのメンバー全員）の兵士で、同じ道の上にいるもの
-      for (const id of this.alivePlayerIds()) {
-        if (this.side(id) !== soldier.targetId) continue;
-        const other = this.players[id];
-        for (const e of other.soldiers) {
-          if (e.roadId !== soldier.roadId) continue;
-          const q = laneLength - 1 - e.position; // 相手の兵士の位置を、soldier から数えた位置に直す
-          if (q === here || q === here + 1) consider(other, e);
-        }
-      }
-      return best;
-    }
-    for (const id of this.alivePlayerIds()) {
-      const theirs = this.side(id);
-      if (theirs === mine) continue; // 味方とは戦わない
-      const other = this.players[id];
-      for (const e of other.soldiers) {
-        if (e.targetId !== mine && soldier.targetId !== theirs) continue;
-        const q = this.coordOnPath(mine, soldier.targetId, this.placeOf(id, e));
-        if (q === here || q === here + 1) consider(other, e);
-      }
+    for (const c of this.foesOf(soldier, owner)) {
+      if (c.q !== here && c.q !== here + 1) continue;
+      if (!best || soldierNumber(c.soldier) < soldierNumber(best.soldier)) best = { owner: c.owner, soldier: c.soldier };
     }
     return best;
+  }
+
+  /**
+   * owner の兵士 soldier が戦う（撃つ）相手の兵士すべてと、その場所（soldier から数えた位置 q）。
+   *   となりの道：道の向こうの陣地（チーム戦ならそのチームのメンバー全員）の兵士で、同じ道の上にいるもの
+   *   広場：自分の陣地に向かってくる兵士と、自分が狙っている陣地の兵士（味方とは戦わない）
+   * @returns {{owner: Player, soldier: Soldier, q: number}[]}
+   */
+  foesOf(soldier, owner) {
+    const { laneLength } = this.rules;
+    const mine = this.side(owner.id);
+    const found = [];
+    for (const id of this.alivePlayerIds()) {
+      const theirs = this.side(id);
+      if (theirs === mine) continue;
+      const other = this.players[id];
+      for (const e of other.soldiers) {
+        let q;
+        if (!this.plaza) {
+          if (theirs !== soldier.targetId || e.roadId !== soldier.roadId) continue;
+          q = laneLength - 1 - e.position; // 相手の兵士の位置を、soldier から数えた位置に直す
+        } else {
+          if (e.targetId !== mine && soldier.targetId !== theirs) continue;
+          q = this.coordOnPath(mine, soldier.targetId, this.placeOf(id, e));
+          if (q === null) continue;
+        }
+        found.push({ owner: other, soldier: e, q });
+      }
+    }
+    return found;
+  }
+
+  /**
+   * 弓兵・魔法使い：動かずに撃つ。自分のマスから range マス先までの
+   *   1. 相手の兵士（いちばん近い1体。同じ近さなら先に出された方）→ 2. 魔物 → 3.（魔法使いだけ）狙った相手の城
+   * の順に1つを撃つ。反撃は受けない。撃つ相手がいなければ待つ。どちらでも turnsLeft が1減り、0で帰る（soldierDestroyed の reason は "returned"）。
+   * 城が落ちて決着したら true
+   */
+  shoot(player, soldier) {
+    const here = soldier.position;
+    const inRange = (q) => q !== null && q >= here && q <= here + soldier.range;
+    const foes = this.foesOf(soldier, player).filter((c) => inRange(c.q));
+    foes.sort((a, b) => a.q - b.q || soldierNumber(a.soldier) - soldierNumber(b.soldier));
+    const shot = { playerId: player.id, soldierId: soldier.soldierId, role: soldier.role };
+    let over = false;
+    if (foes.length > 0) {
+      const { owner, soldier: victim } = foes[0];
+      const amount = this.fightDamage(soldier, victim);
+      this.emit('soldierShot', { ...shot, target: { kind: 'soldier', playerId: owner.id, soldierId: victim.soldierId }, amount });
+      this.damageSoldier(owner, victim, amount, 'shot');
+    } else {
+      const road = this.findRoad(soldier.roadId);
+      const monster = this.monsters.find((m) =>
+        inRange(m.roadId === PLAZA ? m.square : m.roadId === soldier.roadId ? road.toPosition(this.side(player.id), m.square) : null));
+      if (monster) {
+        const amount = this.fightDamage(soldier, monster);
+        this.emit('soldierShot', { ...shot, target: { kind: 'monster', monsterId: monster.monsterId }, amount });
+        this.damageMonster(monster, amount, { playerId: player.id, soldierId: soldier.soldierId });
+        this.defeatMonsterIfDead(monster, player.id);
+      } else if (soldier.role === 'mage') {
+        const enemy = this.players[soldier.targetId];
+        this.emit('soldierShot', { ...shot, target: { kind: 'castle', playerId: enemy.id }, amount: soldier.attack });
+        this.damageCastle(enemy, soldier.attack, { kind: 'soldier', soldierId: soldier.soldierId });
+        over = this.checkGameOver();
+      }
+      // 撃つ相手がいないときは、撃たずに待つ（ターンは過ぎる）
+    }
+    if (over) return true;
+    this.tickRanged(player, soldier);
+    return false;
+  }
+
+  /** 弓兵・魔法使いの残りターンを1減らし、0なら帰る */
+  tickRanged(player, soldier) {
+    if (!player.soldiers.includes(soldier)) return;
+    soldier.turnsLeft -= 1;
+    if (soldier.turnsLeft <= 0) this.removeSoldier(player, soldier, 'returned');
   }
 
   /**

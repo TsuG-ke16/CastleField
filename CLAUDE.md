@@ -274,8 +274,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack }` … `hp` / `attack` は出した時点の値 |
 | `soldierMoved` | `{ playerId, soldierId, roadId, from, to }` |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
-| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"`。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
-| `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった） |
+| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
+| `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
+| `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
 | `spellCast` | `{ playerId, type, target, targetKind, roadId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）のときだけ入る。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
 | `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }` |
 | `castleHealed` | `{ playerId, amount, hp }` … `amount` は実際に増えた量（上限で止まったぶんは含まない） |
@@ -901,6 +902,33 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - デッキ（`data/decks.json`）：木の斧を風の弓に置きかえた（土の槌は入れていない）
 - 確かめたこと：`node --test` は全部通る。`node tests/sim/run.js --games 400` は全組み合わせが決着し、CPU の強さの順は変わらない。**デッキ対戦の勝率は、バランスに勝つ割合が突撃61%・籠城58%で、仮の目安（49〜52%）よりずれている**（これは A1 の5枚補充を入れたときからで、属性の変更のせいではない）。デッキの調整は、遊んで確かめてから決める
 - 画面：属性のアイコン・武器の絵・説明文を風・土に直した（`js/ui/look.js`・`art.js`・`text.js`）。絵は仮
+
+## 兵士を4系統×5レアリティにした（人間に確認して決めた）
+
+兵士は **普通の兵士・騎兵・弓兵・魔法使い** の4系統で、それぞれコモン〜レジェンドの5段階（合計20体）。合成は同じ系統の1つ上へ。今までの兵士6種は組み込んだ（歩兵・槍兵・重装兵・巨人・勇者は普通の兵士、騎士は騎兵）。**数値はすべて仮。**
+
+| 系統 | コモン | アンコモン | レア | エピック | レジェンド | 特徴 |
+|---|---|---|---|---|---|---|
+| 普通の兵士 | 歩兵 5/5/2 | 槍兵 4/7/2 | 重装兵 11/6/2 | 巨人 13/9/2 | 勇者 16/12/3 | 進んで城を攻める。基準 |
+| 騎兵 | 斥候騎兵 3/4/4 | 騎兵 4/5/4 | 騎士 5/7/5 | 聖騎士 8/8/5 | 竜騎士 10/10/5 | 速い（1〜2ターンで城）。打たれ弱く、攻撃は少し低い |
+| 弓兵 | 見習い弓兵 3/3 | 弓兵 4/5 | 長弓兵 5/7 | 狙撃手 6/9 | 天弓の射手 8/12 | 動かずに撃つ（下） |
+| 魔法使い | 見習い魔法使い 3/2 | 魔法使い 3/4 | 魔導士 4/6 | 大魔導士 5/8 | 賢者 7/11 | 動かずに撃つ。撃つ相手がいなければ城を撃つ（下） |
+
+（HP/攻撃/速さ。弓兵・魔法使いは HP/攻撃）
+
+- **道を5マスにした**（`rules.laneLength: 5`。人間の指示）：3マスだと速さ3で1ターンで城に着き、騎兵の「速い」が出せなかったため。真ん中（魔物・広場）はマス2。普通の兵士は速さ2（勇者は3）で、城まで2〜3ターン
+- **城HPを70 → 60にした**：道が長くなって試合が延びた（smart 同士 平均71手番・周回の上限で決着17%）ので、前の指示「60手番くらい」に合わせた（60で平均59手番・上限8%。55は54手番、65は67手番）
+- **弓兵・魔法使い**（`role: "archer"` / `"mage"`、`range`（撃てる距離）、`stay`（残るターン数）。`speed` は書かない）
+  - 出したマス（自分の城の前）から**動かない**。出した次の自分のターンから、進軍のときに撃つ
+  - 自分のマスから `range`（2）マス先までの、**戦う相手の兵士**（ほかの兵士がぶつかって戦う相手と同じ決まり）のうち、いちばん近い1体（同じなら先に出された方）を撃つ。**反撃は受けない**。ダメージは攻撃力（属性も効く。盾が先に受ける）
+  - 相手の兵士がいなければ、射程の中の**魔物**を撃つ（とどめを刺せばごほうび）
+  - **魔法使いだけ**は、兵士も魔物もいなければ、**狙った相手の城**に攻撃力ぶんのダメージ（城壁は受ける。防御は聞かない）
+  - **2ターンで帰る**（自分のターンごとに1減る。撃つ相手がいない・凍っているときも減る）。帰るときは `soldierDestroyed`（`"returned"`）
+  - **守りにも使える**：道の上にいるので、向かってくる兵士はふつうにぶつかって戦う（そのときは同時に攻撃し合う）
+- `getState()` の兵士に `role`（`"melee"` / `"archer"` / `"mage"`）・`range`・`turnsLeft`（弓兵・魔法使いの残りターン。ほかは `null`）を足した
+- 排出の重み（`weight`）：コモン1・アンコモン0.75・レア以上0.5（兵士の割合が少し増えた）
+- 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均59手番・p1 勝率51%・周回の上限で決着8%。CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 41%・defensive 18%・smart 97%）。3人以上（`multi.js`）・チーム戦（`teams.js`）もほぼ前と同じ
+- 画面（UI担当）：新しい兵士14体のカードの絵と盤面の絵、`soldierShot` の演出（矢・魔法弾）、5マスの道、弓兵・魔法使いの残りターンの表示
 
 ## カードのレアリティと合成（人間に確認して決めた）
 
