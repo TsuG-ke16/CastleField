@@ -1,0 +1,273 @@
+/* 仕上げ：見た目の統一（いちばん最後に読む）。
+   ボタンの木枠を引き伸ばさずに貼る（9スライス）・フォーム部品の世界観合わせ・メニューや名札の整列。 */
+
+/* ---------- ボタン：木枠の角を保ったまま伸ばす ---------- */
+.plank-btn:not(.mode-choice):not(#end-turn),
+.small-btn:not(#title-help) {
+  background: none;
+  border: 1px solid transparent;
+  border-image-slice: 118 150 fill;
+  border-image-width: 17px 22px;
+  border-image-repeat: stretch;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 44px;
+  padding: 9px 22px;
+  color: #4a2f17;
+  font-family: var(--head);
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-shadow: 0 1px 0 #ffe2a3b0;
+  filter: drop-shadow(0 3px 0 #3d281430);
+  transition: transform .07s, filter .12s;
+}
+.plank-btn:not(.mode-choice):not(#end-turn) { border-image-source: url('../assets/ui/btn-orange.png'); }
+.plank-btn.alt:not(.mode-choice):not(#end-turn) { border-image-source: url('../assets/ui/btn-blue.png'); text-shadow: 0 1px 0 #d9f0ffb0; }
+.plank-btn.alt2:not(.mode-choice):not(#end-turn) { border-image-source: url('../assets/ui/btn-green.png'); text-shadow: 0 1px 0 #e3f7c8b0; }
+.small-btn:not(#title-help) {
+  border-image-source: url('../assets/ui/btn-cream.png');
+  border-image-slice: 106 150 fill;
+  border-image-width: 14px 19px;
+  min-height: 38px;
+  padding: 7px 18px;
+  font-size: 13px;
+  text-shadow: none;
+}
+.small-btn.danger:not(#title-help) { border-image-source: url('../assets/ui/btn-red.png'); border-image-slice: 118 150 fill; color: #fff3e6; text-shadow: 0 1px 2px #5c1410; }
+.plank-btn.big:not(.mode-choice) { min-height: 58px; padding: 10px 24px; border-image-width: 21px 27px; font-size: 19px; }
+.plank-btn.big.level { font-size: 18px; padding: 9px 24px; }
+.plank-btn.big small { font-size: 11px; opacity: .8; letter-spacing: 0; }
+@media (hover: hover) {
+  .plank-btn:not(:disabled):hover, .small-btn:not(:disabled):hover { filter: drop-shadow(0 3px 0 #3d281430) brightness(1.06); }
+}
+.plank-btn:not(.mode-choice):not(:disabled):active, .small-btn:not(:disabled):active {
+  transform: translateY(2px);
+  filter: brightness(.9);
+}
+.plank-btn:disabled, .plank-btn.off, .plank-btn.blocked, .plank-btn.not-ready { filter: grayscale(.75) brightness(.96); opacity: .7; }
+
+/* ---------- メニュー：文字を枠のまん中に ---------- */
+.menu-box { gap: 10px; }
+.small-btn.wide { justify-content: center; text-align: center; min-height: 48px; padding: 10px 26px; font-size: 15px; }
+.menu-box .plank-btn { min-height: 54px; margin-top: 6px; font-size: 17px; }
+.menu-title { font-family: var(--head); }
+
+/* ---------- フォーム部品：羊皮紙と木の色にそろえる ---------- */
+#app select,
+#app input[type=text],
+#app input:not([type]) {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 2px solid #c9ab72;
+  border-radius: 10px;
+  background-color: #fffdf6;
+  box-shadow: inset 0 2px 0 #f1e6cc;
+  color: #3f321f;
+  font: inherit;
+  font-weight: 700;
+}
+#app select {
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a5a24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  cursor: pointer;
+}
+#app select:disabled { opacity: .5; cursor: default; }
+#app select:focus-visible, #app input[type=text]:focus-visible, #app input:not([type]):focus-visible {
+  outline: 3px solid #e9a63a80;
+  border-color: #b9812d;
+}
+#app input::placeholder { color: #b3a488; font-weight: 400; }
+#app input[type=range] { accent-color: #e08a2c; height: 28px; }
+#app input[type=checkbox] { accent-color: #e08a2c; }
+
+.settings-box h2 { font-family: var(--head); color: #284b43; font-size: 22px; letter-spacing: .06em; margin: 0 0 8px; }
+.settings-box label { font-weight: 800; color: #3f4a37; margin: 16px 0; }
+.settings-box output { font-family: var(--head); color: #8a5a24; }
+.settings-box .check-label { flex-wrap: nowrap; align-items: flex-start; gap: 10px; padding: 12px; border-radius: 10px; background: #f4ecd8; }
+.settings-box .settings-close { display: block; margin: 4px auto 0; min-width: 180px; }
+.settings-status { text-align: center; color: #5d7a52; }
+
+.local-options { border: 2px solid #e5d9bd; border-radius: 12px; background: #fff7e2; margin: 12px 0 14px; }
+.local-options summary { padding: 11px 10px; font-size: 12px; font-weight: 800; color: #6a5632; }
+.local-fields { padding: 0 12px 10px; }
+.local-fields label { font-size: 12px; font-weight: 800; color: #5d6d5c; }
+.local-fields select { margin-top: 4px; }
+.levels-title { font-family: var(--head); letter-spacing: .04em; }
+#title-form label { font-weight: 800; }
+
+/* ---------- 盤面：城の名札を1行に ---------- */
+#board:not(.plaza-board) .castle-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; max-width: 148px; }
+
+/* ---------- タイトル：遊び方の3つを木の看板に。下の小さいボタンは1列にまとめる ---------- */
+.title-choices { background: linear-gradient(#2a5a50, #1b3f39); border: 3px solid #14322c; box-shadow: inset 0 0 0 2px #4a7d6d, 0 12px 26px #1b3a3338; }
+#title-main { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: center; }
+#title-main > .mode-choice, #offline-status { grid-column: 1 / -1; }
+.plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 {
+  grid-template-columns: 48px 1fr 18px;
+  gap: 12px;
+  min-height: 76px;
+  padding: 12px 26px 12px 22px;
+  background: none;
+  border: 1px solid transparent;
+  border-image: url('../assets/ui/btn-orange.png') 118 150 fill / 24px 31px stretch;
+  border-radius: 0;
+  color: #4a2f17;
+  filter: drop-shadow(0 4px 0 #0c221d80);
+  transition: transform .08s, filter .12s;
+}
+.plank-btn.mode-choice.alt2 { border-image-source: url('../assets/ui/btn-green.png'); color: #f6ffe6; }
+.plank-btn.mode-choice.alt { border-image-source: url('../assets/ui/btn-blue.png'); color: #eef7ff; }
+.mode-choice strong { font-family: var(--head); font-size: 19px; letter-spacing: .04em; text-shadow: 0 1px 0 #ffe2a3b0; }
+.mode-choice small, .mode-choice.alt small, .mode-choice.alt2 small { margin-top: 3px; font-size: 11px; font-weight: 700; color: inherit; opacity: .82; }
+.mode-choice.alt strong, .mode-choice.alt2 strong { text-shadow: 0 2px 0 #0000004d; }
+.mode-choice .mode-arrow { font-size: 18px; font-weight: 900; opacity: .7; }
+.mode-symbol, .mode-choice.alt .mode-symbol, .mode-choice.alt2 .mode-symbol { width: 48px; height: 48px; background: center / contain no-repeat; filter: drop-shadow(0 2px 0 #0000003d); }
+.mode-symbol svg { display: none; }
+#title-solo .mode-symbol { background-image: url('../assets/ui/icon-mode-solo.png'); }
+#title-local .mode-symbol { background-image: url('../assets/ui/icon-mode-local.png'); }
+#title-online .mode-symbol { background-image: url('../assets/ui/icon-mode-online.png'); }
+.mode-choice:hover { transform: translateY(-2px); filter: drop-shadow(0 6px 0 #0c221d80) brightness(1.05); }
+.plank-btn.mode-choice:active { transform: translateY(2px); filter: brightness(.92); }
+#title-solo { animation: title-invite 2.4s ease-in-out infinite; }
+@keyframes title-invite { 50% { filter: drop-shadow(0 4px 0 #0c221d80) drop-shadow(0 0 10px #ffd66b) brightness(1.06); } }
+.reduced-motion #title-solo { animation: none; }
+@media (prefers-reduced-motion: reduce) { #title-solo { animation: none; } }
+
+#offline-status { margin: 0; min-height: 0; color: #b9d0c0; font-size: 11px; }
+#offline-status:empty { display: none; }
+#title-record { grid-column: 1 / 3; margin: 4px 0 0; padding: 0 4px; text-align: left; font-family: var(--head); font-size: 14px; letter-spacing: .04em; color: #ffe9b0; }
+#title-main #record-clear {
+  grid-column: 3; justify-self: end; min-height: 0; margin-top: 4px; padding: 4px 6px;
+  border: 0; border-image: none; background: none; filter: none;
+  color: #a9c3b3; font-family: var(--font); font-size: 11px; font-weight: 700; text-decoration: underline; letter-spacing: 0;
+}
+#title-main #title-catalog, #title-main #title-settings, #title-main #title-help {
+  width: 100%; min-height: 42px; margin: 0; padding: 6px 4px;
+  background: none; border: 1px solid transparent; border-radius: 0; box-shadow: none;
+  border-image: url('../assets/ui/btn-cream.png') 106 150 fill / 14px 19px stretch;
+  color: #4a2f17; font-family: var(--head); font-size: 12px; font-weight: 900; letter-spacing: 0; white-space: nowrap;
+  filter: drop-shadow(0 3px 0 #0c221d66);
+}
+#title-main > * { min-width: 0; }
+.mode-choice > span { min-width: 0; }
+.mode-choice small { white-space: normal; line-height: 1.3; }
+@media (max-width: 360px) {
+  .plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { grid-template-columns: 38px 1fr; gap: 8px; min-height: 62px; padding: 9px 18px 9px 16px; border-image-width: 20px 26px; }
+  .mode-symbol, .mode-choice.alt .mode-symbol, .mode-choice.alt2 .mode-symbol { width: 38px; height: 38px; }
+  .mode-choice strong { font-size: 15px; letter-spacing: 0; }
+  .mode-choice small { font-size: 10px; }
+  .mode-choice .mode-arrow { display: none; }
+  .title-choices { padding: 12px; }
+}
+@media (max-height: 480px) {
+  .plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { min-height: 54px; padding-block: 6px; }
+  .mode-symbol, .mode-choice.alt .mode-symbol, .mode-choice.alt2 .mode-symbol { width: 40px; height: 40px; }
+  .mode-choice strong { font-size: 15px; }
+}
+
+/* ---------- カードの説明：説明文を主役に、補足は小さく ---------- */
+.detail-name { font-family: var(--head); font-size: 17px; letter-spacing: .03em; }
+.detail-desc { font-size: var(--reading-size, 14px); line-height: 1.55; color: #3f4a37; font-weight: 700; }
+.detail-meta { margin-top: 6px; font-size: 11px; font-weight: 700; color: #8a7b5c; }
+#card-detail .detail-hint { font-size: 12px; font-weight: 800; color: #6b7a55; }
+#card-detail .detail-hint.warn { color: #b3402f; }
+#card-detail .detail-use { min-width: 96px; min-height: 48px; font-size: 17px; }
+
+/* ---------- 強化ボタン：コイン袋らしく、木のボタンと同じ仲間に ---------- */
+#upgrade-open {
+  border: 2px solid #b98a2e; border-radius: 12px;
+  background: linear-gradient(#fff3c4, #f6d67a);
+  box-shadow: 0 3px 0 #9a6f1f, inset 0 1px 0 #fffbe6;
+  color: #5a3d10; font-family: var(--head);
+}
+#upgrade-open.off { background: linear-gradient(#f3ecd9, #e2d7ba); border-color: #b9ab86; box-shadow: 0 3px 0 #9d9070; }
+
+/* ---------- タブ（図鑑・強化）：選んでいるタブがひと目で分かるように ---------- */
+.guide-tabs > button, .shop-tabs > button {
+  flex: none; min-height: 40px; padding: 7px 16px;
+  background: none; border: 1px solid transparent; border-radius: 0; box-shadow: none;
+  border-image: url('../assets/ui/btn-cream.png') 106 150 fill / 14px 19px stretch;
+  color: #6a5632; font-family: var(--head); font-size: 13px; font-weight: 900; letter-spacing: .02em;
+  opacity: .82;
+}
+.guide-tabs > [aria-selected=true], .shop-tabs > [aria-selected=true] {
+  border-image-source: url('../assets/ui/btn-orange.png'); border-image-slice: 118 150 fill;
+  background: none; color: #4a2f17; opacity: 1; text-shadow: 0 1px 0 #ffe2a3b0;
+  filter: drop-shadow(0 3px 0 #3d281430);
+}
+@media (max-width: 400px) { .shop-tabs { gap: 3px; } .shop-tabs > button { padding-inline: 11px; font-size: 12px; } }
+
+/* ---------- 強化を買う：買えるものを明るく、買えないものは静かに ---------- */
+.upgrade-head b { font-family: var(--head); font-size: 19px; color: #284b43; letter-spacing: .04em; }
+.upgrade-coins { font-family: var(--head); font-size: 17px; color: #7a5312; padding: 3px 10px; border-radius: 999px; background: #fbe9b0; box-shadow: inset 0 0 0 2px #e2bb5c; }
+#upgrade-panel .upgrade-item:not(.blocked) { border: 2px solid #dcae45; background: linear-gradient(#fffdf3, #fff3cf); box-shadow: 0 3px 0 #c99a3a; transition: transform .07s; }
+#upgrade-panel .upgrade-item:not(.blocked):active { transform: translateY(2px); box-shadow: 0 1px 0 #c99a3a; }
+#upgrade-panel .upgrade-item.blocked { border: 2px solid #e2dcc8; background: #f3f0e4; }
+.upgrade-item .upgrade-name { font-family: var(--head); font-size: 15px; color: #3f321f; }
+.upgrade-item.blocked .upgrade-name { color: #8d8672; }
+.upgrade-item .upgrade-desc { color: #5d6d5c; }
+.upgrade-cost { font-family: var(--head); background: #fbe9b0; box-shadow: inset 0 0 0 1px #e2bb5c; color: #6b4a10; }
+.upgrade-item.blocked .upgrade-cost { background: #e9e4d2; box-shadow: none; color: #8d8672; }
+.upgrade-note { color: #8a7b5c; font-size: 11px; }
+#app select { font-size: max(13px, 1em); }
+.guide-filters select, .guide-box select { min-height: 40px; padding-block: 6px; }
+
+/* ---------- 結果：勝ちは金色に輝かせ、負けは夕暮れで静かに ---------- */
+#result { background: radial-gradient(ellipse at 50% 34%, #fffbe0 0%, #ffe9a0 38%, #f7c35a 72%, #e9a13c 100%); }
+#result .result-rays { opacity: .5; top: 34%; }
+#result .result-title {
+  font-family: var(--head); font-size: clamp(32px, 9.5vw, 42px); letter-spacing: .02em; line-height: 1.15;
+  color: #fff6c9; -webkit-text-stroke: 0;
+  text-shadow: 0 2px 0 #7a3d08, 2px 0 0 #7a3d08, -2px 0 0 #7a3d08, 0 -2px 0 #7a3d08, 2px 2px 0 #7a3d08, -2px 2px 0 #7a3d08, 2px -2px 0 #7a3d08, -2px -2px 0 #7a3d08, 0 6px 0 #7a3d0855;
+}
+#result .result-sub { color: #6d4a17; font-size: 13px; font-weight: 800; margin: 8px 0 14px; }
+#result.lost { background: linear-gradient(#566b86 0%, #7d8fa3 45%, #c5b9a6 100%); }
+#result.lost .result-title { color: #f3f6fa; text-shadow: 0 2px 0 #2a3a4f, 2px 0 0 #2a3a4f, -2px 0 0 #2a3a4f, 0 -2px 0 #2a3a4f, 2px 2px 0 #2a3a4f, -2px 2px 0 #2a3a4f, 2px -2px 0 #2a3a4f, -2px -2px 0 #2a3a4f; font-size: clamp(28px, 8.4vw, 36px); }
+#result.lost .result-sub { color: #f2f4f6; text-shadow: 0 1px 2px #2a3a4f; }
+#result-stats { border: 2px solid #c9a35a; border-radius: 14px; background: #fffaeb; box-shadow: 0 4px 0 #b4863a55, inset 0 0 0 3px #fff3cf; padding: 10px 16px; color: #3f321f; }
+#result-stats p { font-family: var(--head); color: #8a5a24; letter-spacing: .06em; text-align: center; }
+#result-stats dt { color: #5b4d33; font-weight: 700; }
+#result-stats dd { font-family: var(--head); font-size: 16px; color: #3f321f; }
+#result-encouragement { color: #5a3d10; font-weight: 800; }
+#result.lost #result-encouragement { color: #fff; text-shadow: 0 1px 2px #2a3a4f; }
+#result #rematch { margin-top: 2px; }
+
+/* ---------- 部屋（ロビー）：席に城の絵、合言葉を看板に ---------- */
+#room-screen { background: radial-gradient(ellipse at 50% 0%, #fdf6dc, #f1e7c9 60%, #e6dab8); }
+.room-eyebrow { color: #8a5a24; }
+.room-box h1 { font-family: var(--head); color: #284b43; letter-spacing: .04em; }
+.room-box h2 { font-family: var(--head); color: #3f321f; letter-spacing: .03em; }
+.room-passphrase { border: 3px solid #c9a35a; border-radius: 14px; background: #fffaeb; box-shadow: inset 0 0 0 3px #fff3cf, 0 4px 0 #b4863a40; color: #5a3d10; font-family: var(--head); text-align: center; }
+.room-seat { position: relative; min-height: 96px; border: 2px solid #dccb9f; border-left: 6px solid var(--seat-color, #c9a35a); border-radius: 14px; background: #fffdf5; box-shadow: 0 3px 0 #cdbb8d55; }
+.room-seat.room-self { border-color: #e0a63a; border-left-color: var(--seat-color, #e0a63a); background: #fffbe9; box-shadow: 0 0 0 3px #f6d67a80, 0 3px 0 #cdbb8d55; }
+.room-seat h3 { font-family: var(--head); font-size: 17px; color: #3f321f; padding-right: 76px; }
+.room-seat h3 small { background: #f6d67a; color: #5a3d10; font-family: var(--font); font-weight: 800; border-radius: 999px; padding: 3px 8px; }
+.room-seat > .room-note { font-size: 12px; margin: 3px 0; padding-right: 76px; }
+.room-seat-pic { position: absolute; top: 8px; right: 10px; width: 68px; height: 60px; pointer-events: none; }
+.room-seat-pic .castle-art { display: block; width: 100%; height: 100%; }
+.room-seat-pic img { width: 100%; height: 100%; object-fit: contain; }
+.room-select { font-weight: 800; color: #5b4d33; }
+.room-settings { border: 2px solid #d6dcc0; border-radius: 14px; background: #eef1df; padding: 12px 14px 14px; }
+.room-start { min-height: 60px; font-size: 19px; }
+.room-box > .room-note { text-align: center; font-weight: 700; }
+
+/* ---------- 小さい画面：下の操作ボタンが1列におさまるように ---------- */
+#controls .control-row .small-btn { padding-inline: 14px; }
+@media (max-width: 380px) {
+  #controls .control-row { gap: 5px; padding-inline: 8px; }
+  #controls .control-row .small-btn { min-width: 0; padding-inline: 10px; font-size: 12px; border-image-width: 12px 14px; letter-spacing: 0; }
+  #controls #upgrade-open { padding-inline: 7px; }
+  #controls #end-turn { min-width: 112px; padding: 8px 10px 8px 38px; font-size: 12px; letter-spacing: 0; }
+}
+@media (max-width: 340px) {
+  #controls .control-row { gap: 3px; padding-inline: 5px; }
+  #controls .control-row .small-btn { padding-inline: 7px; font-size: 11px; }
+  #controls #upgrade-open .upgrade-open-label { display: none; }
+  #controls #end-turn { min-width: 100px; padding-left: 32px; font-size: 11px; }
+}

@@ -1,4 +1,5 @@
 // サーバーが送る選択肢と席だけで部屋を描く。名前は必ず textContent。
+import { castleArt, colorOf } from './art.js';
 export class RoomView {
   constructor({ onAction, onLeave }) {
     this.onAction = onAction;
@@ -76,6 +77,9 @@ export class RoomView {
       if (p.playerId === room.you) title.append(this.node('small', 'あなた'));
       if (p.playerId === room.hostId) title.append(this.node('small', '部屋主'));
       seat.append(title);
+      // 選んだ城の絵を席に出す（城の種類を変えると絵も変わる）
+      const pic = this.node('div', null, 'room-seat-pic'); pic.setAttribute('aria-hidden', 'true');
+      pic.innerHTML = castleArt(colorOf(p.playerId), 0, p.castle ?? 'standard'); seat.append(pic);
       const level = choices.cpuLevels?.find(c => c.id === p.cpu)?.name;
       seat.append(this.node('p', `${p.cpu ? `CPU · ${level ?? p.cpu}` : 'プレイヤー'} · ${p.connected ? '接続中' : '再接続を待っています'}`, 'room-note'));
       const edit = p.playerId === room.you || (host && Boolean(p.cpu));

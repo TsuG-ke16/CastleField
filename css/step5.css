@@ -32,5 +32,6 @@
 .soldier .soldier-stats {border-bottom:2px solid var(--team-color);border-radius:5px;}
 #target-bar {flex-wrap:wrap;}.target-members {width:100%;display:flex;gap:6px;flex-wrap:wrap;}
 .castle-label { display:block;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;text-align:center; }
-.plaza-stage .castle-label {max-height:none;}.castle-side {align-items:center;}
+.plaza-stage .castle-label {max-height:none;max-width:118px;}
+.plaza-stage .plaza-castle.plaza-upper { flex-direction:column-reverse; }.castle-side {align-items:center;}
 .castle[data-tier=fortress] { min-height:100px; }
