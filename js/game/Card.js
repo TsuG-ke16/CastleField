@@ -3,6 +3,8 @@
 
 export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense'];
 export const ELEMENTS = ['fire', 'water', 'wood'];
+/** 精霊の種類：fire=毎ターン敵の城を攻める／water=毎ターン城を回復／wind=兵士の速さの最低値／earth=受けるダメージを軽くする */
+export const SPIRIT_KINDS = ['fire', 'water', 'wind', 'earth'];
 
 /** effect ごとに、必要な数値のキー */
 export const EFFECTS = {
@@ -15,6 +17,7 @@ export const EFFECTS = {
     redrawHand: [], // 天の恵み：手札を全部引き直す
     randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
     stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
+    summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
   },
   defense: {
     shieldSoldier: ['amount'],
@@ -102,6 +105,12 @@ export class Card {
       }
       if (def.element !== undefined && def.element !== null && !ELEMENTS.includes(def.element)) {
         throw new Error(`${where}: element は ${ELEMENTS.join(' / ')} のどれかにしてください（書かなければ属性なし）`);
+      }
+
+      if (def.effect === 'summonSpirit') {
+        if (!SPIRIT_KINDS.includes(def.spirit)) throw new Error(`${where}: spirit は ${SPIRIT_KINDS.join(' / ')} のどれかにしてください`);
+      } else if (def.spirit !== undefined) {
+        throw new Error(`${where}: spirit を書けるのは effect が summonSpirit の魔法だけです`);
       }
 
       if (def.scope !== undefined) {

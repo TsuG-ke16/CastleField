@@ -290,6 +290,15 @@ const CARD_ART = {
     `<ellipse cx="38" cy="48" rx="3.4" ry="3" fill="${INK}"/><ellipse cx="62" cy="48" rx="3.4" ry="3" fill="${INK}"/>` +
     `<rect x="30" y="64" width="24" height="30" rx="4" fill="#b0703c" ${S} stroke-width="3.5" transform="rotate(-12 42 80)"/>` +
     `<rect x="52" y="62" width="24" height="30" rx="4" fill="#4da3e8" ${S} stroke-width="3.5" transform="rotate(10 64 78)"/>`,
+  // 精霊カード（仮の絵：色と形で見分ける。大精霊は光の輪つき）
+  fireSpirit: () => spiritArt('#ffd9a8', '#f2622e', '#ffc83d'),
+  greatFireSpirit: () => spiritArt('#ffd9a8', '#f2622e', '#ffc83d', true),
+  waterSpirit: () => spiritArt('#cdeafb', '#4db8f0', '#e4f6ff'),
+  greatWaterSpirit: () => spiritArt('#cdeafb', '#4db8f0', '#e4f6ff', true),
+  windSpirit: () => spiritArt('#d8f5e6', '#5fd0a0', '#f0fff8'),
+  greatWindSpirit: () => spiritArt('#d8f5e6', '#5fd0a0', '#f0fff8', true),
+  earthSpirit: () => spiritArt('#ecdcc2', '#b0834f', '#f6ead4'),
+  greatEarthSpirit: () => spiritArt('#ecdcc2', '#b0834f', '#f6ead4', true),
   // 魔法の追加カード（仮の絵：既存の絵の色違い）
   minorHeal: () => bg('#e2f7d8', '#f5fdee') +
     `<path d="M50 78 Q22 58 25 40 Q28 28 40 31 Q46 33 50 39 Q54 33 60 31 Q72 28 75 40 Q78 58 50 78 Z" fill="#f9a1b4" ${S} stroke-width="4"/>` +
@@ -308,6 +317,17 @@ const CARD_ART = {
     `<path d="M40 62 Q38 42 54 38 H76 Q92 42 90 62 Z" fill="#c9ae74" ${S} stroke-width="4"/>` +
     `<path d="M28 74 h18 M58 52 h18" stroke="#a88f58" stroke-width="3" stroke-linecap="round"/>`,
 };
+
+
+/** 精霊の絵：ゆらゆらした体と顔。大精霊は後ろに光の輪と星がつく */
+function spiritArt(back, body, light, great = false) {
+  return bg(back, light) +
+    (great ? `<circle cx="50" cy="50" r="42" fill="none" stroke="#ffd93b" stroke-width="5" stroke-dasharray="4 8" stroke-linecap="round"/>` +
+      `<path d="M50 4 l3 7 l7 1 l-5 5 l1 7 l-6 -4 l-6 4 l1 -7 l-5 -5 l7 -1 Z" fill="#ffd93b" ${S} stroke-width="2"/>` : '') +
+    `<path d="M50 20 Q78 30 74 58 Q72 80 50 88 Q28 80 26 58 Q22 30 50 20 Z" fill="${body}" ${S} stroke-width="4"/>` +
+    `<path d="M36 36 Q40 28 50 27" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>` +
+    face(50, 56, 1);
+}
 
 /** カードの絵（知らない種類は、名前の1文字目を出す） */
 export function cardArt(type, color = 'blue', name = '') {

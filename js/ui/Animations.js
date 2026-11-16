@@ -236,6 +236,9 @@ export class Animations {
       case 'defenseEnded':
         model.phase = 'main';
         return undefined;
+      case 'spiritSummoned': return this.spiritSummoned(p, model);
+      case 'spiritTriggered': return this.spiritTriggered(p);
+      case 'spiritEnded': return this.spiritEnded(p, model);
       case 'spellReflected': return this.spellReflected();
       case 'soldierDecoyed': return this.soldierDecoyed();
       case 'cardStolen': return this.cardStolen(p, model, ctx);
@@ -526,6 +529,28 @@ export class Animations {
     if (def.effect === 'stealCard') return this.banner('盗賊！', UI_CONFIG.timing.shuffle, 'small');
     // 回復などは castleHealed 側で見せる
     return undefined;
+  }
+
+  /** 精霊を呼ぶ：城のそばにバッジが出る */
+  async spiritSummoned({ playerId, type, spirit, amount, turns, targetId }, model) {
+    model.players[playerId].spirit = { type, spirit, amount, turns, targetId };
+    this.renderer.setSpirit(playerId, model.players[playerId].spirit);
+    if (this.skipping) return;
+    sound.play('heal');
+    this.banner(`${this.cards[type]?.name ?? '精霊'}！`, UI_CONFIG.timing.shuffle, 'small');
+    await this.delay(UI_CONFIG.timing.shuffle * 0.8);
+  }
+
+  /** 精霊が効く（このあと castleDamaged / castleHealed） */
+  async spiritTriggered({ type }) {
+    if (this.skipping) return;
+    this.banner(`${this.cards[type]?.name ?? '精霊'}`, UI_CONFIG.timing.shuffle * 0.7, 'small');
+    await this.delay(UI_CONFIG.timing.shuffle * 0.4);
+  }
+
+  async spiritEnded({ playerId }, model) {
+    model.players[playerId].spirit = null;
+    this.renderer.setSpirit(playerId, null);
   }
 
   /** 反射：撃たれた魔法が、撃った人の城に返る（このあと castleDamaged） */

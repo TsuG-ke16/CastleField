@@ -341,6 +341,11 @@ function smartTurn(game, pid, ctx) {
   ]);
   if (played) return;
   // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み
+  // 精霊：今いなければ、1体呼ぶ（大精霊は使い切りなので、城HPが半分を切ったときだけ）
+  if (!me.spirit) {
+    const spirits = typesWithEffect(ctx, 'summonSpirit').filter((t) => !ctx.cards[t].exhaust || me.castleHp * 2 < me.castleMaxHp);
+    if (playFirst(game, playable, spirits)) return;
+  }
   if (enemy && enemy.handCount >= 3 && playFirst(game, playable, typesWithEffect(ctx, 'stealCard'))) return;
   if (me.hand.length >= 4 && playFirst(game, playable, typesWithEffect(ctx, 'redrawHand'))) return;
   playFirst(game, playable, typesWithEffect(ctx, 'randomEffect'));

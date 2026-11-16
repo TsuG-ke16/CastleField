@@ -47,6 +47,16 @@ const EFFECT_TEXT = {
   poisonEnemySoldiers: (c) => `相手の兵士全員に毒（${c.amount}ダメージ×${c.turns}回・盾が効かない）`,
   freezeEnemySoldiers: (c) => `相手の兵士全員を${c.turns}回休みにする`,
   shieldSoldier: (c) => `自分の兵士に盾${c.amount}（ダメージを先に受ける）`,
+  summonSpirit: (c) => {
+    const t = c.turns;
+    const text = {
+      fire: `精霊を呼ぶ：${t}ターン、毎ターン相手の城に${c.amount}ダメージ`,
+      water: `精霊を呼ぶ：${t}ターン、毎ターン自分の城HP+${c.amount}`,
+      wind: `精霊を呼ぶ：${t}ターン、自分の兵士が1ターンに最低${c.amount}マス進む`,
+      earth: `精霊を呼ぶ：${t}ターン、自分の城と兵士が受けるダメージ-${c.amount}（最低1）`,
+    }[c.spirit];
+    return `${text}。1人1体まで（呼ぶと入れ替わる）`;
+  },
   armorCastle: (c) => `自分の城を${c.amount}守る（次の自分のターンまで）`,
 };
 

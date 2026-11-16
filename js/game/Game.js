@@ -67,6 +67,9 @@ export const EVENT_TYPES = [
   'spellReflected',
   'soldierDecoyed',
   'cardStolen',
+  'spiritSummoned',
+  'spiritTriggered',
+  'spiritEnded',
   'gameOver',
 ];
 
@@ -506,6 +509,7 @@ export class Game {
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
     const drawCount = Math.max(baseDraw, this.rules.drawUntilHand - player.hand.length);
     this.drawCards(player, drawCount);
+    if (this.triggerSpirit(player)) return;
 
     // 2. 進軍
     this.advanceSoldiers(player);
@@ -562,7 +566,8 @@ export class Game {
         let opponent = this.findClashTarget(soldier, enemy);
         monster = opponent ? null : this.findMonsterInRange(soldier, player);
         let moved = 0;
-        while (!opponent && !monster && steps < soldier.speed) {
+        const speed = this.speedOf(player, soldier);
+      while (!opponent && !monster && steps < speed) {
           soldier.moveForward();
           steps += 1;
           moved += 1;
@@ -583,7 +588,7 @@ export class Game {
         }
         if (!opponent) break;
         this.fight(player, soldier, enemy, opponent);
-        const keepGoing = this.rules.advanceAfterWin && opponent.isDead && !soldier.isDead && steps < soldier.speed;
+        const keepGoing = this.rules.advanceAfterWin && opponent.isDead && !soldier.isDead && steps < speed;
         if (!keepGoing) break;
       }
       if (monster) {
@@ -626,6 +631,7 @@ export class Game {
 
   /** 城にダメージ。城壁が先に受ける。castleDamaged を出す */
   damageCastle(owner, amount, source) {
+    amount = this.reduceDamage(owner, amount);
     const blocked = Math.min(owner.armor, amount);
     owner.armor -= blocked;
     owner.castle.takeDamage(amount - blocked);
@@ -634,6 +640,7 @@ export class Game {
 
   /** 兵士にダメージ（盾が先に受ける）。soldierDamaged を出し、HPが0なら消す。消えたら true */
   damageSoldier(owner, soldier, amount, cause) {
+    amount = this.reduceDamage(owner, amount);
     const blocked = soldier.takeDamage(amount);
     this.emit('soldierDamaged', {
       playerId: owner.id, soldierId: soldier.soldierId, amount, hp: soldier.hp, cause, blocked,
@@ -761,7 +768,7 @@ export class Game {
       square: road.toSquare(player.id, soldier.position),
     });
     const toMonster = this.fightDamage(soldier, monster);
-    const toSoldier = this.fightDamage(monster, soldier);
+    const toSoldier = this.reduceDamage(player, this.fightDamage(monster, soldier));
     this.damageMonster(monster, toMonster, { playerId: player.id, soldierId: soldier.soldierId });
     const blocked = soldier.takeDamage(toSoldier);
     this.emit('soldierDamaged', {
@@ -831,8 +838,8 @@ export class Game {
       square: road.toSquare(player.id, attacker.position), // 攻める側が止まったマス
     });
 
-    const toDefender = this.fightDamage(attacker, defender);
-    const toAttacker = this.fightDamage(defender, attacker);
+    const toDefender = this.reduceDamage(enemy, this.fightDamage(attacker, defender));
+    const toAttacker = this.reduceDamage(player, this.fightDamage(defender, attacker));
     const blockedD = defender.takeDamage(toDefender);
     const blockedA = attacker.takeDamage(toAttacker);
     this.emit('soldierDamaged', {
@@ -929,6 +936,15 @@ export class Game {
           targets: this.opponentsOf(player.id).filter((p) => p.hand.length > 0).map((p) => ({ playerId: p.id })),
           reason: '手札を持っている相手がいません',
         };
+      case 'summonSpirit': {
+        if (player.spirit?.type === card.type) return { targets: [], reason: '同じ精霊がもう来ています' };
+        // 火の精霊は、毎ターン城を攻める相手を選ぶ。ほかは自分
+        if (def.spirit === 'fire') {
+          const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.opponentsOf(player.id);
+          return { targets: playerTargets(foes), reason: '相手がいません' };
+        }
+        return { targets: [{ playerId: player.id }], reason: '' };
+      }
       case 'reflectSpell':
       case 'nullifySoldier':
         return { targets: [], reason: '攻撃を受けたときにだけ使えます' };
@@ -1144,6 +1160,12 @@ export class Game {
         break;
       }
 
+      case 'summonSpirit': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        this.summonSpirit(player, card, enemy);
+        break;
+      }
+
       case 'randomEffect': {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         this.prayCard(player);
@@ -1163,6 +1185,79 @@ export class Game {
         // Card.validateDefinitions で弾いているので、ここには来ない
         break;
     }
+  }
+
+  // ================= 精霊 =================
+  // 1人1体まで。新しく呼ぶと入れ替わる（強すぎないように、1種類だけ選ぶ形）。
+  // 呼んだターンは効かない。次の自分のターンから `turns` 回、効く。自分のターンの終わりに残りが1つ減り、0で消える。
+  //   fire：自分のターンの始めに、選んだ相手の城に amount ダメージ（城壁は受ける）
+  //   water：自分のターンの始めに、自分の城を amount 回復
+  //   wind：自分の兵士の速さが、最低でも amount になる
+  //   earth：自分の城と兵士が受けるダメージが amount 軽くなる（ただし1より小さくはならない）
+
+  summonSpirit(player, card, target) {
+    const def = card.def;
+    if (player.spirit) this.emit('spiritEnded', { playerId: player.id, type: player.spirit.type, reason: 'replaced' });
+    player.spirit = {
+      type: card.type,
+      spirit: def.spirit,
+      amount: def.amount,
+      turns: def.turns,
+      targetId: def.spirit === 'fire' ? target.id : null,
+      fresh: true, // 呼んだターンの終わりには減らさない
+    };
+    this.emit('spiritSummoned', {
+      playerId: player.id, type: card.type, spirit: def.spirit, amount: def.amount, turns: def.turns, targetId: player.spirit.targetId,
+    });
+  }
+
+  /** ターンの始め：火・水の精霊が効く。城が落ちて決着したら true */
+  triggerSpirit(player) {
+    const sp = player.spirit;
+    if (!sp || sp.fresh) return false;
+    if (sp.spirit === 'water') {
+      const healed = player.castle.heal(sp.amount);
+      if (healed > 0) {
+        this.emit('spiritTriggered', { playerId: player.id, type: sp.type, spirit: 'water', amount: healed });
+        this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+      }
+    } else if (sp.spirit === 'fire') {
+      const foes = this.opponentsOf(player.id);
+      const target = foes.find((p) => p.id === sp.targetId) ?? foes[0];
+      if (!target) return false;
+      this.emit('spiritTriggered', { playerId: player.id, type: sp.type, spirit: 'fire', amount: sp.amount, targetId: target.id });
+      this.damageCastle(target, sp.amount, { kind: 'spirit', type: sp.type });
+      return this.checkGameOver();
+    }
+    return false;
+  }
+
+  /** 自分のターンの終わり：精霊の残りを1つ減らす。0で消える */
+  tickSpirit(player) {
+    const sp = player.spirit;
+    if (!sp) return;
+    if (sp.fresh) {
+      sp.fresh = false;
+      return;
+    }
+    sp.turns -= 1;
+    if (sp.turns <= 0) {
+      player.spirit = null;
+      this.emit('spiritEnded', { playerId: player.id, type: sp.type, reason: 'expired' });
+    }
+  }
+
+  /** 兵士 soldier の今の速さ（風の精霊は、最低でも amount にする） */
+  speedOf(player, soldier) {
+    const sp = player.spirit;
+    return sp && sp.spirit === 'wind' ? Math.max(soldier.speed, sp.amount) : soldier.speed;
+  }
+
+  /** 土の精霊：owner が受けるダメージを軽くする（0のダメージはそのまま。1より小さくはならない） */
+  reduceDamage(owner, amount) {
+    const sp = owner.spirit;
+    if (!sp || sp.spirit !== 'earth' || amount <= 0) return amount;
+    return Math.max(1, amount - sp.amount);
   }
 
   /**
@@ -1390,6 +1485,7 @@ export class Game {
   passTurn() {
     const player = this.players[this.currentPlayer];
     player.playedThisTurn = false;
+    this.tickSpirit(player);
     this.beginTurn(this.nextPlayerAfter(this.currentPlayer));
   }
 

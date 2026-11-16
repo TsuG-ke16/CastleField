@@ -25,6 +25,8 @@ export class Player {
     this.coins = 0;
     /** 強化ID → 買った回数 */
     this.upgradesBought = {};
+    /** 今来ている精霊（1人1体まで）。{ type, spirit, amount, turns, targetId, fresh } か null */
+    this.spirit = null;
   }
 
   findInHand(cardId) {
@@ -52,6 +54,7 @@ export class Player {
       eliminated: this.eliminated,
       cardsPlayedThisTurn: this.cardsPlayedThisTurn,
       armor: this.armor,
+      spirit: this.spirit ? { type: this.spirit.type, spirit: this.spirit.spirit, amount: this.spirit.amount, turns: this.spirit.turns, targetId: this.spirit.targetId } : null,
       coins: this.coins,
       hand: showHand ? this.hand.map((c) => c.toState()) : null,
       handCount: this.hand.length,

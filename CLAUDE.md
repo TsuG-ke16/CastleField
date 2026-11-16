@@ -298,6 +298,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spellReflected` | `{ defenderId, attackerId, amount }` … 反射。このあと撃った人の城に `castleDamaged` |
 | `soldierDecoyed` | `{ defenderId, attackerId, soldierId }` … 身代わり。このあと兵士の `soldierDestroyed`（`"reachedCastle"`）。城にダメージは入らない |
 | `cardStolen` | `{ playerId, victimId, cardId }` … 盗賊。`cardId` から種類は分からない（奪った本人だけが `state` で種類を見られる） |
+| `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
+| `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
+| `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
 
 #### イベントの順番
@@ -809,6 +812,25 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 防御側が増えて試合が長くなったので、城壁・土嚢・毒の霧・氷の息を各4→3枚に減らした（山札は86枚。攻撃側39・防御側47で、「半々」からは防御に寄っている。遊んで確かめる）
 - 確かめたこと（`node tests/sim/run.js --games 400`）：全組み合わせが決着。smart 同士は平均64手番（追加前は58〜62）。CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 8%・defensive 38%・smart 75%）。**試合は少し長くなった**ので、遊んで確かめる
 - 見た目は仮の絵（`js/ui/art.js`）
+
+### 精霊カード（人間に確認して決めた）
+基本4属性（火・水・風・土）それぞれに「精霊」と「大精霊」を作った。**数値はすべて仮**。`kind: "spell"`・`effect: "summonSpirit"`、`spirit` に種類、`amount` と `turns`（続くターン数）を書く（`data/cards.json`）。
+
+- **1人1体まで**（複数枚で強くなりすぎないように、1種類だけ選ぶ形）。新しく呼ぶと、今の精霊と入れ替わる（`spiritEnded` の `reason: "replaced"`）。同じカードの精霊が来ているときは呼べない（「同じ精霊がもう来ています」）
+- **呼んだターンは効かない。** 次の自分のターンから `turns` 回効き、自分のターンの終わりに残りが1つ減り、0で消える。`getState().players.pX.spirit` は `{ type, spirit, amount, turns, targetId }` か `null`
+- 「ここでの火・水・風・土」は精霊カードだけの属性。**兵士同士の戦いの属性（火・水・木、`rules.elementBonus`）は変えていない**（風・土を戦いの属性に入れるかは決めていない）
+
+| 種類 | 精霊（枚数2） | 大精霊（使い切り・枚数1） | 効き方 |
+|---|---|---|---|
+| 火 | 3ダメージ×3ターン | 5×3 | 自分のターンの始めに、選んだ相手の城にダメージ（城壁は受ける。防御は聞かない） |
+| 水 | +2×4ターン | +3×4 | 自分のターンの始めに、自分の城を回復 |
+| 風 | 速さ最低2・3ターン | 最低3・3ターン | 自分の兵士の速さが、最低でもその値になる |
+| 土 | -1・3ターン | -2・3ターン | 自分の城と兵士が受けるダメージ（城・兵士同士の戦い・魔法・魔物）が軽くなる。ただし最低1（毒は軽くならない） |
+
+- 長所と短所：火・水は少しずつ効くので、すぐには効かず、入れ替えられると無駄になる。風は兵士がいないと意味がない。土はダメージを0にはできない。大精霊は強いが使い切り・1枚だけ
+- CPU（`smart` 系）は、精霊が来ていなければ呼ぶ（大精霊は城HPが半分を切ったときだけ）
+- 確かめたこと（`node tests/sim/run.js --games 400`）：全組み合わせが決着。smart 同士は平均65手番、CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 7%・defensive 25%・smart 64%）。精霊を足して、random に勝つ割合は下がった（random も精霊を出すため）。**試合の長さと迷う場面は、遊んで確かめる**
+- 画面：城のそばに「💧 あと4」のバッジを出す（`js/ui/Renderer.js`）。絵は仮（`js/ui/art.js`）
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
