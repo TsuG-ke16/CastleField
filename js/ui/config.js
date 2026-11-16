@@ -3,6 +3,11 @@
 
 export const UI_CONFIG = {
   cpuThink: 450,
+  cpuLevels: {
+    easy: {name:'よわい',strategy:'defensive'},
+    normal: {name:'ふつう',strategy:'rush'},
+    hard: {name:'つよい',strategy:'smart'},
+  },
   plazaSize: 640, plazaSizeCompact: 480,
   teamColors: Object.assign(['#4da3e8','#f5923e','#9c73d8','#41a589','#e27299','#a88d45','#6984c9','#b37b60'], {t1:'#4da3e8', t2:'#f5923e', t3:'#9c73d8', t4:'#41a589'}),
   castleTiers: [{min:1,name:'castle',towers:false}, {min:2,name:'towers',towers:true}, {min:4,name:'walls',towers:true,wall:true}, {min:6,name:'fortress',towers:true,wall:true,fortress:true}],

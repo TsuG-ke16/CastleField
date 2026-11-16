@@ -253,3 +253,6 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 
 ### ローカル対戦設定の確認画像（2026-11-16）
 - `review/local-setup/*.png`：Playwright同梱Chromiumで設定・8人広場・2チームの勝敗を撮影。ゲーム内素材の条件は本ファイルの各項を参照。外部素材追加なし。
+
+### CPU強さの確認画像（2026-11-16）
+- `review/cpu-levels/selection.png`：Playwright同梱Chromiumによる本ゲームの画面。素材の条件は本ファイルの各項を参照。

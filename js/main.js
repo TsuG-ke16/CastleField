@@ -104,12 +104,9 @@ let upgradeCounts = {};    // playerId → { upgradeId: 買った回数 }（getS
 const listeners = [];
 
 // ひとりで遊ぶ（CPU と対戦）
-// 強さ → 戦い方（js/game/strategies.js）。シミュレーションで、PR42の結果に合わせて defensive < rush < smart と確かめた
-const CPU_LEVELS = {
-  easy: { name: 'よわい', strategy: 'defensive' },
-  normal: { name: 'ふつう', strategy: 'rush' },
-  hard: { name: 'つよい', strategy: 'smart' },
-};
+// 2026-11-16再測定（各200試合、seed 1、先攻でrandomと対戦）：defensive 23% < rush 50% < smart 97%。
+// 元の割り当ては修正済みだったため順序は維持し、UI_CONFIGに集約。
+const CPU_LEVELS = UI_CONFIG.cpuLevels;
 let cpu = null;            // { id, level, strategy, rng }（ひとりで遊ぶときだけ）
 
 // オンライン
