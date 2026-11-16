@@ -276,3 +276,6 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 
 ### 表示・アクセシビリティの確認画像（2026-11-16）
 - `review/accessibility/*.png`：Playwright同梱Chromiumで12サイズ×9画面とノッチ模擬4画面を撮影。一覧画像は撮影画像をPillowで並べ、確認画像だけをパレット圧縮（各300KB以下）。本番の絵の改変はしていません。素材の出どころ・条件は本ファイルの各項を参照。テスト条件と全画像のリンクは同フォルダのREADME.md、計測結果はreport.jsonに記録。
+
+### UIスモークテストの確認画像（2026-11-16）
+- `review/ui-smoke/{title,deployed,result}.png`：`node ui-tests/smoke.js` がPlaywright同梱Chromium・390×844で実操作して撮影。ゲーム内素材の条件は本ファイルの各項を参照。
