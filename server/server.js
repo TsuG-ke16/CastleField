@@ -20,6 +20,7 @@ export function loadData(dir = join(ROOT, 'data')) {
     upgrades: optional('upgrades.json'),
     castles: optional('castles.json'),
     decks: optional('decks.json'),
+    rarities: optional('rarities.json'),
   };
 }
 

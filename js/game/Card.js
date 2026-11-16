@@ -80,7 +80,7 @@ export class Card {
    * cards.json の中身をチェックする。書き間違いがあれば、どこが悪いかを書いた Error を投げる。
    * （不正な「操作」は例外にしない約束だが、データの書き間違いは起動時に気づけるよう例外にする）
    */
-  static validateDefinitions(cards) {
+  static validateDefinitions(cards, rarities = null) {
     if (!cards || typeof cards !== 'object' || Array.isArray(cards)) {
       throw new Error('cards.json はカード種類をキーにしたオブジェクトにしてください');
     }
@@ -97,6 +97,18 @@ export class Card {
       if (typeof def.name !== 'string' || def.name === '') throw new Error(`${where}: name を書いてください`);
       if (!CARD_KINDS.includes(def.kind)) throw new Error(`${where}: kind は ${CARD_KINDS.join(' / ')} のどれかです`);
       if (!isCount(def.count)) throw new Error(`${where}: count は0以上の整数にしてください`);
+      if (rarities) {
+        if (!Object.hasOwn(rarities, def.rarity)) throw new Error(`${where}: rarity は ${Object.keys(rarities).join(' / ')} のどれかにしてください`);
+        if (def.weight !== undefined && !(typeof def.weight === 'number' && def.weight >= 0)) throw new Error(`${where}: weight は0以上の数にしてください（書かなければ 1）`);
+        const order = Object.keys(rarities);
+        const next = order[order.indexOf(def.rarity) + 1];
+        if (next === undefined) {
+          if (def.fuseTo !== undefined) throw new Error(`${where}: いちばん上のレアリティのカードに fuseTo は書けません`);
+        } else {
+          if (typeof def.fuseTo !== 'string' || !Object.hasOwn(cards, def.fuseTo)) throw new Error(`${where}: fuseTo に、合成してできるカード種類を書いてください`);
+          if (cards[def.fuseTo].rarity !== next) throw new Error(`${where}: fuseTo は1つ上のレアリティ（${next}）のカードにしてください`);
+        }
+      }
       if (def.exhaust !== undefined && typeof def.exhaust !== 'boolean') {
         throw new Error(`${where}: exhaust は true か false にしてください（書かなければ false）`);
       }

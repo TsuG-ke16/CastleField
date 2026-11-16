@@ -53,3 +53,55 @@ export class Pile {
     this.exhausted = [];
   }
 }
+
+/** rarities.json の中身をチェックする（キーの並びが低い順。dropRate は%で、合計100） */
+export function validateRarities(rarities) {
+  if (!rarities || typeof rarities !== 'object' || Array.isArray(rarities)) {
+    throw new Error('rarities.json はレアリティをキーにしたオブジェクトにしてください（低い順）');
+  }
+  const ids = Object.keys(rarities);
+  if (ids.length < 2) throw new Error('rarities.json にレアリティが2つ以上必要です');
+  let total = 0;
+  for (const id of ids) {
+    const def = rarities[id];
+    const where = `rarities.json の "${id}"`;
+    if (!def || typeof def.name !== 'string' || def.name === '') throw new Error(`${where}: name を書いてください`);
+    if (typeof def.dropRate !== 'number' || def.dropRate < 0) throw new Error(`${where}: dropRate は0以上の数（%）にしてください`);
+    total += def.dropRate;
+  }
+  if (Math.abs(total - 100) > 1e-9) throw new Error(`rarities.json の dropRate の合計は100にしてください（今は${total}）`);
+}
+
+/**
+ * カードごとの排出率（%）。レアリティの dropRate を、同じレアリティのカードの weight（省略すると1）で分ける。
+ * そのレアリティのカードが1枚もなければ、その分は残りのレアリティに按分する。
+ */
+export function dropRates(cards, rarities) {
+  const sums = {};
+  for (const def of Object.values(cards)) sums[def.rarity] = (sums[def.rarity] ?? 0) + (def.weight ?? 1);
+  const live = Object.entries(rarities).filter(([id]) => sums[id] > 0);
+  const total = live.reduce((n, [, r]) => n + r.dropRate, 0);
+  const rates = {};
+  for (const [type, def] of Object.entries(cards)) {
+    const r = rarities[def.rarity];
+    rates[type] = sums[def.rarity] > 0 && total > 0 ? ((r.dropRate / total) * 100 * (def.weight ?? 1)) / sums[def.rarity] : 0;
+  }
+  return rates;
+}
+
+/** 排出率どおりに size 枚を引き当てる（rng を使うので、シードで固定できる） */
+export function sampleDeckTypes(cards, rarities, size, rng) {
+  const rates = dropRates(cards, rarities);
+  const entries = Object.entries(rates).filter(([, v]) => v > 0);
+  const total = entries.reduce((n, [, v]) => n + v, 0);
+  const types = [];
+  for (let i = 0; i < size; i++) {
+    let x = rng() * total;
+    let pick = entries[entries.length - 1][0];
+    for (const [type, v] of entries) {
+      if ((x -= v) < 0) { pick = type; break; }
+    }
+    types.push(pick);
+  }
+  return types;
+}

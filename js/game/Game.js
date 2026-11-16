@@ -20,7 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, validateCastles, validateDecks } from './Setup.js';
+import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -34,6 +34,7 @@ export const EVENT_TYPES = [
   'cardDrawn',
   'deckShuffled',
   'cardPlayed',
+  'cardsFused',
   'discardRequired',
   'cardDiscarded',
   'soldierDeployed',
@@ -103,6 +104,8 @@ const OPTIONAL_RULES = {
   defenseReaction: false,
   // 0 より大きいと、毎ターンのドローは「手札がこの枚数になるまで」（drawPerTurn は最低枚数）
   drawUntilHand: 0,
+  // レアリティを使うとき、全員共通の山札に入る枚数（排出率で引き当てる）
+  deckSize: 100,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -130,9 +133,10 @@ export class Game {
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
-    Card.validateDefinitions(cards);
+    if (rarities !== null) validateRarities(rarities);
+    Card.validateDefinitions(cards, rarities);
     Game.validateRules(rules);
     if (typeof rng !== 'function') throw new Error('rng は 0以上1未満の数を返す関数にしてください');
     if (monsters !== null) {
@@ -144,6 +148,7 @@ export class Game {
     if (decks !== null) validateDecks(decks, cards);
 
     this.cardDefs = cards;
+    this.rarityDefs = rarities;
     this.monsterDefs = monsters;
     this.upgradeDefs = upgrades || {};
     this.rules = {
@@ -340,8 +345,13 @@ export class Game {
     return new Card(cardId, type, this.cardDefs[type]);
   }
 
-  /** 山札に入るカード種類の並び（count 枚ずつ） */
+  /**
+   * 山札に入るカード種類の並び。
+   * rarities を渡したときは、排出率（レアリティの割合 × 同じレアリティ内の weight）で rules.deckSize 枚を引き当てる。
+   * 渡さないときは、count 枚ずつ。
+   */
   buildDeckTypes() {
+    if (this.rarityDefs) return sampleDeckTypes(this.cardDefs, this.rarityDefs, this.rules.deckSize, this.rng);
     const types = [];
     for (const [type, def] of Object.entries(this.cardDefs)) {
       for (let i = 0; i < def.count; i++) types.push(type);
@@ -819,6 +829,35 @@ export class Game {
         this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack });
       }
     }
+    return ok();
+  }
+
+  // ================= 合成 =================
+
+  /** 手札の同じカード2枚を合成できるか（読むだけ） */
+  canFuse(cardIdA, cardIdB) {
+    if (this.phase === 'ready') return fail('ゲームがまだ始まっていません');
+    if (this.phase === 'gameOver') return fail('ゲームは終わっています');
+    if (this.phase !== 'main') return fail('今は合成できません');
+    const player = this.players[this.currentPlayer];
+    if (typeof cardIdA !== 'string' || typeof cardIdB !== 'string' || cardIdA === cardIdB) return fail('別々のカードを2枚選んでください');
+    const a = player.hand.find((c) => c.cardId === cardIdA);
+    const b = player.hand.find((c) => c.cardId === cardIdB);
+    if (!a || !b) return fail('そのカードは手札にありません');
+    if (a.type !== b.type) return fail('同じ種類のカードどうしでないと合成できません');
+    if (!a.def.fuseTo) return fail('レジェンドはこれ以上合成できません');
+    return { ok: true, player, a, b };
+  }
+
+  /** 手札の同じカード2枚を、1つ上のレアリティのカード1枚にする（メインの1枚には数えない。何回でもできる） */
+  fuse(cardIdA, cardIdB) {
+    const check = this.canFuse(cardIdA, cardIdB);
+    if (!check.ok) return check;
+    const { player, a, b } = check;
+    player.hand = player.hand.filter((c) => c !== a && c !== b);
+    const card = this.createCard(a.def.fuseTo);
+    player.hand.push(card);
+    this.emit('cardsFused', { playerId: player.id, cardIds: [a.cardId, b.cardId], cardId: card.cardId, from: a.type, to: card.type });
     return ok();
   }
 

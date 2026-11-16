@@ -110,6 +110,7 @@ data/
   monsters.json    … 魔物の定義（STEP 3）
   castles.json     … 城の種類（STEP 5）
   decks.json       … デッキ対戦のデッキ（STEP 5）
+  rarities.json    … レアリティと排出率（コモン〜レジェンド）
   upgrades.json    … コインで買う強化（STEP 3）
 tests/             … 自動テスト（node --test）。Node.js だけで動く
   helpers.js       … data/ と fixtures/ の読み込み、シード付き乱数、イベントの記録
@@ -181,6 +182,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 | `game.canDefend(cardId, target)` / `game.getDefenseTargets(cardId)` | 攻撃を受けているとき（`phase` が `"defend"`）に、その防御カードを今出せるか／出せる対象の一覧（読むだけ）。`canPlayCard` / `getTargets` の防御版。出せるのは `getState().defense.defenderId` の手札だけ |
 | `game.defend(cardId, target)` | 攻撃を受けた人が、防御カードをその場で出す（何枚でも）。出せるカードがなくなったら、自動で攻撃を受ける。対象が1つなら `target` は省略できる |
 | `game.passDefense()` | 防御しないで（これ以上出さずに）攻撃を受ける |
+| `game.canFuse(cardIdA, cardIdB)` / `game.fuse(cardIdA, cardIdB)` | 手札の同じ種類のカード2枚を合成して、1つ上のレアリティのカード1枚にする（`phase` が `"main"` の自分の番に、何回でも。メインの1枚には数えない）。`canFuse` は読むだけ。レジェンドは合成できない |
 | `game.endTurn()` | ターンを終える。手札が上限を超えていたら `phase` が `"discard"` になり、捨て終わるまで次の人の番にならない |
 | `game.surrender(playerId)` | 降参する。`playerId` の負けで、相手の勝ちですぐ終わる（`gameOver` の `reason` は `"surrender"`）。自分の番でなくても使える。2人のときだけ（3人以上は `{ ok: false }`。まだ決めていない） |
 | `game.on(type, handler)` / `game.off(type, handler)` | イベントの購読と解除。`handler` はペイロードのオブジェクトを1つ受け取る。表にない `type` を渡すと `{ ok: false }` |
@@ -265,6 +267,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `cardDrawn` | `{ playerId, cardIds }` |
 | `deckShuffled` | `{ deckCount, playerId }` … `playerId` は、`"own"` のときだれの山札か（`"shared"` なら `null`） |
 | `cardPlayed` | `{ playerId, cardId, type }` |
+| `cardsFused` | `{ playerId, cardIds: [a, b], cardId, from, to }` … 手札の2枚（`from` の種類）が、1枚（`to` の種類）になった。オンラインでは本人以外に `{ playerId }` だけ送る |
 | `discardRequired` | `{ playerId, count }` … 捨てる必要がある枚数 |
 | `cardDiscarded` | `{ playerId, cardIds }` |
 | `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack }` … `hp` / `attack` は出した時点の値 |
@@ -841,6 +844,19 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - デッキ（`data/decks.json`）：木の斧を風の弓に置きかえた（土の槌は入れていない）
 - 確かめたこと：`node --test` は全部通る。`node tests/sim/run.js --games 400` は全組み合わせが決着し、CPU の強さの順は変わらない。**デッキ対戦の勝率は、バランスに勝つ割合が突撃61%・籠城58%で、仮の目安（49〜52%）よりずれている**（これは A1 の5枚補充を入れたときからで、属性の変更のせいではない）。デッキの調整は、遊んで確かめてから決める
 - 画面：属性のアイコン・武器の絵・説明文を風・土に直した（`js/ui/look.js`・`art.js`・`text.js`）。絵は仮
+
+## カードのレアリティと合成（人間に確認して決めた）
+
+レアリティは コモン（`common`）・アンコモン（`uncommon`）・レア（`rare`）・エピック（`epic`）・レジェンド（`legendary`）の5段階（`data/rarities.json`。キーの並びが低い順）。**数値はすべて仮。**
+
+- **試合の中で合成する**：手札の**同じ種類**のカード2枚 → 1つ上のレアリティの**別のカード**1枚（`game.fuse()`）。使った2枚はゲームから消える（山札・捨て札には戻らない）。メインの1枚には数えず、何回でもできる（手札が減ることがコスト）。レジェンドはこれ以上合成できない
+- **カードの書き方**（`data/cards.json`）：`rarity`、`fuseTo`（合成してできるカード種類。1つ上のレアリティのカードだけ。レジェンドは書かない）、`weight`（同じレアリティの中での出やすさ。省略すると1）。レアリティごとに別のカードなので、数値も効果もカードごとに決める（上位互換にしすぎない）
+- **系統**（`fuseTo` でつながる5段階。2つの系統が途中で合流してもよい）：兵士（歩兵→重装兵→騎士→巨人→勇者）／城攻め（ファイアボール→業火→隕石→星降り→終末の炎）／対兵士（雷光→サンダー→大雷→雷神の怒り→天罰）／回復（小回復→ヒール→大回復→聖なる光→女神の祝福）／毒・氷・武器・盾・城壁・精霊・特殊（神頼み→天の恵み→盗賊→身代わり→反射）
+- **排出率**：`rarities.json` の `dropRate`（%、合計100）が、レアリティごとの出る割合（仮：50 / 28 / 14 / 6 / 2）。カードごとの排出率は、そのレアリティの割合を `weight` で分けたもの（`dropRates()` in `js/game/Setup.js`）
+- **山札**：`new Game({ rarities })` を渡すと、全員共通の山札は `rules.deckSize`（仮：100）枚を排出率で引き当てて作る（乱数は `rng`。試合ごとに中身が変わる）。`rarities` を渡さないときは今までどおり `count` 枚ずつ（テストの固定データ用。デッキ対戦 `deckMode: "own"` は `decks.json` のまま）
+- CPU：`smart` 系は、ターンの最初に手札の同じカードを合成する
+- 城HP：上限を **100**、先攻・後攻とも同じ（`secondPlayerCastleBonus` は 0）にした（人間の指示）。**試合が長くなった**：`node tests/sim/run.js --games 300` で、smart 同士の平均が112手番、ほとんどが周回の上限（`maxRounds` 60）で終わる。カードの数値・`maxRounds` の見直しが必要（要相談）
+- 画面（UI担当）：レアリティの色・名前の表示と、合成の操作は未実装（`rarities.json` の `color` を使える）。ひとりで遊ぶ・同じ端末のときに `rarities` を渡すのも `js/main.js` 側。オンラインは `POST /api/action` の `method` に `fuse` を足した
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

@@ -307,7 +307,21 @@ function buyUpgrades(game, pid, ctx) {
   }
 }
 
+/** 手札に同じカードが2枚あれば合成する（1つ上のレアリティになる。レジェンドは合成できない） */
+function fuseAll(game, pid) {
+  for (let i = 0; i < 20; i++) {
+    const hand = game.getState(pid).players[pid].hand;
+    let done = false;
+    for (let a = 0; a < hand.length && !done; a++) {
+      const b = hand.findIndex((c, j) => j > a && c.type === hand[a].type);
+      if (b >= 0 && game.fuse(hand[a].cardId, hand[b].cardId).ok) done = true;
+    }
+    if (!done) return;
+  }
+}
+
 function smartTurn(game, pid, ctx) {
+  fuseAll(game, pid);
   const { me, enemies, playable } = view(game, pid);
   const enemy = enemies[0];
   const castleSpells = typesWithEffect(ctx, 'damageEnemyCastle');
