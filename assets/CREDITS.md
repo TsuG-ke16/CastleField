@@ -279,3 +279,6 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 
 ### UIスモークテストの確認画像（2026-11-16）
 - `review/ui-smoke/{title,deployed,result}.png`：`node ui-tests/smoke.js` がPlaywright同梱Chromium・390×844で実操作して撮影。ゲーム内素材の条件は本ファイルの各項を参照。
+
+### 遊び方・図鑑の確認画像（2026-11-16）
+- `review/current-guide/*.png`：Playwright同梱Chromiumで12サイズの遊び方・図鑑と兵士詳細を撮影。確認画像のみPillowでパレット圧縮（各300KB以下）。ゲーム内素材の出どころ・利用条件は本ファイルの各項を参照。外部素材の追加なし。

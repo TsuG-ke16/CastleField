@@ -1,0 +1,19 @@
+.help-quick {margin:10px 0;}
+.help-flow {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;margin:8px 0;font-size:12px;}
+.help-flow span {border:1px solid #c3ad76;border-radius:8px;padding:6px 3px;background:#fff5d1;}
+.help-road {display:flex;align-items:center;gap:5px;padding:8px 0;font-size:11px;}
+.help-road>b {width:3.2em;flex:none;color:#285349;}
+.help-road-cells {display:grid;gap:3px;flex:1;min-width:0;}
+.help-road-cells span {display:grid;place-items:center;aspect-ratio:1;border:2px solid #bb9a58;border-radius:50%;background:#f4e0a6;font-size:15px;}
+.help-road-cells .middle {background:#f7bf5d;color:#664722;}
+.help-short {font-size:12px;line-height:1.5;margin:4px 0 9px;}
+.help-more {border-top:1px solid #d4c6a3;text-align:left;padding:8px 0;}
+.help-more summary {cursor:pointer;font-size:14px;line-height:1.5;}
+.help-more p {font-size:var(--reading-size,14px);line-height:1.6;margin:8px 0;}
+.help-plaza {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,35px);gap:4px;align-items:center;text-align:center;font-size:11px;background:linear-gradient(90deg,transparent 48%,#c3a366 49% 51%,transparent 52%),linear-gradient(transparent 48%,#c3a366 49% 51%,transparent 52%);margin-top:8px;}
+.help-plaza span {background:#edf1db;border:1px solid #a4b38f;border-radius:7px;padding:5px 2px;}
+.plaza-top {grid-column:2;grid-row:1;}.plaza-left {grid-column:1;grid-row:2;}.plaza-center {grid-column:2;grid-row:2;background:#ffe5a5!important;}.plaza-right {grid-column:3;grid-row:2;}.plaza-bottom {grid-column:2;grid-row:3;}
+.guide-note,.guide-family-info,.guide-movement {font-size:var(--reading-size,14px);line-height:1.6;color:#29483f;}
+.guide-filters label:last-child {grid-column:1/-1;}
+.guide-card-detail {min-width:0;}.guide-card-detail>div {min-width:0;overflow-wrap:anywhere;}
+@media(max-height:500px){.help-box {width:min(100%,520px);}.help-flow {font-size:11px;}}

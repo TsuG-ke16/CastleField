@@ -2,6 +2,12 @@
 // 時間はすべてミリ秒。speed を 2 にすると全部の演出が倍の長さになる。
 
 export const UI_CONFIG = {
+  soldierFamilies: [
+    {root:'infantry',name:'普通の兵士',note:'進んで城を攻める。攻撃と打たれ強さの基準。'},
+    {root:'scout',name:'騎兵',note:'速く進んで城へ。打たれ弱いので出す道を選ぼう。'},
+    {root:'apprenticeArcher',name:'弓兵',note:'動かずに近い相手の兵士や魔物を撃つ。射撃の反撃は受けない。'},
+    {root:'apprenticeMage',name:'魔法使い',note:'動かずに撃つ。兵士も魔物もいなければ狙った城を撃つ。'},
+  ],
   maxAnimation: 2000,
   cpuThink: 450,
   cpuLevels: {

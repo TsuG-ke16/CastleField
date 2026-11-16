@@ -1,0 +1,30 @@
+import { UI_CONFIG } from './config.js';
+const el=(tag,cls,text)=>{const node=document.createElement(tag);if(cls)node.className=cls;if(text!==undefined)node.textContent=text;return node;};
+export function soldierFamilies(cards){
+  return UI_CONFIG.soldierFamilies.map(family=>{const types=[],seen=new Set();let type=family.root;while(cards[type]?.kind==='soldier'&&!seen.has(type)){seen.add(type);types.push(type);type=cards[type].fuseTo;}return {...family,types};});
+}
+export function renderHelp({cards,rules,monsters,rarities}){
+  const box=document.querySelector('#help .help-box'),list=box.querySelector('.help-list');
+  const quick=el('section','help-quick');
+  const flow=el('p','help-flow');for(const [i,label] of ['カードを選ぶ','光る道に出す','ターン終了'].entries())flow.append(el('span','',`${i+1}. ${label}`));quick.append(flow);
+  const road=el('div','help-road');road.setAttribute('role','img');road.setAttribute('aria-label',`自分の城から${rules.laneLength}マスの道を通って相手の城へ。中央に魔物が出ます。`);
+  road.append(el('b','','自分の城'));const cells=el('div','help-road-cells');cells.style.gridTemplateColumns=`repeat(${rules.laneLength},minmax(0,1fr))`;
+  for(let i=0;i<rules.laneLength;i++)cells.append(el('span',i===Math.floor(rules.laneLength/2)?'middle':'',i===Math.floor(rules.laneLength/2)?'★':'○'));
+  road.append(cells,el('b','','相手の城'));quick.append(road,el('p','help-short',`ふたりの盤面：${rules.laneCount??1}本の道から選ぶ。道は${rules.laneLength}マス。兵士は次の自分の番に進む。`));
+  quick.append(document.getElementById('help-tutorial'));box.querySelector('.menu-title').after(quick);
+  list.replaceChildren();
+  for(const text of ['相手の城HPを0にしよう。兵士が城に届くと大ダメージ！','メインは自分の番に1枚。武器と防御、コインでの強化、合成は別に使える。'])list.append(el('li','',text));
+  const details=(title)=>{const section=el('details','help-more');section.append(el('summary','',title));list.after(section);return section;};
+  const elements=box.querySelector('.element-guide');
+  const attributes=details('属性の強弱を見る');attributes.append(elements,el('p','','水→火→風→土→水。矢印の先の属性に強い。武器で兵士の属性を変えられる。'));
+  const monster=details('魔物は早く倒すとおいしい');
+  monster.append(el('p','',monsters?`放置すると城を繰り返し攻める${rules.monsterAttackGrowth>0?`。攻めるたびにダメージがさらに+${rules.monsterAttackGrowth}`:''}。兵士や城への魔法で倒そう。`:'魔物はこの対戦では出現しません。'),el('p','','とどめを刺した人にカード。強い魔物ほど高いレアリティのごほうび！'));
+  if(rules.rewardLuckyChance>0)monster.append(el('p','',`ラッキーは${Math.round(rules.rewardLuckyChance*100)}%。当たると1つ上のレアリティ（${Object.values(rarities??{}).at(-1)?.name??'最高レアリティ'}はそのまま）。`));
+  const multi=details('広場とチーム戦');
+  const plaza=el('div','help-plaza');plaza.setAttribute('role','img');plaza.setAttribute('aria-label','自分と相手の城を中央の広場でつなぐ。広場には魔物が1体。');for(const [cls,text]of [['plaza-top','自分の城'],['plaza-left','相手の城'],['plaza-center','広場 ★ 魔物'],['plaza-right','相手の城'],['plaza-bottom','相手の城']])plaza.append(el('span',cls,text));multi.append(plaza,el('p','','3つ以上の城では、広場を通ってどの相手も狙える。広場の魔物は1体。'),el('p','','個人戦は「最初に城を落とした人」か「最後の1人」。最後の1人は長めの対戦。'),el('p','',`チームは城とHPを共有。${rules.teamTurns==='all'?'チームごとに全員が順に動く':'チームを交互に回して1人ずつ動く'}。手札・兵士・コインはそれぞれ別。2チームなら従来のレーンで戦う。`));
+  const soldiers=details('兵士の4系統・射程・帰還');
+  const families=soldierFamilies(cards);
+  soldiers.append(el('p','',`兵士は${Object.values(cards).filter(c=>c.kind==='soldier').length}体。${families.length}系統で、同じカード2枚から同じ系統の次のレアリティへ合成できる。`));
+  for(const family of families){const p=el('p','');p.append(el('b','',`${family.name}：`),document.createTextNode(family.note));const def=cards[family.root];if(def?.range)p.append(document.createTextNode(` ${def.name}は射程${def.range}、${def.stay}回の自分の番で帰る。凍結中や撃てない番も残りが減る。`));soldiers.append(p);}
+  box.querySelector('.help-note').textContent='カードをタップして説明を確認。出せないときは理由が出ます。図鑑では射程・帰還・合成先も見られます。';
+}

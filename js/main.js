@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { renderHelp } from './ui/HelpView.js';
 import { setupAccessibility } from './ui/Accessibility.js';
 import { MatchStats } from './ui/MatchStats.js';
 import { LocalSetup } from './ui/LocalSetup.js';
@@ -258,6 +259,7 @@ async function boot() {
   settings = new Settings((value) => { el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
   setupMenu();
   setupTitle();
+  renderHelp({cards,rules,monsters,rarities});
   setupAccessibility();
 
   if (DEBUG) {
@@ -462,6 +464,7 @@ async function surrender() {
 }
 
 function openHelp() {
+  $('help-tutorial').textContent=session?'今の試合を終えて操作を練習する':'案内つきで操作を練習する';
   sound.play('tap');
   el.help.hidden = false;
 }
