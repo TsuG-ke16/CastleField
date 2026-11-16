@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { MatchStats } from './ui/MatchStats.js';
 import { LocalSetup } from './ui/LocalSetup.js';
 import { Settings } from './ui/Settings.js';
 import { Tutorial } from './ui/Tutorial.js';
@@ -70,6 +71,7 @@ const el = {
   netLeave: $('net-leave'),
 };
 
+const matchStats = new MatchStats();
 const tutorial = new Tutorial();
 let replayTutorial = false;
 let settings;
@@ -315,6 +317,8 @@ function setupTitle() {
     el.titleStatus.textContent = '同じ合言葉を入れた人と対戦します';
     (el.titleName.value ? el.titlePass : el.titleName).focus({ preventScroll: true });
   });
+  matchStats.drawRecord();
+  $('record-clear').addEventListener('click', () => matchStats.clear());
   $('help-tutorial').addEventListener('click', () => { el.help.hidden = true; replayTutorial = true; startLocal(undefined, 'normal'); });
   for (const id of ['title-settings','menu-settings']) $(id).addEventListener('click', () => settings.open());
   $('title-help').addEventListener('click', () => openHelp());
@@ -459,6 +463,7 @@ function stopLocal() {
 
 /** 新しい試合の前に、画面の持ちものを空にする */
 function resetForNewGame() {
+  matchStats.reset();
   gen += 1;
   cancelHandover?.();
   anim.skip();
@@ -545,6 +550,7 @@ function startLocal(seedOverride, cpuLevel = null, options = null) {
 
   // 開始前の状態を表示用に覚えてから start() する。p1 の turnStarted で最初の目隠しが出る
   viewerId = cpu ? cpu.humanId : null;
+  matchStats.begin(game.getState(viewerId));
   model = modelFromState(game.getState(viewerId));
   if (cpu) {
     // ひとりで遊ぶ：交代の画面はない。最初から自分の視点で出す
@@ -567,6 +573,7 @@ function startLocal(seedOverride, cpuLevel = null, options = null) {
 
 /** イベントをキューに入れる。getState にない値（買った回数・最後に城を削ったもの）はここで覚える */
 function enqueue(ev) {
+  matchStats.event(ev);
   const p = ev.payload ?? {};
   if (ev.type === 'monsterAppeared') sound.setScene('tension');
   if (ev.type === 'castleDamaged') lastCastleHit = 'castle';
@@ -780,6 +787,8 @@ async function showBatch(batch) {
   if (newGame) {
     // 試合の始まり（入ったとき・もう1回）：状態から描く
     resetForNewGame();
+    matchStats.begin(st);
+    if (st.turn <= 1) for (const ev of batch.events) matchStats.event(ev);
     for (const c of st.players[viewerId]?.hand ?? []) knownCards.set(c.cardId, { ...c });
     el.title.hidden = true;
     roomView.hide();
@@ -1327,6 +1336,9 @@ async function showResult(winner) {
     : ['#f5923e', '#ffd9b0', '#ffd93b', '#ffffff'];
   if (won) anim.confetti(el.confetti, colors);
   else el.confetti.innerHTML = '';
+  matchStats.render(viewerId, online);
+  matchStats.finish(won, online);
+  $('result-encouragement').textContent = won ? '見事な采配！ 次の勝利に挑もう。' : '出す順番や攻める道を変えて、もう一度！';
   el.result.hidden = false;
   sound.enabled = true;
   sound.setScene(won ? 'victory' : 'defeat');

@@ -256,3 +256,6 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 
 ### CPU強さの確認画像（2026-11-16）
 - `review/cpu-levels/selection.png`：Playwright同梱Chromiumによる本ゲームの画面。素材の条件は本ファイルの各項を参照。
+
+### 結果画面の確認画像（2026-11-16）
+- `review/results/summary.png`：Playwright同梱Chromiumで本ゲームの試合集計を撮影。ゲーム内素材の条件は本ファイルの各項を参照。
