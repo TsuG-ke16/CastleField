@@ -405,3 +405,143 @@
 /* PCで見たときの外側とブランド帯も、青緑ではなく木の濃い茶に */
 body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%, #6b4423, transparent 65%); }
 .game-brand { background: linear-gradient(#7f4a1f, #5f3615); color: #ffe9b0; box-shadow: inset 0 -2px 0 #3f2511; }
+
+/* =====================================================================
+   仕上げ2：試合中の画面を「木枠＋羊皮紙」にそろえる
+   ===================================================================== */
+
+/* ---------- 1. 上のバー：白い帯をやめて、羊皮紙の板に木の縁（パネルと同じ作り） ---------- */
+#hud {
+  background: linear-gradient(var(--parch), var(--parch-deep));
+  border-bottom: 4px solid var(--wood);
+  box-shadow: 0 2px 0 var(--wood-dark), inset 0 -2px 0 #e0b06a, 0 6px 10px #2a180a40;
+}
+/* 札（山・捨て・手札・コイン）：羊皮紙の小さな札に木の縁。数字は濃い茶で読みやすく */
+.chip {
+  border: 2px solid var(--wood);
+  background: linear-gradient(#fffdf0, #f7e9c3);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #3f251140;
+  color: var(--wood-ink);
+}
+.chip b { color: var(--wood-ink); }
+#hud .player-name { color: var(--wood-ink); }
+/* 「n周目」の札は既に木。縁を同じ木の濃い色にして、ほかの札と同じ仲間に見せる */
+.turn-info { border-color: var(--wood-dark); }
+.turn-info { background: linear-gradient(#a8692f, #7f4a1f); color: #fff3d0; box-shadow: inset 0 1px 0 #d39b5c, 0 2px 0 #3f251166; }
+.castle-label { background: linear-gradient(#fffdf0, #f7e9c3); border: 2px solid var(--wood); color: var(--wood-ink); box-shadow: 0 2px 0 #3f251140; }
+.castle.current .castle-label { background: linear-gradient(#ffeaa0, #f6cf6a); box-shadow: 0 2px 0 #3f251140; }
+
+/* ---------- 1b. HP表示：未使用だった木の看板（sign-hp.png）に ----------
+   看板の画像は 512×270 で、まわりに透明の余白がある（見える絵は幅の約58%・高さの約69%）。
+   そこで .castle-hp 自体は「見える絵」と同じ大きさ（元の白い箱と同じ幅110px）にして、
+   画像は ::before に余白ぶん大きく敷く（はみ出した余白は透明なので、城や道には重ならない）。
+   --k は大きさの倍率。小さい画面・横向きで下げる。数字は max(18px, …) で、どの大きさでも18px以上。
+   ハートは看板の絵が持っているので、文字側のハート（.hp-heart）は出さない。 */
+.castle-hp {
+  --k: 1;
+  position: relative; isolation: isolate; box-sizing: border-box;
+  width: calc(110px * var(--k)); height: calc(69px * var(--k)); align-self: center;
+  padding: calc(22px * var(--k)) calc(13px * var(--k)) 0;
+  background: none; border: 0; border-radius: 0; box-shadow: none;
+  filter: drop-shadow(0 3px 0 #3f251140);
+}
+.castle-hp::before {
+  content: ''; position: absolute; z-index: -1; left: 50%; top: 50%; pointer-events: none;
+  width: calc(190px * var(--k)); height: calc(100px * var(--k)); transform: translate(-50%, -50%);
+  background: url('../assets/ui/sign-hp.png') center / 100% 100% no-repeat;
+  /* 画像の右側にある黒い点（画像の汚れ）を切り落とす。絵そのものは幅の78%までなので、右の20%を切る */
+  clip-path: inset(0 20% 0 0);
+}
+.castle-hp .hp-heart { display: none; }
+.castle-hp .hp-text { height: max(18px, calc(22px * var(--k))); align-items: center; }
+.castle-hp .hp-value { color: #fff8e0; font-size: max(18px, calc(22px * var(--k))); line-height: 1; letter-spacing: 0; text-shadow: 0 2px 0 #3f2511, 0 0 3px #3f2511; }
+.castle-hp .hp-max { color: #ffe9b0; font-size: 9px; text-shadow: 0 1px 0 #3f2511; }
+.castle-hp .hp-bar { height: 5px; margin-top: 1px; border: 1px solid #3f2511; border-radius: 4px; background: #3f2511; }
+@media (max-width: 360px) { .castle-hp { --k: .78; } }
+@media (max-height: 480px) { .castle-hp { --k: .6; } .castle-hp .hp-bar { height: 4px; } }
+
+/* ---------- 2. CPUの強さ：3つとも同格の選択肢なので、橙（アクセント）をやめて木のクリームに ---------- */
+/* いちばん押してほしい「ひとりで遊ぶ」が橙なので、ここで橙を使うと主役が分からなくなる。
+   ボタンの木枠は9スライスなので、画像と slice 値（クリームは 106 150）をセットで差し替える */
+.plank-btn.big.level:not(.mode-choice):not(#end-turn) {
+  border-image-source: url('../assets/ui/btn-cream.png');
+  border-image-slice: 106 150 fill;
+  border-image-width: 19px 25px;
+  color: var(--wood-ink);
+  text-shadow: none;
+}
+.plank-btn.big.level small { opacity: .75; }
+
+/* ---------- 3. 対象を選ぶ帯：青緑をやめて、羊皮紙＋金の枠。「いま選ぶ」ことが分かるよう、金色の光をゆっくり脈打たせる ---------- */
+#target-bar:not(#x) {
+  border: 4px solid #d9a02c;
+  background: linear-gradient(#fffbe6, #fbe6a6);
+  color: var(--wood-ink);
+  box-shadow: 0 0 0 2px var(--wood-dark), inset 0 0 0 2px #fff3c4, 0 6px 0 #2a180a4d, 0 0 14px 2px #f6c64a99;
+  animation: panel-in .14s ease-out, target-pulse 1.6s ease-in-out .2s infinite;
+}
+@keyframes target-pulse { 50% { box-shadow: 0 0 0 2px var(--wood-dark), inset 0 0 0 2px #fff3c4, 0 6px 0 #2a180a4d, 0 0 22px 6px #f6c64acc; } }
+.reduced-motion #target-bar { animation: none; }
+@media (prefers-reduced-motion: reduce) { #target-bar:not(#x) { animation: none; } }
+.target-msg { color: var(--wood-ink); font-weight: 800; }
+
+/* ---------- 4. 図鑑・強化（ショップ）のカード：白い箱を羊皮紙の色に ---------- */
+.guide-card { background: linear-gradient(#fff8e0, #f7e9c3); border: 2px solid #c9a35a; border-bottom-width: 4px; box-shadow: inset 0 0 0 2px #fff3cf, 0 2px 0 #3f251126; color: var(--wood-ink); }
+.guide-card small, .guide-short { color: #7a5a30; }
+.guide-effect { background: #f7e9c3; border: 2px solid #e0c58a; color: var(--wood-ink); }
+.fusion-path { background: #fff3d2; border: 2px solid #e0c58a; color: var(--wood-ink); }
+.guide-note, .guide-family-info, .guide-movement { color: #4a3a22; }
+.detail-kind { border-radius: 999px; }
+#upgrade-panel .upgrade-item:not(.blocked) { background: linear-gradient(#fff8e0, #f7e9c3); border: 2px solid #c9a35a; box-shadow: inset 0 0 0 2px #fff3cf, 0 3px 0 #b4863a; }
+#upgrade-panel .upgrade-item.blocked { background: #ecdcb2; border: 2px solid #d6bf86; box-shadow: none; }
+.upgrade-item .upgrade-desc { color: #5a4a2c; }
+.upgrade-item.blocked .upgrade-name { color: #8d7a55; }
+
+/* =====================================================================
+   仕上げ3
+   ===================================================================== */
+
+/* ---------- 5. 設定のスライダー：塗りを青緑から金〜橙に（アクセントはここでは「いまの値」を示す小さな線だけ） ---------- */
+#app .settings-box input[type=range] { background: linear-gradient(90deg, #e8a530 var(--p, 50%), #4a3523 var(--p, 50%)); }
+
+/* ---------- 6. 手札の「合成可」バッジ：濃い青緑をやめて木の茶＋羊皮紙の文字 ---------- */
+.card.can-fuse::after { background: linear-gradient(#a8692f, #7f4a1f); border: 1px solid var(--wood-dark); color: var(--parch); box-shadow: 0 1px 0 #3f251166; }
+.card.choosing { box-shadow: 0 0 0 2px #d9a02c; }
+
+/* ---------- 8. 手番交代の画面：前の人の手札を隠すので不透明のまま、タイトルと同じ空と草原の絵を敷く ---------- */
+#handover, #handover[data-player=p2] { background: #7cc4f5 url('../assets/bg/title-compact.png') center bottom / cover no-repeat; }
+@media (min-width: 900px) { #handover, #handover[data-player=p2] { background-image: url('../assets/bg/title.png'); background-position: center 62%; } }
+.handover-title { color: var(--wood-ink); }
+.handover-turn { color: var(--wood-ink); }
+
+/* ---------- 9. UIに残っていた青緑の文字を、木の茶に ---------- */
+.settings-box label, .detail-desc, .local-fields label, .economy-status { color: var(--wood-ink); }
+.settings-status { color: #7a5a30; }
+.help-road > b { color: var(--wood-ink); }
+.detail-hint, #card-detail .detail-hint { color: #7a5a30; }
+.economy-status { background: #f7e9c3; }
+.screen-sub { color: #7a5a30; }
+
+/* ---------- 7. 横向き：「ターン終了」の左の旗に文字がかぶって「ーン終」に見えていたので、幅と左の余白を広げる ---------- */
+@media (max-height: 480px) {
+  #controls #end-turn { min-width: 128px; padding: 8px 12px 8px 42px; font-size: 12px; white-space: nowrap; }
+}
+
+/* ---------- 1c. 広場（3人以上）：城が8つ並んで名札と重なるので、看板をやめて小さな羊皮紙の札（木の縁）に ---------- */
+.plaza-stage .castle-hp {
+  width: 92px; height: auto; padding: 2px 6px 4px; border: 2px solid var(--wood); border-radius: 10px;
+  background: linear-gradient(#fffdf0, #f7e9c3); box-shadow: 0 2px 0 #3f251140, inset 0 1px 0 #fff; filter: none;
+}
+.plaza-stage .castle-hp::before { display: none; }
+.plaza-stage .castle-hp .hp-heart { display: inline-flex; font-size: 13px; }
+.plaza-stage .castle-hp .hp-text { height: 24px; }
+.plaza-stage .castle-hp .hp-value { color: var(--wood-ink); text-shadow: none; font-size: 20px; }
+.plaza-stage .castle-hp .hp-max { color: #7a5a30; text-shadow: none; font-size: 10px; }
+.plaza-stage .castle-hp .hp-bar { height: 5px; border-color: var(--wood); background: #e6d3a2; }
+.plaza-zoom { background: linear-gradient(#fffdf0, #f7e9c3); border: 2px solid var(--wood); color: var(--wood-ink); }
+
+/* ---------- 9. 色の下地：theme.css が文字・縁の基本色 --ink を青緑がかった暗い色（#263e3b）にしていたので、木の濃い茶に戻す ----------
+   --ink は文字と細い縁のほぼ全部が使っている。ここを変えると、個別に直さなくても青緑の文字・縁がいっぺんに茶になる */
+:root { --ink: #3f2511; }
+#toast { background: #3f2511f5; border-color: #e0b06a; box-shadow: 0 8px 24px #2a180a55; }
+.title-logo { color: var(--wood-ink); }
