@@ -6,6 +6,8 @@ import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
 import { cardArt, icon, imageArt } from './art.js';
+import { frameAsset } from './cardFrame.js';
+import { mountMiniCard } from './cardView.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -369,6 +371,11 @@ export class Animations {
 
   effectCard(type, name) {
     const el = document.createElement('div'); el.className = 'effect-card';
+    const def = type ? this.cards[type] : null;
+    if (def && frameAsset(def, this.rarities)) {
+      mountMiniCard(el, type, def, this.rarities);
+      return el;
+    }
     const art = document.createElement('div'); art.className = 'effect-card-art';
     art.innerHTML = type ? cardArt(type, 'blue', name ?? '') : icon('card');
     const label = document.createElement('b'); label.textContent = name ?? '相手の報酬カード';
