@@ -8,6 +8,7 @@ export const UI_CONFIG = {
   // 演出の長さ
   timing: {
     fusion: 900,
+    reward: 1100,        // 魔物報酬のレアリティを読む時間
     soldierMove: 280,      // 兵士が進む
     deploy: 240,           // 兵士が出てくる
     defenseResult: 900,   // 反射・身代わりの帯（カード拡大が終わってから表示）
