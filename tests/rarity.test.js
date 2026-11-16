@@ -79,3 +79,42 @@ test('合成：本人以外にはカードの中身を送らない', () => {
   assert.deepEqual(filterEventFor('cardsFused', p, 'p2'), { playerId: 'p1' });
   assert.deepEqual(filterEventFor('cardsFused', p, 'p1'), p);
 });
+
+test('運命の祈り：買うと、次の数枚は排出率を上げて引き当てる（レア以上が出やすい）', () => {
+  const { cards, rules } = buildData();
+  const upgrades = loadJson('upgrades.json');
+  const base = dropRates(cards, rarities);
+  const boosted = dropRates(cards, rarities, { from: 'rare', multiplier: 4 });
+  const high = (r) => Object.entries(cards).filter(([, d]) => ['rare', 'epic', 'legendary'].includes(d.rarity)).reduce((n, [t]) => n + r[t], 0);
+  assert.ok(high(boosted) > high(base) * 2);
+  assert.ok(Math.abs(Object.values(boosted).reduce((a, b) => a + b, 0) - 100) < 1e-9);
+
+  const g = make({ upgrades });
+  g.start();
+  g.players.p1.coins = 5; // 内部の状態を直接書く（魔物を倒さなくても買えるように）
+  assert.equal(g.buyUpgrade('luck').ok, true);
+  assert.equal(g.getState('p1').players.p1.luck.draws, upgrades.luck.amount);
+  g.players.p1.coins = 5;
+  assert.match(g.canBuyUpgrade('luck').reason, /もう効いています/);
+  const deckBefore = g.pileOf('p1').deck.length;
+  g.drawCards(g.players.p1, 3);
+  assert.equal(g.pileOf('p1').deck.length, deckBefore); // 山札は減らない
+  assert.equal(g.getState('p1').players.p1.luck.draws, upgrades.luck.amount - 3);
+});
+
+test('ドロー：drawPerPlayed なら、前のターンに出した枚数ぶん引く', () => {
+  const { cards, rules } = buildData({ rules: { drawUntilHand: 0, drawPerTurn: 1, drawPerPlayed: true, maxHand: 20 } });
+  const g = new Game({ cards, rules, rng: seededRng(5) });
+  g.debugSetHand('p1', ['infantry', 'shield', 'shield']);
+  g.debugSetHand('p2', ['infantry']);
+  g.start();
+  const p1 = () => g.getState('p1').players.p1.handCount;
+  const hand = g.getState('p1').players.p1.hand;
+  const sh = hand.filter((c) => c.type === 'shield');
+  const inf = hand.find((c) => c.type === 'infantry').cardId;
+  assert.equal(g.playCard(inf, g.getTargets(inf)[0]).ok, true);
+  const before = p1();
+  g.endTurn(); // p2
+  g.endTurn(); // p1 に戻る：前のターンに1枚出した → 1枚引く
+  assert.equal(p1(), before + 1);
+});

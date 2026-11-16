@@ -299,6 +299,7 @@ function buyUpgrades(game, pid, ctx) {
     const order = [
       ...(me.castleHp < me.castleMaxHp / 2 ? by('repairCastle') : []),
       ...by('sharpenSoldiers'),
+      ...by('boostDrops'),
       ...by('drawCards'),
     ];
     const id = order.find((u) => game.canBuyUpgrade(u).ok);

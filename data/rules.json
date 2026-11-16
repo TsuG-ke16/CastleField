@@ -22,5 +22,6 @@
   "deckMode": "shared",
   "defaultCastle": "standard",
   "defaultDeck": "balanced",
-  "deckSize": 100
+  "deckSize": 100,
+  "drawPerPlayed": true
 }

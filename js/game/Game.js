@@ -20,7 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes } from './Setup.js';
+import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -106,6 +106,8 @@ const OPTIONAL_RULES = {
   drawUntilHand: 0,
   // レアリティを使うとき、全員共通の山札に入る枚数（排出率で引き当てる）
   deckSize: 100,
+  // true なら、毎ターンのドローが「前のターンに出したカードの枚数」以上になる（出した分を引き直す）
+  drawPerPlayed: false,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -289,6 +291,9 @@ export class Game {
         throw new Error(`rules.json の ${key} は 0 以上 1 以下の数にしてください`);
       }
     }
+    if (rules.drawPerPlayed !== undefined && typeof rules.drawPerPlayed !== 'boolean') {
+      throw new Error('rules.json の drawPerPlayed は true か false にしてください（書かなければ false）');
+    }
     if (rules.advanceAfterWin !== undefined && typeof rules.advanceAfterWin !== 'boolean') {
       throw new Error('rules.json の advanceAfterWin は true か false にしてください（書かなければ false）');
     }
@@ -373,6 +378,15 @@ export class Game {
     const cardIds = [];
     const pile = this.pileOf(player.id);
     for (let i = 0; i < count; i++) {
+      // 運命の祈り：山札からではなく、排出率を上げて引き当てる
+      if (player.luck && this.rarityDefs) {
+        const type = sampleType(this.cardDefs, this.rarityDefs, this.rng, { from: player.luck.from, multiplier: player.luck.boost });
+        const lucky = this.createCard(type);
+        player.hand.push(lucky);
+        cardIds.push(lucky.cardId);
+        if (--player.luck.draws <= 0) player.luck = null;
+        continue;
+      }
       if (pile.deck.length === 0) {
         if (pile.discard.length === 0) break;
         pile.deck = this.shuffle(pile.discard);
@@ -490,6 +504,7 @@ export class Game {
     this.turn += 1;
     this.phase = 'main';
     player.playedThisTurn = false;
+    const playedLastTurn = player.cardsPlayedThisTurn;
     player.cardsPlayedThisTurn = 0;
     this.emit('turnStarted', { playerId, turn: this.turn });
 
@@ -517,7 +532,7 @@ export class Game {
 
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
-    const drawCount = Math.max(baseDraw, this.rules.drawUntilHand - player.hand.length);
+    const drawCount = Math.max(baseDraw, this.rules.drawUntilHand - player.hand.length, this.rules.drawPerPlayed ? playedLastTurn : 0);
     this.drawCards(player, drawCount);
     if (this.triggerSpirit(player)) return;
 
@@ -805,6 +820,11 @@ export class Game {
     if (def.effect === 'repairCastle' && player.castle.isFull) return fail('城のHPが満タンです');
     const pile = this.pileOf(player.id);
     if (def.effect === 'drawCards' && pile.deck.length + pile.discard.length === 0) return fail('山札も捨て札もありません');
+    if (def.effect === 'boostDrops') {
+      if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
+      if (!Object.hasOwn(this.rarityDefs, def.fromRarity)) return fail('その強化はありません');
+      if (player.luck) return fail('運命の祈りがもう効いています');
+    }
     if (def.effect === 'sharpenSoldiers' && player.soldiers.length === 0) return fail('道の上に自分の兵士がいません');
     return ok();
   }
@@ -823,6 +843,8 @@ export class Game {
       this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
     } else if (def.effect === 'drawCards') {
       this.drawCards(player, def.amount);
+    } else if (def.effect === 'boostDrops') {
+      player.luck = { draws: def.amount, boost: def.boost, from: def.fromRarity };
     } else if (def.effect === 'sharpenSoldiers') {
       for (const s of player.soldiers) {
         s.baseAttack += def.amount;

@@ -76,32 +76,34 @@ export function validateRarities(rarities) {
  * カードごとの排出率（%）。レアリティの dropRate を、同じレアリティのカードの weight（省略すると1）で分ける。
  * そのレアリティのカードが1枚もなければ、その分は残りのレアリティに按分する。
  */
-export function dropRates(cards, rarities) {
+export function dropRates(cards, rarities, boost = null) {
   const sums = {};
   for (const def of Object.values(cards)) sums[def.rarity] = (sums[def.rarity] ?? 0) + (def.weight ?? 1);
+  // boost: { from: レアリティ, multiplier } … from 以上のレアリティの割合を multiplier 倍にして、全体を100%に直す
+  const order = Object.keys(rarities);
+  const factor = (id) => (boost && order.indexOf(id) >= order.indexOf(boost.from) ? boost.multiplier : 1);
   const live = Object.entries(rarities).filter(([id]) => sums[id] > 0);
-  const total = live.reduce((n, [, r]) => n + r.dropRate, 0);
+  const total = live.reduce((n, [id, r]) => n + r.dropRate * factor(id), 0);
   const rates = {};
   for (const [type, def] of Object.entries(cards)) {
     const r = rarities[def.rarity];
-    rates[type] = sums[def.rarity] > 0 && total > 0 ? ((r.dropRate / total) * 100 * (def.weight ?? 1)) / sums[def.rarity] : 0;
+    rates[type] = sums[def.rarity] > 0 && total > 0 ? ((r.dropRate * factor(def.rarity) / total) * 100 * (def.weight ?? 1)) / sums[def.rarity] : 0;
   }
   return rates;
 }
 
 /** 排出率どおりに size 枚を引き当てる（rng を使うので、シードで固定できる） */
 export function sampleDeckTypes(cards, rarities, size, rng) {
-  const rates = dropRates(cards, rarities);
-  const entries = Object.entries(rates).filter(([, v]) => v > 0);
+  return Array.from({ length: size }, () => sampleType(cards, rarities, rng));
+}
+
+/** 排出率どおりに1種類を引き当てる（boost を渡すと、その分だけ高いレアリティが出やすい） */
+export function sampleType(cards, rarities, rng, boost = null) {
+  const entries = Object.entries(dropRates(cards, rarities, boost)).filter(([, v]) => v > 0);
   const total = entries.reduce((n, [, v]) => n + v, 0);
-  const types = [];
-  for (let i = 0; i < size; i++) {
-    let x = rng() * total;
-    let pick = entries[entries.length - 1][0];
-    for (const [type, v] of entries) {
-      if ((x -= v) < 0) { pick = type; break; }
-    }
-    types.push(pick);
+  let x = rng() * total;
+  for (const [type, v] of entries) {
+    if ((x -= v) < 0) return type;
   }
-  return types;
+  return entries[entries.length - 1][0];
 }
