@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { Settings } from './ui/Settings.js';
 import { Tutorial } from './ui/Tutorial.js';
 import { RoomView } from './ui/RoomView.js';
 import { CardGuide } from './ui/CardGuide.js';
@@ -70,6 +71,7 @@ const el = {
 
 const tutorial = new Tutorial();
 let replayTutorial = false;
+let settings;
 let rarities = null;
 let progressPanel;
 let cardGuide;
@@ -244,6 +246,7 @@ async function boot() {
       if (res && !res.ok) toast(reasonText(res.reason));
     },
   });
+  settings = new Settings((value) => { el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
   setupMenu();
   setupTitle();
 
@@ -309,6 +312,7 @@ function setupTitle() {
     (el.titleName.value ? el.titlePass : el.titleName).focus({ preventScroll: true });
   });
   $('help-tutorial').addEventListener('click', () => { el.help.hidden = true; replayTutorial = true; startLocal(undefined, 'normal'); });
+  for (const id of ['title-settings','menu-settings']) $(id).addEventListener('click', () => settings.open());
   $('title-help').addEventListener('click', () => openHelp());
   $('title-back').addEventListener('click', () => {
     leaveOnline();
@@ -501,7 +505,7 @@ function startLocal(seedOverride, cpuLevel = null) {
     const humanId = order[rng() < 0.5 ? 0 : 1];
     const cpuId = order.find((id) => id !== humanId);
     cpu = { id: cpuId, humanId, level: cpuLevel, strategy: STRATEGIES[CPU_LEVELS[cpuLevel].strategy], rng };
-    setPlayerNames({ [cpuId]: `CPU（${CPU_LEVELS[cpuLevel].name}）` });
+    setPlayerNames({ [humanId]: settings.value.name || 'あなた', [cpuId]: `CPU（${CPU_LEVELS[cpuLevel].name}）` });
   }
   tutorial.close();
   if (cpu && (replayTutorial || tutorial.pending())) {

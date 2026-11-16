@@ -1,0 +1,15 @@
+.settings-box { max-height:calc(100dvh - 32px); overflow:auto; width:min(94vw,430px); text-align:left; }
+.settings-box h2 { text-align:center; }
+.settings-box label { display:flex; gap:6px; flex-wrap:wrap; margin:14px 0; align-items:center; font-size:16px; }
+.settings-box input:not([type=checkbox]), .settings-box select { width:100%; min-height:40px; font:inherit; }
+.settings-box input[type=checkbox] { width:22px; height:22px; flex-shrink:0; }
+.settings-box output { margin-left:auto; }
+.settings-status { font-size:14px; min-height:20px; }
+.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+.reduced-motion .confetti, .reduced-motion .result-rays { display:none; }
+html[data-text-size=small] { --reading-size:13px; }
+html[data-text-size=normal] { --reading-size:15px; }
+html[data-text-size=large] { --reading-size:18px; }
+.help-list, .help-note, .detail-desc, .detail-hint, #message, .target-msg, .room-note, .settings-box label, #tutorial p { font-size:var(--reading-size,15px); }
+html[data-text-size=large] .card-name { font-size:15px; }
+html[data-text-size=large] .castle-label { font-size:14px; }

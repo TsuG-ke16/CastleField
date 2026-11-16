@@ -9,6 +9,8 @@ class Sound {
   constructor() {
     this.ctx = null;
     this.master = null;
+    this.sfxVolume = .5;
+    this.bgmVolume = .3;
     this.muted = false;
     this.enabled = true; // 演出を飛ばしているあいだは false（まとめて鳴ってうるさくならないように）
     try {
@@ -24,7 +26,7 @@ class Sound {
         if (!AC) return;
         this.ctx = new AC();
         this.master = this.ctx.createGain();
-        this.master.gain.value = 0.5;
+        this.master.gain.value = this.sfxVolume;
         this.master.connect(this.ctx.destination);
       }
       if (this.ctx.state === 'suspended') this.ctx.resume();
@@ -37,6 +39,8 @@ class Sound {
       localStorage.setItem(KEY, muted ? '1' : '0');
     } catch { /* 覚えられなくても困らない */ }
   }
+
+  updateVolumes() { if(this.master) this.master.gain.value = this.sfxVolume; }
 
   get ready() {
     return Boolean(this.ctx && this.ctx.state === 'running' && !this.muted && this.enabled);

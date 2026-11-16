@@ -70,7 +70,7 @@ export class Animations {
 
   /** ms 待つ（speed 倍率つき。飛ばしているときはすぐ終わる） */
   delay(ms) {
-    if (this.skipping || ms <= 0) return Promise.resolve();
+    if (this.skipping || ms <= 0 || UI_CONFIG.speed === 0) return Promise.resolve();
     return new Promise((resolve) => {
       const t = {
         id: setTimeout(() => t.done(), ms * UI_CONFIG.speed),
@@ -82,7 +82,7 @@ export class Animations {
 
   /** Web Animations API のラッパー。終わったら resolve。飛ばしているときは何もしない */
   animate(el, keyframes, { duration, ...opts }) {
-    if (this.skipping) return Promise.resolve();
+    if (this.skipping || UI_CONFIG.speed === 0 || UI_CONFIG.reducedMotion) return Promise.resolve();
     const a = el.animate(keyframes, { duration: duration * UI_CONFIG.speed, ...opts });
     this.running.add(a);
     const end = () => this.running.delete(a);
@@ -91,7 +91,7 @@ export class Animations {
 
   /** ヒットストップ：動いているものをすべて止めて、少し待つ */
   async hitstop(ms) {
-    if (this.skipping || ms <= 0) return;
+    if (this.skipping || ms <= 0 || UI_CONFIG.reducedMotion) return;
     const paused = document.getAnimations().filter((a) => a.playState === 'running');
     paused.forEach((a) => a.pause());
     await this.delay(ms);
@@ -99,6 +99,7 @@ export class Animations {
   }
 
   shake(el, amplitude, duration) {
+    if (UI_CONFIG.reducedMotion) return Promise.resolve();
     const frames = [];
     const n = 8;
     for (let i = 0; i <= n; i++) {

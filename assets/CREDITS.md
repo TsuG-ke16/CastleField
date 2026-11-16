@@ -243,3 +243,6 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 
 ### チュートリアルの確認画像（2026-11-16）
 - `review/tutorial/advance.png`、`review/tutorial/result.png`：Playwright同梱Chromiumで本ゲームの画面を撮影。新規の外部素材なし。ゲーム内素材の出どころ・利用条件は本ファイルの各項を参照。
+
+### 設定の確認画像（2026-11-16）
+- `review/settings/panel.png`、`review/settings/reduced-result.png`：Playwright同梱Chromiumで本ゲームを撮影。ゲーム内素材の利用条件は本ファイルの各項を参照。外部素材の追加なし。
