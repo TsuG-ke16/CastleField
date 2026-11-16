@@ -74,6 +74,8 @@ export function cardDescription(def, rules, opts = {}) {
     const make = EFFECT_TEXT[def.effect];
     text = make ? make(def, rules ?? {}, opts) : '';
   }
+  // レーンを選ぶ魔法は、選んだ1レーンの兵士だけに効く（rules.laneCount が2以上のとき）
+  if (def.scope === 'lane' && (rules?.laneCount ?? 1) > 1) text = text.replace('相手の兵士全員', '選んだ1レーンの相手の兵士');
   if (def.exhaust) text += '。使い切り';
   return text;
 }
