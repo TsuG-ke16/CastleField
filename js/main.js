@@ -18,7 +18,7 @@ import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
 import { sound } from './ui/Sound.js';
-import { castleArt, unitArt, icon, colorOf } from './ui/art.js';
+import { castleArt, unitArt, icon, colorOf, preloadAssets } from './ui/art.js';
 import { playerName, setPlayerNames, reasonText, soldierInfo, monsterInfo, GAME_OVER_TEXT, GAME_OVER_TEXT_LOST } from './ui/text.js';
 
 const params = new URLSearchParams(location.search);
@@ -29,6 +29,8 @@ const $ = (id) => document.getElementById(id);
 const el = {
   app: $('app'),
   message: $('message'),
+  controls: $('controls'),
+  handToggle: $('hand-toggle'),
   endTurn: $('end-turn'),
   toast: $('toast'),
   netStatus: $('net-status'),
@@ -146,6 +148,8 @@ async function boot() {
       'http://localhost:8000 を開いてください。');
     return;
   }
+
+  await preloadAssets(); // 画像を先に読み込む（読み込み中に代わりの絵が見えないように）
 
   // デバッグ：URL の rules={"monsterFirstRound":1,...} で、ルールの一部だけ変えて試せる（data/ は書き換えない）
   if (DEBUG && params.has('rules')) {
@@ -294,7 +298,20 @@ function setTitleWaiting(waiting) {
   el.titleForm.classList.toggle('waiting', waiting);
 }
 
+/** 手札の表示・非表示（盤面を広く見たいとき用） */
+function setHandVisible(visible) {
+  if (!visible) handView?.select(null);
+  el.controls.classList.toggle('hand-hidden', !visible);
+  el.handToggle.textContent = visible ? '手札 ▾' : '手札 ▴';
+  el.handToggle.setAttribute('aria-expanded', String(visible));
+}
+
 function setupMenu() {
+  el.handToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sound.play('tap');
+    setHandVisible(el.controls.classList.contains('hand-hidden'));
+  });
   const drawSound = () => {
     el.menuSound.innerHTML = `${icon(sound.muted ? 'mute' : 'sound')}<span>${sound.muted ? '音：なし' : '音：あり'}</span>`;
   };
@@ -846,6 +863,7 @@ async function settle({ check = true } = {}) {
     }
     el.endTurn.classList.remove('off', 'ready');
     el.endTurn.disabled = false;
+    setHandVisible(true); // 防御カードを選ぶので、手札を出す
     const who = playerName(d.attackerId);
     setMessage(d.kind === 'castle'
       ? `${who}の攻撃が城に${d.amount}ダメージ！ 城壁などで守れます`
@@ -866,6 +884,7 @@ async function settle({ check = true } = {}) {
   if (st.phase === 'discard') {
     const maxHand = me.maxHand ?? rules.maxHand;
     const count = model.discardRequired || Math.max(1, me.handCount - maxHand);
+    setHandVisible(true); // 捨てるカードを選ぶので、手札を出す
     handView.enterDiscard(count, maxHand);
     el.endTurn.disabled = true;
     setMessage('捨てるカードを選んでください');
@@ -875,10 +894,7 @@ async function settle({ check = true } = {}) {
   el.endTurn.disabled = false;
   const anyPlayable = me.hand.some((c) => !blocked.has(c.cardId));
   el.endTurn.classList.toggle('ready', !anyPlayable);
-  if (!me.playedThisTurn && anyPlayable) setMessage('カードを選んで出そう（メインは1枚。武器・防御は何枚でも）');
-  else if (!me.playedThisTurn) setMessage('出せるカードがありません。「ターン終了」を押そう');
-  else if (anyPlayable) setMessage('武器・防御はまだ出せます。終わったら「ターン終了」');
-  else setMessage('「ターン終了」で交代します');
+  setMessage(''); // 操作の案内は出さない（盤面を広く見せる）
 }
 
 /** 手札の各カードが出せないなら、その理由（canPlayCard の結果。付加・防御はメインのあとも出せる） */

@@ -3,17 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-  <meta name="theme-color" content="#7cc0f0">
+  <meta name="theme-color" content="#193f42">
   <title>キャッスルフィールド</title>
   <link rel="icon" href="data:,">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=M+PLUS+Rounded+1c:wght@500;700;800;900&display=swap">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/theme.css">
 </head>
 <body>
   <div id="app">
     <div id="scenery" aria-hidden="true"></div>
+
+    <div class="game-brand"><span class="brand-seal" aria-hidden="true">✦</span><span>CASTLE FIELD</span><span class="brand-caption">城攻めカードバトル</span></div>
 
     <!-- 上：相手の情報・ターン・山札と捨て札・メニュー -->
     <header id="hud">
@@ -31,7 +31,7 @@
     </header>
     <div id="net-status" role="status" hidden><span class="net-text"></span><button type="button" id="net-leave" class="small-btn" hidden>タイトルへ</button></div>
 
-    <!-- 盤面：相手の城 / 1本の道（左が相手の兵士・右が自分の兵士・真ん中に魔物） / 自分の城 -->
+    <!-- 盤面：相手の城 / 選べるレーン / 自分の城 -->
     <main id="board">
       <section class="castle" id="castle-opp" data-side="opp">
         <div class="castle-side">
@@ -84,14 +84,15 @@
         <span class="discard-msg"></span>
         <button type="button" class="discard-ok plank-btn">捨てる</button>
       </div>
+      <p id="message" role="status" aria-live="polite"></p>
       <div class="control-row">
-        <p id="message"></p>
+        <button id="hand-toggle" type="button" class="small-btn" aria-controls="hand" aria-expanded="true">手札 ▾</button>
         <button id="upgrade-open" type="button" title="コインで強化を買う" hidden>
           <span class="chip-icon" data-icon="coin"></span><b id="my-coins">0</b><span class="upgrade-open-label">強化</span>
         </button>
         <button id="end-turn" type="button" class="plank-btn">ターン終了</button>
       </div>
-      <div id="hand"></div>
+      <div id="hand" aria-label="手札"></div>
     </footer>
 
     <!-- コインで買う強化 -->
@@ -148,6 +149,7 @@
     <div id="help" class="screen dim" hidden>
       <div class="screen-box parchment help-box">
         <p class="menu-title">遊び方</p>
+        <p class="element-guide" aria-label="属性の強弱。水は火、火は風、風は土、土は水に強い"><span data-icon="water"></span>水 → <span data-icon="fire"></span>火 → <span data-icon="wind"></span>風 → <span data-icon="earth"></span>土 → 水</p>
         <ol class="help-list">
           <li><b>相手の城を落としたら勝ち。</b>城HPを0にしよう</li>
           <li>自分の番に<b>カードを1枚</b>出せる（武器と防御は何枚でも）</li>
@@ -163,28 +165,32 @@
     <!-- タイトル：同じ端末で遊ぶか、合言葉でオンライン対戦 -->
     <div id="title" class="screen" hidden>
       <div class="title-box">
-        <h1 class="title-logo"><span>キャッスル</span><span>フィールド</span></h1>
-        <div class="title-pic" aria-hidden="true"></div>
-        <div id="title-main">
-          <button type="button" id="title-solo" class="plank-btn big">ひとりで遊ぶ<small>CPU と対戦</small></button>
-          <button type="button" id="title-local" class="plank-btn big alt2">ふたりで遊ぶ<small>この端末で交代しながら</small></button>
-          <button type="button" id="title-online" class="plank-btn big alt">オンラインで遊ぶ<small>合言葉で友だちと</small></button>
-          <button type="button" id="title-help" class="small-btn">遊び方</button>
+        <div class="title-story">
+          <h1 class="title-logo"><img src="assets/ui/logo.png" alt="キャッスルフィールド" width="768" height="523"></h1>
+          <div class="title-pic" aria-hidden="true"></div>
         </div>
-        <div id="title-levels" class="parchment" hidden>
-          <p class="levels-title">CPU の強さ</p>
-          <button type="button" class="plank-btn big level" data-level="easy">よわい<small>はじめての人むけ</small></button>
-          <button type="button" class="plank-btn big level" data-level="normal">ふつう<small>守りながら戦う</small></button>
-          <button type="button" class="plank-btn big level" data-level="hard">つよい<small>よく考えて戦う</small></button>
-          <button type="button" id="levels-back" class="small-btn">もどる</button>
+        <div class="title-choices">
+          <div id="title-main">
+            <button type="button" id="title-solo" class="plank-btn big mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m0 1c5-4 7 4 13 0v10c-6 4-8-4-13 0"/></svg></span><span><strong>ひとりで遊ぶ</strong><small>自分のペースで、CPUに挑戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
+            <button type="button" id="title-local" class="plank-btn big alt2 mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M2 20v-2a6 6 0 0 1 12 0v2m2-15a3 3 0 0 1 0 6m1 3a5 5 0 0 1 5 5v1"/></svg></span><span><strong>ふたりで遊ぶ</strong><small>ひとつの画面で、交代しながら</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
+            <button type="button" id="title-online" class="plank-btn big alt mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></span><span><strong>オンラインで遊ぶ</strong><small>合言葉を決めて、友だちと対戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
+            <button type="button" id="title-help" class="small-btn">遊び方</button>
+          </div>
+          <div id="title-levels" class="parchment" hidden>
+            <p class="levels-title">CPU の強さ</p>
+            <button type="button" class="plank-btn big level" data-level="easy">よわい<small>はじめての人むけ</small></button>
+            <button type="button" class="plank-btn big level" data-level="normal">ふつう<small>守りながら戦う</small></button>
+            <button type="button" class="plank-btn big level" data-level="hard">つよい<small>よく考えて戦う</small></button>
+            <button type="button" id="levels-back" class="small-btn">もどる</button>
+          </div>
+          <form id="title-form" class="parchment" autocomplete="off" hidden>
+            <label>あなたの名前<input id="title-name" type="text" maxlength="16" placeholder="なまえ" enterkeyhint="next"></label>
+            <label>合言葉（相手と同じもの）<input id="title-pass" type="text" maxlength="32" placeholder="あいことば" enterkeyhint="go"></label>
+            <p id="title-status" role="status"></p>
+            <button type="submit" id="title-join" class="plank-btn">部屋に入る</button>
+            <button type="button" id="title-back" class="small-btn">もどる</button>
+          </form>
         </div>
-        <form id="title-form" class="parchment" autocomplete="off" hidden>
-          <label>あなたの名前<input id="title-name" type="text" maxlength="16" placeholder="なまえ" enterkeyhint="next"></label>
-          <label>合言葉（相手と同じもの）<input id="title-pass" type="text" maxlength="32" placeholder="あいことば" enterkeyhint="go"></label>
-          <p id="title-status" role="status"></p>
-          <button type="submit" id="title-join" class="plank-btn">部屋に入る</button>
-          <button type="button" id="title-back" class="small-btn">もどる</button>
-        </form>
       </div>
     </div>
 

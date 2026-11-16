@@ -1,5 +1,5 @@
-// 絵（SVG）。assets/STYLE.md の絵柄（太いこげ茶の輪郭線・明るい色・2頭身のちびキャラ）に合わせて、コードで描いている。
-// - 画像ファイルを読みに行かないので、どこで開いてもすぐ出る（404 も出ない）
+// 絵（PNGと代替SVG）。assets/STYLE.md の絵柄（太いこげ茶の輪郭線・明るい色・2頭身のちびキャラ）に合わせて、コードで描いている。
+// - 本番PNGを読み込み、読み込み前・失敗時にはコードで描いたSVGを表示する
 // - どの種類にどの絵を使うかは、ここで決める（data/ には画像の情報を入れない）
 // - カード・魔物を増やしたら、CARD_ART / MONSTER_ART に同じキーで足す。なければ仮の絵（名前の1文字目）になる
 
@@ -81,7 +81,7 @@ function knightBody(c) {
 const UNIT_ART = { infantry: infantryBody, knight: knightBody };
 
 /** 盤面の兵士の絵。知らない種類は、歩兵の絵に名前の1文字目を重ねる */
-export function unitArt(type, color, name = '') {
+function svgUnitArt(type, color, name = '') {
   const c = PLAYER_COLORS[color] ?? PLAYER_COLORS.blue;
   const draw = UNIT_ART[type];
   if (draw) return svg('0 0 100 100', draw(c), 'unit-art');
@@ -147,7 +147,7 @@ const MONSTER_ART = {
     `<path d="M38 56 Q50 64 62 56" fill="none" ${S} stroke-width="3"/>`,
 };
 
-export function monsterArt(type, name = '') {
+function svgMonsterArt(type, name = '') {
   const draw = MONSTER_ART[type];
   if (draw) return svg('0 0 100 100', draw(), 'monster-art');
   return svg('0 0 100 100',
@@ -158,7 +158,7 @@ export function monsterArt(type, name = '') {
 // ---------- 城 ----------
 
 /** 城。壊れ具合は、親の要素の data-damage（0〜3）に合わせて CSS がひび・煙を出す */
-export function castleArt(color) {
+function svgCastleArt(color) {
   const c = PLAYER_COLORS[color] ?? PLAYER_COLORS.blue;
   const stone = '#e6dfd0';
   const stoneD = '#c9bfab';
@@ -334,7 +334,7 @@ function spiritArt(back, body, light, great = false) {
 }
 
 /** カードの絵（知らない種類は、名前の1文字目を出す） */
-export function cardArt(type, color = 'blue', name = '') {
+function svgCardArt(type, color = 'blue', name = '') {
   const draw = CARD_ART[type];
   const c = PLAYER_COLORS[color] ?? PLAYER_COLORS.blue;
   if (draw) return svg('0 0 100 100', draw(c), 'card-art-svg', 'xMidYMid slice');
@@ -366,7 +366,7 @@ const ICONS = {
 };
 
 /** 小さな記号（24×24）。class="ic" で文字の大きさに合わせて出る */
-export function icon(name) {
+function svgIcon(name) {
   return `<svg class="ic ic-${name}" viewBox="0 0 24 24" aria-hidden="true">${ICONS[name] ?? ''}</svg>`;
 }
 
@@ -381,4 +381,65 @@ export function treeArt() {
 
 function escapeText(s) {
   return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+}
+
+// 画像の割り当てはUIだけが持つ。読み込み前・失敗時は元のSVGを表示する。
+const CARD_TYPES = new Set(['infantry','knight','spearman','heavy','giant','fireball','meteor','thunder','bigThunder','heal','minorHeal','poisonMist','toxicRain','venom','frostBreath','glacier','deepFreeze','flameSword','waterSpear','windBow','earthHammer','ironSword','shield','bigShield','wall','sandbag','reflect','decoy','blessing','prayer','thief','bolt','fireSpirit','greatFireSpirit','waterSpirit','greatWaterSpirit','windSpirit','greatWindSpirit','earthSpirit','greatEarthSpirit']);
+const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+// 起動時に全部の画像を先に読み込んでおく。読み込めた画像は、代わりのSVGを出さず最初からPNGで描く
+// （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
+const READY = new Set();
+export const isAssetReady = (path) => READY.has(path);
+export async function preloadAssets(timeoutMs = 8000) {
+  let paths = ['bg/board.png', 'bg/title.png', 'ui/logo.png'];
+  try {
+    const res = await fetch('assets/asset-manifest.json');
+    if (res.ok) paths = [...new Set([...paths, ...Object.keys(await res.json())])].filter((p) => p !== 'style-reference.png');
+  } catch { /* 一覧がなくても、読めた分だけで動く */ }
+  const load = (path) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = async () => { try { await img.decode?.(); } catch { /* 見られればよい */ } READY.add(path); resolve(); };
+    img.onerror = () => resolve();
+    img.src = `assets/${path}`;
+  });
+  await Promise.race([Promise.all(paths.map(load)), new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
+}
+export function imageArt(path, fallback = '', cls = '') {
+  if (READY.has(path)) {
+    return `<span class="asset-art asset-loaded ${cls}" aria-hidden="true"><img class="asset-image" src="assets/${path}" alt="" decoding="sync" draggable="false"></span>`;
+  }
+  return `<span class="asset-art ${cls}" aria-hidden="true"><span class="asset-fallback">${fallback}</span></span>`;
+}
+// loadはバブルしないためキャプチャする。インラインハンドラを使わない。
+document.addEventListener('load', (e) => {
+  if (e.target instanceof HTMLImageElement && e.target.classList.contains('asset-image')) {
+    e.target.parentElement.classList.add('asset-loaded');
+  }
+  if (e.target instanceof HTMLImageElement && e.target.classList.contains('card-frame')) {
+    e.target.parentElement.classList.add('has-frame');
+  }
+}, true);
+export function cardArt(type, color = 'blue', name = '') {
+  const fallback = svgCardArt(type, color, name);
+  return CARD_TYPES.has(type) ? imageArt(`cards/card-${kebab(type)}.png`, fallback, 'art card-art-svg') : fallback;
+}
+export function unitArt(type, color, name = '') {
+  const fallback = svgUnitArt(type, color, name);
+  return ['infantry','knight','spearman','heavy','giant'].includes(type)
+    ? imageArt(`units/${type}-${color === 'orange' ? 'orange' : 'blue'}.png`, fallback, 'art unit-art') : fallback;
+}
+export function monsterArt(type, name = '') {
+  const fallback = svgMonsterArt(type, name);
+  return ['slime','goblin','dragon','bat','skeleton','golem','demon'].includes(type)
+    ? imageArt(`units/monster-${type}.png`, fallback, 'art monster-art') : fallback;
+}
+export function castleArt(color, damage = 0) {
+  const team = color === 'orange' ? 'orange' : 'blue';
+  const stage = Math.max(0, Math.min(3, damage));
+  return imageArt(`castles/castle-${team}${stage ? `-damaged-${stage}` : ''}.png`, svgCastleArt(team), 'art castle-art').replace('<span ', `<span data-damage-stage="${stage}" `);
+}
+export function icon(name) {
+  const fallback = svgIcon(name);
+  return ['fire','water','wind','earth','heart','coin'].includes(name)
+    ? imageArt(`ui/icon-${name}.png`, fallback, `ic ic-${name}`) : fallback;
 }

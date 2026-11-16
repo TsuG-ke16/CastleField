@@ -5,6 +5,7 @@
 import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
+import { imageArt } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -117,6 +118,11 @@ export class Animations {
   fx(className, { x, y } = {}) {
     const el = document.createElement('div');
     el.className = className;
+    const sprites = { 'fx-fireball': 'fireball', 'fx-burst': 'explosion', 'fx-bolt': 'lightning', 'fx-heal-sprite': 'heal' };
+    if (sprites[className]) {
+      el.classList.add('sprite-fx');
+      el.innerHTML = imageArt(`fx/${sprites[className]}.png`, '', 'art');
+    }
     if (x != null) el.style.left = `${x}px`;
     if (y != null) el.style.top = `${y}px`;
     this.el.fx.appendChild(el);
@@ -147,10 +153,10 @@ export class Animations {
   }
 
   banner(text, ms, variant = '') {
-    if (this.skipping) return;
+    if (this.skipping) return Promise.resolve();
     const el = this.fx(`fx-banner ${variant}`.trim());
     el.textContent = text;
-    this.animate(el, [
+    return this.animate(el, [
       { transform: 'scale(1.6)', opacity: 0 },
       { transform: 'scale(1)', opacity: 1, offset: 0.2 },
       { transform: 'scale(1)', opacity: 1, offset: 0.75 },
@@ -290,7 +296,7 @@ export class Animations {
     const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
     this.sparks(mid, { count: 6, spread: 34, size: 6 });
     const mark = this.fx('fx-clash', mid);
-    mark.textContent = ICON.clash;
+    mark.innerHTML = imageArt('fx/dust.png', ICON.clash, 'art');
     const dur = UI_CONFIG.timing.clash;
     this.animate(mark, [
       { transform: 'translate(-50%, -50%) scale(0.3)', opacity: 0 },
@@ -392,14 +398,15 @@ export class Animations {
     const dy = to.y - from.y;
     const base = 'translate(-50%, -50%)';
     const dur = UI_CONFIG.timing.cardPlay;
-    this.animate(clone, [
+    const cardAnimation = this.animate(clone, [
       { transform: `${base} translate(0, 0) scale(1)` },
       { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, offset: 0.35 },
       { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75 },
       { transform: `${base} translate(${dx}px, ${dy - 30}px) scale(1.4)`, opacity: 0 },
     ], { duration: dur, easing: 'ease-out', fill: 'forwards' }).then(() => clone.remove());
-    // 消えきるのを待たずに、効果の演出へ進む
-    await this.delay(dur * 0.7);
+    // 防御の帯はカードが消えてから見せる。ほかの効果は従来どおり重ねてテンポを保つ。
+    if (type === 'reflect' || type === 'decoy') await cardAnimation;
+    else await this.delay(dur * 0.7);
   }
 
   async cardDiscarded({ playerId, cardIds }, model, ctx) {
@@ -557,16 +564,14 @@ export class Animations {
   async spellReflected() {
     if (this.skipping) return;
     sound.play('block');
-    this.banner('反射！', UI_CONFIG.timing.shuffle, 'turn mine');
-    await this.delay(UI_CONFIG.timing.shuffle * 0.8);
+    await this.banner('反射！', UI_CONFIG.timing.defenseResult, 'defense-result');
   }
 
   /** 身代わり：城に着いた兵士のダメージが消える（このあと兵士が消える） */
   async soldierDecoyed() {
     if (this.skipping) return;
     sound.play('block');
-    this.banner('身代わり！', UI_CONFIG.timing.shuffle, 'turn mine');
-    await this.delay(UI_CONFIG.timing.shuffle * 0.8);
+    await this.banner('身代わり！', UI_CONFIG.timing.defenseResult, 'defense-result');
   }
 
   /** 盗賊：相手の手札から1枚奪う。自分が奪われたら手札から消え、奪ったら手札に入る */
@@ -599,6 +604,7 @@ export class Animations {
     const app = this.el.app.getBoundingClientRect();
     const r = this.renderer.laneEl(roadId).getBoundingClientRect(); // レーンを選んだ魔法は、その道だけに霧をかける
     const fog = this.fx('fx-mist');
+    fog.innerHTML = imageArt(`fx/${color === SPELL_TINT.freezeEnemySoldiers ? 'ice' : 'poison'}.png`, '', 'art');
     fog.style.left = `${r.left - app.left}px`;
     fog.style.top = `${r.top - app.top}px`;
     fog.style.width = `${r.width}px`;
@@ -719,6 +725,8 @@ export class Animations {
     void castle.offsetWidth;
     castle.classList.add('heal-glow');
     sound.play('heal');
+    const aura = this.fx('fx-heal-sprite', this.centerOf(castle));
+    this.animate(aura, [{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, offset: .3 }, { opacity: 0, transform: 'scale(1.3)' }], { duration: UI_CONFIG.timing.heal, fill: 'forwards' }).then(() => aura.remove());
     this.sparks(this.centerOf(castle), { count: 10, color: '#7fe08a', spread: 60, size: 8 });
     this.number(castle, `+${amount}`, { kind: 'heal', size: UI_CONFIG.healNumber.size, duration: UI_CONFIG.healNumber.duration });
     await this.delay(UI_CONFIG.timing.heal);
