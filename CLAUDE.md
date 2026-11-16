@@ -687,32 +687,32 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - サーバーは `server/`（Node.js 22.7 以上。**外部パッケージなし**）。Game（`js/game/`）をそのまま動かす。乱数もサーバーだけが持つ
 - 起動：リポジトリのルートで `node server/server.js`（ポートは環境変数 `PORT`、省略すると 8787）。`data/` の JSON はサーバーが読み、間違っていれば起動したときにエラーで止まる
 - **画面のファイル（`index.html`・`css/`・`js/`・`data/`・`assets/`）も同じサーバーが配る**。`http://localhost:8787` を開けば、画面とサーバーが同じ場所なので、画面はつなぎ先を `/api/...` と書くだけでよい
-- 人数は `rules.playerCount`（2〜8）。その人数がそろったら始まる。城の種類・デッキは今は全員 `rules.defaultCastle` / `defaultDeck`（部屋で選ぶしくみはまだない）
+- 人数は部屋に入った人数（CPU を含めて2〜8）。**自動では始まらず、部屋主が「開始」を押して始める**（下の「部屋（ロビー）」）。`rules.playerCount` はオンラインでは使わない
 - 通信は HTTP だけ（WebSocket は使わない。外部パッケージなしで作れて、ブラウザでもそのまま使えるため）
   - ブラウザ → サーバー：`fetch` で `POST`（JSON）
   - サーバー → ブラウザ：Server-Sent Events（`EventSource` で受け取る）
-- **合言葉で部屋に入る**：同じ合言葉を入れた人が同じ部屋に入る。人数（`rules.playerCount`、今は2）がそろったら自動で始まる。入った順に `p1`、`p2` …
+- **合言葉で部屋に入る**：同じ合言葉を入れた人が同じ部屋に入る（最大8人）。入った順に `p1`、`p2` …
 - 見えてはいけない情報は、サーバーが `js/game/visibility.js` の決まりでプレイヤーごとに隠してから送る（Game はそのまま）
 
 ### 送るもの（ブラウザ → サーバー）
 | URL | 送る JSON | 返る JSON |
 |---|---|---|
 | `POST /api/join` | `{ passphrase, name }` … 合言葉（1〜32文字）と表示名（1〜16文字） | `{ ok: true, roomId, playerId, token }` か `{ ok: false, reason }`。`token` はその人だけの鍵（以後ずっと使う） |
-| `POST /api/action` | `{ token, method, args }` … `method` は `playCard` / `discard` / `endTurn` / `buyUpgrade` / `defend` / `passDefense` / `rematch` / `surrender` / `leave` のどれか（`rematch`・`surrender`・`leave` は自分の番でなくても送れる。`defend`・`passDefense` は攻撃を受ける人だけが送れる）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
+| `POST /api/action` | `{ token, method, args }` … `method` は試合の操作 `playCard` / `discard` / `endTurn` / `buyUpgrade` / `fuse` / `defend` / `passDefense` と、部屋の操作 `start` / `setRules` / `setSeat` / `addCpu` / `removeCpu` / `backToRoom` / `rematch` / `surrender` / `leave` のどれか（部屋の操作は自分の番でなくても送れる。`defend`・`passDefense` は攻撃を受ける人だけが送れる。部屋の操作の中身は下の「部屋（ロビー）」）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
 
-- `rematch`：全員が送ったら、同じ部屋・同じ席で新しい試合が始まる（負けた人もすぐ「もう1回」できるように）
+- `rematch`：人が全員送ったら（CPU は送らない）、同じ部屋・同じ席・同じ設定で新しい試合が始まる（負けた人もすぐ「もう1回」できるように）
 
 ### 届くもの（サーバー → ブラウザ）
 `GET /api/stream?token=...` を `EventSource` で開く。メッセージは JSON で、`type` で分かれる。
 
 | `type` | 中身 | いつ |
 |---|---|---|
-| `room` | `{ roomId, players: [{ playerId, name, connected, left }], capacity, started, rematchVotes }` … `left` は自分から部屋を出たか。`rematchVotes` は「もう1回」を送った人のIDの配列（新しい試合が始まると空に戻る） | 入ったとき・誰かが入った／抜けたとき |
+| `room` | `{ roomId, you, hostId, players: [{ playerId, name, connected, left, cpu, castle, deck }], capacity, minPlayers, started, settings, choices, rematchVotes }` … `you` は受け取った人の今の `playerId`（始まる前に誰かが出ると席が詰まって変わる。自分が出たときは `null`）。`hostId` は部屋主。`left` は試合中に自分から部屋を出たか。`cpu` は CPU の強さ（人なら `null`。CPU の `connected` はいつも `true`）。`castle` / `deck` は席の城・デッキ。`settings` は `{ winCondition, deckMode }`。`choices` は選べるもの `{ winConditions, deckModes, castles, decks, cpuLevels }`（どれも `[{ id, name }]`）。`rematchVotes` は「もう1回」を送った人のIDの配列（新しい試合が始まると空に戻る） | 入ったとき・誰かが入った／抜けたとき・設定が変わったとき・始まったとき |
 | `event` | `{ event, payload }` … Game のイベント（「Gameが出すイベント」の表）を、その人向けに隠したもの | 起きた順に |
 | `state` | `{ state, playable, upgrades }` … `state` は `getState(自分)`。`playable` は自分の手札の各カードの `{ cardId, ok, reason, needsTarget, targets }`（自分の番でないときは全部 `ok: false`）。`upgrades` は `{ upgradeId: { ok, reason } }` | 操作のたび（その操作のイベントを全部送ったあと）・つないだとき |
 
 - つなぎ直したとき（`EventSource` は自動でつなぎ直す）は、`room` と `state` が届くので、それで画面を描き直す
-- 2人目が入った瞬間に試合が始まるので、2人目は最初の `turnStarted` などを受け取れないことがある（`state` は届く）。画面は `state` から描けるようにする
+- 試合の途中でつなぎ直した人は、それまでのイベントを受け取れない（`state` は届く）。画面は `state` から描けるようにする
 - `token` は URL に入る（`EventSource` の決まり）。サーバーのアクセスログに残ることがあるので、ログを人に見せない
 - 表示名（`name`）は人が入れた文字列そのまま。画面では `textContent` で出す（HTML として入れない）
 - エラーの返事：壊れた JSON は 400、大きすぎる本文（16KB 超）は 413、知らない token は 403。どれも `{ ok: false, reason }`
@@ -724,6 +724,23 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - **自分から部屋を出る**（`leave`。「タイトルへ戻る」を押したとき）：もう戻れない。残った人には `room` の `players[].left` で伝わり、「○○さんが部屋を出ました」と出る。出た人がいる部屋では「もう1回」はできず、同じ合言葉で入ると新しい部屋になる
   - **降参**（`surrender`。メニューから、確認のため2回押す）：自分の番でなくてもできる。相手の勝ちで終わる（`gameOver` の `reason` は `"surrender"`）。2人のときだけ（3人以上はまだ決めていない）
 - 画面は、イベントで演出し、`state` で答え合わせをする（同じ端末のときと同じ）。出せない理由は `playable` を使う（ブラウザに Game はない）
+
+### 部屋（ロビー）（人間に確認して決めた）
+「8人がそろわないと始まらない」のではなく、**8人まで入れる部屋で、好きなときに始める**。足りなければ CPU を足せる。
+
+- **部屋主**：最初に入った人。部屋主が出たら、残っている人のうちいちばん前の席の人が部屋主になる（CPU はなれない）
+- **始まる前**（`started: false`）
+  - `start`：部屋主だけ。CPU を含めて `minPlayers`（2）人以上で始まる。始まったら、その部屋には入れない
+  - `setRules`、`args: [{ winCondition?, deckMode? }]`：部屋主だけ。勝ち方（`"firstDestroy"`：最初に城を落とした人の勝ち／`"lastStanding"`：バトルロイヤル）と山札（`"shared"`：共通の山札／`"own"`：1人1つのデッキ）
+  - `setSeat`、`args: [{ castle?, deck? }, playerId?]`：席の城の種類・デッキ（`castles.json` / `decks.json` のキー）。自分の席は自分で、CPU の席は部屋主が `playerId` を付けて選ぶ。デッキは `deckMode` が `"own"` のときに使われる
+  - `addCpu`、`args: [level?]`：部屋主だけ。`level` は `"easy"` / `"normal"`（省略したとき）/ `"hard"`（戦い方は `js/main.js` の `CPU_LEVELS` と同じ：defensive / rush / smart）。名前は「CPU1（つよい）」など。返り値に `playerId`
+  - `removeCpu`、`args: [playerId]`：部屋主だけ。CPU を外す（席が詰まる）
+  - `leave`：始まる前に出た人は席ごと消え、うしろの席が詰まる（`playerId` が変わるので、画面は `room` の `you` を見る）。人が全員出たら CPU も消える
+- **試合中・試合のあと**
+  - CPU は、サーバーが `js/game/strategies.js` の戦い方で動かす（自分の手札しか見ない）。1手ごとに少し間をおく（`createGameServer({ cpuDelayMs })`、省略すると 700ミリ秒）。人の番・人の防御になったら止まって待つ。CPU が攻めて人が防御を選ぶあいだも待つ
+  - `backToRoom`：試合が終わったあと、部屋主だけ。始まる前の状態に戻る（設定を変えたり、人が入ったりできる）。試合中に出た人の席は、ここで消える（出た人がいても、部屋に戻せばまた遊べる）
+- 試合の `rules` は `data/rules.json` に、部屋の人数（`playerCount`）と `settings` を上書きしたもの。城への魔法は `castleSpellRange`（今は `"any"`：誰にでも）のまま
+- **まだ入っていないこと**（次のPR）：真ん中の広場を通る道（今は3人以上でも輪の道のまま）、チーム戦
 
 ### 隠す情報（`js/game/visibility.js`）
 | イベント | 本人以外に送るとき |

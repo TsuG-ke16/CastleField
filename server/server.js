@@ -78,11 +78,12 @@ function sendJson(res, status, body) {
  * @param {object} [o]
  * @param {object} [o.data] { cards, rules, monsters, upgrades }。省略すると data/ を読む
  * @param {() => () => number} [o.makeRng] 試合ごとの乱数を作る関数（テストでシードを固定するため）
+ * @param {number} [o.cpuDelayMs] CPU が1手ごとに待つ時間（ミリ秒。0 ならすぐ動く。テスト用）
  */
-export function createGameServer({ data = loadData(), makeRng = () => Math.random } = {}) {
+export function createGameServer({ data = loadData(), makeRng = () => Math.random, cpuDelayMs = 700 } = {}) {
   // data/ が間違っていたら、起動したときに分かるようにする（試合が始まってから落ちないように）
   new Game({ ...data, rng: makeRng() });
-  const lobby = new Lobby(data, makeRng);
+  const lobby = new Lobby(data, makeRng, { cpuDelayMs });
   const sweeper = setInterval(() => lobby.sweep(30 * 60 * 1000), 60 * 1000);
   sweeper.unref();
 
