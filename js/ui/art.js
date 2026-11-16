@@ -323,49 +323,13 @@ const CARD_ART = {
 };
 
 
-// Same art style as the reference: bright cartoon fantasy mobile game art,
-// thick dark-brown outlines, soft cel shading, cute chibi proportions,
-// 3/4 top-down view, transparent background, no text, single object centered.
-// Original vector drawings: matching silhouettes within each line, richer trim at higher rarities.
-const SOLDIER_LINES = {
-  scout:['cavalry',0], cavalry:['cavalry',1], paladin:['cavalry',3], dragonKnight:['cavalry',4],
-  apprenticeArcher:['archer',0], archer:['archer',1], longbowman:['archer',2], sniper:['archer',3], skyArcher:['archer',4],
-  apprenticeMage:['mage',0], mage:['mage',1], sorcerer:['mage',2], archmage:['mage',3], sage:['mage',4],
-};
-function lineBody(role, rank, c) {
-  const trim = ['#9a704c','#b9c9d0','#ffdb79','#ecc66b','#fff1a1'][rank];
-  const robe = role === 'mage' ? ['#a78aba','#9176bb','#8164b2','#6c4d9e','#faf0ce'][rank] : c.main;
-  const aura = rank >= 3 ? `<circle cx="50" cy="49" r="43" fill="none" stroke="${trim}" stroke-width="2" stroke-dasharray="4 6" opacity=".75"/>` : '';
-  if (role === 'cavalry') return aura +
-    (rank === 4 ? `<path d="M33 60 Q6 33 8 18 L32 28 L46 53 M65 56 Q96 28 94 16 L74 26 L58 52" fill="#a9c9ea" ${S} stroke-width="3"/>` : '') +
-    knightBody(c) + (rank >= 1 ? `<path d="M23 70 Q49 60 72 70 L70 79 Q49 69 25 79 Z" fill="${trim}" ${S} stroke-width="2"/>` : '') +
-    (rank >= 3 ? `<path d="M29 31 L26 17 L36 22 L42 12 L47 26 Z" fill="${trim}" ${S} stroke-width="2"/><path d="M70 50 L77 56 L70 62 L63 56 Z" fill="#b566e2" ${S} stroke-width="2"/>` : '');
-  return aura +
-    (rank === 4 ? `<path d="M28 69 Q2 65 6 39 Q21 41 31 58 M72 69 Q98 65 94 39 Q79 41 69 58" fill="#fff4d1" ${S} stroke-width="3"/>` : '') +
-    `<ellipse cx="50" cy="94" rx="26" ry="4" fill="#4a2e1a" opacity=".14"/>` +
-    `<path d="M31 91 Q27 67 39 62 H61 Q73 67 69 91 Z" fill="${robe}" ${S} stroke-width="3.5"/>` +
-    `<path d="M36 76 H64 M41 91 V80 M59 91 V80" stroke="${trim}" stroke-width="${rank+2}"/>` +
-    `<rect x="32" y="89" width="15" height="7" rx="3" fill="#8a5a32" ${S} stroke-width="2"/><rect x="53" y="89" width="15" height="7" rx="3" fill="#8a5a32" ${S} stroke-width="2"/>` +
-    `<circle cx="50" cy="43" r="23" fill="${SKIN}" ${S} stroke-width="3.5"/>` + face(50,48,.9) +
-    (role === 'archer' ?
-      `<path d="M25 40 Q27 13 49 15 Q72 14 76 40 L63 33 Q43 29 25 40 Z" fill="${c.dark}" ${S} stroke-width="3"/>` +
-      `<path d="M60 19 Q70 ${8-rank} 76 12 L65 28 Z" fill="${trim}" ${S} stroke-width="2"/>` +
-      `<path d="M73 35 Q${95+rank} 60 73 87" fill="none" stroke="${INK}" stroke-width="8"/><path d="M73 35 Q${95+rank} 60 73 87" fill="none" stroke="${trim}" stroke-width="4"/>` +
-      `<path d="M73 35 V87 M66 61 H94" stroke="${INK}" stroke-width="2"/><path d="M94 61 L88 57 V65 Z" fill="#e6ecf1" ${S} stroke-width="2"/>` +
-      `<circle cx="70" cy="66" r="5" fill="${SKIN}" ${S} stroke-width="2"/>` :
-      `<path d="M23 36 L42 7 Q53 ${1-rank} 62 16 L76 36 Q50 46 23 36 Z" fill="${robe}" ${S} stroke-width="3.5"/>` +
-      `<path d="M31 30 Q50 36 67 29" fill="none" stroke="${trim}" stroke-width="4"/>` +
-      `<path d="M80 86 L83 30" stroke="${INK}" stroke-width="7"/><path d="M80 86 L83 30" stroke="${trim}" stroke-width="3"/>` +
-      `<path d="M83 12 L92 23 L83 35 L74 23 Z" fill="${rank >= 3 ? '#ffd967' : '#b9eaff'}" ${S} stroke-width="3"/>` +
-      `<circle cx="77" cy="67" r="5" fill="${SKIN}" ${S} stroke-width="2"/>` +
-      (rank >= 2 ? `<path d="M37 58 Q50 67 63 58 L57 75 L49 82 L42 73 Z" fill="#fff4dc" ${S} stroke-width="2"/>` : '')) +
-    (rank >= 2 ? `<path d="M50 67 l5 5 l-5 6 l-5 -6 Z" fill="${rank >= 3 ? '#a367c4' : '#75b8d9'}" ${S} stroke-width="2"/>` : '') +
-    (rank >= 3 ? `<path d="M9 16 v10 M4 21 h10 M91 42 v8 M87 46 h8" stroke="${trim}" stroke-width="3" stroke-linecap="round"/>` : '');
-}
-for (const [type,[role,rank]] of Object.entries(SOLDIER_LINES)) {
-  UNIT_ART[type] = c => lineBody(role,rank,c);
-  CARD_ART[type] = c => lineBody(role,rank,c);
-}
+// 新しい兵士14種は、見本を添付してOpenAI画像生成で作った本番PNGだけを使用。
+// コードで描くSVG・Canvasの兵士や、他の兵士の絵への置き換えはしない。
+const NEW_SOLDIER_TYPES = new Set([
+  'scout', 'cavalry', 'paladin', 'dragonKnight',
+  'apprenticeArcher', 'archer', 'longbowman', 'sniper', 'skyArcher',
+  'apprenticeMage', 'mage', 'sorcerer', 'archmage', 'sage',
+]);
 
 /** 精霊の絵：ゆらゆらした体と顔。大精霊は後ろに光の輪と星がつく */
 function spiritArt(back, body, light, great = false) {
@@ -429,7 +393,7 @@ function escapeText(s) {
 }
 
 // 画像の割り当てはUIだけが持つ。読み込み前・失敗時は元のSVGを表示する。
-const CARD_TYPES = new Set([...Object.keys(SOLDIER_LINES),"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
+const CARD_TYPES = new Set([...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
 const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // 起動時に全部の画像を先に読み込んでおく。読み込めた画像は、代わりのSVGを出さず最初からPNGで描く
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
@@ -464,13 +428,18 @@ document.addEventListener('load', (e) => {
     e.target.parentElement.classList.add('has-frame');
   }
 }, true);
+function generatedSoldierPng(path, cls, name) {
+  return `<span class="asset-art asset-loaded ${cls}"><img class="asset-image" src="assets/${path}" alt="${escapeText(name)}" decoding="sync" draggable="false"></span>`;
+}
 export function cardArt(type, color = 'blue', name = '') {
+  if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`cards/card-${kebab(type)}.png`, 'art card-art-svg', name);
   const fallback = svgCardArt(type, color, name);
   return CARD_TYPES.has(type) ? imageArt(`cards/card-${kebab(type)}.png`, fallback, 'art card-art-svg') : fallback;
 }
 export function unitArt(type, color, name = '') {
+  if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`units/${kebab(type)}-${color === 'orange' ? 'orange' : 'blue'}.png`, 'art unit-art', name);
   const fallback = svgUnitArt(type, color, name);
-  return ['infantry','knight','spearman','heavy','giant','hero',...Object.keys(SOLDIER_LINES)].includes(type)
+  return ['infantry','knight','spearman','heavy','giant','hero'].includes(type)
     ? imageArt(`units/${kebab(type)}-${color === 'orange' ? 'orange' : 'blue'}.png`, fallback, 'art unit-art') : fallback;
 }
 export function monsterArt(type, name = '') {
