@@ -855,13 +855,13 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **排出率**：`rarities.json` の `dropRate`（%、合計100）が、レアリティごとの出る割合（仮：50 / 28 / 14 / 6 / 2）。カードごとの排出率は、そのレアリティの割合を `weight` で分けたもの（`dropRates()` in `js/game/Setup.js`）
 - **山札**：`new Game({ rarities })` を渡すと、全員共通の山札は `rules.deckSize`（仮：100）枚を排出率で引き当てて作る（乱数は `rng`。試合ごとに中身が変わる）。`rarities` を渡さないときは今までどおり `count` 枚ずつ（テストの固定データ用。デッキ対戦 `deckMode: "own"` は `decks.json` のまま）
 - CPU：`smart` 系は、ターンの最初に手札の同じカードを合成する
-- 城HP：上限を **100**、先攻・後攻とも同じ（`secondPlayerCastleBonus` は 0）にした（人間の指示）。**試合が長くなった**：`node tests/sim/run.js --games 300` で、smart 同士の平均が112手番、ほとんどが周回の上限（`maxRounds` 60）で終わる。カードの数値・`maxRounds` の見直しが必要（要相談）
+- 城HP：上限を **40**、先攻・後攻とも同じ（`secondPlayerCastleBonus` は 0）にした（人間の指示。いったん100にしたが長すぎたので40に決めた）。`node tests/sim/run.js --games 200 --match smart,smart`：城HP 40 で平均61手番・周回上限で終わる試合は5.5%（100 だと平均110手番・上限で終わるのが60%）。遊んで長ければ下げる
 - 画面（UI担当）：レアリティの色・名前の表示と、合成の操作は未実装（`rarities.json` の `color` を使える）。ひとりで遊ぶ・同じ端末のときに `rarities` を渡すのも `js/main.js` 側。オンラインは `POST /api/action` の `method` に `fuse` を足した
 
 ### コインで排出率を上げる・出した枚数ぶん引く（人間に確認して決めた）
 - **運命の祈り**（`upgrades.json` の `luck`、効果 `boostDrops`。仮：コスト5・1試合2回まで）：買うと、自分の**次の `amount` 枚（仮：5）のドロー**が、山札からではなく、`fromRarity`（仮：レア）以上のレアリティの排出率を `boost` 倍（仮：4倍）にして引き当てたカードになる（山札は減らない）。効いているあいだは重ねて買えない。`rarities` を渡していないと買えない。`getState().players.pX.luck` は `{ draws, boost }` か `null`。CPU の smart 系は、とぎ石の次に買う
 - **出した枚数ぶん引く**：`rules.drawPerPlayed`（省略すると `false`。仮：`true`）。ターンの始めに引く枚数は `max(drawPerTurn（先攻の最初は firstTurnDraw）, drawUntilHand − 手札, 前のターンに出した枚数)`。合成は「出した」に数えない
-- 確かめたこと（`node tests/sim/run.js --games 200`）：全組み合わせが決着。smart 同士は平均110手番で、上限60周に近い（城HP100のため。要相談）。**運命の祈りの強さは遊んで確かめる**
+- 確かめたこと（`node tests/sim/run.js --games 200`）：全組み合わせが決着。城HP100のときは平均110手番で上限60周に近かった。城HP40にして解消（上の城HPの項）。**運命の祈りの強さは遊んで確かめる**
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
