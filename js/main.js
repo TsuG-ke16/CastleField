@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { LocalSetup } from './ui/LocalSetup.js';
 import { Settings } from './ui/Settings.js';
 import { Tutorial } from './ui/Tutorial.js';
 import { RoomView } from './ui/RoomView.js';
@@ -72,6 +73,10 @@ const el = {
 const tutorial = new Tutorial();
 let replayTutorial = false;
 let settings;
+let localSetup;
+let lastLocalOptions = null;
+let castles = null;
+let decks = null;
 let rarities = null;
 let progressPanel;
 let cardGuide;
@@ -166,9 +171,9 @@ function hideLoading() {
 
 async function boot() {
   try {
-    [cards, rules, monsters, upgrades, rarities] = await Promise.all([
+    [cards, rules, monsters, upgrades, rarities, castles, decks] = await Promise.all([
       loadJson('data/cards.json'), loadJson('data/rules.json'),
-      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'),
+      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'),
     ]);
   } catch (err) {
     console.error(err);
@@ -290,9 +295,11 @@ function setupTitle() {
   document.querySelector('#title .title-pic').innerHTML =
     `<div class="title-castle left">${castleArt('blue')}</div><div class="title-unit left">${unitArt('knight', 'blue')}</div>` +
     `<div class="title-unit right">${unitArt('infantry', 'orange')}</div><div class="title-castle right">${castleArt('orange')}</div>`;
-  $('title-local').addEventListener('click', () => { sound.play('tap'); startLocal(); });
+  localSetup = new LocalSetup({castles,decks,rules,onStart:(level,options)=>startLocal(undefined,level,options)});
+  $('title-local').addEventListener('click', () => { sound.play('tap'); localSetup.open('local'); el.titleMain.hidden=true; el.titleLevels.hidden=false; });
   $('title-solo').addEventListener('click', () => {
     sound.play('tap');
+    localSetup.open('solo');
     el.titleMain.hidden = true;
     el.titleLevels.hidden = false;
   });
@@ -301,7 +308,7 @@ function setupTitle() {
     el.titleMain.hidden = false;
   });
   for (const btn of el.titleLevels.querySelectorAll('.level')) {
-    btn.addEventListener('click', () => { sound.play('tap'); startLocal(undefined, btn.dataset.level); });
+    btn.addEventListener('click', () => { sound.play('tap'); startLocal(undefined, btn.dataset.level, localSetup.read()); });
   }
   $('title-online').addEventListener('click', () => {
     sound.play('tap');
@@ -478,7 +485,8 @@ function resetForNewGame() {
  * @param {number} [seedOverride] 乱数シード
  * @param {string|null} [cpuLevel] "easy" / "normal" / "hard" なら、ひとりで遊ぶ（CPU と対戦）。省略すると2人で交代
  */
-function startLocal(seedOverride, cpuLevel = null) {
+function startLocal(seedOverride, cpuLevel = null, options = null) {
+  lastLocalOptions = options ? structuredClone(options) : null;
   leaveOnline();
   stopLocal();
   setPlayerNames({});
@@ -489,6 +497,20 @@ function startLocal(seedOverride, cpuLevel = null) {
   seed = seedOverride ?? URL_SEED ?? Math.floor(Math.random() * 2 ** 32);
   try {
     const opts = { cards: structuredClone(cards), rules: structuredClone(rules), rarities: structuredClone(rarities), rng: mulberry32(seed) };
+    if (options) {
+      Object.assign(opts.rules,{playerCount:options.playerCount,winCondition:options.winCondition,deckMode:options.deckMode,roadLayout:'plaza'});
+      opts.castles=structuredClone(castles);opts.decks=structuredClone(decks);
+      opts.setup={castles:Array(options.playerCount).fill(rules.defaultCastle??'standard'),decks:Array(options.playerCount).fill(rules.defaultDeck??'balanced')};
+      // 自分の席は後で決まるため、選択を割り当てる席を同じシードから求める。
+      const seatRng=mulberry32(seed ^ 0x9e3779b9);
+      const humanSeat=cpuLevel?Math.floor(seatRng()*options.playerCount):0;
+      opts.setup.castles[humanSeat]=options.castle;opts.setup.decks[humanSeat]=options.deck;
+      if(options.teams==='auto'){
+        const seats=Array.from({length:options.playerCount},(_,i)=>i);
+        for(let i=seats.length-1;i>0;i--){const j=Math.floor(seatRng()*(i+1));[seats[i],seats[j]]=[seats[j],seats[i]];}
+        opts.setup.teams=Array(options.playerCount);seats.forEach((seat,i)=>{opts.setup.teams[seat]=i<Math.floor(options.playerCount/2)?'t1':'t2';});
+      }
+    }
     // 2人で交代して遊ぶときは、相手に手札を見せないので、攻撃を受けたときの防御は聞かない
     if (!cpuLevel) opts.rules.defenseReaction = false;
     if (monsters) opts.monsters = structuredClone(monsters);
@@ -504,10 +526,11 @@ function startLocal(seedOverride, cpuLevel = null) {
     // 先攻・後攻は毎回ランダム（シードが同じなら同じ）
     const rng = mulberry32(seed ^ 0x9e3779b9);
     const order = game.getState(null).playerOrder;
-    const humanId = order[rng() < 0.5 ? 0 : 1];
-    const cpuId = order.find((id) => id !== humanId);
-    cpu = { id: cpuId, humanId, level: cpuLevel, strategy: STRATEGIES[CPU_LEVELS[cpuLevel].strategy], rng };
-    setPlayerNames({ [humanId]: settings.value.name || 'あなた', [cpuId]: `CPU（${CPU_LEVELS[cpuLevel].name}）` });
+    const humanId = order[Math.floor(rng() * order.length)];
+    const cpuIds = order.filter((id) => id !== humanId);
+    const cpuId = cpuIds[0];
+    cpu = { id: cpuId, ids: cpuIds, humanId, level: cpuLevel, strategy: STRATEGIES[CPU_LEVELS[cpuLevel].strategy], rng };
+    setPlayerNames({ [humanId]: settings.value.name || 'あなた', ...Object.fromEntries(cpuIds.map((id,i)=>[id,`CPU${cpuIds.length>1?i+1:''}（${CPU_LEVELS[cpuLevel].name}）`])) });
   }
   tutorial.close();
   if (cpu && (replayTutorial || tutorial.pending())) {
@@ -790,6 +813,7 @@ function modelFromState(st) {
   for (const id of st.playerOrder) {
     const p = st.players[id];
     players[id] = {
+      castleType:p.castleType, deckId:p.deckId,
       team: p.team, castleOwner: p.castleOwner ?? id, eliminated: p.eliminated,
       castleHp: p.castleHp,
       castleMaxHp: p.castleMaxHp,
@@ -805,6 +829,7 @@ function modelFromState(st) {
     };
   }
   return {
+    deckMode:st.deckMode,
     layout: st.layout, roads: structuredClone(st.roads ?? []), teams: structuredClone(st.teams ?? null), winnerTeam: st.winnerTeam,
     playerOrder: [...st.playerOrder],
     turn: st.turn,
@@ -959,7 +984,7 @@ async function settle({ check = true } = {}) {
     el.endTurn.disabled = false;
     el.endTurn.classList.add('off');
     setMessage(st.phase === 'discard' ? `${playerName(st.currentPlayer)}が手札を捨てています…` : `${playerName(st.currentPlayer)}の番です…`);
-    if (cpu && st.currentPlayer === cpu.id) cpuTurn();
+    if (cpu?.ids.includes(st.currentPlayer)) cpuTurn();
     return;
   }
   el.endTurn.classList.remove('off');
@@ -1031,13 +1056,14 @@ function playability(st) {
  */
 async function cpuTurn() {
   const g = gen;
-  const me = cpu;
+  const group = cpu;
+  const me = {...group, id: game.getState(null).currentPlayer};
   setBusy(true);
   setMessage(`${playerName(me.id)}が考えています…`);
-  await new Promise((r) => setTimeout(r, 450 * UI_CONFIG.speed));
-  if (g !== gen || cpu !== me || !game) return; // 待っているあいだに、やめた・やり直した
+  await new Promise((r) => setTimeout(r, UI_CONFIG.cpuThink / Math.max(1, me.ids.length) * UI_CONFIG.speed));
+  if (g !== gen || cpu !== group || !game) return; // 待っているあいだに、やめた・やり直した
   try {
-    const ctx = { cards, rules, upgrades: upgrades ?? {}, discardCount: 0 };
+    const ctx = { cards, rules:game.rules, upgrades: upgrades ?? {}, discardCount: 0 };
     const discardIfNeeded = () => {
       const st = game.getState(me.id);
       if (st.phase !== 'discard' || st.currentPlayer !== me.id) return;
@@ -1099,11 +1125,11 @@ async function act(send) {
 /** CPU が攻撃を受けるところ（phase "defend"）なら、戦い方に防御を決めてもらう */
 function cpuDefendIfNeeded() {
   if (!cpu || !game) return;
-  const ctx = { cards, rules, upgrades: upgrades ?? {}, discardCount: 0 };
+  const ctx = { cards, rules:game.rules, upgrades: upgrades ?? {}, discardCount: 0 };
   for (let i = 0; i < 50; i++) {
     const st = game.getState(null);
-    if (st.phase !== 'defend' || st.defense.defenderId !== cpu.id) return;
-    cpu.strategy.respond(game, cpu.id, cpu.rng, ctx);
+    if (st.phase !== 'defend' || !cpu.ids.includes(st.defense.defenderId)) return;
+    cpu.strategy.respond(game, st.defense.defenderId, cpu.rng, ctx);
   }
 }
 
@@ -1222,7 +1248,7 @@ async function discard(cardIds) {
 async function rematch() {
   sound.play('tap');
   if (!session?.online) {
-    startLocal(undefined, cpu?.level ?? null); // CPU 戦は同じ強さでもう1回
+    startLocal(undefined, cpu?.level ?? null, lastLocalOptions); // CPU 戦は同じ強さでもう1回
     return;
   }
   if (rematchSent) return;

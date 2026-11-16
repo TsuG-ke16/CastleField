@@ -13,3 +13,10 @@ html[data-text-size=large] { --reading-size:18px; }
 .help-list, .help-note, .detail-desc, .detail-hint, #message, .target-msg, .room-note, .settings-box label, #tutorial p { font-size:var(--reading-size,15px); }
 html[data-text-size=large] .card-name { font-size:15px; }
 html[data-text-size=large] .castle-label { font-size:14px; }
+
+.local-options {text-align:left; margin:12px 0;}
+.local-options summary {cursor:pointer; padding:8px;}
+.local-fields label {display:block; margin:8px 0;}
+.local-fields select {display:block; width:100%; min-height:38px; font:inherit;}
+.local-note {font-size:13px; line-height:1.5;}
+#title-levels {max-height:80dvh;overflow:auto;}
