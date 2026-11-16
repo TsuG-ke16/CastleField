@@ -915,6 +915,38 @@ async function settle({ check = true } = {}) {
   const anyPlayable = me.hand.some((c) => !blocked.has(c.cardId));
   el.endTurn.classList.toggle('ready', !anyPlayable);
   setMessage(''); // 操作の案内は出さない（盤面を広く見せる）
+  // 出せるカードも、買える強化も、合成できるカードもなければ、待たせずに自動でターンを終える
+  if (!anyPlayable && !canBuyAnyUpgrade() && !canFuseAny(me.hand)) autoEndTurn(st.turn);
+}
+
+/** 今買える強化があるか */
+function canBuyAnyUpgrade() {
+  return Object.keys(upgrades ?? {}).some((id) => session.canBuyUpgrade(id)?.ok);
+}
+
+/** 手札に合成できる組（同じ種類の2枚で、合成先があるもの）があるか */
+function canFuseAny(hand) {
+  const seen = new Set();
+  for (const c of hand) {
+    if (!cards[c.type]?.fuseTo) continue;
+    if (seen.has(c.type)) return true;
+    seen.add(c.type);
+  }
+  return false;
+}
+
+/** やることがないときの自動のターン終了。少し待って、そのあいだに状態が変わっていなければ終える */
+let autoEndFor = null; // 自動のターン終了を待っている手番（同じ手番で何度も始めないように）
+async function autoEndTurn(turn) {
+  if (autoEndFor === turn) return;
+  autoEndFor = turn;
+  const s = session;
+  setMessage('出せるカードがないので、ターンを終えます');
+  await new Promise((r) => setTimeout(r, UI_CONFIG.timing.autoEndTurn * UI_CONFIG.speed));
+  if (s !== session || busy || sending) return;
+  const st = session.getState(viewerId);
+  if (!st || st.turn !== turn || st.phase !== 'main' || st.currentPlayer !== viewerId) return;
+  endTurn();
 }
 
 /** 手札の各カードが出せないなら、その理由（canPlayCard の結果。付加・防御はメインのあとも出せる） */

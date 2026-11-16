@@ -325,9 +325,11 @@ export class Renderer {
         fire: `城に${spirit.amount}ダメージ`, water: `城を${spirit.amount}回復`,
         wind: `速さ最低${spirit.amount}`, earth: `ダメージ−${spirit.amount}`,
       };
-      detail.textContent = `${effects[spirit.spirit] ?? ''}・あと${spirit.turns}回`;
-      badge.append(symbol, name, detail);
-      badge.title = this.cards[spirit.type]?.description ?? name.textContent;
+      // 盤面（道）にかぶらないよう、バッジは「印＋あとN回」だけの小さな形。名前と効果はタップ（title）で読む
+      detail.textContent = `あと${spirit.turns}`;
+      badge.append(symbol, detail);
+      badge.title = `${name.textContent}：${effects[spirit.spirit] ?? ''}・あと${spirit.turns}回`;
+      badge.setAttribute('aria-label', badge.title);
     }
   }
 
