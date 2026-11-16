@@ -177,3 +177,22 @@ ChatGPT（OpenAI の画像生成）で、`assets/STYLE.md` の共通指示文と
 | 騎兵 | scout, cavalry, paladin, dragon-knight |
 | 弓兵 | apprentice-archer, archer, longbowman, sniper, sky-archer |
 | 魔法使い | apprentice-mage, mage, sorcerer, archmage, sage |
+
+## レアリティ枠・ボタン（2026-11-16）
+
+OpenAIの画像生成ツールで生成したオリジナル素材シートから切り出し、既存PNGの寸法に合わせてリサイズ。`STYLE.md` の画風を参考に制作。元画像は引き渡しパッケージの `source/openai-rarity-ui-atlas.png`。
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `cards/frame-common.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `cards/frame-epic.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `cards/frame-legendary.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `cards/frame-rare.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `cards/frame-uncommon.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-blue.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-cream.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-green.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-orange.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-red.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-round.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/button-end-turn.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |

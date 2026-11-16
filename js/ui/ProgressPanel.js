@@ -1,5 +1,6 @@
 import { setRarities } from './rarity.js';
 import { cardArt } from './art.js';
+import { mountMiniCard } from './cardView.js';
 
 const make = (tag, cls, text) => {
   const el = document.createElement(tag);
@@ -92,7 +93,7 @@ export class ProgressPanel {
     for (const list of pairs) {
       const def = this.cards[list[0].type], next = this.cards[def.fuseTo];
       const btn = make('button', 'fusion-pair'); btn.type = 'button';
-      const art = make('div', 'fusion-art'); art.innerHTML = cardArt(def.fuseTo, 'blue', next.name);
+      const art = make('div', 'fusion-art'); mountMiniCard(art, def.fuseTo, next, this.rarities, { showName: false });
       const text = make('span', 'fusion-text');
       text.append(make('span', '', `${def.name} ×2 →`), make('b', '', next.name), make('small', '', this.rarities?.[next.rarity]?.name ?? next.rarity));
       btn.style.setProperty('--rarity', this.rarities?.[next.rarity]?.color ?? '#999');

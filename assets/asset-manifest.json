@@ -81,7 +81,7 @@
   "cards/frame-spell.png": "exec-c803fda6-6611-49d2-b256-c1987f2a5cc5.png",
   "cards/frame-weapon.png": "exec-c803fda6-6611-49d2-b256-c1987f2a5cc5.png",
   "cards/frame-defense.png": "exec-c803fda6-6611-49d2-b256-c1987f2a5cc5.png",
-  "ui/button-end-turn.png": "exec-c803fda6-6611-49d2-b256-c1987f2a5cc5.png",
+  "ui/button-end-turn.png": "openai-rarity-ui-atlas-2026-11-16.png",
   "ui/sign-hp.png": "exec-c803fda6-6611-49d2-b256-c1987f2a5cc5.png",
   "ui/banner-win.png": "exec-c803fda6-6611-49d2-b256-c1987f2a5cc5.png",
   "ui/panel-parchment.png": "exec-c803fda6-6611-49d2-b256-c1987f2a5cc5.png",
@@ -168,5 +168,16 @@
   "units/archmage-orange.png": "Original vector art, Codex, 2026-11-16",
   "units/sage-blue.png": "Original vector art, Codex, 2026-11-16",
   "cards/card-sage.png": "Original vector art, Codex, 2026-11-16",
-  "units/sage-orange.png": "Original vector art, Codex, 2026-11-16"
+  "units/sage-orange.png": "Original vector art, Codex, 2026-11-16",
+  "cards/frame-common.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "cards/frame-epic.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "cards/frame-legendary.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "cards/frame-rare.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "cards/frame-uncommon.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "ui/btn-blue.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "ui/btn-cream.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "ui/btn-green.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "ui/btn-orange.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "ui/btn-red.png": "openai-rarity-ui-atlas-2026-11-16.png",
+  "ui/btn-round.png": "openai-rarity-ui-atlas-2026-11-16.png"
 }
