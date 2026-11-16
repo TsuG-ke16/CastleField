@@ -105,3 +105,16 @@ OpenAIの画像生成ツールで、このプロジェクト用に新規生成�
 | `style-reference.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 
 文字は端末にインストールされた日本語フォントを使用し、フォントファイルの同梱・外部読込は行わない。
+
+## タイトル・ボタン・ロゴ・背景の作り直し（2026-11-16）
+
+ChatGPT（OpenAI の画像生成）で、`assets/STYLE.md` の共通指示文と `style-reference.png` を参照して生成したものを、人間が持ち込んだ。利用条件は上の「本番用PNG」と同じ（OpenAI規約・AI生成・独自のライセンスなし）。`bg/board.png` は 300KB 以下にするため 720×1280・40色に減らした。`btn-green.png`・`btn-blue.png`・`btn-red.png` は `btn-orange.png` の色相を変えて作った（画像の編集のみ）。ロゴ（`ui/logo.png`）は文字入り（STYLE.md の「文字は絵に入れない」の例外。人間に確認して使う）。
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `bg/board.png`（作り直し・道3本） | ChatGPT 画像生成 | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `bg/title.png` | ChatGPT 画像生成 | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `ui/logo.png` | ChatGPT 画像生成 | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `ui/btn-orange.png`・`ui/btn-cream.png`・`ui/btn-round.png`・`ui/tap-plate.png` | ChatGPT 画像生成 | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `ui/btn-green.png`・`ui/btn-blue.png`・`ui/btn-red.png` | `btn-orange.png` の色違い（Claude Code が色相を変えた） | 同上 | 2026-11-16 |
+| `ui/icon-mode-solo.png`・`ui/icon-mode-local.png`・`ui/icon-mode-online.png`・`ui/icon-help.png` | ChatGPT 画像生成 | 上記OpenAI規約・AI生成 | 2026-11-16 |

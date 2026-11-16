@@ -1287,3 +1287,86 @@ body { position: fixed; inset: 0; height: auto; }
   #hand { height: calc(var(--card-h) + 24px); padding-block: 10px; }
 }
 @media (max-height: 600px) { .title-pic { margin-top: 18px; } }
+
+/* ================================================================
+   ChatGPT で作った画像（ボタン・札・ロゴ・背景）を使う
+   ================================================================ */
+#scenery { background-image: url('../assets/bg/board.png'); background-position: center top; }
+
+/* ボタン：画像を9分割で伸ばす（両端の丸みはそのまま） */
+.plank-btn, .plank-btn.alt, .plank-btn.alt2 {
+  border: 4px solid transparent;
+  border-image: url('../assets/ui/btn-orange.png') 150 160 fill / 23px / 0 stretch;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, .5);
+  padding: 7px 18px 9px;
+}
+.plank-btn.alt { border-image-source: url('../assets/ui/btn-blue.png'); }
+.plank-btn.alt2 { border-image-source: url('../assets/ui/btn-green.png'); }
+.plank-btn:active { transform: translateY(2px); box-shadow: none; }
+@keyframes ready { 50% { transform: scale(1.07); filter: brightness(1.12) drop-shadow(0 0 8px #fff3a0); } }
+.small-btn {
+  border: 3px solid transparent;
+  border-image: url('../assets/ui/btn-cream.png') 140 150 fill / 16px / 0 stretch;
+  background: none;
+  box-shadow: none;
+  padding: 6px 16px 8px;
+}
+.small-btn:active { box-shadow: none; }
+.round-btn { border: 0; background: url('../assets/ui/btn-round.png') center / 100% 100% no-repeat; }
+
+/* タイトル */
+#title { background: url('../assets/bg/title.png') center / cover no-repeat, #8fd06a; }
+#title::before { display: none; }
+.title-logo { margin: 0 0 2px; width: min(94%, 360px); transform: none; filter: drop-shadow(0 6px 0 rgba(74, 46, 26, .25)); animation: pop-in .5s cubic-bezier(.3, 1.5, .5, 1) both; }
+.title-logo img { display: block; width: 100%; height: auto; }
+.title-pic { height: clamp(90px, 18vh, 150px); }
+#title.splash .title-pic { height: clamp(120px, 26vh, 210px); }
+#title-tap {
+  min-width: 250px;
+  padding: 10px 30px 12px;
+  border: 4px solid transparent;
+  border-image: url('../assets/ui/tap-plate.png') 110 130 fill / 18px 30px / 0 stretch;
+  background: none;
+  box-shadow: none;
+  font-size: 19px;
+}
+#title .plank-btn.big, #title .plank-btn.big.alt, #title .plank-btn.big.alt2 {
+  border: 4px solid transparent;
+  border-image: url('../assets/ui/btn-orange.png') 150 160 fill / 36px / 0 stretch;
+  background: none;
+  box-shadow: 0 8px 12px rgba(40, 20, 5, .22);
+  padding: 9px 18px 12px 14px;
+  color: #fff;
+  paint-order: stroke fill;
+  -webkit-text-stroke: 5px var(--ink);
+  text-shadow: none;
+}
+#title .plank-btn.big.alt { border-image-source: url('../assets/ui/btn-blue.png'); }
+#title .plank-btn.big.alt2 { border-image-source: url('../assets/ui/btn-green.png'); }
+#title .level[data-level="easy"] { border-image-source: url('../assets/ui/btn-green.png'); }
+#title .level[data-level="normal"] { border-image-source: url('../assets/ui/btn-blue.png'); }
+#title .level[data-level="hard"] { border-image-source: url('../assets/ui/btn-red.png'); }
+#title .plank-btn.big:active { transform: translateY(3px); box-shadow: none; }
+#title .plank-btn.big small { -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; font-size: 11px; text-shadow: none; }
+.mode-ic { flex: none; width: 52px; height: 52px; margin: -4px 0; border: 0; border-radius: 0; background: none; box-shadow: none; filter: drop-shadow(0 2px 0 rgba(74, 46, 26, .35)); }
+#title .plank-btn.big.level { display: block; }
+#title #title-help { display: inline-flex; align-items: center; gap: 6px; }
+.help-ic { width: 22px; height: 22px; }
+@media (max-height: 700px) {
+  #title .plank-btn.big, #title .plank-btn.big.alt, #title .plank-btn.big.alt2 { border-image-width: 28px; padding-block: 5px 8px; font-size: 18px; }
+  .mode-ic { width: 40px; height: 40px; }
+}
+/* 道は背景の絵にあるので、レーンの区切り線は出さない（出せる道を選ぶときの光だけ残す） */
+#road.multi .lane + .lane { border-left: 0; }
+#road.multi .lane:nth-child(odd) { background: none; }
+.small-btn { border-image-width: 18px; min-height: 36px; }
+#hand-toggle { border-image-width: 22px; min-width: 76px; }
+#title-levels { width: 100%; }
+@media (max-height: 640px) {
+  #title:not(.splash) .title-pic { display: none; }
+  .title-logo { width: min(74%, 270px); }
+  #title-main { gap: 8px; }
+}
