@@ -27,5 +27,6 @@
   "initialCoins": 5,
   "coinPerTurn": 1,
   "monsterAttackGrowth": 1,
-  "rewardLuckyChance": 0.15
+  "rewardLuckyChance": 0.15,
+  "roadLayout": "plaza"
 }

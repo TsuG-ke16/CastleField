@@ -119,12 +119,19 @@ const CHOICE_RULES = {
   winCondition: ['firstDestroy', 'lastStanding'],
   castleSpellRange: ['any', 'neighbors'],
   deckMode: ['shared', 'own'],
+  // 3人以上の道の形："ring"（となりの席どうし）か "plaza"（真ん中の広場を通って、だれの城へも行ける）。2人ならどちらも同じ
+  roadLayout: ['ring', 'plaza'],
 };
 /** 0以上1以下の数（整数でなくてよい）の省略できる項目 */
 const OPTIONAL_RATE_RULES = {
   monsterSpawnChance: 0, // 周回の始めに、魔物がいない道ごとに魔物が出る確率
   rewardLuckyChance: 0, // 魔物のごほうびが、1つ上のレアリティになる確率（ラッキー）
 };
+
+/** 広場の魔物の roadId */
+export const PLAZA = 'plaza';
+/** 兵士IDの番号（"s12" → 12）。先に出された兵士ほど小さい */
+const soldierNumber = (s) => Number(s.soldierId.slice(1));
 
 const ok = () => ({ ok: true });
 const fail = (reason) => ({ ok: false, reason });
@@ -166,6 +173,9 @@ export class Game {
       playerCount: 2,
       ...rules,
     };
+    /** 真ん中の広場を通る道か（3人以上で roadLayout が "plaza" のとき）。広場では道（レーン）は1本 */
+    this.plaza = this.rules.roadLayout === 'plaza' && this.rules.playerCount >= 3;
+    if (this.plaza) this.rules.laneCount = 1;
     this.castleDefs = castles;
     this.deckDefs = decks;
     this.rng = rng;
@@ -452,7 +462,10 @@ export class Game {
   rebuildRoads() {
     const alive = this.alivePlayerIds();
     const pairs = [];
-    if (alive.length === 2) pairs.push([alive[0], alive[1]]);
+    if (this.plaza) {
+      // 広場：だれの城へも行けるので、まだ負けていない2人ずつの組すべてに「通り道」がある（広場で重なっている）
+      for (let i = 0; i < alive.length; i++) for (let j = i + 1; j < alive.length; j++) pairs.push([alive[i], alive[j]]);
+    } else if (alive.length === 2) pairs.push([alive[0], alive[1]]);
     else if (alive.length > 2) {
       for (let i = 0; i < alive.length; i++) {
         const a = alive[i];
@@ -598,7 +611,7 @@ export class Game {
       // advanceAfterWin のときは、戦って相手だけが消えたら、残りの歩数でもう一度進む
       for (;;) {
         const from = soldier.position;
-        let opponent = this.findClashTarget(soldier, enemy);
+        let opponent = this.findClashTarget(soldier, player);
         monster = opponent ? null : this.findMonsterInRange(soldier, player);
         let moved = 0;
         const speed = this.speedOf(player, soldier);
@@ -607,7 +620,7 @@ export class Game {
           steps += 1;
           moved += 1;
           if (soldier.hasReachedCastle(laneLength)) break;
-          opponent = this.findClashTarget(soldier, enemy);
+          opponent = this.findClashTarget(soldier, player);
           if (!opponent) monster = this.findMonsterInRange(soldier, player);
         }
         reached = soldier.hasReachedCastle(laneLength);
@@ -622,8 +635,8 @@ export class Game {
           });
         }
         if (!opponent) break;
-        this.fight(player, soldier, enemy, opponent);
-        const keepGoing = this.rules.advanceAfterWin && opponent.isDead && !soldier.isDead && steps < speed;
+        this.fight(player, soldier, opponent.owner, opponent.soldier);
+        const keepGoing = this.rules.advanceAfterWin && opponent.soldier.isDead && !soldier.isDead && steps < speed;
         if (!keepGoing) break;
       }
       if (monster) {
@@ -691,19 +704,59 @@ export class Game {
   }
 
   /**
-   * soldier の「同じマスか1つ先のマス」にいる相手の兵士（同じ道の上だけ）のうち、先に出された1体（いなければ null）。
-   * enemy.soldiers は出した順に並んでいるので、最初に見つかったものが先に出された兵士。
+   * owner の兵士 soldier の「同じマスか1つ先のマス」にいて、戦う相手の兵士のうち、先に出された1体。
+   * いなければ null。見つかったら { owner, soldier }（相手の兵士とその持ち主）。
+   *   となりの道（ring）：道の向こうの人の兵士で、同じ道の上にいるもの
+   *   広場（plaza）：自分の方に向かってくる兵士（相手が自分の城を狙っている）か、自分が狙っている人の兵士。
+   *                  それ以外の人の兵士は関係ないので、同じマスにいても戦わずにすれちがう
    */
-  findClashTarget(soldier, enemy) {
+  findClashTarget(soldier, owner) {
     const { laneLength } = this.rules;
     const here = soldier.position;
-    return (
-      enemy.soldiers.find((e) => {
+    if (!this.plaza) {
+      const enemy = this.players[soldier.targetId];
+      const found = enemy.soldiers.find((e) => {
         if (e.roadId !== soldier.roadId) return false;
         const q = laneLength - 1 - e.position; // 相手の兵士の位置を、soldier から数えた位置に直す
         return q === here || q === here + 1;
-      }) || null
-    );
+      });
+      return found ? { owner: enemy, soldier: found } : null;
+    }
+    let best = null;
+    for (const id of this.alivePlayerIds()) {
+      if (id === owner.id) continue;
+      const other = this.players[id];
+      for (const e of other.soldiers) {
+        if (e.targetId !== owner.id && soldier.targetId !== id) continue;
+        const q = this.coordOnPath(owner.id, soldier.targetId, this.placeOf(id, e));
+        if (q !== here && q !== here + 1) continue;
+        if (!best || soldierNumber(e) < soldierNumber(best.soldier)) best = { owner: other, soldier: e };
+      }
+    }
+    return best;
+  }
+
+  /**
+   * 広場のとき、ownerId の兵士がいる場所。{ at: "spoke", playerId, square }（playerId の城から広場への道。
+   * square は その城から数えたマス）か { at: "plaza" }。城に着いていれば null
+   */
+  placeOf(ownerId, soldier) {
+    const { laneLength } = this.rules;
+    const mid = this.middleSquare();
+    const p = soldier.position;
+    if (p >= laneLength) return null;
+    if (p < mid) return { at: 'spoke', playerId: ownerId, square: p };
+    if (p === mid) return { at: 'plaza' };
+    return { at: 'spoke', playerId: soldier.targetId, square: laneLength - 1 - p };
+  }
+
+  /** 場所 place を、from の城から to の城への通り道の上の位置（from から数えたマス）に直す。通り道の上になければ null */
+  coordOnPath(from, to, place) {
+    if (!place) return null;
+    if (place.at === 'plaza') return this.middleSquare();
+    if (place.playerId === from) return place.square;
+    if (place.playerId === to) return this.rules.laneLength - 1 - place.square;
+    return null;
   }
 
   // ================= 魔物 =================
@@ -718,6 +771,8 @@ export class Game {
     const road = this.findRoad(soldier.roadId);
     return (
       this.monsters.find((m) => {
+        // 広場の魔物は、どの通り道からも真ん中のマスにいる
+        if (m.roadId === PLAZA) return soldier.position === m.square || soldier.position + 1 === m.square;
         if (m.roadId !== road.roadId) return false;
         const q = road.toPosition(owner.id, m.square);
         return q === soldier.position || q === soldier.position + 1;
@@ -735,16 +790,29 @@ export class Game {
       m.attackIn -= 1;
       if (m.attackIn > 0) continue;
       m.attackIn = m.def.attackEvery;
-      const road = this.findRoad(m.roadId);
-      const victim = this.players[road.players[Math.floor(this.rng() * 2)]];
-      const before = victim.castle.hp;
-      // 放置するほど攻撃が重くなる
-      victim.castle.takeDamage(m.nextCastleAttack);
+      // 攻める城：道の両はしのどちらか1つ。広場の魔物は、人数の半分（切り上げ）の城をランダムに選ぶ（2人のときの「2人に1人」と同じ割合）
+      let victims;
+      if (m.roadId === PLAZA) {
+        const pool = this.alivePlayerIds();
+        victims = [];
+        for (let k = Math.ceil(pool.length / 2); k > 0 && pool.length > 0; k--) victims.push(pool.splice(Math.floor(this.rng() * pool.length), 1)[0]);
+        victims.sort((a, b) => this.playerOrder.indexOf(a) - this.playerOrder.indexOf(b));
+      } else {
+        const road = this.findRoad(m.roadId);
+        victims = [road.players[Math.floor(this.rng() * 2)]];
+      }
+      // 放置するほど攻撃が重くなる（同じ回に攻める城には、同じダメージ）
+      const damage = m.nextCastleAttack;
       m.attackCount += 1;
-      this.emit('monsterAttackedCastle', {
-        monsterId: m.monsterId, playerId: victim.id, amount: before - victim.castle.hp, hp: victim.castle.hp,
-      });
-      if (victim.castle.isDestroyed) return;
+      for (const id of victims) {
+        const victim = this.players[id];
+        const before = victim.castle.hp;
+        victim.castle.takeDamage(damage);
+        this.emit('monsterAttackedCastle', {
+          monsterId: m.monsterId, playerId: victim.id, amount: before - victim.castle.hp, hp: victim.castle.hp,
+        });
+        if (victim.castle.isDestroyed) return;
+      }
     }
   }
 
@@ -753,11 +821,11 @@ export class Game {
     if (!this.monsterDefs || this.round < this.rules.monsterFirstRound || this.rules.monsterSpawnChance === 0) return;
     const types = Object.keys(this.monsterDefs);
     if (types.length === 0) return;
-    // 魔物は、同じ2人の間の道すべてで1体まで（道が何本あっても、出るのは1本だけ）
-    const pairIds = [...new Set(this.roads.map((r) => r.pairId))];
+    // 魔物は、同じ2人の間の道すべてで1体まで（道が何本あっても、出るのは1本だけ）。広場なら広場に1体だけ
+    const pairIds = this.plaza ? [PLAZA] : [...new Set(this.roads.map((r) => r.pairId))];
     for (const pairId of pairIds) {
-      const lanes = this.roads.filter((r) => r.pairId === pairId);
-      if (this.monsters.some((m) => lanes.some((r) => r.roadId === m.roadId))) continue;
+      const lanes = this.plaza ? [] : this.roads.filter((r) => r.pairId === pairId);
+      if (this.plaza ? this.monsters.length > 0 : this.monsters.some((m) => lanes.some((r) => r.roadId === m.roadId))) continue;
       // 魔物を倒したところには、しばらく出ない（魔物が道をふさぎ続けないように）
       if ((this.monsterCooldown.get(pairId) ?? 0) > this.round) continue;
       if (this.rng() >= this.rules.monsterSpawnChance) continue;
@@ -766,12 +834,14 @@ export class Game {
       const type = types.find((t) => (r -= this.monsterDefs[t].weight) < 0) ?? types.at(-1);
       const monsterId = `m${String(this.nextMonsterNumber++).padStart(2, '0')}`;
       // 出る道はランダム（道が1本のときは乱数を使わない）
-      const road = lanes.length === 1 ? lanes[0] : lanes[Math.floor(this.rng() * lanes.length)];
-      const m = new Monster(monsterId, type, this.monsterDefs[type], road.roadId, this.middleSquare());
+      const roadId = this.plaza ? PLAZA : (lanes.length === 1 ? lanes[0] : lanes[Math.floor(this.rng() * lanes.length)]).roadId;
+      const m = new Monster(monsterId, type, this.monsterDefs[type], roadId, this.middleSquare());
       m.growth = this.rules.monsterAttackGrowth;
+      // 広場の魔物の HP は人数に比例（2人のときの HP が基準。出た時点の残りの人数で決める）
+      if (this.plaza) m.maxHp = m.hp = Math.max(1, Math.round((m.hp * this.alivePlayerIds().length) / 2));
       this.monsters.push(m);
       this.emit('monsterAppeared', {
-        monsterId, type, roadId: road.roadId, square: m.square, hp: m.hp, attack: m.attack, element: m.element,
+        monsterId, type, roadId, square: m.square, hp: m.hp, attack: m.attack, element: m.element,
       });
     }
   }
@@ -785,7 +855,8 @@ export class Game {
   defeatMonsterIfDead(monster, playerId) {
     if (!monster.isDead) return;
     this.monsters = this.monsters.filter((m) => m !== monster);
-    this.monsterCooldown.set(this.findRoad(monster.roadId).pairId, this.round + this.rules.monsterCooldownRounds + 1);
+    const slot = monster.roadId === PLAZA ? PLAZA : this.findRoad(monster.roadId).pairId;
+    this.monsterCooldown.set(slot, this.round + this.rules.monsterCooldownRounds + 1);
     const { reward } = monster.def;
     const baseRarity = monster.def.rewardRarity ?? null;
     // ラッキー：rewardLuckyChance の確率で、1つ上のレアリティが出る（確率が0のときは乱数を使わない）
@@ -1034,8 +1105,8 @@ export class Game {
         return {
           targets: [
             ...playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.opponentsOf(player.id)),
-            // 魔物は、自分の道（自分が両はしのどちらか）にいるものだけ
-            ...this.monsters.filter((m) => this.findRoad(m.roadId).has(player.id)).map((m) => ({ monsterId: m.monsterId })),
+            // 魔物は、自分の道（自分が両はしのどちらか）にいるものだけ。広場の魔物はだれからでも狙える
+            ...this.monsters.filter((m) => m.roadId === PLAZA || this.findRoad(m.roadId).has(player.id)).map((m) => ({ monsterId: m.monsterId })),
           ],
           reason: '相手がいません',
         };
@@ -1736,8 +1807,14 @@ export class Game {
     for (const id of this.playerOrder) {
       const p = this.players[id];
       const pile = this.pileOf(id);
+      const base = p.toState(id === viewerId);
+      // 広場のとき、兵士がいる場所（どの城の道か・広場か）。となりの道のときは null
+      for (const st of base.soldiers) {
+        const soldier = p.soldiers.find((x) => x.soldierId === st.soldierId);
+        st.place = this.plaza ? this.placeOf(id, soldier) : null;
+      }
       players[id] = {
-        ...p.toState(id === viewerId),
+        ...base,
         castleType: p.castleType,
         maxHand: p.maxHand,
         deckId: p.deckId ?? null,
@@ -1750,6 +1827,7 @@ export class Game {
     const topPile = own ? (this.piles.has(viewerId) ? this.pileOf(viewerId) : null) : this.pileOf(this.playerOrder[0]);
     return {
       deckMode: this.rules.deckMode,
+      layout: this.plaza ? 'plaza' : 'lanes',
       playerOrder: [...this.playerOrder],
       round: this.round,
       monsters: this.monsters.map((m) => m.toState()),
