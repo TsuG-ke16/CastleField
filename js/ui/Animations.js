@@ -945,9 +945,8 @@ export class Animations {
     sound.play('hit', 0.6);
     this.sparks(this.centerOf(el), { count: 14, color: '#ffcf3f', spread: 70, size: 10 });
     const who = playerId === this.renderer.viewerId ? 'あなた' : '相手';
-    this.banner(rewardRarity ? `${lucky ? 'ラッキー！ ' : 'とどめ！ '}${who}に${this.rarities?.[rewardRarity]?.name ?? rewardRarity}カード！` : `とどめ！ ${who}に${ICON.coin}${reward}`, UI_CONFIG.timing.monsterDefeat, lucky ? 'reward lucky' : 'reward');
     await this.hitstop(UI_CONFIG.monsterHit.hitstop * 2);
-    await this.delay(UI_CONFIG.timing.monsterDefeat * 0.6);
+    await this.banner(rewardRarity ? `${lucky ? 'ラッキー！ ' : 'とどめ！ '}${who}に${this.rarities?.[rewardRarity]?.name ?? rewardRarity}カード！` : `とどめ！ ${who}に${ICON.coin}${reward}`, UI_CONFIG.timing.reward, lucky ? 'reward lucky' : 'reward');
     this.renderer.removeMonster(monsterId);
   }
 
