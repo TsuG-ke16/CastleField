@@ -266,7 +266,7 @@ export class Renderer {
       const kind=this.players[id]?.castleType;
       const kindName=this.castleDefs[kind]?.name??'';
       castle.dataset.castleType=kind??'standard';
-      castle.querySelector('.castle-label').textContent = `席${model.playerOrder.indexOf(id)+1} ${members.includes(this.viewerId) ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
+      castle.querySelector('.castle-label').textContent = `席${model.playerOrder.indexOf(id)+1} ${members.includes(this.viewerId) && label !== 'あなた' ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
       castle.setAttribute('aria-label',`席${model.playerOrder.indexOf(id)+1}、${label}、${kindName}`);
       castle.querySelector('.castle-label').title = label;
       castle.classList.toggle('eliminated', Boolean(this.players[id]?.eliminated));

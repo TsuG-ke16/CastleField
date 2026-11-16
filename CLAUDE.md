@@ -91,7 +91,8 @@ sw.js              … サービスワーカー（オフライン。PWA。UI担�
 manifest.webmanifest … ホーム画面に追加するときの情報（UI担当）
 README.md          … このリポジトリの入口（遊び方・起動・フォルダ）
 .gitignore
-css/               … 画面のスタイル。style.css が土台、theme.css・step5.css などが上に重なる
+css/               … 画面のスタイル。style.css が土台、theme.css・step5.css などが上に重なる。
+                     unify.css は最後に読み、ボタン・札・ダイアログ・入力部品を「木と羊皮紙、太いこげ茶の枠」にそろえる（新しい部品はここの決まりに従う）
 js/
   main.js          … 起動。Game と UI をつなぐ（UI担当）
   game/            … ゲームロジック（DOMを使わない）
@@ -113,6 +114,7 @@ js/
     Tutorial.js・HelpView.js・CardGuide.js … 案内・遊び方・図鑑
     Settings.js・Sound.js・Music.js … 設定・効果音・BGM
     MatchStats.js  … 結果のまとめと戦績
+    badges.js      … カードの左上（種類）・右上（レアリティ）のバッジの絵（手描きのSVG。画像生成AIの絵に差しかえてよい）
     art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
     precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
 data/

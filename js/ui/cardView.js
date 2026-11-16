@@ -1,5 +1,6 @@
 import { cardArt, icon } from './art.js';
-import { frameAsset, kindIcon, rarityMark } from './cardFrame.js';
+import { frameAsset, kindIcon } from './cardFrame.js';
+import { badgeKind, badgeRarity } from './badges.js';
 
 export function mountMiniCard(root, type, def, rarities, { showName = true } = {}) {
   const path = frameAsset(def, rarities);
@@ -19,11 +20,12 @@ export function mountMiniCard(root, type, def, rarities, { showName = true } = {
   illustration.innerHTML = cardArt(type, 'blue', def?.name ?? '');
   const kind = document.createElement('span');
   kind.className = 'mini-card-kind';
-  kind.innerHTML = icon(kindIcon(def?.kind));
+  kind.innerHTML = badgeKind(def?.kind) || icon(kindIcon(def?.kind));
   kind.title = def?.kind ?? '';
   const rarity = document.createElement('span');
   rarity.className = 'mini-card-rarity';
-  rarity.textContent = rarityMark(def?.rarity);
+  rarity.innerHTML = badgeRarity(def?.rarity, rarities?.[def?.rarity]?.color);
+  rarity.title = rarities?.[def?.rarity]?.name ?? '';
   rarity.style.setProperty('--rarity', rarities?.[def?.rarity]?.color ?? '#9aa3ad');
   const banner = document.createElement('span');
   banner.className = 'mini-card-name';

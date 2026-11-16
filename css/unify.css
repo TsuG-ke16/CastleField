@@ -1,0 +1,146 @@
+/* ボタン・チップ・カードのバッジを、ひとつの見た目にそろえる。
+   このゲームの見た目は「木の板と羊皮紙、太いこげ茶の輪郭線」（assets/STYLE.md。ロゴ・カードの枠・盤面・
+   「よわい／ふつう／つよい」ボタンがその世界）。後から足された平たい白・緑の部品と、
+   サイズのばらばらな小さな板ボタンが浮いていたので、いちばん最後に読んで上書きする。
+   色は style.css の :root（--ink / --paper / --wood …）を使う。新しいボタンも、ここの決まりに従う：
+   - 主な操作 …… .plank-btn（オレンジ・青・緑の木の板。assets/ui/btn-*.png）
+   - 小さな操作 …… .small-btn（クリームの板。高さ 40px 以上）
+   - 数や状態の表示 …… .chip（羊皮紙の札。太いこげ茶の枠）  */
+
+/* ---- カードの左上（種類）・右上（レアリティ）のバッジ（js/ui/badges.js の絵）---- */
+.card.has-frame .card-kind, .card.has-frame .card-rarity, .mini-card-kind, .mini-card-rarity { display: grid; place-items: center; }
+.badge-svg { display: block; width: 122%; height: 122%; max-width: none; margin: auto; filter: drop-shadow(0 1px 0 rgba(74, 46, 26, .35)); }
+
+/* ---- チップ（山札・捨て札・手札の数・コインなど）：羊皮紙の札 ---- */
+.chip {
+  border: 2px solid var(--ink);
+  background: linear-gradient(var(--paper), #f3deae);
+  color: var(--ink);
+  box-shadow: 0 2px 0 rgba(74, 46, 26, .3);
+}
+.turn-info { background: var(--ink); color: #fff7e0; }
+
+/* ---- 小さな板ボタン：どこでも同じ大きさ・同じ文字 ---- */
+.small-btn { min-height: 40px; padding: 6px 16px; font-size: 14px; font-weight: 800; color: #4c3623; }
+#hand-toggle { min-height: 40px; }
+#fusion-open { min-width: 64px; }
+
+/* ---- 強化ボタン（コイン）：クリームの板にして、ほかの小さなボタンとそろえる ---- */
+#upgrade-open {
+  background: url('../assets/ui/btn-cream.png') center / 100% 100% no-repeat;
+  border: 0; box-shadow: none; border-radius: 0;
+  color: #4c3623; padding: 5px 16px;
+}
+
+/* ---- タイトル：羊皮紙の板に、木の板ボタン ---- */
+.title-choices {
+  background: linear-gradient(#fdf3d9, #f1dca8);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 20px;
+  box-shadow: 0 5px 0 var(--wood-d), 0 14px 26px rgba(74, 46, 26, .22);
+}
+.choices-eyebrow { color: var(--ink); }
+.plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 {
+  background-color: transparent;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  border: 0; border-radius: 0; box-shadow: none;
+  color: #4c3623;
+  min-height: 64px;
+  padding-inline: 22px;
+}
+.plank-btn.mode-choice { background-image: url('../assets/ui/btn-orange.png'); }
+.plank-btn.mode-choice.alt { background-image: url('../assets/ui/btn-blue.png'); }
+.plank-btn.mode-choice.alt2 { background-image: url('../assets/ui/btn-green.png'); }
+.mode-choice small { color: #6b4a2a; font-weight: 700; }
+.mode-symbol { color: var(--ink); }
+/* 緑・青の板は暗いので、文字は白にこげ茶のふちどり（オレンジの板は、こげ茶の文字のまま） */
+.plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { color: #fff; text-shadow: -1px 0 var(--ink), 1px 0 var(--ink), 0 -1px var(--ink), 0 1px var(--ink), 0 2px 0 var(--ink); }
+.mode-choice.alt small, .mode-choice.alt2 small { color: #fff4d6; font-weight: 800; }
+.mode-choice.alt .mode-symbol, .mode-choice.alt2 .mode-symbol { color: #fff; filter: drop-shadow(0 1px 0 var(--ink)); }
+.plank-btn.mode-choice { padding-left: 26px; }
+.mode-symbol svg { stroke-width: 2.2; }
+
+/* 下の小さなボタンは、はみ出さずに折り返して、中央にならべる */
+#title-main { display: flex; flex-direction: row; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px; }
+#title-main > .plank-btn { flex: 0 0 100%; }
+#title-main > p { flex: 0 0 100%; text-align: center; margin: 2px 0 0; color: var(--ink); }
+#title-record { font-weight: 800; }
+#offline-status { color: #6b4a2a; }
+#title-main > .small-btn { flex: 0 0 auto; }
+#title-catalog { color: #4c3623; font-size: 14px; }
+#title-help { background-image: none; border: 0; box-shadow: none; min-height: 32px; color: #6b4a2a; text-decoration: underline; }
+
+/* ---- 城の名札・案内の帯：羊皮紙に太いこげ茶の枠 ---- */
+.castle-label {
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  background: linear-gradient(var(--paper), #f3deae);
+  color: var(--ink);
+  box-shadow: 0 2px 0 rgba(74, 46, 26, .3);
+  font-weight: 900;
+}
+#tutorial {
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  background: linear-gradient(var(--paper), #f1dca8);
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--wood-d);
+}
+#tutorial button, .tutorial-skip { min-height: 40px; }
+.mode-choice small { color: #4a2e1a; }
+
+/* ---- ダイアログ（設定・図鑑・遊び方・結果など）：羊皮紙に太いこげ茶の枠 ---- */
+.screen.dim .parchment {
+  background: linear-gradient(var(--paper), #f1dca8);
+  border: 3px solid var(--ink);
+  border-radius: 18px;
+  color: var(--ink);
+  box-shadow: 0 5px 0 var(--wood-d), 0 16px 30px rgba(50, 28, 12, .35);
+}
+
+/* ---- 入力部品：標準の見た目をやめて、木と羊皮紙の部品にする ---- */
+select, input[type="text"], input:not([type]) {
+  appearance: none; -webkit-appearance: none;
+  min-height: 40px; padding: 6px 12px;
+  border: 2px solid var(--ink); border-radius: 10px;
+  background: #fffaf0; color: var(--ink);
+  font: inherit; font-weight: 800;
+  box-shadow: inset 0 2px 0 rgba(74, 46, 26, .12);
+}
+select {
+  padding-right: 34px;
+  background: #fffaf0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3 6l5 5 5-5' fill='none' stroke='%234a2e1a' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") right 10px center / 16px no-repeat;
+}
+select:focus-visible, input:focus-visible { outline: 3px solid var(--gold-d); outline-offset: 2px; }
+
+/* つまみ（スライダー）：木のみぞに、金のつまみ */
+input[type="range"] { appearance: none; -webkit-appearance: none; background: transparent; height: 32px; padding: 0; border: 0; box-shadow: none; }
+input[type="range"]::-webkit-slider-runnable-track { height: 12px; border: 2px solid var(--ink); border-radius: 8px; background: linear-gradient(var(--wood-d), var(--wood)); }
+input[type="range"]::-moz-range-track { height: 12px; border: 2px solid var(--ink); border-radius: 8px; background: linear-gradient(var(--wood-d), var(--wood)); }
+input[type="range"]::-webkit-slider-thumb { appearance: none; -webkit-appearance: none; width: 28px; height: 28px; margin-top: -10px; border: 3px solid var(--ink); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0, var(--gold) 45%, var(--gold-d)); box-shadow: 0 2px 0 rgba(74, 46, 26, .4); }
+input[type="range"]::-moz-range-thumb { width: 22px; height: 22px; border: 3px solid var(--ink); border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0, var(--gold) 45%, var(--gold-d)); box-shadow: 0 2px 0 rgba(74, 46, 26, .4); }
+
+/* チェックボックス：こげ茶の枠の箱。入ると金色にチェック */
+input[type="checkbox"] {
+  appearance: none; -webkit-appearance: none;
+  width: 28px; height: 28px; flex-shrink: 0;
+  border: 3px solid var(--ink); border-radius: 8px;
+  background: #fffaf0;
+  box-shadow: inset 0 2px 0 rgba(74, 46, 26, .12);
+}
+input[type="checkbox"]:checked {
+  background: #ffd35a url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M4 10.5l4 4 8-9' fill='none' stroke='%234a2e1a' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 80% no-repeat;
+}
+
+/* 設定の項目 */
+.settings-box h2 { color: var(--ink); }
+.settings-box label { font-weight: 800; }
+.settings-box output { font-variant-numeric: tabular-nums; font-weight: 900; }
+
+/* 図鑑・店の切りかえ（タブ）：小さな板ボタンと同じ札 */
+.guide-tabs > button, .shop-tabs > button { min-height: 36px; font-weight: 800; }
+.settings-box label:has(input[type="checkbox"]) { flex-wrap: nowrap; gap: 12px; }
+.settings-box .plank-btn, .settings-box .small-btn { display: block; min-width: 150px; min-height: 48px; margin: 18px auto 4px; }

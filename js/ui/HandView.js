@@ -10,7 +10,8 @@ import { groupStarts, sortHand } from './handOrder.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
-import { frameAsset, kindIcon, rarityMark } from './cardFrame.js';
+import { frameAsset, kindIcon } from './cardFrame.js';
+import { badgeKind, badgeRarity } from './badges.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -173,7 +174,7 @@ export class HandView {
       el.style.setProperty('--rarity', this.rarities[def.rarity].color);
       const badge = document.createElement('span');
       badge.className = 'card-rarity';
-      badge.textContent = rarityMark(def.rarity);
+      badge.innerHTML = badgeRarity(def.rarity, this.rarities[def.rarity].color);
       badge.title = this.rarities[def.rarity].name;
       badge.setAttribute('aria-label', this.rarities[def.rarity].name);
       el.appendChild(badge);
@@ -190,7 +191,7 @@ export class HandView {
     }
     const kind = el.querySelector('.card-kind');
     if (framePath) {
-      kind.innerHTML = icon(kindIcon(def.kind));
+      kind.innerHTML = badgeKind(def.kind) || icon(kindIcon(def.kind));
       kind.title = KIND_LABEL[def.kind] ?? '';
     } else kind.textContent = KIND_LABEL[def.kind] ?? '';
     el.querySelector('.card-art').innerHTML = cardArt(card.type, this.color ?? 'blue', def.name ?? '');
