@@ -267,6 +267,29 @@ const CARD_ART = {
   bigShield: () => bg('#b7cdea', '#dbe8f7') +
     `<path d="M50 4 Q72 16 94 16 Q96 66 50 96 Q4 66 6 16 Q28 16 50 4 Z" fill="#4f82c4" ${S} stroke-width="4"/>` +
     `<path d="M50 20 l8 17 l18 2 l-14 12 l5 18 l-17 -10 l-17 10 l5 -18 l-14 -12 l18 -2 Z" fill="#ffd93b" ${S} stroke-width="3"/>`,
+  // ゴッドフィールド風の新カード（仮の絵）
+  reflect: () => bg('#d8ecfb', '#f0f8ff') +
+    `<circle cx="50" cy="50" r="34" fill="#e6f4ff" ${S} stroke-width="4"/><circle cx="50" cy="50" r="22" fill="#bfe3fb" ${S} stroke-width="3"/>` +
+    `<path d="M30 70 L72 28 M72 28 H56 M72 28 V44" fill="none" ${S} stroke-width="7"/><path d="M30 70 L72 28 M72 28 H56 M72 28 V44" fill="none" stroke="#ffd93b" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  decoy: () => bg('#efe0c8', '#faf1e0') +
+    `<path d="M50 14 Q70 14 70 34 Q70 48 58 52 L64 90 H36 L42 52 Q30 48 30 34 Q30 14 50 14 Z" fill="#e8c88f" ${S} stroke-width="4"/>` +
+    `<ellipse cx="43" cy="34" rx="2.6" ry="3.6" fill="${INK}"/><ellipse cx="57" cy="34" rx="2.6" ry="3.6" fill="${INK}"/><path d="M44 44 q6 4 12 0" fill="none" ${S} stroke-width="2.5"/>` +
+    `<path d="M22 70 L38 62 M78 70 L62 62" ${S} stroke-width="5"/>`,
+  blessing: () => bg('#fff3c4', '#fffbe6') +
+    `<circle cx="50" cy="50" r="30" fill="#fff3a8" ${S} stroke-width="4"/>` +
+    `<g stroke="#ffcf3f" stroke-width="5" stroke-linecap="round"><path d="M50 4 V16 M50 84 V96 M4 50 H16 M84 50 H96 M18 18 L26 26 M74 74 L82 82 M82 18 L74 26 M26 74 L18 82"/></g>` +
+    `<path d="M50 36 l4 9 l10 1 l-8 7 l3 10 l-9 -6 l-9 6 l3 -10 l-8 -7 l10 -1 Z" fill="#fff" ${S} stroke-width="3"/>`,
+  prayer: () => bg('#e6d6f5', '#f5ecfc') +
+    `<path d="M50 90 V60 M36 60 Q36 36 50 28 Q64 36 64 60 Z" fill="#f2d2a8" ${S} stroke-width="4"/>` +
+    `<path d="M40 56 L50 70 L60 56" fill="none" ${S} stroke-width="4"/>` +
+    `<text x="50" y="30" font-size="40" font-weight="900" text-anchor="middle" fill="#ffd93b" stroke="${INK}" stroke-width="4" paint-order="stroke">?</text>` +
+    `<circle cx="20" cy="30" r="4" fill="#ffd93b" ${S} stroke-width="2"/><circle cx="82" cy="40" r="3.5" fill="#ffd93b" ${S} stroke-width="2"/>`,
+  thief: () => bg('#d5d8e3', '#eceef5') +
+    `<path d="M16 60 Q16 22 50 22 Q84 22 84 60 Z" fill="#4a4f66" ${S} stroke-width="4"/>` +
+    `<rect x="22" y="40" width="56" height="16" rx="8" fill="#f2d2a8" ${S} stroke-width="3.5"/>` +
+    `<ellipse cx="38" cy="48" rx="3.4" ry="3" fill="${INK}"/><ellipse cx="62" cy="48" rx="3.4" ry="3" fill="${INK}"/>` +
+    `<rect x="30" y="64" width="24" height="30" rx="4" fill="#b0703c" ${S} stroke-width="3.5" transform="rotate(-12 42 80)"/>` +
+    `<rect x="52" y="62" width="24" height="30" rx="4" fill="#4da3e8" ${S} stroke-width="3.5" transform="rotate(10 64 78)"/>`,
   sandbag: () => bg('#eadfc6', '#f8f1df') +
     `<path d="M8 86 Q6 66 22 62 H46 Q62 66 60 86 Z" fill="#d7bf8a" ${S} stroke-width="4"/>` +
     `<path d="M40 62 Q38 42 54 38 H76 Q92 42 90 62 Z" fill="#c9ae74" ${S} stroke-width="4"/>` +

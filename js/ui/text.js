@@ -26,6 +26,7 @@ export const KIND_LABEL = {
 export function slotNote(def) {
   if (!def) return '';
   if (def.kind === 'weapon') return '付加：何枚でも出せる';
+  if (def.effect === 'reflectSpell' || def.effect === 'nullifySoldier') return '防御：攻撃を受けたときだけ出せる';
   if (def.kind === 'defense') return '防御：何枚でも出せる';
   return 'メイン：1ターンに1枚';
 }

@@ -794,7 +794,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 反射・身代わりは、`rules.defenseReaction` が `true` のときの「攻撃を受けたとき」にだけ出せる（`defend()`）。出すと防御はそこで終わり、攻撃は反射／無効になる。自分のターンに `canPlayCard` で調べると「攻撃を受けたときにだけ使えます」
 - 神頼みでタダで出したカードの `cardPlayed` には `free: true` が付く。盗賊で奪ったカードの ID は `cardStolen` で全員に見えるが、種類は奪った本人にしか見えない
 - 確かめたこと（`node tests/sim/run.js --games 300` / `--games 400`）：全組み合わせが決着。smart 同士は平均62手番、CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 16%・defensive 41%・smart 61%）。CPU の `smart`（`guard` も）は新カードを使う：反射・身代わりは城壁より先に出す。ほかに出すものがないとき、相手の手札が3枚以上なら盗賊、自分の手札が4枚以上なら天の恵み、最後に神頼み（先攻のとき random に勝つ割合は smart 78%）
-- 画面の変更が必要（UI担当へ。ここでは触っていない）：新カードの絵と枠（`js/ui/art.js`）、反射・身代わりが出せるときに光らせる、`spellReflected` / `soldierDecoyed` / `cardStolen` の演出、手札が5枚まで補充されることの表示
+- 画面（人間に確認して、同じ変更で入れた）：新カードの仮の絵（`js/ui/art.js`）、`spellReflected` / `soldierDecoyed` / `cardStolen` の演出と、神頼み（`cardPlayed` の `free: true`）の扱い（`js/ui/Animations.js`）、反射・身代わりの説明（`js/ui/text.js`）。出せるカードを光らせるのは、防御カード全般と同じしくみ（`canDefend`）。専用の絵ができたら `art.js` を差しかえる。UI 担当のレビューを受けること
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
