@@ -1,0 +1,27 @@
+{
+  "common": {
+    "name": "コモン",
+    "dropRate": 50,
+    "color": "#9aa3ad"
+  },
+  "uncommon": {
+    "name": "アンコモン",
+    "dropRate": 28,
+    "color": "#4caf6a"
+  },
+  "rare": {
+    "name": "レア",
+    "dropRate": 14,
+    "color": "#3d7fe0"
+  },
+  "epic": {
+    "name": "エピック",
+    "dropRate": 6,
+    "color": "#9b59d0"
+  },
+  "legendary": {
+    "name": "レジェンド",
+    "dropRate": 2,
+    "color": "#f0a020"
+  }
+}

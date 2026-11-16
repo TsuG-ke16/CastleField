@@ -6,6 +6,8 @@
 // 真ん中のマス（floor(laneLength / 2)）は魔物の居場所で、魔物はそのレーンのまん中に置く。
 // レーンは roadId の「#番号」で決まる（番号なしなら1本目）。
 
+import { UI_CONFIG } from './config.js';
+import { RARITY_NAMES } from './rarity.js';
 import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
 import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf } from './art.js';
@@ -222,6 +224,7 @@ export class Renderer {
     }
     this.syncSoldiers(model);
     this.syncMonsters(model);
+    this.updateThreatWarnings();
   }
 
   setTurnInfo(turn, round) {
@@ -266,6 +269,7 @@ export class Renderer {
     const castle = this.castleEl(playerId);
     if (max) castle.dataset.max = String(max);
     const maxHp = Number(castle.dataset.max) || this.rules.castleMaxHp;
+    castle.dataset.hp = String(hp);
     const ratio = Math.max(0, Math.min(1, hp / maxHp));
     const fill = castle.querySelector('.hp-fill');
     const lag = castle.querySelector('.hp-lag');
@@ -290,6 +294,7 @@ export class Renderer {
     castle.dataset.damage = damage;
     castle.querySelector('.hp-value').textContent = String(Math.max(0, hp));
     castle.querySelector('.hp-max').textContent = `/${maxHp}`;
+    this.updateThreatWarnings();
   }
 
   /** 城壁（armor）の表示 */
@@ -538,7 +543,11 @@ export class Renderer {
   updateMonster(monsterId, patch) {
     const m = this.monsters.get(monsterId);
     if (!m) return;
+    const before = m.castleAttack;
     Object.assign(m, patch);
+    if (before != null && m.castleAttack > before) {
+      m.el.classList.remove('threat-grown'); void m.el.offsetWidth; m.el.classList.add('threat-grown');
+    }
     const look = ELEMENT_LOOK[m.element];
     if (look) m.el.style.setProperty('--element', look.color);
     const elBadge = m.el.querySelector('.monster-element');
@@ -551,8 +560,27 @@ export class Renderer {
     const attackIn = m.el.querySelector('.monster-attack-in');
     attackIn.hidden = m.attackIn == null;
     const soon = m.attackIn != null && m.attackIn <= 1;
-    attackIn.textContent = m.attackIn == null ? '' : (soon ? '次に城をおそう！' : `あと${m.attackIn}周でおそう`);
+    attackIn.replaceChildren();
+    const damage = document.createElement('b'); damage.textContent = `城へ ${m.castleAttack ?? '?'} ダメージ`;
+    const countdown = document.createElement('small'); countdown.textContent = soon ? '次の周回で攻撃！' : `あと${m.attackIn}周`;
+    attackIn.append(damage, countdown);
+    m.el.dataset.danger = String(soon);
+    let reward = m.el.querySelector('.monster-reward');
+    if (!reward) { reward = document.createElement('div'); reward.className = 'monster-reward'; m.el.appendChild(reward); }
+    reward.textContent = m.rewardRarity ? `${RARITY_NAMES[m.rewardRarity] ?? m.rewardRarity}カード` : `コイン${m.reward ?? 0}`;
     attackIn.classList.toggle('soon', soon);
+  }
+
+  updateThreatWarnings() {
+    const near = [...this.monsters.values()].some((m) => m.attackIn != null && m.attackIn <= 1);
+    for (const castle of Object.values(this.el.castle)) {
+      const hp = Number(castle.dataset.hp), max = Number(castle.dataset.max);
+      const on = near && hp > 0 && max > 0 && hp / max <= UI_CONFIG.warningHpRatio;
+      castle.classList.toggle('under-threat', on);
+      let badge = castle.querySelector('.castle-threat');
+      if (!badge) { badge = document.createElement('span'); badge.className = 'castle-threat'; badge.textContent = '危険：魔物の攻撃が近い'; castle.append(badge); }
+      badge.hidden = !on;
+    }
   }
 
   removeMonster(monsterId) {

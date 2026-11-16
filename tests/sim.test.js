@@ -23,10 +23,10 @@ test('どの戦い方の組み合わせでも、全試合が決着する（各20
   }
 });
 
-test('カードの総数は変わらない（山札＋捨て札＋使い切り＋手札）', () => {
+test('カードの総数は変わらない（山札＋捨て札＋使い切り＋手札。合成する smart は除く：合成で2枚が1枚になる）', () => {
   const total = Object.values(cards).reduce((a, c) => a + c.count, 0);
   for (let seed = 1; seed <= 30; seed++) {
-    const r = runMatch({ cards, rules, strategies: ['smart', 'random'], seed });
+    const r = runMatch({ cards, rules, strategies: ['aggro', 'random'], seed });
     const s = r.finalState;
     const hands = Object.values(s.players).reduce((a, p) => a + p.handCount, 0);
     assert.equal(s.deckCount + s.discardCount + s.exhaustedCount + hands, total);

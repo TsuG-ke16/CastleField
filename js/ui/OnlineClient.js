@@ -138,6 +138,7 @@ export class OnlineClient {
     return postJson('/api/action', { token: this.token, method, args });
   }
 
+  fuse(a, b) { return this.act('fuse', [a, b]); }
   playCard(cardId, target) { return this.act('playCard', target ? [cardId, target] : [cardId]); }
   buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
   endTurn() { return this.act('endTurn'); }

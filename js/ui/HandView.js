@@ -4,7 +4,9 @@
 //   3. カードを上（盤面）へドラッグして離す
 // 捨てるカードを選ぶ画面もここで扱う。
 
+import { currentRates } from './CardInfo.js';
 import { UI_CONFIG } from './config.js';
+import { groupStarts, sortHand } from './handOrder.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
@@ -18,7 +20,9 @@ export class HandView {
    *           onDiscard: (cardIds: string[]) => void,
    *           onNotice: (text: string) => void }} opts
    */
-  constructor({ cards, rules, textOpts = {}, onPlay, onDiscard, onNotice }) {
+  constructor({ cards, rules, rarities = null, textOpts = {}, getContext = () => ({}), onPlay, onDiscard, onNotice }) {
+    this.rarities = rarities;
+    this.getContext = getContext;
     this.cards = cards;
     this.rules = rules;
     this.textOpts = textOpts; // 説明文の切りかえ（魔物が出るゲームか など）
@@ -51,6 +55,20 @@ export class HandView {
       discardOk: document.querySelector('#discard-bar .discard-ok'),
     };
 
+    this.el.detail.querySelector('.detail-close').onclick = () => this.select(null);
+    let press;
+    const stopPress = () => { clearTimeout(press?.timer); press = null; };
+    this.el.hand.addEventListener('pointerdown', (e) => {
+      this.suppressClick = false;
+      const card = e.target.closest('.card'); if (!card || this.discardCount || (e.button !== undefined && e.button !== 0)) return;
+      stopPress();
+      press = { x: e.clientX, y: e.clientY, timer: setTimeout(() => {
+        this.select(card.dataset.id); this.suppressClick = true; this.cancelDrag();
+      }, UI_CONFIG.input.longPress) };
+    });
+    this.el.hand.addEventListener('pointermove', (e) => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > UI_CONFIG.input.dragStartDistance) stopPress(); });
+    for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) this.el.hand.addEventListener(event, stopPress);
+    this.el.hand.addEventListener('contextmenu', (e) => e.preventDefault());
     const refill = $('hand-refill');
     if (refill) refill.textContent = rules.drawUntilHand > 0 ? `毎ターン${rules.drawUntilHand}枚まで補充` : '';
     this.el.hand.addEventListener('keydown', (e) => {
@@ -84,7 +102,8 @@ export class HandView {
    * @param {{ newIds?: Iterable<string> }} opts
    */
   render(hand, { newIds = [] } = {}) {
-    this.hand = hand.map((c) => ({ ...c }));
+    // 並び：種類順 → レアリティの高い順（js/ui/handOrder.js）
+    this.hand = sortHand(hand.map((c) => ({ ...c })), this.cards, this.rarities);
     if (this.selectedId && !this.hand.some((c) => c.cardId === this.selectedId)) this.selectedId = null;
     for (const id of [...this.discardPicks]) if (!this.hand.some((c) => c.cardId === id)) this.discardPicks.delete(id);
     const fresh = new Set(newIds);
@@ -94,9 +113,29 @@ export class HandView {
       box.innerHTML = '<div class="hand-empty">手札がありません</div>';
     }
     for (const card of this.hand) box.appendChild(this.makeCardEl(card, fresh.has(card.cardId)));
+    const counts = new Map();
+    for (const c of this.hand) counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
+    for (const el of box.querySelectorAll('.card')) {
+      const c = this.hand.find((c) => c.cardId === el.dataset.id);
+      el.classList.toggle('can-fuse', counts.get(c.type) >= 2 && Boolean(this.cards[c.type]?.fuseTo));
+    }
+    this.markGroups();
     this.layout();
     this.updateDetail();
     this.updateDiscardBar();
+  }
+
+  /** 今の手札が、server/Game の手札と同じカードの集まりか（並びは見ない。表示は並べ替えてあるため） */
+  sameCards(hand) {
+    if (hand.length !== this.hand.length) return false;
+    const ids = new Set(this.hand.map((c) => c.cardId));
+    return hand.every((c) => ids.has(c.cardId));
+  }
+
+  /** 種類のグループの最初のカードに印をつける（見た目で少し間をあける） */
+  markGroups() {
+    const starts = groupStarts(this.hand, this.cards);
+    for (const el of this.el.hand.querySelectorAll('.card')) el.classList.toggle('group-start', starts.has(el.dataset.id));
   }
 
   /** カードを重ねず、全体が読める幅で横に並べる。 */
@@ -127,6 +166,14 @@ export class HandView {
     if (def.element) el.dataset.element = def.element;
     el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
       '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
+    if (def.rarity && this.rarities?.[def.rarity]) {
+      el.dataset.rarity = def.rarity;
+      el.style.setProperty('--rarity', this.rarities[def.rarity].color);
+      const badge = document.createElement('span');
+      badge.className = 'card-rarity';
+      badge.textContent = this.rarities[def.rarity].name;
+      el.appendChild(badge);
+    }
     const frame = document.createElement('img');
     frame.className = 'card-frame';
     frame.src = `assets/cards/frame-${def.kind}.png`;
@@ -211,6 +258,7 @@ export class HandView {
     if (this.hand.length === 0 && !this.el.hand.querySelector('.hand-empty')) {
       this.el.hand.innerHTML = '<div class="hand-empty">手札がありません</div>';
     }
+    this.markGroups();
     this.layout();
     this.updateDetail();
     return info;
@@ -219,9 +267,13 @@ export class HandView {
   /** 引いたカードを1枚ずつ加える */
   addCard(card) {
     this.el.hand.querySelector('.hand-empty')?.remove();
-    this.hand.push({ ...card });
+    // 引いたカードは、並びの正しい位置に入れる（いつも右端に付けない）
+    this.hand = sortHand([...this.hand, { ...card }], this.cards, this.rarities);
+    const at = this.hand.findIndex((c) => c.cardId === card.cardId);
     const el = this.makeCardEl(card, true);
-    this.el.hand.appendChild(el);
+    const next = this.hand[at + 1] ? this.cardEl(this.hand[at + 1].cardId) : null;
+    this.el.hand.insertBefore(el, next);
+    this.markGroups();
     this.layout();
   }
 
@@ -264,17 +316,29 @@ export class HandView {
     this.el.detailHint.classList.toggle('warn', Boolean(reason));
     if (reason) this.el.detailHint.textContent = `いまは出せません：${reason}`;
     else this.el.detailHint.textContent = slotNote(def);
+    const rarity = this.rarities?.[def.rarity];
+    const badge = this.el.detail.querySelector('.detail-rarity');
+    badge.textContent = rarity?.name ?? '';
+    badge.style.setProperty('--rarity', rarity?.color ?? '#999');
+    const meta = this.el.detail.querySelector('.detail-meta');
+    const context = this.getContext();
+    const rates = currentRates(context, this.cards, this.rarities);
+    const boosted = Boolean(context.session?.getState(context.viewerId)?.players[context.viewerId]?.luck);
+    const next = def.fuseTo ? this.cards[def.fuseTo]?.name : null;
+    meta.textContent = `${next ? `合成先：${next}（同じカード2枚）` : '合成：これ以上合成できません'} ／ 排出率${boosted ? '（祈り中）' : ''} ${Number(rates[card.type] ?? 0).toFixed(3)}%`;
+    this.el.detailUse.disabled = this.locked;
     this.el.detailUse.hidden = !input.useButton;
     this.el.detailUse.classList.toggle('blocked', Boolean(reason) || this.blocked.has(card.cardId));
     this.el.detail.hidden = false;
   }
 
   handleClick(e) {
-    if (this.locked) return;
+    if (this.suppressClick) { this.suppressClick = false; return; }
     if (this.drag?.moved) return;
     const el = e.target.closest('.card');
     if (!el) return;
     const id = el.dataset.id;
+    if (this.locked) { this.select(id); return; }
 
     if (this.discardCount) {
       this.toggleDiscard(id);

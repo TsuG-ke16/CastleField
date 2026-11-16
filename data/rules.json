@@ -1,6 +1,6 @@
 {
-  "castleMaxHp": 40,
-  "secondPlayerCastleBonus": 1,
+  "castleMaxHp": 70,
+  "secondPlayerCastleBonus": 0,
   "initialHand": 5,
   "drawPerTurn": 1,
   "firstTurnDraw": 1,
@@ -21,5 +21,11 @@
   "maxRounds": 60,
   "deckMode": "shared",
   "defaultCastle": "standard",
-  "defaultDeck": "balanced"
+  "defaultDeck": "balanced",
+  "deckSize": 100,
+  "drawPerPlayed": true,
+  "initialCoins": 5,
+  "coinPerTurn": 1,
+  "monsterAttackGrowth": 1,
+  "rewardLuckyChance": 0.15
 }

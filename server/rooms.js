@@ -4,7 +4,7 @@ import { randomBytes } from 'node:crypto';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { filterEventFor } from '../js/game/visibility.js';
 
-const ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'defend', 'passDefense', 'rematch', 'surrender', 'leave'];
+const ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense', 'rematch', 'surrender', 'leave'];
 /** 攻撃を受けた人（自分の番でなくても）が送れる操作 */
 const DEFENSE_ACTIONS = ['defend', 'passDefense'];
 const MAX_ROOMS = 1000;

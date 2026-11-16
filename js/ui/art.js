@@ -384,7 +384,7 @@ function escapeText(s) {
 }
 
 // 画像の割り当てはUIだけが持つ。読み込み前・失敗時は元のSVGを表示する。
-const CARD_TYPES = new Set(['infantry','knight','spearman','heavy','giant','fireball','meteor','thunder','bigThunder','heal','minorHeal','poisonMist','toxicRain','venom','frostBreath','glacier','deepFreeze','flameSword','waterSpear','windBow','earthHammer','ironSword','shield','bigShield','wall','sandbag','reflect','decoy','blessing','prayer','thief','bolt','fireSpirit','greatFireSpirit','waterSpirit','greatWaterSpirit','windSpirit','greatWindSpirit','earthSpirit','greatEarthSpirit']);
+const CARD_TYPES = new Set(["infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
 const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // 起動時に全部の画像を先に読み込んでおく。読み込めた画像は、代わりのSVGを出さず最初からPNGで描く
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
@@ -425,13 +425,13 @@ export function cardArt(type, color = 'blue', name = '') {
 }
 export function unitArt(type, color, name = '') {
   const fallback = svgUnitArt(type, color, name);
-  return ['infantry','knight','spearman','heavy','giant'].includes(type)
+  return ['infantry','knight','spearman','heavy','giant','hero'].includes(type)
     ? imageArt(`units/${type}-${color === 'orange' ? 'orange' : 'blue'}.png`, fallback, 'art unit-art') : fallback;
 }
 export function monsterArt(type, name = '') {
   const fallback = svgMonsterArt(type, name);
-  return ['slime','goblin','dragon','bat','skeleton','golem','demon'].includes(type)
-    ? imageArt(`units/monster-${type}.png`, fallback, 'art monster-art') : fallback;
+  return ['slime','goblin','dragon','bat','skeleton','golem','demon','ghost','treant','mimic','vampire','demonKing'].includes(type)
+    ? imageArt(`units/monster-${kebab(type)}.png`, fallback, 'art monster-art') : fallback;
 }
 export function castleArt(color, damage = 0) {
   const team = color === 'orange' ? 'orange' : 'blue';

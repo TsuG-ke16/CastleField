@@ -5,6 +5,8 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { CardGuide } from './ui/CardGuide.js';
+import { ProgressPanel } from './ui/ProgressPanel.js';
 import { Game, EVENT_TYPES } from './game/Game.js';
 import { Renderer } from './ui/Renderer.js';
 import { HandView } from './ui/HandView.js';
@@ -64,6 +66,9 @@ const el = {
   netLeave: $('net-leave'),
 };
 
+let rarities = null;
+let progressPanel;
+let cardGuide;
 let cards;
 let rules;
 let monsters = null;  // data/monsters.json（読めなければ null：魔物は出ない）
@@ -88,10 +93,10 @@ let upgradeCounts = {};    // playerId → { upgradeId: 買った回数 }（getS
 const listeners = [];
 
 // ひとりで遊ぶ（CPU と対戦）
-// 強さ → 戦い方（js/game/strategies.js）。シミュレーションで、弱い順に rush < defensive < smart と確かめた
+// 強さ → 戦い方（js/game/strategies.js）。シミュレーションで、PR42の結果に合わせて defensive < rush < smart と確かめた
 const CPU_LEVELS = {
-  easy: { name: 'よわい', strategy: 'rush' },
-  normal: { name: 'ふつう', strategy: 'defensive' },
+  easy: { name: 'よわい', strategy: 'defensive' },
+  normal: { name: 'ふつう', strategy: 'rush' },
   hard: { name: 'つよい', strategy: 'smart' },
 };
 let cpu = null;            // { id, level, strategy, rng }（ひとりで遊ぶときだけ）
@@ -135,11 +140,13 @@ async function loadOptionalJson(path) {
   }
 }
 
+function uiContext() { return { session, viewerId, busy, sending, luckFrom: upgrades?.luck?.fromRarity }; }
+
 async function boot() {
   try {
-    [cards, rules, monsters, upgrades] = await Promise.all([
+    [cards, rules, monsters, upgrades, rarities] = await Promise.all([
       loadJson('data/cards.json'), loadJson('data/rules.json'),
-      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'),
+      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'),
     ]);
   } catch (err) {
     console.error(err);
@@ -173,13 +180,13 @@ async function boot() {
     onTargetTap: (target) => { if (!busy) targeting.tap(target); },
   });
   handView = new HandView({
-    cards, rules, textOpts: { monsters: Boolean(monsters) },
+    cards, rules, rarities, getContext: uiContext, textOpts: { monsters: Boolean(monsters), debug: DEBUG },
     onPlay: playCard, onDiscard: discard, onNotice: toast,
   });
-  anim = new Animations({ renderer, handView, cards, rules, monsters, upgrades });
+  anim = new Animations({ renderer, handView, cards, rules, monsters, upgrades, rarities });
   targeting = new Targeting({ renderer, handView, onChoose: (cardId, target) => doPlay(cardId, target) });
   if (upgrades && Object.keys(upgrades).length) {
-    upgradePanel = new UpgradePanel({ upgrades, onBuy: buyUpgrade, onOpen: refreshUpgrades, onDenied: (r) => toast(r, 'info') });
+    upgradePanel = new UpgradePanel({ upgrades, rarities, onBuy: buyUpgrade, onOpen: refreshUpgrades, onDenied: (r) => toast(r, 'info') });
   } else {
     // 強化のデータがないときも、コインのボタンを押したら理由を出す
     el.upgradeOpen.addEventListener('click', (e) => {
@@ -198,6 +205,16 @@ async function boot() {
     if (busy && !e.target.closest('.screen, #debug-panel, #debug-toggle, #menu-open')) anim.skip();
   }, true);
 
+  cardGuide = new CardGuide({ cards, rarities, rules, monsters, getContext: uiContext, debug: DEBUG });
+  progressPanel = new ProgressPanel({ cards, rarities, rules, monsters,
+    getContext: uiContext, onRates: () => cardGuide.open('rates'),
+    onFuse: async (a, b) => {
+      const check = session.canFuse?.(a, b);
+      if (check && !check.ok) { toast(reasonText(check.reason)); return; }
+      const res = await act(() => session.fuse(a, b));
+      if (res && !res.ok) toast(reasonText(res.reason));
+    },
+  });
   setupMenu();
   setupTitle();
 
@@ -429,7 +446,7 @@ function startLocal(seedOverride, cpuLevel = null) {
 
   seed = seedOverride ?? URL_SEED ?? Math.floor(Math.random() * 2 ** 32);
   try {
-    const opts = { cards: structuredClone(cards), rules: structuredClone(rules), rng: mulberry32(seed) };
+    const opts = { cards: structuredClone(cards), rules: structuredClone(rules), rarities: structuredClone(rarities), rng: mulberry32(seed) };
     // 2人で交代して遊ぶときは、相手に手札を見せないので、攻撃を受けたときの防御は聞かない
     if (!cpuLevel) opts.rules.defenseReaction = false;
     if (monsters) opts.monsters = structuredClone(monsters);
@@ -720,6 +737,8 @@ function modelFromState(st) {
       armor: p.armor ?? 0,
       spirit: p.spirit ?? null,
       coins: p.coins ?? 0,
+      luck: p.luck ? structuredClone(p.luck) : null,
+      armyAttack: p.armyAttack ?? 0, armyHp: p.armyHp ?? 0,
       handCount: p.handCount,
       playedThisTurn: p.playedThisTurn,
       cardsPlayedThisTurn: p.cardsPlayedThisTurn ?? 0,
@@ -758,7 +777,9 @@ function lookupCard(cardId) {
 // ---------- イベントの再生 ----------
 
 function setBusy(value) {
+  progressPanel?.closeFusion();
   busy = value;
+  if (!value) progressPanel?.refresh();
   el.app.classList.toggle('busy', value);
   handView.setLocked(value);
   if (value) {
@@ -837,9 +858,8 @@ async function settle({ check = true } = {}) {
   renderer.renderAll(model);
   renderer.setCurrentPlayer(st.phase === 'gameOver' ? null : st.currentPlayer);
   const me = st.players[viewerId];
-  const sameHand = me.hand.length === handView.hand.length &&
-    me.hand.every((c, i) => c.cardId === handView.hand[i].cardId);
-  if (!sameHand) handView.render(me.hand);
+  // 手札の表示は並べ替えてあるので、並びではなく、同じカードがそろっているかで比べる
+  if (!handView.sameCards(me.hand)) handView.render(me.hand);
   const blocked = playability(st);
   handView.setPlayability(blocked);
 

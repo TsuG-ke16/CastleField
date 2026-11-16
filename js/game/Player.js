@@ -25,6 +25,11 @@ export class Player {
     this.coins = 0;
     /** 強化ID → 買った回数 */
     this.upgradesBought = {};
+    /** 運命の祈り：次の draws 枚は、排出率を boost 倍（fromRarity 以上）にして引き当てる。{ draws, boost, from } か null */
+    this.luck = null;
+    /** 軍の訓練：これから出す兵士と、いる兵士の攻撃力・HPが、ずっと増える（コインで買う） */
+    this.armyAttack = 0;
+    this.armyHp = 0;
     /** 今来ている精霊（1人1体まで）。{ type, spirit, amount, turns, targetId, fresh } か null */
     this.spirit = null;
   }
@@ -56,6 +61,9 @@ export class Player {
       armor: this.armor,
       spirit: this.spirit ? { type: this.spirit.type, spirit: this.spirit.spirit, amount: this.spirit.amount, turns: this.spirit.turns, targetId: this.spirit.targetId } : null,
       coins: this.coins,
+      armyAttack: this.armyAttack,
+      armyHp: this.armyHp,
+      luck: this.luck ? { draws: this.luck.draws, boost: this.luck.boost } : null,
       hand: showHand ? this.hand.map((c) => c.toState()) : null,
       handCount: this.hand.length,
       playedThisTurn: this.playedThisTurn,

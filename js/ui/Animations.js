@@ -5,7 +5,7 @@
 import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
-import { imageArt } from './art.js';
+import { cardArt, icon, imageArt } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -15,13 +15,14 @@ export class Animations {
    *           handView: import('./HandView.js').HandView,
    *           cards: object, rules: object, monsters?: object, upgrades?: object }} opts
    */
-  constructor({ renderer, handView, cards, rules, monsters = null, upgrades = null }) {
+  constructor({ renderer, handView, cards, rules, monsters = null, upgrades = null, rarities = null }) {
     this.renderer = renderer;
     this.handView = handView;
     this.cards = cards;
     this.rules = rules;
     this.monsterDefs = monsters;
     this.upgradeDefs = upgrades;
+    this.rarities = rarities;
     this.skipping = false;
     this.timers = new Set();     // 待っている delay
     this.running = new Set();    // 動いている Web Animation
@@ -211,8 +212,11 @@ export class Animations {
         this.renderer.setCurrentPlayer(p.playerId);
         return;
       case 'roundStarted': return this.roundStarted(p, model);
+      case 'cardsFused': return this.cardsFused(p, model, ctx);
       case 'cardDrawn': return this.cardDrawn(p, model, ctx);
       case 'deckShuffled':
+        // drawCardsはシャッフル前に引いた分も最後のcardDrawnにまとめる。
+        model.preShuffleDraws = (model.preShuffleDraws ?? 0) + model.deckCount;
         model.deckCount = p.deckCount;
         model.discardCount = 0;
         this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
@@ -258,7 +262,7 @@ export class Animations {
       case 'monsterDamaged': return this.monsterDamaged(p, model);
       case 'monsterDefeated': return this.monsterDefeated(p, model);
       case 'coinsChanged': return this.coinsChanged(p, model);
-      case 'upgradeBought': return this.upgradeBought(p);
+      case 'upgradeBought': return this.upgradeBought(p, model);
       case 'soldierBuffed': return this.soldiersBuffed(ev, queue, model);
       case 'gameOver':
         model.phase = 'gameOver';
@@ -334,11 +338,78 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.round * 0.5);
   }
 
+  async cardsFused({ playerId, cardIds, cardId, from, to }, model, ctx) {
+    const pl = model.players[playerId];
+    pl.handCount = Math.max(0, pl.handCount - 1);
+    if (playerId === ctx.viewerId) {
+      model.hand = model.hand.filter((c) => !cardIds.includes(c.cardId));
+      model.hand.push({ cardId, type: to });
+      this.handView.render(model.hand, { newIds: [cardId] });
+    } else this.renderer.setOppHandCount(pl.handCount);
+    if (this.skipping) return;
+    sound.play('equip');
+    if (playerId !== ctx.viewerId) { await this.banner('相手がカードを合成！', UI_CONFIG.timing.fusion, 'fusion'); return; }
+    const stage = this.fx('fx-fusion-stage', this.centerOf(this.renderer.el.field));
+    const rank = this.rarities?.[this.cards[to]?.rarity];
+    stage.style.setProperty('--rarity', rank?.color ?? '#d6b354');
+    for (const side of [0, 1]) {
+      const el = this.effectCard(from, this.cards[from]?.name); stage.append(el);
+      this.animate(el, [
+        { transform: `translate(${side ? 80 : -80}px, 0) rotate(${side ? 12 : -12}deg)`, opacity: 1 },
+        { transform: 'translate(0, 0) scale(.7)', opacity: 1, offset: .45 },
+        { transform: 'scale(.2)', opacity: 0, offset: .6 }, { opacity: 0 },
+      ], { duration: UI_CONFIG.timing.fusion, fill: 'forwards' });
+    }
+    const result = this.effectCard(to, this.cards[to]?.name); stage.append(result);
+    await this.animate(result, [{ transform: 'scale(.1)', opacity: 0 }, { transform: 'scale(.1)', opacity: 0, offset: .4 }, { transform: 'scale(1.15)', opacity: 1, offset: .65 }, { transform: 'scale(1)', opacity: 1, offset: .85 }, { transform: 'translateY(40px) scale(.6)', opacity: 0 }], { duration: UI_CONFIG.timing.fusion, fill: 'forwards' });
+    stage.remove();
+  }
+
+  effectCard(type, name) {
+    const el = document.createElement('div'); el.className = 'effect-card';
+    const art = document.createElement('div'); art.className = 'effect-card-art';
+    art.innerHTML = type ? cardArt(type, 'blue', name ?? '') : icon('card');
+    const label = document.createElement('b'); label.textContent = name ?? '相手の報酬カード';
+    el.append(art, label); return el;
+  }
+
+  async revealReward(reward, cardId, ctx) {
+    if (this.skipping) return;
+    const mine = reward.playerId === ctx.viewerId;
+    const card = mine ? ctx.lookupCard(cardId) : null;
+    const rarity = this.rarities?.[reward.rarity];
+    const rank = Math.max(0, Object.keys(this.rarities ?? {}).indexOf(reward.rarity));
+    const cfg = UI_CONFIG.rewardFx;
+    const duration = Math.min(cfg.max, cfg.base + rank * cfg.perRank + (reward.lucky ? cfg.luckyExtra : 0));
+    const stage = this.fx(`fx-reward-stage${reward.lucky ? ' lucky' : ''}`, this.centerOf(this.renderer.el.field));
+    stage.style.setProperty('--rarity', rarity?.color ?? '#d6b354');
+    stage.dataset.rarity = reward.rarity;
+    const heading = document.createElement('strong'); heading.className = 'reward-heading';
+    heading.textContent = reward.lucky ? `ラッキー！ ${this.rarities?.[reward.base]?.name ?? ''} → ${rarity?.name ?? ''}` : `${mine ? 'あなた' : '相手'}が${rarity?.name ?? ''}カード獲得！`;
+    stage.append(heading, this.effectCard(card?.type, card ? this.cards[card.type]?.name : '相手の報酬カード'));
+    const badge = document.createElement('span'); badge.className = 'reward-rarity'; badge.textContent = rarity?.name ?? ''; stage.append(badge);
+    sound.play('equip');
+    this.sparks(this.centerOf(this.renderer.el.field), { count: cfg.sparksBase + rank * cfg.sparksPerRank, color: rarity?.color ?? '#ffdf82', spread: 50 + rank * 20, size: 6 + rank });
+    if (rank === Object.keys(this.rarities ?? {}).length - 1) this.screenFlash(rarity.color, duration * .4);
+    try {
+      await this.animate(stage, [{ opacity: 0, transform: 'translate(-50%, -50%) scale(.4)' }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1.08)', offset: .18 }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: .8 }, { opacity: 0, transform: `translate(-50%, calc(-50% + ${mine ? 65 : -65}px)) scale(.5)` }], { duration, fill: 'forwards' });
+    } finally { stage.remove(); }
+  }
+
   async cardDrawn({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
+    if (pl.pendingReward) {
+      const reward = pl.pendingReward; delete pl.pendingReward;
+      await this.revealReward(reward, cardIds[0], ctx);
+    }
     for (const cardId of cardIds) {
       pl.handCount += 1;
-      model.deckCount = Math.max(0, model.deckCount - 1);
+      if (pl.generatedDraws > 0) pl.generatedDraws -= 1;
+      else if (pl.luck?.draws > 0) {
+        pl.luck.draws -= 1;
+        if (!pl.luck.draws) pl.luck = null;
+      } else if (model.preShuffleDraws > 0) model.preShuffleDraws -= 1;
+      else model.deckCount = Math.max(0, model.deckCount - 1);
       this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
       if (playerId === ctx.viewerId) {
         const card = ctx.lookupCard(cardId);
@@ -774,8 +845,8 @@ export class Animations {
     for (const b of list) {
       const s = this.modelSoldier(model, b.playerId, b.soldierId);
       const before = s?.attack ?? b.attack;
-      if (s) s.attack = b.attack;
-      this.renderer.updateSoldier(b.soldierId, { attack: b.attack });
+      if (s) { s.attack = b.attack; if (b.hp != null) s.hp = b.hp; }
+      this.renderer.updateSoldier(b.soldierId, { attack: b.attack, ...(b.hp != null ? { hp: b.hp } : {}) });
       const diff = b.attack - before;
       waits.push(this.soldierGlow(b.soldierId, {
         color: GLOW.buff, text: `⚔${diff > 0 ? `+${diff}` : b.attack}`, ms: UI_CONFIG.timing.equip,
@@ -854,7 +925,7 @@ export class Animations {
       monsterId: p.monsterId, type: p.type, roadId: p.roadId, square: p.square,
       hp: p.hp, maxHp: p.hp, // 出たときは満タン
       attack: p.attack, element: p.element ?? null,
-      attackIn: def.attackEvery ?? null, reward: def.reward ?? null, castleAttack: def.castleAttack ?? null,
+      rewardRarity: def.rewardRarity ?? null, attackIn: def.attackEvery ?? null, reward: def.reward ?? null, castleAttack: def.castleAttack ?? null,
     };
     model.monsters = [...(model.monsters ?? []).filter((x) => x.monsterId !== m.monsterId), m];
     if (this.renderer.monster(m.monsterId)) this.renderer.updateMonster(m.monsterId, m);
@@ -868,6 +939,8 @@ export class Animations {
 
   async monsterAttackedCastle({ monsterId, playerId, amount, hp }, model) {
     model.players[playerId].castleHp = hp;
+    const m = this.modelMonster(model, monsterId);
+    if (m && m.castleAttack != null) { m.castleAttack += this.rules.monsterAttackGrowth ?? 0; this.renderer.updateMonster(monsterId, { castleAttack: m.castleAttack }); }
     const mEl = this.renderer.monsterEl(monsterId);
     const castle = this.renderer.castleEl(playerId);
     if (mEl && !this.skipping) {
@@ -908,24 +981,26 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.afterMonsterHit);
   }
 
-  async monsterDefeated({ monsterId, playerId, reward }, model) {
+  async monsterDefeated({ monsterId, playerId, reward, rewardRarity, baseRarity, lucky }, model) {
+    if (rewardRarity) {
+      model.players[playerId].generatedDraws = (model.players[playerId].generatedDraws ?? 0) + 1;
+      model.players[playerId].pendingReward = { playerId, rarity: rewardRarity, base: baseRarity, lucky };
+    }
     model.monsters = (model.monsters ?? []).filter((m) => m.monsterId !== monsterId);
     const el = this.renderer.monsterEl(monsterId);
     if (!el || this.skipping) {
       this.renderer.removeMonster(monsterId);
       return;
     }
-    el.classList.add('dying');
     sound.play('hit', 0.6);
-    this.sparks(this.centerOf(el), { count: 14, color: '#ffcf3f', spread: 70, size: 10 });
-    const who = playerId === this.renderer.viewerId ? 'あなた' : '相手';
-    this.banner(`とどめ！ ${who}に${ICON.coin}${reward}`, UI_CONFIG.timing.monsterDefeat);
-    await this.hitstop(UI_CONFIG.monsterHit.hitstop * 2);
-    await this.delay(UI_CONFIG.timing.monsterDefeat * 0.6);
+    this.sparks(this.centerOf(el), { count: 12, color: this.rarities?.[rewardRarity]?.color ?? '#ffcf3f', spread: 55, size: 8 });
+    if (!rewardRarity) this.banner(`とどめ！ ${ICON.coin}${reward}`, UI_CONFIG.timing.reward, 'reward');
+    await this.hitstop(UI_CONFIG.monsterHit.hitstop);
+    await this.animate(el, [{ opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }, { opacity: 0, transform: 'translate(-50%, -50%) scale(.1) rotate(25deg)' }], { duration: UI_CONFIG.rewardFx.collapse, fill: 'forwards' });
     this.renderer.removeMonster(monsterId);
   }
 
-  async coinsChanged({ playerId, delta, coins }, model) {
+  async coinsChanged({ playerId, delta, coins, reason }, model) {
     model.players[playerId].coins = coins;
     this.renderer.setCoins(playerId, coins, { bump: true });
     if (this.skipping) return;
@@ -933,13 +1008,16 @@ export class Animations {
     const target = this.renderer.coinEl(playerId);
     if (target && !target.hidden) {
       const small = UI_CONFIG.smallNumber;
-      this.number(target, `${ICON.coin}${delta > 0 ? '+' : ''}${delta}`, { size: small.size, duration: small.duration, kind: delta > 0 ? 'coin' : 'block' });
+      const fx = UI_CONFIG.coinFx;
+      this.number(target, `${ICON.coin}${delta > 0 ? '+' : ''}${delta}`, { size: small.size * (reason === 'card' ? fx.cardScale : reason === 'turn' ? fx.turnScale : 1), duration: reason === 'card' ? fx.cardDuration : reason === 'turn' ? fx.turnDuration : small.duration, kind: delta > 0 ? 'coin' : 'block' });
     }
     await this.delay(UI_CONFIG.timing.coins);
   }
 
-  async upgradeBought({ upgradeId }) {
+  async upgradeBought({ playerId, upgradeId }, model) {
     const def = this.upgradeDefs?.[upgradeId];
+    if (def?.effect === 'gainCard') model.players[playerId].generatedDraws = (model.players[playerId].generatedDraws ?? 0) + def.amount;
+    if (def?.effect === 'boostDrops') model.players[playerId].luck = { draws: def.amount, boost: def.boost, from: def.fromRarity };
     sound.play('equip');
     this.banner(`${upgradeIcon(upgradeId)} ${def?.name ?? '強化'}！`, UI_CONFIG.timing.upgrade, 'small');
     await this.delay(UI_CONFIG.timing.upgrade * 0.5);

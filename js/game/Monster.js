@@ -20,6 +20,14 @@ export class Monster {
     this.element = def.element ?? null;
     /** 城を攻めるまでの残り周回 */
     this.attackIn = def.attackEvery;
+    /** 城を攻めた回数と、1回ごとに増えるダメージ（rules.monsterAttackGrowth。Game が入れる） */
+    this.attackCount = 0;
+    this.growth = 0;
+  }
+
+  /** 次に城を攻めるときのダメージ（放置するほど重くなる） */
+  get nextCastleAttack() {
+    return this.def.castleAttack + this.growth * this.attackCount;
   }
 
   takeDamage(amount) {
@@ -41,8 +49,9 @@ export class Monster {
       attack: this.attack,
       element: this.element,
       attackIn: this.attackIn,
-      reward: this.def.reward,
-      castleAttack: this.def.castleAttack,
+      reward: this.def.reward ?? 0,
+      rewardRarity: this.def.rewardRarity ?? null,
+      castleAttack: this.nextCastleAttack,
     };
   }
 
@@ -56,9 +65,13 @@ export class Monster {
       const where = `monsters.json の "${type}"`;
       if (!def || typeof def !== 'object') throw new Error(`${where}: 定義がオブジェクトではありません`);
       if (typeof def.name !== 'string' || def.name === '') throw new Error(`${where}: name を書いてください`);
-      for (const key of ['hp', 'attack', 'reward', 'castleAttack', 'attackEvery', 'weight']) {
+      for (const key of ['hp', 'attack', 'castleAttack', 'attackEvery', 'weight']) {
         if (!isPositive(def[key])) throw new Error(`${where}: ${key} は1以上の整数にしてください`);
       }
+      // ごほうび：コイン（reward）か、カード（rewardRarity：そのレアリティのカードが1枚手札に入る）
+      if (def.reward === undefined && def.rewardRarity === undefined) throw new Error(`${where}: ごほうび（reward か rewardRarity）を書いてください`);
+      if (def.reward !== undefined && !isPositive(def.reward)) throw new Error(`${where}: reward は1以上の整数にしてください`);
+      if (def.rewardRarity !== undefined && (typeof def.rewardRarity !== 'string' || def.rewardRarity === '')) throw new Error(`${where}: rewardRarity はレアリティの名前にしてください`);
       if (def.element !== undefined && def.element !== null && !elements.includes(def.element)) {
         throw new Error(`${where}: element は ${elements.join(' / ')} のどれかにしてください`);
       }
@@ -66,7 +79,7 @@ export class Monster {
   }
 }
 
-export const UPGRADE_EFFECTS = ['repairCastle', 'drawCards', 'sharpenSoldiers'];
+export const UPGRADE_EFFECTS = ['repairCastle', 'drawCards', 'sharpenSoldiers', 'boostDrops', 'gainCard', 'trainArmy', 'fortifyArmy'];
 
 /** upgrades.json の中身をチェックする（間違いは例外） */
 export function validateUpgrades(upgrades) {
@@ -81,6 +94,11 @@ export function validateUpgrades(upgrades) {
     for (const key of ['cost', 'amount']) {
       if (!Number.isInteger(def[key]) || def[key] < 1) throw new Error(`${where}: ${key} は1以上の整数にしてください`);
     }
+    if (def.effect === 'boostDrops') {
+      if (typeof def.fromRarity !== 'string') throw new Error(`${where}: fromRarity（この以上のレアリティが出やすくなる）を書いてください`);
+      if (typeof def.boost !== 'number' || def.boost < 1) throw new Error(`${where}: boost は1以上の数にしてください`);
+    }
+    if (def.effect === 'gainCard' && typeof def.rarity !== 'string') throw new Error(`${where}: rarity（手に入るカードのレアリティ）を書いてください`);
     if (def.limit !== undefined && (!Number.isInteger(def.limit) || def.limit < 1)) {
       throw new Error(`${where}: limit（1試合に買える回数）は1以上の整数にしてください（書かなければ何回でも）`);
     }

@@ -299,6 +299,10 @@ function buyUpgrades(game, pid, ctx) {
     const order = [
       ...(me.castleHp < me.castleMaxHp / 2 ? by('repairCastle') : []),
       ...by('sharpenSoldiers'),
+      ...by('trainArmy'),
+      ...by('fortifyArmy'),
+      ...by('gainCard').sort((a, b) => ctx.upgrades[b].cost - ctx.upgrades[a].cost),
+      ...by('boostDrops'),
       ...by('drawCards'),
     ];
     const id = order.find((u) => game.canBuyUpgrade(u).ok);
@@ -307,18 +311,32 @@ function buyUpgrades(game, pid, ctx) {
   }
 }
 
+/** 手札に同じカードが2枚あれば合成する（1つ上のレアリティになる。レジェンドは合成できない） */
+function fuseAll(game, pid) {
+  for (let i = 0; i < 20; i++) {
+    const hand = game.getState(pid).players[pid].hand;
+    let done = false;
+    for (let a = 0; a < hand.length && !done; a++) {
+      const b = hand.findIndex((c, j) => j > a && c.type === hand[a].type);
+      if (b >= 0 && game.fuse(hand[a].cardId, hand[b].cardId).ok) done = true;
+    }
+    if (!done) return;
+  }
+}
+
 function smartTurn(game, pid, ctx) {
+  fuseAll(game, pid);
   const { me, enemies, playable } = view(game, pid);
   const enemy = enemies[0];
   const castleSpells = typesWithEffect(ctx, 'damageEnemyCastle');
-  // 自分の道の、ごほうびの多い魔物（5コイン以上）にとどめを刺せるなら、魔物を狙う
+  // 自分の道の、ごほうびの多い魔物（5コイン以上か、レア以上のカード）にとどめを刺せるなら、魔物を狙う
   // （ファイアボールは城を削るいちばんの手段なので、小さな魔物には使わない）
   for (const c of playable.filter((x) => castleSpells.includes(x.type))) {
     const ms = game.getTargets(c.cardId).filter((t) => t.monsterId);
     const st = game.getState(pid);
     const kill = ms.find((t) => {
       const m = st.monsters.find((x) => x.monsterId === t.monsterId);
-      return m.hp <= ctx.cards[c.type].amount && m.reward >= 5;
+      return m.hp <= ctx.cards[c.type].amount && (m.reward >= 5 || ['rare', 'epic', 'legendary'].includes(m.rewardRarity));
     });
     if (kill && game.playCard(c.cardId, kill).ok) return;
   }
@@ -340,6 +358,8 @@ function smartTurn(game, pid, ctx) {
     ...typesWithEffect(ctx, 'healOwnCastle'),
   ]);
   if (played) return;
+  // 出すものがないとき、コインを増やすカード
+  if (playFirst(game, playable, typesWithEffect(ctx, 'gainCoins'))) return;
   // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み
   // 精霊：今いなければ、1体呼ぶ（大精霊は使い切りなので、城HPが半分を切ったときだけ）
   if (!me.spirit) {

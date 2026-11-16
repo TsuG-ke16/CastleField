@@ -20,7 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, validateCastles, validateDecks } from './Setup.js';
+import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -34,6 +34,7 @@ export const EVENT_TYPES = [
   'cardDrawn',
   'deckShuffled',
   'cardPlayed',
+  'cardsFused',
   'discardRequired',
   'cardDiscarded',
   'soldierDeployed',
@@ -103,6 +104,15 @@ const OPTIONAL_RULES = {
   defenseReaction: false,
   // 0 より大きいと、毎ターンのドローは「手札がこの枚数になるまで」（drawPerTurn は最低枚数）
   drawUntilHand: 0,
+  // レアリティを使うとき、全員共通の山札に入る枚数（排出率で引き当てる）
+  deckSize: 100,
+  // true なら、毎ターンのドローが「前のターンに出したカードの枚数」以上になる（出した分を引き直す）
+  drawPerPlayed: false,
+  // 試合の最初に持っているコインと、自分のターンの始めにもらえるコイン
+  initialCoins: 0,
+  coinPerTurn: 0,
+  // 放置された魔物が城を攻めるたびに、ダメージが増える量（1回目は castleAttack、2回目は +growth、…）
+  monsterAttackGrowth: 0,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -113,6 +123,7 @@ const CHOICE_RULES = {
 /** 0以上1以下の数（整数でなくてよい）の省略できる項目 */
 const OPTIONAL_RATE_RULES = {
   monsterSpawnChance: 0, // 周回の始めに、魔物がいない道ごとに魔物が出る確率
+  rewardLuckyChance: 0, // 魔物のごほうびが、1つ上のレアリティになる確率（ラッキー）
 };
 
 const ok = () => ({ ok: true });
@@ -130,9 +141,10 @@ export class Game {
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
-    Card.validateDefinitions(cards);
+    if (rarities !== null) validateRarities(rarities);
+    Card.validateDefinitions(cards, rarities);
     Game.validateRules(rules);
     if (typeof rng !== 'function') throw new Error('rng は 0以上1未満の数を返す関数にしてください');
     if (monsters !== null) {
@@ -144,6 +156,7 @@ export class Game {
     if (decks !== null) validateDecks(decks, cards);
 
     this.cardDefs = cards;
+    this.rarityDefs = rarities;
     this.monsterDefs = monsters;
     this.upgradeDefs = upgrades || {};
     this.rules = {
@@ -181,6 +194,7 @@ export class Game {
       const cdef = castleType ? castles[castleType] : {};
       const maxHp = Math.max(1, this.rules.castleMaxHp + this.seatBonus(seat) + (cdef.hpBonus ?? 0));
       const player = new Player(id, maxHp);
+      player.coins = this.rules.initialCoins;
       player.castleType = castleType;
       player.castleDef = cdef;
       player.maxHand = Math.max(0, this.rules.maxHand + (cdef.maxHandBonus ?? 0));
@@ -259,7 +273,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -283,6 +297,9 @@ export class Game {
       if (v !== undefined && (typeof v !== 'number' || !(v >= 0 && v <= 1))) {
         throw new Error(`rules.json の ${key} は 0 以上 1 以下の数にしてください`);
       }
+    }
+    if (rules.drawPerPlayed !== undefined && typeof rules.drawPerPlayed !== 'boolean') {
+      throw new Error('rules.json の drawPerPlayed は true か false にしてください（書かなければ false）');
     }
     if (rules.advanceAfterWin !== undefined && typeof rules.advanceAfterWin !== 'boolean') {
       throw new Error('rules.json の advanceAfterWin は true か false にしてください（書かなければ false）');
@@ -340,8 +357,13 @@ export class Game {
     return new Card(cardId, type, this.cardDefs[type]);
   }
 
-  /** 山札に入るカード種類の並び（count 枚ずつ） */
+  /**
+   * 山札に入るカード種類の並び。
+   * rarities を渡したときは、排出率（レアリティの割合 × 同じレアリティ内の weight）で rules.deckSize 枚を引き当てる。
+   * 渡さないときは、count 枚ずつ。
+   */
   buildDeckTypes() {
+    if (this.rarityDefs) return sampleDeckTypes(this.cardDefs, this.rarityDefs, this.rules.deckSize, this.rng);
     const types = [];
     for (const [type, def] of Object.entries(this.cardDefs)) {
       for (let i = 0; i < def.count; i++) types.push(type);
@@ -363,6 +385,15 @@ export class Game {
     const cardIds = [];
     const pile = this.pileOf(player.id);
     for (let i = 0; i < count; i++) {
+      // 運命の祈り：山札からではなく、排出率を上げて引き当てる
+      if (player.luck && this.rarityDefs) {
+        const type = sampleType(this.cardDefs, this.rarityDefs, this.rng, { from: player.luck.from, multiplier: player.luck.boost });
+        const lucky = this.createCard(type);
+        player.hand.push(lucky);
+        cardIds.push(lucky.cardId);
+        if (--player.luck.draws <= 0) player.luck = null;
+        continue;
+      }
       if (pile.deck.length === 0) {
         if (pile.discard.length === 0) break;
         pile.deck = this.shuffle(pile.discard);
@@ -480,6 +511,7 @@ export class Game {
     this.turn += 1;
     this.phase = 'main';
     player.playedThisTurn = false;
+    const playedLastTurn = player.cardsPlayedThisTurn;
     player.cardsPlayedThisTurn = 0;
     this.emit('turnStarted', { playerId, turn: this.turn });
 
@@ -505,9 +537,12 @@ export class Game {
       this.emit('armorExpired', { playerId });
     }
 
+    // コイン：自分のターンの始めに coinPerTurn 枚もらえる
+    if (this.rules.coinPerTurn > 0) this.changeCoins(player, this.rules.coinPerTurn, 'turn');
+
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
-    const drawCount = Math.max(baseDraw, this.rules.drawUntilHand - player.hand.length);
+    const drawCount = Math.max(baseDraw, this.rules.drawUntilHand - player.hand.length, this.rules.drawPerPlayed ? playedLastTurn : 0);
     this.drawCards(player, drawCount);
     if (this.triggerSpirit(player)) return;
 
@@ -703,7 +738,9 @@ export class Game {
       const road = this.findRoad(m.roadId);
       const victim = this.players[road.players[Math.floor(this.rng() * 2)]];
       const before = victim.castle.hp;
-      victim.castle.takeDamage(m.def.castleAttack);
+      // 放置するほど攻撃が重くなる
+      victim.castle.takeDamage(m.nextCastleAttack);
+      m.attackCount += 1;
       this.emit('monsterAttackedCastle', {
         monsterId: m.monsterId, playerId: victim.id, amount: before - victim.castle.hp, hp: victim.castle.hp,
       });
@@ -731,6 +768,7 @@ export class Game {
       // 出る道はランダム（道が1本のときは乱数を使わない）
       const road = lanes.length === 1 ? lanes[0] : lanes[Math.floor(this.rng() * lanes.length)];
       const m = new Monster(monsterId, type, this.monsterDefs[type], road.roadId, this.middleSquare());
+      m.growth = this.rules.monsterAttackGrowth;
       this.monsters.push(m);
       this.emit('monsterAppeared', {
         monsterId, type, roadId: road.roadId, square: m.square, hp: m.hp, attack: m.attack, element: m.element,
@@ -748,9 +786,29 @@ export class Game {
     if (!monster.isDead) return;
     this.monsters = this.monsters.filter((m) => m !== monster);
     this.monsterCooldown.set(this.findRoad(monster.roadId).pairId, this.round + this.rules.monsterCooldownRounds + 1);
-    const reward = monster.def.reward;
-    this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward });
-    this.changeCoins(this.players[playerId], reward, 'reward');
+    const { reward } = monster.def;
+    const baseRarity = monster.def.rewardRarity ?? null;
+    // ラッキー：rewardLuckyChance の確率で、1つ上のレアリティが出る（確率が0のときは乱数を使わない）
+    let rewardRarity = baseRarity;
+    let lucky = false;
+    if (baseRarity && this.rarityDefs && this.rules.rewardLuckyChance > 0) {
+      const next = nextRarityWithCards(this.cardDefs, this.rarityDefs, baseRarity);
+      if (next && this.rng() < this.rules.rewardLuckyChance) {
+        rewardRarity = next;
+        lucky = true;
+      }
+    }
+    this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward: reward ?? 0, rewardRarity, baseRarity, lucky });
+    if (reward) this.changeCoins(this.players[playerId], reward, 'reward');
+    // ごほうびのカード：そのレアリティのカードが1枚、手札に入る（カードがなければ何も起きない）
+    if (rewardRarity) {
+      const type = sampleTypeOfRarity(this.cardDefs, rewardRarity, this.rng);
+      if (type) {
+        const card = this.createCard(type);
+        this.players[playerId].hand.push(card);
+        this.emit('cardDrawn', { playerId, cardIds: [card.cardId] });
+      }
+    }
   }
 
   changeCoins(player, delta, reason) {
@@ -795,6 +853,15 @@ export class Game {
     if (def.effect === 'repairCastle' && player.castle.isFull) return fail('城のHPが満タンです');
     const pile = this.pileOf(player.id);
     if (def.effect === 'drawCards' && pile.deck.length + pile.discard.length === 0) return fail('山札も捨て札もありません');
+    if (def.effect === 'gainCard') {
+      if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
+      if (!Object.values(this.cardDefs).some((d) => d.rarity === def.rarity && (d.weight ?? 1) > 0)) return fail('その強化はありません');
+    }
+    if (def.effect === 'boostDrops') {
+      if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
+      if (!Object.hasOwn(this.rarityDefs, def.fromRarity)) return fail('その強化はありません');
+      if (player.luck) return fail('運命の祈りがもう効いています');
+    }
     if (def.effect === 'sharpenSoldiers' && player.soldiers.length === 0) return fail('道の上に自分の兵士がいません');
     return ok();
   }
@@ -813,12 +880,80 @@ export class Game {
       this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
     } else if (def.effect === 'drawCards') {
       this.drawCards(player, def.amount);
+    } else if (def.effect === 'trainArmy') {
+      player.armyAttack += def.amount;
+      for (const s of player.soldiers) {
+        s.baseAttack += def.amount;
+        this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack });
+      }
+    } else if (def.effect === 'fortifyArmy') {
+      player.armyHp += def.amount;
+      for (const s of player.soldiers) {
+        s.hp += def.amount;
+        this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack, hp: s.hp });
+      }
+    } else if (def.effect === 'gainCard') {
+      const cardIds = [];
+      for (let i = 0; i < def.amount; i++) {
+        const card = this.createCard(sampleTypeOfRarity(this.cardDefs, def.rarity, this.rng));
+        player.hand.push(card);
+        cardIds.push(card.cardId);
+      }
+      this.emit('cardDrawn', { playerId: player.id, cardIds });
+    } else if (def.effect === 'boostDrops') {
+      player.luck = { draws: def.amount, boost: def.boost, from: def.fromRarity };
     } else if (def.effect === 'sharpenSoldiers') {
       for (const s of player.soldiers) {
         s.baseAttack += def.amount;
         this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack });
       }
     }
+    return ok();
+  }
+
+  // ================= 合成 =================
+
+  /**
+   * 排出率の一覧（読むだけ。UI が「排出率を見る」画面に使う）
+   * @returns {{rarities: object[], cards: object, monsters: object}|null} rarities を渡していなければ null
+   */
+  getDropRates() {
+    if (!this.rarityDefs) return null;
+    const rates = dropRates(this.cardDefs, this.rarityDefs);
+    const rarities = Object.entries(this.rarityDefs).map(([id, r]) => ({ id, name: r.name, dropRate: r.dropRate }));
+    const cards = {};
+    for (const [type, def] of Object.entries(this.cardDefs)) cards[type] = { name: def.name, rarity: def.rarity, rate: rates[type] };
+    const monsters = {};
+    for (const [type, def] of Object.entries(this.monsterDefs || {})) {
+      if (def.rewardRarity) monsters[type] = { name: def.name, odds: rewardOdds(this.cardDefs, this.rarityDefs, def.rewardRarity, this.rules.rewardLuckyChance) };
+    }
+    return { rarities, cards, monsters };
+  }
+
+  /** 手札の同じカード2枚を合成できるか（読むだけ） */
+  canFuse(cardIdA, cardIdB) {
+    if (this.phase === 'ready') return fail('ゲームがまだ始まっていません');
+    if (this.phase === 'gameOver') return fail('ゲームは終わっています');
+    if (this.phase !== 'main') return fail('今は合成できません');
+    const player = this.players[this.currentPlayer];
+    if (typeof cardIdA !== 'string' || typeof cardIdB !== 'string' || cardIdA === cardIdB) return fail('別々のカードを2枚選んでください');
+    const a = player.hand.find((c) => c.cardId === cardIdA);
+    const b = player.hand.find((c) => c.cardId === cardIdB);
+    if (!a || !b) return fail('そのカードは手札にありません');
+    if (a.type !== b.type) return fail('同じ種類のカードどうしでないと合成できません');
+    if (!a.def.fuseTo) return fail('レジェンドはこれ以上合成できません');
+    return { ok: true, player, a, b };
+  }
+
+  /** 手札の同じカード2枚を、1つ上のレアリティのカード1枚にする（メインの1枚には数えない。何回でもできる） */
+  fuse(cardIdA, cardIdB) {
+    const check = this.canFuse(cardIdA, cardIdB);
+    if (!check.ok) return check;
+    const { player, a, b } = check;
+    player.hand = player.hand.filter((c) => c !== a && c !== b);
+    const card = this.createCard(a.def.fuseTo);
+    player.hand.push(card);
+    this.emit('cardsFused', { playerId: player.id, cardIds: [a.cardId, b.cardId], cardId: card.cardId, from: a.type, to: card.type });
     return ok();
   }
 
@@ -919,6 +1054,8 @@ export class Game {
           reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
         };
       }
+      case 'gainCoins':
+        return { targets: [{ playerId: player.id }], reason: '' };
       case 'redrawHand':
         return {
           targets: player.hand.some((c) => c.cardId !== card.cardId) ? [{ playerId: player.id }] : [],
@@ -1064,6 +1201,8 @@ export class Game {
       const soldierId = `s${String(this.nextSoldierNumber++).padStart(2, '0')}`;
       const soldier = new Soldier(soldierId, card, road.roadId, targetId);
       soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
+      soldier.baseAttack += player.armyAttack; // 訓練（コインで買う）
+      soldier.hp += player.armyHp;
       player.soldiers.push(soldier);
       this.emit('soldierDeployed', {
         playerId: player.id,
@@ -1146,6 +1285,12 @@ export class Game {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         const healed = player.castle.heal(amount);
         this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        break;
+      }
+
+      case 'gainCoins': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        this.changeCoins(player, amount, 'card');
         break;
       }
 
