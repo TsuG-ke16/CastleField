@@ -5,7 +5,7 @@
 //   入る（最大8人）→ 部屋主がモードを選ぶ・CPU を足す／各自が城・デッキを選ぶ → 部屋主が「開始」
 //   → 試合 → 「もう1回」（同じ設定）か「部屋に戻る」（設定を変える・人が入れる）
 import { randomBytes } from 'node:crypto';
-import { Game, EVENT_TYPES } from '../js/game/Game.js';
+import { Game, EVENT_TYPES, TEAM_IDS, MAX_TEAM_SIZE } from '../js/game/Game.js';
 import { filterEventFor } from '../js/game/visibility.js';
 import { STRATEGIES } from '../js/game/strategies.js';
 
@@ -32,6 +32,15 @@ export const DECK_MODES = {
   shared: 'みんなで共通の山札',
   own: '1人1つのデッキ',
 };
+/** 部屋で選べるチームの分け方 */
+export const TEAM_MODES = {
+  off: 'チームなし（個人戦）',
+  auto: '自動で2チームに分ける',
+  choose: '各自でチームを選ぶ',
+};
+/** チームの名前（画面に出す） */
+export const TEAM_NAMES = { t1: 'チームA', t2: 'チームB', t3: 'チームC', t4: 'チームD' };
+
 /** CPU の強さ → 戦い方（js/main.js の CPU_LEVELS と同じ割り当て） */
 export const CPU_LEVELS = {
   easy: { name: 'よわい', strategy: 'defensive' },
@@ -63,8 +72,11 @@ export class Room {
     this.settings = {
       winCondition: Object.hasOwn(WIN_CONDITIONS, data.rules.winCondition) ? data.rules.winCondition : 'firstDestroy',
       deckMode: Object.hasOwn(DECK_MODES, data.rules.deckMode) ? data.rules.deckMode : 'shared',
+      teams: 'off',
     };
     this.game = null;
+    /** 今の試合のチーム（席ごと。チームなしなら null） */
+    this.lastTeams = null;
     this.rematchVotes = new Set();
     this.lastActive = Date.now();
     this.cpuTimer = null;
@@ -94,6 +106,8 @@ export class Room {
       left: false,
       clients: new Set(),
       cpu,
+      // 各自で選ぶときのチーム（入った順に A・B・A・B …。選び直せる）
+      team: TEAM_IDS[this.seats.length % 2],
       castle: this.data.castles ? this.defaultOf(this.data.castles, this.data.rules.defaultCastle) : null,
       deck: this.data.decks ? this.defaultOf(this.data.decks, this.data.rules.defaultDeck) : null,
     };
@@ -138,6 +152,9 @@ export class Room {
       deckMode: this.settings.deckMode,
     };
     const setup = {};
+    const teams = this.teamsForGame();
+    if (teams) setup.teams = teams;
+    this.lastTeams = teams;
     if (this.data.castles) setup.castles = this.seats.map((s) => s.castle);
     if (this.data.decks && rules.deckMode === 'own') setup.decks = this.seats.map((s) => s.deck);
     this.game = new Game({ ...this.data, rules, setup, rng: this.makeRng() });
@@ -226,11 +243,42 @@ export class Room {
     return null;
   }
 
+  /**
+   * 試合のチーム（席ごとのチームID）。チームなしなら null
+   *   auto：席をシャッフルして、2チームに半分ずつ（奇数ならチームAが1人少ない）。試合のたびに分け直す
+   *   choose：各自が選んだチーム
+   */
+  teamsForGame() {
+    if (this.settings.teams === 'off') return null;
+    if (this.settings.teams === 'choose') return this.seats.map((s) => s.team);
+    const rng = this.makeRng();
+    const idx = this.seats.map((_, i) => i);
+    for (let i = idx.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [idx[i], idx[j]] = [idx[j], idx[i]];
+    }
+    const teams = Array(this.seats.length);
+    idx.forEach((seat, k) => { teams[seat] = k < Math.floor(this.seats.length / 2) ? 't1' : 't2'; });
+    return teams;
+  }
+
+  /** チームで始められないときの理由（始められるなら null） */
+  teamProblem() {
+    if (this.settings.teams !== 'choose') return null;
+    const counts = {};
+    for (const s of this.seats) counts[s.team] = (counts[s.team] ?? 0) + 1;
+    if (Object.keys(counts).length < 2) return 'チームが1つしかありません（2チーム以上に分かれてください）';
+    if (Object.values(counts).some((n) => n > MAX_TEAM_SIZE)) return `1チームは${MAX_TEAM_SIZE}人までです`;
+    return null;
+  }
+
   /** 部屋主が試合を始める（CPU を含めて2人以上） */
   start(seat) {
     if (this.game) return { ok: false, reason: 'もう試合が始まっています' };
     if (seat !== this.host) return { ok: false, reason: '部屋主だけが始められます' };
     if (this.seats.length < MIN_PLAYERS) return { ok: false, reason: `${MIN_PLAYERS}人以上で始められます（CPU を足すこともできます）` };
+    const teamProblem = this.teamProblem();
+    if (teamProblem) return { ok: false, reason: teamProblem };
     try {
       this.startGame();
     } catch (err) {
@@ -243,7 +291,7 @@ export class Room {
     return { ok: true };
   }
 
-  /** 部屋主がモードを選ぶ：{ winCondition?, deckMode? } */
+  /** 部屋主がモードを選ぶ：{ winCondition?, deckMode?, teams? } */
   setRules(seat, patch) {
     const bad = this.lobbyCheck(seat);
     if (bad) return bad;
@@ -253,6 +301,9 @@ export class Room {
       if (key === 'winCondition') {
         if (!Object.hasOwn(WIN_CONDITIONS, value)) return { ok: false, reason: 'その勝ち方はありません' };
         next.winCondition = value;
+      } else if (key === 'teams') {
+        if (!Object.hasOwn(TEAM_MODES, value)) return { ok: false, reason: 'そのチームの分け方はありません' };
+        next.teams = value;
       } else if (key === 'deckMode') {
         if (!Object.hasOwn(DECK_MODES, value)) return { ok: false, reason: 'その山札の形はありません' };
         if (value === 'own' && !this.data.decks) return { ok: false, reason: 'デッキがないので、1人1つのデッキは選べません' };
@@ -280,11 +331,14 @@ export class Room {
       if (seat !== this.host) return { ok: false, reason: 'CPU の席は部屋主だけが変えられます' };
     }
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return { ok: false, reason: '設定の形が正しくありません' };
-    const next = { castle: target.castle, deck: target.deck };
+    const next = { castle: target.castle, deck: target.deck, team: target.team };
     for (const [key, value] of Object.entries(patch)) {
       if (key === 'castle') {
         if (!this.data.castles || typeof value !== 'string' || !Object.hasOwn(this.data.castles, value)) return { ok: false, reason: 'その城はありません' };
         next.castle = value;
+      } else if (key === 'team') {
+        if (!TEAM_IDS.includes(value)) return { ok: false, reason: 'そのチームはありません' };
+        next.team = value;
       } else if (key === 'deck') {
         if (!this.data.decks || typeof value !== 'string' || !Object.hasOwn(this.data.decks, value)) return { ok: false, reason: 'そのデッキはありません' };
         next.deck = value;
@@ -531,6 +585,8 @@ export class Room {
         cpu: s.cpu,
         castle: s.castle,
         deck: s.deck,
+        // 試合中・試合のあとは、その試合のチーム。始まる前は、各自で選ぶときのチーム
+        team: this.game ? this.lastTeams?.[this.seats.indexOf(s)] ?? null : s.team,
       })),
       hostId: this.host?.playerId ?? null,
       capacity: this.capacity,
@@ -545,6 +601,8 @@ export class Room {
         castles: Object.entries(this.data.castles ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         decks: Object.entries(this.data.decks ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),
+        teamModes: Object.entries(TEAM_MODES).map(([id, name]) => ({ id, name })),
+        teams: TEAM_IDS.map((id) => ({ id, name: TEAM_NAMES[id] })),
       },
       rematchVotes: [...this.rematchVotes],
     };

@@ -731,8 +731,8 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **部屋主**：最初に入った人。部屋主が出たら、残っている人のうちいちばん前の席の人が部屋主になる（CPU はなれない）
 - **始まる前**（`started: false`）
   - `start`：部屋主だけ。CPU を含めて `minPlayers`（2）人以上で始まる。始まったら、その部屋には入れない
-  - `setRules`、`args: [{ winCondition?, deckMode? }]`：部屋主だけ。勝ち方（`"firstDestroy"`：最初に城を落とした人の勝ち／`"lastStanding"`：バトルロイヤル）と山札（`"shared"`：共通の山札／`"own"`：1人1つのデッキ）
-  - `setSeat`、`args: [{ castle?, deck? }, playerId?]`：席の城の種類・デッキ（`castles.json` / `decks.json` のキー）。自分の席は自分で、CPU の席は部屋主が `playerId` を付けて選ぶ。デッキは `deckMode` が `"own"` のときに使われる
+  - `setRules`、`args: [{ winCondition?, deckMode?, teams? }]`：部屋主だけ。勝ち方（`"firstDestroy"`：最初に城を落とした人の勝ち／`"lastStanding"`：バトルロイヤル）と山札（`"shared"`：共通の山札／`"own"`：1人1つのデッキ）とチームの分け方（`"off"`：個人戦／`"auto"`：自動で2チーム／`"choose"`：各自で選ぶ。下の「チーム」）
+  - `setSeat`、`args: [{ castle?, deck?, team? }, playerId?]`：席の城の種類・デッキ（`castles.json` / `decks.json` のキー）・チーム（`"t1"`〜`"t4"`。各自で選ぶときに使う）。自分の席は自分で、CPU の席は部屋主が `playerId` を付けて選ぶ。デッキは `deckMode` が `"own"` のときに使われる
   - `addCpu`、`args: [level?]`：部屋主だけ。`level` は `"easy"` / `"normal"`（省略したとき）/ `"hard"`（戦い方は `js/main.js` の `CPU_LEVELS` と同じ：defensive / rush / smart）。名前は「CPU1（つよい）」など。返り値に `playerId`
   - `removeCpu`、`args: [playerId]`：部屋主だけ。CPU を外す（席が詰まる）
   - `leave`：始まる前に出た人は席ごと消え、うしろの席が詰まる（`playerId` が変わるので、画面は `room` の `you` を見る）。人が全員出たら CPU も消える
@@ -740,7 +740,11 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - CPU は、サーバーが `js/game/strategies.js` の戦い方で動かす（自分の手札しか見ない）。1手ごとに少し間をおく（`createGameServer({ cpuDelayMs })`、省略すると 700ミリ秒）。人の番・人の防御になったら止まって待つ。CPU が攻めて人が防御を選ぶあいだも待つ
   - `backToRoom`：試合が終わったあと、部屋主だけ。始まる前の状態に戻る（設定を変えたり、人が入ったりできる）。試合中に出た人の席は、ここで消える（出た人がいても、部屋に戻せばまた遊べる）
 - 試合の `rules` は `data/rules.json` に、部屋の人数（`playerCount`）と `settings` を上書きしたもの。城への魔法は `castleSpellRange`（今は `"any"`：誰にでも）のまま
-- **まだ入っていないこと**（次のPR）：真ん中の広場を通る道（今は3人以上でも輪の道のまま）、チーム戦
+- **チーム**（人間に確認して決めた。ルールは STEP 5 の「チーム戦」）
+  - `"auto"`：始めるたびに、席をシャッフルして2チームに半分ずつ分ける（奇数ならチームAが1人少ない）。「もう1回」でも分け直す
+  - `"choose"`：各自が `setSeat` でチームを選ぶ（入った順に A・B・A・B … で始まる）。CPU のチームは部屋主が選ぶ。チームは4つまで（A〜D）、1チーム7人まで。2チーム以上に分かれていないと始められない
+  - `room` の `players[].team`：始まる前は各自で選んだチーム、試合中・試合のあとはその試合のチーム（個人戦なら `null`）。`choices.teamModes` / `choices.teams`（`[{ id, name }]`。名前は チームA〜D）
+- 広場（3人以上）・チーム戦は、STEP 5 のルールのとおり（部屋が `rules.json` と `setup.teams` を渡すだけ）
 
 ### 隠す情報（`js/game/visibility.js`）
 | イベント | 本人以外に送るとき |

@@ -56,7 +56,7 @@ test('部屋主：最初に入った人。モードは部屋主だけが選べ�
   assert.equal(a.room.action(a.seat, 'setRules', [{ winCondition: 'nope' }]).ok, false);
   assert.equal(a.room.action(a.seat, 'setRules', [{ castleMaxHp: 1 }]).ok, false);
   assert.equal(a.room.action(a.seat, 'setRules', [{ winCondition: 'lastStanding', deckMode: 'own' }]).ok, true);
-  assert.deepEqual(b.lastRoom().settings, { winCondition: 'lastStanding', deckMode: 'own' });
+  assert.deepEqual(b.lastRoom().settings, { winCondition: 'lastStanding', deckMode: 'own', teams: 'off' });
   const ids = (list) => list.map((x) => x.id);
   assert.deepEqual(ids(b.lastRoom().choices.winConditions), ['firstDestroy', 'lastStanding']);
   assert.deepEqual(ids(b.lastRoom().choices.deckModes), ['shared', 'own']);
@@ -197,4 +197,39 @@ test('CPU は間をおいて1手ずつ動く（cpuDelayMs）', async () => {
   const now = a.room.game.getState(null);
   assert.equal(now.phase === 'defend' ? now.defense.defenderId : now.currentPlayer, 'p1');
   a.room.stopCpu();
+});
+
+test('チーム：自動なら2チームに半分ずつ分かれ、もう1回のたびに分け直す', () => {
+  const lobby = newLobby();
+  const a = enter(lobby, 'r', 'A');
+  for (let i = 0; i < 4; i++) a.room.action(a.seat, 'addCpu', ['hard']);
+  assert.equal(a.room.action(a.seat, 'setRules', [{ teams: 'nope' }]).ok, false);
+  assert.equal(a.room.action(a.seat, 'setRules', [{ teams: 'auto' }]).ok, true);
+  assert.equal(a.room.action(a.seat, 'start', []).ok, true);
+  const st = a.room.game.getState(null);
+  const sizes = Object.values(st.teams).map((t) => t.size).sort();
+  assert.deepEqual(sizes, [2, 3]);
+  const shown = a.lastRoom().players.map((p) => p.team);
+  assert.deepEqual(shown, st.playerOrder.map((id) => st.players[id].team));
+  playOut(a.room);
+  assert.ok(a.seen.filter((m) => m.event === 'gameOver').at(-1).payload.winnerTeam);
+});
+
+test('チーム：各自で選ぶ。CPU は部屋主が選び、1チームしかないと始められない', () => {
+  const lobby = newLobby();
+  const a = enter(lobby, 'r', 'A');
+  const b = enter(lobby, 'r', 'B');
+  a.room.action(a.seat, 'addCpu', []);
+  a.room.action(a.seat, 'addCpu', []);
+  a.room.action(a.seat, 'setRules', [{ teams: 'choose' }]);
+  assert.deepEqual(a.lastRoom().players.map((p) => p.team), ['t1', 't2', 't1', 't2']);
+  for (const id of ['p2', 'p4']) assert.equal(a.room.action(a.seat, 'setSeat', [{ team: 't1' }, id]).ok, id !== 'p2');
+  assert.equal(a.room.action(b.seat, 'setSeat', [{ team: 't1' }]).ok, true);
+  assert.equal(a.room.action(a.seat, 'start', []).reason, 'チームが1つしかありません（2チーム以上に分かれてください）');
+  assert.equal(a.room.action(b.seat, 'setSeat', [{ team: 't5' }]).ok, false);
+  assert.equal(a.room.action(b.seat, 'setSeat', [{ team: 't3' }]).ok, true);
+  assert.equal(a.room.action(a.seat, 'setSeat', [{ team: 't4' }, 'p3']).ok, true);
+  assert.equal(a.room.action(a.seat, 'start', []).ok, true);
+  assert.deepEqual(Object.keys(a.room.game.getState(null).teams), ['t1', 't3', 't4']);
+  playOut(a.room);
 });
