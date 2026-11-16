@@ -12,5 +12,9 @@
   "ticketEpic": {"name": "エピック入手券", "effect": "gainCard", "amount": 1, "rarity": "epic", "cost": 35, "limit": 1},
   "ticketLegendary": {"name": "レジェンド入手券", "effect": "gainCard", "amount": 1, "rarity": "legendary", "cost": 80, "limit": 1},
   "superRepair": {"name": "超修理", "effect": "repairCastle", "amount": 20, "cost": 20, "limit": 1},
-  "hugeRecruit": {"name": "大量補充", "effect": "drawCards", "amount": 5, "cost": 12, "limit": 1}
+  "hugeRecruit": {"name": "大量補充", "effect": "drawCards", "amount": 5, "cost": 12, "limit": 1},
+  "training": {"name": "訓練", "effect": "trainArmy", "amount": 1, "cost": 3, "limit": 10},
+  "hardTraining": {"name": "猛特訓", "effect": "trainArmy", "amount": 3, "cost": 10, "limit": 5},
+  "conditioning": {"name": "鍛錬", "effect": "fortifyArmy", "amount": 1, "cost": 3, "limit": 10},
+  "hardConditioning": {"name": "超鍛錬", "effect": "fortifyArmy", "amount": 3, "cost": 10, "limit": 5}
 }

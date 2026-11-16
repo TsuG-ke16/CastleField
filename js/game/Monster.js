@@ -71,7 +71,7 @@ export class Monster {
   }
 }
 
-export const UPGRADE_EFFECTS = ['repairCastle', 'drawCards', 'sharpenSoldiers', 'boostDrops', 'gainCard'];
+export const UPGRADE_EFFECTS = ['repairCastle', 'drawCards', 'sharpenSoldiers', 'boostDrops', 'gainCard', 'trainArmy', 'fortifyArmy'];
 
 /** upgrades.json の中身をチェックする（間違いは例外） */
 export function validateUpgrades(upgrades) {

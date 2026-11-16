@@ -299,6 +299,8 @@ function buyUpgrades(game, pid, ctx) {
     const order = [
       ...(me.castleHp < me.castleMaxHp / 2 ? by('repairCastle') : []),
       ...by('sharpenSoldiers'),
+      ...by('trainArmy'),
+      ...by('fortifyArmy'),
       ...by('gainCard').sort((a, b) => ctx.upgrades[b].cost - ctx.upgrades[a].cost),
       ...by('boostDrops'),
       ...by('drawCards'),

@@ -863,6 +863,18 @@ export class Game {
       this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
     } else if (def.effect === 'drawCards') {
       this.drawCards(player, def.amount);
+    } else if (def.effect === 'trainArmy') {
+      player.armyAttack += def.amount;
+      for (const s of player.soldiers) {
+        s.baseAttack += def.amount;
+        this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack });
+      }
+    } else if (def.effect === 'fortifyArmy') {
+      player.armyHp += def.amount;
+      for (const s of player.soldiers) {
+        s.hp += def.amount;
+        this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack, hp: s.hp });
+      }
     } else if (def.effect === 'gainCard') {
       const cardIds = [];
       for (let i = 0; i < def.amount; i++) {
@@ -1155,6 +1167,8 @@ export class Game {
       const soldierId = `s${String(this.nextSoldierNumber++).padStart(2, '0')}`;
       const soldier = new Soldier(soldierId, card, road.roadId, targetId);
       soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
+      soldier.baseAttack += player.armyAttack; // 訓練（コインで買う）
+      soldier.hp += player.armyHp;
       player.soldiers.push(soldier);
       this.emit('soldierDeployed', {
         playerId: player.id,

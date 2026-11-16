@@ -176,3 +176,24 @@ test('魔物のごほうび：rewardRarity の魔物を倒すと、そのレア�
   assert.equal(me.coins, coins);
   assert.equal(log.filter((e) => e.event === 'coinsChanged').length, 0);
 });
+
+test('訓練・鍛錬：買うと、いる兵士にも、これから出す兵士にも、攻撃力・HPがずっと増える', () => {
+  const upgrades = loadJson('upgrades.json');
+  const g = make({ upgrades });
+  g.debugSetHand('p1', ['infantry', 'infantry']);
+  g.start();
+  g.players.p1.coins = 100;
+  const cards = loadJson('cards.json');
+  const ids = g.getState('p1').players.p1.hand.filter((c) => c.type === 'infantry').map((c) => c.cardId);
+  assert.equal(g.playCard(ids[0], g.getTargets(ids[0])[0]).ok, true);
+  assert.equal(g.buyUpgrade('hardTraining').ok, true); // 攻撃+3
+  assert.equal(g.buyUpgrade('hardConditioning').ok, true); // HP+3
+  const s = () => g.getState('p1').players.p1.soldiers;
+  assert.equal(s()[0].attack, cards.infantry.attack + upgrades.hardTraining.amount);
+  assert.equal(s()[0].hp, cards.infantry.hp + upgrades.hardConditioning.amount);
+  g.endTurn(); g.endTurn(); // p1 に戻る。メインは1枚なので2枚目の歩兵は次のターン
+  assert.equal(g.playCard(ids[1], g.getTargets(ids[1])[0]).ok, true);
+  const added = s().at(-1); // 最初の1体は、もう城に着いて消えている
+  assert.equal(added.attack, cards.infantry.attack + upgrades.hardTraining.amount);
+  assert.equal(added.hp, cards.infantry.hp + upgrades.hardConditioning.amount);
+});
