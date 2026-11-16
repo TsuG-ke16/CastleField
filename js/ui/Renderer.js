@@ -16,8 +16,6 @@ const $ = (id) => document.getElementById(id);
 const X_ME = 74;
 const X_OPP = 26;
 
-const SPIRIT_ICON = { fire: '🔥', water: '💧', wind: '🌀', earth: '⛰️' };
-
 export class Renderer {
   /**
    * @param {{ cards: object, rules: object, monsters?: object, showCoins?: boolean,
@@ -285,7 +283,11 @@ export class Renderer {
     fill.classList.toggle('low', ratio <= 0.25);
     castle.classList.toggle('danger', ratio <= 0.25 && ratio > 0);
     // 城が壊れていく見た目（0：無傷 〜 3：落ちた）
-    castle.dataset.damage = String(ratio <= 0 ? 3 : ratio <= 0.34 ? 2 : ratio <= 0.67 ? 1 : 0);
+    const damage = String(ratio <= 0 ? 3 : ratio <= 0.34 ? 2 : ratio <= 0.67 ? 1 : 0);
+    if (castle.querySelector('.castle-pic > .castle-art')?.dataset.damageStage !== damage) {
+      castle.querySelector('.castle-pic').innerHTML = castleArt(colorOf(playerId), Number(damage));
+    }
+    castle.dataset.damage = damage;
     castle.querySelector('.hp-value').textContent = String(Math.max(0, hp));
     castle.querySelector('.hp-max').textContent = `/${maxHp}`;
   }
@@ -306,7 +308,22 @@ export class Renderer {
     const badge = this.castleEl(playerId).querySelector('.castle-spirit');
     if (!badge) return;
     badge.hidden = !spirit;
-    badge.textContent = spirit ? `${SPIRIT_ICON[spirit.spirit] ?? '✨'} あと${spirit.turns}` : '';
+    badge.replaceChildren();
+    if (spirit) {
+      const name = document.createElement('b');
+      const symbol = document.createElement('span');
+      symbol.className = 'spirit-symbol';
+      symbol.innerHTML = icon(spirit.spirit);
+      name.textContent = this.cards[spirit.type]?.name ?? '精霊';
+      const detail = document.createElement('span');
+      const effects = {
+        fire: `城に${spirit.amount}ダメージ`, water: `城を${spirit.amount}回復`,
+        wind: `速さ最低${spirit.amount}`, earth: `ダメージ−${spirit.amount}`,
+      };
+      detail.textContent = `${effects[spirit.spirit] ?? ''}・あと${spirit.turns}回`;
+      badge.append(symbol, name, detail);
+      badge.title = this.cards[spirit.type]?.description ?? name.textContent;
+    }
   }
 
   // ---------- 兵士 ----------

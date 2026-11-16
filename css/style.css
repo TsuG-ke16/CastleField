@@ -26,8 +26,8 @@
   --t-death: 260ms;
   --t-heal: 420ms;
   --t-equip: 300ms;
-  --font: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
-  --head: "Dela Gothic One", "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic UI", sans-serif;
+  --font: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+  --head: "Hiragino Maru Gothic ProN", "Yu Gothic UI", sans-serif;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -997,3 +997,110 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 @media (prefers-reduced-motion: reduce) {
   .soldier-pic, .monster-pic, .castle-flag, .result-rays, .title-unit { animation: none !important; }
 }
+
+/* 防御の成否は拡大カードより手前で、文字を読み切れる長さだけ表示する。 */
+.fx-banner.defense-result {
+  z-index: 56;
+  top: 38%;
+  padding: 18px 8px;
+  font-size: clamp(28px, 7vw, 38px);
+  color: #ffe14d;
+  background: linear-gradient(90deg, transparent, #4a2e1a 12%, #4a2e1a 88%, transparent);
+}
+
+/* 親指で押す操作と、読み切れる手札を優先した配置。 */
+html, body { background: radial-gradient(ellipse at top, #a9d4e4, #294957); }
+#app { box-shadow: 0 0 60px #18353c66; }
+.control-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 12px; }
+#message { grid-column: 1 / -1; min-height: 1.4em; font-size: 13px; }
+#end-turn { grid-column: 2; min-width: 132px; min-height: 46px; }
+#upgrade-open { justify-self: start; min-height: 44px; }
+.round-btn { min-width: 36px; min-height: 36px; }
+.hand-toolbar { display: flex; align-items: center; gap: 10px; padding: 0 12px; color: #fff7e0; font-size: 11px; }
+.hand-toolbar b { font-size: 14px; }
+.hand-scroll-hint { margin-left: auto; visibility: hidden; }
+.hand-scrolls .hand-scroll-hint { visibility: visible; }
+#hand { padding-top: 14px; padding-bottom: 14px; height: calc(var(--card-h) + 32px); scroll-padding-inline: 12px; }
+#hand .card { scroll-snap-align: start; }
+#hand .card:focus-visible, button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.card-name { max-width: 100%; font-size: 12px; letter-spacing: -.35px; }
+.card-name.long { font-size: 10px; }
+.castle-spirit { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; white-space: normal; padding: 5px 6px; border-radius: 10px; }
+.castle-spirit b { font-size: 11px; }
+.castle-spirit span { font-size: 10px; line-height: 1.35; }
+@media (max-width: 360px) {
+  .hand-toolbar { gap: 6px; font-size: 10px; }
+  .hand-scroll-hint { font-size: 9px; }
+}
+@media (max-height: 650px) {
+  .control-row { padding-block: 5px; gap: 5px; }
+  #message { font-size: 11px; }
+  #end-turn, #upgrade-open { min-height: 38px; }
+  .hand-toolbar { font-size: 10px; }
+}
+@media (max-width: 360px) {
+  #hud { gap: 4px; padding-inline: 6px; }
+  #hud .chip { padding-inline: 5px; gap: 2px; }
+  #hud .hud-opp, #hud .hud-right { gap: 3px; }
+  #hud .player-name { display: none; }
+}
+
+/* PNGの本番素材。SVGは読み込み中と失敗時の代替表示。 */
+.asset-art { position: relative; display: inline-block; }
+.asset-art.art { display: block; }
+.asset-image, .asset-fallback { position: absolute; inset: 0; width: 100%; height: 100%; }
+.asset-image { object-fit: contain; opacity: 0; pointer-events: none; }
+.asset-loaded > .asset-image { opacity: 1; }
+.asset-loaded > .asset-fallback { visibility: hidden; }
+#scenery { background: url('../assets/bg/board.png') center / cover no-repeat; }
+#scenery .tree { opacity: .12; }
+#road { background: linear-gradient(#f8e3b3ed, #e6c184eb); box-shadow: 0 8px 18px #67482422, inset 0 2px #fff6d6; }
+.card-frame { display: none; position: absolute; inset: -3px; width: calc(100% + 6px); height: calc(100% + 6px); pointer-events: none; z-index: 1; }
+.card.has-frame .card-frame { display: block; }
+.card.has-frame { border-color: transparent; background: #fff1ce; box-shadow: 0 4px 6px #38261455; }
+.card.has-frame .card-art { position: absolute; left: 19%; top: 26%; width: 62%; height: 45%; border: 0; background: #fff2d6; border-radius: 3px; }
+.card.has-frame .card-name { position: absolute; top: 77%; left: 6%; right: 6%; z-index: 2; text-align: center; color: #4a2e1a; -webkit-text-stroke-width: 0; }
+.card.has-frame .card-short { position: absolute; bottom: -7px; z-index: 2; }
+.card.has-frame .card-kind, .card.has-frame .card-exhaust { z-index: 3; }
+:root { --card-w: 104px; --card-h: 150px; }
+.card-name { font-size: 13px; }
+.card-name.long { font-size: 11px; }
+.plank-btn { background: #efbf6a url('../assets/ui/button-end-turn.png') center / 100% 100% no-repeat; color: #fff7df; text-shadow: 0 1px 3px #4a2e1a; }
+.plank-btn.alt, .plank-btn.alt2, .level { background-blend-mode: soft-light; }
+.castle-hp { background: #d0a367 url('../assets/ui/sign-hp.png') center / 100% 100% no-repeat; }
+.result-crown { width: 240px; height: 120px; margin: 0 auto; font-size: 0; background: url('../assets/ui/banner-win.png') center / contain no-repeat; }
+.element-guide { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 3px; padding: 10px 4px; border-radius: 12px; background: #f1ddb1; font-size: 12px; }
+.element-guide .asset-art { width: 20px; height: 20px; }
+@media (max-height: 650px) { :root { --card-w: 82px; --card-h: 116px; } .card-name { font-size: 11px; } .card-name.long { font-size: 9px; } }
+
+.sprite-fx:has(.asset-loaded) { background: none; border: 0; clip-path: none; box-shadow: none; }
+.fx-fireball.sprite-fx { width: 72px; height: 72px; }
+.fx-bolt.sprite-fx { width: 64px; margin-left: -32px; }
+.fx-bolt.sprite-fx .asset-image { object-fit: fill; }
+.fx-clash:has(.asset-art) { width: 90px; height: 90px; }
+.fx-heal-sprite { position: absolute; width: 130px; height: 130px; margin: -65px 0 0 -65px; }
+.fx-mist .asset-art { opacity: .75; }
+
+/* 数字と文字を画像の飾りに重ねず、明瞭な面に置く。 */
+.castle-hp { background: linear-gradient(#f6dfab, #d9ae69); }
+.plank-btn { background: linear-gradient(#ffe497, #eeb94e); color: var(--ink); text-shadow: none; }
+.plank-btn.alt { background: linear-gradient(#b7e1ff, #64b3ed); }
+.plank-btn.alt2 { background: linear-gradient(#d9f3b8, #91d468); }
+.card.has-frame .card-frame { height: 76%; }
+.card.has-frame .card-art { top: 19%; height: 34%; }
+.card.has-frame .card-name { top: 76%; left: 0; right: 0; font-size: 13px; line-height: 1.4; }
+.card.has-frame .card-name.long { font-size: 11px; }
+.card.has-frame .card-short { bottom: -5px; }
+.card.has-frame { background: linear-gradient(#fdf2cf, #f6e1ad); }
+.card.has-frame.spell { background: linear-gradient(#f4eaff, #dac7ed); }
+.card.has-frame.defense { background: linear-gradient(#e8f4ff, #bfdaee); }
+.card.has-frame.weapon { background: linear-gradient(#fff0d9, #f1cc92); }
+@media (max-height: 650px) {
+ .card.has-frame .card-name { font-size: 11px; }
+ .card.has-frame .card-name.long { font-size: 9px; }
+ .card.has-frame .card-short { font-size: 10px; }
+}
+
+.castle-spirit { display: grid; grid-template-columns: 18px 1fr; align-items: center; column-gap: 4px; }
+.castle-spirit .spirit-symbol { grid-row: span 2; width: 18px; height: 18px; font-size: 18px; }
+.castle-spirit > span:last-child { grid-column: 2; }

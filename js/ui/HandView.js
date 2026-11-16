@@ -51,6 +51,14 @@ export class HandView {
       discardOk: document.querySelector('#discard-bar .discard-ok'),
     };
 
+    const refill = $('hand-refill');
+    if (refill) refill.textContent = rules.drawUntilHand > 0 ? `毎ターン${rules.drawUntilHand}枚まで補充` : '';
+    this.el.hand.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card')) {
+        e.preventDefault();
+        e.target.click();
+      }
+    });
     this.el.hand.addEventListener('click', (e) => this.handleClick(e));
     this.el.hand.addEventListener('pointerdown', (e) => this.handlePointerDown(e));
     this.el.detailUse.addEventListener('click', () => {
@@ -91,22 +99,16 @@ export class HandView {
     this.updateDiscardBar();
   }
 
-  /**
-   * 手札が画面の幅に収まるように、カードを重ねる（全部のカードがいつも見えるように）。
-   * 重ねても収まらないほど多いときは、左右にスライドできる。
-   */
+  /** カードを重ねず、全体が読める幅で横に並べる。 */
   layout() {
     const box = this.el.hand;
-    const cardEls = box.querySelectorAll('.card');
-    const n = cardEls.length;
-    let gap = 8;
-    if (n > 1) {
-      const cw = cardEls[0].offsetWidth || 86;
-      const room = box.clientWidth - 24;
-      const minStrip = 38; // 重ねたときに、最低これだけは見せる(px)
-      gap = Math.min(8, Math.max(minStrip - cw, (room - n * cw) / (n - 1)));
-    }
-    box.style.setProperty('--gap', `${Math.floor(gap)}px`);
+    const cards = box.querySelectorAll('.card');
+    box.style.setProperty('--gap', '8px');
+    const count = $('hand-count');
+    if (count) count.textContent = String(cards.length);
+    // 描画直後にも測定できるよう、幅はレイアウト済みの値を使う。
+    const overflow = box.scrollWidth > box.clientWidth;
+    this.el.controls.classList.toggle('hand-scrolls', overflow);
   }
 
   /** カードの色（兵士の絵を、持ち主の色で描く） */
@@ -119,9 +121,18 @@ export class HandView {
     const el = document.createElement('div');
     el.className = `card ${def.kind ?? ''}${def.exhaust ? ' exhaust' : ''}`;
     el.dataset.id = card.cardId;
+    el.tabIndex = 0;
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', `${def.name}。${cardDescription(def, this.rules, this.textOpts)}`);
     if (def.element) el.dataset.element = def.element;
     el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
       '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
+    const frame = document.createElement('img');
+    frame.className = 'card-frame';
+    frame.src = `assets/cards/frame-${def.kind}.png`;
+    frame.alt = '';
+    frame.draggable = false;
+    if (['soldier', 'spell', 'weapon', 'defense'].includes(def.kind)) el.prepend(frame);
     el.querySelector('.card-kind').textContent = KIND_LABEL[def.kind] ?? '';
     el.querySelector('.card-art').innerHTML = cardArt(card.type, this.color ?? 'blue', def.name ?? '');
     const name = el.querySelector('.card-name');
@@ -159,6 +170,7 @@ export class HandView {
     this.discardPicks.clear();
     this.cancelDrag();
     this.el.hand.innerHTML = '';
+    this.layout();
     this.updateDetail();
     this.updateDiscardBar();
   }
