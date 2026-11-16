@@ -1,0 +1,100 @@
+/* 説明・操作をどの画面でも読めるようにする。 */
+:focus-visible {outline:3px solid #163e54!important;outline-offset:3px;box-shadow:0 0 0 5px #fff7d6!important;}
+.screen {padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));}
+.screen-box {max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);overflow:auto;max-width:100%;}
+#hud {padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));}
+#controls {padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
+#title-levels {max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px);}
+#card-detail {max-height:min(50dvh,390px);overflow:auto;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px;}
+#card-detail .detail-text {grid-column:1/-1;padding-right:30px;}
+#card-detail .detail-close {position:absolute;right:5px;top:5px;}
+#card-detail .detail-use {grid-column:1/-1;justify-self:end;position:sticky;bottom:0;}
+#card-detail .detail-desc {display:block!important;line-height:1.55;color:#29443c;}
+#card-detail .detail-hint {display:block!important;line-height:1.5;color:#46513e;}
+#card-detail .detail-hint.warn {color:#922923;}
+.detail-meta {overflow-wrap:anywhere;}
+#target-bar,#discard-bar {max-height:45dvh;overflow:auto;flex-wrap:wrap;}
+#result.lost .result-title,#result.lost .result-sub {color:#294d43;}
+#result .result-title {animation-duration:.2s;}
+#message {max-width:100%;white-space:normal;line-height:1.4;overflow-wrap:anywhere;}
+html[data-text-size=large] .card.has-frame .card-name {font-size:12px;}
+html[data-text-size=large] .card.has-frame .card-name.long {font-size:10px;}
+html[data-text-size=small] .card.has-frame .card-name {font-size:10px;}
+@media (min-width:900px) and (min-height:650px) {
+  #app {height:calc(100dvh - 48px);max-height:calc(100dvh - 48px);}
+  #controls {padding-bottom:max(10px,env(safe-area-inset-bottom));}
+  #card-detail {max-height:45dvh;}
+}
+@media (max-height:650px) and (max-width:899px) {
+  :root {--unit:40px;}
+  .castle-spirit .spirit-symbol {display:block;}
+  .spirit-symbol .spirit-art {width:26px;height:26px;}
+  #tutorial p {font-size:12px;}
+  #tutorial {padding:5px 7px;}
+}
+@media (max-width:360px) {
+  .control-row {gap:4px;padding-inline:6px;}
+  #hand-toggle {min-width:58px;padding-inline:5px;}
+  #end-turn {min-width:100px;font-size:12px;}
+  .castle-label {font-size:11px;}
+}
+@media (max-height:500px) {
+  html,body {height:100%;min-height:0;overflow:hidden;}
+  #app {width:100%;height:100dvh;max-height:100dvh;min-height:0;margin:0;border-radius:0;display:grid;grid-template-columns:minmax(200px,1fr) minmax(220px,.85fr);grid-template-rows:auto minmax(0,1fr);}
+  .game-brand {display:none;}
+  #hud {grid-column:1/-1;grid-row:1;padding-top:max(3px,env(safe-area-inset-top));padding-bottom:3px;}
+  #board {grid-column:1;grid-row:2;min-width:0;min-height:0;padding:2px 8px;}
+  #controls {grid-column:2;grid-row:2;display:flex;flex-direction:column;min-height:0;overflow:hidden;border-radius:0;padding-top:0;}
+  #hand {order:1;flex:1;min-height:0;height:auto;display:flex;flex-wrap:wrap;align-content:start;justify-content:center;overflow:auto;padding:8px;gap:7px;}
+  #hand .card {width:80px;height:116px;flex:none;}
+  .control-row {order:4;flex:none;flex-wrap:wrap;padding:5px;gap:4px;}
+  #controls #hand-toggle {display:none;}
+  #controls.hand-hidden #hand {display:flex;}
+  #controls #end-turn {min-width:100px;font-size:12px;padding-left:28px;padding-right:8px;}
+  #controls #upgrade-open {padding:3px;min-width:42px;}
+  #controls #message {position:relative;order:2;font-size:11px;min-height:0;}
+  #controls .economy-status {order:3;font-size:10px;}
+  #tutorial {flex:none;order:0;}
+  #tutorial p {font-size:11px;line-height:1.35;}
+  #tutorial button {font-size:10px;padding:4px;}
+  #card-detail {position:absolute;inset:5px;max-height:calc(100% - 10px);margin:0;z-index:40;}
+  #target-bar,#discard-bar {position:absolute;left:4px;right:4px;top:4px;bottom:auto;max-height:80%;margin:0;z-index:41;}
+  #title .title-box {display:grid;grid-template-columns:.9fr 1.1fr;gap:12px;max-width:100%;padding:10px;}
+  #title .title-story {align-self:center;}
+  #title .title-logo {margin:0;}
+  #title .title-logo img {max-height:150px;object-fit:contain;}
+  #title .title-pic {height:65px;margin-top:0;}
+  #title .title-choices {max-height:calc(100dvh - 24px);overflow:auto;padding:12px;}
+  #title .mode-choice {padding:8px;min-height:46px;}
+  #title .mode-choice strong {font-size:13px;}
+  #title .mode-choice small {font-size:9px;}
+  #title #title-main {gap:6px;}
+  .castle {height:48px;}
+  .castle-pic {height:48px;}
+  .hp-value {font-size:20px;}
+  .castle-label {font-size:10px;padding:3px;}
+}
+html[data-text-size=large] {--card-w:124px;--card-h:178px;}
+@media (max-height:500px) {html[data-text-size=large] #hand .card {width:100px;height:144px;}}
+#controls #message {flex:none;}
+.economy-status:empty {display:none;}
+@media (max-height:650px) {
+  #result .result-crown {display:none;}
+  #result .result-pic {height:130px;}
+  #result-stats {padding:6px 10px;}
+  #result-stats dl {font-size:12px;gap:3px 12px;}
+  #result .result-title {font-size:26px;}
+  #result .result-sub {margin:4px 0 8px;}
+  #result-encouragement {margin:8px 0;font-size:12px;}
+}
+@media (max-height:500px) {
+  #result .screen-box {width:min(100%,680px);display:grid;grid-template-columns:1fr 1.35fr;gap:4px 12px;align-items:center;padding:0;}
+  #result .result-pic {grid-column:1;grid-row:1;width:180px;height:110px;max-width:100%;}
+  #result .result-title {grid-column:1;grid-row:2;font-size:23px;margin:0;}
+  #result .result-sub {grid-column:1;grid-row:3;font-size:12px;margin:0;}
+  #result-stats {grid-column:2;grid-row:1/3;width:100%;margin:0;}
+  #result-encouragement {grid-column:2;grid-row:3;margin:0;}
+  #result #rematch {grid-column:2;grid-row:4;width:100%;min-height:40px;padding-block:5px;font-size:19px;}
+  #result #result-title-btn {grid-column:1;grid-row:4;margin:0;}
+  #result #back-to-room {grid-column:2;grid-row:5;margin:0;}
+}

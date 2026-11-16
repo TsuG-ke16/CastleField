@@ -27,11 +27,12 @@ export class Renderer {
    *   onTargetTap：対象を選んでいるときに盤面がタップされたら呼ぶ（光っていない所なら null）
    *   showCoins：コインを出すか（自分と相手で同じ条件。main.js が決める）
    */
-  constructor({ cards, rules, monsters = null, castles = null, showCoins = false, onSoldierTap, onMonsterTap, onTargetTap }) {
+  constructor({ cards, rules, monsters = null, castles = null, showCoins = false, onCastleTap, onSoldierTap, onMonsterTap, onTargetTap }) {
     this.cards = cards;
     this.castleDefs = castles ?? {};
     this.rules = rules;
     this.monsterDefs = monsters;
+    this.onCastleTap = onCastleTap;
     this.onSoldierTap = onSoldierTap;
     this.onMonsterTap = onMonsterTap;
     this.onTargetTap = onTargetTap;
@@ -75,12 +76,14 @@ export class Renderer {
     this.buildRoad();
 
     // 盤面のタップ：対象を選んでいるときは対象を、そうでなければ兵士・魔物の情報を出す
-    this.el.board.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.targetable')) { e.preventDefault(); e.target.click(); } });
+    this.el.board.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.targetable,.soldier,.monster,.castle')) { e.preventDefault(); e.target.click(); } });
     this.el.board.addEventListener('click', (e) => {
       if (this.targets) {
         this.onTargetTap?.(this.targetFromEl(e.target));
         return;
       }
+      const castle=e.target.closest('.castle');
+      if(castle){const id=castle.dataset.playerId;this.onCastleTap?.({playerId:id,...this.players[id]});return;}
       const sEl = e.target.closest('.soldier');
       if (sEl) {
         const s = this.soldiers.get(sEl.dataset.id);
@@ -528,6 +531,7 @@ export class Renderer {
     const el = document.createElement('div');
     el.className = `soldier ${this.sideOf(playerId)} no-anim`;
     el.dataset.id = st.soldierId;
+    el.tabIndex=0;el.setAttribute('role','button');
     el.dataset.role = st.role ?? def.role ?? 'melee';
     const team = this.players[playerId]?.team;
     el.dataset.team = team ?? '';
@@ -566,6 +570,7 @@ export class Renderer {
 
   /** 兵士の見た目を、持っている値（HP・攻撃・武器・盾・状態異常）に合わせる */
   updateSoldierBadges(s) {
+    s.el.setAttribute('aria-label',`席${this.playerOrder.indexOf(s.playerId)+1} ${this.cards[s.type]?.name??''}、攻撃${s.attack}、HP${s.hp}`);
     const q = (sel) => s.el.querySelector(sel);
     q('.soldier-turns').hidden = s.turnsLeft == null;
     q('.soldier-turns').textContent = `${s.role === 'mage' ? '✦' : '➶'} あと${s.turnsLeft}回`;
@@ -703,6 +708,7 @@ export class Renderer {
     const el = document.createElement('div');
     el.className = 'monster';
     el.dataset.id = st.monsterId;
+    el.tabIndex=0;el.setAttribute('role','button');
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="monster-token"><div class="monster-pic"></div>' +
       '<span class="monster-element" hidden></span><span class="monster-attack-in" hidden></span></div>' +
@@ -732,6 +738,7 @@ export class Renderer {
     if (!m) return;
     const before = m.castleAttack;
     Object.assign(m, patch);
+    m.el.setAttribute('aria-label',`${this.monsterDefs?.[m.type]?.name??'魔物'}、HP${m.hp}、次の城への攻撃${m.castleAttack??0}`);
     if (before != null && m.castleAttack > before) {
       m.el.classList.remove('threat-grown'); void m.el.offsetWidth; m.el.classList.add('threat-grown');
     }
@@ -799,11 +806,20 @@ export class Renderer {
 
   /** 対象（getTargets の結果）を光らせる。null で元に戻す */
   setTargets(targets) {
-    this.targets = targets && targets.length ? targets : null;
-    this.el.app.classList.toggle('targeting', Boolean(this.targets));
-    for (const el of this.el.board.querySelectorAll('.targetable')) el.classList.remove('targetable');
-    if (!this.targets) return;
-    for (const t of this.targets) this.elOfTarget(t)?.classList.add('targetable');
+    for(const {el,tab,role,label} of this.targetRestore??[]){
+      el.classList.remove('targetable');
+      for(const [key,value] of [['tabindex',tab],['role',role],['aria-label',label]])value===null?el.removeAttribute(key):el.setAttribute(key,value);
+    }
+    this.targetRestore=[];
+    this.targets=targets?.length?targets:null;
+    this.el.app.classList.toggle('targeting',Boolean(this.targets));
+    if(!this.targets)return;
+    for(const t of this.targets){const el=this.elOfTarget(t);if(!el||this.targetRestore.some(x=>x.el===el))continue;
+      this.targetRestore.push({el,tab:el.getAttribute('tabindex'),role:el.getAttribute('role'),label:el.getAttribute('aria-label')});
+      el.classList.add('targetable');el.tabIndex=0;el.setAttribute('role','button');
+      el.setAttribute('aria-label',t.roadId?`道${this.laneOf(t.roadId)+1}、${playerName(t.playerId)}`:t.monsterId?'魔物を狙う':t.soldierId?'兵士を選ぶ':`${playerName(t.playerId)}の城を選ぶ`);
+    }
+    this.targetRestore[0]?.el.focus({preventScroll:true});
   }
 
   elOfTarget(t) {

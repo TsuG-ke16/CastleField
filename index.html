@@ -2,7 +2,7 @@
 <html lang="ja" class="at-title">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/ui/app-icon-192.png">
   <meta name="theme-color" content="#193f42">
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="css/settings.css">
   <link rel="stylesheet" href="css/rarity-assets.css">
   <link rel="stylesheet" href="css/finishing-art.css">
+  <link rel="stylesheet" href="css/accessibility.css">
 </head>
 <body>
   <div id="app">
@@ -85,7 +86,7 @@
 
     <!-- 下：自分の操作 -->
     <footer id="controls">
-      <div id="card-detail" class="panel" hidden>
+      <div id="card-detail" class="panel" role="region" aria-label="カードの説明" hidden>
         <div class="detail-text">
           <div class="detail-head"><span class="detail-kind"></span><b class="detail-name"></b></div>
           <span class="detail-rarity"></span><div class="detail-desc"></div>
@@ -141,14 +142,14 @@
     </div>
 
     <!-- 勝敗 -->
-    <div id="result" class="screen" hidden>
+    <div id="result" class="screen" aria-labelledby="result-heading" aria-describedby="result-description" hidden>
       <div class="confetti" aria-hidden="true"></div>
       <div class="result-rays" aria-hidden="true"></div>
       <div class="screen-box">
         <p class="result-crown" aria-hidden="true" data-icon="crown"></p>
         <div class="result-pic"></div>
-        <p class="result-title"></p>
-        <p class="result-sub"></p>
+        <p id="result-heading" class="result-title"></p>
+        <p id="result-description" class="result-sub"></p>
         <div id="result-stats"></div>
         <p id="result-encouragement"></p>
         <button type="button" id="rematch" class="plank-btn big">もう1回</button>

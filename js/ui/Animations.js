@@ -73,7 +73,7 @@ export class Animations {
     if (this.skipping || ms <= 0 || UI_CONFIG.speed === 0) return Promise.resolve();
     return new Promise((resolve) => {
       const t = {
-        id: setTimeout(() => t.done(), ms * UI_CONFIG.speed),
+        id: setTimeout(() => t.done(), Math.min(UI_CONFIG.maxAnimation, ms * UI_CONFIG.speed)),
         done: () => { clearTimeout(t.id); this.timers.delete(t); resolve(); },
       };
       this.timers.add(t);
@@ -83,7 +83,7 @@ export class Animations {
   /** Web Animations API のラッパー。終わったら resolve。飛ばしているときは何もしない */
   animate(el, keyframes, { duration, ...opts }) {
     if (this.skipping || UI_CONFIG.speed === 0 || UI_CONFIG.reducedMotion) return Promise.resolve();
-    const a = el.animate(keyframes, { duration: duration * UI_CONFIG.speed, ...opts });
+    const a = el.animate(keyframes, { duration: Math.min(UI_CONFIG.maxAnimation, duration * UI_CONFIG.speed), ...opts });
     this.running.add(a);
     const end = () => this.running.delete(a);
     return a.finished.then(end, end);
@@ -950,7 +950,7 @@ export class Animations {
       const statuses = { ...(s?.statuses ?? this.renderer.soldier(a.soldierId)?.statuses ?? { poison: null, frozen: 0 }) };
       if (a.status === 'poison') {
         // statusApplied に毒の量はない。量は推測せず（null）、毒のダメージを受けたときか getState で分かる
-        statuses.poison = { amount: statuses.poison?.amount ?? null, turns: a.turns };
+        statuses.poison = { amount: null, turns: a.turns };
       } else if (a.status === 'frozen') {
         statuses.frozen = a.turns;
       }

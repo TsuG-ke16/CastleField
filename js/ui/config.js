@@ -2,6 +2,7 @@
 // 時間はすべてミリ秒。speed を 2 にすると全部の演出が倍の長さになる。
 
 export const UI_CONFIG = {
+  maxAnimation: 2000,
   cpuThink: 450,
   cpuLevels: {
     easy: {name:'よわい',strategy:'defensive'},

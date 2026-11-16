@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { setupAccessibility } from './ui/Accessibility.js';
 import { MatchStats } from './ui/MatchStats.js';
 import { LocalSetup } from './ui/LocalSetup.js';
 import { Settings } from './ui/Settings.js';
@@ -207,6 +208,7 @@ async function boot() {
   renderer = new Renderer({
     cards, rules, monsters, castles,
     showCoins: Boolean(monsters || upgrades), // コインは魔物か強化があるときだけ出す（自分も相手も同じ）
+    onCastleTap: (p) => toast(`${playerName(p.playerId)} · ${castles?.[p.castleType]?.name ?? '城'} · HP ${p.castleHp}/${p.castleMaxHp}`, 'info'),
     onSoldierTap: (s) => toast(soldierInfo(s, { cards, rules, viewerId }), 'info'),
     onMonsterTap: (m) => toast(monsterInfo(m, { monsters }), 'info'),
     onTargetTap: (target) => { if (!busy) targeting.tap(target); },
@@ -237,6 +239,7 @@ async function boot() {
   el.rematch.addEventListener('click', (e) => { e.stopPropagation(); rematch(); });
   el.resultTitleBtn.addEventListener('click', (e) => { e.stopPropagation(); showTitle(); });
   // 最初のタップで音を出せるようにする。演出中に画面をタップしたら飛ばす（重ねて出す画面の上は除く）
+  el.app.addEventListener('keydown', e => { if(['Enter',' '].includes(e.key)) sound.unlock(); });
   el.app.addEventListener('pointerdown', (e) => {
     sound.unlock();
     if (busy && !e.target.closest('.screen, #debug-panel, #debug-toggle, #menu-open')) anim.skip();
@@ -255,6 +258,7 @@ async function boot() {
   settings = new Settings((value) => { el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
   setupMenu();
   setupTitle();
+  setupAccessibility();
 
   if (DEBUG) {
     new DebugPanel({

@@ -76,6 +76,7 @@ export class HandView {
       if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card')) {
         e.preventDefault();
         e.target.click();
+        if(this.selectedId&&!this.el.detail.hidden)this.el.detailUse.focus({preventScroll:true});
       }
     });
     this.el.hand.addEventListener('click', (e) => this.handleClick(e));
@@ -211,6 +212,8 @@ export class HandView {
 
   applyCardClasses(el) {
     const id = el.dataset.id;
+    const reason=this.blocked.get(id);
+    if(reason)el.setAttribute('aria-description',`今は出せません：${reason}`);else el.removeAttribute('aria-description');
     el.classList.toggle('selected', id === this.selectedId);
     el.classList.toggle('dim', this.blocked.has(id) && !this.discardCount);
     el.classList.toggle('discard-pick', this.discardPicks.has(id));

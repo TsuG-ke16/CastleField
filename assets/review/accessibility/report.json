@@ -1,0 +1,781 @@
+{
+  "errors": [],
+  "report": [
+    {
+      "width": 320,
+      "height": 568,
+      "name": "board",
+      "problems": [],
+      "file": "320x568-board.png"
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "card",
+      "problems": [],
+      "file": "320x568-card.png"
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "settings",
+      "problems": [],
+      "file": "320x568-settings.png"
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "large-text",
+      "problems": [],
+      "file": "320x568-large-text.png"
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "result",
+      "problems": [],
+      "file": "320x568-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "title",
+      "problems": [],
+      "file": "320x568-title.png"
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "help",
+      "problems": [],
+      "file": "320x568-help.png"
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "catalog",
+      "problems": [],
+      "file": "320x568-catalog.png"
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "board",
+      "problems": [],
+      "file": "568x320-board.png"
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "card",
+      "problems": [],
+      "file": "568x320-card.png"
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "settings",
+      "problems": [],
+      "file": "568x320-settings.png"
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "large-text",
+      "problems": [],
+      "file": "568x320-large-text.png"
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "result",
+      "problems": [],
+      "file": "568x320-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "title",
+      "problems": [],
+      "file": "568x320-title.png"
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "help",
+      "problems": [],
+      "file": "568x320-help.png"
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "catalog",
+      "problems": [],
+      "file": "568x320-catalog.png"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "board",
+      "problems": [],
+      "file": "360x640-board.png"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "card",
+      "problems": [],
+      "file": "360x640-card.png"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "settings",
+      "problems": [],
+      "file": "360x640-settings.png"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "large-text",
+      "problems": [],
+      "file": "360x640-large-text.png"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "result",
+      "problems": [],
+      "file": "360x640-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "title",
+      "problems": [],
+      "file": "360x640-title.png"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "help",
+      "problems": [],
+      "file": "360x640-help.png"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "catalog",
+      "problems": [],
+      "file": "360x640-catalog.png"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "board",
+      "problems": [],
+      "file": "640x360-board.png"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "card",
+      "problems": [],
+      "file": "640x360-card.png"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "settings",
+      "problems": [],
+      "file": "640x360-settings.png"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "large-text",
+      "problems": [],
+      "file": "640x360-large-text.png"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "result",
+      "problems": [],
+      "file": "640x360-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "title",
+      "problems": [],
+      "file": "640x360-title.png"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "help",
+      "problems": [],
+      "file": "640x360-help.png"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "catalog",
+      "problems": [],
+      "file": "640x360-catalog.png"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "board",
+      "problems": [],
+      "file": "390x844-board.png"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "card",
+      "problems": [],
+      "file": "390x844-card.png"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "settings",
+      "problems": [],
+      "file": "390x844-settings.png"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "large-text",
+      "problems": [],
+      "file": "390x844-large-text.png"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "result",
+      "problems": [],
+      "file": "390x844-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "title",
+      "problems": [],
+      "file": "390x844-title.png"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "help",
+      "problems": [],
+      "file": "390x844-help.png"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "catalog",
+      "problems": [],
+      "file": "390x844-catalog.png"
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "board",
+      "problems": [],
+      "file": "844x390-board.png"
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "card",
+      "problems": [],
+      "file": "844x390-card.png"
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "settings",
+      "problems": [],
+      "file": "844x390-settings.png"
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "large-text",
+      "problems": [],
+      "file": "844x390-large-text.png"
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "result",
+      "problems": [],
+      "file": "844x390-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "title",
+      "problems": [],
+      "file": "844x390-title.png"
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "help",
+      "problems": [],
+      "file": "844x390-help.png"
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "catalog",
+      "problems": [],
+      "file": "844x390-catalog.png"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "board",
+      "problems": [],
+      "file": "430x932-board.png"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "card",
+      "problems": [],
+      "file": "430x932-card.png"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "settings",
+      "problems": [],
+      "file": "430x932-settings.png"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "large-text",
+      "problems": [],
+      "file": "430x932-large-text.png"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "result",
+      "problems": [],
+      "file": "430x932-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "title",
+      "problems": [],
+      "file": "430x932-title.png"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "help",
+      "problems": [],
+      "file": "430x932-help.png"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "catalog",
+      "problems": [],
+      "file": "430x932-catalog.png"
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "board",
+      "problems": [],
+      "file": "932x430-board.png"
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "card",
+      "problems": [],
+      "file": "932x430-card.png"
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "settings",
+      "problems": [],
+      "file": "932x430-settings.png"
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "large-text",
+      "problems": [],
+      "file": "932x430-large-text.png"
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "result",
+      "problems": [],
+      "file": "932x430-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "title",
+      "problems": [],
+      "file": "932x430-title.png"
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "help",
+      "problems": [],
+      "file": "932x430-help.png"
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "catalog",
+      "problems": [],
+      "file": "932x430-catalog.png"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "board",
+      "problems": [],
+      "file": "768x1024-board.png"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "card",
+      "problems": [],
+      "file": "768x1024-card.png"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "settings",
+      "problems": [],
+      "file": "768x1024-settings.png"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "large-text",
+      "problems": [],
+      "file": "768x1024-large-text.png"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "result",
+      "problems": [],
+      "file": "768x1024-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "title",
+      "problems": [],
+      "file": "768x1024-title.png"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "help",
+      "problems": [],
+      "file": "768x1024-help.png"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "catalog",
+      "problems": [],
+      "file": "768x1024-catalog.png"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "board",
+      "problems": [],
+      "file": "1024x768-board.png"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "card",
+      "problems": [],
+      "file": "1024x768-card.png"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "settings",
+      "problems": [],
+      "file": "1024x768-settings.png"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "large-text",
+      "problems": [],
+      "file": "1024x768-large-text.png"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "result",
+      "problems": [],
+      "file": "1024x768-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "title",
+      "problems": [],
+      "file": "1024x768-title.png"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "help",
+      "problems": [],
+      "file": "1024x768-help.png"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "catalog",
+      "problems": [],
+      "file": "1024x768-catalog.png"
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "board",
+      "problems": [],
+      "file": "1280x900-board.png"
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "card",
+      "problems": [],
+      "file": "1280x900-card.png"
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "settings",
+      "problems": [],
+      "file": "1280x900-settings.png"
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "large-text",
+      "problems": [],
+      "file": "1280x900-large-text.png"
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "result",
+      "problems": [],
+      "file": "1280x900-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "title",
+      "problems": [],
+      "file": "1280x900-title.png"
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "help",
+      "problems": [],
+      "file": "1280x900-help.png"
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "catalog",
+      "problems": [],
+      "file": "1280x900-catalog.png"
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "board",
+      "problems": [],
+      "file": "900x1280-board.png"
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "card",
+      "problems": [],
+      "file": "900x1280-card.png"
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "settings",
+      "problems": [],
+      "file": "900x1280-settings.png"
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "large-text",
+      "problems": [],
+      "file": "900x1280-large-text.png"
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "result",
+      "problems": [],
+      "file": "900x1280-result.png",
+      "rematchWithinViewport": true
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "title",
+      "problems": [],
+      "file": "900x1280-title.png"
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "help",
+      "problems": [],
+      "file": "900x1280-help.png"
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "catalog",
+      "problems": [],
+      "file": "900x1280-catalog.png"
+    },
+    {
+      "width": 320,
+      "height": 568,
+      "name": "room",
+      "problems": [],
+      "file": "320x568-room.png"
+    },
+    {
+      "width": 568,
+      "height": 320,
+      "name": "room",
+      "problems": [],
+      "file": "568x320-room.png"
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "name": "room",
+      "problems": [],
+      "file": "360x640-room.png"
+    },
+    {
+      "width": 640,
+      "height": 360,
+      "name": "room",
+      "problems": [],
+      "file": "640x360-room.png"
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "name": "room",
+      "problems": [],
+      "file": "390x844-room.png"
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "name": "room",
+      "problems": [],
+      "file": "844x390-room.png"
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "name": "room",
+      "problems": [],
+      "file": "430x932-room.png"
+    },
+    {
+      "width": 932,
+      "height": 430,
+      "name": "room",
+      "problems": [],
+      "file": "932x430-room.png"
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "name": "room",
+      "problems": [],
+      "file": "768x1024-room.png"
+    },
+    {
+      "width": 1024,
+      "height": 768,
+      "name": "room",
+      "problems": [],
+      "file": "1024x768-room.png"
+    },
+    {
+      "width": 1280,
+      "height": 900,
+      "name": "room",
+      "problems": [],
+      "file": "1280x900-room.png"
+    },
+    {
+      "width": 900,
+      "height": 1280,
+      "name": "room",
+      "problems": [],
+      "file": "900x1280-room.png"
+    },
+    {
+      "name": "notch-settings",
+      "problems": []
+    },
+    {
+      "name": "notch-board-card-title",
+      "problems": []
+    }
+  ]
+}

@@ -273,3 +273,6 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 - `ui/card-back.png`、`ui/result-victory.png`、`ui/result-defeat.png`（3枚）：原本 `exec-0c61b69b-3974-4d6e-9e33-6904fe1680eb.png`。
 原本と個別画像の対応は `asset-manifest.json` に記録し、生成原本は作業環境の `/workspace/generated_images/` に保持しています。
 - `review/finishing-art/*.png`：2026-11-16、Playwright同梱Chromiumで生成素材一覧と実際の盤面・勝敗画面を撮影。一覧はPillowでパレット圧縮。勝利画面と壊れた城はデバッグ用のGameメソッドで表示を確認したものです。
+
+### 表示・アクセシビリティの確認画像（2026-11-16）
+- `review/accessibility/*.png`：Playwright同梱Chromiumで12サイズ×9画面とノッチ模擬4画面を撮影。一覧画像は撮影画像をPillowで並べ、確認画像だけをパレット圧縮（各300KB以下）。本番の絵の改変はしていません。素材の出どころ・条件は本ファイルの各項を参照。テスト条件と全画像のリンクは同フォルダのREADME.md、計測結果はreport.jsonに記録。
