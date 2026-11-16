@@ -410,7 +410,7 @@ export async function preloadAssets(timeoutMs = 8000, onProgress = null, {phase 
     const img=new Image();let ended=false;
     const finish=ok=>{if(ended)return;ended=true;clearTimeout(timer);if(ok)READY.add(path);done++;onProgress?.(done,paths.length);resolve();};
     const timer=setTimeout(()=>finish(false),timeoutMs);
-    img.onload=()=>finish(true);img.onerror=()=>finish(false);img.src=`assets/${path}`;
+    img.onload=async()=>{try{await img.decode();}catch{}finish(true);};img.onerror=()=>finish(false);img.src=`assets/${path}`;
   });
   await Promise.all(Array.from({length:Math.min(12,paths.length)},async()=>{while(index<paths.length)await load(paths[index++]);}));
 }
@@ -447,12 +447,17 @@ export function monsterArt(type, name = '') {
   return ['slime','goblin','dragon','bat','skeleton','golem','demon','ghost','treant','mimic','vampire','demonKing'].includes(type)
     ? imageArt(`units/monster-${kebab(type)}.png`, fallback, 'art monster-art') : fallback;
 }
-export function castleArt(color, damage = 0) {
+export function castleArt(color, damage = 0, kind = 'standard') {
   const team = color === 'orange' ? 'orange' : 'blue';
   const stage = Math.max(0, Math.min(3, damage));
-  return imageArt(`castles/castle-${team}${stage ? `-damaged-${stage}` : ''}.png`, svgCastleArt(team), 'art castle-art').replace('<span ', `<span data-damage-stage="${stage}" `);
+  const prefix = ['fortress','tower','barracks'].includes(kind) ? kind : 'castle';
+  return imageArt(`castles/${prefix}-${team}${stage ? `-damaged-${stage}` : ''}.png`, svgCastleArt(team), 'art castle-art').replace('<span ', `<span data-damage-stage="${stage}" `);
+}
+export function spiritSprite(element, great = false) {
+  return imageArt(`units/${great ? 'great-' : ''}${element}-spirit.png`, '', 'art spirit-art');
 }
 export function icon(name) {
+  if(name === 'card') return imageArt('ui/card-back.png', '', 'ic card-back-icon');
   const fallback = svgIcon(name);
   return ['fire','water','wind','earth','heart','coin'].includes(name)
     ? imageArt(`ui/icon-${name}.png`, fallback, `ic ic-${name}`) : fallback;

@@ -213,6 +213,7 @@ export class Animations {
         }
         this.renderer.setTurnInfo(p.turn, model.round);
         this.renderer.setCurrentPlayer(p.playerId);
+        if(['wind','earth'].includes(model.players[p.playerId]?.spirit?.spirit)) return this.spiritTriggered({playerId:p.playerId,type:model.players[p.playerId].spirit.type});
         return;
       case 'roundStarted': return this.roundStarted(p, model);
       case 'cardsFused': return this.cardsFused(p, model, ctx);
@@ -672,9 +673,11 @@ export class Animations {
   }
 
   /** 精霊が効く（このあと castleDamaged / castleHealed） */
-  async spiritTriggered({ type }) {
+  async spiritTriggered({ type, playerId }) {
     if (this.skipping) return;
-    this.banner(`${this.cards[type]?.name ?? '精霊'}`, UI_CONFIG.timing.shuffle * 0.7, 'small');
+    this.banner(`${this.cards[type]?.name ?? '精霊'}が力を貸してくれた！`, UI_CONFIG.timing.shuffle * 0.7, 'small');
+    const badge=this.renderer.castleEl(playerId)?.querySelector('.castle-spirit');
+    if(badge&&!badge.hidden)this.animate(badge,[{filter:'brightness(1)',scale:1},{filter:'brightness(1.4)',scale:1.15},{filter:'brightness(1)',scale:1}],{duration:UI_CONFIG.timing.shuffle});
     await this.delay(UI_CONFIG.timing.shuffle * 0.4);
   }
 

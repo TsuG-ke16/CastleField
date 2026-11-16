@@ -265,3 +265,11 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 - `ui/title-castle-blue.png`、`ui/title-castle-orange.png`、`ui/title-knight-blue.png`、`ui/title-infantry-orange.png`：既存の同名の城・兵士PNGのタイトル用縮小版。Pillowでリサイズ・圧縮。元画像の出どころ・利用条件を継承。
 - `ui/app-icon-192.png`、`ui/app-icon-512.png`：既存の `ui/icon-mode-solo.png` をPillowでリサイズ・圧縮。元画像の出どころ・利用条件を継承。
 - `review/offline/*.png`：Playwright同梱Chromiumで保存状態・オフラインCPU戦・決着を撮影。ゲーム内素材の条件は各項を参照。
+
+### 城・精霊・カード裏面・勝敗（2026-11-16）
+以下は全てOpenAIの画像生成ツールで本ゲーム用に生成。毎回 `assets/STYLE.md` の共通指示文を先頭に付け、`assets/style-reference.png` を添付しました。生成後はPillowで等間隔のアトラスを切り出し、リサイズ・透過パレット圧縮だけを実施。描画や色替えはしていません。外部の配布素材は不使用。OpenAIの生成出力として利用し、リポジトリの他の生成素材と同じ利用条件です。各PNGは300KB以下。
+- `castles/fortress-{blue,orange}[-damaged-{1,2,3}].png`、`castles/tower-{blue,orange}[-damaged-{1,2,3}].png`、`castles/barracks-{blue,orange}[-damaged-{1,2,3}].png`（24枚）：原本 `exec-9f264513-3771-42fa-a2d8-380151b1f8cd.png`。
+- `units/{fire,water,wind,earth}-spirit.png`、`units/great-{fire,water,wind,earth}-spirit.png`（8枚）：原本 `exec-122b76ab-f075-4673-9cec-491bff07d082.png`。
+- `ui/card-back.png`、`ui/result-victory.png`、`ui/result-defeat.png`（3枚）：原本 `exec-0c61b69b-3974-4d6e-9e33-6904fe1680eb.png`。
+原本と個別画像の対応は `asset-manifest.json` に記録し、生成原本は作業環境の `/workspace/generated_images/` に保持しています。
+- `review/finishing-art/*.png`：2026-11-16、Playwright同梱Chromiumで生成素材一覧と実際の盤面・勝敗画面を撮影。一覧はPillowでパレット圧縮。勝利画面と壊れた城はデバッグ用のGameメソッドで表示を確認したものです。

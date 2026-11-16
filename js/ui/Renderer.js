@@ -10,7 +10,7 @@ import { UI_CONFIG } from './config.js';
 import { RARITY_NAMES } from './rarity.js';
 import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
-import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf } from './art.js';
+import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite } from './art.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -27,8 +27,9 @@ export class Renderer {
    *   onTargetTap：対象を選んでいるときに盤面がタップされたら呼ぶ（光っていない所なら null）
    *   showCoins：コインを出すか（自分と相手で同じ条件。main.js が決める）
    */
-  constructor({ cards, rules, monsters = null, showCoins = false, onSoldierTap, onMonsterTap, onTargetTap }) {
+  constructor({ cards, rules, monsters = null, castles = null, showCoins = false, onSoldierTap, onMonsterTap, onTargetTap }) {
     this.cards = cards;
+    this.castleDefs = castles ?? {};
     this.rules = rules;
     this.monsterDefs = monsters;
     this.onSoldierTap = onSoldierTap;
@@ -197,7 +198,7 @@ export class Renderer {
   castlePicture(id, damage = 0) {
     const size = this.teamSize(id);
     const tier = UI_CONFIG.castleTiers.filter(t => size >= t.min).at(-1);
-    const art = castleArt(colorOf(this.ownerOf(id)), damage);
+    const art = castleArt(colorOf(this.ownerOf(id)), damage, this.players[this.ownerOf(id)]?.castleType);
     return `${tier.towers ? `<span class="extra-tower tower-left">${art}</span><span class="extra-tower tower-right">${art}</span>` : ''}${art}${tier.wall ? '<span class="team-wall"></span>' : ''}${tier.fortress ? '<span class="fortress-flags">⚑ ⚑ ⚑</span>' : ''}`;
   }
   teamSize(id) { return this.teams?.[this.players[id]?.team]?.size ?? (Object.values(this.players).filter(p => p.castleOwner === this.ownerOf(id)).length || 1); }
@@ -259,11 +260,16 @@ export class Renderer {
       castle.tabIndex = 0;
       castle.dataset.color = colorOf(id);
       castle.style.setProperty('--team-color', palette[team] ?? palette[this.owners.indexOf(id) % palette.length]);
-      castle.querySelector('.castle-label').textContent = `${members.includes(this.viewerId) ? 'あなたの城 · ' : ''}${label}`;
+      const kind=this.players[id]?.castleType;
+      const kindName=this.castleDefs[kind]?.name??'';
+      castle.dataset.castleType=kind??'standard';
+      castle.querySelector('.castle-label').textContent = `席${model.playerOrder.indexOf(id)+1} ${members.includes(this.viewerId) ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
+      castle.setAttribute('aria-label',`席${model.playerOrder.indexOf(id)+1}、${label}、${kindName}`);
       castle.querySelector('.castle-label').title = label;
       castle.classList.toggle('eliminated', Boolean(this.players[id]?.eliminated));
       const tier = UI_CONFIG.castleTiers.filter(t => members.length >= t.min).at(-1);
-      if (castle.dataset.tier !== tier.name || castle.dataset.artColor !== colorOf(id)) {
+      if (castle.dataset.tier !== tier.name || castle.dataset.artColor !== colorOf(id) || castle.dataset.artKind !== (kind??'standard')) {
+        castle.dataset.artKind=kind??'standard';
         castle.dataset.tier = tier.name;
         castle.dataset.artColor = colorOf(id);
         castle.querySelector('.castle-pic').innerHTML = this.castlePicture(id, Number(castle.dataset.damage ?? 0));
@@ -459,7 +465,10 @@ export class Renderer {
       badge.hidden = !spirits.length; badge.replaceChildren();
       for (const [id,p] of spirits) {
         const label = document.createElement('span');
-        label.textContent = `${playerName(id)}：${this.cards[p.spirit.type]?.name ?? ''} あと${p.spirit.turns}回`;
+        label.className='team-spirit';
+        label.innerHTML=spiritSprite(p.spirit.spirit,p.spirit.type.startsWith('great')||p.spirit.type.endsWith('King'));
+        label.append(document.createTextNode(`席${this.playerOrder.indexOf(id)+1} あと${p.spirit.turns}`));
+        label.title=`${playerName(id)}：${this.cards[p.spirit.type]?.name ?? ''}`;
         badge.append(label);
       }
       badge.title = [...badge.children].map(el => el.textContent).join(' / ');
@@ -471,7 +480,7 @@ export class Renderer {
       const name = document.createElement('b');
       const symbol = document.createElement('span');
       symbol.className = 'spirit-symbol';
-      symbol.innerHTML = icon(spirit.spirit);
+      symbol.innerHTML = spiritSprite(spirit.spirit,spirit.type.startsWith('great')||spirit.type.endsWith('King'));
       name.textContent = this.cards[spirit.type]?.name ?? '精霊';
       const detail = document.createElement('span');
       const effects = {
@@ -529,6 +538,7 @@ export class Renderer {
       '<span class="soldier-weapon" hidden></span><span class="soldier-shield" hidden></span><span class="soldier-status" hidden></span></div>' +
       `<div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
     el.querySelector('.soldier-pic').innerHTML = unitArt(st.type, colorOf(playerId), def.name ?? st.type);
+    const seat = document.createElement('span');seat.className='seat-mark';seat.textContent=String(this.playerOrder.indexOf(playerId)+1);seat.title=playerName(playerId);seat.setAttribute('aria-label',`席${seat.textContent}、${playerName(playerId)}`);el.append(seat);
     const turns = document.createElement('span'); turns.className = 'soldier-turns'; el.append(turns);
     this.el.units.appendChild(el);
     const s = {

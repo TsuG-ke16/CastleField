@@ -205,7 +205,7 @@ async function boot() {
   }
 
   renderer = new Renderer({
-    cards, rules, monsters,
+    cards, rules, monsters, castles,
     showCoins: Boolean(monsters || upgrades), // コインは魔物か強化があるときだけ出す（自分も相手も同じ）
     onSoldierTap: (s) => toast(soldierInfo(s, { cards, rules, viewerId }), 'info'),
     onMonsterTap: (m) => toast(monsterInfo(m, { monsters }), 'info'),
@@ -1363,7 +1363,12 @@ async function showResult(winner) {
   $('back-to-room').hidden = !session?.online || room?.hostId !== viewerId;
   const how = (won ? GAME_OVER_TEXT : GAME_OVER_TEXT_LOST)[model.gameOverReason] ?? '';
   el.resultSub.textContent = `${how ? `${how}　` : ''}${model.turn}ターンで決着`;
-  el.resultPic.innerHTML = castleArt(colorOf(winner)) + unitArt('knight', colorOf(winner));
+  const resultImage = new Image();
+  resultImage.className='result-illustration';resultImage.alt='';
+  resultImage.src=`assets/ui/result-${won ? 'victory' : 'defeat'}.png`;
+  await resultImage.decode().catch(()=>{});
+  if(s!==session)return;
+  el.resultPic.replaceChildren(resultImage);
   const colors = winner === 'p1'
     ? ['#4da3e8', '#bfe3fb', '#ffd93b', '#ffffff']
     : ['#f5923e', '#ffd9b0', '#ffd93b', '#ffffff'];
