@@ -780,9 +780,18 @@ export class Game {
     if (!monster.isDead) return;
     this.monsters = this.monsters.filter((m) => m !== monster);
     this.monsterCooldown.set(this.findRoad(monster.roadId).pairId, this.round + this.rules.monsterCooldownRounds + 1);
-    const reward = monster.def.reward;
-    this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward });
-    this.changeCoins(this.players[playerId], reward, 'reward');
+    const { reward, rewardRarity } = monster.def;
+    this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward: reward ?? 0, rewardRarity: rewardRarity ?? null });
+    if (reward) this.changeCoins(this.players[playerId], reward, 'reward');
+    // ごほうびのカード：そのレアリティのカードが1枚、手札に入る（カードがなければ何も起きない）
+    if (rewardRarity) {
+      const type = sampleTypeOfRarity(this.cardDefs, rewardRarity, this.rng);
+      if (type) {
+        const card = this.createCard(type);
+        this.players[playerId].hand.push(card);
+        this.emit('cardDrawn', { playerId, cardIds: [card.cardId] });
+      }
+    }
   }
 
   changeCoins(player, delta, reason) {

@@ -41,7 +41,8 @@ export class Monster {
       attack: this.attack,
       element: this.element,
       attackIn: this.attackIn,
-      reward: this.def.reward,
+      reward: this.def.reward ?? 0,
+      rewardRarity: this.def.rewardRarity ?? null,
       castleAttack: this.def.castleAttack,
     };
   }
@@ -56,9 +57,13 @@ export class Monster {
       const where = `monsters.json の "${type}"`;
       if (!def || typeof def !== 'object') throw new Error(`${where}: 定義がオブジェクトではありません`);
       if (typeof def.name !== 'string' || def.name === '') throw new Error(`${where}: name を書いてください`);
-      for (const key of ['hp', 'attack', 'reward', 'castleAttack', 'attackEvery', 'weight']) {
+      for (const key of ['hp', 'attack', 'castleAttack', 'attackEvery', 'weight']) {
         if (!isPositive(def[key])) throw new Error(`${where}: ${key} は1以上の整数にしてください`);
       }
+      // ごほうび：コイン（reward）か、カード（rewardRarity：そのレアリティのカードが1枚手札に入る）
+      if (def.reward === undefined && def.rewardRarity === undefined) throw new Error(`${where}: ごほうび（reward か rewardRarity）を書いてください`);
+      if (def.reward !== undefined && !isPositive(def.reward)) throw new Error(`${where}: reward は1以上の整数にしてください`);
+      if (def.rewardRarity !== undefined && (typeof def.rewardRarity !== 'string' || def.rewardRarity === '')) throw new Error(`${where}: rewardRarity はレアリティの名前にしてください`);
       if (def.element !== undefined && def.element !== null && !elements.includes(def.element)) {
         throw new Error(`${where}: element は ${elements.join(' / ')} のどれかにしてください`);
       }

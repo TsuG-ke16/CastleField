@@ -327,14 +327,14 @@ function smartTurn(game, pid, ctx) {
   const { me, enemies, playable } = view(game, pid);
   const enemy = enemies[0];
   const castleSpells = typesWithEffect(ctx, 'damageEnemyCastle');
-  // 自分の道の、ごほうびの多い魔物（5コイン以上）にとどめを刺せるなら、魔物を狙う
+  // 自分の道の、ごほうびの多い魔物（5コイン以上か、レア以上のカード）にとどめを刺せるなら、魔物を狙う
   // （ファイアボールは城を削るいちばんの手段なので、小さな魔物には使わない）
   for (const c of playable.filter((x) => castleSpells.includes(x.type))) {
     const ms = game.getTargets(c.cardId).filter((t) => t.monsterId);
     const st = game.getState(pid);
     const kill = ms.find((t) => {
       const m = st.monsters.find((x) => x.monsterId === t.monsterId);
-      return m.hp <= ctx.cards[c.type].amount && m.reward >= 5;
+      return m.hp <= ctx.cards[c.type].amount && (m.reward >= 5 || ['rare', 'epic', 'legendary'].includes(m.rewardRarity));
     });
     if (kill && game.playCard(c.cardId, kill).ok) return;
   }

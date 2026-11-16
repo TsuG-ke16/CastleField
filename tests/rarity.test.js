@@ -156,3 +156,23 @@ test('コインのカードの値：コモン1・アンコモン3・レア8・�
   const c = loadJson('cards.json');
   assert.deepEqual(['coinPouch', 'goldCoin', 'treasure', 'goldVein', 'kingTreasure'].map((t) => c[t].amount), [1, 3, 8, 20, 50]);
 });
+
+test('魔物のごほうび：rewardRarity の魔物を倒すと、そのレアリティのカードが手札に入る（コインは増えない）', () => {
+  const monsters = { bat: { name: 'コウモリ', hp: 1, attack: 1, rewardRarity: 'rare', castleAttack: 1, attackEvery: 2, weight: 1 } };
+  const g = make({ monsters });
+  g.start();
+  const me = g.players.p1;
+  const coins = me.coins;
+  const hand = me.hand.length;
+  const log = recordEvents(g, ['monsterDefeated', 'cardDrawn', 'coinsChanged']);
+  // 魔物を1体置いて、とどめを刺したことにする（内部の関数を直接呼ぶ）
+  const def = monsters.bat;
+  const fake = { monsterId: 'mX', isDead: true, roadId: g.roads[0].roadId, def };
+  g.monsters.push(fake);
+  g.defeatMonsterIfDead(fake, 'p1');
+  assert.equal(log.find((e) => e.event === 'monsterDefeated').rewardRarity, 'rare');
+  assert.equal(me.hand.length, hand + 1);
+  assert.equal(loadJson('cards.json')[me.hand.at(-1).type].rarity, 'rare');
+  assert.equal(me.coins, coins);
+  assert.equal(log.filter((e) => e.event === 'coinsChanged').length, 0);
+});

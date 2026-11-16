@@ -75,7 +75,7 @@ test('兵士は真ん中の手前で止まって魔物と戦う。倒したら�
   assert.deepEqual([log[i - 1].from, log[i - 1].to], [0, 1]);
   assert.equal(log[i].square, 1);
   assert.equal(log[i + 1].amount, 5);
-  assert.deepEqual(log[i + 3], { event: 'monsterDefeated', monsterId: 'm01', playerId: 'p1', reward: 2 });
+  assert.deepEqual(log[i + 3], { event: 'monsterDefeated', monsterId: 'm01', playerId: 'p1', reward: 2, rewardRarity: null });
   assert.deepEqual(log[i + 4], { event: 'coinsChanged', playerId: 'p1', delta: 2, coins: 2, reason: 'reward' });
   const s = game.getState(null);
   assert.equal(s.players.p1.coins, 2);
