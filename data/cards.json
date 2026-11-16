@@ -65,9 +65,9 @@
   "waterKing": {"name": "水の精霊王", "kind": "spell", "effect": "summonSpirit", "spirit": "water", "amount": 5, "turns": 5, "count": 0, "rarity": "legendary"},
   "windKing": {"name": "風の精霊王", "kind": "spell", "effect": "summonSpirit", "spirit": "wind", "amount": 5, "turns": 4, "count": 0, "rarity": "legendary"},
   "earthKing": {"name": "土の精霊王", "kind": "spell", "effect": "summonSpirit", "spirit": "earth", "amount": 3, "turns": 4, "count": 0, "rarity": "legendary"},
-  "coinPouch": {"name": "小銭袋", "kind": "spell", "effect": "gainCoins", "amount": 1, "count": 0, "rarity": "common", "fuseTo": "goldCoin"},
-  "goldCoin": {"name": "金貨", "kind": "spell", "effect": "gainCoins", "amount": 3, "count": 0, "rarity": "uncommon", "fuseTo": "treasure"},
-  "treasure": {"name": "財宝", "kind": "spell", "effect": "gainCoins", "amount": 8, "count": 0, "rarity": "rare", "fuseTo": "goldVein"},
-  "goldVein": {"name": "金脈", "kind": "spell", "effect": "gainCoins", "amount": 20, "count": 0, "rarity": "epic", "fuseTo": "kingTreasure"},
-  "kingTreasure": {"name": "王の財宝", "kind": "spell", "effect": "gainCoins", "amount": 50, "count": 0, "rarity": "legendary"}
+  "coinPouch": {"name": "小銭袋", "kind": "spell", "effect": "gainCoins", "amount": 1, "count": 0, "rarity": "common", "fuseTo": "goldCoin", "weight": 0.5},
+  "goldCoin": {"name": "金貨", "kind": "spell", "effect": "gainCoins", "amount": 3, "count": 0, "rarity": "uncommon", "fuseTo": "treasure", "weight": 0.5},
+  "treasure": {"name": "財宝", "kind": "spell", "effect": "gainCoins", "amount": 8, "count": 0, "rarity": "rare", "fuseTo": "goldVein", "weight": 0.5},
+  "goldVein": {"name": "金脈", "kind": "spell", "effect": "gainCoins", "amount": 20, "count": 0, "rarity": "epic", "fuseTo": "kingTreasure", "weight": 0.5},
+  "kingTreasure": {"name": "王の財宝", "kind": "spell", "effect": "gainCoins", "amount": 50, "count": 0, "rarity": "legendary", "weight": 0.5}
 }
