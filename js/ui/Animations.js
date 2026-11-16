@@ -215,6 +215,8 @@ export class Animations {
       case 'cardsFused': return this.cardsFused(p, model, ctx);
       case 'cardDrawn': return this.cardDrawn(p, model, ctx);
       case 'deckShuffled':
+        // drawCardsはシャッフル前に引いた分も最後のcardDrawnにまとめる。
+        model.preShuffleDraws = (model.preShuffleDraws ?? 0) + model.deckCount;
         model.deckCount = p.deckCount;
         model.discardCount = 0;
         this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
@@ -357,7 +359,8 @@ export class Animations {
       else if (pl.luck?.draws > 0) {
         pl.luck.draws -= 1;
         if (!pl.luck.draws) pl.luck = null;
-      } else model.deckCount = Math.max(0, model.deckCount - 1);
+      } else if (model.preShuffleDraws > 0) model.preShuffleDraws -= 1;
+      else model.deckCount = Math.max(0, model.deckCount - 1);
       this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
       if (playerId === ctx.viewerId) {
         const card = ctx.lookupCard(cardId);
