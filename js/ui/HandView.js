@@ -6,6 +6,7 @@
 
 import { currentRates } from './CardInfo.js';
 import { UI_CONFIG } from './config.js';
+import { groupStarts, sortHand } from './handOrder.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
@@ -101,7 +102,8 @@ export class HandView {
    * @param {{ newIds?: Iterable<string> }} opts
    */
   render(hand, { newIds = [] } = {}) {
-    this.hand = hand.map((c) => ({ ...c }));
+    // 並び：種類順 → レアリティの高い順（js/ui/handOrder.js）
+    this.hand = sortHand(hand.map((c) => ({ ...c })), this.cards, this.rarities);
     if (this.selectedId && !this.hand.some((c) => c.cardId === this.selectedId)) this.selectedId = null;
     for (const id of [...this.discardPicks]) if (!this.hand.some((c) => c.cardId === id)) this.discardPicks.delete(id);
     const fresh = new Set(newIds);
@@ -117,9 +119,23 @@ export class HandView {
       const c = this.hand.find((c) => c.cardId === el.dataset.id);
       el.classList.toggle('can-fuse', counts.get(c.type) >= 2 && Boolean(this.cards[c.type]?.fuseTo));
     }
+    this.markGroups();
     this.layout();
     this.updateDetail();
     this.updateDiscardBar();
+  }
+
+  /** 今の手札が、server/Game の手札と同じカードの集まりか（並びは見ない。表示は並べ替えてあるため） */
+  sameCards(hand) {
+    if (hand.length !== this.hand.length) return false;
+    const ids = new Set(this.hand.map((c) => c.cardId));
+    return hand.every((c) => ids.has(c.cardId));
+  }
+
+  /** 種類のグループの最初のカードに印をつける（見た目で少し間をあける） */
+  markGroups() {
+    const starts = groupStarts(this.hand, this.cards);
+    for (const el of this.el.hand.querySelectorAll('.card')) el.classList.toggle('group-start', starts.has(el.dataset.id));
   }
 
   /** カードを重ねず、全体が読める幅で横に並べる。 */
@@ -242,6 +258,7 @@ export class HandView {
     if (this.hand.length === 0 && !this.el.hand.querySelector('.hand-empty')) {
       this.el.hand.innerHTML = '<div class="hand-empty">手札がありません</div>';
     }
+    this.markGroups();
     this.layout();
     this.updateDetail();
     return info;
@@ -250,9 +267,13 @@ export class HandView {
   /** 引いたカードを1枚ずつ加える */
   addCard(card) {
     this.el.hand.querySelector('.hand-empty')?.remove();
-    this.hand.push({ ...card });
+    // 引いたカードは、並びの正しい位置に入れる（いつも右端に付けない）
+    this.hand = sortHand([...this.hand, { ...card }], this.cards, this.rarities);
+    const at = this.hand.findIndex((c) => c.cardId === card.cardId);
     const el = this.makeCardEl(card, true);
-    this.el.hand.appendChild(el);
+    const next = this.hand[at + 1] ? this.cardEl(this.hand[at + 1].cardId) : null;
+    this.el.hand.insertBefore(el, next);
+    this.markGroups();
     this.layout();
   }
 
