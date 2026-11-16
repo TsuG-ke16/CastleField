@@ -875,7 +875,7 @@ async function settle({ check = true } = {}) {
   el.endTurn.disabled = false;
   const anyPlayable = me.hand.some((c) => !blocked.has(c.cardId));
   el.endTurn.classList.toggle('ready', !anyPlayable);
-  if (!me.playedThisTurn && anyPlayable) setMessage('カードを選んで出そう（メインは1枚。武器・防御は何枚でも）');
+  if (!me.playedThisTurn && anyPlayable) setMessage('カードを選ぼう。メインは1枚、武器・防御は何枚でも');
   else if (!me.playedThisTurn) setMessage('出せるカードがありません。「ターン終了」を押そう');
   else if (anyPlayable) setMessage('武器・防御はまだ出せます。終わったら「ターン終了」');
   else setMessage('「ターン終了」で交代します');

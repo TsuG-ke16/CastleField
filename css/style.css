@@ -1007,3 +1007,40 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
   color: #ffe14d;
   background: linear-gradient(90deg, transparent, #4a2e1a 12%, #4a2e1a 88%, transparent);
 }
+
+/* 親指で押す操作と、読み切れる手札を優先した配置。 */
+html, body { background: radial-gradient(ellipse at top, #a9d4e4, #294957); }
+#app { box-shadow: 0 0 60px #18353c66; }
+.control-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 12px; }
+#message { grid-column: 1 / -1; min-height: 1.4em; font-size: 13px; }
+#end-turn { grid-column: 2; min-width: 132px; min-height: 46px; }
+#upgrade-open { justify-self: start; min-height: 44px; }
+.round-btn { min-width: 36px; min-height: 36px; }
+.hand-toolbar { display: flex; align-items: center; gap: 10px; padding: 0 12px; color: #fff7e0; font-size: 11px; }
+.hand-toolbar b { font-size: 14px; }
+.hand-scroll-hint { margin-left: auto; visibility: hidden; }
+.hand-scrolls .hand-scroll-hint { visibility: visible; }
+#hand { padding-top: 14px; padding-bottom: 14px; height: calc(var(--card-h) + 32px); scroll-padding-inline: 12px; }
+#hand .card { scroll-snap-align: start; }
+#hand .card:focus-visible, button:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.card-name { max-width: 100%; font-size: 12px; letter-spacing: -.35px; }
+.card-name.long { font-size: 10px; }
+.castle-spirit { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; white-space: normal; padding: 5px 6px; border-radius: 10px; }
+.castle-spirit b { font-size: 11px; }
+.castle-spirit span { font-size: 10px; line-height: 1.35; }
+@media (max-width: 360px) {
+  .hand-toolbar { gap: 6px; font-size: 10px; }
+  .hand-scroll-hint { font-size: 9px; }
+}
+@media (max-height: 650px) {
+  .control-row { padding-block: 5px; gap: 5px; }
+  #message { font-size: 11px; }
+  #end-turn, #upgrade-open { min-height: 38px; }
+  .hand-toolbar { font-size: 10px; }
+}
+@media (max-width: 360px) {
+  #hud { gap: 4px; padding-inline: 6px; }
+  #hud .chip { padding-inline: 5px; gap: 2px; }
+  #hud .hud-opp, #hud .hud-right { gap: 3px; }
+  #hud .player-name { display: none; }
+}

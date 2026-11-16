@@ -306,7 +306,19 @@ export class Renderer {
     const badge = this.castleEl(playerId).querySelector('.castle-spirit');
     if (!badge) return;
     badge.hidden = !spirit;
-    badge.textContent = spirit ? `${SPIRIT_ICON[spirit.spirit] ?? '✨'} あと${spirit.turns}` : '';
+    badge.replaceChildren();
+    if (spirit) {
+      const name = document.createElement('b');
+      name.textContent = `${SPIRIT_ICON[spirit.spirit] ?? '✨'} ${this.cards[spirit.type]?.name ?? '精霊'}`;
+      const detail = document.createElement('span');
+      const effects = {
+        fire: `城に${spirit.amount}ダメージ`, water: `城を${spirit.amount}回復`,
+        wind: `速さ最低${spirit.amount}`, earth: `ダメージ−${spirit.amount}`,
+      };
+      detail.textContent = `${effects[spirit.spirit] ?? ''}・あと${spirit.turns}回`;
+      badge.append(name, detail);
+      badge.title = this.cards[spirit.type]?.description ?? name.textContent;
+    }
   }
 
   // ---------- 兵士 ----------
