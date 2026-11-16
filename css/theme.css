@@ -293,3 +293,46 @@ body { position: fixed; inset: 0; height: auto; }
 
 .fx-fusion-glow { position: absolute; width: 160px; height: 160px; margin: -80px 0 0 -80px; }
 .fx-banner.lucky::before { content: ""; position: absolute; left: calc(50% - 50px); bottom: 100%; width: 100px; height: 100px; background: url("../assets/fx/lucky-reward.png") center / contain no-repeat; }
+
+/* ===== 読み込み中の画面 ===== */
+#loading {
+  position: absolute; inset: 0; z-index: 300;
+  display: grid; place-items: center; padding: 16px;
+  background: radial-gradient(ellipse at 20% 5%, #37625b, transparent 65%), #153538;
+  color: #f4f1dd;
+  transition: opacity .25s ease;
+}
+#loading.done { opacity: 0; pointer-events: none; }
+.loading-box { width: min(100%, 280px); text-align: center; display: grid; gap: 16px; }
+.loading-name { font-size: 26px; letter-spacing: .04em; text-shadow: 0 2px 0 #0c2224; }
+.loading-bar { height: 12px; border-radius: 8px; background: #0c2224; border: 2px solid #f4f1dd55; overflow: hidden; }
+#loading-fill { display: block; height: 100%; width: 4%; background: #ffd75e; border-radius: 6px; transition: width .2s ease; }
+.loading-text { font-size: 13px; opacity: .8; }
+@media (prefers-reduced-motion: reduce) { #loading, #loading-fill { transition: none; } }
+
+/* 盤面にかぶらないように（人間の指示：「プレイヤーの番」の帯が画面にかぶって邪魔だった）
+   - お知らせ（〇〇の番です…・タップで早送り）は盤面に浮かせず、操作欄のいちばん上に1行で出す。行の高さは空でも取っておく（出たり消えたりで手札がずれないように）
+   - 精霊のバッジは「印＋あとN」だけの小さな形（名前と効果は長押し・title で読む）
+   - カードの説明・対象選び・捨てる画面を開いているあいだは、お知らせを隠す */
+@media (max-width: 899px), (max-height: 649px) {
+  #message, #message:empty {
+    position: static;
+    display: block;
+    min-height: 1.5em;
+    margin: 0;
+    padding: 4px 12px 0;
+    border-radius: 0;
+    background: none;
+    color: #5d6d61;
+    font-size: 11px;
+    line-height: 1.5;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+.castle-spirit { display: inline-flex; flex-direction: row; align-items: center; gap: 3px; padding: 1px 7px; border-radius: 999px; }
+.castle-spirit .spirit-symbol { display: inline-block; width: 14px; height: 14px; font-size: 14px; }
+.castle-spirit > span:last-child { font-size: 11px; font-weight: 900; }
+#controls:has(#card-detail:not([hidden]), #target-bar:not([hidden]), #discard-bar:not([hidden])) #message { visibility: hidden; }

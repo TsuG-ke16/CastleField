@@ -48,7 +48,7 @@ const post = (base, path, body) =>
 
 async function startServer() {
   let seed = 11;
-  const server = createGameServer({ data: loadData(), makeRng: () => seededRng(seed++) });
+  const server = createGameServer({ data: loadData(), makeRng: () => seededRng(seed++), cpuDelayMs: 0 });
   await new Promise((r) => server.listen(0, r));
   return { server, base: `http://localhost:${server.address().port}` };
 }
@@ -69,11 +69,18 @@ test('合言葉と名前の確かめ、満員、知らない token', async () =>
     const b = await post(base, '/api/join', { passphrase: 'room1', name: 'B' });
     assert.deepEqual([a.playerId, b.playerId], ['p1', 'p2']);
     assert.equal(a.roomId, b.roomId);
-    const c = await post(base, '/api/join', { passphrase: 'room1', name: 'C' });
-    assert.deepEqual(c, { ok: false, reason: 'この部屋はもう満員です' });
+    // 8人まで入れる。9人目は満員
+    for (const name of ['C', 'D', 'E', 'F', 'G', 'H']) assert.equal((await post(base, '/api/join', { passphrase: 'room1', name })).ok, true);
+    const nine = await post(base, '/api/join', { passphrase: 'room1', name: 'I' });
+    assert.deepEqual(nine, { ok: false, reason: 'この部屋はもう満員です' });
     const other = await post(base, '/api/join', { passphrase: 'room2', name: 'D' });
     assert.notEqual(other.roomId, a.roomId);
     assert.equal((await post(base, '/api/action', { token: 'nope', method: 'endTurn', args: [] })).ok, false);
+    // 自動では始まらない。部屋主（最初に入った人）だけが始められる
+    assert.equal((await post(base, '/api/action', { token: a.token, method: 'endTurn', args: [] })).reason, 'まだ試合が始まっていません');
+    assert.equal((await post(base, '/api/action', { token: b.token, method: 'start', args: [] })).reason, '部屋主だけが始められます');
+    assert.equal((await post(base, '/api/action', { token: a.token, method: 'start', args: [] })).ok, true);
+    assert.equal((await post(base, '/api/join', { passphrase: 'room1', name: 'Z' })).ok, false);
     assert.equal((await post(base, '/api/action', { token: b.token, method: 'endTurn', args: [] })).reason, 'あなたの番ではありません');
     assert.equal((await post(base, '/api/action', { token: a.token, method: 'debugSetCastleHp', args: ['p2', 1] })).ok, false);
   } finally {
@@ -93,6 +100,7 @@ test('2人ぶんの接続で1試合を最後まで遊ぶ。相手の手札は届
     const b = await post(base, '/api/join', { passphrase: '合言葉', name: 'だいだい' });
     const cb = await openStream(base, b.token);
     clients.push(cb);
+    assert.equal((await post(base, '/api/action', { token: a.token, method: 'start', args: [] })).ok, true);
     await ca.waitFor((m) => m.type === 'state');
     await cb.waitFor((m) => m.type === 'state');
     const me = { p1: { token: a.token, c: ca }, p2: { token: b.token, c: cb } };
@@ -206,6 +214,7 @@ test('壊れたリクエストでもサーバーは止まらず、返事をす�
     assert.equal(big.status, 413);
     const a = await post(base, '/api/join', { passphrase: 'z', name: 'A' });
     const b = await post(base, '/api/join', { passphrase: 'z', name: 'B' });
+    await post(base, '/api/action', { token: a.token, method: 'start', args: [] });
     for (const method of ['constructor', '__proto__', 'toString', 123, 'debugSetHand']) {
       assert.equal((await post(base, '/api/action', { token: a.token, method, args: [] })).ok, false);
     }
@@ -224,6 +233,7 @@ test('手札にないカードは、相手の手札にあってもなくても�
   try {
     const a = await post(base, '/api/join', { passphrase: 'q', name: 'A' });
     await post(base, '/api/join', { passphrase: 'q', name: 'B' });
+    await post(base, '/api/action', { token: a.token, method: 'start', args: [] });
     const game = [...server.lobby.rooms.values()][0].game;
     const theirs = game.getState('p2').players.p2.hand[0].cardId;
     const r1 = await post(base, '/api/action', { token: a.token, method: 'playCard', args: [theirs] });
@@ -262,10 +272,10 @@ test('画面のファイルも配る。リポジトリの外や関係ないフ�
   }
 });
 
-test('3人の部屋：3人そろったら始まり、それぞれ自分の手札だけ届く', async () => {
+test('3人の部屋：部屋主が始めると、それぞれ自分の手札だけ届く', async () => {
   const data = loadData();
   let seed = 5;
-  const server = createGameServer({ data: { ...data, rules: { ...data.rules, playerCount: 3 } }, makeRng: () => seededRng(seed++) });
+  const server = createGameServer({ data, makeRng: () => seededRng(seed++), cpuDelayMs: 0 });
   await new Promise((r) => server.listen(0, r));
   const base = `http://localhost:${server.address().port}`;
   const clients = [];
@@ -274,6 +284,7 @@ test('3人の部屋：3人そろったら始まり、それぞれ自分の手札
     for (const name of ['A', 'B', 'C']) joins.push(await post(base, '/api/join', { passphrase: 'three', name }));
     assert.deepEqual(joins.map((j) => j.playerId), ['p1', 'p2', 'p3']);
     for (const j of joins) clients.push(await openStream(base, j.token));
+    assert.equal((await post(base, '/api/action', { token: joins[0].token, method: 'start', args: [] })).ok, true);
     for (const [i, c] of clients.entries()) {
       const st = (await c.waitFor((m) => m.type === 'state')).state;
       assert.deepEqual(st.playerOrder, ['p1', 'p2', 'p3']);
@@ -286,6 +297,24 @@ test('3人の部屋：3人そろったら始まり、それぞれ自分の手札
   } finally {
     clients.forEach((c) => c.close());
     server.closeAllConnections();
+    server.close();
+  }
+});
+
+test('PWA：/sw.js と /manifest.webmanifest を配る（manifest は専用の種類で）', async () => {
+  const { server, base } = await startServer();
+  try {
+    const sw = await fetch(`${base}/sw.js`);
+    assert.equal(sw.status, 200);
+    assert.match(sw.headers.get('content-type'), /javascript/);
+    const manifest = await fetch(`${base}/manifest.webmanifest`);
+    assert.equal(manifest.status, 200);
+    assert.match(manifest.headers.get('content-type'), /manifest\+json/);
+    assert.ok(JSON.parse(await manifest.text()).icons.length > 0);
+    // 公開していないファイルは配らない
+    assert.equal((await fetch(`${base}/server/server.js`)).status, 404);
+    assert.equal((await fetch(`${base}/CLAUDE.md`)).status, 404);
+  } finally {
     server.close();
   }
 });

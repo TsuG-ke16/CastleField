@@ -89,6 +89,7 @@ export class OnlineClient {
 
   receive(msg) {
     if (msg.type === 'room') {
+      this.playerId = msg.you;
       this.onRoom?.(msg);
     } else if (msg.type === 'event') {
       this.pending.push(this.adapt(msg.event, msg.payload));

@@ -1,0 +1,4 @@
+# 画面のスモークテストが作る画像・結果（node ui-tests/smoke.js）
+ui-tests/artifacts/
+node_modules/
+.DS_Store

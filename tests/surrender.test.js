@@ -43,14 +43,15 @@ test('降参：3人以上のときはできない（まだ決めていない）'
 
 function newLobby() {
   const data = { cards: loadFixture('cards.json'), rules: loadFixture('rules.json'), monsters: null, upgrades: null };
-  return new Lobby(data, () => seededRng(1));
+  return new Lobby(data, () => seededRng(1), { cpuDelayMs: 0 });
 }
 
 test('部屋：自分の番でない人も降参できる', () => {
   const lobby = newLobby();
-  lobby.join('abc', 'A');
+  const a = lobby.join('abc', 'A');
   const b = lobby.join('abc', 'B');
   const { room, seat } = lobby.findSeat(b.token);
+  room.action(lobby.findSeat(a.token).seat, 'start', []);
   assert.equal(room.game.currentPlayer, 'p1');
   assert.deepEqual(room.action(seat, 'surrender', []), { ok: true });
   assert.equal(room.game.getState(null).winner, 'p1');
@@ -62,6 +63,7 @@ test('部屋：出た人がいると、もう1回はできず、同じ合言葉�
   const b = lobby.join('abc', 'B');
   const fa = lobby.findSeat(a.token);
   const fb = lobby.findSeat(b.token);
+  fa.room.action(fa.seat, 'start', []);
   const seen = [];
   fa.room.connect(fa.seat, (msg) => seen.push(msg));
   assert.deepEqual(fb.room.action(fb.seat, 'leave', []), { ok: true });

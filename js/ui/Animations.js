@@ -6,6 +6,8 @@ import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
 import { cardArt, icon, imageArt } from './art.js';
+import { frameAsset } from './cardFrame.js';
+import { mountMiniCard } from './cardView.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -68,10 +70,10 @@ export class Animations {
 
   /** ms 待つ（speed 倍率つき。飛ばしているときはすぐ終わる） */
   delay(ms) {
-    if (this.skipping || ms <= 0) return Promise.resolve();
+    if (this.skipping || ms <= 0 || UI_CONFIG.speed === 0) return Promise.resolve();
     return new Promise((resolve) => {
       const t = {
-        id: setTimeout(() => t.done(), ms * UI_CONFIG.speed),
+        id: setTimeout(() => t.done(), Math.min(UI_CONFIG.maxAnimation, ms * UI_CONFIG.speed)),
         done: () => { clearTimeout(t.id); this.timers.delete(t); resolve(); },
       };
       this.timers.add(t);
@@ -80,8 +82,8 @@ export class Animations {
 
   /** Web Animations API のラッパー。終わったら resolve。飛ばしているときは何もしない */
   animate(el, keyframes, { duration, ...opts }) {
-    if (this.skipping) return Promise.resolve();
-    const a = el.animate(keyframes, { duration: duration * UI_CONFIG.speed, ...opts });
+    if (this.skipping || UI_CONFIG.speed === 0 || UI_CONFIG.reducedMotion) return Promise.resolve();
+    const a = el.animate(keyframes, { duration: Math.min(UI_CONFIG.maxAnimation, duration * UI_CONFIG.speed), ...opts });
     this.running.add(a);
     const end = () => this.running.delete(a);
     return a.finished.then(end, end);
@@ -89,7 +91,7 @@ export class Animations {
 
   /** ヒットストップ：動いているものをすべて止めて、少し待つ */
   async hitstop(ms) {
-    if (this.skipping || ms <= 0) return;
+    if (this.skipping || ms <= 0 || UI_CONFIG.reducedMotion) return;
     const paused = document.getAnimations().filter((a) => a.playState === 'running');
     paused.forEach((a) => a.pause());
     await this.delay(ms);
@@ -97,6 +99,7 @@ export class Animations {
   }
 
   shake(el, amplitude, duration) {
+    if (UI_CONFIG.reducedMotion) return Promise.resolve();
     const frames = [];
     const n = 8;
     for (let i = 0; i <= n; i++) {
@@ -210,11 +213,13 @@ export class Animations {
         }
         this.renderer.setTurnInfo(p.turn, model.round);
         this.renderer.setCurrentPlayer(p.playerId);
+        if(['wind','earth'].includes(model.players[p.playerId]?.spirit?.spirit)) return this.spiritTriggered({playerId:p.playerId,type:model.players[p.playerId].spirit.type});
         return;
       case 'roundStarted': return this.roundStarted(p, model);
       case 'cardsFused': return this.cardsFused(p, model, ctx);
       case 'cardDrawn': return this.cardDrawn(p, model, ctx);
       case 'deckShuffled':
+        if (model.deckMode === 'own' && p.playerId !== ctx.viewerId) return;
         // drawCardsはシャッフル前に引いた分も最後のcardDrawnにまとめる。
         model.preShuffleDraws = (model.preShuffleDraws ?? 0) + model.deckCount;
         model.deckCount = p.deckCount;
@@ -230,6 +235,7 @@ export class Animations {
         return;
       case 'cardDiscarded': return this.cardDiscarded(p, model, ctx);
       case 'soldierDeployed': return this.soldierDeployed(p, model);
+      case 'soldierShot': return this.soldierShot(p, model);
       case 'soldierMoved': return this.soldiersMoved(ev, queue, model);
       case 'soldiersClashed': return this.soldiersClashed(p);
       case 'soldierDamaged': return this.soldiersDamaged(ev, queue, model);
@@ -267,6 +273,7 @@ export class Animations {
       case 'gameOver':
         model.phase = 'gameOver';
         model.winner = p.winner;
+        model.winnerTeam = p.winnerTeam;
         model.gameOverReason = p.reason ?? null;
         return;
       default:
@@ -347,7 +354,7 @@ export class Animations {
       this.handView.render(model.hand, { newIds: [cardId] });
     } else this.renderer.setOppHandCount(pl.handCount);
     if (this.skipping) return;
-    sound.play('equip');
+    sound.play('fusion');
     if (playerId !== ctx.viewerId) { await this.banner('相手がカードを合成！', UI_CONFIG.timing.fusion, 'fusion'); return; }
     const stage = this.fx('fx-fusion-stage', this.centerOf(this.renderer.el.field));
     const rank = this.rarities?.[this.cards[to]?.rarity];
@@ -367,6 +374,11 @@ export class Animations {
 
   effectCard(type, name) {
     const el = document.createElement('div'); el.className = 'effect-card';
+    const def = type ? this.cards[type] : null;
+    if (def && frameAsset(def, this.rarities)) {
+      mountMiniCard(el, type, def, this.rarities);
+      return el;
+    }
     const art = document.createElement('div'); art.className = 'effect-card-art';
     art.innerHTML = type ? cardArt(type, 'blue', name ?? '') : icon('card');
     const label = document.createElement('b'); label.textContent = name ?? '相手の報酬カード';
@@ -388,7 +400,7 @@ export class Animations {
     heading.textContent = reward.lucky ? `ラッキー！ ${this.rarities?.[reward.base]?.name ?? ''} → ${rarity?.name ?? ''}` : `${mine ? 'あなた' : '相手'}が${rarity?.name ?? ''}カード獲得！`;
     stage.append(heading, this.effectCard(card?.type, card ? this.cards[card.type]?.name : '相手の報酬カード'));
     const badge = document.createElement('span'); badge.className = 'reward-rarity'; badge.textContent = rarity?.name ?? ''; stage.append(badge);
-    sound.play('equip');
+    sound.play(reward.lucky ? 'lucky' : 'fusion');
     this.sparks(this.centerOf(this.renderer.el.field), { count: cfg.sparksBase + rank * cfg.sparksPerRank, color: rarity?.color ?? '#ffdf82', spread: 50 + rank * 20, size: 6 + rank });
     if (rank === Object.keys(this.rarities ?? {}).length - 1) this.screenFlash(rarity.color, duration * .4);
     try {
@@ -408,7 +420,8 @@ export class Animations {
       else if (pl.luck?.draws > 0) {
         pl.luck.draws -= 1;
         if (!pl.luck.draws) pl.luck = null;
-      } else if (model.preShuffleDraws > 0) model.preShuffleDraws -= 1;
+      } else if (model.deckMode === 'own' && playerId !== ctx.viewerId) { /* 相手の山札は自分の表示に反映しない */ }
+      else if (model.preShuffleDraws > 0) model.preShuffleDraws -= 1;
       else model.deckCount = Math.max(0, model.deckCount - 1);
       this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
       if (playerId === ctx.viewerId) {
@@ -429,11 +442,11 @@ export class Animations {
     const pl = model.players[playerId];
     const def = this.cards[type] ?? {};
     // 神頼みでタダで出したカード（free）は、山札の上から直接出る。手札は減らない
-    if (free) model.deckCount = Math.max(0, model.deckCount - 1);
-    else pl.handCount = Math.max(0, pl.handCount - 1);
+    if (free && (model.deckMode !== 'own' || playerId === ctx.viewerId)) model.deckCount = Math.max(0, model.deckCount - 1);
+    if (!free) pl.handCount = Math.max(0, pl.handCount - 1);
     if (!free && def.kind !== 'weapon' && def.kind !== 'defense') pl.playedThisTurn = true;
     pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
-    if (!def.exhaust) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
+    if (!def.exhaust && (model.deckMode !== 'own' || playerId === ctx.viewerId)) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
     model.hand = model.hand.filter((c) => c.cardId !== cardId);
     let clone;
     let from;
@@ -483,7 +496,7 @@ export class Animations {
   async cardDiscarded({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
     pl.handCount = Math.max(0, pl.handCount - cardIds.length);
-    model.discardCount += cardIds.length;
+    if (model.deckMode !== 'own' || playerId === ctx.viewerId) model.discardCount += cardIds.length;
     model.phase = 'main';
     model.discardRequired = 0;
     model.hand = model.hand.filter((c) => !cardIds.includes(c.cardId));
@@ -500,6 +513,7 @@ export class Animations {
   async soldierDeployed({ playerId, soldierId, type, position, hp, attack, roadId, targetId }, model) {
     const def = this.cards[type] ?? {};
     const s = {
+      role: def.role ?? 'melee', range: def.range, turnsLeft: def.stay ?? null,
       soldierId, type, hp: hp ?? def.hp, attack: attack ?? def.attack, position, roadId, targetId,
       weapon: null, element: null, shield: 0, statuses: { poison: null, frozen: 0 },
     };
@@ -520,14 +534,21 @@ export class Animations {
       if (queue[i].type === 'soldierMoved') moves.push(queue.splice(i, 1)[0].payload);
       else i++;
     }
+    let duration = 0;
     for (const m of moves) {
       const s = model.players[m.playerId].soldiers.find((x) => x.soldierId === m.soldierId);
-      if (s) s.position = m.to;
+      if (s) {s.position = m.to; s.place = null;}
+      const el = this.renderer.soldierEl(m.soldierId);
+      const speed = this.cards[s?.type]?.speed ?? 1;
+      const ms = UI_CONFIG.timing.soldierMove * Math.max(.65, Math.abs(m.to-m.from)/Math.max(speed,1));
+      duration = Math.max(duration, ms);
+      if (el) el.style.transitionDuration = `${ms*UI_CONFIG.speed}ms`;
       this.renderer.moveSoldier(m.soldierId, m.to);
     }
     this.renderer.layoutStacks();
     sound.play('step');
-    await this.delay(UI_CONFIG.timing.soldierMove);
+    await this.delay(duration || UI_CONFIG.timing.soldierMove);
+    for (const m of moves) this.renderer.soldierEl(m.soldierId)?.style.removeProperty('transition-duration');
   }
 
   /** 兵士へのダメージ：続けて来たものはまとめて同時に見せる。盾が受けたぶんと毒は見た目を変える */
@@ -577,18 +598,50 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.afterSoldierHit);
   }
 
-  /** 兵士が消える：続けて来たものはまとめて同時に消す */
+  async soldierShot({ playerId, soldierId, role, target, amount }, model) {
+    const from = this.renderer.soldierEl(soldierId);
+    const to = target.kind === 'soldier' ? this.renderer.soldierEl(target.soldierId)
+      : target.kind === 'monster' ? this.renderer.monsterEl(target.monsterId) : this.renderer.castleEl(target.playerId);
+    if (!from || !to) return;
+    const a = this.centerOf(from), b = this.centerOf(to);
+    const projectile = this.fx(role === 'mage' ? 'shot-magic' : 'shot-arrow', a);
+    const angle = Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+    sound.play(role === 'mage' ? 'magicShot' : 'bow', Math.min(1, amount / 12));
+    await this.animate(projectile, [
+      {transform:`translate(-50%,-50%) rotate(${angle}deg)`,opacity:1},
+      {transform:`translate(calc(-50% + ${b.x-a.x}px),calc(-50% + ${b.y-a.y}px)) rotate(${angle}deg)`,opacity:1},
+    ], {duration:UI_CONFIG.timing.soldierShot,easing:'ease-in',fill:'forwards'});
+    projectile.remove();
+    const soldier = this.modelSoldier(model,playerId,soldierId);
+    if(soldier?.turnsLeft != null) {
+      soldier.turnsLeft = Math.max(0,soldier.turnsLeft-1);
+      this.renderer.updateSoldier(soldierId,{turnsLeft:soldier.turnsLeft});
+    }
+  }
+
+  /** 帰還は城へ飛んで消える。倒れた兵士はその場で消える。 */
   async soldiersDestroyed(first, queue, model) {
     const list = this.takeRun(first, queue);
-    for (const d of list) {
+    await Promise.all(list.map(async d => {
       const pl = model.players[d.playerId];
-      pl.soldiers = pl.soldiers.filter((x) => x.soldierId !== d.soldierId);
-      const dyingEl = this.renderer.soldierEl(d.soldierId);
-      dyingEl?.classList.add(d.reason === 'reachedCastle' ? 'arrived' : 'dying');
-      if (dyingEl && d.reason !== 'reachedCastle' && !this.skipping) this.sparks(this.centerOf(dyingEl), { count: 7, color: '#fff', spread: 36, size: 9 });
-    }
-    await this.delay(UI_CONFIG.timing.soldierDeath);
-    for (const d of list) this.renderer.removeSoldier(d.soldierId);
+      pl.soldiers = pl.soldiers.filter(x => x.soldierId !== d.soldierId);
+      const el = this.renderer.soldierEl(d.soldierId);
+      if (el && d.reason === 'returned') {
+        const a = this.centerOf(el), b = this.centerOf(this.renderer.castleEl(d.playerId));
+        const scale = this.renderer.isPlaza ? this.renderer.plazaScale || 1 : 1;
+        b.x = a.x+(b.x-a.x)/scale; b.y = a.y+(b.y-a.y)/scale;
+        this.number(el,'帰還！',{kind:'heal',size:20,duration:UI_CONFIG.timing.soldierReturn});
+        await this.animate(el,[
+          {transform:'translate(-50%,-50%) scale(1)',opacity:1},
+          {transform:`translate(calc(-50% + ${b.x-a.x}px),calc(-50% + ${b.y-a.y}px)) scale(.3)`,opacity:0},
+        ],{duration:UI_CONFIG.timing.soldierReturn,easing:'ease-in',fill:'forwards'});
+      } else {
+        el?.classList.add(d.reason === 'reachedCastle' ? 'arrived' : 'dying');
+        if (el && d.reason !== 'reachedCastle' && !this.skipping) this.sparks(this.centerOf(el),{count:7,color:'#fff',spread:36,size:9});
+        await this.delay(UI_CONFIG.timing.soldierDeath);
+      }
+      this.renderer.removeSoldier(d.soldierId);
+    }));
   }
 
   async spellCast({ playerId, type, target, targetKind, roadId }) {
@@ -620,9 +673,11 @@ export class Animations {
   }
 
   /** 精霊が効く（このあと castleDamaged / castleHealed） */
-  async spiritTriggered({ type }) {
+  async spiritTriggered({ type, playerId }) {
     if (this.skipping) return;
-    this.banner(`${this.cards[type]?.name ?? '精霊'}`, UI_CONFIG.timing.shuffle * 0.7, 'small');
+    this.banner(`${this.cards[type]?.name ?? '精霊'}が力を貸してくれた！`, UI_CONFIG.timing.shuffle * 0.7, 'small');
+    const badge=this.renderer.castleEl(playerId)?.querySelector('.castle-spirit');
+    if(badge&&!badge.hidden)this.animate(badge,[{filter:'brightness(1)',scale:1},{filter:'brightness(1.4)',scale:1.15},{filter:'brightness(1)',scale:1}],{duration:UI_CONFIG.timing.shuffle});
     await this.delay(UI_CONFIG.timing.shuffle * 0.4);
   }
 
@@ -734,11 +789,18 @@ export class Animations {
     await this.delay(dur * 0.6);
   }
 
+  patchCastle(model, id, patch) {
+    const owner = model.players[id]?.castleOwner ?? id;
+    for (const [pid, player] of Object.entries(model.players)) {
+      if ((player.castleOwner ?? pid) === owner) Object.assign(player,patch);
+    }
+  }
+
   async castleDamaged({ playerId, amount, hp, blocked = 0 }, model) {
     const pl = model.players[playerId];
-    pl.castleHp = hp;
+    this.patchCastle(model, playerId, {castleHp:hp});
     if (blocked > 0) {
-      pl.armor = Math.max(0, (pl.armor ?? 0) - blocked);
+      this.patchCastle(model, playerId, {armor:Math.max(0,(pl.armor ?? 0)-blocked)});
       this.renderer.setArmor(playerId, pl.armor);
     }
     const dealt = Math.max(0, amount - blocked);
@@ -769,6 +831,7 @@ export class Animations {
     this.renderer.setCastleHp(playerId, hp);
     if (this.skipping) return;
     sound.play('hit', finish ? 1 : Math.min(1, amount / 12));
+    if (finish) sound.play('collapse');
     if (finish) this.screenFlash('#fff', 520);
 
     // 1) 当たった瞬間：白く光る＋爆発
@@ -788,7 +851,7 @@ export class Animations {
   }
 
   async castleHealed({ playerId, amount, hp }, model) {
-    model.players[playerId].castleHp = hp;
+    this.patchCastle(model, playerId, {castleHp:hp});
     const castle = this.renderer.castleEl(playerId);
     this.renderer.setCastleHp(playerId, hp);
     if (this.skipping) return;
@@ -856,7 +919,7 @@ export class Animations {
   }
 
   async castleArmored({ playerId, armor }, model) {
-    model.players[playerId].armor = armor;
+    this.patchCastle(model, playerId, {armor});
     this.renderer.setArmor(playerId, armor);
     if (this.skipping) return;
     const castle = this.renderer.castleEl(playerId);
@@ -867,7 +930,7 @@ export class Animations {
   }
 
   async armorExpired({ playerId }, model) {
-    model.players[playerId].armor = 0;
+    this.patchCastle(model, playerId, {armor:0});
     if (this.skipping) {
       this.renderer.setArmor(playerId, 0);
       return;
@@ -887,7 +950,7 @@ export class Animations {
       const statuses = { ...(s?.statuses ?? this.renderer.soldier(a.soldierId)?.statuses ?? { poison: null, frozen: 0 }) };
       if (a.status === 'poison') {
         // statusApplied に毒の量はない。量は推測せず（null）、毒のダメージを受けたときか getState で分かる
-        statuses.poison = { amount: statuses.poison?.amount ?? null, turns: a.turns };
+        statuses.poison = { amount: null, turns: a.turns };
       } else if (a.status === 'frozen') {
         statuses.frozen = a.turns;
       }
@@ -938,7 +1001,7 @@ export class Animations {
   }
 
   async monsterAttackedCastle({ monsterId, playerId, amount, hp }, model) {
-    model.players[playerId].castleHp = hp;
+    this.patchCastle(model, playerId, {castleHp:hp});
     const m = this.modelMonster(model, monsterId);
     if (m && m.castleAttack != null) { m.castleAttack += this.rules.monsterAttackGrowth ?? 0; this.renderer.updateMonster(monsterId, { castleAttack: m.castleAttack }); }
     const mEl = this.renderer.monsterEl(monsterId);

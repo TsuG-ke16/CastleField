@@ -1,0 +1,4 @@
+#tutorial { padding:8px 10px; border:2px solid #b78429; border-radius:12px; background:#fff7db; color:#352518; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+#tutorial[hidden] { display:none; }
+#tutorial p { margin:0; white-space:pre-line; font-size:13px; line-height:1.45; flex:1; }
+#tutorial button { flex-shrink:0; }

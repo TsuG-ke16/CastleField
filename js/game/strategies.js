@@ -11,7 +11,9 @@ const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 function view(game, pid) {
   const state = game.getState(pid);
   const me = state.players[pid];
-  const enemies = Object.keys(state.players).filter((id) => id !== pid).map((id) => ({ id, ...state.players[id] }));
+  // チーム戦では、同じ城（castleOwner）の味方は相手に数えない
+  const sideOf = (id) => state.players[id].castleOwner ?? id;
+  const enemies = Object.keys(state.players).filter((id) => sideOf(id) !== sideOf(pid)).map((id) => ({ id, ...state.players[id] }));
   const playable = me.hand.filter((c) => game.canPlayCard(c.cardId).ok);
   return { state, me, enemies, playable };
 }
@@ -35,7 +37,7 @@ function pickLane(game, pid, cardId, targets) {
   const type = st.players[pid].hand.find((c) => c.cardId === cardId)?.type;
   const isSoldier = curCards[type]?.kind === 'soldier';
   const enemyCount = (roadId) => Object.entries(st.players)
-    .filter(([id]) => id !== pid)
+    .filter(([id, p]) => (p.castleOwner ?? id) !== (st.players[pid].castleOwner ?? pid))
     .reduce((n, [, p]) => n + p.soldiers.filter((x) => x.roadId === roadId).length, 0);
   const score = (t) => {
     const monster = st.monsters.some((m) => m.roadId === t.roadId) ? 1 : 0;

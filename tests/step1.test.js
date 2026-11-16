@@ -178,9 +178,10 @@ test('findClashTarget：同じマスと1つ先に相手が1体ずつ → 先に�
   me.position = 1;
   first.position = 2; // 道のマス2（1つ先）
   second.position = 3; // 道のマス1（同じマス）
-  assert.equal(game.findClashTarget(me, game.players.p2), first);
+  assert.equal(game.findClashTarget(me, game.players.p1).soldier, first);
   first.position = 1; // 道のマス3（範囲外）
-  assert.equal(game.findClashTarget(me, game.players.p2), second);
+  assert.equal(game.findClashTarget(me, game.players.p1).soldier, second);
+  assert.equal(game.findClashTarget(me, game.players.p1).owner, game.players.p2);
 });
 
 test('ファイアボール：spellCast → castleDamaged（source は spell）', () => {

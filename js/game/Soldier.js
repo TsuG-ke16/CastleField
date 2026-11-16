@@ -17,7 +17,13 @@ export class Soldier {
     this.type = card.type;
     this.hp = card.def.hp;
     this.baseAttack = card.def.attack;
-    this.speed = card.def.speed;
+    this.speed = card.def.speed ?? 0;
+    /** 役割（"melee" | "archer" | "mage"）。弓兵・魔法使いは動かずに撃つ */
+    this.role = card.def.role ?? 'melee';
+    /** 撃てる距離（自分のマスから何マス先まで。弓兵・魔法使いだけ） */
+    this.range = card.def.range ?? 0;
+    /** あと何ターン残るか（弓兵・魔法使いだけ。自分のターンごとに1減り、0で帰る） */
+    this.turnsLeft = card.def.stay ?? 0;
     this.position = 0;
     /** 持っている武器のカード種類（なければ null） */
     this.weapon = null;
@@ -67,6 +73,9 @@ export class Soldier {
       hp: this.hp,
       attack: this.attack,
       position: this.position,
+      role: this.role,
+      range: this.range,
+      turnsLeft: this.role === 'melee' ? null : this.turnsLeft,
       roadId: this.roadId,
       targetId: this.targetId,
       weapon: this.weapon,

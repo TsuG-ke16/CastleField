@@ -51,8 +51,10 @@ function readJson(req) {
 const STATIC_TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
-const STATIC_DIRS = ['/index.html', '/css/', '/js/', '/data/', '/assets/'];
+// /sw.js と /manifest.webmanifest は、ホーム画面に追加・オフラインで遊ぶ（PWA）ために、ルートに置いて配る
+const STATIC_DIRS = ['/index.html', '/sw.js', '/manifest.webmanifest', '/css/', '/js/', '/data/', '/assets/'];
 
 /** 画面のファイルも同じサーバーから配る（同じオリジンになるので、画面はつなぎ先を知らなくてよい） */
 function serveStatic(pathname, res) {
@@ -78,11 +80,12 @@ function sendJson(res, status, body) {
  * @param {object} [o]
  * @param {object} [o.data] { cards, rules, monsters, upgrades }。省略すると data/ を読む
  * @param {() => () => number} [o.makeRng] 試合ごとの乱数を作る関数（テストでシードを固定するため）
+ * @param {number} [o.cpuDelayMs] CPU が1手ごとに待つ時間（ミリ秒。0 ならすぐ動く。テスト用）
  */
-export function createGameServer({ data = loadData(), makeRng = () => Math.random } = {}) {
+export function createGameServer({ data = loadData(), makeRng = () => Math.random, cpuDelayMs = 700 } = {}) {
   // data/ が間違っていたら、起動したときに分かるようにする（試合が始まってから落ちないように）
   new Game({ ...data, rng: makeRng() });
-  const lobby = new Lobby(data, makeRng);
+  const lobby = new Lobby(data, makeRng, { cpuDelayMs });
   const sweeper = setInterval(() => lobby.sweep(30 * 60 * 1000), 60 * 1000);
   sweeper.unref();
 

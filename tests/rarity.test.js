@@ -56,9 +56,9 @@ test('合成：手札の同じカード2枚が、1つ上のレアリティの1�
   assert.equal(g.fuse(a, b).ok, true);
   const hand = g.getState('p1').players.p1.hand;
   assert.equal(hand.filter((c) => c.type === 'infantry').length, 0);
-  assert.equal(hand.filter((c) => c.type === 'heavy').length, 1);
+  assert.equal(hand.filter((c) => c.type === 'spearman').length, 1);
   assert.equal(log[0].from, 'infantry');
-  assert.equal(log[0].to, 'heavy');
+  assert.equal(log[0].to, 'spearman');
   assert.equal(g.getState('p1').players.p1.playedThisTurn, false); // メインの1枚には数えない
 });
 

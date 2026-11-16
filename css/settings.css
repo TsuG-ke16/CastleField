@@ -1,0 +1,39 @@
+.settings-box { max-height:calc(100dvh - 32px); overflow:auto; width:min(94vw,430px); text-align:left; }
+.settings-box h2 { text-align:center; }
+.settings-box label { display:flex; gap:6px; flex-wrap:wrap; margin:14px 0; align-items:center; font-size:16px; }
+.settings-box input:not([type=checkbox]), .settings-box select { width:100%; min-height:40px; font:inherit; }
+.settings-box input[type=checkbox] { width:22px; height:22px; flex-shrink:0; }
+.settings-box output { margin-left:auto; }
+.settings-status { font-size:14px; min-height:20px; }
+.reduced-motion *, .reduced-motion *::before, .reduced-motion *::after { animation:none!important; transition:none!important; scroll-behavior:auto!important; }
+.reduced-motion .confetti, .reduced-motion .result-rays { display:none; }
+html[data-text-size=small] { --reading-size:13px; }
+html[data-text-size=normal] { --reading-size:15px; }
+html[data-text-size=large] { --reading-size:18px; }
+.help-list, .help-note, .detail-desc, .detail-hint, #message, .target-msg, .room-note, .settings-box label, #tutorial p { font-size:var(--reading-size,15px); }
+html[data-text-size=large] .card-name { font-size:15px; }
+html[data-text-size=large] .castle-label { font-size:14px; }
+
+.local-options {text-align:left; margin:12px 0;}
+.local-options summary {cursor:pointer; padding:8px;}
+.local-fields label {display:block; margin:8px 0;}
+.local-fields select {display:block; width:100%; min-height:38px; font:inherit;}
+.local-note {font-size:13px; line-height:1.5;}
+#title-levels {max-height:80dvh;overflow:auto;}
+
+#result .screen-box {max-height:calc(100dvh - 32px);overflow:auto;}
+#result-stats {max-width:340px;margin:8px auto;padding:8px 14px;border:1px solid #9f956d;border-radius:12px;background:#fff9e9;color:#294744;}
+#result-stats p {margin:0 0 6px;font-size:14px;}
+#result-stats dl {display:grid;grid-template-columns:1fr auto;gap:4px 16px;margin:0;text-align:left;font-size:14px;}
+#result-stats dd {margin:0;font-weight:bold;font-variant-numeric:tabular-nums;}
+#result-encouragement {font-size:14px;}
+#title-record {font-size:13px;margin:10px 0 2px;}
+#record-clear {font-size:12px;}
+
+html.at-title #scenery {background-image:url('../assets/bg/title-compact.png');}
+html.at-title #board, html.at-title #hud, html.at-title #controls {display:none;}
+#asset-loading {z-index:250;}
+#offline-status {font-size:12px;line-height:1.4;}
+.asset-wait {display:grid;place-items:center;width:100%;height:100%;font-size:12px;background:#eee5cf;color:#514936;}
+.asset-loaded .asset-wait {display:none;}
+.asset-art:not(.asset-loaded)>.asset-image {visibility:hidden;}

@@ -1,0 +1,17 @@
+.seat-mark {position:absolute;right:0;top:10px;min-width:18px;height:18px;display:grid;place-items:center;border:2px solid var(--team-color);border-radius:50%;background:#fffbed;color:#173332;font:bold 11px sans-serif;z-index:3;}
+.spirit-symbol .spirit-art {width:40px;height:40px;display:block;}
+.castle-spirit {overflow:visible;}
+.team-spirit {display:inline-flex;align-items:center;gap:3px;white-space:nowrap;}
+.team-spirit .spirit-art {width:26px;height:26px;}
+.plaza-stage .castle-spirit {display:flex;position:absolute;left:calc(100% - 16px);top:0;max-width:70px;flex-wrap:wrap;gap:2px;padding:2px;font-size:10px;}
+.plaza-stage .spirit-symbol .spirit-art {width:28px;height:28px;}
+.plaza-stage .castle-spirit[hidden] {display:none;}
+.result-pic .result-illustration {display:block;width:100%;height:100%;object-fit:contain;}
+#result.lost .result-pic {filter:none;}
+.result-pic .result-illustration img {width:100%;height:100%;object-fit:contain;}
+.result-pic {width:240px;height:170px;margin-inline:auto;}
+.card-back-icon {width:16px;height:22px;vertical-align:middle;}
+#title .title-castle {animation:title-breathe 5s ease-in-out infinite;}
+#title .title-unit {animation:title-breathe 5s ease-in-out 1s infinite;}
+@keyframes title-breathe {50% {translate:0 -4px;}}
+@media (prefers-reduced-motion:reduce) {#title .title-castle,#title .title-unit {animation:none;}}

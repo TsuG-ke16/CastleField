@@ -2,13 +2,32 @@
 // 時間はすべてミリ秒。speed を 2 にすると全部の演出が倍の長さになる。
 
 export const UI_CONFIG = {
+  soldierFamilies: [
+    {root:'infantry',name:'普通の兵士',note:'進んで城を攻める。攻撃と打たれ強さの基準。'},
+    {root:'scout',name:'騎兵',note:'速く進んで城へ。打たれ弱いので出す道を選ぼう。'},
+    {root:'apprenticeArcher',name:'弓兵',note:'動かずに近い相手の兵士や魔物を撃つ。射撃の反撃は受けない。'},
+    {root:'apprenticeMage',name:'魔法使い',note:'動かずに撃つ。兵士も魔物もいなければ狙った城を撃つ。'},
+  ],
+  maxAnimation: 2000,
+  cpuThink: 450,
+  cpuLevels: {
+    easy: {name:'よわい',strategy:'defensive'},
+    normal: {name:'ふつう',strategy:'rush'},
+    hard: {name:'つよい',strategy:'smart'},
+  },
+  plazaSize: 640, plazaSizeCompact: 480,
+  teamColors: Object.assign(['#4da3e8','#f5923e','#9c73d8','#41a589','#e27299','#a88d45','#6984c9','#b37b60'], {t1:'#4da3e8', t2:'#f5923e', t3:'#9c73d8', t4:'#41a589'}),
+  castleTiers: [{min:1,name:'castle',towers:false}, {min:2,name:'towers',towers:true}, {min:4,name:'walls',towers:true,wall:true}, {min:6,name:'fortress',towers:true,wall:true,fortress:true}],
   // 全演出の速さの倍率（大きいほどゆっくり。デバッグパネルから変えられる）
-  speed: 1,
+  // 1 だと短すぎて何が起きたか分からなかった（人間の指示）ので 1.8 にした。演出はタップで早送りできる
+  speed: 1.8,
 
   // 演出の長さ
   timing: {
     fusion: 900,
     reward: 1100,        // 魔物報酬のレアリティを読む時間
+    soldierShot: 520,
+    soldierReturn: 650,
     soldierMove: 280,      // 兵士が進む
     deploy: 240,           // 兵士が出てくる
     defenseResult: 900,   // 反射・身代わりの帯（カード拡大が終わってから表示）
@@ -36,6 +55,7 @@ export const UI_CONFIG = {
     discard: 150,          // 手札を捨てたあと
     afterSoldierHit: 160,  // 兵士にダメージが入ったあとの間
     afterMonsterHit: 120,  // 魔物にダメージが入ったあとの間
+    autoEndTurn: 700,      // やることがないとき、自動でターンを終えるまでの間（「ターンを終えます」を読む時間）
   },
 
   // 城にダメージが入ったときの手応え。値 = base + perDamage × ダメージ（max で頭打ち）

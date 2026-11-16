@@ -1,0 +1,36 @@
+#room-screen { background: #f5f0df; overflow-y: auto; align-items: start; padding: max(20px, env(safe-area-inset-top)) 16px; }
+.room-box { width: min(100%, 840px); margin: 0 auto; color: #3e3525; padding-bottom: 32px; }
+.room-eyebrow { letter-spacing: .16em; color: #657856; font-size: 11px; font-weight: 800; }
+.room-box h1 { margin: 8px 0; font-size: 28px; }.room-box h2 { font-size: 17px; margin: 12px 0; }
+.room-note { color: #6d705f; font-size: 12px; line-height: 1.6; display: block; margin: 5px 0; }
+.room-passphrase { display: block; font-size: clamp(23px, 7vw, 36px); letter-spacing: .1em; padding: 14px; border: 1px dashed #aaa477; background: #fffaf0; border-radius: 12px; overflow-wrap: anywhere; }
+.room-heading { display: flex; align-items: center; justify-content: space-between; margin: 14px 0; }
+.room-seats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 270px), 1fr)); gap: 10px; }
+.room-seat { border: 1px solid #ded4b9; padding: 12px; border-radius: 14px; background: #fffdf5; border-left: 5px solid var(--seat-color, #b8bda4); }
+.room-seat.room-self { box-shadow: 0 0 0 2px #6d987b; }.room-seat[data-team=t1] { --seat-color: #4da3e8; }.room-seat[data-team=t2] { --seat-color: #f5923e; }.room-seat[data-team=t3] { --seat-color: #9c73d8; }.room-seat[data-team=t4] { --seat-color: #41a589; }
+.room-seat h3 { display:flex; align-items:center; flex-wrap:wrap; gap:6px; margin:0; overflow-wrap:anywhere; font-size:15px; }.room-seat h3 small { background:#e7eddb; padding:3px 6px; border-radius:5px; font-size:10px; }
+.room-select { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; margin: 8px 0; }.room-select select { max-width: 65%; min-height: 40px; font: inherit; background: #fff; color: #403821; border: 1px solid #c9c3aa; border-radius: 6px; padding: 7px; }.room-select b { text-align:right; }
+.room-settings { margin: 18px 0; padding: 10px 14px; background: #e9ecdf; border-radius: 12px; }.room-start { width: 100%; margin-top: 8px; min-height: 52px; }.room-status { color: #a23b36; font-size: 13px; min-height: 20px; }
+#board.plaza-board { position: relative; display: block; min-height: 180px; padding: 0; overflow: hidden; }
+.plaza-viewport { position: absolute; inset: 0; overflow: hidden; touch-action: pan-y; }.plaza-stage { position: absolute; top:50%;left:50%; transform-origin:center; }
+.plaza-stage #unit-layer { inset:0; }.plaza-stage #unit-layer .soldier { width: 62px; }.plaza-stage .monster { width:76px; }.plaza-stage .monster-attack-in { font-size:12px; }
+.plaza-hub { position:absolute;top:50%;left:50%;width:92px;height:92px;border:5px solid #b5a37a;border-radius:50%;background:#e6d7af;transform:translate(-50%,-50%);text-align:center;padding-top:59px;font-size:13px;color:#695538;box-shadow:0 0 0 10px #c2d49a; }
+.spoke-dot { position:absolute; width:24px;height:24px;background:#e9d5a3;border:3px solid #baa375;border-radius:50%;transform:translate(-50%,-50%); }
+.plaza-stage .plaza-castle { position:absolute;transform:translate(-50%,-50%);width:118px;height:106px;display:flex;flex-direction:column;gap:0;z-index:3; }
+.plaza-stage .castle-pic { order:0;width:78px;height:62px;flex:none; }.plaza-stage .castle-side { order:1;align-items:center;max-width:140px; }.plaza-stage .castle-label { font-size:13px;line-height:1.2;max-width:140px;max-height:48px;overflow:hidden;padding:3px 5px; }.plaza-stage .castle-hp { order:2;width:92px;padding:2px 5px; }.plaza-stage .hp-value { font-size:20px; }.plaza-stage .hp-max { font-size:11px; }.plaza-stage .hp-text { height:22px; }.plaza-stage .hp-bar {height:4px;}.plaza-stage .castle-spirit {display:none;}.plaza-stage .castle-armor {font-size:10px;}
+.castle .castle-label { border-bottom: 3px solid var(--team-color, #aaa); }.castle.eliminated { opacity:.45; }.castle-pic { position:relative;isolation:isolate; }.extra-tower {position:absolute;width:65%;height:80%;bottom:0;z-index:-1;}.extra-tower .castle-art { width:100%;height:100%; }.tower-left {left:-30%;}.tower-right {right:-30%;}.team-wall {position:absolute;bottom:3%;left:-30%;width:160%;height:26%;border:3px solid #776a58;background:repeating-linear-gradient(90deg,#cfc6ac 0 14px,#8f8874 15px 17px);z-index:2;clip-path:polygon(0 0,10% 0,10% 20%,20% 20%,20% 0,30% 0,30% 20%,70% 20%,70% 0,80% 0,80% 20%,90% 20%,90% 0,100% 0,100% 100%,0 100%);}.fortress-flags {position:absolute;top:-25%;left:-25%;width:150%;color:var(--team-color);font-size:28px;letter-spacing:9px;}
+.plaza-zoom {position:absolute;right:5px;top:3px;display:flex;align-items:center;gap:4px;z-index:10;background:#fff8e8d9;border-radius:10px;padding:3px;}.plaza-zoom button {min-width:35px;min-height:34px;}.plaza-zoom span {font-size:10px;min-width:30px;}
+.soldier-turns {position:absolute;left:50%;top:-13px;transform:translateX(-50%);white-space:nowrap;border:1px solid #b5915c;border-radius:8px;padding:2px 4px;background:#fff5d6;color:#624f2b;font-size:10px;font-weight:800;}.soldier[data-role=archer] .soldier-token {border-bottom:3px solid #4d9561;border-radius:50%;}.soldier[data-role=mage] .soldier-token {border-bottom:3px solid #a173d8;border-radius:50%;}
+.shot-arrow,.shot-magic {position:absolute;pointer-events:none;z-index:40;}.shot-arrow {width:40px;height:7px;border-radius:2px;background:#d9ab63;border:2px solid #59412b;}.shot-arrow::after {content:'';position:absolute;right:-9px;top:-5px;border-left:12px solid #dce9ee;border-top:7px solid transparent;border-bottom:7px solid transparent;}.shot-magic {width:22px;height:22px;border-radius:50%;background:#fff4ff;box-shadow:0 0 10px 5px #c578f4,0 0 24px 9px #8a58db;}
+[hidden] {display:none !important;}
+/* 背景画像に描かれた3個の石より、実際の laneLength のマスを優先する。 */
+#field { background: radial-gradient(ellipse at center,#c1d391,#9dbf71); border-radius: 16px; }
+#road .lane { margin:0 8px;background:linear-gradient(90deg,#dfba7e,#efd49d 45%,#dfba7e);border-radius:18px; }
+#road .stone, #road .cell.mid .stone, #road.multi .cell.mid .stone { display:block;width:48%;height:48%;background:#e5d6a5;border:2px solid #b9a16f;box-shadow:0 3px 0 #ae955c; }
+#road .cell.mid .stone { background:#d5bfeb;border-color:#9e84b4; }.cell.mid .stone::after { content:none; }
+.plaza-board { background:radial-gradient(ellipse at center,#d2dfaf,#a5c67e);border-radius:16px; }
+.soldier .soldier-stats {border-bottom:2px solid var(--team-color);border-radius:5px;}
+#target-bar {flex-wrap:wrap;}.target-members {width:100%;display:flex;gap:6px;flex-wrap:wrap;}
+.castle-label { display:block;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;text-align:center; }
+.plaza-stage .castle-label {max-height:none;}.castle-side {align-items:center;}
+.castle[data-tier=fortress] { min-height:100px; }

@@ -1,17 +1,35 @@
 <!doctype html>
-<html lang="ja">
+<html lang="ja" class="at-title">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/ui/app-icon-192.png">
   <meta name="theme-color" content="#193f42">
   <title>キャッスルフィールド</title>
   <link rel="icon" href="data:,">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/rarity-fx.css">
+  <link rel="stylesheet" href="css/step5.css">
+  <link rel="stylesheet" href="css/tutorial.css">
+  <link rel="stylesheet" href="css/settings.css">
+  <link rel="stylesheet" href="css/rarity-assets.css">
+  <link rel="stylesheet" href="css/finishing-art.css">
+  <link rel="stylesheet" href="css/accessibility.css">
+  <link rel="stylesheet" href="css/help-guide.css">
 </head>
 <body>
   <div id="app">
+    <!-- 読み込み中の画面：画像とデータがそろうまで、組みかけの盤面を見せないために出す（起動が終わったら main.js が消す） -->
+    <div id="loading" role="status" aria-live="polite">
+      <div class="loading-box">
+        <div class="loading-name">キャッスルフィールド</div>
+        <div class="loading-bar" aria-hidden="true"><span id="loading-fill"></span></div>
+        <div class="loading-text" id="loading-text">読み込み中…</div>
+      </div>
+    </div>
+    <div id="asset-loading" class="screen dim" role="status" aria-live="polite" hidden><div class="screen-box parchment"><p id="asset-loading-text">対戦の絵を準備中…</p></div></div>
     <div id="scenery" aria-hidden="true"></div>
 
     <div class="game-brand"><span class="brand-seal" aria-hidden="true">✦</span><span>CASTLE FIELD</span><span class="brand-caption">城攻めカードバトル</span></div>
@@ -69,7 +87,7 @@
 
     <!-- 下：自分の操作 -->
     <footer id="controls">
-      <div id="card-detail" class="panel" hidden>
+      <div id="card-detail" class="panel" role="region" aria-label="カードの説明" hidden>
         <div class="detail-text">
           <div class="detail-head"><span class="detail-kind"></span><b class="detail-name"></b></div>
           <span class="detail-rarity"></span><div class="detail-desc"></div>
@@ -125,15 +143,18 @@
     </div>
 
     <!-- 勝敗 -->
-    <div id="result" class="screen" hidden>
+    <div id="result" class="screen" aria-labelledby="result-heading" aria-describedby="result-description" hidden>
       <div class="confetti" aria-hidden="true"></div>
       <div class="result-rays" aria-hidden="true"></div>
       <div class="screen-box">
         <p class="result-crown" aria-hidden="true" data-icon="crown"></p>
         <div class="result-pic"></div>
-        <p class="result-title"></p>
-        <p class="result-sub"></p>
+        <p id="result-heading" class="result-title"></p>
+        <p id="result-description" class="result-sub"></p>
+        <div id="result-stats"></div>
+        <p id="result-encouragement"></p>
         <button type="button" id="rematch" class="plank-btn big">もう1回</button>
+        <button type="button" id="back-to-room" class="small-btn" hidden>部屋に戻る</button>
         <button type="button" id="result-title-btn" class="small-btn">タイトルへ</button>
       </div>
     </div>
@@ -145,6 +166,7 @@
         <button type="button" id="menu-sound" class="small-btn wide"></button>
         <button type="button" id="menu-catalog" class="small-btn wide">カード・魔物一覧</button>
         <button type="button" id="menu-rates" class="small-btn wide">排出率を見る</button>
+        <button type="button" id="menu-settings" class="small-btn wide">設定</button>
         <button type="button" id="menu-help" class="small-btn wide">遊び方</button>
         <button type="button" id="menu-surrender" class="small-btn wide danger" hidden>降参する</button>
         <button type="button" id="menu-title-btn" class="small-btn wide">タイトルへ戻る</button>
@@ -165,6 +187,7 @@
           <li id="help-monster">まん中に出る<b>魔物</b>を倒すとカード。放置すると城への攻撃が強くなる</li>
         </ol>
         <p class="help-note">カードをタップすると説明が出ます。出せないカードは理由が出ます</p>
+        <button type="button" id="help-tutorial" class="small-btn">操作を案内つきで練習する</button>
         <button type="button" id="help-close" class="plank-btn">わかった</button>
       </div>
     </div>
@@ -179,9 +202,12 @@
         <div class="title-choices">
           <div id="title-main">
             <button type="button" id="title-solo" class="plank-btn big mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m0 1c5-4 7 4 13 0v10c-6 4-8-4-13 0"/></svg></span><span><strong>ひとりで遊ぶ</strong><small>自分のペースで、CPUに挑戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
-            <button type="button" id="title-local" class="plank-btn big alt2 mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M2 20v-2a6 6 0 0 1 12 0v2m2-15a3 3 0 0 1 0 6m1 3a5 5 0 0 1 5 5v1"/></svg></span><span><strong>ふたりで遊ぶ</strong><small>ひとつの画面で、交代しながら</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
+            <button type="button" id="title-local" class="plank-btn big alt2 mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M2 20v-2a6 6 0 0 1 12 0v2m2-15a3 3 0 0 1 0 6m1 3a5 5 0 0 1 5 5v1"/></svg></span><span><strong>同じ端末で遊ぶ</strong><small>2〜8人で、交代しながら</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
             <button type="button" id="title-online" class="plank-btn big alt mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></span><span><strong>オンラインで遊ぶ</strong><small>合言葉を決めて、友だちと対戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
+            <p id="offline-status" role="status"></p>
+            <p id="title-record" aria-live="polite"></p><button type="button" id="record-clear" class="small-btn">戦績を消す</button>
             <button type="button" id="title-catalog" class="small-btn">カード・魔物一覧</button>
+            <button type="button" id="title-settings" class="small-btn">設定</button>
             <button type="button" id="title-help" class="small-btn">遊び方</button>
           </div>
           <div id="title-levels" class="parchment" hidden>

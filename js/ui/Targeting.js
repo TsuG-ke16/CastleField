@@ -2,6 +2,8 @@
 // やめ方：「やめる」ボタン・光っていない所をタップ・盤面の外（手札など）をタップ。
 // どこに出せるかは main.js が game.getTargets() で調べて渡す。ここでは状態を書き換えない。
 
+import { playerName } from './text.js';
+
 const $ = (id) => document.getElementById(id);
 
 export class Targeting {
@@ -64,6 +66,7 @@ export class Targeting {
     this.current = null;
     this.renderer.setTargets(null);
     this.el.bar.hidden = true;
+    this.el.bar.querySelector('.target-members')?.remove();
   }
 
   /** 盤面がタップされた。光っている対象なら選び、そうでなければやめる */
@@ -73,6 +76,18 @@ export class Targeting {
     if (!target) {
       this.cancel();
       return;
+    }
+    if (target.options) {
+      this.el.bar.querySelector('.target-members')?.remove();
+      const members = document.createElement('div'); members.className = 'target-members';
+      this.el.msg.textContent = 'この城のだれの兵士を狙う？';
+      for (const option of target.options) {
+        const button = document.createElement('button'); button.type = 'button';button.className = 'small-btn';
+        button.textContent = playerName(option.playerId);
+        button.addEventListener('click', e => {e.stopPropagation(); this.onChoose(t.cardId,option);});
+        members.append(button);
+      }
+      this.el.bar.append(members); return;
     }
     this.onChoose(t.cardId, target);
   }

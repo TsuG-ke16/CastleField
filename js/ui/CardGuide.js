@@ -1,4 +1,6 @@
+import { soldierFamilies } from './HelpView.js';
 import { cardArt, monsterArt, icon } from './art.js';
+import { mountMiniCard } from './cardView.js';
 import { KIND_LABEL, cardDescription, cardShort, elementName } from './text.js';
 import { currentRates, fusionPaths } from './CardInfo.js';
 import { rewardOdds } from '../game/Setup.js';
@@ -12,7 +14,7 @@ const node = (tag, cls, text) => {
 export class CardGuide {
   constructor({ cards, rarities, rules, monsters, getContext, debug }) {
     Object.assign(this, { cards, rarities, rules, monsters, getContext, debug });
-    this.filters = { rarity: '', kind: '' };
+    this.filters = { rarity: '', kind: '', family: '' };
     this.screen = node('div', 'screen dim guide-screen'); this.screen.id = 'card-guide'; this.screen.hidden = true;
     this.box = node('section', 'parchment guide-box');
     this.box.setAttribute('role', 'dialog'); this.box.setAttribute('aria-modal', 'true'); this.box.setAttribute('aria-labelledby', 'guide-title');
@@ -62,18 +64,20 @@ export class CardGuide {
     if (tab === 'rates') this.renderRates();
   }
   renderCards() {
+    const families=soldierFamilies(this.cards);
+    this.content.append(node('p','guide-note',`カード${Object.keys(this.cards).length}種 · 兵士${Object.values(this.cards).filter(c=>c.kind==='soldier').length}体（${families.length}系統）。射程・帰還・合成先はカードを開いて確認。`));
     const filters = node('div', 'guide-filters');
-    for (const [key, label, options] of [['rarity', 'レアリティ', Object.entries(this.rarities ?? {}).map(([id, r]) => [id, r.name])], ['kind', '種類', Object.entries(KIND_LABEL)]]) {
+    for (const [key, label, options] of [['rarity', 'レアリティ', Object.entries(this.rarities ?? {}).map(([id, r]) => [id, r.name])], ['kind', '種類', Object.entries(KIND_LABEL)], ['family','兵士の系統',families.map(f=>[f.root,f.name])]]) {
       const field = node('label', '', label), select = node('select', ''); select.setAttribute('aria-label', label);
       for (const [id, text] of [['', 'すべて'], ...options]) { const option = node('option', '', text); option.value = id; select.append(option); }
-      select.value = this.filters[key]; select.onchange = () => { this.filters[key] = select.value; this.render('cards'); this.content.querySelector(`select[aria-label="${label}"]`)?.focus(); };
+      select.value = this.filters[key]; select.onchange = () => { this.filters[key] = select.value; if(key==='family'&&select.value)this.filters.kind='soldier';if(key==='kind'&&select.value!=='soldier')this.filters.family='';this.render('cards'); this.content.querySelector(`select[aria-label="${label}"]`)?.focus(); };
       field.append(select); filters.append(field);
     }
     this.content.append(filters);
     const rates = this.rates(); let count = 0;
     for (const [rarityId, rarity] of Object.entries(this.rarities ?? {})) {
       if (this.filters.rarity && this.filters.rarity !== rarityId) continue;
-      const members = Object.entries(this.cards).filter(([, c]) => c.rarity === rarityId && (!this.filters.kind || c.kind === this.filters.kind));
+      const members = Object.entries(this.cards).filter(([type, c]) => c.rarity === rarityId && (!this.filters.kind || c.kind === this.filters.kind) && (!this.filters.family || families.find(f=>f.root===this.filters.family)?.types.includes(type)));
       if (!members.length) continue;
       this.content.append(node('h3', 'guide-group-title', `${rarity.name} · ${members.length}種`));
       const grid = node('div', 'guide-grid');
@@ -81,7 +85,7 @@ export class CardGuide {
         count++;
         const button = node('button', 'guide-card'); button.type = 'button'; button.dataset.type = type;
         button.style.setProperty('--rarity', rarity.color);
-        const art = node('div', 'guide-art'); art.innerHTML = cardArt(type, 'blue', def.name);
+        const art = node('div', 'guide-art'); mountMiniCard(art, type, def, this.rarities);
         const short = node('span', 'guide-short');
         for (const item of cardShort(def)) { const part = node('span', ''); part.innerHTML = icon(item.icon); part.append(document.createTextNode(String(item.text))); short.append(part); }
         button.append(art, node('b', '', def.name), node('small', '', rarity.name), short, node('small', '', `${rates[type].toFixed(3)}%`));
@@ -96,9 +100,13 @@ export class CardGuide {
     this.content.replaceChildren(); this.content.scrollTop = 0;
     const back = node('button', 'small-btn', '← カード一覧へ'); back.type = 'button'; back.onclick = () => this.render('cards'); this.content.append(back);
     const hero = node('div', 'guide-card-detail'); hero.style.setProperty('--rarity', rarity?.color ?? '#999');
-    const art = node('div', 'guide-detail-art'); art.innerHTML = cardArt(type, 'blue', def.name);
+    const art = node('div', 'guide-detail-art'); mountMiniCard(art, type, def, this.rarities);
     const info = node('div', ''); info.append(node('h3', '', def.name), node('span', 'rarity-label', `${rarity?.name ?? ''} ／ ${KIND_LABEL[def.kind]}`));
-    hero.append(art, info); this.content.append(hero, node('p', 'guide-effect', cardDescription(def, this.rules, { monsters: Boolean(this.monsters), debug: this.debug })));
+    hero.append(art, info);
+    const family=soldierFamilies(this.cards).find(f=>f.types.includes(type));
+    if(family)info.append(node('p','guide-family-info',`${family.name}：${family.note}`));
+    this.content.append(hero, node('p', 'guide-effect', cardDescription(def, this.rules, { monsters: Boolean(this.monsters), debug: this.debug })));
+    if(def.kind==='soldier')this.content.append(node('p','guide-movement',def.range?`射程${def.range}マス。出した次の自分の番から撃ち、${def.stay}回で帰還。撃てない・凍結の番も回数が減る。向かってくる兵士とは通常の戦いになる。`:`速さ${def.speed}マス。出した番は動かず、次の自分の番から進軍。城に届くと攻撃力×${this.rules.soldierCastleDamageMultiplier??1}のダメージ。`));
     this.content.append(node('p', 'progress-note', `排出率：${this.rates()[type].toFixed(3)}%（通常、または現在の運命の祈りを反映）`));
     this.content.append(node('h4', '', '合成の流れ'));
     for (const path of fusionPaths(type, this.cards)) this.content.append(node('p', 'fusion-path', path.map((id) => this.cards[id].name).join(' → ')));
@@ -106,6 +114,7 @@ export class CardGuide {
     back.focus({ preventScroll: true });
   }
   renderMonsters() {
+    this.content.append(node('p','guide-note','放置するほど城への攻撃が重くなる。とどめを刺すとカード！ 表示は出現時の基準値で、広場では人数に応じてHPが増えます。'));
     for (const [type, def] of Object.entries(this.monsters ?? {})) {
       const row = node('article', 'guide-monster'); const art = node('div', 'guide-art'); art.innerHTML = monsterArt(type, def.name);
       const info = node('div', ''); info.append(node('h3', '', def.name), node('p', '', `HP ${def.hp} ／ 攻撃 ${def.attack} ／ ${elementName(def.element) || '属性なし'}`));
