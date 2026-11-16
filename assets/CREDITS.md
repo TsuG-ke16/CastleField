@@ -246,3 +246,7 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 
 ### 設定の確認画像（2026-11-16）
 - `review/settings/panel.png`、`review/settings/reduced-result.png`：Playwright同梱Chromiumで本ゲームを撮影。ゲーム内素材の利用条件は本ファイルの各項を参照。外部素材の追加なし。
+
+### BGMと追加効果音（2026-11-16）
+- `js/ui/Music.js`（タイトル・戦闘・魔物・勝利・敗北の旋律）と `js/ui/Sound.js`（弓・魔法弾・合成・ラッキー・落城）：OpenAI Codexが本ゲーム向けに作成したWeb Audio合成音。外部の曲・録音・音源・サンプルは使用していません。リポジトリのコードと同じ利用条件。
+- `review/music/volume.png`：2026-11-16、Playwright同梱Chromiumで音量設定を撮影。ゲーム内素材の条件は本ファイルの各項を参照。

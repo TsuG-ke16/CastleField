@@ -3,6 +3,8 @@
 // - 強い攻撃ほど大きく・低く鳴らす（power：0〜1）
 // - 消音の設定は端末に覚えておく（localStorage）
 
+import { Music } from './Music.js';
+
 const KEY = 'cf-muted';
 
 class Sound {
@@ -12,6 +14,7 @@ class Sound {
     this.sfxVolume = .5;
     this.bgmVolume = .3;
     this.muted = false;
+    this.music = new Music(this);
     this.enabled = true; // 演出を飛ばしているあいだは false（まとめて鳴ってうるさくならないように）
     try {
       this.muted = localStorage.getItem(KEY) === '1';
@@ -29,18 +32,21 @@ class Sound {
         this.master.gain.value = this.sfxVolume;
         this.master.connect(this.ctx.destination);
       }
-      if (this.ctx.state === 'suspended') this.ctx.resume();
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      this.music.start();
     } catch { /* 音が出なくても遊べる */ }
   }
 
   setMuted(muted) {
     this.muted = muted;
+    this.updateVolumes();
     try {
       localStorage.setItem(KEY, muted ? '1' : '0');
     } catch { /* 覚えられなくても困らない */ }
   }
 
-  updateVolumes() { if(this.master) this.master.gain.value = this.sfxVolume; }
+  updateVolumes() { if(this.master) this.master.gain.value = this.sfxVolume; this.music.updateVolume(); }
+  setScene(scene) { this.music.setScene(scene); }
 
   get ready() {
     return Boolean(this.ctx && this.ctx.state === 'running' && !this.muted && this.enabled);
@@ -96,6 +102,11 @@ class Sound {
 }
 
 const SOUNDS = {
+  bow: (s,p) => { s.noise({dur:.08,gain:.10+p*.15,freq:4800,endFreq:900});s.tone({freq:350,endFreq:110,dur:.16,gain:.1+p*.12,type:'triangle'}); },
+  magicShot: (s,p) => s.tone({freq:750,endFreq:180,dur:.24,gain:.12+p*.2,type:'sine'}),
+  fusion: s => [440,554,659,880].forEach((freq,i)=>s.tone({freq,dur:.25,at:i*.08,gain:.14,type:'triangle'})),
+  lucky: s => [784,988,1175,1568,1976].forEach((freq,i)=>s.tone({freq,dur:.3,at:i*.07,gain:.16,type:'triangle'})),
+  collapse: s => {s.noise({dur:.7,gain:.4,freq:700,endFreq:70});s.tone({freq:90,endFreq:25,dur:.6,gain:.3,type:'sawtooth'});},
   tap: (s) => s.tone({ freq: 720, endFreq: 900, dur: 0.05, type: 'triangle', gain: 0.12 }),
   deny: (s) => {
     s.tone({ freq: 170, dur: 0.09, type: 'square', gain: 0.1 });

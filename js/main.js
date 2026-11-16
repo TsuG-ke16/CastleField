@@ -328,6 +328,7 @@ function setupTitle() {
 
 /** タイトルへ戻る（遊んでいた試合はやめる） */
 function showTitle() {
+  sound.setScene('title');
   tutorial.close();
   gen += 1;
   cancelHandover?.();
@@ -483,6 +484,7 @@ function startLocal(seedOverride, cpuLevel = null) {
   setPlayerNames({});
   resetForNewGame();
   el.title.hidden = true;
+  sound.setScene('battle');
 
   seed = seedOverride ?? URL_SEED ?? Math.floor(Math.random() * 2 ** 32);
   try {
@@ -546,6 +548,7 @@ function startLocal(seedOverride, cpuLevel = null) {
 /** イベントをキューに入れる。getState にない値（買った回数・最後に城を削ったもの）はここで覚える */
 function enqueue(ev) {
   const p = ev.payload ?? {};
+  if (ev.type === 'monsterAppeared') sound.setScene('tension');
   if (ev.type === 'castleDamaged') lastCastleHit = 'castle';
   if (ev.type === 'monsterAttackedCastle') lastCastleHit = 'monster';
   if (ev.type === 'upgradeBought') {
@@ -914,6 +917,7 @@ async function settle({ check = true } = {}) {
   if (model.gameOverReason === 'castleDestroyed' && lastCastleHit === 'monster') model.gameOverReason = 'monsterDestroyed';
   model = modelFromState(st);
   renderer.renderAll(model);
+  if (st.phase !== 'gameOver') sound.setScene(st.monsters.length ? 'tension' : 'battle');
   renderer.setCurrentPlayer(st.phase === 'gameOver' ? null : st.currentPlayer);
   const me = st.players[viewerId];
   // 手札の表示は並べ替えてあるので、並びではなく、同じカードがそろっているかで比べる
@@ -1302,6 +1306,7 @@ async function showResult(winner) {
   else el.confetti.innerHTML = '';
   el.result.hidden = false;
   sound.enabled = true;
+  sound.setScene(won ? 'victory' : 'defeat');
   sound.play(won ? 'win' : 'lose');
   if (!rematchSent) {
     el.rematch.disabled = false;

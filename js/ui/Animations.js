@@ -352,7 +352,7 @@ export class Animations {
       this.handView.render(model.hand, { newIds: [cardId] });
     } else this.renderer.setOppHandCount(pl.handCount);
     if (this.skipping) return;
-    sound.play('equip');
+    sound.play('fusion');
     if (playerId !== ctx.viewerId) { await this.banner('相手がカードを合成！', UI_CONFIG.timing.fusion, 'fusion'); return; }
     const stage = this.fx('fx-fusion-stage', this.centerOf(this.renderer.el.field));
     const rank = this.rarities?.[this.cards[to]?.rarity];
@@ -398,7 +398,7 @@ export class Animations {
     heading.textContent = reward.lucky ? `ラッキー！ ${this.rarities?.[reward.base]?.name ?? ''} → ${rarity?.name ?? ''}` : `${mine ? 'あなた' : '相手'}が${rarity?.name ?? ''}カード獲得！`;
     stage.append(heading, this.effectCard(card?.type, card ? this.cards[card.type]?.name : '相手の報酬カード'));
     const badge = document.createElement('span'); badge.className = 'reward-rarity'; badge.textContent = rarity?.name ?? ''; stage.append(badge);
-    sound.play('equip');
+    sound.play(reward.lucky ? 'lucky' : 'fusion');
     this.sparks(this.centerOf(this.renderer.el.field), { count: cfg.sparksBase + rank * cfg.sparksPerRank, color: rarity?.color ?? '#ffdf82', spread: 50 + rank * 20, size: 6 + rank });
     if (rank === Object.keys(this.rarities ?? {}).length - 1) this.screenFlash(rarity.color, duration * .4);
     try {
@@ -595,7 +595,7 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.afterSoldierHit);
   }
 
-  async soldierShot({ playerId, soldierId, role, target }, model) {
+  async soldierShot({ playerId, soldierId, role, target, amount }, model) {
     const from = this.renderer.soldierEl(soldierId);
     const to = target.kind === 'soldier' ? this.renderer.soldierEl(target.soldierId)
       : target.kind === 'monster' ? this.renderer.monsterEl(target.monsterId) : this.renderer.castleEl(target.playerId);
@@ -603,7 +603,7 @@ export class Animations {
     const a = this.centerOf(from), b = this.centerOf(to);
     const projectile = this.fx(role === 'mage' ? 'shot-magic' : 'shot-arrow', a);
     const angle = Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
-    sound.play(role === 'mage' ? 'spell' : 'step');
+    sound.play(role === 'mage' ? 'magicShot' : 'bow', Math.min(1, amount / 12));
     await this.animate(projectile, [
       {transform:`translate(-50%,-50%) rotate(${angle}deg)`,opacity:1},
       {transform:`translate(calc(-50% + ${b.x-a.x}px),calc(-50% + ${b.y-a.y}px)) rotate(${angle}deg)`,opacity:1},
@@ -826,6 +826,7 @@ export class Animations {
     this.renderer.setCastleHp(playerId, hp);
     if (this.skipping) return;
     sound.play('hit', finish ? 1 : Math.min(1, amount / 12));
+    if (finish) sound.play('collapse');
     if (finish) this.screenFlash('#fff', 520);
 
     // 1) 当たった瞬間：白く光る＋爆発
