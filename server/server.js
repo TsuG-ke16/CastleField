@@ -51,8 +51,10 @@ function readJson(req) {
 const STATIC_TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg',
+  '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
-const STATIC_DIRS = ['/index.html', '/css/', '/js/', '/data/', '/assets/'];
+// /sw.js と /manifest.webmanifest は、ホーム画面に追加・オフラインで遊ぶ（PWA）ために、ルートに置いて配る
+const STATIC_DIRS = ['/index.html', '/sw.js', '/manifest.webmanifest', '/css/', '/js/', '/data/', '/assets/'];
 
 /** 画面のファイルも同じサーバーから配る（同じオリジンになるので、画面はつなぎ先を知らなくてよい） */
 function serveStatic(pathname, res) {

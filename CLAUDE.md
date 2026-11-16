@@ -61,7 +61,7 @@ YouTube「桜井政博のゲーム作るには」の考え方を、このゲー�
 | 領域 | フォルダ・ファイル | 内容 |
 |---|---|---|
 | ゲームロジック | `js/game/`、`data/`、`tests/`、`server/` | ターン進行、兵士の進軍、カード効果、勝敗判定、数値データ、自動テストとシミュレーション、オンライン対戦のサーバー |
-| 画面（UI） | `index.html`、`css/`、`js/ui/`、`js/main.js`、`assets/` | レイアウト、手札の表示、アニメーション、入力、Game と UI の接続、画像素材 |
+| 画面（UI） | `index.html`、`css/`、`js/ui/`、`js/main.js`、`assets/`、`sw.js`、`manifest.webmanifest`、`ui-tests/` | レイアウト、手札の表示、アニメーション、入力、Game と UI の接続、画像素材、ホーム画面に追加・オフライン（PWA）、画面のスモークテスト |
 | 共有 | `CLAUDE.md` | 変更は2人で相談してから。PRで相手の承認を必須とする |
 
 ロジックと画面のつなぎ方は、下の「ロジックとUIの約束」に従う。この約束を変えるときは、2人で相談してからこのファイルを更新する。
@@ -71,6 +71,8 @@ YouTube「桜井政博のゲーム作るには」の考え方を、このゲー�
 - HTML / CSS / JavaScript（フレームワークなし、ES Modules）
 - 起動：リポジトリのルートで `python3 -m http.server` を実行し、`http://localhost:8000` を開く（Windows は `python -m http.server`）
 - 自動テスト：リポジトリのルートで `node --test`（Node.js 22.7 以上。`package.json` がなくても `.js` を ES Modules として読めるのが 22.7 から。外部パッケージは使わない）。ロジックを変えたら必ず全部通してからPRを出す。新しい機能にはテストを足す
+- 画面のスモークテスト：`node ui-tests/smoke.js`（タイトル→ひとりで遊ぶ→1手出す→結果→再戦。Playwright は環境にあるものを使い、リポジトリには入れない）。画面を大きく変えたら通す
+- **オフライン用の一覧**：配るファイル（`index.html`・`css/`・`js/`・`data/`・`assets/`）を変えたら、`node js/ui/build-precache.js` で `js/ui/precache.js` を作り直して同じPRに入れる（忘れると、2回目以降の起動で古い版が出る）
 - バランスのシミュレーション：`node tests/sim/run.js`（いろいろな戦い方の組み合わせで各1000試合）。乱数はシード付きなので、同じ引数なら誰が回しても同じ結果になる
   - `--games 200`（試合数）、`--seed 7`、`--match smart,random`（1つの組み合わせだけ）、`--rules '{"castleMaxHp":30}'`・`--cards '{"fireball":{"count":3}}'`（`data/` を書き換えずに一部の値だけ試す）、`--json`
   - 「出せる種類が2以上」の列は、出せるカードが2種類以上あったターンの割合（目安）。本当に迷うかは人が遊んで確かめる
@@ -85,8 +87,11 @@ YouTube「桜井政博のゲーム作るには」の考え方を、このゲー�
 
 ```
 index.html
-css/
-  style.css
+sw.js              … サービスワーカー（オフライン。PWA。UI担当）
+manifest.webmanifest … ホーム画面に追加するときの情報（UI担当）
+README.md          … このリポジトリの入口（遊び方・起動・フォルダ）
+.gitignore
+css/               … 画面のスタイル。style.css が土台、theme.css・step5.css などが上に重なる
 js/
   main.js          … 起動。Game と UI をつなぐ（UI担当）
   game/            … ゲームロジック（DOMを使わない）
@@ -101,9 +106,15 @@ js/
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
     strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
   ui/              … 画面表示と入力
-    Renderer.js
-    HandView.js
-    Animations.js
+    Renderer.js    … 盤面（道・広場・城・兵士・魔物）
+    HandView.js    … 手札
+    Animations.js  … 演出
+    RoomView.js・LocalSetup.js … 部屋・ひとりで遊ぶの設定
+    Tutorial.js・HelpView.js・CardGuide.js … 案内・遊び方・図鑑
+    Settings.js・Sound.js・Music.js … 設定・効果音・BGM
+    MatchStats.js  … 結果のまとめと戦績
+    art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
+    precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
 data/
   cards.json       … カードの定義
   rules.json       … ルールの数値
@@ -112,6 +123,8 @@ data/
   decks.json       … デッキ対戦のデッキ（STEP 5）
   rarities.json    … レアリティと排出率（コモン〜レジェンド）
   upgrades.json    … コインで買う強化（STEP 3）
+ui-tests/          … 画面のスモークテスト（node ui-tests/smoke.js。Playwright は環境にあるものを使う。UI担当）
+docs/              … 設計メモ。archive/ は終わった依頼（Codex 向けのプロンプトなど）
 tests/             … 自動テスト（node --test）。Node.js だけで動く
   helpers.js       … data/ と fixtures/ の読み込み、シード付き乱数、イベントの記録
   fixtures/        … テスト用の固定データ（data/ を調整してもロジックのテストが落ちないように）
@@ -126,6 +139,7 @@ tests/             … 自動テスト（node --test）。Node.js だけで動�
 server/            … オンライン対戦のサーバー（Node.js だけ。ロジック担当）
   server.js        … HTTP（合言葉で入る・操作を受ける・SSE で送る）。node server/server.js で起動
   rooms.js         … 部屋と席。Game を動かし、プレイヤーごとに隠して送る
+                     画面のファイルのほか、/sw.js と /manifest.webmanifest（PWA）も配る
 assets/            … 画像素材（UI担当）
   STYLE.md         … 絵柄の決まりと、画像生成AIに使う共通の指示文
   CREDITS.md       … 素材ごとの出どころとライセンス
@@ -449,15 +463,17 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - タイトルの「ひとりで遊ぶ」から、CPU の強さを3段階で選ぶ。URL に `?local=1&cpu=hard`（`easy` / `normal` / `hard`）でもすぐ始まる
 - CPU は `js/game/strategies.js` の戦い方をそのまま使う。Game の公開メソッドだけを使い、自分の手札しか見ない（ずるをしない）
 
-| 強さ | 戦い方 | random（ランダムに出す）に勝つ割合 |
+| 強さ | 戦い方 | random（ランダムに出す）に勝つ割合（先攻のとき） |
 |---|---|---|
-| よわい（`easy`） | `rush`（攻め重視。守らない） | 約32% |
-| ふつう（`normal`） | `defensive`（守り優先） | 約55% |
-| つよい（`hard`） | `smart`（ほどよく考える） | 約70% |
+| よわい（`easy`） | `defensive`（守り優先） | 約23% |
+| ふつう（`normal`） | `rush`（攻め重視。守らない） | 約50% |
+| つよい（`hard`） | `smart`（ほどよく考える） | 約97% |
+
+（コインの強化・精霊・兵士の追加で、以前の「rush が最弱」の順が入れかわったので、割り当てを直した。測定：`node tests/sim/run.js --games 200 --match <戦い方>,random`）
 
 - 先攻・後攻は毎回ランダム（後攻は今のルールどおり城HP+1）。「もう1回」は同じ強さで始まる
 - 交代の画面は出さない（オンラインと同じく、だれの番かを帯で知らせる）。メニューから降参できる
-- 強さの割り当ては `js/main.js` の `CPU_LEVELS`。カードや数値を変えたら、`node tests/sim/run.js --match rush,random` などで弱い順が変わっていないか確かめる
+- 強さの割り当ては `js/ui/config.js` の `UI_CONFIG.cpuLevels`（`js/main.js` の `CPU_LEVELS` が読む）。カードや数値を変えたら、`node tests/sim/run.js --match rush,random` などで弱い順が変わっていないか確かめる
 
 ## 完成の目安（STEP 1）
 

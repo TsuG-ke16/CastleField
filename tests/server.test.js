@@ -300,3 +300,21 @@ test('3人の部屋：部屋主が始めると、それぞれ自分の手札だ�
     server.close();
   }
 });
+
+test('PWA：/sw.js と /manifest.webmanifest を配る（manifest は専用の種類で）', async () => {
+  const { server, base } = await startServer();
+  try {
+    const sw = await fetch(`${base}/sw.js`);
+    assert.equal(sw.status, 200);
+    assert.match(sw.headers.get('content-type'), /javascript/);
+    const manifest = await fetch(`${base}/manifest.webmanifest`);
+    assert.equal(manifest.status, 200);
+    assert.match(manifest.headers.get('content-type'), /manifest\+json/);
+    assert.ok(JSON.parse(await manifest.text()).icons.length > 0);
+    // 公開していないファイルは配らない
+    assert.equal((await fetch(`${base}/server/server.js`)).status, 404);
+    assert.equal((await fetch(`${base}/CLAUDE.md`)).status, 404);
+  } finally {
+    server.close();
+  }
+});
