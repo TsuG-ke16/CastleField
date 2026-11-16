@@ -108,7 +108,11 @@ export function cardDescription(def, rules, opts = {}) {
  */
 export function cardShort(def) {
   if (!def) return [];
-  if (def.kind === 'soldier') return [{ icon: 'sword', text: def.attack }, { icon: 'heart', text: def.hp }, { icon: def.role === 'archer' || def.role === 'mage' ? 'card' : 'boot', text: def.speed ?? `${def.stay}回` }];
+  if (def.kind === 'soldier') {
+    // 弓兵・魔法使い（role）は動かないので、速さの代わりに射程を出す
+    const third = def.role && def.role !== 'melee' ? { icon: 'target', text: `射${def.range}` } : { icon: 'boot', text: def.speed };
+    return [{ icon: 'sword', text: def.attack }, { icon: 'heart', text: def.hp }, third];
+  }
   if (def.kind === 'weapon') {
     const list = [{ icon: 'sword', text: `+${def.attackBonus}` }];
     if (ELEMENT_LOOK[def.element]) list.push({ icon: ELEMENT_LOOK[def.element].iconName, text: ELEMENT_LOOK[def.element].name });
