@@ -28,7 +28,7 @@ test('getState に playerOrder と roads が入る。2人なら道は1本', () =
   const { game } = setup();
   const s = game.getState(null);
   assert.deepEqual(s.playerOrder, ['p1', 'p2']);
-  assert.deepEqual(s.roads, [{ roadId: 'p1-p2', players: ['p1', 'p2'], length: 5 }]);
+  assert.deepEqual(s.roads, [{ roadId: 'p1-p2', players: ['p1', 'p2'], length: 5, lane: 0 }]);
   assert.equal(s.players.p1.eliminated, false);
 });
 

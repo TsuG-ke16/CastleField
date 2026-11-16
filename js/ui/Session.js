@@ -9,6 +9,7 @@
 //   getTargets(cardId)        … 出せる対象の一覧（読むだけ）
 //   canBuyUpgrade(upgradeId)  … { ok, reason }（読むだけ）
 //   playCard / discard / endTurn / buyUpgrade … Promise<{ ok, reason }>
+//   defend / passDefense      … 攻撃を受けたとき（phase "defend"）の防御。canPlayCard / getTargets も、そのときは防御カードについて答える
 
 export class LocalSession {
   /** @param {import('../game/Game.js').Game} game */
@@ -26,12 +27,13 @@ export class LocalSession {
     return this.game.getState(viewerId);
   }
 
+  // 攻撃を受けて防御を選んでいるとき（phase "defend"）は、防御カードを出せるかを返す
   canPlayCard(cardId) {
-    return this.game.canPlayCard(cardId);
+    return this.game.phase === 'defend' ? this.game.canDefend(cardId) : this.game.canPlayCard(cardId);
   }
 
   getTargets(cardId) {
-    return this.game.getTargets(cardId);
+    return this.game.phase === 'defend' ? this.game.getDefenseTargets(cardId) : this.game.getTargets(cardId);
   }
 
   canBuyUpgrade(upgradeId) {
@@ -40,6 +42,16 @@ export class LocalSession {
 
   async playCard(cardId, target) {
     return target ? this.game.playCard(cardId, target) : this.game.playCard(cardId);
+  }
+
+  /** 攻撃を受けたとき、防御カードを出す */
+  async defend(cardId, target) {
+    return target ? this.game.defend(cardId, target) : this.game.defend(cardId);
+  }
+
+  /** 防御しないで、攻撃を受ける */
+  async passDefense() {
+    return this.game.passDefense();
   }
 
   async discard(cardIds) {

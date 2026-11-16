@@ -19,6 +19,9 @@ export const EFFECTS = {
   },
 };
 
+/** scope（レーンを選ぶか）を書ける effect。lane なら選んだ1レーンの相手の兵士だけに効く */
+export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers'];
+
 /** kind → 出し方（slot）。main は1ターン1枚、addon と defense は何枚でも */
 export const SLOT_OF_KIND = {
   soldier: 'main',
@@ -94,6 +97,13 @@ export class Card {
       }
       if (def.element !== undefined && def.element !== null && !ELEMENTS.includes(def.element)) {
         throw new Error(`${where}: element は ${ELEMENTS.join(' / ')} のどれかにしてください（書かなければ属性なし）`);
+      }
+
+      if (def.scope !== undefined) {
+        if (def.scope !== 'all' && def.scope !== 'lane') throw new Error(`${where}: scope は "all"（相手の全レーン）か "lane"（選んだ1レーン）にしてください（書かなければ "all"）`);
+        if (!LANE_SCOPE_EFFECTS.includes(def.effect)) {
+          throw new Error(`${where}: scope を書けるのは ${LANE_SCOPE_EFFECTS.join(' / ')} の魔法だけです`);
+        }
       }
 
       if (def.kind === 'soldier') {

@@ -4,7 +4,9 @@ import { randomBytes } from 'node:crypto';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { filterEventFor } from '../js/game/visibility.js';
 
-const ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'rematch', 'surrender', 'leave'];
+const ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'defend', 'passDefense', 'rematch', 'surrender', 'leave'];
+/** 攻撃を受けた人（自分の番でなくても）が送れる操作 */
+const DEFENSE_ACTIONS = ['defend', 'passDefense'];
 const MAX_ROOMS = 1000;
 
 export class Room {
@@ -86,9 +88,15 @@ export class Room {
     if (method === 'leave') return this.leave(seat);
     if (method === 'surrender') return this.surrender(seat);
     if (!this.game) return { ok: false, reason: 'まだ全員そろっていません' };
-    if (this.game.currentPlayer !== seat.playerId) return { ok: false, reason: 'あなたの番ではありません' };
+    if (DEFENSE_ACTIONS.includes(method)) {
+      // 防御は、攻撃を受ける人だけが送れる
+      if (this.game.phase !== 'defend') return { ok: false, reason: '今は防御する場面ではありません' };
+      if (this.game.pending.defenderId !== seat.playerId) return { ok: false, reason: 'あなたは防御する人ではありません' };
+    } else if (this.game.currentPlayer !== seat.playerId) {
+      return { ok: false, reason: 'あなたの番ではありません' };
+    }
     // 手札にないカードは、相手の手札にあってもなくても同じ文にする（文の違いから相手の手札が分からないように）
-    if (method === 'playCard') {
+    if (method === 'playCard' || method === 'defend') {
       const hand = this.game.getState(seat.playerId).players[seat.playerId].hand || [];
       if (!hand.some((c) => c.cardId === args[0])) return { ok: false, reason: 'そのカードは手札にありません' };
     }
@@ -136,16 +144,25 @@ export class Room {
   stateFor(playerId) {
     const game = this.game;
     const state = game.getState(playerId);
-    const myTurn = game.currentPlayer === playerId;
+    const defending = game.phase === 'defend';
+    const myTurn = game.currentPlayer === playerId && !defending;
     const hand = state.players[playerId].hand || [];
     const playable = hand.map((c) => {
+      // 防御を待っているとき：攻撃を受ける人は防御カードだけ、ほかの人は何もできない
+      if (defending) {
+        if (game.pending.defenderId !== playerId) {
+          return { cardId: c.cardId, ok: false, reason: '相手が防御を選んでいます', needsTarget: false, targets: [] };
+        }
+        const r = game.canDefend(c.cardId);
+        return { cardId: c.cardId, ok: r.ok, reason: r.reason ?? null, needsTarget: !!r.needsTarget, targets: game.getDefenseTargets(c.cardId) };
+      }
       if (!myTurn) return { cardId: c.cardId, ok: false, reason: 'あなたの番ではありません', needsTarget: false, targets: [] };
       const r = game.canPlayCard(c.cardId);
       return { cardId: c.cardId, ok: r.ok, reason: r.reason ?? null, needsTarget: !!r.needsTarget, targets: game.getTargets(c.cardId) };
     });
     const upgrades = {};
     for (const id of Object.keys(this.data.upgrades || {})) {
-      const r = myTurn ? game.canBuyUpgrade(id) : { ok: false, reason: 'あなたの番ではありません' };
+      const r = myTurn ? game.canBuyUpgrade(id) : { ok: false, reason: defending ? '相手が防御を選んでいます' : 'あなたの番ではありません' };
       upgrades[id] = { ok: r.ok, reason: r.reason ?? null };
     }
     return { state, playable, upgrades };

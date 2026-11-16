@@ -413,6 +413,8 @@ function startLocal(seedOverride, cpuLevel = null) {
   seed = seedOverride ?? URL_SEED ?? Math.floor(Math.random() * 2 ** 32);
   try {
     const opts = { cards: structuredClone(cards), rules: structuredClone(rules), rng: mulberry32(seed) };
+    // 2人で交代して遊ぶときは、相手に手札を見せないので、攻撃を受けたときの防御は聞かない
+    if (!cpuLevel) opts.rules.defenseReaction = false;
     if (monsters) opts.monsters = structuredClone(monsters);
     if (upgrades) opts.upgrades = structuredClone(upgrades);
     game = new Game(opts);
@@ -830,6 +832,25 @@ async function settle({ check = true } = {}) {
 
   setBusy(false);
   refreshUpgrades();
+  setEndTurnLabel(st.phase === 'defend' && st.defense?.defenderId === viewerId);
+  if (st.phase === 'defend') {
+    // 攻撃を受けるところ：受ける人だけが防御カードを出せる。相手は待つ
+    handView.exitDiscard();
+    const d = st.defense;
+    if (d.defenderId !== viewerId) {
+      el.endTurn.disabled = false;
+      el.endTurn.classList.add('off');
+      setMessage(`${playerName(d.defenderId)}が防御を選んでいます…`);
+      return;
+    }
+    el.endTurn.classList.remove('off', 'ready');
+    el.endTurn.disabled = false;
+    const who = playerName(d.attackerId);
+    setMessage(d.kind === 'castle'
+      ? `${who}の攻撃が城に${d.amount}ダメージ！ 城壁などで守れます`
+      : `${who}の魔法が兵士に${d.amount}ダメージ！ 盾で守れます`);
+    return;
+  }
   const myTurn = st.currentPlayer === viewerId;
   if (!myTurn) {
     // オンライン・CPU 戦の相手の番：見るだけ。手札は説明だけ読める
@@ -863,7 +884,7 @@ async function settle({ check = true } = {}) {
 function playability(st) {
   const blocked = new Map();
   const me = st.players[viewerId];
-  if (st.phase !== 'main') return blocked;
+  if (st.phase !== 'main' && !(st.phase === 'defend' && st.defense?.defenderId === viewerId)) return blocked;
   for (const c of me.hand) {
     const res = session.canPlayCard(c.cardId);
     if (res && !res.ok) blocked.set(c.cardId, reasonText(res.reason));
@@ -898,8 +919,10 @@ async function cpuTurn() {
     if (st.phase === 'main' && st.currentPlayer === me.id) {
       me.strategy.takeTurn(game, me.id, me.rng, ctx);
       st = game.getState(me.id);
+      // 自分の攻撃で相手が防御を選んでいるあいだは、ターンを終えない（返事が来たら、続きを進める）
       if (st.phase === 'main' && st.currentPlayer === me.id) game.endTurn();
       discardIfNeeded();
+      cpuDefendIfNeeded(); // 自分の番が終わって、人の兵士が CPU の城に着いたときなど
     }
   } catch (err) {
     console.error('CPU の手番でエラーが起きました', err);
@@ -936,9 +959,26 @@ async function act(send) {
   if (s.online) {
     if (!res?.ok) sending = false; // 成功したときは、結果のまとまりが届いたら false に戻る（showBatch）
   } else if (res?.ok) {
+    cpuDefendIfNeeded(); // CPU が攻撃を受けるときは、CPU が防御を決める
     drainAndSettle();
   }
   return res;
+}
+
+/** CPU が攻撃を受けるところ（phase "defend"）なら、戦い方に防御を決めてもらう */
+function cpuDefendIfNeeded() {
+  if (!cpu || !game) return;
+  const ctx = { cards, rules, upgrades: upgrades ?? {}, discardCount: 0 };
+  for (let i = 0; i < 50; i++) {
+    const st = game.getState(null);
+    if (st.phase !== 'defend' || st.defense.defenderId !== cpu.id) return;
+    cpu.strategy.respond(game, cpu.id, cpu.rng, ctx);
+  }
+}
+
+/** 「ターン終了」ボタンは、攻撃を受けているあいだ「防御しない」になる */
+function setEndTurnLabel(defending) {
+  el.endTurn.textContent = defending ? '防御しない' : 'ターン終了';
 }
 
 function playCard(cardId) {
@@ -955,7 +995,8 @@ function playCard(cardId) {
 
 /** カードを出す（target を省略すると、対象が1つのときだけ出せる） */
 async function doPlay(cardId, target) {
-  const res = await act(() => session.playCard(cardId, target));
+  const defending = session?.getState(viewerId)?.phase === 'defend';
+  const res = await act(() => (defending ? session.defend(cardId, target) : session.playCard(cardId, target)));
   if (!res) return;
   if (!res.ok) {
     if (res.needsTarget) {
@@ -1010,6 +1051,7 @@ function upgradeOffReason(st) {
   if (st?.phase === 'gameOver') return 'ゲームは終わっています';
   if (st && viewerId && st.currentPlayer !== viewerId) return '強化は自分の番に買えます';
   if (st?.phase === 'discard') return '先に手札を捨ててください';
+  if (st?.phase === 'defend') return '攻撃を受けているあいだは買えません';
   if (busy) return '演出が終わってから買えます';
   return '強化は自分の番のメインで買えます';
 }
@@ -1035,7 +1077,9 @@ async function endTurn() {
   cancelTargeting();
   upgradePanel?.close();
   sound.play('tap');
-  const res = await act(() => session.endTurn());
+  // 攻撃を受けているとき、このボタンは「防御しない」
+  const defending = session.getState(viewerId)?.phase === 'defend';
+  const res = await act(() => (defending ? session.passDefense() : session.endTurn()));
   if (res && !res.ok) toast(reasonText(res.reason));
 }
 

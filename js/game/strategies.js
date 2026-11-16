@@ -17,13 +17,55 @@ function view(game, pid) {
 }
 
 
-/** 対象を選んで出す。chooseTarget を省略すると最初の対象 */
+/** 今のターンのカード定義（レーンの選び方で、兵士か魔法かを見分けるのに使う） */
+let curCards = {};
+/** 今のターンの ctx（ctx.onDefense があれば、攻撃が防御待ちになったとき、続きを進める前に呼ぶ） */
+let curCtx = null;
+
+/**
+ * 道（レーン）を選ぶ（targets の中に roadId があるとき）。
+ *   兵士：相手の兵士が来ている道へ迎え撃ちに行く（いなければ魔物のいる道。ごほうびと、城を攻められる前に倒すため）
+ *   魔法：相手の兵士がいちばん多い道へ
+ * 同点のときは乱数で選ぶ。
+ */
+function pickLane(game, pid, cardId, targets) {
+  const withRoad = targets.filter((t) => t.roadId);
+  if (withRoad.length < 2) return withRoad[0] ?? targets[0];
+  const st = game.getState(pid);
+  const type = st.players[pid].hand.find((c) => c.cardId === cardId)?.type;
+  const isSoldier = curCards[type]?.kind === 'soldier';
+  const enemyCount = (roadId) => Object.entries(st.players)
+    .filter(([id]) => id !== pid)
+    .reduce((n, [, p]) => n + p.soldiers.filter((x) => x.roadId === roadId).length, 0);
+  const score = (t) => {
+    const monster = st.monsters.some((m) => m.roadId === t.roadId) ? 1 : 0;
+    // 兵士：相手の兵士が来ている道に出して迎え撃つ（いなければ、魔物のいない道）
+    return isSoldier ? enemyCount(t.roadId) * 2 + monster : enemyCount(t.roadId);
+  };
+  const best = Math.max(...withRoad.map(score));
+  const ties = withRoad.filter((t) => score(t) === best);
+  return ties[Math.floor(tieRng() * ties.length)];
+}
+
+/** 対象を選んで出す。chooseTarget を省略すると、いちばん城HPの割合が少ない相手（道は pickLane で選ぶ） */
 function playWith(game, cardId, chooseTarget) {
   const targets = game.getTargets(cardId);
   if (targets.length === 0) return false;
-  // 省略したら、いちばん城HPの割合が少ない相手（魔物は選ばない）
-  const t = chooseTarget ? chooseTarget(targets) : weakest(game, targets);
-  return t ? game.playCard(cardId, t).ok : false;
+  let t;
+  if (chooseTarget) t = chooseTarget(targets);
+  else {
+    // 省略したら、いちばん城HPの割合が少ない相手（魔物は選ばない）。道が何本かあるときは、その相手の道から選ぶ
+    t = weakest(game, targets);
+    if (t?.playerId) {
+      const lanes = targets.filter((x) => x.playerId === t.playerId && x.roadId);
+      if (lanes.length) t = pickLane(game, game.getState(null).currentPlayer, cardId, lanes);
+    }
+  }
+  if (!t) return false;
+  const res = game.playCard(cardId, t);
+  // 相手が防御を選ぶ場面になったら、(シミュレーションなどでは) その場で相手に返事をしてもらう
+  if (res.ok && curCtx?.onDefense && game.getState(null).phase === 'defend') curCtx.onDefense(game);
+  return res.ok;
 }
 
 /** 同じくらいのときに、いつも同じ相手を選ばないための乱数（takeTurn の最初に入れる） */
@@ -101,6 +143,47 @@ function soldierTypes(ctx) {
 const typesWithEffect = (ctx, effect) =>
   Object.entries(ctx.cards).filter(([, d]) => d.effect === effect).map(([t]) => t);
 
+/**
+ * 攻撃を受けたときの返事（防御カードを出す。出さなくてもよい）。
+ *   never：防御しない／always：出せるなら出す／smart：守る価値があるときだけ出す／random：半分の確率で出す
+ * 自分の手札しか見ない。Game の公開メソッド（getState / canDefend / defend / passDefense）だけを使う。
+ */
+function respondDefense(game, pid, rng, ctx, policy) {
+  for (let guard = 0; guard < 20; guard++) {
+    const st = game.getState(pid);
+    if (st.phase !== 'defend' || st.defense.defenderId !== pid) return;
+    if (policy === 'never') break;
+    const me = st.players[pid];
+    const d = st.defense;
+    const amountOf = (c) => ctx.cards[c.type].amount ?? 0;
+    const options = me.hand.filter((c) => game.canDefend(c.cardId).ok).sort((a, b) => amountOf(b) - amountOf(a));
+    if (options.length === 0) break;
+    let card = null;
+    let target;
+    if (policy === 'random') {
+      if (rng() >= 0.5) break;
+      card = pick(options, rng);
+      target = pick(game.getDefenseTargets(card.cardId), rng);
+    } else if (d.kind === 'castle') {
+      // 城：城HPが半分を切りそうなとき、または大きなダメージのときに城壁を出す
+      const worth = policy === 'always' || d.amount >= 6 || me.castleHp - d.amount <= me.castleMaxHp / 2;
+      if (!worth) break;
+      card = options[0];
+    } else {
+      // 兵士：やられそうな兵士（いちばん強いもの）に、それを守れる盾を出す
+      const victims = me.soldiers.filter((x) => d.soldierIds.includes(x.soldierId)).sort((a, b) => b.attack - a.attack);
+      const dying = victims.find((x) => x.hp + x.shield <= d.amount);
+      const v = policy === 'always' ? victims[0] : dying;
+      if (!v) break;
+      const saves = options.filter((c) => v.hp + v.shield + amountOf(c) > d.amount);
+      card = saves.at(-1) ?? options[0]; // 足りる中でいちばん小さい盾（なければいちばん大きい盾）
+      target = { soldierId: v.soldierId };
+    }
+    if (!card || !game.defend(card.cardId, target).ok) break;
+  }
+  if (game.getState(null).phase === 'defend') game.passDefense();
+}
+
 const RAW_STRATEGIES = {
   /** 出せるカードからランダムに1枚 */
   random: {
@@ -114,6 +197,9 @@ const RAW_STRATEGIES = {
         if (game.getState(pid).players[pid].playedThisTurn && rng() < 0.5) return;
       }
     },
+    respond(game, pid, rng, ctx) {
+      respondDefense(game, pid, rng, ctx, 'random');
+    },
     chooseDiscard: randomDiscard,
   },
 
@@ -122,6 +208,9 @@ const RAW_STRATEGIES = {
     takeTurn(game, pid, rng, ctx) {
       const { playable } = view(game, pid);
       playFirst(game, playable, [...typesWithEffect(ctx, 'damageEnemyCastle'), ...soldierTypes(ctx)]);
+    },
+    respond(game, pid, rng, ctx) {
+      respondDefense(game, pid, rng, ctx, 'never');
     },
     chooseDiscard: randomDiscard,
   },
@@ -132,6 +221,9 @@ const RAW_STRATEGIES = {
       buyUpgrades(game, pid, ctx);
       smartTurn(game, pid, ctx);
       playSupports(game, pid, ctx);
+    },
+    respond(game, pid, rng, ctx) {
+      respondDefense(game, pid, rng, ctx, 'smart');
     },
     chooseDiscard: randomDiscard,
   },
@@ -149,6 +241,9 @@ const RAW_STRATEGIES = {
         ...typesWithEffect(ctx, 'damageEnemyCastle'),
       ]);
     },
+    respond(game, pid, rng, ctx) {
+      respondDefense(game, pid, rng, ctx, 'always');
+    },
     chooseDiscard: randomDiscard,
   },
 
@@ -160,12 +255,18 @@ const RAW_STRATEGIES = {
       playFirst(game, playable, [...typesWithEffect(ctx, 'damageEnemyCastle'), ...soldierTypes(ctx)]);
       playSupports(game, pid, ctx);
     },
+    respond(game, pid, rng, ctx) {
+      respondDefense(game, pid, rng, ctx, 'never');
+    },
     chooseDiscard: randomDiscard,
   },
 
   /** 何も出さない */
   pass: {
     takeTurn() {},
+    respond(game, pid, rng, ctx) {
+      respondDefense(game, pid, rng, ctx, 'never');
+    },
     chooseDiscard: randomDiscard,
   },
 
@@ -178,6 +279,9 @@ const RAW_STRATEGIES = {
       buyUpgrades(game, pid, ctx);
       if (!(near && playFirst(game, playable, soldierTypes(ctx)))) smartTurn(game, pid, ctx);
       playSupports(game, pid, ctx);
+    },
+    respond(game, pid, rng, ctx) {
+      respondDefense(game, pid, rng, ctx, 'smart');
     },
     chooseDiscard: randomDiscard,
   },
@@ -243,6 +347,8 @@ export const STRATEGIES = Object.fromEntries(
       ...st,
       takeTurn(game, pid, rng, ctx) {
         tieRng = rng;
+        curCards = ctx.cards;
+        curCtx = ctx;
         return st.takeTurn(game, pid, rng, ctx);
       },
     },

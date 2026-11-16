@@ -62,6 +62,14 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
   const strategyOf = (pid) => players[Number(pid.slice(1)) - 1];
   const ctx = { cards, rules, discardCount: 0, upgrades: gameOptions.upgrades || {} };
   game.on('discardRequired', (e) => { ctx.discardCount = e.count; });
+  // 攻撃を受けた人の防御：その人の戦い方が返事をする
+  const settleDefense = () => {
+    for (let i = 0; i < 50 && game.getState(null).phase === 'defend'; i++) {
+      const defender = game.getState(null).defense.defenderId;
+      strategyOf(defender).respond(game, defender, aiRng, ctx);
+    }
+  };
+  ctx.onDefense = settleDefense;
 
   game.start();
   let guard = 0;
@@ -69,6 +77,10 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
     const now = game.getState(null);
     if (now.phase === 'gameOver' || now.turn > maxTurns) break;
     if (++guard > maxTurns * 20) throw new Error('シミュレーションが進まなくなりました');
+    if (now.phase === 'defend') {
+      settleDefense();
+      continue;
+    }
     const pid = now.currentPlayer;
     const strat = strategyOf(pid);
     if (now.phase === 'discard') {

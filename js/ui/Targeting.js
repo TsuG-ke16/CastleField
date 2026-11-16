@@ -50,8 +50,11 @@ export class Targeting {
     setTimeout(() => { t.armed = true; }, 0);
     this.renderer.setTargets(targets);
     this.handView.cardEl(cardId)?.classList.add('choosing');
-    const kinds = new Set(targets.map((x) => (x.soldierId ? '兵士' : x.monsterId ? '魔物' : '城')));
-    this.el.msg.textContent = `「${cardName}」をどこに使う？ 光っている${[...kinds].join('か')}をタップ`;
+    const kinds = new Set(targets.map((x) => (x.soldierId ? '兵士' : x.monsterId ? '魔物' : x.roadId ? '道' : '城')));
+    const isSoldierCard = targets.every((x) => x.roadId && x.playerId) && !targets.some((x) => x.soldierId || x.monsterId);
+    this.el.msg.textContent = isSoldierCard
+      ? `「${cardName}」をどの道に使う？ 光っている道をタップ`
+      : `「${cardName}」をどこに使う？ 光っている${[...kinds].join('か')}をタップ`;
     this.el.bar.hidden = false;
   }
 

@@ -1,9 +1,10 @@
 // 盤面（城・道・兵士・魔物・枚数表示）を描く。
 // ゲームの状態は書き換えない。main.js が持つ「表示用の状態」を受け取って描くだけ。
 //
-// 道は1本（rules.laneLength マス）で、上が相手の城・下が自分の城。
-// 同じマスに両方の兵士がいることがあるので、相手の兵士は道の左より・自分の兵士は右よりに置く。
-// 真ん中のマス（floor(laneLength / 2)）は魔物の居場所で、魔物は道のまん中に置く。
+// 道（レーン）は rules.laneCount 本が横に並び、1本は rules.laneLength マス。上が相手の城・下が自分の城。
+// 同じマスに両方の兵士がいることがあるので、相手の兵士はレーンの左より・自分の兵士は右よりに置く。
+// 真ん中のマス（floor(laneLength / 2)）は魔物の居場所で、魔物はそのレーンのまん中に置く。
+// レーンは roadId の「#番号」で決まる（番号なしなら1本目）。
 
 import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
@@ -11,7 +12,7 @@ import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf } from './art.js
 
 const $ = (id) => document.getElementById(id);
 
-/** 道の幅に対する、兵士を置く横の位置（%） */
+/** レーンの幅に対する、兵士を置く横の位置（%）。自分は右より・相手は左より */
 const X_ME = 74;
 const X_OPP = 26;
 
@@ -92,6 +93,28 @@ export class Renderer {
     return this.rules.laneLength;
   }
 
+  /** レーン（道）の本数 */
+  get laneCount() {
+    return this.rules.laneCount ?? 1;
+  }
+
+  /** roadId → レーン番号（0から。"p1-p2#2" なら 1、番号なしなら 0） */
+  laneOf(roadId) {
+    const m = /#(\d+)$/.exec(roadId ?? '');
+    return m ? Math.min(this.laneCount - 1, Math.max(0, Number(m[1]) - 1)) : 0;
+  }
+
+  /** そのレーンの中心の、盤面の幅に対する位置（%） */
+  laneCenter(lane) {
+    return ((lane + 0.5) / this.laneCount) * 100;
+  }
+
+  /** レーンの要素（roadId を渡さなければ道ぜんぶ） */
+  laneEl(roadId) {
+    if (roadId === undefined) return this.el.road;
+    return this.el.road.querySelectorAll('.lane')[this.laneOf(roadId)] ?? this.el.road;
+  }
+
   /** 道の真ん中のマス番号（魔物の居場所） */
   get middleSquare() {
     return Math.floor(this.laneLength / 2);
@@ -108,12 +131,20 @@ export class Renderer {
   buildRoad() {
     const L = this.laneLength;
     document.documentElement.style.setProperty('--cells', String(L));
-    const cells = this.el.road.querySelector('.cells');
-    cells.innerHTML = '';
-    for (let i = 0; i < L; i++) {
-      const cell = cells.appendChild(document.createElement('div'));
-      cell.className = 'cell';
-      cell.innerHTML = '<span class="stone"></span>';
+    document.documentElement.style.setProperty('--lanes', String(this.laneCount));
+    this.el.road.innerHTML = '';
+    this.el.road.classList.toggle('multi', this.laneCount > 1);
+    for (let n = 0; n < this.laneCount; n++) {
+      const lane = this.el.road.appendChild(document.createElement('div'));
+      lane.className = 'lane';
+      lane.dataset.lane = String(n);
+      const cells = lane.appendChild(document.createElement('div'));
+      cells.className = 'cells';
+      for (let i = 0; i < L; i++) {
+        const cell = cells.appendChild(document.createElement('div'));
+        cell.className = 'cell';
+        cell.innerHTML = '<span class="stone"></span>';
+      }
     }
   }
 
@@ -139,7 +170,7 @@ export class Renderer {
     }
     // 真ん中のマスは魔物の居場所だと分かるように、見た目を変える
     const midRow = this.rowOfSquare(this.middleSquare);
-    this.el.road.querySelectorAll('.cell').forEach((cell, row) => cell.classList.toggle('mid', row === midRow));
+    this.el.road.querySelectorAll('.cell').forEach((cell, i) => cell.classList.toggle('mid', i % this.laneLength === midRow));
   }
 
   opponentOf(playerId) {
@@ -160,8 +191,10 @@ export class Renderer {
   }
 
   /** そのプレイヤーの兵士の要素（魔法が当たる相手を光らせる・雷を落とす） */
-  soldierElsOf(playerId) {
-    return [...this.soldiers.values()].filter((s) => s.playerId === playerId).map((s) => s.el);
+  soldierElsOf(playerId, roadId) {
+    return [...this.soldiers.values()]
+      .filter((s) => s.playerId === playerId && (roadId === undefined || this.laneOf(s.roadId) === this.laneOf(roadId)))
+      .map((s) => s.el);
   }
 
   /** 道のマス番号（players[0] の城側が 0）→ 上から数えた行。2人なら players[0] は p1 */
@@ -278,8 +311,10 @@ export class Renderer {
   place(s) {
     const arrived = s.position >= this.laneLength;
     s.el.style.top = `${this.topPercent(s.playerId, s.position)}%`;
-    // 城に着いた兵士は、城のまん中へ寄る
-    s.el.style.setProperty('--x', arrived ? '50%' : `${this.sideOf(s.playerId) === 'me' ? X_ME : X_OPP}%`);
+    // レーンの中で、自分は右より・相手は左より。城に着いた兵士は、そのレーンのまん中へ寄る
+    const center = this.laneCenter(this.laneOf(s.roadId));
+    const side = ((this.sideOf(s.playerId) === 'me' ? X_ME : X_OPP) - 50) / 100; // レーン幅に対する割合
+    s.el.style.setProperty('--x', `${arrived ? center : center + (side * 100) / this.laneCount}%`);
   }
 
   addSoldier(playerId, st, { appear = false } = {}) {
@@ -298,6 +333,7 @@ export class Renderer {
       el,
       playerId,
       soldierId: st.soldierId,
+      roadId: st.roadId,
       type: st.type,
       hp: st.hp ?? def.hp,
       attack: st.attack ?? def.attack,
@@ -393,11 +429,11 @@ export class Renderer {
         s.el.style.setProperty('--offset', '0px');
         continue;
       }
-      const key = `${s.playerId}:${s.position}`;
+      const key = `${s.playerId}:${s.roadId}:${s.position}`;
       if (!groups.has(key)) groups.set(key, []);
       groups.get(key).push(s);
     }
-    const width = this.el.units.clientWidth || 320;
+    const width = (this.el.units.clientWidth || 320) / this.laneCount; // 1レーンの幅
     const half = width * 0.5;
     for (const list of groups.values()) {
       // 片側の幅（道の半分）に収まるように間をつめる
@@ -455,6 +491,7 @@ export class Renderer {
       `<div class="monster-stats"><span class="st atk">${icon('sword')}<b></b></span></div>`;
     el.querySelector('.monster-pic').innerHTML = monsterArt(st.type, def.name ?? st.type);
     el.style.top = `${((this.rowOfSquare(st.square) + 0.5) / this.laneLength) * 100}%`;
+    el.style.left = `${this.laneCenter(this.laneOf(st.roadId))}%`;
     this.el.units.appendChild(el);
     const m = { ...st, el };
     this.monsters.set(st.monsterId, m);
@@ -529,6 +566,7 @@ export class Renderer {
   elOfTarget(t) {
     if (t.soldierId) return this.soldierEl(t.soldierId);
     if (t.monsterId) return this.monsterEl(t.monsterId);
+    if (t.roadId) return this.laneEl(t.roadId); // 兵士を出す道・魔法で狙う道
     if (t.playerId) return this.castleEl(t.playerId);
     return null;
   }
@@ -539,12 +577,14 @@ export class Renderer {
     const sEl = node.closest('.soldier');
     const mEl = node.closest('.monster');
     const cEl = node.closest('.castle');
-    let t = null;
-    if (sEl) t = { soldierId: sEl.dataset.id };
-    else if (mEl) t = { monsterId: mEl.dataset.id };
-    else if (cEl) t = { playerId: cEl === this.el.castle.me ? this.viewerId : this.opponentOf(this.viewerId) };
-    if (!t) return null;
-    const key = Object.keys(t)[0];
-    return this.targets.find((x) => x[key] === t[key]) ?? null;
+    const lEl = node.closest('.lane');
+    if (sEl) return this.targets.find((x) => x.soldierId === sEl.dataset.id) ?? null;
+    if (mEl) return this.targets.find((x) => x.monsterId === mEl.dataset.id) ?? null;
+    if (cEl) {
+      const playerId = cEl === this.el.castle.me ? this.viewerId : this.opponentOf(this.viewerId);
+      return this.targets.find((x) => x.playerId === playerId && !x.roadId && !x.soldierId && !x.monsterId) ?? null;
+    }
+    if (lEl) return this.targets.find((x) => x.roadId && this.laneOf(x.roadId) === Number(lEl.dataset.lane)) ?? null;
+    return null;
   }
 }

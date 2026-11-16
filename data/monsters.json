@@ -1,5 +1,9 @@
 {
-  "slime":  { "name": "スライム", "hp": 4,  "attack": 1, "element": "water", "reward": 2, "castleAttack": 2, "attackEvery": 3, "weight": 5 },
-  "goblin": { "name": "ゴブリン", "hp": 7,  "attack": 3, "element": "wood",  "reward": 3, "castleAttack": 3, "attackEvery": 2, "weight": 3 },
-  "dragon": { "name": "ドラゴン", "hp": 12, "attack": 5, "element": "fire",  "reward": 6, "castleAttack": 5, "attackEvery": 2, "weight": 1 }
+  "slime":    { "name": "スライム", "hp": 4,  "attack": 1, "element": "water", "reward": 2, "castleAttack": 2, "attackEvery": 3, "weight": 5 },
+  "goblin":   { "name": "ゴブリン", "hp": 7,  "attack": 3, "element": "wood",  "reward": 3, "castleAttack": 3, "attackEvery": 2, "weight": 3 },
+  "dragon":   { "name": "ドラゴン", "hp": 12, "attack": 5, "element": "fire",  "reward": 6, "castleAttack": 5, "attackEvery": 2, "weight": 1 },
+  "bat":      { "name": "コウモリ", "hp": 3,  "attack": 2,                      "reward": 1, "castleAttack": 1, "attackEvery": 2, "weight": 4 },
+  "skeleton": { "name": "スケルトン", "hp": 6, "attack": 3,                     "reward": 3, "castleAttack": 2, "attackEvery": 2, "weight": 3 },
+  "golem":    { "name": "ゴーレム", "hp": 14, "attack": 2, "element": "wood",  "reward": 5, "castleAttack": 3, "attackEvery": 4, "weight": 2 },
+  "demon":    { "name": "デーモン", "hp": 10, "attack": 4, "element": "fire",  "reward": 5, "castleAttack": 4, "attackEvery": 2, "weight": 1 }
 }

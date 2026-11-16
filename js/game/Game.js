@@ -18,7 +18,7 @@
 //                超えていなければ（または捨て終わったら）次の人のターンが始まる
 //   城HPが0以下になった瞬間に phase "gameOver"
 
-import { Card, ELEMENTS } from './Card.js';
+import { Card, ELEMENTS, LANE_SCOPE_EFFECTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
 import { Pile, validateCastles, validateDecks } from './Setup.js';
 import { Soldier } from './Soldier.js';
@@ -62,6 +62,8 @@ export const EVENT_TYPES = [
   'playerEliminated',
   'roadClosed',
   'roadOpened',
+  'defenseRequested',
+  'defenseEnded',
   'gameOver',
 ];
 
@@ -89,6 +91,10 @@ const OPTIONAL_RULES = {
   advanceAfterWin: false,
   // 城に着いた兵士が与えるダメージ ＝ 攻撃力 × この値
   soldierCastleDamageMultiplier: 1,
+  // 同じ2人の間の道の本数（兵士を出すとき、どの道に出すかを選ぶ）
+  laneCount: 1,
+  // 攻撃を受けた人が、その場で防御カードを出せる（城に着いた兵士・城に当たる魔法・兵士に当たる魔法）
+  defenseReaction: false,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -148,9 +154,11 @@ export class Game {
     this.nextMonsterNumber = 1;
     /** @type {Monster[]} */
     this.monsters = [];
-    /** 道ID → この周回より前には魔物が出ない */
+    /** 2人の組（道の pairId）→ この周回より前には魔物が出ない */
     this.monsterCooldown = new Map();
     this.round = 0;
+    /** 攻撃を受けた人の防御を待っているとき（phase "defend"）：{ defenderId, attackerId, kind, amount, soldierIds, apply, after } */
+    this.pending = null;
     /** @type {Map<string, Set<Function>>} */
     this.listeners = new Map(EVENT_TYPES.map((type) => [type, new Set()]));
 
@@ -271,6 +279,12 @@ export class Game {
     if (rules.advanceAfterWin !== undefined && typeof rules.advanceAfterWin !== 'boolean') {
       throw new Error('rules.json の advanceAfterWin は true か false にしてください（書かなければ false）');
     }
+    if (rules.defenseReaction !== undefined && typeof rules.defenseReaction !== 'boolean') {
+      throw new Error('rules.json の defenseReaction は true か false にしてください（書かなければ false）');
+    }
+    if (rules.laneCount !== undefined && (!Number.isInteger(rules.laneCount) || rules.laneCount < 1 || rules.laneCount > 5)) {
+      throw new Error('rules.json の laneCount は 1〜5 の整数にしてください（書かなければ 1）');
+    }
     const m = rules.soldierCastleDamageMultiplier;
     if (m !== undefined && (!Number.isInteger(m) || m < 1)) {
       throw new Error('rules.json の soldierCastleDamageMultiplier は 1 以上の整数にしてください（書かなければ 1）');
@@ -368,12 +382,23 @@ export class Game {
 
   /** playerId と道でつながっている相手（となりの席） */
   neighborsOf(playerId) {
-    return this.roads.filter((r) => r.has(playerId)).map((r) => this.players[r.otherSide(playerId)]);
+    const ids = new Set(this.roads.filter((r) => r.has(playerId)).map((r) => r.otherSide(playerId)));
+    return [...ids].map((id) => this.players[id]);
   }
 
-  /** 2人の間の道（なければ null） */
+  /** 2人の間の道（なければ null）。道が何本かあるときは最初の1本 */
   roadBetween(a, b) {
     return this.roads.find((r) => r.has(a) && r.has(b)) || null;
+  }
+
+  /** 2人の間の道すべて（rules.laneCount 本。つながっていなければ空） */
+  roadsBetween(a, b) {
+    return this.roads.filter((r) => r.has(a) && r.has(b));
+  }
+
+  /** そのカードが「選んだ1レーンだけに効く」魔法か（道が1本のときはふつうの魔法と同じ） */
+  isLaneScoped(def) {
+    return def.scope === 'lane' && this.rules.laneCount > 1;
   }
 
   findRoad(roadId) {
@@ -398,13 +423,16 @@ export class Game {
       }
     }
     const opened = [];
-    const next = pairs.map(([a, b]) => {
-      const existing = this.roads.find((r) => r.players[0] === a && r.players[1] === b);
-      if (existing) return existing;
-      const road = new Road(a, b, this.rules.laneLength);
-      opened.push(road);
-      return road;
-    });
+    const { laneCount } = this.rules;
+    const next = pairs.flatMap(([a, b]) =>
+      Array.from({ length: laneCount }, (_, lane) => {
+        const existing = this.roads.find((r) => r.players[0] === a && r.players[1] === b && r.lane === lane);
+        if (existing) return existing;
+        const road = new Road(a, b, this.rules.laneLength, lane, laneCount);
+        opened.push(road);
+        return road;
+      }),
+    );
     const closed = this.roads.filter((r) => !next.includes(r));
     this.roads = next;
     return { opened, closed };
@@ -484,10 +512,11 @@ export class Game {
    * 戦ったら（相手だけが消えても）そのターンはその場で止まる。トラップにかかっても止まる。
    * 城に着いたら 移動 → 城にダメージ → 消える。城が落ちたらその場でゲームを止める。
    */
-  advanceSoldiers(player) {
+  advanceSoldiers(player, queue = [...player.soldiers]) {
     const { laneLength } = this.rules;
 
-    for (const soldier of [...player.soldiers]) {
+    while (queue.length > 0) {
+      const soldier = queue.shift();
       if (!player.soldiers.includes(soldier)) continue; // 念のため
       const enemy = this.players[soldier.targetId];
       const road = this.findRoad(soldier.roadId);
@@ -558,13 +587,24 @@ export class Game {
       if (!reached) continue;
 
       const damage = soldier.attack * this.rules.soldierCastleDamageMultiplier;
-      this.damageCastle(enemy, damage, { kind: 'soldier', soldierId: soldier.soldierId });
-      player.removeSoldier(soldier.soldierId);
-      this.emit('soldierDestroyed', {
-        playerId: player.id,
-        soldierId: soldier.soldierId,
-        reason: 'reachedCastle',
-      });
+      const hit = () => {
+        this.damageCastle(enemy, damage, { kind: 'soldier', soldierId: soldier.soldierId });
+        player.removeSoldier(soldier.soldierId);
+        this.emit('soldierDestroyed', {
+          playerId: player.id,
+          soldierId: soldier.soldierId,
+          reason: 'reachedCastle',
+        });
+      };
+      // 城を攻められる人は、ここで防御カード（城壁など）を出せる。待つときは、返事が来てから続きを進める
+      const waiting = this.requestDefense(
+        { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage },
+        hit,
+        () => {
+          if (!this.checkGameOver()) this.advanceSoldiers(player, queue);
+        },
+      );
+      if (waiting) return;
 
       // 城が落ちた瞬間にゲームを止める（残りの兵士は動かさない）
       if (this.checkGameOver()) return;
@@ -656,15 +696,20 @@ export class Game {
     if (!this.monsterDefs || this.round < this.rules.monsterFirstRound || this.rules.monsterSpawnChance === 0) return;
     const types = Object.keys(this.monsterDefs);
     if (types.length === 0) return;
-    for (const road of this.roads) {
-      if (this.monsters.some((m) => m.roadId === road.roadId)) continue;
-      // 魔物を倒した道には、しばらく出ない（魔物が道をふさぎ続けないように）
-      if ((this.monsterCooldown.get(road.roadId) ?? 0) > this.round) continue;
+    // 魔物は、同じ2人の間の道すべてで1体まで（道が何本あっても、出るのは1本だけ）
+    const pairIds = [...new Set(this.roads.map((r) => r.pairId))];
+    for (const pairId of pairIds) {
+      const lanes = this.roads.filter((r) => r.pairId === pairId);
+      if (this.monsters.some((m) => lanes.some((r) => r.roadId === m.roadId))) continue;
+      // 魔物を倒したところには、しばらく出ない（魔物が道をふさぎ続けないように）
+      if ((this.monsterCooldown.get(pairId) ?? 0) > this.round) continue;
       if (this.rng() >= this.rules.monsterSpawnChance) continue;
       const total = types.reduce((a, t) => a + this.monsterDefs[t].weight, 0);
       let r = this.rng() * total;
       const type = types.find((t) => (r -= this.monsterDefs[t].weight) < 0) ?? types.at(-1);
       const monsterId = `m${String(this.nextMonsterNumber++).padStart(2, '0')}`;
+      // 出る道はランダム（道が1本のときは乱数を使わない）
+      const road = lanes.length === 1 ? lanes[0] : lanes[Math.floor(this.rng() * lanes.length)];
       const m = new Monster(monsterId, type, this.monsterDefs[type], road.roadId, this.middleSquare());
       this.monsters.push(m);
       this.emit('monsterAppeared', {
@@ -682,7 +727,7 @@ export class Game {
   defeatMonsterIfDead(monster, playerId) {
     if (!monster.isDead) return;
     this.monsters = this.monsters.filter((m) => m !== monster);
-    this.monsterCooldown.set(monster.roadId, this.round + this.rules.monsterCooldownRounds + 1);
+    this.monsterCooldown.set(this.findRoad(monster.roadId).pairId, this.round + this.rules.monsterCooldownRounds + 1);
     const reward = monster.def.reward;
     this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward });
     this.changeCoins(this.players[playerId], reward, 'reward');
@@ -802,8 +847,14 @@ export class Game {
     const playerTargets = (players) => players.map((p) => ({ playerId: p.id }));
     const ownSoldiers = () => player.soldiers.map((x) => ({ soldierId: x.soldierId }));
     switch (def.kind) {
-      case 'soldier':
-        return { targets: playerTargets(this.neighborsOf(player.id)), reason: '兵士を送れる相手がいません' };
+      case 'soldier': {
+        // 道が何本かあるときは、どの道に出すかも選ぶ（{ playerId, roadId }）
+        const targets = this.neighborsOf(player.id).flatMap((p) => {
+          const roads = this.roadsBetween(player.id, p.id);
+          return roads.length === 1 ? [{ playerId: p.id }] : roads.map((r) => ({ playerId: p.id, roadId: r.roadId }));
+        });
+        return { targets, reason: '兵士を送れる相手がいません' };
+      }
       case 'weapon': {
         // 同じ武器をもう一度持たせても何も起きないので、その兵士は対象にしない
         const targets = player.soldiers.filter((x) => x.weapon !== card.type).map((x) => ({ soldierId: x.soldierId }));
@@ -813,6 +864,16 @@ export class Game {
         break;
     }
     const hasSoldiers = (p) => p.soldiers.length > 0;
+    // 選んだ1レーンだけに効く魔法：自分の道ごとに、相手の兵士がいる（効き目が変わる兵士がいる）道が対象
+    if (this.isLaneScoped(def) && LANE_SCOPE_EFFECTS.includes(def.effect)) {
+      const changes = this.changesSoldier(def);
+      const mine = this.roads.filter((r) => r.has(player.id));
+      const withSoldiers = mine.filter((r) => this.players[r.otherSide(player.id)].soldiers.some((x) => x.roadId === r.roadId));
+      const targets = withSoldiers
+        .filter((r) => this.players[r.otherSide(player.id)].soldiers.some((x) => x.roadId === r.roadId && changes(x)))
+        .map((r) => ({ playerId: r.otherSide(player.id), roadId: r.roadId }));
+      return { targets, reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません' };
+    }
     switch (def.effect) {
       case 'damageEnemyCastle':
         return {
@@ -831,10 +892,7 @@ export class Game {
       case 'poisonEnemySoldiers':
       case 'freezeEnemySoldiers': {
         // 効き目が変わる兵士がいる相手だけ（全員もう同じかそれ以上の状態なら、出しても何も起きない）
-        const changes = (x) =>
-          def.effect === 'poisonEnemySoldiers'
-            ? !x.poison || x.poison.turns < def.turns || x.poison.amount < def.amount
-            : x.frozen < def.turns;
+        const changes = this.changesSoldier(def);
         const withSoldiers = this.opponentsOf(player.id).filter(hasSoldiers);
         return {
           targets: playerTargets(withSoldiers.filter((p) => p.soldiers.some(changes))),
@@ -855,11 +913,19 @@ export class Game {
     }
   }
 
+  /** その魔法で、兵士 x の状態が変わるか（毒・凍結：もう同じかそれ以上なら変わらない。サンダーはいつも変わる） */
+  changesSoldier(def) {
+    if (def.effect === 'poisonEnemySoldiers') return (x) => !x.poison || x.poison.turns < def.turns || x.poison.amount < def.amount;
+    if (def.effect === 'freezeEnemySoldiers') return (x) => x.frozen < def.turns;
+    return () => true;
+  }
+
   /** 手番・手札・枚数の決まりを確かめる。出せるならカードを返す */
   checkPlayable(cardId) {
     if (this.phase === 'ready') return fail('ゲームがまだ始まっていません');
     if (this.phase === 'gameOver') return fail('ゲームは終わっています');
     if (this.phase === 'discard') return fail('手札を捨てているところです');
+    if (this.phase === 'defend') return fail('相手が防御を選んでいます');
 
     const player = this.players[this.currentPlayer];
     const card = player.findInHand(cardId);
@@ -937,7 +1003,7 @@ export class Game {
 
     if (card.isSoldier) {
       const targetId = resolved.target.playerId;
-      const road = this.roadBetween(player.id, targetId);
+      const road = resolved.target.roadId ? this.findRoad(resolved.target.roadId) : this.roadBetween(player.id, targetId);
       const soldierId = `s${String(this.nextSoldierNumber++).padStart(2, '0')}`;
       const soldier = new Soldier(soldierId, card, road.roadId, targetId);
       soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
@@ -958,7 +1024,7 @@ export class Game {
       this.damageMonster(monster, card.def.amount, { playerId: player.id, type: card.type });
       this.defeatMonsterIfDead(monster, player.id);
     } else if (card.isSpell) {
-      this.castSpell(player, card, this.players[resolved.target.playerId]);
+      this.castSpell(player, card, this.players[resolved.target.playerId], resolved.target.roadId);
     } else {
       this.playSupport(player, card, resolved.target);
     }
@@ -967,27 +1033,47 @@ export class Game {
     return ok();
   }
 
-  castSpell(player, card, targetPlayer) {
+  castSpell(player, card, targetPlayer, roadId) {
     const enemy = targetPlayer;
     const { effect, amount } = card.def;
+    // レーンを選んだ魔法は、その道の兵士だけに効く（spellCast にも roadId を入れる）
+    const lane = roadId === undefined ? {} : { roadId };
+    const victims = () => enemy.soldiers.filter((x) => roadId === undefined || x.roadId === roadId);
 
     switch (effect) {
       case 'damageEnemyCastle':
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
         // 魔法の塔は城への魔法が強い
-        this.damageCastle(enemy, amount + (player.castleDef.castleSpellBonus ?? 0), { kind: 'spell', type: card.type });
+        {
+          const damage = amount + (player.castleDef.castleSpellBonus ?? 0);
+          this.requestDefense(
+            { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage },
+            () => this.damageCastle(enemy, damage, { kind: 'spell', type: card.type }),
+            () => this.checkGameOver(),
+          );
+        }
         break;
 
       case 'damageEnemySoldiers':
-        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
-        for (const soldier of [...enemy.soldiers]) this.damageSoldier(enemy, soldier, amount, 'spell');
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player', ...lane });
+        {
+          const hit = victims();
+          // 兵士を狙われた人は、当たる前に盾を出せる
+          this.requestDefense(
+            { kind: 'soldiers', defenderId: enemy.id, attackerId: player.id, amount, soldierIds: hit.map((x) => x.soldierId) },
+            () => {
+              for (const soldier of hit) if (enemy.soldiers.includes(soldier)) this.damageSoldier(enemy, soldier, amount, 'spell');
+            },
+            () => this.checkGameOver(),
+          );
+        }
         break;
 
       case 'poisonEnemySoldiers':
       case 'freezeEnemySoldiers': {
-        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player', ...lane });
         const status = effect === 'poisonEnemySoldiers' ? 'poison' : 'frozen';
-        for (const soldier of enemy.soldiers) {
+        for (const soldier of victims()) {
           // 重ねがけでは増えない：残りの回数を長い方にそろえる
           if (status === 'poison') {
             const turns = Math.max(card.def.turns, soldier.poison?.turns ?? 0);
@@ -1045,6 +1131,7 @@ export class Game {
     if (this.phase === 'ready') return fail('ゲームがまだ始まっていません');
     if (this.phase === 'gameOver') return fail('ゲームは終わっています');
     if (this.phase === 'discard') return fail('先に手札を捨ててください');
+    if (this.phase === 'defend') return fail('相手が防御を選んでいます');
 
     const player = this.players[this.currentPlayer];
     const over = player.hand.length - player.maxHand;
@@ -1077,6 +1164,115 @@ export class Game {
     this.discardCount = 0;
     this.emit('cardDiscarded', { playerId: player.id, cardIds: [...cardIds] });
     this.passTurn();
+    return ok();
+  }
+
+  // ================= 防御（攻撃を受けたときの反応） =================
+  // rules.defenseReaction が true のとき、攻撃が当たる前に、受ける人が防御カードを何枚でも出せる。
+  //   城に着いた兵士・ファイアボールや隕石 → 城壁・土嚢（城を守る）
+  //   サンダー・大雷 → 盾・大盾（当たる兵士に盾をつける）
+  //   毒・凍結は、防御カードで防げないので聞かない
+  // 出せるカードが手札になければ、止まらない。待つときは phase が "defend" になり、
+  // defend() で防御カードを出す → passDefense() で受ける（出せるカードがなくなったら自動で受ける）。
+
+  /** 攻撃 pending に対して、そのカードをどこに出せるか */
+  defenseTargetsFor(pending, card) {
+    const def = card.def;
+    const defender = this.players[pending.defenderId];
+    if (def.kind !== 'defense') return { targets: [], reason: '防御カードだけ出せます' };
+    if (pending.kind === 'castle') {
+      if (def.effect !== 'armorCastle') return { targets: [], reason: '城が攻められています。城を守るカードを出してください' };
+      if (defender.armor >= def.amount) return { targets: [], reason: '同じか、より強い城壁がもう置いてあります' };
+      return { targets: [{ playerId: defender.id }], reason: '' };
+    }
+    if (def.effect !== 'shieldSoldier') return { targets: [], reason: '兵士が攻められています。盾のカードを出してください' };
+    const targets = defender.soldiers.filter((x) => pending.soldierIds.includes(x.soldierId)).map((x) => ({ soldierId: x.soldierId }));
+    return { targets, reason: '守れる兵士がいません' };
+  }
+
+  /**
+   * 攻撃が当たる前に、受ける人に防御を聞く。防御できるカードが手札になければ聞かずに apply() する。
+   * 聞くとき（true を返す）は phase が "defend" になり、返事が来たら apply() → after() を呼ぶ。
+   * @returns {boolean} 返事を待っているなら true（呼び出した側は、そこで止める）
+   */
+  requestDefense(spec, apply, after) {
+    const defender = this.players[spec.defenderId];
+    const pending = { ...spec, apply, after };
+    const canDefend = this.rules.defenseReaction
+      && !defender.eliminated
+      && defender.hand.some((card) => this.defenseTargetsFor(pending, card).targets.length > 0);
+    if (!canDefend) {
+      apply();
+      return false;
+    }
+    this.pending = pending;
+    this.phase = 'defend';
+    this.emit('defenseRequested', {
+      defenderId: spec.defenderId,
+      attackerId: spec.attackerId,
+      kind: spec.kind,
+      amount: spec.amount,
+      ...(spec.soldierIds ? { soldierIds: [...spec.soldierIds] } : {}),
+    });
+    return true;
+  }
+
+  /** 防御を終えて、攻撃を当てる */
+  resolveDefense() {
+    const p = this.pending;
+    this.pending = null;
+    this.phase = 'main';
+    this.emit('defenseEnded', { defenderId: p.defenderId });
+    p.apply();
+    p.after?.();
+  }
+
+  /** 防御カードを今出せるか（読むだけ）。phase が "defend" のときだけ。出せる人は pending.defenderId */
+  canDefend(cardId, target) {
+    if (this.phase !== 'defend') return fail('今は防御する場面ではありません');
+    const card = this.players[this.pending.defenderId].findInHand(cardId);
+    if (!card) return fail('そのカードは手札にありません');
+    const { targets, reason } = this.defenseTargetsFor(this.pending, card);
+    if (targets.length === 0) return fail(reason);
+    if (target === undefined || target === null) return targets.length === 1 ? ok() : { ok: true, needsTarget: true };
+    const keys = (o) => Object.keys(o).filter((k) => o[k] !== undefined);
+    const same = (a, b) => keys(a).length === keys(b).length && keys(b).every((k) => a[k] === b[k]);
+    return typeof target === 'object' && targets.some((t) => same(t, target)) ? ok() : fail('そこには出せません');
+  }
+
+  /** 防御カードを出せる対象の一覧（読むだけ） */
+  getDefenseTargets(cardId) {
+    if (this.phase !== 'defend') return [];
+    const card = this.players[this.pending.defenderId].findInHand(cardId);
+    return card ? this.defenseTargetsFor(this.pending, card).targets.map((t) => ({ ...t })) : [];
+  }
+
+  /** 防御カードを出す（攻撃を受ける人が、何枚でも）。出せるカードがなくなったら、自動で攻撃を受ける */
+  defend(cardId, target) {
+    const check = this.canDefend(cardId, target);
+    if (!check.ok) return check;
+    if (check.needsTarget) return { ok: false, reason: '対象を選んでください', needsTarget: true };
+    const defender = this.players[this.pending.defenderId];
+    const card = defender.findInHand(cardId);
+    const targets = this.defenseTargetsFor(this.pending, card).targets;
+    const chosen = target ? targets.find((t) => Object.keys(target).every((k) => target[k] === undefined || t[k] === target[k])) : targets[0];
+
+    defender.takeFromHand(cardId);
+    if (card.isExhaust) this.pileOf(defender.id).exhausted.push(card);
+    else this.pileOf(defender.id).discard.push(card);
+    this.emit('cardPlayed', { playerId: defender.id, cardId: card.cardId, type: card.type });
+    this.playSupport(defender, card, chosen);
+
+    // まだ出せるカードがあれば待つ。なければ、そのまま攻撃を受ける
+    const more = defender.hand.some((c) => this.defenseTargetsFor(this.pending, c).targets.length > 0);
+    if (!more) this.resolveDefense();
+    return ok();
+  }
+
+  /** 防御しないで（これ以上出さずに）攻撃を受ける */
+  passDefense() {
+    if (this.phase !== 'defend') return fail('今は防御する場面ではありません');
+    this.resolveDefense();
     return ok();
   }
 
@@ -1136,6 +1332,7 @@ export class Game {
 
   finish(winner, reason) {
     this.winner = winner;
+    this.pending = null;
     this.phase = 'gameOver';
     this.emit('gameOver', { winner, reason });
   }
@@ -1209,6 +1406,15 @@ export class Game {
       currentPlayer: this.currentPlayer,
       phase: this.phase,
       winner: this.winner,
+      defense: this.pending
+        ? {
+            defenderId: this.pending.defenderId,
+            attackerId: this.pending.attackerId,
+            kind: this.pending.kind,
+            amount: this.pending.amount,
+            soldierIds: this.pending.soldierIds ? [...this.pending.soldierIds] : [],
+          }
+        : null,
       deckCount: topPile ? topPile.deck.length : null,
       discardCount: topPile ? topPile.discard.length : null,
       exhaustedCount: topPile ? topPile.exhausted.length : null,

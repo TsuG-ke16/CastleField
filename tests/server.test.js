@@ -111,6 +111,24 @@ test('2人ぶんの接続で1試合を最後まで遊ぶ。相手の手札は届
     for (let step = 0; step < 3000 && !over; step++) {
       const st = ca.lastState().state;
       if (st.phase === 'gameOver') { over = st; break; }
+      // 攻撃を受けて防御を選ぶ場面：受ける人が防御カードを出す（出せるなら半分の確率で）か、防御しない
+      if (st.phase === 'defend') {
+        const defender = st.defense.defenderId;
+        const { token: dt, c: dc } = me[defender];
+        const attacker = st.defense.attackerId;
+        // 攻める人（と、ほかの人）は、防御の操作を送れない
+        assert.equal((await post(base, '/api/action', { token: me[attacker].token, method: 'passDefense', args: [] })).ok, false);
+        const mineDef = dc.lastState();
+        const canDefend = mineDef.playable.filter((p) => p.ok);
+        assert.ok(canDefend.length > 0);
+        if (rng() < 0.5) {
+          const pick = canDefend[0];
+          assert.equal((await act(dt, 'defend', [pick.cardId, pick.targets[0]])).ok, true);
+        } else {
+          assert.equal((await act(dt, 'passDefense', [])).ok, true);
+        }
+        continue;
+      }
       const pid = st.currentPlayer;
       const { token, c } = me[pid];
       const mine = c.lastState();
@@ -126,7 +144,7 @@ test('2人ぶんの接続で1試合を最後まで遊ぶ。相手の手札は届
         const target = pick.targets[Math.floor(rng() * pick.targets.length)];
         const r = await act(token, 'playCard', [pick.cardId, target]);
         assert.equal(r.ok, true, r.reason);
-        if (ca.lastState().state.phase === 'gameOver') continue;
+        if (ca.lastState().state.phase === 'gameOver' || ca.lastState().state.phase === 'defend') continue;
       }
       if (c.lastState().state.phase === 'main') {
         assert.equal((await act(token, 'endTurn', [])).ok, true);

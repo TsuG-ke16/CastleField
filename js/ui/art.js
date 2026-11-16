@@ -119,6 +119,32 @@ const MONSTER_ART = {
     `<ellipse cx="40" cy="43" rx="4" ry="5" fill="#fff36b" ${S} stroke-width="2.5"/><ellipse cx="60" cy="43" rx="4" ry="5" fill="#fff36b" ${S} stroke-width="2.5"/>` +
     `<ellipse cx="40" cy="43" rx="1.2" ry="4" fill="${INK}"/><ellipse cx="60" cy="43" rx="1.2" ry="4" fill="${INK}"/>` +
     `<circle cx="45" cy="56" r="1.8" fill="${INK}"/><circle cx="55" cy="56" r="1.8" fill="${INK}"/>`,
+  bat: () =>
+    `<ellipse cx="50" cy="94" rx="24" ry="4" fill="#000" opacity=".15"/>` +
+    `<path d="M50 50 Q30 22 4 34 Q14 46 12 62 Q26 54 34 66 Q42 58 50 66 Q58 58 66 66 Q74 54 88 62 Q86 46 96 34 Q70 22 50 50 Z" fill="#6b5a99" ${S} stroke-width="3.5"/>` +
+    `<circle cx="50" cy="56" r="20" fill="#8a77bd" ${S} stroke-width="3.5"/><path d="M36 42 L34 26 L46 38 Z M64 42 L66 26 L54 38 Z" fill="#8a77bd" ${S} stroke-width="3"/>` +
+    `<circle cx="43" cy="54" r="4" fill="#ffe94d" ${S} stroke-width="2"/><circle cx="57" cy="54" r="4" fill="#ffe94d" ${S} stroke-width="2"/><path d="M45 66 l2 5 l3 -5 l3 5 l2 -5" fill="#fff" ${S} stroke-width="2"/>`,
+  skeleton: () =>
+    `<ellipse cx="50" cy="94" rx="26" ry="4" fill="#000" opacity=".15"/>` +
+    `<path d="M34 92 V70 Q50 60 66 70 V92 Z" fill="#efe9d8" ${S} stroke-width="3.5"/><path d="M38 76 H62 M38 84 H62" stroke="${INK}" stroke-width="3"/>` +
+    `<path d="M26 46 Q24 14 50 14 Q76 14 74 46 Q74 62 62 62 H38 Q26 62 26 46 Z" fill="#f6f1e2" ${S} stroke-width="3.5"/>` +
+    `<ellipse cx="40" cy="42" rx="7" ry="9" fill="${INK}"/><ellipse cx="60" cy="42" rx="7" ry="9" fill="${INK}"/><path d="M50 50 l-3 7 h6 Z" fill="${INK}"/>` +
+    `<path d="M40 62 V54 M50 62 V54 M60 62 V54" stroke="${INK}" stroke-width="2.5"/>`,
+  golem: () =>
+    `<ellipse cx="50" cy="94" rx="34" ry="5" fill="#000" opacity=".18"/>` +
+    `<path d="M16 90 Q10 52 30 46 H70 Q90 52 84 90 Z" fill="#9a8a6c" ${S} stroke-width="4"/>` +
+    `<rect x="30" y="14" width="40" height="36" rx="8" fill="#b3a280" ${S} stroke-width="4"/>` +
+    `<rect x="37" y="26" width="9" height="7" rx="2" fill="#7cdc5a" ${S} stroke-width="2.5"/><rect x="54" y="26" width="9" height="7" rx="2" fill="#7cdc5a" ${S} stroke-width="2.5"/>` +
+    `<path d="M24 62 L34 70 M76 60 L68 72" stroke="#6b5f48" stroke-width="3"/><path d="M42 42 h16" ${S} stroke-width="3"/>` +
+    `<path d="M20 52 q-4 -6 2 -8 M80 52 q4 -6 -2 -8" fill="none" stroke="#5fae4e" stroke-width="4" stroke-linecap="round"/>`,
+  demon: () =>
+    `<ellipse cx="50" cy="94" rx="28" ry="5" fill="#000" opacity=".18"/>` +
+    `<path d="M24 62 Q4 44 12 20 Q24 38 38 44 Z" fill="#6a2f7a" ${S} stroke-width="3.5"/><path d="M76 62 Q96 44 88 20 Q76 38 62 44 Z" fill="#6a2f7a" ${S} stroke-width="3.5"/>` +
+    `<path d="M30 92 Q26 62 50 60 Q74 62 70 92 Z" fill="#8f3f9e" ${S} stroke-width="3.5"/>` +
+    `<path d="M30 24 L22 6 L40 18 Z M70 24 L78 6 L60 18 Z" fill="#ffd98a" ${S} stroke-width="3"/>` +
+    `<path d="M26 44 Q24 16 50 16 Q76 16 74 44 Q74 64 50 64 Q26 64 26 44 Z" fill="#b45bc6" ${S} stroke-width="3.5"/>` +
+    `<path d="M32 34 L46 42 M68 34 L54 42" ${S} stroke-width="3.5"/><circle cx="40" cy="44" r="4" fill="#ff5a4a" ${S} stroke-width="2"/><circle cx="60" cy="44" r="4" fill="#ff5a4a" ${S} stroke-width="2"/>` +
+    `<path d="M38 56 Q50 64 62 56" fill="none" ${S} stroke-width="3"/>`,
 };
 
 export function monsterArt(type, name = '') {
@@ -214,6 +240,37 @@ const CARD_ART = {
     `<g ${S} stroke-width="6" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/><path d="M40 20 L50 30 L60 20 M40 80 L50 70 L60 80 M19 45 L32 40 L28 26 M81 55 L68 60 L72 74 M19 55 L32 60 L28 74 M81 45 L68 40 L72 26"/></g>` +
     `<g stroke="#8fdcff" stroke-width="2.5" stroke-linecap="round" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/></g>` +
     `<circle cx="50" cy="50" r="8" fill="#e9faff" ${S} stroke-width="3"/>`,
+  // 追加カード：もとの絵を使い回し、背景の色と一部の飾りで見分ける（専用の絵ができたら差しかえる）
+  spearman: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${infantryBody(c)}</g>` +
+    `<path d="M88 92 L72 14" ${S} stroke-width="8"/><path d="M88 92 L72 14" stroke="#c99a5b" stroke-width="4" stroke-linecap="round"/><path d="M72 4 L79 20 L65 20 Z" fill="${STEEL}" ${S} stroke-width="3"/>`,
+  heavy: (c) => bg('#d6dbe3', '#eef1f5') + `<g transform="translate(6 8) scale(.88)">${infantryBody(c)}</g>` +
+    `<path d="M62 52 Q78 56 86 52 Q86 74 74 86 Q62 74 62 52 Z" fill="${STEEL}" ${S} stroke-width="4"/>`,
+  giant: (c) => bg('#e8d3b8', '#f7ecdd') + `<g transform="translate(-8 -4) scale(1.1)">${knightBody(c)}</g>`,
+  meteor: () => bg('#ffc9a0', '#ffe9d2') +
+    `<path d="M84 8 L30 56" stroke="#f2622e" stroke-width="14" stroke-linecap="round" opacity=".55"/>` +
+    `<circle cx="34" cy="62" r="26" fill="#8a6a50" ${S} stroke-width="4"/><circle cx="26" cy="56" r="6" fill="#6b4f3a"/><circle cx="42" cy="72" r="5" fill="#6b4f3a"/>` +
+    `<path d="M16 40 q-6 -14 4 -22 q0 8 6 8 q-2 -8 4 -12 q-2 10 4 14 Z" fill="#ffc83d" ${S} stroke-width="2.5"/>`,
+  bigThunder: () => bg('#8f9bd0', '#c9d1f0') +
+    `<path d="M22 46 Q8 44 12 30 Q16 18 30 22 Q36 8 52 12 Q66 8 72 22 Q90 20 90 36 Q90 48 76 48 Z" fill="#4c5578" ${S} stroke-width="4"/>` +
+    `<path d="M48 36 L26 68 H42 L32 94 L66 54 H50 L62 36 Z" fill="#ffe94d" ${S} stroke-width="4"/>`,
+  venom: () => bg('#c2e08a', '#e4f4c4') +
+    `<path d="M50 10 Q74 40 74 60 Q74 86 50 88 Q26 86 26 60 Q26 40 50 10 Z" fill="#8fd13a" ${S} stroke-width="4"/>` +
+    `<circle cx="42" cy="56" r="5" fill="${INK}"/><circle cx="58" cy="56" r="5" fill="${INK}"/><path d="M42 72 h16" ${S} stroke-width="3"/>`,
+  deepFreeze: () => bg('#a9dcf5', '#e2f5ff') +
+    `<path d="M50 6 L70 38 L94 50 L70 62 L50 94 L30 62 L6 50 L30 38 Z" fill="#bfeaff" ${S} stroke-width="4"/>` +
+    `<path d="M50 20 L50 80 M20 50 H80" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".9"/>`,
+  ironSword: () => bg('#dfe3ea', '#f3f5f8') +
+    `<path d="M24 80 L70 18 Q84 10 80 28 L34 88 Z" fill="${STEEL}" ${S} stroke-width="4"/>` +
+    `<path d="M34 76 L72 26" stroke="#fff" stroke-width="5" stroke-linecap="round"/>` +
+    `<path d="M14 62 L44 92" ${S} stroke-width="10"/><path d="M14 62 L44 92" stroke="#f2c14e" stroke-width="5" stroke-linecap="round"/>` +
+    `<path d="M22 86 L12 94" ${S} stroke-width="9"/><path d="M22 86 L12 94" stroke="#8a5a32" stroke-width="4.5" stroke-linecap="round"/>`,
+  bigShield: () => bg('#b7cdea', '#dbe8f7') +
+    `<path d="M50 4 Q72 16 94 16 Q96 66 50 96 Q4 66 6 16 Q28 16 50 4 Z" fill="#4f82c4" ${S} stroke-width="4"/>` +
+    `<path d="M50 20 l8 17 l18 2 l-14 12 l5 18 l-17 -10 l-17 10 l5 -18 l-14 -12 l18 -2 Z" fill="#ffd93b" ${S} stroke-width="3"/>`,
+  sandbag: () => bg('#eadfc6', '#f8f1df') +
+    `<path d="M8 86 Q6 66 22 62 H46 Q62 66 60 86 Z" fill="#d7bf8a" ${S} stroke-width="4"/>` +
+    `<path d="M40 62 Q38 42 54 38 H76 Q92 42 90 62 Z" fill="#c9ae74" ${S} stroke-width="4"/>` +
+    `<path d="M28 74 h18 M58 52 h18" stroke="#a88f58" stroke-width="3" stroke-linecap="round"/>`,
 };
 
 /** カードの絵（知らない種類は、名前の1文字目を出す） */
