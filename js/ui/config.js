@@ -9,6 +9,7 @@ export const UI_CONFIG = {
   timing: {
     soldierMove: 280,      // 兵士が進む
     deploy: 240,           // 兵士が出てくる
+    defenseResult: 900,   // 反射・身代わりの帯（カード拡大が終わってから表示）
     cardPlay: 420,         // 出したカードを大きく見せる
     spellProjectile: 260,  // ファイアボールが飛ぶ
     thunder: 300,          // 雷

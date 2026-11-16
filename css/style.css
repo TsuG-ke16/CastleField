@@ -997,3 +997,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 @media (prefers-reduced-motion: reduce) {
   .soldier-pic, .monster-pic, .castle-flag, .result-rays, .title-unit { animation: none !important; }
 }
+
+/* 防御の成否は拡大カードより手前で、文字を読み切れる長さだけ表示する。 */
+.fx-banner.defense-result {
+  z-index: 56;
+  top: 38%;
+  padding: 18px 8px;
+  font-size: clamp(28px, 7vw, 38px);
+  color: #ffe14d;
+  background: linear-gradient(90deg, transparent, #4a2e1a 12%, #4a2e1a 88%, transparent);
+}

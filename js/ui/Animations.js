@@ -147,10 +147,10 @@ export class Animations {
   }
 
   banner(text, ms, variant = '') {
-    if (this.skipping) return;
+    if (this.skipping) return Promise.resolve();
     const el = this.fx(`fx-banner ${variant}`.trim());
     el.textContent = text;
-    this.animate(el, [
+    return this.animate(el, [
       { transform: 'scale(1.6)', opacity: 0 },
       { transform: 'scale(1)', opacity: 1, offset: 0.2 },
       { transform: 'scale(1)', opacity: 1, offset: 0.75 },
@@ -392,14 +392,15 @@ export class Animations {
     const dy = to.y - from.y;
     const base = 'translate(-50%, -50%)';
     const dur = UI_CONFIG.timing.cardPlay;
-    this.animate(clone, [
+    const cardAnimation = this.animate(clone, [
       { transform: `${base} translate(0, 0) scale(1)` },
       { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, offset: 0.35 },
       { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75 },
       { transform: `${base} translate(${dx}px, ${dy - 30}px) scale(1.4)`, opacity: 0 },
     ], { duration: dur, easing: 'ease-out', fill: 'forwards' }).then(() => clone.remove());
-    // 消えきるのを待たずに、効果の演出へ進む
-    await this.delay(dur * 0.7);
+    // 防御の帯はカードが消えてから見せる。ほかの効果は従来どおり重ねてテンポを保つ。
+    if (type === 'reflect' || type === 'decoy') await cardAnimation;
+    else await this.delay(dur * 0.7);
   }
 
   async cardDiscarded({ playerId, cardIds }, model, ctx) {
@@ -557,16 +558,14 @@ export class Animations {
   async spellReflected() {
     if (this.skipping) return;
     sound.play('block');
-    this.banner('反射！', UI_CONFIG.timing.shuffle, 'turn mine');
-    await this.delay(UI_CONFIG.timing.shuffle * 0.8);
+    await this.banner('反射！', UI_CONFIG.timing.defenseResult, 'defense-result');
   }
 
   /** 身代わり：城に着いた兵士のダメージが消える（このあと兵士が消える） */
   async soldierDecoyed() {
     if (this.skipping) return;
     sound.play('block');
-    this.banner('身代わり！', UI_CONFIG.timing.shuffle, 'turn mine');
-    await this.delay(UI_CONFIG.timing.shuffle * 0.8);
+    await this.banner('身代わり！', UI_CONFIG.timing.defenseResult, 'defense-result');
   }
 
   /** 盗賊：相手の手札から1枚奪う。自分が奪われたら手札から消え、奪ったら手札に入る */
