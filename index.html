@@ -81,14 +81,14 @@
         <span class="discard-msg"></span>
         <button type="button" class="discard-ok plank-btn">捨てる</button>
       </div>
+      <p id="message" role="status" aria-live="polite"></p>
       <div class="control-row">
-        <p id="message" role="status" aria-live="polite"></p>
+        <button id="hand-toggle" type="button" class="small-btn" aria-controls="hand" aria-expanded="true">手札 ▾</button>
         <button id="upgrade-open" type="button" title="コインで強化を買う" hidden>
           <span class="chip-icon" data-icon="coin"></span><b id="my-coins">0</b><span class="upgrade-open-label">強化</span>
         </button>
         <button id="end-turn" type="button" class="plank-btn">ターン終了</button>
       </div>
-      <div class="hand-toolbar"><span>手札 <b id="hand-count">0</b>枚</span><span id="hand-refill"></span><span class="hand-scroll-hint">左右にスワイプ ›</span></div>
       <div id="hand" aria-label="手札"></div>
     </footer>
 
@@ -160,14 +160,15 @@
     </div>
 
     <!-- タイトル：同じ端末で遊ぶか、合言葉でオンライン対戦 -->
-    <div id="title" class="screen" hidden>
+    <div id="title" class="screen splash" hidden>
       <div class="title-box">
-        <h1 class="title-logo"><span>キャッスル</span><span>フィールド</span></h1>
+        <h1 class="title-logo"><span data-t="キャッスル">キャッスル</span><span data-t="フィールド">フィールド</span></h1>
         <div class="title-pic" aria-hidden="true"></div>
+        <p id="title-tap" class="blink">タップしてはじめる</p>
         <div id="title-main">
-          <button type="button" id="title-solo" class="plank-btn big">ひとりで遊ぶ<small>CPU と対戦</small></button>
-          <button type="button" id="title-local" class="plank-btn big alt2">ふたりで遊ぶ<small>この端末で交代しながら</small></button>
-          <button type="button" id="title-online" class="plank-btn big alt">オンラインで遊ぶ<small>合言葉で友だちと</small></button>
+          <button type="button" id="title-solo" class="plank-btn big" data-mode="solo"><i class="mode-ic" aria-hidden="true">⚔️</i><span>ひとりで遊ぶ<small>CPU と対戦</small></span></button>
+          <button type="button" id="title-local" class="plank-btn big alt2" data-mode="local"><i class="mode-ic" aria-hidden="true">🤝</i><span>ふたりで遊ぶ<small>この端末で交代しながら</small></span></button>
+          <button type="button" id="title-online" class="plank-btn big alt" data-mode="online"><i class="mode-ic" aria-hidden="true">🌐</i><span>オンラインで遊ぶ<small>合言葉で友だちと</small></span></button>
           <button type="button" id="title-help" class="small-btn">遊び方</button>
         </div>
         <div id="title-levels" class="parchment" hidden>
