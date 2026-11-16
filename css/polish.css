@@ -354,3 +354,54 @@
 }
 .pill { font-size: 12px; letter-spacing: 0; padding-inline: 2px; }
 .set-name { width: 5.2em; }
+
+/* =====================================================================
+   色の役割（色彩構成）：
+     ベース（約7割）… 絵の世界の色。空の青・草の緑（背景の絵）
+     メイン（約2.5割）… UIの色。木の茶と羊皮紙のクリーム（空の青の補色側なので、絵の上で自然に立つ）
+     アクセント（約0.5割）… 金〜橙。いちばん押してほしいボタンだけに使う。赤は危険の合図だけ
+   UIに青緑（ダークティール）や、橙・緑・青の同格ボタンを並べない（主役が分からなくなるため）。
+   ===================================================================== */
+:root { --wood: #8f5a2a; --wood-dark: #3f2511; --wood-ink: #4a2f17; --parch: #fff8e0; --parch-deep: #f7e9c3; --accent: #f6a52e; }
+
+/* ---------- タイトル：用意してあった空と草原の絵を背景に。UIは木と羊皮紙、主役のボタンだけ橙 ---------- */
+#title { background: #7cc4f5 url('../assets/bg/title-compact.png') center bottom / cover no-repeat; }
+@media (min-width: 900px) { #title { background-image: url('../assets/bg/title.png'); background-position: center 62%; } }
+.title-pic { background: none; }
+.title-pic::before { display: none; }
+.title-logo { filter: drop-shadow(0 6px 0 #1d4f7a33) drop-shadow(0 0 18px #ffffffb0); }
+.title-choices {
+  border: 5px solid var(--wood); border-radius: 18px;
+  background: linear-gradient(var(--parch), var(--parch-deep));
+  box-shadow: 0 0 0 2px var(--wood-dark), inset 0 0 0 2px #e0b06a, inset 0 3px 0 2px #fff6d8, 0 8px 0 #2a180a40, 0 16px 26px #1d4f7a40;
+  color: var(--wood-ink);
+}
+#title-levels.parchment, #title-form.parchment { border: 0; box-shadow: none; background: none; padding: 4px; color: var(--wood-ink); }
+.levels-title, #title-form label { color: var(--wood-ink); }
+/* 主役は「ひとりで遊ぶ」だけ橙。ほかの2つは同じ木のクリーム（色はメダルの絵が持っている） */
+.plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { border-image-source: url('../assets/ui/btn-cream.png'); border-image-slice: 106 150 fill; color: var(--wood-ink); min-height: 66px; }
+.mode-choice.alt strong, .mode-choice.alt2 strong { text-shadow: none; font-size: 17px; }
+.plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { filter: drop-shadow(0 4px 0 #3f251140); }
+.mode-choice:hover { filter: drop-shadow(0 6px 0 #3f251140) brightness(1.05); }
+@keyframes title-invite { 50% { filter: drop-shadow(0 4px 0 #3f251140) drop-shadow(0 0 10px #ffc94d) brightness(1.06); } }
+#title-record { color: #7a4a12; }
+#title-main #record-clear { color: #9a8560; }
+#offline-status { color: #8a7b5c; }
+#title-main #title-catalog, #title-main #title-settings, #title-main #title-help { filter: drop-shadow(0 3px 0 #3f251133); }
+
+/* ---------- UIから青緑をなくす：文字と小さい札は木の色に ---------- */
+.turn-info { background: linear-gradient(#a8692f, #7f4a1f); color: #fff3d0; box-shadow: inset 0 1px 0 #d39b5c, 0 2px 0 #3f251166; font-family: var(--head); letter-spacing: .04em; }
+.detail-name, .room-box h1, .settings-box h2, .upgrade-head b, #result-stats { color: var(--wood-ink); }
+.settings-box h2 { color: #fff3d0; }
+.detail-kind { background: #f0dcae; color: #6a4318; }
+.guide-box, .progress-box, .help-box { color: #3f321f; }
+.help-list b { color: #b0661a; }
+#title::before { background: linear-gradient(#ffffff00 0%, #ffffff00 100%); }
+/* 城と兵士は、背景の地平線の上に立たせる。背景にも城があるので、ここの城は出さない */
+#title .title-castle { display: none; }
+#title .title-pic { height: 96px; margin: 6px 0 0; transform: translateY(14px); z-index: 1; }
+#title .title-unit { width: 22%; }
+#title .title-unit.left { left: 24%; } #title .title-unit.right { right: 24%; left: auto; }
+/* PCで見たときの外側とブランド帯も、青緑ではなく木の濃い茶に */
+body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%, #6b4423, transparent 65%); }
+.game-brand { background: linear-gradient(#7f4a1f, #5f3615); color: #ffe9b0; box-shadow: inset 0 -2px 0 #3f2511; }
