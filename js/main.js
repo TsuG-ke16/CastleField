@@ -231,12 +231,6 @@ async function boot() {
 // ---------- タイトル・メニュー ----------
 
 function setupTitle() {
-  // タイトルは、まず画面をタップして始める。そのあと遊び方を選ぶ
-  el.title.addEventListener('click', () => {
-    if (!el.title.classList.contains('splash')) return;
-    sound.play('tap');
-    el.title.classList.remove('splash');
-  });
   document.querySelector('#title .title-pic').innerHTML =
     `<div class="title-castle left">${castleArt('blue')}</div><div class="title-unit left">${unitArt('knight', 'blue')}</div>` +
     `<div class="title-unit right">${unitArt('infantry', 'orange')}</div><div class="title-castle right">${castleArt('orange')}</div>`;
@@ -293,7 +287,6 @@ function showTitle() {
   el.titleForm.hidden = true;
   el.titleLevels.hidden = true;
   el.titleMain.hidden = false;
-  el.title.classList.add('splash');
   el.title.hidden = false;
 }
 
