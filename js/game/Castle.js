@@ -1,9 +1,11 @@
-// 城。HPが0以下になったら持ち主の負け。
+// 城。HPが0以下になったら持ち主の負け。チーム戦では、チームのメンバーが同じ城を共有する。
 
 export class Castle {
   constructor(maxHp) {
     this.maxHp = maxHp;
     this.hp = maxHp;
+    /** 城壁の残り（Player.armor から読み書きする） */
+    this.armor = 0;
   }
 
   /** ダメージを受ける。HPは0未満にしない */

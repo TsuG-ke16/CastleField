@@ -1,12 +1,12 @@
 {
-  "castleMaxHp": 70,
+  "castleMaxHp": 60,
   "secondPlayerCastleBonus": 0,
   "initialHand": 5,
   "drawPerTurn": 1,
   "firstTurnDraw": 1,
   "drawUntilHand": 5,
   "maxHand": 8,
-  "laneLength": 3,
+  "laneLength": 5,
   "laneCount": 3,
   "defenseReaction": true,
   "advanceAfterWin": false,
@@ -27,5 +27,8 @@
   "initialCoins": 5,
   "coinPerTurn": 1,
   "monsterAttackGrowth": 1,
-  "rewardLuckyChance": 0.15
+  "rewardLuckyChance": 0.15,
+  "roadLayout": "plaza",
+  "teamTurns": "rotate",
+  "teamCastleHpShare": 0.25
 }

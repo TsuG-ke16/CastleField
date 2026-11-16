@@ -10,6 +10,7 @@ import { groupStarts, sortHand } from './handOrder.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
+import { frameAsset, kindIcon, rarityMark } from './cardFrame.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -171,17 +172,26 @@ export class HandView {
       el.style.setProperty('--rarity', this.rarities[def.rarity].color);
       const badge = document.createElement('span');
       badge.className = 'card-rarity';
-      badge.textContent = this.rarities[def.rarity].name;
+      badge.textContent = rarityMark(def.rarity);
+      badge.title = this.rarities[def.rarity].name;
+      badge.setAttribute('aria-label', this.rarities[def.rarity].name);
       el.appendChild(badge);
     }
-    const frame = document.createElement('img');
-    frame.className = 'card-frame';
-    frame.src = `assets/cards/frame-${def.kind}.png`;
-    frame.alt = '';
-    frame.draggable = false;
-    if (['soldier', 'spell', 'weapon', 'defense'].includes(def.kind)) el.prepend(frame);
-    if (isAssetReady(`cards/frame-${def.kind}.png`)) el.classList.add('has-frame'); // 読み込み済みなら、最初から枠つきで出す
-    el.querySelector('.card-kind').textContent = KIND_LABEL[def.kind] ?? '';
+    const framePath = frameAsset(def, this.rarities);
+    if (framePath) {
+      const frame = document.createElement('img');
+      frame.className = 'card-frame';
+      frame.src = `assets/${framePath}`;
+      frame.alt = '';
+      frame.draggable = false;
+      el.prepend(frame);
+      if (isAssetReady(framePath)) el.classList.add('has-frame');
+    }
+    const kind = el.querySelector('.card-kind');
+    if (framePath) {
+      kind.innerHTML = icon(kindIcon(def.kind));
+      kind.title = KIND_LABEL[def.kind] ?? '';
+    } else kind.textContent = KIND_LABEL[def.kind] ?? '';
     el.querySelector('.card-art').innerHTML = cardArt(card.type, this.color ?? 'blue', def.name ?? '');
     const name = el.querySelector('.card-name');
     name.textContent = def.name;

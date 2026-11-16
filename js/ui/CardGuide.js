@@ -1,4 +1,5 @@
 import { cardArt, monsterArt, icon } from './art.js';
+import { mountMiniCard } from './cardView.js';
 import { KIND_LABEL, cardDescription, cardShort, elementName } from './text.js';
 import { currentRates, fusionPaths } from './CardInfo.js';
 import { rewardOdds } from '../game/Setup.js';
@@ -81,7 +82,7 @@ export class CardGuide {
         count++;
         const button = node('button', 'guide-card'); button.type = 'button'; button.dataset.type = type;
         button.style.setProperty('--rarity', rarity.color);
-        const art = node('div', 'guide-art'); art.innerHTML = cardArt(type, 'blue', def.name);
+        const art = node('div', 'guide-art'); mountMiniCard(art, type, def, this.rarities);
         const short = node('span', 'guide-short');
         for (const item of cardShort(def)) { const part = node('span', ''); part.innerHTML = icon(item.icon); part.append(document.createTextNode(String(item.text))); short.append(part); }
         button.append(art, node('b', '', def.name), node('small', '', rarity.name), short, node('small', '', `${rates[type].toFixed(3)}%`));
@@ -96,7 +97,7 @@ export class CardGuide {
     this.content.replaceChildren(); this.content.scrollTop = 0;
     const back = node('button', 'small-btn', '← カード一覧へ'); back.type = 'button'; back.onclick = () => this.render('cards'); this.content.append(back);
     const hero = node('div', 'guide-card-detail'); hero.style.setProperty('--rarity', rarity?.color ?? '#999');
-    const art = node('div', 'guide-detail-art'); art.innerHTML = cardArt(type, 'blue', def.name);
+    const art = node('div', 'guide-detail-art'); mountMiniCard(art, type, def, this.rarities);
     const info = node('div', ''); info.append(node('h3', '', def.name), node('span', 'rarity-label', `${rarity?.name ?? ''} ／ ${KIND_LABEL[def.kind]}`));
     hero.append(art, info); this.content.append(hero, node('p', 'guide-effect', cardDescription(def, this.rules, { monsters: Boolean(this.monsters), debug: this.debug })));
     this.content.append(node('p', 'progress-note', `排出率：${this.rates()[type].toFixed(3)}%（通常、または現在の運命の祈りを反映）`));

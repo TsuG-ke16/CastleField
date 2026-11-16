@@ -95,7 +95,7 @@ js/
     Castle.js
     Card.js
     Soldier.js
-    Road.js        … 道（となりの席どうしをつなぐ）
+    Road.js        … 道（となりの席どうし・広場の通り道）
     Monster.js     … 魔物と、強化のデータのチェック
     Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
@@ -120,8 +120,9 @@ tests/             … 自動テスト（node --test）。Node.js だけで動�
     sim.js         … 1試合・何試合も回して数字を集める
     strategies.js  … js/game/strategies.js をそのまま出すだけ（戦い方の本体はそちら）
     run.js         … 表を出すコマンド（2人）
-    multi.js       … 2人・4人・8人で、勝利条件と魔法の届く相手を比べる
+    multi.js       … 2人・4人・8人で、道の形（広場・輪）と勝利条件を比べる
     castles.js     … 城の種類・デッキの勝率
+    teams.js       … チーム戦の分け方ごとの勝率と長さ
 server/            … オンライン対戦のサーバー（Node.js だけ。ロジック担当）
   server.js        … HTTP（合言葉で入る・操作を受ける・SSE で送る）。node server/server.js で起動
   rooms.js         … 部屋と席。Game を動かし、プレイヤーごとに隠して送る
@@ -163,7 +164,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 - カードID（cardId）：山札の1枚1枚につく一意のID。例：`"c07"`。同じ種類のカードでもIDは別
 - 兵士ID（soldierId）：場に出た兵士につく一意のID。例：`"s03"`
 - カードIDは山札をシャッフルしたあとの順に振る。IDから種類は分からない
-- 道ID（roadId）：道のID。2人のIDを席順で `-` でつなぐ（3人以上の道の形は STEP 5 で決める）。例：`"p1-p2"`。`rules.laneCount`（レーンの数）が2以上のときは、同じ2人の間に道が `laneCount` 本でき、`"p1-p2#1"`、`"p1-p2#2"` … のように番号がつく（1本のときは番号なし）
+- 道ID（roadId）：道のID。2人のIDを席順で `-` でつなぐ（3人以上の広場のときは、2人ずつの組の「通り道」。STEP 5 の「真ん中の広場を通る道」）。例：`"p1-p2"`。`rules.laneCount`（レーンの数）が2以上のときは、同じ2人の間に道が `laneCount` 本でき、`"p1-p2#1"`、`"p1-p2#2"` … のように番号がつく（1本のときは番号なし）
 - 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ playerId, roadId }`（レーンが2本以上のときの、兵士を出す道と、`scope: "lane"` の魔法で狙う道）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
 
 ### UIから呼ぶもの
@@ -273,8 +274,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack }` … `hp` / `attack` は出した時点の値 |
 | `soldierMoved` | `{ playerId, soldierId, roadId, from, to }` |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
-| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"`。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
-| `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった） |
+| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
+| `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
+| `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
 | `spellCast` | `{ playerId, type, target, targetKind, roadId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）のときだけ入る。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
 | `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }` |
 | `castleHealed` | `{ playerId, amount, hp }` … `amount` は実際に増えた量（上限で止まったぶんは含まない） |
@@ -686,32 +688,32 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - サーバーは `server/`（Node.js 22.7 以上。**外部パッケージなし**）。Game（`js/game/`）をそのまま動かす。乱数もサーバーだけが持つ
 - 起動：リポジトリのルートで `node server/server.js`（ポートは環境変数 `PORT`、省略すると 8787）。`data/` の JSON はサーバーが読み、間違っていれば起動したときにエラーで止まる
 - **画面のファイル（`index.html`・`css/`・`js/`・`data/`・`assets/`）も同じサーバーが配る**。`http://localhost:8787` を開けば、画面とサーバーが同じ場所なので、画面はつなぎ先を `/api/...` と書くだけでよい
-- 人数は `rules.playerCount`（2〜8）。その人数がそろったら始まる。城の種類・デッキは今は全員 `rules.defaultCastle` / `defaultDeck`（部屋で選ぶしくみはまだない）
+- 人数は部屋に入った人数（CPU を含めて2〜8）。**自動では始まらず、部屋主が「開始」を押して始める**（下の「部屋（ロビー）」）。`rules.playerCount` はオンラインでは使わない
 - 通信は HTTP だけ（WebSocket は使わない。外部パッケージなしで作れて、ブラウザでもそのまま使えるため）
   - ブラウザ → サーバー：`fetch` で `POST`（JSON）
   - サーバー → ブラウザ：Server-Sent Events（`EventSource` で受け取る）
-- **合言葉で部屋に入る**：同じ合言葉を入れた人が同じ部屋に入る。人数（`rules.playerCount`、今は2）がそろったら自動で始まる。入った順に `p1`、`p2` …
+- **合言葉で部屋に入る**：同じ合言葉を入れた人が同じ部屋に入る（最大8人）。入った順に `p1`、`p2` …
 - 見えてはいけない情報は、サーバーが `js/game/visibility.js` の決まりでプレイヤーごとに隠してから送る（Game はそのまま）
 
 ### 送るもの（ブラウザ → サーバー）
 | URL | 送る JSON | 返る JSON |
 |---|---|---|
 | `POST /api/join` | `{ passphrase, name }` … 合言葉（1〜32文字）と表示名（1〜16文字） | `{ ok: true, roomId, playerId, token }` か `{ ok: false, reason }`。`token` はその人だけの鍵（以後ずっと使う） |
-| `POST /api/action` | `{ token, method, args }` … `method` は `playCard` / `discard` / `endTurn` / `buyUpgrade` / `defend` / `passDefense` / `rematch` / `surrender` / `leave` のどれか（`rematch`・`surrender`・`leave` は自分の番でなくても送れる。`defend`・`passDefense` は攻撃を受ける人だけが送れる）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
+| `POST /api/action` | `{ token, method, args }` … `method` は試合の操作 `playCard` / `discard` / `endTurn` / `buyUpgrade` / `fuse` / `defend` / `passDefense` と、部屋の操作 `start` / `setRules` / `setSeat` / `addCpu` / `removeCpu` / `backToRoom` / `rematch` / `surrender` / `leave` のどれか（部屋の操作は自分の番でなくても送れる。`defend`・`passDefense` は攻撃を受ける人だけが送れる。部屋の操作の中身は下の「部屋（ロビー）」）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
 
-- `rematch`：全員が送ったら、同じ部屋・同じ席で新しい試合が始まる（負けた人もすぐ「もう1回」できるように）
+- `rematch`：人が全員送ったら（CPU は送らない）、同じ部屋・同じ席・同じ設定で新しい試合が始まる（負けた人もすぐ「もう1回」できるように）
 
 ### 届くもの（サーバー → ブラウザ）
 `GET /api/stream?token=...` を `EventSource` で開く。メッセージは JSON で、`type` で分かれる。
 
 | `type` | 中身 | いつ |
 |---|---|---|
-| `room` | `{ roomId, players: [{ playerId, name, connected, left }], capacity, started, rematchVotes }` … `left` は自分から部屋を出たか。`rematchVotes` は「もう1回」を送った人のIDの配列（新しい試合が始まると空に戻る） | 入ったとき・誰かが入った／抜けたとき |
+| `room` | `{ roomId, you, hostId, players: [{ playerId, name, connected, left, cpu, castle, deck }], capacity, minPlayers, started, settings, choices, rematchVotes }` … `you` は受け取った人の今の `playerId`（始まる前に誰かが出ると席が詰まって変わる。自分が出たときは `null`）。`hostId` は部屋主。`left` は試合中に自分から部屋を出たか。`cpu` は CPU の強さ（人なら `null`。CPU の `connected` はいつも `true`）。`castle` / `deck` は席の城・デッキ。`settings` は `{ winCondition, deckMode }`。`choices` は選べるもの `{ winConditions, deckModes, castles, decks, cpuLevels }`（どれも `[{ id, name }]`）。`rematchVotes` は「もう1回」を送った人のIDの配列（新しい試合が始まると空に戻る） | 入ったとき・誰かが入った／抜けたとき・設定が変わったとき・始まったとき |
 | `event` | `{ event, payload }` … Game のイベント（「Gameが出すイベント」の表）を、その人向けに隠したもの | 起きた順に |
 | `state` | `{ state, playable, upgrades }` … `state` は `getState(自分)`。`playable` は自分の手札の各カードの `{ cardId, ok, reason, needsTarget, targets }`（自分の番でないときは全部 `ok: false`）。`upgrades` は `{ upgradeId: { ok, reason } }` | 操作のたび（その操作のイベントを全部送ったあと）・つないだとき |
 
 - つなぎ直したとき（`EventSource` は自動でつなぎ直す）は、`room` と `state` が届くので、それで画面を描き直す
-- 2人目が入った瞬間に試合が始まるので、2人目は最初の `turnStarted` などを受け取れないことがある（`state` は届く）。画面は `state` から描けるようにする
+- 試合の途中でつなぎ直した人は、それまでのイベントを受け取れない（`state` は届く）。画面は `state` から描けるようにする
 - `token` は URL に入る（`EventSource` の決まり）。サーバーのアクセスログに残ることがあるので、ログを人に見せない
 - 表示名（`name`）は人が入れた文字列そのまま。画面では `textContent` で出す（HTML として入れない）
 - エラーの返事：壊れた JSON は 400、大きすぎる本文（16KB 超）は 413、知らない token は 403。どれも `{ ok: false, reason }`
@@ -723,6 +725,27 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - **自分から部屋を出る**（`leave`。「タイトルへ戻る」を押したとき）：もう戻れない。残った人には `room` の `players[].left` で伝わり、「○○さんが部屋を出ました」と出る。出た人がいる部屋では「もう1回」はできず、同じ合言葉で入ると新しい部屋になる
   - **降参**（`surrender`。メニューから、確認のため2回押す）：自分の番でなくてもできる。相手の勝ちで終わる（`gameOver` の `reason` は `"surrender"`）。2人のときだけ（3人以上はまだ決めていない）
 - 画面は、イベントで演出し、`state` で答え合わせをする（同じ端末のときと同じ）。出せない理由は `playable` を使う（ブラウザに Game はない）
+
+### 部屋（ロビー）（人間に確認して決めた）
+「8人がそろわないと始まらない」のではなく、**8人まで入れる部屋で、好きなときに始める**。足りなければ CPU を足せる。
+
+- **部屋主**：最初に入った人。部屋主が出たら、残っている人のうちいちばん前の席の人が部屋主になる（CPU はなれない）
+- **始まる前**（`started: false`）
+  - `start`：部屋主だけ。CPU を含めて `minPlayers`（2）人以上で始まる。始まったら、その部屋には入れない
+  - `setRules`、`args: [{ winCondition?, deckMode?, teams? }]`：部屋主だけ。勝ち方（`"firstDestroy"`：最初に城を落とした人の勝ち／`"lastStanding"`：バトルロイヤル）と山札（`"shared"`：共通の山札／`"own"`：1人1つのデッキ）とチームの分け方（`"off"`：個人戦／`"auto"`：自動で2チーム／`"choose"`：各自で選ぶ。下の「チーム」）
+  - `setSeat`、`args: [{ castle?, deck?, team? }, playerId?]`：席の城の種類・デッキ（`castles.json` / `decks.json` のキー）・チーム（`"t1"`〜`"t4"`。各自で選ぶときに使う）。自分の席は自分で、CPU の席は部屋主が `playerId` を付けて選ぶ。デッキは `deckMode` が `"own"` のときに使われる
+  - `addCpu`、`args: [level?]`：部屋主だけ。`level` は `"easy"` / `"normal"`（省略したとき）/ `"hard"`（戦い方は `js/main.js` の `CPU_LEVELS` と同じ：defensive / rush / smart）。名前は「CPU1（つよい）」など。返り値に `playerId`
+  - `removeCpu`、`args: [playerId]`：部屋主だけ。CPU を外す（席が詰まる）
+  - `leave`：始まる前に出た人は席ごと消え、うしろの席が詰まる（`playerId` が変わるので、画面は `room` の `you` を見る）。人が全員出たら CPU も消える
+- **試合中・試合のあと**
+  - CPU は、サーバーが `js/game/strategies.js` の戦い方で動かす（自分の手札しか見ない）。1手ごとに少し間をおく（`createGameServer({ cpuDelayMs })`、省略すると 700ミリ秒）。人の番・人の防御になったら止まって待つ。CPU が攻めて人が防御を選ぶあいだも待つ
+  - `backToRoom`：試合が終わったあと、部屋主だけ。始まる前の状態に戻る（設定を変えたり、人が入ったりできる）。試合中に出た人の席は、ここで消える（出た人がいても、部屋に戻せばまた遊べる）
+- 試合の `rules` は `data/rules.json` に、部屋の人数（`playerCount`）と `settings` を上書きしたもの。城への魔法は `castleSpellRange`（今は `"any"`：誰にでも）のまま
+- **チーム**（人間に確認して決めた。ルールは STEP 5 の「チーム戦」）
+  - `"auto"`：始めるたびに、席をシャッフルして2チームに半分ずつ分ける（奇数ならチームAが1人少ない）。「もう1回」でも分け直す
+  - `"choose"`：各自が `setSeat` でチームを選ぶ（入った順に A・B・A・B … で始まる）。CPU のチームは部屋主が選ぶ。チームは4つまで（A〜D）、1チーム7人まで。2チーム以上に分かれていないと始められない
+  - `room` の `players[].team`：始まる前は各自で選んだチーム、試合中・試合のあとはその試合のチーム（個人戦なら `null`）。`choices.teamModes` / `choices.teams`（`[{ id, name }]`。名前は チームA〜D）
+- 広場（3人以上）・チーム戦は、STEP 5 のルールのとおり（部屋が `rules.json` と `setup.teams` を渡すだけ）
 
 ### 隠す情報（`js/game/visibility.js`）
 | イベント | 本人以外に送るとき |
@@ -744,6 +767,62 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - `rules.playerCount`：2〜8（省略すると2）。席順に `p1`〜`p8`。道は「となりの席どうし」（#16）
 - 席ごとの城ボーナス：`rules.seatCastleBonus`（席ごとの数の配列、省略できる）。省略すると、2人なら `[0, secondPlayerCastleBonus]`、3人以上なら席 i（0から）に `round(secondPlayerCastleBonus × i ÷ (人数−1))`（後ろの席ほど少し多い）
 - 兵士は道でつながった相手（となりの2人）にだけ送れる。ファイアボールなど城への魔法の届く相手は `rules.castleSpellRange`：`"neighbors"`（となりだけ）か `"any"`（誰にでも）。**仮：`"any"`**（シミュレーションで、勝利条件が「最初に落とした人」のとき、4人・8人とも「誰にでも」の方が席ごとの勝率の差が小さく、考える人が勝ちやすく、試合も短かった。「最後の1人」ではほとんど差がない）。サンダー・毒の霧・氷の息は、この設定にかかわらず誰の兵士にでも使える。2人ならどちらも同じ
+
+### 真ん中の広場を通る道（`rules.roadLayout: "plaza"`。人間に確認して決めた）
+3人以上のときは、輪（となりどうし）ではなく、真ん中の広場を通ってだれの城へも行ける形にする（`data/rules.json` は `"plaza"`。`"ring"` にすると今までの輪の道）。**2人のときは広場にしない**（今までどおり道が `laneCount` 本）。
+
+```
+     城A     城B
+       ＼   ／
+        広場（魔物）
+       ／   ＼
+     城D     城C
+```
+
+- **道は1本**（`laneCount` は使わず1本。レーンがあると画面がごちゃごちゃになるため）。兵士は「自分の城の前（マス0）→ 広場（真ん中のマス）→ 狙った城の前 → 城」と進む。道3マスなら2人のときと同じ歩数
+- 兵士はまだ負けていない相手ならだれにでも送れる（対象 `{ playerId }`）
+- **戦う相手**：**自分の方に向かってくる兵士**（相手が自分の城を狙っている）と、**自分が狙っている人の兵士**とだけ戦う。それ以外の人の兵士とは、同じマスにいても戦わずにすれちがう（例：p1→p2 と p3→p2 は戦わない。p1→p2 と p4→p1 は戦う。p1→p2 と p2→p3 は戦う）。「同じマスか1つ先のマス」で確かめるのは今までと同じで、場所は広場と各城の道で比べる。何体かいるときは、先に出された兵士と戦う
+- **魔物**：広場に1体だけ（`roadId` は `"plaza"`、`square` は真ん中のマス）。どの城の兵士も、広場の手前で止まって戦う。だれでもファイアボールで狙える。倒したあとの `monsterCooldownRounds` は広場全体にかかる
+  - **HP は人数に比例**：出た時点で残っている人数 ÷ 2 倍（四捨五入。2人のときの HP が基準。8人なら4倍）
+  - **城への攻撃も人数に合わせる**：攻めるときは、残っている人数の半分（切り上げ）の城をランダムに選んで攻める（2人のときの「2人に1人」と同じ割合。8人なら4つの城）。ダメージは今までと同じで、同じ回に攻める城には同じダメージ
+- **通り道**：`getState().roads` には、まだ負けていない2人ずつの組すべての「通り道」が入る（`roadId` は今と同じ `"p1-p3"` の形。広場で重なっている）。兵士の `roadId` は自分と狙った人の通り道。抜けた人がいると、その人への通り道は消える（`roadClosed`。そこを進んでいた兵士も消える）。新しい道はできない（`roadOpened` は出ない）
+- 理由：だれの城へも同じ条件で行けるので、席の場所で有利・不利が出にくい。関係ない兵士とは戦わないので、狙われた人が守る形になり、乱戦がわかりやすい
+
+#### ロジックとUIの約束に足すもの（広場）
+- `getState().layout`：`"plaza"`（広場）か `"lanes"`（今までの道）
+- 兵士の `place`：広場のときだけ、今いる場所。`{ at: "spoke", playerId, square }`（`playerId` の城から広場への道の上。`square` はその城から数えたマス）か `{ at: "plaza" }`。となりの道のときは `null`。画面は兵士をこれで置く
+- 魔物の `roadId` が `"plaza"` なら広場にいる
+- 確かめたこと（`node tests/sim/multi.js --games 200`）：全試合が決着。最初に落とした人の勝ち：4人は平均45手番、8人は36手番（輪の道は43・43）。バトルロイヤル：4人119手番（周回の上限で終わる21%）、8人206手番（上限で終わる30%）で、**とても長い**。8人のバトルロイヤルで smart 1人が random 7人に勝つ割合は33%（人数ぶんの1＝13%よりは高い）。長さは遊んで確かめる（短くするなら城HP・`maxRounds` を調整する）
+
+### チーム戦（`setup.teams`。人間に確認して決めた）
+- **チーム**：`new Game({ ..., setup: { teams: ["t1", "t2", "t1", "t2"] } })`（席ごとのチームID。`"t1"`〜`"t4"`）。**2〜4チーム、1チーム7人まで**（8人なら1対7もできる）。省略するとチーム戦ではない（今までどおり）
+- **城はチームで1つ**。城の持ち主は、チームでいちばん前の席の人（**代表**）。盤面（道・広場・兵士を送る先・城への魔法の対象）は代表で考える。城が2つ（2チーム）なら2人のときと同じ道（`laneCount` 本）、3つ以上なら広場（`roadLayout: "plaza"` のとき）
+- **城HP** ＝ 代表の城HP ＋ `rules.teamCastleHpShare`（仮：0.25）× ほかのメンバーの城HPの合計。城HPは、その人の `castleMaxHp` ＋ 自分の城の種類の `hpBonus`（席ごとの城ボーナスは使わない）。城の種類のほかの効果（城への魔法・兵士の攻撃・手札の上限）は、メンバーごとに自分が選んだ城のもの
+- **城壁も共有**（城に置く）。代表の城に攻撃が来たときの防御（`defenseRequested`）を聞かれるのは代表（ほかのメンバーの手札では防御できない。仮）
+- **手番**：`rules.teamTurns`。`"rotate"`（仮・決めた）：チームを順に回し、1回の手番はメンバー1人（2チームなら A1 → B1 → A2 → B2 …。チームの中は順番）。`"all"`：チームの手番でメンバー全員が順に動く。周回は、最初のチームの手番が来るたびに1増える
+- **手札・兵士・コイン・精霊は1人ずつ別**。味方には兵士を送れず、城への魔法も撃てない。**味方の兵士とは戦わない**。相手チームのメンバーの兵士とは、1人のときと同じ決まりで戦う（広場なら「自分の陣地に向かってくる・自分が狙っている陣地の兵士」）
+- **勝ち方**：城を落とされたチームはメンバー全員が抜ける（`playerEliminated` が1人ずつ）。`firstDestroy` は最初に城を落としたチーム、`lastStanding` は最後まで城が残ったチームの勝ち。`gameOver` に `winnerTeam` が付く（チーム戦のときだけ）
+- **城の見た目**（画面）：チームの人数（`teams[t].size`）が多いほど城を豪華にする（UI担当）
+- 確かめたこと（`node tests/sim/teams.js --games 200`、全員 smart）：
+
+| 分け方 | 勝ち方 | 平均手番 | 周回の上限で決着 | チームの勝率 |
+|---|---|---|---|---|
+| 2対2 | 最初に落とした | 86 | 27% | 49%・51% |
+| 4対4 | 最初に落とした | 107 | 60% | 48%・53% |
+| 3対5 | 最初に落とした | 107 | 56% | 51%・49% |
+| 1対7 | 最初に落とした | 95 | 45% | 62%（1人側）・38% |
+| 2人×4チーム | 最初に落とした | 66 | 0% | 23〜27% |
+| 2人×4チーム | 最後の1チーム | 159 | 56% | 22〜28% |
+
+  - 決め方：案どおり「城HP＝人数ぶん（`teamCastleHpShare: 1`）」だと、1周で動ける回数は1人のときと同じなのに城HPだけ増えるので、4対4の98%が周回の上限で決着した。`"all"`（全員が動く）は同じ人数なら公平だが、1対7・3対5は人数が多い方が100%勝つ。0.25 は人数が違っても勝率が近く、長さもほどほど
+  - **周回の上限で決着する試合がまだ多い**（2チームで3〜6割）。遊んで長ければ、チーム戦の城HP・`maxRounds` を調整する
+
+#### ロジックとUIの約束に足すもの（チーム戦）
+- `getState().teams`：`{ t1: { members: ["p1", "p3"], castleOwner: "p1", size: 2 }, … }`（チームの順）。チーム戦でなければ `null`
+- `getState().winnerTeam`：勝ったチーム（チーム戦でなければ `null`）
+- `players.pX.team`（チームID か `null`）・`players.pX.castleOwner`（城の持ち主。チーム戦でなければ本人）。チームのメンバーは同じ `castleHp` / `castleMaxHp` / `armor` を持つ
+- 城のイベント（`castleDamaged` / `castleHealed` / `castleArmored` / `armorExpired`）の `playerId` は、代表とは限らない（回復した人・城壁を置いた人のこともある）。画面は `players[playerId].castleOwner` の城に出す
+- 兵士の `targetId` は相手の城の持ち主（代表）。広場の `place` の `playerId` も城の持ち主
 
 ### 勝利条件（`rules.winCondition`）
 | 値 | 勝ち方 | 城が落ちた人 |
@@ -851,6 +930,33 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 突撃：隕石を外し、騎士3→2・歩兵6→7
 - 結果：バランス51%・突撃54%・籠城49%（平均手番44〜49）。突撃はまだ目安（49〜52%）よりやや高い。**遊んで確かめる**
 
+## 兵士を4系統×5レアリティにした（人間に確認して決めた）
+
+兵士は **普通の兵士・騎兵・弓兵・魔法使い** の4系統で、それぞれコモン〜レジェンドの5段階（合計20体）。合成は同じ系統の1つ上へ。今までの兵士6種は組み込んだ（歩兵・槍兵・重装兵・巨人・勇者は普通の兵士、騎士は騎兵）。**数値はすべて仮。**
+
+| 系統 | コモン | アンコモン | レア | エピック | レジェンド | 特徴 |
+|---|---|---|---|---|---|---|
+| 普通の兵士 | 歩兵 5/5/2 | 槍兵 4/7/2 | 重装兵 11/6/2 | 巨人 13/9/2 | 勇者 16/12/3 | 進んで城を攻める。基準 |
+| 騎兵 | 斥候騎兵 3/4/4 | 騎兵 4/5/4 | 騎士 5/7/5 | 聖騎士 8/8/5 | 竜騎士 10/10/5 | 速い（1〜2ターンで城）。打たれ弱く、攻撃は少し低い |
+| 弓兵 | 見習い弓兵 3/3 | 弓兵 4/5 | 長弓兵 5/7 | 狙撃手 6/9 | 天弓の射手 8/12 | 動かずに撃つ（下） |
+| 魔法使い | 見習い魔法使い 3/2 | 魔法使い 3/4 | 魔導士 4/6 | 大魔導士 5/8 | 賢者 7/11 | 動かずに撃つ。撃つ相手がいなければ城を撃つ（下） |
+
+（HP/攻撃/速さ。弓兵・魔法使いは HP/攻撃）
+
+- **道を5マスにした**（`rules.laneLength: 5`。人間の指示）：3マスだと速さ3で1ターンで城に着き、騎兵の「速い」が出せなかったため。真ん中（魔物・広場）はマス2。普通の兵士は速さ2（勇者は3）で、城まで2〜3ターン
+- **城HPを70 → 60にした**：道が長くなって試合が延びた（smart 同士 平均71手番・周回の上限で決着17%）ので、前の指示「60手番くらい」に合わせた（60で平均59手番・上限8%。55は54手番、65は67手番）
+- **弓兵・魔法使い**（`role: "archer"` / `"mage"`、`range`（撃てる距離）、`stay`（残るターン数）。`speed` は書かない）
+  - 出したマス（自分の城の前）から**動かない**。出した次の自分のターンから、進軍のときに撃つ
+  - 自分のマスから `range`（2）マス先までの、**戦う相手の兵士**（ほかの兵士がぶつかって戦う相手と同じ決まり）のうち、いちばん近い1体（同じなら先に出された方）を撃つ。**反撃は受けない**。ダメージは攻撃力（属性も効く。盾が先に受ける）
+  - 相手の兵士がいなければ、射程の中の**魔物**を撃つ（とどめを刺せばごほうび）
+  - **魔法使いだけ**は、兵士も魔物もいなければ、**狙った相手の城**に攻撃力ぶんのダメージ（城壁は受ける。防御は聞かない）
+  - **2ターンで帰る**（自分のターンごとに1減る。撃つ相手がいない・凍っているときも減る）。帰るときは `soldierDestroyed`（`"returned"`）
+  - **守りにも使える**：道の上にいるので、向かってくる兵士はふつうにぶつかって戦う（そのときは同時に攻撃し合う）
+- `getState()` の兵士に `role`（`"melee"` / `"archer"` / `"mage"`）・`range`・`turnsLeft`（弓兵・魔法使いの残りターン。ほかは `null`）を足した
+- 排出の重み（`weight`）：コモン1・アンコモン0.75・レア以上0.5（兵士の割合が少し増えた）
+- 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均59手番・p1 勝率51%・周回の上限で決着8%。CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 41%・defensive 18%・smart 97%）。3人以上（`multi.js`）・チーム戦（`teams.js`）もほぼ前と同じ
+- 画面（UI担当）：新しい兵士14体のカードの絵と盤面の絵、`soldierShot` の演出（矢・魔法弾）、5マスの道、弓兵・魔法使いの残りターンの表示
+
 ## カードのレアリティと合成（人間に確認して決めた）
 
 レアリティは コモン（`common`）・アンコモン（`uncommon`）・レア（`rare`）・エピック（`epic`）・レジェンド（`legendary`）の5段階（`data/rarities.json`。キーの並びが低い順）。**数値はすべて仮。**
@@ -954,7 +1060,7 @@ STEP 2 以降で作り直しにならないよう、Game をどう広げるか�
 
 ここは**案**。STEP 5 で実際に遊んでから決める。決まるまで、ここに書いたことを前提にした実装を他のSTEPに入れない。
 
-#### 道：真ん中に広場を置く
+#### 道：真ん中に広場を置く（済：STEP 5 の「真ん中の広場を通る道」。下は最初の案）
 輪（となりどうし）ではなく、真ん中に広場を置く形にする。
 
 ```
@@ -974,7 +1080,7 @@ STEP 2 以降で作り直しにならないよう、Game をどう広げるか�
 - 2人なら「城A ─ 広場 ─ 城B」で、今の1本道とまったく同じ（広場 ＝ 真ん中のマス）
 - 広場での乱戦の決まり（誰と誰が戦うか）や、集中攻撃への対策は、STEP 5 で遊びながら決める
 
-#### チーム戦：チームで1つの城を共有し、城HPを増やす
+#### チーム戦：チームで1つの城を共有し、城HPを増やす（済：STEP 5 の「チーム戦」。下は最初の案。城HPと手番は変えた）
 - チームの城は1つ。広場から見た城の数はチーム数になる（2対2なら城2つで、2人戦と同じ形の盤面）
 - 勝ち方は「相手チームの城を落とした方の勝ち」
 - 城HPは、まず「1人ぶんのHP × チームの人数」から試す

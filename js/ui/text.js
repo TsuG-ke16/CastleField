@@ -74,7 +74,9 @@ export function cardDescription(def, rules, opts = {}) {
   if (def.description) return def.description;
   let text = '';
   if (def.kind === 'soldier') {
-    text = `HP${def.hp}・攻撃${def.attack}・1ターンに${def.speed}マス進む`;
+    text = def.role === 'archer' || def.role === 'mage'
+      ? `HP${def.hp}・攻撃${def.attack}・動かず射程${def.range}マスの兵士・魔物を撃つ。${def.stay}ターンで帰還${def.role === 'mage' ? '。相手がいなければ城を撃つ' : ''}`
+      : `HP${def.hp}・攻撃${def.attack}・1ターンに${def.speed}マス進む`;
   } else if (def.kind === 'weapon') {
     const el = def.element ? elementName(def.element) : '';
     const weak = def.element ? elementName(ELEMENT_BEATS[def.element]) : '';
@@ -106,7 +108,11 @@ export function cardDescription(def, rules, opts = {}) {
  */
 export function cardShort(def) {
   if (!def) return [];
-  if (def.kind === 'soldier') return [{ icon: 'sword', text: def.attack }, { icon: 'heart', text: def.hp }, { icon: 'boot', text: def.speed }];
+  if (def.kind === 'soldier') {
+    // 弓兵・魔法使い（role）は動かないので、速さの代わりに射程を出す
+    const third = def.role && def.role !== 'melee' ? { icon: 'target', text: `射${def.range}` } : { icon: 'boot', text: def.speed };
+    return [{ icon: 'sword', text: def.attack }, { icon: 'heart', text: def.hp }, third];
+  }
   if (def.kind === 'weapon') {
     const list = [{ icon: 'sword', text: `+${def.attackBonus}` }];
     if (ELEMENT_LOOK[def.element]) list.push({ icon: ELEMENT_LOOK[def.element].iconName, text: ELEMENT_LOOK[def.element].name });
@@ -149,6 +155,7 @@ export function soldierInfo(s, { cards, rules, viewerId }) {
   const owner = s.playerId === viewerId ? 'あなた' : playerName(s.playerId);
   const parts = [`${def.name ?? s.type}（${owner}）`, `HP${Math.max(0, s.hp)}`, `攻撃${s.attack}`,
     `位置${Math.min(s.position, rules.laneLength)}/${rules.laneLength}`];
+  if (s.turnsLeft != null) parts.push(`射程${s.range ?? def.range}・あと${s.turnsLeft}回で帰還`);
   if (s.weapon) {
     const el = s.element ? `・${elementName(s.element)}属性` : '';
     parts.push(`${cards[s.weapon]?.name ?? s.weapon}${el}`);

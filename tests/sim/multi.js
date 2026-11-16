@@ -1,6 +1,6 @@
 // 人数を変えたときのシミュレーション（STEP 5）。
 //   node tests/sim/multi.js [--games 300]
-// 2人・4人・8人で、勝利条件と「城への魔法の届く相手」を変えて比べる。
+// 2人・4人・8人で、道の形（広場／輪）と勝利条件を変えて比べる。
 // - all smart：全員が smart。席ごとの勝率の幅（先の席が有利か）
 // - 1 smart：席1だけ smart、ほかは random。smart の勝率（考える人が勝てるか。人数ぶんの1より大きければよい）
 import { buildData, loadOptionalData } from '../helpers.js';
@@ -12,10 +12,10 @@ const gameOptions = loadOptionalData();
 const pct = (x) => `${Math.round(x * 100)}%`;
 
 const VARIANTS = [
-  { label: '最初に落とした人・誰にでも（data/ の値）', rules: { winCondition: 'firstDestroy', castleSpellRange: 'any' } },
-  { label: '最初に落とした人・となりだけ', rules: { winCondition: 'firstDestroy', castleSpellRange: 'neighbors' } },
-  { label: '最後の1人・となりだけ', rules: { winCondition: 'lastStanding', castleSpellRange: 'neighbors' } },
-  { label: '最後の1人・誰にでも', rules: { winCondition: 'lastStanding', castleSpellRange: 'any' } },
+  { label: '広場・最初に落とした人（data/ の値）', rules: { roadLayout: 'plaza', winCondition: 'firstDestroy', castleSpellRange: 'any' } },
+  { label: '広場・最後の1人', rules: { roadLayout: 'plaza', winCondition: 'lastStanding', castleSpellRange: 'any' } },
+  { label: '輪・最初に落とした人・誰にでも', rules: { roadLayout: 'ring', winCondition: 'firstDestroy', castleSpellRange: 'any' } },
+  { label: '輪・最後の1人・誰にでも', rules: { roadLayout: 'ring', winCondition: 'lastStanding', castleSpellRange: 'any' } },
 ];
 
 console.log(`各 ${games} 試合・シード 1。手番は通算ターン数、周回は全員が1回ずつ手番を終えた数`);

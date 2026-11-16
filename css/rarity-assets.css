@@ -1,0 +1,138 @@
+/* Loaded LAST. Existing theme.css intentionally hides the old frame: undo that for PNG art. */
+.card.has-frame, .card.has-frame.spell, .card.has-frame.weapon, .card.has-frame.defense,
+.card.has-frame[data-rarity=legendary] {
+  background: transparent;
+  border: 0;
+  box-shadow: none; /* 四角い影が枠のまわりに白い箱のように見えるので消す（影は枠の絵にある） */
+}
+.card.has-frame .card-frame {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  z-index: 1;
+  pointer-events: none;
+}
+.card.has-frame .card-art, .card.has-frame.spell .card-art,
+.card.has-frame.weapon .card-art, .card.has-frame.defense .card-art {
+  position: absolute;
+  inset: 13% auto auto 12%;
+  width: 76%;
+  height: 50%;
+  border: 0;
+  border-radius: 2px;
+  overflow: hidden;
+  z-index: 0;
+}
+.card.has-frame .card-art .asset-art { width: 100%; height: 100%; display: block; }
+.card.has-frame .card-name, .card.has-frame .card-name.long {
+  position: absolute;
+  left: 8%; right: 8%; top: 68%; height: 14%;
+  display: flex; align-items: center; justify-content: center;
+  width: auto; margin: 0; max-width: none;
+  z-index: 2; padding: 0;
+  line-height: 1.1; font-size: 11px;
+  font-weight: 900; letter-spacing: -.03em; color: #533823;
+  text-align: center; -webkit-text-stroke: 0;
+  white-space: nowrap;
+}
+.card.has-frame .card-name.long { font-size: 9px; letter-spacing: -.05em; }
+.card.has-frame .card-kind, .card.has-frame .card-rarity {
+  position: absolute; top: 3%; width: 18%; height: 14%;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 3; padding: 0; margin: 0; border: 0; border-radius: 50%;
+  background: transparent; box-shadow: none;
+  font-size: 13px; color: #5c4531; line-height: 1;
+}
+.card.has-frame .card-kind { left: 5%; }
+.card.has-frame .card-rarity { right: 5%; left: auto; color: var(--rarity, #9aa3ad); text-shadow: 1px 1px #462a20; }
+.card.has-frame .card-kind .ic { width: 70%; height: 70%; }
+.card.has-frame .card-short {
+  position: absolute; z-index: 2; bottom: 1%;
+  left: 7%; right: 7%; width: auto; padding: 0; margin: 0;
+  font-size: 9px; color: #5c4531; line-height: 1.1;
+}
+.card.has-frame .card-exhaust { z-index: 3; }
+
+/* Reusable card preview keeps all card layouts and rarity treatment consistent. */
+.mini-card {
+  position: relative; display: block; isolation: isolate;
+  flex: none; width: 100%; aspect-ratio: 2 / 3; height: auto;
+  overflow: visible; padding: 0; border: 0;
+  background: transparent; box-shadow: none;
+}
+.mini-card-frame { position: absolute; z-index: 2; inset: 0; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+.mini-card-image { position: absolute; z-index: 1; left: 12%; top: 13%; width: 76%; height: 50%; overflow: hidden; }
+.mini-card-image .asset-art { display: block; width: 100%; height: 100%; }
+.mini-card-name { position: absolute; z-index: 3; left: 8%; right: 8%; top: 68%; height: 14%; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: clamp(7px, 1.2vw, 11px); line-height: 1.1; color: #513820; white-space: nowrap; }
+.mini-card-kind, .mini-card-rarity { position: absolute; z-index: 4; top: 3%; width: 18%; height: 14%; display: grid; place-items: center; background: transparent; border: 0; }
+.mini-card-kind { left: 5%; } .mini-card-rarity { right: 5%; color: var(--rarity); font-size: 13px; text-shadow: 1px 1px #452c21; }
+.mini-card-kind .ic { width: 65%; height: 65%; }
+.guide-art.mini-card { width: min(100%, 105px); height: auto; margin: auto; }
+.guide-detail-art.mini-card { width: min(34vw, 140px); height: auto; }
+.fusion-art.mini-card { width: 56px; height: auto; }
+.effect-card.mini-card { display: block; width: 145px; height: 218px; padding: 0; border: 0; border-radius: 0; background: transparent; overflow: visible; box-shadow: 0 0 22px var(--rarity, #d4b76f); }
+.fx-fusion-stage .effect-card.mini-card { left: -72px; top: -109px; }
+@media (max-height: 650px) {
+  .effect-card.mini-card { width: 120px; height: 180px; }
+  .fx-fusion-stage .effect-card.mini-card { left: -60px; top: -90px; }
+}
+@media (max-width: 420px) {
+  .card.has-frame .card-name, .card.has-frame .card-name.long { font-size: 10px; }
+  .card.has-frame .card-name.long { font-size: 8px; }
+  .card.has-frame .card-short { font-size: 8px; }
+  .card.has-frame .card-kind, .card.has-frame .card-rarity { font-size: 11px; }
+  .guide-detail-art.mini-card { width: min(32vw, 125px); }
+}
+
+/* New PNG buttons. Visual drawing is in the generated images, not in SVG/Canvas/CSS. */
+.plank-btn:not(.mode-choice), .plank-btn.alt:not(.mode-choice), .plank-btn.alt2:not(.mode-choice),
+.small-btn:not(#title-help), .small-btn.danger, .round-btn {
+  background-color: transparent;
+  background-position: center;
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  border: 0;
+  box-shadow: none;
+  text-shadow: none;
+  color: #4c3623;
+}
+.plank-btn:not(.mode-choice) { background-image: url('../assets/ui/btn-orange.png'); }
+.plank-btn.alt:not(.mode-choice) { background-image: url('../assets/ui/btn-blue.png'); }
+.plank-btn.alt2:not(.mode-choice) { background-image: url('../assets/ui/btn-green.png'); }
+#end-turn { background: url('../assets/ui/button-end-turn.png') center / 100% 100% no-repeat; color: #513719; padding: 8px 12px 8px 40px; white-space: nowrap; } /* 左の旗に文字がかぶらないように */
+.small-btn:not(#title-help) { background-image: url('../assets/ui/btn-cream.png'); }
+.small-btn.danger { background-image: url('../assets/ui/btn-red.png'); color: #6e271f; }
+.round-btn { background-image: url('../assets/ui/btn-round.png'); background-size: contain; border-radius: 50%; }
+.plank-btn:not(:disabled):active, .small-btn:not(:disabled):active, .round-btn:not(:disabled):active {
+  transform: translateY(2px);
+  filter: brightness(.88);
+}
+
+/* ---- 枠ごとに、絵の窓・左右の丸・名前の帯の位置を合わせる（枠の絵ごとに少しずつ違うため） ---- */
+.card.has-frame, .mini-card { --win-l: 16%; --win-t: 17%; --win-w: 71%; --win-h: 46%; --med-y: 14%; --med-l: 19%; --med-r: 84%; --name-y: 74%; }
+.card.has-frame[data-rarity=uncommon], .mini-card[data-rarity=uncommon] { --win-l: 13%; --win-t: 20%; --win-w: 72%; --win-h: 45%; --med-y: 16%; --med-l: 16%; --med-r: 83%; --name-y: 75%; }
+.card.has-frame[data-rarity=rare], .mini-card[data-rarity=rare] { --win-l: 15%; --win-t: 21%; --win-w: 72%; --win-h: 44%; --med-y: 18%; --med-l: 17%; --med-r: 84%; --name-y: 76%; }
+.card.has-frame[data-rarity=epic], .mini-card[data-rarity=epic] { --win-l: 14%; --win-t: 24%; --win-w: 72%; --win-h: 42%; --med-y: 21%; --med-l: 15%; --med-r: 84%; --name-y: 75%; }
+.card.has-frame[data-rarity=legendary], .mini-card[data-rarity=legendary] { --win-l: 16%; --win-t: 26%; --win-w: 67%; --win-h: 40%; --med-y: 23%; --med-l: 17%; --med-r: 82%; --name-y: 76%; }
+.card.has-frame .card-art, .card.has-frame.spell .card-art, .card.has-frame.weapon .card-art, .card.has-frame.defense .card-art, .mini-card-image {
+  left: calc(var(--win-l) - 1%); top: calc(var(--win-t) - 1%); width: calc(var(--win-w) + 2%); height: calc(var(--win-h) + 2%); inset: auto;
+  left: calc(var(--win-l) - 1%); top: calc(var(--win-t) - 1%);
+  background: #fff4dc;
+}
+.card.has-frame .card-kind, .card.has-frame .card-rarity, .mini-card-kind, .mini-card-rarity {
+  top: calc(var(--med-y) - 6%); width: 16%; height: 12%;
+}
+.card.has-frame .card-kind, .mini-card-kind { left: calc(var(--med-l) - 8%); }
+.card.has-frame .card-rarity, .mini-card-rarity { right: auto; left: calc(var(--med-r) - 8%); }
+.card.has-frame .card-name, .card.has-frame .card-name.long, .mini-card-name { top: calc(var(--name-y) - 6%); height: 12%; left: 14%; right: 14%; }
+/* 数値（攻撃・HPなど）は、枠の下の飾りに埋もれないよう、小さな札にのせる */
+.card.has-frame .card-short { bottom: 1%; left: 16%; right: 16%; padding: 1px 2px; border-radius: 7px; background: #fff7e4ee; box-shadow: 0 1px 2px #4a2e1a44; justify-content: center; }
+/* 出せないカードも、レアリティの色が分かる程度に暗くする（真っ灰色にしない） */
+.card.has-frame.dim { filter: saturate(.45) brightness(.8); }
+/* ターン終了：左の旗と右の月桂樹にかからないよう、幅をとって文字を真ん中寄りに */
+#end-turn { min-width: 140px; padding: 8px 18px 8px 48px; font-size: 13px; }
+/* 背景の道（3マス）を消した草原にする。道は #road のレーンだけで描く（5マスと合わないため） */
+#scenery { background-image: url('../assets/bg/board-meadow.png'); }

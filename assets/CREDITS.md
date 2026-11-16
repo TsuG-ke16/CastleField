@@ -165,3 +165,78 @@ ChatGPT（OpenAI の画像生成）で、`assets/STYLE.md` の共通指示文と
 | `units/hero-blue.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
 | `units/hero-orange.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
 | `fx/lucky-reward.png` | OpenAI画像生成（既存見本参照） | 前記OpenAI規約・AI生成 | 2026-11-16 |
+
+## 兵士4系統の追加素材（2026-11-16、PR #53で画像生成AIに差し替え）
+
+- 道具：**OpenAI画像生成（見本を参照）**。全生成で `assets/style-reference.png` を添付し、`STYLE.md` の共通指示文を先頭に付けた。既存の `card-knight.png`・`card-infantry.png`・`knight-blue.png`・`knight-orange.png` も参照し、顔・線の太さ・塗り・描き込みを統一した。
+- 手順：カード／青の盤面／オレンジの盤面を3列、兵士2種を2行にしたアトラスをOpenAI画像生成ツールで作成。斥候騎兵・騎兵のアトラスの背景除去も同ツールで行った。生成後の処理は個別PNGへの切り出し・リサイズ・パレット圧縮だけ。キャラクターの図形描画・プログラムによる着色や色替えは行っていない。
+- コード描画による旧PNG42枚をすべて差し替え、新兵士用の `lineBody` とSVG生成処理も削除した。既存の騎士の絵は変更していない。
+- 形式：カード512×512、盤面256×256、背景透明PNG、全42枚300KB以下。魔法使いも大きな帽子・ローブ・マントで青（SKY BLUE）／オレンジ（SUNSET ORANGE）を区別。
+- 利用条件：上記「本番用PNG（2026-11-16）」と同じ。OpenAI規約・AI生成、独自ライセンスの追加なし。
+- 原本：作業環境の `/workspace/generated_images/` に保持。各PNGの生成原本名は `asset-manifest.json` に記録。
+- 比較画像：`assets/review/soldier-style-comparison.png`。既存の歩兵・騎士と、新しいカード／盤面の青・オレンジをレアリティ順に配置した確認用画像。キャラクター部分はすべて実際のPNGを使用。
+
+| ファイル | 作った道具 | 利用条件 | 作った日 |
+|---|---|---|---|
+| `cards/card-scout.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/scout-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/scout-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-cavalry.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/cavalry-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/cavalry-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-paladin.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/paladin-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/paladin-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-dragon-knight.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/dragon-knight-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/dragon-knight-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-apprentice-archer.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/apprentice-archer-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/apprentice-archer-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-archer.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/archer-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/archer-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-longbowman.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/longbowman-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/longbowman-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-sniper.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/sniper-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/sniper-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-sky-archer.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/sky-archer-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/sky-archer-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-apprentice-mage.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/apprentice-mage-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/apprentice-mage-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-mage.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/mage-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/mage-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-sorcerer.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/sorcerer-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/sorcerer-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-archmage.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/archmage-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/archmage-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `cards/card-sage.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/sage-blue.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+| `units/sage-orange.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
+
+## レアリティ枠・ボタン（2026-11-16）
+
+OpenAIの画像生成ツールで生成したオリジナル素材シートから切り出し、既存PNGの寸法に合わせてリサイズ。`STYLE.md` の画風を参考に制作。元画像は引き渡しパッケージの `source/openai-rarity-ui-atlas.png`。
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `cards/frame-common.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `cards/frame-epic.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `cards/frame-legendary.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `cards/frame-rare.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `cards/frame-uncommon.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-blue.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-cream.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-green.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-orange.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-red.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/btn-round.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `ui/button-end-turn.png` | OpenAI画像生成・PNG切り出し | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
+| `bg/board-meadow.png` | `bg/board.png`（OpenAI画像生成）の3本の道を、同じ絵の草の部分で塗りつぶして作成 | 既存の本番用PNGと同じOpenAI生成物の注意事項 | 2026-11-16 |
