@@ -177,6 +177,42 @@ test('魔物のごほうび：rewardRarity の魔物を倒すと、そのレア�
   assert.equal(log.filter((e) => e.event === 'coinsChanged').length, 0);
 });
 
+test('放置：魔物が城を攻めるたびに、ダメージが monsterAttackGrowth ずつ重くなる', () => {
+  const monsters = { rock: { name: 'いわ', hp: 99, attack: 1, rewardRarity: 'common', castleAttack: 2, attackEvery: 1, weight: 1 } };
+  const { cards, rules } = buildData({ rules: { monsterFirstRound: 1, monsterSpawnChance: 1, monsterAttackGrowth: 3, drawUntilHand: 0 } });
+  const g = new Game({ cards, rules, rng: seededRng(2), monsters });
+  const log = recordEvents(g, ['monsterAttackedCastle']);
+  g.start();
+  for (let i = 0; i < 8; i++) g.endTurn();
+  assert.deepEqual(log.slice(0, 3).map((e) => e.amount), [2, 5, 8]);
+});
+
+test('ラッキー：rewardLuckyChance が1なら必ず1つ上のレアリティ、0なら出ない', () => {
+  const monsters = { bat: { name: 'コウモリ', hp: 1, attack: 1, rewardRarity: 'common', castleAttack: 1, attackEvery: 2, weight: 1 } };
+  const cardsJson = loadJson('cards.json');
+  for (const [chance, rarity, lucky] of [[1, 'uncommon', true], [0, 'common', false]]) {
+    const g = make({ monsters });
+    g.rules.rewardLuckyChance = chance;
+    g.start();
+    const log = recordEvents(g, ['monsterDefeated']);
+    const fake = { monsterId: 'mX', isDead: true, roadId: g.roads[0].roadId, def: monsters.bat };
+    g.monsters.push(fake);
+    g.defeatMonsterIfDead(fake, 'p1');
+    assert.equal(log[0].lucky, lucky);
+    assert.equal(log[0].rewardRarity, rarity);
+    assert.equal(cardsJson[g.players.p1.hand.at(-1).type].rarity, rarity);
+  }
+});
+
+test('getDropRates：カードごとの合計が100%、魔物のごほうびの内訳が出る', () => {
+  const g = make({ monsters: loadJson('monsters.json') });
+  g.rules.rewardLuckyChance = 0.2;
+  const info = g.getDropRates();
+  assert.ok(Math.abs(Object.values(info.cards).reduce((n, c) => n + c.rate, 0) - 100) < 1e-9);
+  assert.deepEqual(info.monsters.bat.odds.map((o) => [o.rarity, Math.round(o.rate)]), [['common', 80], ['uncommon', 20]]);
+  assert.equal(info.monsters.demonKing.odds.length, 1); // レジェンドの上はない
+});
+
 test('訓練・鍛錬：買うと、いる兵士にも、これから出す兵士にも、攻撃力・HPがずっと増える', () => {
   const upgrades = loadJson('upgrades.json');
   const g = make({ upgrades });

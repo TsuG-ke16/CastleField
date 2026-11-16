@@ -20,7 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity } from './Setup.js';
+import { Pile, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -111,6 +111,8 @@ const OPTIONAL_RULES = {
   // 試合の最初に持っているコインと、自分のターンの始めにもらえるコイン
   initialCoins: 0,
   coinPerTurn: 0,
+  // 放置された魔物が城を攻めるたびに、ダメージが増える量（1回目は castleAttack、2回目は +growth、…）
+  monsterAttackGrowth: 0,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -121,6 +123,7 @@ const CHOICE_RULES = {
 /** 0以上1以下の数（整数でなくてよい）の省略できる項目 */
 const OPTIONAL_RATE_RULES = {
   monsterSpawnChance: 0, // 周回の始めに、魔物がいない道ごとに魔物が出る確率
+  rewardLuckyChance: 0, // 魔物のごほうびが、1つ上のレアリティになる確率（ラッキー）
 };
 
 const ok = () => ({ ok: true });
@@ -270,7 +273,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -735,7 +738,9 @@ export class Game {
       const road = this.findRoad(m.roadId);
       const victim = this.players[road.players[Math.floor(this.rng() * 2)]];
       const before = victim.castle.hp;
-      victim.castle.takeDamage(m.def.castleAttack);
+      // 放置するほど攻撃が重くなる
+      victim.castle.takeDamage(m.nextCastleAttack);
+      m.attackCount += 1;
       this.emit('monsterAttackedCastle', {
         monsterId: m.monsterId, playerId: victim.id, amount: before - victim.castle.hp, hp: victim.castle.hp,
       });
@@ -763,6 +768,7 @@ export class Game {
       // 出る道はランダム（道が1本のときは乱数を使わない）
       const road = lanes.length === 1 ? lanes[0] : lanes[Math.floor(this.rng() * lanes.length)];
       const m = new Monster(monsterId, type, this.monsterDefs[type], road.roadId, this.middleSquare());
+      m.growth = this.rules.monsterAttackGrowth;
       this.monsters.push(m);
       this.emit('monsterAppeared', {
         monsterId, type, roadId: road.roadId, square: m.square, hp: m.hp, attack: m.attack, element: m.element,
@@ -780,8 +786,19 @@ export class Game {
     if (!monster.isDead) return;
     this.monsters = this.monsters.filter((m) => m !== monster);
     this.monsterCooldown.set(this.findRoad(monster.roadId).pairId, this.round + this.rules.monsterCooldownRounds + 1);
-    const { reward, rewardRarity } = monster.def;
-    this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward: reward ?? 0, rewardRarity: rewardRarity ?? null });
+    const { reward } = monster.def;
+    const baseRarity = monster.def.rewardRarity ?? null;
+    // ラッキー：rewardLuckyChance の確率で、1つ上のレアリティが出る（確率が0のときは乱数を使わない）
+    let rewardRarity = baseRarity;
+    let lucky = false;
+    if (baseRarity && this.rarityDefs && this.rules.rewardLuckyChance > 0) {
+      const next = nextRarityWithCards(this.cardDefs, this.rarityDefs, baseRarity);
+      if (next && this.rng() < this.rules.rewardLuckyChance) {
+        rewardRarity = next;
+        lucky = true;
+      }
+    }
+    this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward: reward ?? 0, rewardRarity, baseRarity, lucky });
     if (reward) this.changeCoins(this.players[playerId], reward, 'reward');
     // ごほうびのカード：そのレアリティのカードが1枚、手札に入る（カードがなければ何も起きない）
     if (rewardRarity) {
@@ -895,6 +912,23 @@ export class Game {
   }
 
   // ================= 合成 =================
+
+  /**
+   * 排出率の一覧（読むだけ。UI が「排出率を見る」画面に使う）
+   * @returns {{rarities: object[], cards: object, monsters: object}|null} rarities を渡していなければ null
+   */
+  getDropRates() {
+    if (!this.rarityDefs) return null;
+    const rates = dropRates(this.cardDefs, this.rarityDefs);
+    const rarities = Object.entries(this.rarityDefs).map(([id, r]) => ({ id, name: r.name, dropRate: r.dropRate }));
+    const cards = {};
+    for (const [type, def] of Object.entries(this.cardDefs)) cards[type] = { name: def.name, rarity: def.rarity, rate: rates[type] };
+    const monsters = {};
+    for (const [type, def] of Object.entries(this.monsterDefs || {})) {
+      if (def.rewardRarity) monsters[type] = { name: def.name, odds: rewardOdds(this.cardDefs, this.rarityDefs, def.rewardRarity, this.rules.rewardLuckyChance) };
+    }
+    return { rarities, cards, monsters };
+  }
 
   /** 手札の同じカード2枚を合成できるか（読むだけ） */
   canFuse(cardIdA, cardIdB) {

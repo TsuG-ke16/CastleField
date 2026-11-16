@@ -119,3 +119,24 @@ export function sampleTypeOfRarity(cards, rarity, rng) {
   }
   return entries[entries.length - 1][0];
 }
+
+/** base の1つ上のレアリティ（そのレアリティのカードがあるものだけ）。なければ null */
+export function nextRarityWithCards(cards, rarities, base) {
+  const order = Object.keys(rarities);
+  const next = order[order.indexOf(base) + 1];
+  if (next === undefined) return null;
+  return Object.values(cards).some((d) => d.rarity === next && (d.weight ?? 1) > 0) ? next : null;
+}
+
+/**
+ * 魔物のごほうびの内訳（%）。ラッキー（chance の確率）で1つ上のレアリティになる。
+ * @returns {{rarity: string, rate: number, lucky: boolean}[]}
+ */
+export function rewardOdds(cards, rarities, base, chance = 0) {
+  const next = chance > 0 ? nextRarityWithCards(cards, rarities, base) : null;
+  if (!next) return [{ rarity: base, rate: 100, lucky: false }];
+  return [
+    { rarity: base, rate: (1 - chance) * 100, lucky: false },
+    { rarity: next, rate: chance * 100, lucky: true },
+  ];
+}

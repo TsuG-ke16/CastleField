@@ -876,6 +876,13 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 確かめたこと（`node tests/sim/run.js --games 400`）：smart 同士は平均31手番・周回上限で終わる試合は0.7%（強化前は42手番）。**試合が短くなりすぎた**。先攻のとき random に勝つ割合：rush 53%・defensive 29%・smart 90%
 - 注意：**「終盤にかけて魔物が強くなる」仕様は、まだ実装していない**（今の魔物は周回で変わらない）。実装するなら、先に人間に確認する
 
+### 魔物は放置するとヤバい・倒すとドパが出る（人間の指示：重要視する）
+魔物の「放置の怖さ」と「倒したときのごほうびの嬉しさ」を、この遊びの大事な要素とする。カードや数値を変えるときも、この2つが弱まっていないかを確かめる。
+
+- **放置するほど攻撃が重くなる**：`rules.monsterAttackGrowth`（省略すると0。仮：1）。魔物が城を攻めるたびに、ダメージが `castleAttack` から +growth ずつ増える（例：スライム 2 → 3 → 4 …）。早く倒さないと城が削り殺される。`getState().monsters[].castleAttack` は「次に攻めるときのダメージ」（攻めるたびに増える）
+- **ごほうびがラッキーでブレる（ガチャ感）**：`rules.rewardLuckyChance`（0〜1、省略すると0。仮：0.15）。魔物のごほうびが、この確率で**1つ上のレアリティ**になる（レジェンドの上はないので、ブレない）。`monsterDefeated` は `rewardRarity`（実際に出たレアリティ）・`baseRarity`（本来のレアリティ）・`lucky`（ラッキーだったか）を持つ。UI はこれで派手に見せる（演出は UI 担当）。確率が0のときは乱数を使わない
+- **排出率が見える**：`game.getDropRates()`（読むだけ。`rarities` を渡していなければ `null`）が `{ rarities: [{ id, name, dropRate }], cards: { type: { name, rarity, rate } }, monsters: { type: { name, odds: [{ rarity, rate, lucky }] } } }` を返す。UI が「排出率を見る」画面を作れる。`dropRates()` / `rewardOdds()`（`js/game/Setup.js`）はブラウザからも読める。表で見るなら `node tests/sim/droprates.js`
+
 ### 新しい魔物を5種足した（人間の指示。仮）
 データだけで足した（ルール・イベントの変更なし）。ごほうびは `rewardRarity`。
 

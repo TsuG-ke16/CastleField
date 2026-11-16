@@ -20,6 +20,14 @@ export class Monster {
     this.element = def.element ?? null;
     /** 城を攻めるまでの残り周回 */
     this.attackIn = def.attackEvery;
+    /** 城を攻めた回数と、1回ごとに増えるダメージ（rules.monsterAttackGrowth。Game が入れる） */
+    this.attackCount = 0;
+    this.growth = 0;
+  }
+
+  /** 次に城を攻めるときのダメージ（放置するほど重くなる） */
+  get nextCastleAttack() {
+    return this.def.castleAttack + this.growth * this.attackCount;
   }
 
   takeDamage(amount) {
@@ -43,7 +51,7 @@ export class Monster {
       attackIn: this.attackIn,
       reward: this.def.reward ?? 0,
       rewardRarity: this.def.rewardRarity ?? null,
-      castleAttack: this.def.castleAttack,
+      castleAttack: this.nextCastleAttack,
     };
   }
 

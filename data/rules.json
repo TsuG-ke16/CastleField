@@ -25,5 +25,7 @@
   "deckSize": 100,
   "drawPerPlayed": true,
   "initialCoins": 5,
-  "coinPerTurn": 1
+  "coinPerTurn": 1,
+  "monsterAttackGrowth": 1,
+  "rewardLuckyChance": 0.15
 }
