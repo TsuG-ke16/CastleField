@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { Tutorial } from './ui/Tutorial.js';
 import { RoomView } from './ui/RoomView.js';
 import { CardGuide } from './ui/CardGuide.js';
 import { ProgressPanel } from './ui/ProgressPanel.js';
@@ -67,6 +68,8 @@ const el = {
   netLeave: $('net-leave'),
 };
 
+const tutorial = new Tutorial();
+let replayTutorial = false;
 let rarities = null;
 let progressPanel;
 let cardGuide;
@@ -305,6 +308,7 @@ function setupTitle() {
     el.titleStatus.textContent = '同じ合言葉を入れた人と対戦します';
     (el.titleName.value ? el.titlePass : el.titleName).focus({ preventScroll: true });
   });
+  $('help-tutorial').addEventListener('click', () => { el.help.hidden = true; replayTutorial = true; startLocal(undefined, 'normal'); });
   $('title-help').addEventListener('click', () => openHelp());
   $('title-back').addEventListener('click', () => {
     leaveOnline();
@@ -320,6 +324,7 @@ function setupTitle() {
 
 /** タイトルへ戻る（遊んでいた試合はやめる） */
 function showTitle() {
+  tutorial.close();
   gen += 1;
   cancelHandover?.();
   leaveOnline();
@@ -497,6 +502,13 @@ function startLocal(seedOverride, cpuLevel = null) {
     const cpuId = order.find((id) => id !== humanId);
     cpu = { id: cpuId, humanId, level: cpuLevel, strategy: STRATEGIES[CPU_LEVELS[cpuLevel].strategy], rng };
     setPlayerNames({ [cpuId]: `CPU（${CPU_LEVELS[cpuLevel].name}）` });
+  }
+  tutorial.close();
+  if (cpu && (replayTutorial || tutorial.pending())) {
+    const hand = game.getState(cpu.humanId).players[cpu.humanId].hand;
+    game.debugSetHand(cpu.humanId, ['infantry', ...hand.slice(1).map(c => c.type)]);
+    tutorial.start(cpu.humanId);
+    replayTutorial = false;
   }
   // Game が出すイベントは全部受け取る（演出がないものは Animations が何もしない）
   for (const type of EVENT_TYPES) {
@@ -845,6 +857,7 @@ async function drainEvents() {
       }
       if (queue.length) setMessage('タップで早送り');
       await anim.play(ev, queue, model, { viewerId, lookupCard });
+      tutorial.event(ev);
       if (ev.type === 'turnStarted' && !usesHandover()) {
         // オンライン・CPU 戦は交代の画面がないので、だれの番かを帯で知らせる
         const mine = ev.payload.playerId === viewerId;
