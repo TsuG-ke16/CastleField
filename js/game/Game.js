@@ -64,6 +64,9 @@ export const EVENT_TYPES = [
   'roadOpened',
   'defenseRequested',
   'defenseEnded',
+  'spellReflected',
+  'soldierDecoyed',
+  'cardStolen',
   'gameOver',
 ];
 
@@ -95,6 +98,8 @@ const OPTIONAL_RULES = {
   laneCount: 1,
   // 攻撃を受けた人が、その場で防御カードを出せる（城に着いた兵士・城に当たる魔法・兵士に当たる魔法）
   defenseReaction: false,
+  // 0 より大きいと、毎ターンのドローは「手札がこの枚数になるまで」（drawPerTurn は最低枚数）
+  drawUntilHand: 0,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -251,7 +256,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -498,7 +503,8 @@ export class Game {
     }
 
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
-    const drawCount = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
+    const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
+    const drawCount = Math.max(baseDraw, this.rules.drawUntilHand - player.hand.length);
     this.drawCards(player, drawCount);
 
     // 2. 進軍
@@ -598,7 +604,14 @@ export class Game {
       };
       // 城を攻められる人は、ここで防御カード（城壁など）を出せる。待つときは、返事が来てから続きを進める
       const waiting = this.requestDefense(
-        { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage },
+        {
+          kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage, from: 'soldier', soldierId: soldier.soldierId,
+          // 身代わり：ダメージを受けずに、兵士だけが消える
+          onNullify: () => {
+            player.removeSoldier(soldier.soldierId);
+            this.emit('soldierDestroyed', { playerId: player.id, soldierId: soldier.soldierId, reason: 'reachedCastle' });
+          },
+        },
         hit,
         () => {
           if (!this.checkGameOver()) this.advanceSoldiers(player, queue);
@@ -899,6 +912,26 @@ export class Game {
           reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
         };
       }
+      case 'redrawHand':
+        return {
+          targets: player.hand.some((c) => c.cardId !== card.cardId) ? [{ playerId: player.id }] : [],
+          reason: '引き直す手札がありません',
+        };
+      case 'randomEffect': {
+        const pile = this.pileOf(player.id);
+        return {
+          targets: pile.deck.length + pile.discard.length > 0 ? [{ playerId: player.id }] : [],
+          reason: '山札も捨て札もありません',
+        };
+      }
+      case 'stealCard':
+        return {
+          targets: this.opponentsOf(player.id).filter((p) => p.hand.length > 0).map((p) => ({ playerId: p.id })),
+          reason: '手札を持っている相手がいません',
+        };
+      case 'reflectSpell':
+      case 'nullifySoldier':
+        return { targets: [], reason: '攻撃を受けたときにだけ使えます' };
       case 'healOwnCastle':
         return { targets: player.castle.isFull ? [] : [{ playerId: player.id }], reason: '城のHPが満タンです' };
       case 'shieldSoldier':
@@ -1001,9 +1034,17 @@ export class Game {
     else this.pileOf(player.id).discard.push(card);
     this.emit('cardPlayed', { playerId: player.id, cardId: card.cardId, type: card.type });
 
+    this.applyCard(player, card, resolved.target);
+
+    this.checkGameOver();
+    return ok();
+  }
+
+  /** 出したカードの効果を起こす（神頼みでタダで出すときにも使う） */
+  applyCard(player, card, target) {
     if (card.isSoldier) {
-      const targetId = resolved.target.playerId;
-      const road = resolved.target.roadId ? this.findRoad(resolved.target.roadId) : this.roadBetween(player.id, targetId);
+      const targetId = target.playerId;
+      const road = target.roadId ? this.findRoad(target.roadId) : this.roadBetween(player.id, targetId);
       const soldierId = `s${String(this.nextSoldierNumber++).padStart(2, '0')}`;
       const soldier = new Soldier(soldierId, card, road.roadId, targetId);
       soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
@@ -1018,19 +1059,17 @@ export class Game {
         hp: soldier.hp,
         attack: soldier.attack,
       });
-    } else if (card.isSpell && resolved.target.monsterId) {
-      const monster = this.findMonster(resolved.target.monsterId);
+    } else if (card.isSpell && target.monsterId) {
+      const monster = this.findMonster(target.monsterId);
       this.emit('spellCast', { playerId: player.id, type: card.type, target: monster.monsterId, targetKind: 'monster' });
       this.damageMonster(monster, card.def.amount, { playerId: player.id, type: card.type });
       this.defeatMonsterIfDead(monster, player.id);
     } else if (card.isSpell) {
-      this.castSpell(player, card, this.players[resolved.target.playerId], resolved.target.roadId);
+      this.castSpell(player, card, this.players[target.playerId], target.roadId);
     } else {
-      this.playSupport(player, card, resolved.target);
+      this.playSupport(player, card, target);
     }
 
-    this.checkGameOver();
-    return ok();
   }
 
   castSpell(player, card, targetPlayer, roadId) {
@@ -1047,7 +1086,7 @@ export class Game {
         {
           const damage = amount + (player.castleDef.castleSpellBonus ?? 0);
           this.requestDefense(
-            { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage },
+            { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage, from: 'spell', spellType: card.type },
             () => this.damageCastle(enemy, damage, { kind: 'spell', type: card.type }),
             () => this.checkGameOver(),
           );
@@ -1094,10 +1133,57 @@ export class Game {
         break;
       }
 
+      case 'redrawHand': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        // 先に同じ枚数を引いてから、元の手札を捨てる（捨てたカードをすぐ引き戻さないように）
+        const old = [...player.hand];
+        this.drawCards(player, old.length);
+        const cardIds = old.map((c) => c.cardId);
+        for (const c of old) this.pileOf(player.id).discard.push(player.takeFromHand(c.cardId));
+        this.emit('cardDiscarded', { playerId: player.id, cardIds });
+        break;
+      }
+
+      case 'randomEffect': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        this.prayCard(player);
+        break;
+      }
+
+      case 'stealCard': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        const stolen = enemy.hand[enemy.hand.length === 1 ? 0 : Math.floor(this.rng() * enemy.hand.length)];
+        enemy.takeFromHand(stolen.cardId);
+        player.hand.push(stolen);
+        this.emit('cardStolen', { playerId: player.id, victimId: enemy.id, cardId: stolen.cardId });
+        break;
+      }
+
       default:
         // Card.validateDefinitions で弾いているので、ここには来ない
         break;
     }
+  }
+
+  /**
+   * 神頼み：山の上の1枚をめくって、出せるならタダで出す（対象は出せる中からランダム）。
+   * 出せなければ（神頼み自身・対象がないカード）、そのまま捨て札へ。
+   */
+  prayCard(player) {
+    const pile = this.pileOf(player.id);
+    if (pile.deck.length === 0) {
+      pile.deck = this.shuffle(pile.discard);
+      pile.discard = [];
+      this.emit('deckShuffled', { deckCount: pile.deck.length, playerId: pile.owner });
+    }
+    const card = pile.deck.shift();
+    if (!card) return;
+    (card.isExhaust ? pile.exhausted : pile.discard).push(card);
+    const { targets } = card.def.effect === 'randomEffect' ? { targets: [] } : this.listTargets(player, card);
+    this.emit('cardPlayed', { playerId: player.id, cardId: card.cardId, type: card.type, free: true });
+    if (targets.length === 0) return;
+    const target = targets.length === 1 ? targets[0] : targets[Math.floor(this.rng() * targets.length)];
+    this.applyCard(player, card, target);
   }
 
   /** 付加（武器）・防御・トラップのカードを使う */
@@ -1181,6 +1267,16 @@ export class Game {
     const defender = this.players[pending.defenderId];
     if (def.kind !== 'defense') return { targets: [], reason: '防御カードだけ出せます' };
     if (pending.kind === 'castle') {
+      if (def.effect === 'reflectSpell') {
+        return pending.from === 'spell'
+          ? { targets: [{ playerId: defender.id }], reason: '' }
+          : { targets: [], reason: '反射は魔法にしか使えません' };
+      }
+      if (def.effect === 'nullifySoldier') {
+        return pending.from === 'soldier'
+          ? { targets: [{ playerId: defender.id }], reason: '' }
+          : { targets: [], reason: '身代わりは城に着いた兵士にしか使えません' };
+      }
       if (def.effect !== 'armorCastle') return { targets: [], reason: '城が攻められています。城を守るカードを出してください' };
       if (defender.armor >= def.amount) return { targets: [], reason: '同じか、より強い城壁がもう置いてあります' };
       return { targets: [{ playerId: defender.id }], reason: '' };
@@ -1223,7 +1319,16 @@ export class Game {
     this.pending = null;
     this.phase = 'main';
     this.emit('defenseEnded', { defenderId: p.defenderId });
-    p.apply();
+    if (p.outcome === 'reflect') {
+      // 魔法を、撃った人の城にそのまま返す（撃った人の城壁は先に受ける）
+      this.emit('spellReflected', { defenderId: p.defenderId, attackerId: p.attackerId, amount: p.amount });
+      this.damageCastle(this.players[p.attackerId], p.amount, { kind: 'spell', type: p.spellType });
+    } else if (p.outcome === 'nullify') {
+      this.emit('soldierDecoyed', { defenderId: p.defenderId, attackerId: p.attackerId, soldierId: p.soldierId });
+      p.onNullify();
+    } else {
+      p.apply();
+    }
     p.after?.();
   }
 
@@ -1261,6 +1366,12 @@ export class Game {
     if (card.isExhaust) this.pileOf(defender.id).exhausted.push(card);
     else this.pileOf(defender.id).discard.push(card);
     this.emit('cardPlayed', { playerId: defender.id, cardId: card.cardId, type: card.type });
+    if (card.def.effect === 'reflectSpell' || card.def.effect === 'nullifySoldier') {
+      // 攻撃そのものを変えるカード：これで防御は終わり
+      this.pending.outcome = card.def.effect === 'reflectSpell' ? 'reflect' : 'nullify';
+      this.resolveDefense();
+      return ok();
+    }
     this.playSupport(defender, card, chosen);
 
     // まだ出せるカードがあれば待つ。なければ、そのまま攻撃を受ける

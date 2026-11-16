@@ -295,6 +295,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `defenseEnded` | `{ defenderId }` … 防御が終わった。このあと攻撃が当たる（`castleDamaged` / `soldierDamaged` …） |
 | `roadClosed` | `{ roadId, monsterIds }` … 道がなくなった。その道の魔物（`monsterIds`）も消える |
 | `roadOpened` | `{ roadId, players }` … 抜けた人の両どなりをつなぐ道ができた |
+| `spellReflected` | `{ defenderId, attackerId, amount }` … 反射。このあと撃った人の城に `castleDamaged` |
+| `soldierDecoyed` | `{ defenderId, attackerId, soldierId }` … 身代わり。このあと兵士の `soldierDestroyed`（`"reachedCastle"`）。城にダメージは入らない |
+| `cardStolen` | `{ playerId, victimId, cardId }` … 盗賊。`cardId` から種類は分からない（奪った本人だけが `state` で種類を見られる） |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
 
 #### イベントの順番
@@ -335,6 +338,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
   "initialHand": 5,
   "drawPerTurn": 1,
   "firstTurnDraw": 1,
+  "drawUntilHand": 5,
   "maxHand": 8,
   "laneLength": 3,
   "laneCount": 3,
@@ -771,6 +775,26 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - `roadClosed`：`{ roadId, monsterIds }` → その道の兵士の `soldierDestroyed`（`reason: "roadClosed"`）／`roadOpened`：`{ roadId, players }`
   - `gameOver`：`{ winner, reason }`
 - 順番（`"lastStanding"` で城が落ちたとき）：`castleDamaged`（兵士が城に着いたときは、そのあとの `soldierDestroyed`（`"reachedCastle"`））→ `playerEliminated` → 抜けた人の兵士の `soldierDestroyed`（`"eliminated"`）→ `roadClosed` →（その道の兵士の `soldierDestroyed`（`"roadClosed"`））→ `roadOpened` →（残りが1人なら）`gameOver`
+
+## ゴッドフィールド風の変更（人間に確認して決めた）
+
+「ゴッドフィールドに似せる」ため、ターン進行とカードを変えた。案の全体は `docs/godfield-proposal.md`。採用したのは A1 と B1〜B5（A2・A3・B6 は採用しない）。**数値はすべて仮。**
+
+- **A1 補充**：`rules.drawUntilHand`（省略すると 0 ＝ 今までどおり）。0 より大きいと、毎ターンのドローは「手札がその枚数になるまで」（`drawPerTurn` は最低枚数）。仮：5
+- カード（`data/cards.json`。説明文は `description` に書いてある）
+
+| 名前（type） | 種類 | 効果 | 長所 | 短所 | 枚数 |
+|---|---|---|---|---|---|
+| 反射（`reflect`） | 防御（`reflectSpell`） | 城に魔法（ファイアボール・隕石）を撃たれたとき、相手の城に返す | 大ダメージを逆手に取れる | 魔法にしか使えない。自分のターンには出せない | 2 |
+| 身代わり（`decoy`） | 防御（`nullifySoldier`）・使い切り | 城に着いた兵士1体のダメージを無効にする（兵士は消える） | 城への一撃を確実に止める | 魔法には使えない。使い切り | 2 |
+| 天の恵み（`blessing`） | 魔法（`redrawHand`） | 手札を全部捨てて、同じ枚数を引き直す | 手札事故を直せる | 何も攻めない。メインを使う | 2 |
+| 神頼み（`prayer`） | 魔法（`randomEffect`） | 山札の上の1枚をタダで出す（対象は出せる中からランダム。出せないカードは捨てるだけ） | 当たれば逆転 | 外れもある。メインを使う | 2 |
+| 盗賊（`thief`） | 魔法（`stealCard`）・使い切り | 相手の手札から1枚ランダムに奪う | 切り札を奪える | 相手に手札がないと出せない。使い切り | 2 |
+
+- 反射・身代わりは、`rules.defenseReaction` が `true` のときの「攻撃を受けたとき」にだけ出せる（`defend()`）。出すと防御はそこで終わり、攻撃は反射／無効になる。自分のターンに `canPlayCard` で調べると「攻撃を受けたときにだけ使えます」
+- 神頼みでタダで出したカードの `cardPlayed` には `free: true` が付く。盗賊で奪ったカードの ID は `cardStolen` で全員に見えるが、種類は奪った本人にしか見えない
+- 確かめたこと（`node tests/sim/run.js --games 300` / `--games 400`）：全組み合わせが決着。smart 同士は平均62手番、CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 16%・defensive 41%・smart 61%）。**CPU の戦い方（`strategies.js`）は新カードの使い方をまだ知らない**（反射・身代わりは防御で出せるときに出す。天の恵み・神頼み・盗賊は強さの計算に入っていない）
+- 画面の変更が必要（UI担当へ。ここでは触っていない）：新カードの絵と枠（`js/ui/art.js`）、反射・身代わりが出せるときに光らせる、`spellReflected` / `soldierDecoyed` / `cardStolen` の演出、手札が5枚まで補充されることの表示
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

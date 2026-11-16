@@ -12,10 +12,15 @@ export const EFFECTS = {
     healOwnCastle: ['amount'],
     poisonEnemySoldiers: ['amount', 'turns'],
     freezeEnemySoldiers: ['turns'],
+    redrawHand: [], // 天の恵み：手札を全部引き直す
+    randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
+    stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
   },
   defense: {
     shieldSoldier: ['amount'],
     armorCastle: ['amount'],
+    reflectSpell: [], // 反射：城に当たる魔法を、相手の城に返す（攻撃を受けたときだけ）
+    nullifySoldier: [], // 身代わり：城に着いた兵士1体のダメージを無効にする（攻撃を受けたときだけ）
   },
 };
 

@@ -20,5 +20,10 @@
   "deepFreeze": {"name": "大氷結", "kind": "spell", "effect": "freezeEnemySoldiers", "turns": 2, "count": 3, "exhaust": true},
   "ironSword": {"name": "鉄の剣", "kind": "weapon", "attackBonus": 2, "count": 1},
   "bigShield": {"name": "大盾", "kind": "defense", "effect": "shieldSoldier", "amount": 6, "count": 3, "exhaust": true},
-  "sandbag": {"name": "土嚢", "kind": "defense", "effect": "armorCastle", "amount": 3, "count": 4}
+  "sandbag": {"name": "土嚢", "kind": "defense", "effect": "armorCastle", "amount": 3, "count": 4},
+  "reflect": {"name": "反射", "kind": "defense", "effect": "reflectSpell", "count": 2, "description": "城に魔法を撃たれたとき、そのまま相手の城に返す（兵士の攻撃には使えない）"},
+  "decoy": {"name": "身代わり", "kind": "defense", "effect": "nullifySoldier", "count": 2, "exhaust": true, "description": "城に着いた兵士1体のダメージを無効にする（魔法には使えない）。使い切り"},
+  "blessing": {"name": "天の恵み", "kind": "spell", "effect": "redrawHand", "count": 2, "description": "手札を全部捨てて、同じ枚数を引き直す"},
+  "prayer": {"name": "神頼み", "kind": "spell", "effect": "randomEffect", "count": 2, "description": "山札の上の1枚を、タダで出す（対象はランダム。出せないカードならそのまま捨てる）"},
+  "thief": {"name": "盗賊", "kind": "spell", "effect": "stealCard", "count": 2, "exhaust": true, "description": "相手の手札から1枚ランダムに奪う。使い切り"}
 }
