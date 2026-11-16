@@ -348,6 +348,7 @@ const ICONS = {
   heart: `<path d="M12 21 Q1 13 3 7 Q5 2 9 4 Q11 5 12 7 Q13 5 15 4 Q19 2 21 7 Q23 13 12 21 Z" fill="#f2566e" ${S} stroke-width="2"/>`,
   sword: `<path d="M5 19 L17 5 L20 4 L19 7 L7 21 Z" fill="#eef3f7" ${S} stroke-width="2"/><path d="M4 14 L10 20" ${S} stroke-width="3.4"/><path d="M4 14 L10 20" stroke="#f2c14e" stroke-width="1.4" stroke-linecap="round"/>`,
   boot: `<path d="M8 3 h7 v10 q6 1 6 6 v2 H6 Z" fill="#b98250" ${S} stroke-width="2"/>`,
+  target: `<circle cx="12" cy="12" r="9" fill="#fff3d6" ${S} stroke-width="2"/><circle cx="12" cy="12" r="4.5" fill="#f2566e" ${S} stroke-width="1.6"/>`,
   shield: `<path d="M12 2 Q17 5 21 5 Q21 15 12 22 Q3 15 3 5 Q7 5 12 2 Z" fill="#6f9fd8" ${S} stroke-width="2"/>`,
   coin: `<circle cx="12" cy="12" r="9" fill="#ffcf3f" ${S} stroke-width="2"/><path d="M12 7 l1.6 3.3 l3.6 .5 l-2.6 2.5 l.6 3.6 l-3.2 -1.7 l-3.2 1.7 l.6 -3.6 l-2.6 -2.5 l3.6 -.5 Z" fill="#fff3b0" stroke="${INK}" stroke-width="1.2" stroke-linejoin="round"/>`,
   wall: `<path d="M3 21 V9 h4 V5 h4 v4 h2 V5 h4 v4 h4 v12 Z" fill="#d9cfbb" ${S} stroke-width="2"/><path d="M3 15 H21 M9 9 v6 M15 15 v6" stroke="#8d8069" stroke-width="1.5"/>`,
