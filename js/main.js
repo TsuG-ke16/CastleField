@@ -18,7 +18,7 @@ import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
 import { sound } from './ui/Sound.js';
-import { castleArt, unitArt, icon, colorOf } from './ui/art.js';
+import { castleArt, unitArt, icon, colorOf, preloadAssets } from './ui/art.js';
 import { playerName, setPlayerNames, reasonText, soldierInfo, monsterInfo, GAME_OVER_TEXT, GAME_OVER_TEXT_LOST } from './ui/text.js';
 
 const params = new URLSearchParams(location.search);
@@ -148,6 +148,8 @@ async function boot() {
       'http://localhost:8000 を開いてください。');
     return;
   }
+
+  await preloadAssets(); // 画像を先に読み込む（読み込み中に代わりの絵が見えないように）
 
   // デバッグ：URL の rules={"monsterFirstRound":1,...} で、ルールの一部だけ変えて試せる（data/ は書き換えない）
   if (DEBUG && params.has('rules')) {

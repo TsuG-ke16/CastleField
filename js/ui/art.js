@@ -386,8 +386,29 @@ function escapeText(s) {
 // 画像の割り当てはUIだけが持つ。読み込み前・失敗時は元のSVGを表示する。
 const CARD_TYPES = new Set(['infantry','knight','spearman','heavy','giant','fireball','meteor','thunder','bigThunder','heal','minorHeal','poisonMist','toxicRain','venom','frostBreath','glacier','deepFreeze','flameSword','waterSpear','windBow','earthHammer','ironSword','shield','bigShield','wall','sandbag','reflect','decoy','blessing','prayer','thief','bolt','fireSpirit','greatFireSpirit','waterSpirit','greatWaterSpirit','windSpirit','greatWindSpirit','earthSpirit','greatEarthSpirit']);
 const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+// 起動時に全部の画像を先に読み込んでおく。読み込めた画像は、代わりのSVGを出さず最初からPNGで描く
+// （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
+const READY = new Set();
+export const isAssetReady = (path) => READY.has(path);
+export async function preloadAssets(timeoutMs = 8000) {
+  let paths = ['bg/board.png', 'bg/title.png', 'ui/logo.png'];
+  try {
+    const res = await fetch('assets/asset-manifest.json');
+    if (res.ok) paths = [...new Set([...paths, ...Object.keys(await res.json())])].filter((p) => p !== 'style-reference.png');
+  } catch { /* 一覧がなくても、読めた分だけで動く */ }
+  const load = (path) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = async () => { try { await img.decode?.(); } catch { /* 見られればよい */ } READY.add(path); resolve(); };
+    img.onerror = () => resolve();
+    img.src = `assets/${path}`;
+  });
+  await Promise.race([Promise.all(paths.map(load)), new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
+}
 export function imageArt(path, fallback = '', cls = '') {
-  return `<span class="asset-art ${cls}" aria-hidden="true"><span class="asset-fallback">${fallback}</span><img class="asset-image" src="assets/${path}" alt="" decoding="async" draggable="false"></span>`;
+  if (READY.has(path)) {
+    return `<span class="asset-art asset-loaded ${cls}" aria-hidden="true"><img class="asset-image" src="assets/${path}" alt="" decoding="sync" draggable="false"></span>`;
+  }
+  return `<span class="asset-art ${cls}" aria-hidden="true"><span class="asset-fallback">${fallback}</span></span>`;
 }
 // loadはバブルしないためキャプチャする。インラインハンドラを使わない。
 document.addEventListener('load', (e) => {

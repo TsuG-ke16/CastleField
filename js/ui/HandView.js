@@ -6,7 +6,7 @@
 
 import { UI_CONFIG } from './config.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
-import { cardArt, icon } from './art.js';
+import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
 
 const $ = (id) => document.getElementById(id);
@@ -133,6 +133,7 @@ export class HandView {
     frame.alt = '';
     frame.draggable = false;
     if (['soldier', 'spell', 'weapon', 'defense'].includes(def.kind)) el.prepend(frame);
+    if (isAssetReady(`cards/frame-${def.kind}.png`)) el.classList.add('has-frame'); // 読み込み済みなら、最初から枠つきで出す
     el.querySelector('.card-kind').textContent = KIND_LABEL[def.kind] ?? '';
     el.querySelector('.card-art').innerHTML = cardArt(card.type, this.color ?? 'blue', def.name ?? '');
     const name = el.querySelector('.card-name');
