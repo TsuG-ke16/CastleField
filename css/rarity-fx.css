@@ -53,3 +53,6 @@
 .fx-fusion-stage { position: absolute; z-index: 58; width: 0; height: 0; pointer-events: none; }.fx-fusion-stage .effect-card { position: absolute; left: -72px; top: -98px; }
 @media (max-height: 650px) { .effect-card { width: 120px; height: 160px; }.fx-fusion-stage .effect-card { left: -60px; top: -80px; }.fx-reward-stage { width: 230px; gap: 5px; }.reward-heading { font-size: 12px; padding: 5px 9px; }.monster-attack-in { min-width: 100px; top: -40px; padding: 4px 5px; }.monster-attack-in b { font-size: 11px; } }
 @media (prefers-reduced-motion: reduce) { .monster-attack-in, .monster.threat-grown .monster-attack-in b { animation: none !important; } }
+
+/* 手札の並び：種類のグループの最初のカードの前に、少し間をあける */
+#hand .card.group-start:not(:first-child) { margin-left: 14px; }

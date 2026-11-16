@@ -858,9 +858,8 @@ async function settle({ check = true } = {}) {
   renderer.renderAll(model);
   renderer.setCurrentPlayer(st.phase === 'gameOver' ? null : st.currentPlayer);
   const me = st.players[viewerId];
-  const sameHand = me.hand.length === handView.hand.length &&
-    me.hand.every((c, i) => c.cardId === handView.hand[i].cardId);
-  if (!sameHand) handView.render(me.hand);
+  // 手札の表示は並べ替えてあるので、並びではなく、同じカードがそろっているかで比べる
+  if (!handView.sameCards(me.hand)) handView.render(me.hand);
   const blocked = playability(st);
   handView.setPlayability(blocked);
 
