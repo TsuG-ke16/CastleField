@@ -33,6 +33,15 @@ export const UI_CONFIG = {
     discard: 150,          // 手札を捨てたあと
     afterSoldierHit: 160,  // 兵士にダメージが入ったあとの間
     afterMonsterHit: 120,  // 魔物にダメージが入ったあとの間
+    reactionAlert: 700,    // 攻撃が来たときの「突撃！ 15ダメージ」の表示
+  },
+
+  // 防御（リアクション）の演出。強い攻撃ほど、止める時間を長くする
+  reaction: {
+    alertHitstop: 90,       // 攻撃が来た瞬間に止める時間
+    numberDuration: 900,    // 「受け流し -5」の数字
+    interceptBanner: 650,   // 「迎撃成功！」
+    resolvedPause: 240,     // 防御の効果を見せたあと、ダメージの演出に入るまでの間
   },
 
   // 城にダメージが入ったときの手応え。値 = base + perDamage × ダメージ（max で頭打ち）

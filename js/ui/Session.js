@@ -8,7 +8,8 @@
 //   canPlayCard(cardId)       … { ok, reason, needsTarget }（読むだけ）
 //   getTargets(cardId)        … 出せる対象の一覧（読むだけ）
 //   canBuyUpgrade(upgradeId)  … { ok, reason }（読むだけ）
-//   playCard / discard / endTurn / buyUpgrade … Promise<{ ok, reason }>
+//   canReact(cardId)          … 防御の場面で、そのカードを防御に使えるか（読むだけ）
+//   playCard / discard / endTurn / buyUpgrade / react … Promise<{ ok, reason }>
 
 export class LocalSession {
   /** @param {import('../game/Game.js').Game} game */
@@ -36,6 +37,16 @@ export class LocalSession {
 
   canBuyUpgrade(upgradeId) {
     return this.game.canBuyUpgrade(upgradeId);
+  }
+
+  /** 防御の場面で、そのカードを防御に使えるか（読むだけ） */
+  canReact(cardId) {
+    return this.game.canReact(cardId);
+  }
+
+  /** 防御する（空の配列なら、防御せずに受ける） */
+  async react(cardIds) {
+    return this.game.react(cardIds);
   }
 
   async playCard(cardId, target) {

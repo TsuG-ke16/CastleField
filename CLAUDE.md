@@ -99,11 +99,13 @@ js/
     Monster.js     … 魔物と、強化のデータのチェック
     Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
+    Reaction.js    … 防御（リアクション）の計算。Game・CPU・画面が同じ計算を使う（STEP 6）
     strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
   ui/              … 画面表示と入力
     Renderer.js
     HandView.js
     Animations.js
+    ReactionPanel.js … 防御の帯（攻撃の内容・選んだ防御カードの結果の見積もり・「防御する」「受ける」）
 data/
   cards.json       … カードの定義
   rules.json       … ルールの数値
@@ -179,6 +181,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 | `game.canBuyUpgrade(upgradeId)` | 強化を今買えるか（読むだけ）。`{ ok }` か `{ ok: false, reason }` |
 | `game.buyUpgrade(upgradeId)` | コインで強化を買う。自分のメインの場面（`phase` が `"main"`）で何回でも。メインの1枚とは別 |
 | `game.endTurn()` | ターンを終える。手札が上限を超えていたら `phase` が `"discard"` になり、捨て終わるまで次の人の番にならない |
+| `game.react(cardIds)` | 防御する（`phase` が `"reaction"` のとき、攻撃された側が呼ぶ。空の配列なら、防御せずに受ける）。`game.canReact(cardId)` / `game.previewReaction(cardIds)` で、前もって使えるか・結果を調べられる（読むだけ）。くわしくは「STEP 6」 |
 | `game.surrender(playerId)` | 降参する。`playerId` の負けで、相手の勝ちですぐ終わる（`gameOver` の `reason` は `"surrender"`）。自分の番でなくても使える。2人のときだけ（3人以上は `{ ok: false }`。まだ決めていない） |
 | `game.on(type, handler)` / `game.off(type, handler)` | イベントの購読と解除。`handler` はペイロードのオブジェクトを1つ受け取る。表にない `type` を渡すと `{ ok: false }` |
 
@@ -210,7 +213,8 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   roads: [{ roadId: "p1-p2", players: ["p1", "p2"], length: 3 }],  // 道。length はいつも laneLength
   turn: 3,                     // 通算ターン数（1から）
   currentPlayer: "p1",
-  phase: "main",               // "ready"（start() の前）| "main" | "discard" | "gameOver"
+  phase: "main",               // "ready"（start() の前）| "main" | "discard" | "reaction"（防御の場面。STEP 6）| "gameOver"
+  reaction: null,              // 防御の場面のときだけ { attackerId, defenderId, damage, ... }（STEP 6）
   winner: null,                // 決着したら勝った人のID（"p1"〜"p8"）
   deckCount: 18,               // "own" のときは viewer 本人の山札の数（viewer がいなければ null）
   discardCount: 5,
@@ -290,6 +294,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `roadClosed` | `{ roadId, monsterIds }` … 道がなくなった。その道の魔物（`monsterIds`）も消える |
 | `roadOpened` | `{ roadId, players }` … 抜けた人の両どなりをつなぐ道ができた |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
+| `reactionRequested` / `reactionResolved` | 攻撃が来て防御を待つ／防御が決まった（STEP 6。ペイロードは「STEP 6」） |
 
 #### イベントの順番
 
@@ -374,7 +379,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - 兵士カードも、出した時点で捨て札置き場へ行く（場の兵士とは別に扱う）
   - 使い切りのカード（ヒール）は、使ったら使い切り置き場へ行き、二度と山札に戻らない。手札の上限で捨てたときは捨て札置き場へ行く（山札に戻る）
 - 山札が尽きたら、捨て札をシャッフルして新しい山札にする。両方とも空なら引かない
-- 初期手札：5枚ずつ
+- 初期手札：5枚ずつ（STEP 6 でドローは毎ターン2枚、兵士が城に着いたときのダメージは攻撃力の3倍に変えた。数値は `data/` が正）
 - 先攻は p1。先攻の最初のターンも1枚引く
 - ターンの流れ
   1. ドロー：1枚引く
@@ -684,6 +689,82 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - `roadClosed`：`{ roadId, monsterIds }` → その道の兵士の `soldierDestroyed`（`reason: "roadClosed"`）／`roadOpened`：`{ roadId, players }`
   - `gameOver`：`{ winner, reason }`
 - 順番（`"lastStanding"` で城が落ちたとき）：`castleDamaged`（兵士が城に着いたときは、そのあとの `soldierDestroyed`（`"reachedCastle"`））→ `playerEliminated` → 抜けた人の兵士の `soldierDestroyed`（`"eliminated"`）→ `roadClosed` →（その道の兵士の `soldierDestroyed`（`"roadClosed"`））→ `roadOpened` →（残りが1人なら）`gameOver`
+
+## STEP 6：リアクション型防御（攻撃された側も、その場で判断する）
+
+**数値はすべて仮**（`data/cards.json`・`data/rules.json`）。PR 1（攻防の試作）で入れたもの。このあと、手札とカードの再設計（PR 2）・兵士と進軍（PR 3）・総合調整（PR 4）で直していく。
+
+### なぜ入れるか
+それまでは、兵士が自動で進み、城に着けば自動でダメージが入った。攻撃された側は、結果を眺めるだけだった。
+「相手の行動を見てから、防御を考えられる」ことを、このゲームの柱にする（攻撃されたときも、攻撃するときと同じくらい面白くする）。
+
+### 攻撃と防御の流れ
+1. 攻撃が起きる：**兵士が相手の城に着いた**とき、または**城に直接ダメージを与える魔法**（ファイアボール）を使ったとき
+2. 防御する側に、**使える防御カードが手札に1枚でもあれば**、そこで処理が止まる（`phase: "reaction"`）。攻撃の内容（だれが・何で・何ダメージ）が両方の画面に出る。**使えるカードがなければ、止まらずに自動で受ける**（確認画面を増やさないため）
+3. 防御する側が、防御カードを選ぶ（0〜`reactionMaxCards` 枚）か、「受ける」を選ぶ。選ぶ前に、結果の見積もり（城HPがいくつになるか・迎撃で倒せるか）が見える
+4. 結果が解決される：**迎撃 → 受け流し・反撃の軽減 → 城へのダメージ → 反撃のダメージ**の順。止まっていた処理（進軍の続き・手番の続き）が動く
+5. 兵士が何体も城に着くときは、**出した順に1体ずつ**、そのたびに防御の場面になる
+
+- 手番は攻撃した側のまま。`getState().phase` が `"reaction"` で、`getState().reaction.defenderId` の人だけが `react()` できる
+- 防御の場面では、ほかの操作（`playCard`・`endTurn`・`discard`・`buyUpgrade`）はだれもできない
+- 魔物の攻撃・毒・サンダーなど、ほかのダメージには、まだ防御の場面はない（PR 3 で兵士同士の戦いを含めて見直す）
+
+### 防御カード（`kind: "reaction"`。自分の番には出せない）
+| 名前（type） | 効果（`effect`） | 長所 | 短所 |
+|---|---|---|---|
+| 受け流し（`guard`） | この攻撃のダメージを5減らす（`amount`） | どんな攻撃にも使える。確実 | 減らすだけ。大きな攻撃には足りない |
+| 迎撃（`intercept`） | 攻撃してくる兵士に4ダメージ（`amount`）。倒せたら攻撃は無効 | 倒せれば、どんなに大きな攻撃も0にできる（騎士は HP4 なので倒せる） | 魔法には使えない。盾がある兵士・HPが高い兵士には倒せず、使い損になる |
+| 反撃（`counter`） | ダメージを2減らし（`block`）、相手の城に4ダメージ（`amount`） | 守りながら攻められる。相手の城が低いと、勝負を決められる | 減らす量が少ない。受けた城が落ちたら、反撃は起きない |
+
+- 1回の攻撃に使えるのは最大 `rules.reactionMaxCards`（仮：2）枚。**同じ効果のカードは1枚まで**（受け流しを2枚重ねて全部防ぐ、はできない）
+- 防御に使ったカードは、ふつうに捨て札へ行く（`exhaust: true` なら使い切り）。使った分の手札の補充はない（毎ターンのドローで補う）
+- 城壁があるときは、軽減のあとに城壁が先にダメージを受ける
+- 計算は `js/game/Reaction.js`（Game・CPU・画面が同じ計算を使う）
+- **防御できない攻撃**：城への魔法のカードに `"unblockable": true` を書くと、防御の場面を作らない（今のカードにはない。形だけ用意した）
+- 迎撃は、相手の兵士が先にダメージを受ける。盾は先に受けるので、盾をつけた兵士は迎撃に強い（盾と迎撃の読み合い）
+
+### ロジックとUIの約束に足すもの（STEP 6）
+- `getState()`
+  - `phase`：`"reaction"` が増えた
+  - `reaction`：防御の場面のときだけ。それ以外は `null`。`{ attackerId, defenderId, target: "castle", source: { kind: "soldier", soldierId } | { kind: "spell", type }, damage, unblockable, maxCards, soldier: { soldierId, type, hp, shield, attack } | null, castleHp, armor }`。`damage` は防御する前に届くダメージ（兵士は 攻撃力 × `soldierCastleDamageMultiplier`）
+- メソッド
+  - `game.react(cardIds)`：防御する。`cardIds` は使うカード（空の配列なら、防御せずに受ける）。`phase` が `"reaction"` のときだけ。失敗しても場面は続く
+  - `game.canReact(cardId)`：そのカードを今の攻撃に使えるか（読むだけ）。`{ ok }` か `{ ok: false, reason }`
+  - `game.previewReaction(cardIds)`：使ったら結果がどうなるかの見積もり（読むだけ）。`{ ok: true, intercepted, damage, reduced, counterDamage, soldierHpAfter }`
+- イベント
+  - `reactionRequested`：`getState().reaction` と同じ形 … 攻撃が来て、防御を待つ
+  - `reactionResolved`：`{ attackerId, defenderId, cardIds, types, passed, intercepted, damage, reduced, counterDamage }` … `passed` は防御せずに受けた。`damage` は城に届くダメージ（城壁の前）、`reduced` は減らした量。使えるカードがなくて自動で受けたときは、どちらのイベントも出ない
+  - `castleDamaged.source` に `{ kind: "counter", type }`（反撃で、攻撃した側の城が受けた）を足す。`soldierDamaged.cause` に `"intercept"`（迎撃）を足す
+- イベントの順番（兵士が城に着いたとき）：`soldierMoved` → `reactionRequested` →（止まる）→ `cardPlayed`（防御カード）→ `reactionResolved` →（迎撃なら）`soldierDamaged`（`"intercept"`）→（倒れたら）`soldierDestroyed`（`"killed"`）／（倒れなければ）`castleDamaged` →（反撃なら）`castleDamaged`（`source.kind: "counter"`）→ `soldierDestroyed`（`"reachedCastle"`）。ファイアボールは `spellCast` → `reactionRequested` → … → `castleDamaged`
+- 防御で0になったときは、`castleDamaged` は出ない
+
+### オンライン（STEP 4 に足すもの）
+- `POST /api/action` の `method` に `react` が増えた（`args` は `[cardIds]`）。**防御の場面では、防御される側だけが `react` を送れる**（ほかの人の操作は `{ ok: false }`）
+- `state` メッセージの `playable` の各カードに `reaction: { ok, reason }`（防御する人だけ意味がある）。`state` に `reactionDeadlineIn`（防御の待ち時間の残り。ミリ秒。防御の場面でなければ `null`）
+- **待ち時間**：防御する人が選ばないまま30秒たつと、サーバーが「防御せずに受ける」にして続ける（勝ち負けは決めない。切断していても、待ち続けて試合が止まらないように）。時間は `server/rooms.js` の `REACTION_TIMEOUT_MS`
+- 防御できるカードがないときは止まらないので、相手には「防御カードを持っていない」ことが分かる（止まったときは、少なくとも1枚は持っている）。これは手札の情報が少し漏れる。許す代わりにテンポを優先した（PR 4 で見直す）
+
+### CPU の防御
+- 戦い方（`js/game/strategies.js`）に `react(game, pid, rng, ctx)` を足した（防御する `cardId` の配列を返す。`[]` なら受ける）
+- `smart`・`guard`：防いだダメージ＋反撃のダメージ×0.8 から、カードを使う重みを引いて選ぶ。城に余裕があるうちは重く（温存）、城が危なくなるほど軽く（使う）。城が落ちるときは、生き残る組み合わせを最優先。相手の城を落とせる反撃は大きく評価する
+- `defensive`：3ダメージ以上防げるなら、いちばん防げる組み合わせを使う
+- `random`：使えるカードがあれば、半分の確率で1枚使う
+- `aggro`・`rush`・`pass`：防御しない
+
+### この STEP で変えた数値
+- `drawPerTurn`：1 → **2**（攻撃にも防御にもカードを使うため。先攻の最初のターンは `firstTurnDraw` の1枚のまま）
+- `soldierCastleDamageMultiplier`：2 → **3**（防御で減るぶん、兵士の一撃を重くして、防御する意味を大きくした。騎士は15、武器つきで18）
+- カード：受け流し4枚・迎撃3枚・反撃3枚を山札に足した（山札は49 → 59枚）
+- 城の種類 `fortress`：手札の上限 −2 → **−1**（ドロー2枚だと −2 は重すぎた）
+- 参考（2人・`smart` 同士、300〜400試合）：平均約50手番（中央値48）、先攻の勝率約51%、全試合が決着。防御の場面は1試合あたり約9回で、そのうち約9割で防御カードを使う
+- **未解決**：手札があふれて捨てる場面が多い（`smart` 同士で、手番の約38%）。自分の番に出せない防御カードを温存するぶん、手札が詰まる。PR 2 で手札・ドロー・カードの配分を見直す
+- **未解決**：`own` デッキ（`data/decks.json`）の勝率が崩れた（突撃 約68%・籠城 約33%）。防御カードの枚数が勝敗に効きすぎる。PR 2 で見直す（既定の共通の山札には影響しない）
+
+### 試遊で確かめること（シミュレーションでは分からない）
+- 攻撃されたとき、「使う？温存する？」と迷うか。受け流しを使う場面がありすぎて、考えずに押していないか
+- 防ぎきったとき、気持ちいいか。迎撃で倒せたとき・反撃が決まったとき、手応えがあるか
+- 防御の帯と演出で、テンポが落ちていないか（1回の防御の場面にかかる時間）
+- 負けたとき、なぜ負けたか（防御カードを持っていなかった／使い方をまちがえた／相手が読み勝った）が分かるか
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

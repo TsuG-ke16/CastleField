@@ -20,6 +20,7 @@ export const KIND_LABEL = {
   spell: '魔法',
   weapon: '武器',
   defense: '防御',
+  reaction: 'とっさ',
 };
 
 /** 1ターンに出せる枚数の説明（kind で決まる。CLAUDE.md「1ターンに出せる枚数」） */
@@ -27,6 +28,7 @@ export function slotNote(def) {
   if (!def) return '';
   if (def.kind === 'weapon') return '付加：何枚でも出せる';
   if (def.kind === 'defense') return '防御：何枚でも出せる';
+  if (def.kind === 'reaction') return 'とっさ：相手に攻撃されたときだけ使える（自分の番には出せない）';
   return 'メイン：1ターンに1枚';
 }
 
@@ -47,7 +49,23 @@ const EFFECT_TEXT = {
   freezeEnemySoldiers: (c) => `相手の兵士全員を${c.turns}回休みにする`,
   shieldSoldier: (c) => `自分の兵士に盾${c.amount}（ダメージを先に受ける）`,
   armorCastle: (c) => `自分の城を${c.amount}守る（次の自分のターンまで）`,
+  guard: (c) => `相手に攻撃されたとき、その攻撃のダメージを${c.amount}減らす`,
+  intercept: (c) => `相手の兵士が城に着いたとき、その兵士に${c.amount}ダメージ。倒せたら攻撃は無効（盾は先に受ける。魔法には使えない）`,
+  counter: (c) => `相手に攻撃されたとき、ダメージを${c.block}減らし、相手の城に${c.amount}ダメージ`,
 };
+
+/**
+ * カードの上に出す短い表示（数字と記号）。[{ icon, text }] の並び。icon は art.js の icon() の名前
+ * @param {object} def cards.json のカード
+ */
+function cardShortReaction(def) {
+  switch (def.effect) {
+    case 'guard': return [{ icon: 'shield', text: `-${def.amount}` }];
+    case 'intercept': return [{ icon: 'sword', text: `迎撃${def.amount}` }];
+    case 'counter': return [{ icon: 'shield', text: `-${def.block}` }, { icon: 'sword', text: `反${def.amount}` }];
+    default: return [];
+  }
+}
 
 /**
  * カードの説明文
@@ -83,6 +101,7 @@ export function cardDescription(def, rules, opts = {}) {
  */
 export function cardShort(def) {
   if (!def) return [];
+  if (def.kind === 'reaction') return cardShortReaction(def);
   if (def.kind === 'soldier') return [{ icon: 'sword', text: def.attack }, { icon: 'heart', text: def.hp }, { icon: 'boot', text: def.speed }];
   if (def.kind === 'weapon') {
     const list = [{ icon: 'sword', text: `+${def.attackBonus}` }];

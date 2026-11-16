@@ -3,7 +3,7 @@
 // 画面をタップすると skip() が呼ばれ、残りの演出は一瞬で終わる。
 
 import { UI_CONFIG, scaled } from './config.js';
-import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
+import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, REACTION_COLOR, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
 
 const $ = (id) => document.getElementById(id);
@@ -207,6 +207,8 @@ export class Animations {
       case 'roundStarted': return this.roundStarted(p, model);
       case 'cardDrawn': return this.cardDrawn(p, model, ctx);
       case 'deckShuffled':
+        // 山札が尽きて、捨て札から作り直した。尽きる前に引いたぶん（いまの山札の枚数）は、新しい山札からは引かない
+        model.shuffleSkip = model.deckCount;
         model.deckCount = p.deckCount;
         model.discardCount = 0;
         this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
@@ -214,6 +216,8 @@ export class Animations {
         this.banner('山札をシャッフル！', UI_CONFIG.timing.shuffle, 'small');
         return this.delay(UI_CONFIG.timing.shuffle * 0.6);
       case 'cardPlayed': return this.cardPlayed(p, model, ctx);
+      case 'reactionRequested': return this.reactionRequested(p, model);
+      case 'reactionResolved': return this.reactionResolved(p, model);
       case 'discardRequired':
         model.phase = 'discard';
         model.discardRequired = p.count;
@@ -317,9 +321,12 @@ export class Animations {
 
   async cardDrawn({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
+    let skip = model.shuffleSkip ?? 0;
+    model.shuffleSkip = 0;
     for (const cardId of cardIds) {
       pl.handCount += 1;
-      model.deckCount = Math.max(0, model.deckCount - 1);
+      if (skip > 0) skip -= 1;
+      else model.deckCount = Math.max(0, model.deckCount - 1);
       this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
       if (playerId === ctx.viewerId) {
         const card = ctx.lookupCard(cardId);
@@ -339,8 +346,9 @@ export class Animations {
     const pl = model.players[playerId];
     pl.handCount = Math.max(0, pl.handCount - 1);
     const def = this.cards[type] ?? {};
-    if (def.kind !== 'weapon' && def.kind !== 'defense') pl.playedThisTurn = true;
-    pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
+    // 防御カード（reaction）は相手の攻撃を受けたときに使うので、自分の番の枚数には数えない
+    if (def.kind !== 'weapon' && def.kind !== 'defense' && def.kind !== 'reaction') pl.playedThisTurn = true;
+    if (def.kind !== 'reaction') pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
     if (!def.exhaust) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
     model.hand = model.hand.filter((c) => c.cardId !== cardId);
     let clone;
@@ -383,6 +391,61 @@ export class Animations {
     ], { duration: dur, easing: 'ease-out', fill: 'forwards' }).then(() => clone.remove());
     // 消えきるのを待たずに、効果の演出へ進む
     await this.delay(dur * 0.7);
+  }
+
+  // ---------- 防御（リアクション） ----------
+
+  /** 攻撃が来た：攻撃している兵士と、狙われている城を目立たせて、何が起きるかを大きく見せる */
+  async reactionRequested(p, model) {
+    model.phase = 'reaction';
+    model.reaction = { ...p };
+    this.renderer.markAttack(p);
+    if (this.skipping) return;
+    sound.play('alert');
+    const name = p.source.kind === 'soldier'
+      ? `${this.cards[p.soldier?.type]?.name ?? '兵士'}の突撃！`
+      : `${this.cards[p.source.type]?.name ?? '魔法'}！`;
+    this.banner(`${name} ${p.damage}ダメージ`, UI_CONFIG.timing.reactionAlert, 'alert');
+    await this.hitstop(UI_CONFIG.reaction.alertHitstop);
+    await this.delay(UI_CONFIG.timing.reactionAlert * 0.7);
+  }
+
+  /** 防御が決まった：使ったカードの効果を見せる（このあとの城・兵士へのダメージは、ふつうの演出が続く） */
+  async reactionResolved(p, model) {
+    model.phase = 'main';
+    model.reaction = null;
+    this.renderer.clearAttack();
+    if (p.passed || this.skipping) return;
+    const castle = this.renderer.castleEl(p.defenderId);
+    const small = UI_CONFIG.smallNumber;
+    let waited = false;
+    for (const type of p.types) {
+      const def = this.cards[type] ?? {};
+      const color = REACTION_COLOR[def.effect];
+      if (def.effect === 'guard' || def.effect === 'counter') {
+        const amount = def.effect === 'guard' ? def.amount : def.block;
+        const shown = Math.min(amount, p.reduced);
+        if (!p.intercepted && shown > 0) {
+          sound.play('block');
+          this.number(castle, `${def.name} -${shown}`, { size: small.size + 8, duration: UI_CONFIG.reaction.numberDuration, kind: 'block' });
+          castle.style.setProperty('--glow', color);
+          this.flashClass(castle, 'armor-up', UI_CONFIG.timing.armor);
+          waited = true;
+        }
+      }
+      if (def.effect === 'intercept') {
+        sound.play('clash');
+        this.banner(p.intercepted ? '迎撃成功！' : '迎撃！ 倒しきれない…', UI_CONFIG.reaction.interceptBanner, p.intercepted ? 'good' : 'small');
+        waited = true;
+      }
+    }
+    if (p.counterDamage > 0 && !p.intercepted) {
+      sound.play('fire');
+      await this.projectile(castle, this.renderer.castleEl(p.attackerId));
+      this.banner('反撃！', UI_CONFIG.timing.reactionAlert * 0.8, 'good');
+      waited = true;
+    }
+    if (waited) await this.delay(UI_CONFIG.reaction.resolvedPause);
   }
 
   async cardDiscarded({ playerId, cardIds }, model, ctx) {

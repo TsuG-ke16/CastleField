@@ -5,6 +5,7 @@
 // どの戦い方も「出せるカード」は canPlayCard で確かめるので、ルールが変わっても動く。
 //   takeTurn(game, pid, rng, ctx)      … メインでカードを出す（出さなくてもよい）
 //   chooseDiscard(game, pid, rng, ctx) … ctx.discardCount 枚の cardId を返す
+//   react(game, pid, rng, ctx)         … 相手に攻撃されたとき（phase "reaction"）、防御に使う cardId の配列を返す（[] なら受ける）
 
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 
@@ -104,6 +105,7 @@ const typesWithEffect = (ctx, effect) =>
 const RAW_STRATEGIES = {
   /** 出せるカードからランダムに1枚 */
   random: {
+    react: (game, pid, rng) => randomReact(game, pid, rng),
     takeTurn(game, pid, rng) {
       // 出せるカードからランダムに出す。メインを出したら、あとは半分の確率で続ける
       for (let i = 0; i < 10; i++) {
@@ -128,6 +130,7 @@ const RAW_STRATEGIES = {
 
   /** ほどよく考える */
   smart: {
+    react: (game, pid, rng, ctx) => smartReact(game, pid, ctx),
     takeTurn(game, pid, rng, ctx) {
       buyUpgrades(game, pid, ctx);
       smartTurn(game, pid, ctx);
@@ -138,6 +141,7 @@ const RAW_STRATEGIES = {
 
   /** 守り優先：回復 → 兵士への魔法 → 兵士 → 城への魔法 */
   defensive: {
+    react: (game, pid) => defensiveReact(game, pid),
     takeTurn(game, pid, rng, ctx) {
       const { playable } = view(game, pid);
       playSupports(game, pid, ctx);
@@ -171,6 +175,7 @@ const RAW_STRATEGIES = {
 
   /** 兵士で守る：相手の兵士が自分の城から2マス以内に来たら兵士を出す。それ以外は smart */
   guard: {
+    react: (game, pid, rng, ctx) => smartReact(game, pid, ctx),
     takeTurn(game, pid, rng, ctx) {
       const { playable, enemies } = view(game, pid);
       const L = ctx.rules.laneLength;
@@ -235,12 +240,101 @@ function smartTurn(game, pid, ctx) {
   ]);
 }
 
+// ---------- 防御（リアクション） ----------
+
+/** 今の攻撃に使える防御カード */
+function reactOptions(game, pid) {
+  const me = game.getState(pid).players[pid];
+  return me.hand.filter((c) => game.canReact(c.cardId).ok);
+}
+
+/** 使えるカードから、使える組み合わせ（0〜2枚）をすべて作って、見積もりをつける */
+function reactCombos(game, options, max) {
+  const combos = [[]];
+  for (let i = 0; i < options.length; i++) {
+    combos.push([options[i]]);
+    if (max >= 2) for (let j = i + 1; j < options.length; j++) combos.push([options[i], options[j]]);
+  }
+  return combos
+    .map((cards) => ({ cards, pv: game.previewReaction(cards.map((c) => c.cardId)) }))
+    .filter((c) => c.pv.ok);
+}
+
+/**
+ * ほどよく考える防御：
+ *   防いだダメージ ＋ 反撃のダメージ × 0.8 から、カードを使う代わりを引く（手札が多いときは安く、少ないときは高く）。
+ *   城が落ちそうなら、生き残る組み合わせをいちばん優先する。相手の城を落とせる反撃は大きく評価する
+ */
+function smartReact(game, pid) {
+  return analyzeReact(game, pid).best.cards.map((c) => c.cardId);
+}
+
+/**
+ * 防御の選び方を採点する（smartReact の中身。シミュレーションが「迷う場面だったか」を数えるためにも使う）
+ * @returns {{ best: {score: number, cards: object[]}, plans: {score: number, cards: object[]}[], lethal: boolean }}
+ *   plans：「使わない」を含む、すべての組み合わせの点数（高い順）。lethal：防御しないと城が落ちる場面
+ */
+export function analyzeReact(game, pid) {
+  const st = game.getState(pid);
+  const info = st.reaction;
+  const me = st.players[pid];
+  const enemy = st.players[info.attackerId];
+  const options = reactOptions(game, pid);
+  const combos = reactCombos(game, options, info.maxCards);
+  const armor = info.armor ?? 0;
+  const effective = (damage) => Math.max(0, damage - armor);
+  const none = combos.find((c) => c.cards.length === 0);
+  const hit = effective(none.pv.damage);
+  const lethal = me.castleHp - hit <= 0;
+  // カードを使うことの重み：城に余裕があるうちは大きく（温存する）、城が危なくなるほど小さく（使う）。
+  // 手札があふれそうなときも小さくなる
+  const ratio = me.castleHp / me.castleMaxHp;
+  let cost = ratio > 0.6 ? 5 : ratio > 0.35 ? 3.5 : 1.5;
+  if (me.handCount >= 8) cost -= 1.5;
+  const plans = combos.map(({ cards, pv }) => {
+    if (cards.length === 0) return { score: 0, cards };
+    const dealt = effective(pv.damage);
+    const prevented = hit - dealt;
+    const survive = me.castleHp - dealt > 0;
+    const kills = pv.counterDamage > 0 && enemy.castleHp - pv.counterDamage <= 0;
+    const score = prevented + pv.counterDamage * 0.8 + (kills ? 20 : 0) + (lethal && survive ? 30 : 0) - cards.length * cost;
+    return { score, cards };
+  }).sort((x, y) => y.score - x.score);
+  // 城壁が全部受けてくれるなら、何も使わない
+  const best = hit === 0 ? plans.find((p) => p.cards.length === 0) : plans[0];
+  return { best, plans, lethal };
+}
+
+/** 守り優先の防御：3ダメージ以上防げるなら、いちばん防げる組み合わせを使う */
+function defensiveReact(game, pid) {
+  const info = game.getState(pid).reaction;
+  const armor = info.armor ?? 0;
+  const combos = reactCombos(game, reactOptions(game, pid), info.maxCards);
+  let best = { prevented: 2, cards: [] };
+  const base = Math.max(0, info.damage - armor);
+  for (const { cards, pv } of combos) {
+    const prevented = base - Math.max(0, pv.damage - armor);
+    // 同じくらい防げるなら、少ない枚数で
+    if (prevented > best.prevented || (prevented === best.prevented && cards.length > 0 && cards.length < best.cards.length)) {
+      best = { prevented, cards };
+    }
+  }
+  return best.cards.map((c) => c.cardId);
+}
+
+/** ランダムに防御：使えるカードがあれば、半分の確率で1枚使う */
+function randomReact(game, pid, rng) {
+  const options = reactOptions(game, pid);
+  return options.length && rng() < 0.5 ? [pick(options, rng).cardId] : [];
+}
+
 /** どの戦い方も、ターンの最初に同点の選び方の乱数を入れる */
 export const STRATEGIES = Object.fromEntries(
   Object.entries(RAW_STRATEGIES).map(([name, st]) => [
     name,
     {
       ...st,
+      react: st.react ?? (() => []), // 防御しない戦い方（aggro・rush・pass）
       takeTurn(game, pid, rng, ctx) {
         tieRng = rng;
         return st.takeTurn(game, pid, rng, ctx);

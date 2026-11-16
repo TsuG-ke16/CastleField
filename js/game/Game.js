@@ -17,6 +17,8 @@
 //   endTurn()  … 手札が上限を超えていたら phase "discard" → discard() で捨てる
 //                超えていなければ（または捨て終わったら）次の人のターンが始まる
 //   城HPが0以下になった瞬間に phase "gameOver"
+//   相手に城を攻撃されたとき（兵士が城に着いた・城への魔法）、防御できるカードがあれば phase "reaction"：
+//   防御する人が react() で防御カードを選ぶ（js/game/Reaction.js）。選び終えると、止まっていた処理が続く
 
 import { Card, ELEMENTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
@@ -24,6 +26,7 @@ import { Pile, validateCastles, validateDecks } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
+import { canReactWith, checkCombo, previewReaction } from './Reaction.js';
 
 /** 2人のときのプレイヤーID（人数は rules.playerCount。3人以上は p3〜p8 が続く） */
 export const PLAYER_IDS = ['p1', 'p2'];
@@ -36,6 +39,8 @@ export const EVENT_TYPES = [
   'cardPlayed',
   'discardRequired',
   'cardDiscarded',
+  'reactionRequested',
+  'reactionResolved',
   'soldierDeployed',
   'soldierMoved',
   'soldiersClashed',
@@ -89,6 +94,8 @@ const OPTIONAL_RULES = {
   advanceAfterWin: false,
   // 城に着いた兵士が与えるダメージ ＝ 攻撃力 × この値
   soldierCastleDamageMultiplier: 1,
+  // 相手の攻撃を受けたとき、防御カードを使える最大枚数（0 なら防御の場面を作らない）
+  reactionMaxCards: 2,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -200,6 +207,11 @@ export class Game {
     this.phase = 'ready';
     this.winner = null;
     this.discardCount = 0; // phase "discard" のときに捨てる必要がある枚数
+    /** 防御の場面（phase "reaction"）のとき：{ attackerId, defenderId, attack, ... }。それ以外は null */
+    this.pending = null;
+    /** 途中で止まっている処理（進軍・城への魔法）。防御が終わると続きを動かす */
+    this.flow = null;
+    this.nextReactionNumber = 1;
 
     // 初期手札（ゲーム開始前なのでイベントは出さない）
     for (const id of this.playerOrder) {
@@ -473,8 +485,8 @@ export class Game {
     const drawCount = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
     this.drawCards(player, drawCount);
 
-    // 2. 進軍
-    this.advanceSoldiers(player);
+    // 2. 進軍（城に着いた兵士を防御できるときは、そこで止まって防御を待つ）
+    this.runFlow(this.advanceSoldiers(player));
   }
 
   /**
@@ -484,7 +496,7 @@ export class Game {
    * 戦ったら（相手だけが消えても）そのターンはその場で止まる。トラップにかかっても止まる。
    * 城に着いたら 移動 → 城にダメージ → 消える。城が落ちたらその場でゲームを止める。
    */
-  advanceSoldiers(player) {
+  *advanceSoldiers(player) {
     const { laneLength } = this.rules;
 
     for (const soldier of [...player.soldiers]) {
@@ -557,8 +569,13 @@ export class Game {
       }
       if (!reached) continue;
 
+      // 城への攻撃：防御できるカードがあれば、ここで止まって防御を待つ
       const damage = soldier.attack * this.rules.soldierCastleDamageMultiplier;
-      this.damageCastle(enemy, damage, { kind: 'soldier', soldierId: soldier.soldierId });
+      const result = yield* this.castleAttack(player, enemy, {
+        source: { kind: 'soldier', soldierId: soldier.soldierId }, damage, soldier,
+      });
+      if (this.phase === 'gameOver') return;
+      if (!result.landed) continue; // 迎撃で倒された
       player.removeSoldier(soldier.soldierId);
       this.emit('soldierDestroyed', {
         playerId: player.id,
@@ -569,6 +586,192 @@ export class Game {
       // 城が落ちた瞬間にゲームを止める（残りの兵士は動かさない）
       if (this.checkGameOver()) return;
     }
+  }
+
+  // ================= 防御（リアクション） =================
+
+  /**
+   * 途中で止まれる処理（ジェネレーター）を動かす。処理は、防御の場面が要るところで yield する。
+   * 防御できるカードがなければ、止まらずにそのまま続ける。止まったら phase "reaction" にして戻る。
+   * @param {Generator} gen
+   * @param {(() => void) | null} [onDone] 最後まで終わったときに呼ぶ
+   */
+  runFlow(gen, onDone = null) {
+    this.flow = { gen, onDone };
+    this.stepFlow(undefined);
+  }
+
+  /** 止まっていた処理を、input（防御の選び方）を渡して続ける */
+  stepFlow(input) {
+    const flow = this.flow;
+    for (;;) {
+      if (this.phase === 'gameOver') {
+        this.flow = null;
+        return;
+      }
+      const r = flow.gen.next(input);
+      if (r.done) {
+        this.flow = null;
+        flow.onDone?.();
+        return;
+      }
+      const pending = this.openReaction(r.value);
+      if (!pending) {
+        input = { cardIds: [], skipped: true }; // 防御できるカードがない：止まらずに続ける
+        continue;
+      }
+      this.pending = pending;
+      this.phase = 'reaction';
+      this.emit('reactionRequested', this.reactionState());
+      return;
+    }
+  }
+
+  /** 攻撃（req）に対して、防御する人が使えるカードがあるなら、防御の場面（pending）を返す。なければ null */
+  openReaction({ attacker, defender, source, damage, soldier, unblockable }) {
+    if (this.rules.reactionMaxCards <= 0) return null;
+    const attack = {
+      source: source.kind,
+      damage,
+      unblockable: Boolean(unblockable),
+      soldier: soldier ? { soldierId: soldier.soldierId, type: soldier.type, hp: soldier.hp, shield: soldier.shield, attack: soldier.attack } : null,
+    };
+    if (!defender.hand.some((c) => c.isReaction && canReactWith(attack, c.def).ok)) return null;
+    return {
+      id: this.nextReactionNumber++,
+      attackerId: attacker.id,
+      defenderId: defender.id,
+      attackSource: source,
+      attack,
+    };
+  }
+
+  /** 画面・サーバー向けの、防御の場面の情報（防御する人にも攻撃する人にも同じ） */
+  reactionState() {
+    const p = this.pending;
+    if (!p) return null;
+    const defender = this.players[p.defenderId];
+    return {
+      attackerId: p.attackerId,
+      defenderId: p.defenderId,
+      target: 'castle',
+      source: { ...p.attackSource },
+      damage: p.attack.damage,
+      unblockable: p.attack.unblockable,
+      maxCards: this.rules.reactionMaxCards,
+      soldier: p.attack.soldier ? { ...p.attack.soldier } : null,
+      castleHp: defender.castle.hp,
+      armor: defender.armor,
+    };
+  }
+
+  /**
+   * 城への攻撃を解決する。防御の場面があれば、そこで止まって防御を待つ（yield）。
+   * 流れ：（防御）→ 迎撃 → 城にダメージ → カウンターの反撃。城が落ちたら、反撃は起きない
+   * @returns {{landed: boolean}} landed：攻撃が城に届いたか（迎撃で兵士が倒れたら false）
+   */
+  *castleAttack(attacker, defender, { source, damage, soldier = null, unblockable = false }) {
+    const choice = yield { attacker, defender, source, damage, soldier, unblockable };
+    const cards = [];
+    for (const id of choice.cardIds ?? []) {
+      const card = defender.takeFromHand(id);
+      if (card.isExhaust) this.pileOf(defender.id).exhausted.push(card);
+      else this.pileOf(defender.id).discard.push(card);
+      this.emit('cardPlayed', { playerId: defender.id, cardId: card.cardId, type: card.type });
+      cards.push(card);
+    }
+    let finalDamage = damage;
+    let counterDamage = 0;
+    let interceptDamage = 0;
+    let intercepted = false;
+    if (cards.length > 0) {
+      const attack = { source: source.kind, damage, unblockable, soldier: soldier ? { hp: soldier.hp, shield: soldier.shield } : null };
+      const pv = previewReaction(attack, cards.map((c) => c.def));
+      finalDamage = pv.damage;
+      counterDamage = pv.counterDamage;
+      interceptDamage = pv.interceptDamage;
+      intercepted = pv.intercepted;
+    }
+    if (!choice.skipped) {
+      this.emit('reactionResolved', {
+        attackerId: attacker.id,
+        defenderId: defender.id,
+        cardIds: cards.map((c) => c.cardId),
+        types: cards.map((c) => c.type),
+        passed: cards.length === 0,
+        intercepted,
+        damage: finalDamage,
+        reduced: damage - finalDamage,
+        counterDamage,
+      });
+    }
+    // 迎撃：兵士が先にダメージを受ける。倒れたら攻撃は無効
+    if (soldier && interceptDamage > 0) {
+      this.damageSoldier(attacker, soldier, interceptDamage, 'intercept');
+      if (intercepted) return { landed: false };
+    }
+    // 防御で0になったときは、城へのダメージは起きない（castleDamaged は出さない）
+    if (finalDamage > 0 || cards.length === 0) this.damageCastle(defender, finalDamage, source);
+    // 城が落ちたら決着が先（反撃は起きない）
+    if (counterDamage > 0 && !defender.castle.isDestroyed) {
+      const card = cards.find((c) => c.def.effect === 'counter');
+      this.damageCastle(attacker, counterDamage, { kind: 'counter', type: card.type });
+    }
+    return { landed: true };
+  }
+
+  /**
+   * そのカードを、今の攻撃に防御として使えるか（読むだけ）。使えないときは理由を返す
+   * @param {string} cardId
+   */
+  canReact(cardId) {
+    if (this.phase !== 'reaction' || !this.pending) return fail('いまは防御する場面ではありません');
+    const card = this.players[this.pending.defenderId].findInHand(cardId);
+    if (!card) return fail('そのカードは手札にありません');
+    if (!card.isReaction) return fail('このカードは防御には使えません（相手の攻撃を受けたときの専用カードが使えます）');
+    return canReactWith(this.pending.attack, card.def);
+  }
+
+  /**
+   * 防御のカードを使ったら、結果がどうなるかの見積もり（読むだけ。防御する人が決める前に見る）
+   * @param {string[]} cardIds 使うカード（空なら何も使わない）
+   * @returns {{ok: true, intercepted: boolean, damage: number, reduced: number, counterDamage: number, soldierHpAfter: number|null} | {ok: false, reason: string}}
+   */
+  previewReaction(cardIds = []) {
+    const picked = this.pickReactionCards(cardIds);
+    if (!picked.ok) return picked;
+    return { ok: true, ...previewReaction(this.pending.attack, picked.cards.map((c) => c.def)) };
+  }
+
+  /** 防御に使うカードを手札から集めて、組み合わせの決まりを確かめる */
+  pickReactionCards(cardIds) {
+    if (this.phase !== 'reaction' || !this.pending) return fail('いまは防御する場面ではありません');
+    if (!Array.isArray(cardIds)) return fail('使うカードのIDを配列で渡してください');
+    if (new Set(cardIds).size !== cardIds.length) return fail('同じカードが2回選ばれています');
+    const defender = this.players[this.pending.defenderId];
+    const cards = [];
+    for (const id of cardIds) {
+      const card = defender.findInHand(id);
+      if (!card) return fail('そのカードは手札にありません');
+      cards.push(card);
+    }
+    const check = checkCombo(this.pending.attack, cards.map((c) => c.def), this.rules.reactionMaxCards);
+    if (!check.ok) return check;
+    return { ok: true, cards };
+  }
+
+  /**
+   * 防御する（phase "reaction" のとき、防御される側が呼ぶ）。
+   * 使うカードをまとめて渡す。空の配列なら、防御せずに受ける。選び終えると、止まっていた処理が続く
+   * @param {string[]} [cardIds]
+   */
+  react(cardIds = []) {
+    const picked = this.pickReactionCards(cardIds);
+    if (!picked.ok) return picked;
+    this.pending = null;
+    this.phase = 'main';
+    this.stepFlow({ cardIds: [...cardIds] });
+    return ok();
   }
 
   /** 城にダメージ。城壁が先に受ける。castleDamaged を出す */
@@ -860,6 +1063,7 @@ export class Game {
     if (this.phase === 'ready') return fail('ゲームがまだ始まっていません');
     if (this.phase === 'gameOver') return fail('ゲームは終わっています');
     if (this.phase === 'discard') return fail('手札を捨てているところです');
+    if (this.phase === 'reaction') return fail('相手の攻撃に対する防御の場面です。防御が終わるまで待ってください');
 
     const player = this.players[this.currentPlayer];
     const card = player.findInHand(cardId);
@@ -867,6 +1071,8 @@ export class Game {
       if (this.opponentsOf(player.id).some((p) => p.findInHand(cardId))) return fail('あなたの番ではありません');
       return fail('そのカードは手札にありません');
     }
+    // 防御カード（reaction）は、相手に攻撃されたときだけ使える
+    if (card.isReaction) return fail('防御カードは、相手に攻撃されたときに使います');
     // メイン（兵士・魔法）は1ターン1枚。付加（武器）と防御は何枚でも
     if (card.slot === 'main' && player.playedThisTurn) return fail('このターンはもうメインのカードを出しました');
     return { ok: true, player, card };
@@ -974,8 +1180,15 @@ export class Game {
     switch (effect) {
       case 'damageEnemyCastle':
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
-        // 魔法の塔は城への魔法が強い
-        this.damageCastle(enemy, amount + (player.castleDef.castleSpellBonus ?? 0), { kind: 'spell', type: card.type });
+        // 魔法の塔は城への魔法が強い。防御できるカードがあれば、ここで止まって防御を待つ
+        this.runFlow(
+          this.castleAttack(player, enemy, {
+            source: { kind: 'spell', type: card.type },
+            damage: amount + (player.castleDef.castleSpellBonus ?? 0),
+            unblockable: card.def.unblockable === true,
+          }),
+          () => this.checkGameOver(),
+        );
         break;
 
       case 'damageEnemySoldiers':
@@ -1045,6 +1258,7 @@ export class Game {
     if (this.phase === 'ready') return fail('ゲームがまだ始まっていません');
     if (this.phase === 'gameOver') return fail('ゲームは終わっています');
     if (this.phase === 'discard') return fail('先に手札を捨ててください');
+    if (this.phase === 'reaction') return fail('相手の攻撃に対する防御の場面です。防御が終わるまで待ってください');
 
     const player = this.players[this.currentPlayer];
     const over = player.hand.length - player.maxHand;
@@ -1137,6 +1351,8 @@ export class Game {
   finish(winner, reason) {
     this.winner = winner;
     this.phase = 'gameOver';
+    this.pending = null; // 防御の場面の途中でも、決着したら止める（降参など）
+    this.flow = null;
     this.emit('gameOver', { winner, reason });
   }
 
@@ -1208,6 +1424,7 @@ export class Game {
       turn: this.turn,
       currentPlayer: this.currentPlayer,
       phase: this.phase,
+      reaction: this.reactionState(),
       winner: this.winner,
       deckCount: topPile ? topPile.deck.length : null,
       discardCount: topPile ? topPile.discard.length : null,

@@ -103,6 +103,18 @@
       <p class="upgrade-note">コインは魔物にとどめを刺すともらえます。強化はメインの1枚とは別に買えます</p>
     </div>
 
+    <!-- 防御：相手に攻撃されたとき、使う防御カードを選ぶ -->
+    <div id="reaction-panel" class="panel" hidden>
+      <div class="react-head"><span class="react-alert" data-icon="alert"></span><b class="react-title"></b></div>
+      <p class="react-line"></p>
+      <ul class="react-list"></ul>
+      <div class="react-timer" hidden><i></i></div>
+      <div class="react-actions">
+        <button type="button" class="react-pass small-btn">受ける</button>
+        <button type="button" class="react-go plank-btn">防御する</button>
+      </div>
+    </div>
+
     <div id="toast" role="status" aria-live="polite"></div>
     <div id="fx-layer" aria-hidden="true"></div>
 

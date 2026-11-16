@@ -31,6 +31,8 @@ export class HandView {
     this.locked = true;      // 演出中・交代画面中は操作しない
     this.blocked = new Map(); // 出せないカード：cardId → 理由（見た目を暗くするだけ。押せば理由が出る）
     this.discardCount = 0;   // 0 以外なら「捨てるカードを選ぶ」モード
+    this.reaction = null;    // 「防御するカードを選ぶ」モード：{ canReact(cardId), max, onChange(picks) }
+    this.reactPicks = [];    // 防御に使うと決めたカード（選んだ順）
     this.discardPicks = new Set();
     this.drag = null;
 
@@ -143,8 +145,17 @@ export class HandView {
   applyCardClasses(el) {
     const id = el.dataset.id;
     el.classList.toggle('selected', id === this.selectedId);
-    el.classList.toggle('dim', this.blocked.has(id) && !this.discardCount);
+    el.classList.toggle('dim', this.blocked.has(id) && !this.discardCount && !this.reaction);
     el.classList.toggle('discard-pick', this.discardPicks.has(id));
+    el.classList.toggle('react-pick', this.reactPicks.includes(id));
+    // 防御を選んでいるとき：使えるカードは目立たせ、使えないカードは暗くする
+    if (this.reaction) {
+      const can = this.reaction.canReact(id).ok;
+      el.classList.toggle('reactable', can);
+      el.classList.toggle('dim', !can);
+    } else {
+      el.classList.remove('reactable');
+    }
   }
 
   refreshClasses() {
@@ -157,6 +168,8 @@ export class HandView {
     this.selectedId = null;
     this.discardCount = 0;
     this.discardPicks.clear();
+    this.reaction = null;
+    this.reactPicks = [];
     this.cancelDrag();
     this.el.hand.innerHTML = '';
     this.updateDetail();
@@ -238,7 +251,7 @@ export class HandView {
 
   updateDetail() {
     const card = this.hand.find((c) => c.cardId === this.selectedId);
-    if (!card || this.discardCount) {
+    if (!card || this.discardCount || this.reaction) {
       this.el.detail.hidden = true;
       return;
     }
@@ -257,6 +270,13 @@ export class HandView {
   }
 
   handleClick(e) {
+    if (this.reaction) {
+      // 防御を選んでいるとき：使えるカードは、タップで選ぶ・外す。使えないカードは理由を出す
+      const el = e.target.closest('.card');
+      if (!el) return;
+      this.toggleReactPick(el.dataset.id);
+      return;
+    }
     if (this.locked) return;
     if (this.drag?.moved) return;
     const el = e.target.closest('.card');
@@ -284,7 +304,7 @@ export class HandView {
   // ---------- ドラッグで使う ----------
 
   handlePointerDown(e) {
-    if (this.locked || this.discardCount || !UI_CONFIG.input.dragToPlay) return;
+    if (this.locked || this.discardCount || this.reaction || !UI_CONFIG.input.dragToPlay) return;
     if (e.button !== undefined && e.button !== 0) return;
     const el = e.target.closest('.card');
     if (!el) return;
@@ -358,6 +378,59 @@ export class HandView {
     // click イベントが後から来るので、少し後に drag を消す
     if (d.moved) setTimeout(() => { if (this.drag === d) this.drag = null; }, 0);
     else this.drag = null;
+  }
+
+  // ---------- 防御するカードを選ぶ ----------
+
+  /**
+   * 防御のカードを選ぶモードにする（相手に攻撃されたとき）
+   * @param {{ canReact: (cardId: string) => {ok: boolean, reason?: string}, max: number,
+   *           checkPicks: (cardIds: string[]) => {ok: boolean, reason?: string},
+   *           onChange: (picks: string[]) => void }} opts
+   */
+  enterReaction(opts) {
+    this.reaction = opts;
+    this.reactPicks = [];
+    this.select(null);
+    this.el.controls.classList.add('reacting');
+    this.refreshClasses();
+    this.updateDetail();
+    opts.onChange([]);
+  }
+
+  exitReaction() {
+    if (!this.reaction && this.reactPicks.length === 0) return;
+    this.reaction = null;
+    this.reactPicks = [];
+    this.el.controls.classList.remove('reacting');
+    this.refreshClasses();
+    this.updateDetail();
+  }
+
+  /** 使うと決めたカードを入れかえる（同じ効果のカードは1枚まで。最大枚数を超えたら古い方を外す） */
+  toggleReactPick(cardId) {
+    const r = this.reaction;
+    if (!r) return;
+    const can = r.canReact(cardId);
+    if (!can.ok) {
+      sound.play('deny');
+      this.onNotice(can.reason ?? 'この攻撃には使えません');
+      return;
+    }
+    let picks = [...this.reactPicks];
+    if (picks.includes(cardId)) {
+      picks = picks.filter((x) => x !== cardId);
+    } else {
+      picks.push(cardId);
+      // 同じ効果のカードを選んでいたら、そちらを外して入れかえる
+      const effect = this.cards[this.hand.find((c) => c.cardId === cardId)?.type]?.effect;
+      picks = picks.filter((id, i) => i === picks.length - 1 || this.cards[this.hand.find((c) => c.cardId === id)?.type]?.effect !== effect);
+      while (picks.length > r.max) picks.shift();
+    }
+    sound.play('tap');
+    this.reactPicks = picks;
+    this.refreshClasses();
+    r.onChange(picks);
   }
 
   // ---------- 捨てるカードを選ぶ ----------
