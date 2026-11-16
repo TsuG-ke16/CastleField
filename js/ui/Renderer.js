@@ -16,6 +16,8 @@ const $ = (id) => document.getElementById(id);
 const X_ME = 74;
 const X_OPP = 26;
 
+const SPIRIT_ICON = { fire: '🔥', water: '💧', wind: '🌀', earth: '⛰️' };
+
 export class Renderer {
   /**
    * @param {{ cards: object, rules: object, monsters?: object, showCoins?: boolean,
@@ -217,6 +219,7 @@ export class Renderer {
       const p = model.players[id];
       this.setCastleHp(id, p.castleHp, { instant: true, max: p.castleMaxHp });
       this.setArmor(id, p.armor);
+      this.setSpirit(id, p.spirit);
       this.setCoins(id, p.coins);
     }
     this.syncSoldiers(model);
@@ -296,6 +299,14 @@ export class Renderer {
     badge.hidden = !on;
     badge.innerHTML = on ? `${icon('wall')}<b></b>` : '';
     if (on) badge.querySelector('b').textContent = `城壁 ${armor}`;
+  }
+
+  /** 来ている精霊を、城のそばのバッジで見せる（なければ隠す） */
+  setSpirit(playerId, spirit) {
+    const badge = this.castleEl(playerId).querySelector('.castle-spirit');
+    if (!badge) return;
+    badge.hidden = !spirit;
+    badge.textContent = spirit ? `${SPIRIT_ICON[spirit.spirit] ?? '✨'} あと${spirit.turns}` : '';
   }
 
   // ---------- 兵士 ----------

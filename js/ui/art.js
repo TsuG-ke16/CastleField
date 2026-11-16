@@ -218,11 +218,15 @@ const CARD_ART = {
     `<path d="M58 40 Q52 20 70 8 Q72 22 84 22 Q90 28 76 40 Q70 46 58 40 Z" fill="#4db8f0" ${S} stroke-width="4"/>` +
     `<path d="M66 30 Q66 20 72 16" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" opacity=".85"/>` +
     `<path d="M28 34 q-7 10 0 14 q7 -4 0 -14 Z M84 58 q-6 9 0 12 q6 -3 0 -12 Z" fill="#7fd0f7" ${S} stroke-width="2.5"/>`,
-  woodAxe: () => bg('#cdecb4', '#eaf8dc') +
-    `<path d="M26 92 L64 22" ${S} stroke-width="10"/><path d="M26 92 L64 22" stroke="#a9753f" stroke-width="5" stroke-linecap="round"/>` +
-    `<path d="M50 20 Q70 4 90 24 Q84 44 62 46 Q66 32 50 20 Z" fill="#7cc45a" ${S} stroke-width="4"/>` +
-    `<path d="M62 20 Q72 14 82 24" fill="none" stroke="#d4f2bf" stroke-width="4" stroke-linecap="round"/>` +
-    `<path d="M20 44 Q12 30 26 22 Q36 34 20 44 Z" fill="#5fae4e" ${S} stroke-width="3"/><path d="M21 42 L25 26" stroke="${INK}" stroke-width="2"/>`,
+  windBow: () => bg('#d8f5e6', '#f0fff8') +
+    `<path d="M24 12 Q80 50 24 88" fill="none" ${S} stroke-width="9"/><path d="M24 12 Q80 50 24 88" fill="none" stroke="#c99a5b" stroke-width="4.5" stroke-linecap="round"/>` +
+    `<path d="M24 12 L24 88" stroke="${INK}" stroke-width="2.5"/><path d="M24 50 H88" ${S} stroke-width="5"/><path d="M88 50 l-10 -7 v14 Z" fill="${STEEL}" ${S} stroke-width="3"/>` +
+    `<path d="M40 24 q12 -8 24 0 M46 76 q12 8 24 0" fill="none" stroke="#5fd0a0" stroke-width="4" stroke-linecap="round"/>`,
+  earthHammer: () => bg('#ecdcc2', '#f6ead4') +
+    `<path d="M26 92 L58 40" ${S} stroke-width="10"/><path d="M26 92 L58 40" stroke="#a9753f" stroke-width="5" stroke-linecap="round"/>` +
+    `<path d="M40 30 L60 12 L90 36 L72 56 Z" fill="#b0834f" ${S} stroke-width="4"/>` +
+    `<path d="M52 28 L64 20" stroke="#e4c79a" stroke-width="4" stroke-linecap="round"/>` +
+    `<path d="M14 84 l8 -8 l8 8 M70 86 l6 -6 l6 6" fill="none" stroke="#8a6a3f" stroke-width="3.5" stroke-linecap="round"/>`,
   shield: () => bg('#cfe0f2', '#eaf2fb') +
     `<path d="M50 10 Q68 20 84 20 Q86 62 50 90 Q14 62 16 20 Q32 20 50 10 Z" fill="#6f9fd8" ${S} stroke-width="4"/>` +
     `<path d="M50 20 Q62 27 74 28 Q74 56 50 78 Z" fill="#8fb8e8"/>` +
@@ -267,11 +271,67 @@ const CARD_ART = {
   bigShield: () => bg('#b7cdea', '#dbe8f7') +
     `<path d="M50 4 Q72 16 94 16 Q96 66 50 96 Q4 66 6 16 Q28 16 50 4 Z" fill="#4f82c4" ${S} stroke-width="4"/>` +
     `<path d="M50 20 l8 17 l18 2 l-14 12 l5 18 l-17 -10 l-17 10 l5 -18 l-14 -12 l18 -2 Z" fill="#ffd93b" ${S} stroke-width="3"/>`,
+  // ゴッドフィールド風の新カード（仮の絵）
+  reflect: () => bg('#d8ecfb', '#f0f8ff') +
+    `<circle cx="50" cy="50" r="34" fill="#e6f4ff" ${S} stroke-width="4"/><circle cx="50" cy="50" r="22" fill="#bfe3fb" ${S} stroke-width="3"/>` +
+    `<path d="M30 70 L72 28 M72 28 H56 M72 28 V44" fill="none" ${S} stroke-width="7"/><path d="M30 70 L72 28 M72 28 H56 M72 28 V44" fill="none" stroke="#ffd93b" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`,
+  decoy: () => bg('#efe0c8', '#faf1e0') +
+    `<path d="M50 14 Q70 14 70 34 Q70 48 58 52 L64 90 H36 L42 52 Q30 48 30 34 Q30 14 50 14 Z" fill="#e8c88f" ${S} stroke-width="4"/>` +
+    `<ellipse cx="43" cy="34" rx="2.6" ry="3.6" fill="${INK}"/><ellipse cx="57" cy="34" rx="2.6" ry="3.6" fill="${INK}"/><path d="M44 44 q6 4 12 0" fill="none" ${S} stroke-width="2.5"/>` +
+    `<path d="M22 70 L38 62 M78 70 L62 62" ${S} stroke-width="5"/>`,
+  blessing: () => bg('#fff3c4', '#fffbe6') +
+    `<circle cx="50" cy="50" r="30" fill="#fff3a8" ${S} stroke-width="4"/>` +
+    `<g stroke="#ffcf3f" stroke-width="5" stroke-linecap="round"><path d="M50 4 V16 M50 84 V96 M4 50 H16 M84 50 H96 M18 18 L26 26 M74 74 L82 82 M82 18 L74 26 M26 74 L18 82"/></g>` +
+    `<path d="M50 36 l4 9 l10 1 l-8 7 l3 10 l-9 -6 l-9 6 l3 -10 l-8 -7 l10 -1 Z" fill="#fff" ${S} stroke-width="3"/>`,
+  prayer: () => bg('#e6d6f5', '#f5ecfc') +
+    `<path d="M50 90 V60 M36 60 Q36 36 50 28 Q64 36 64 60 Z" fill="#f2d2a8" ${S} stroke-width="4"/>` +
+    `<path d="M40 56 L50 70 L60 56" fill="none" ${S} stroke-width="4"/>` +
+    `<text x="50" y="30" font-size="40" font-weight="900" text-anchor="middle" fill="#ffd93b" stroke="${INK}" stroke-width="4" paint-order="stroke">?</text>` +
+    `<circle cx="20" cy="30" r="4" fill="#ffd93b" ${S} stroke-width="2"/><circle cx="82" cy="40" r="3.5" fill="#ffd93b" ${S} stroke-width="2"/>`,
+  thief: () => bg('#d5d8e3', '#eceef5') +
+    `<path d="M16 60 Q16 22 50 22 Q84 22 84 60 Z" fill="#4a4f66" ${S} stroke-width="4"/>` +
+    `<rect x="22" y="40" width="56" height="16" rx="8" fill="#f2d2a8" ${S} stroke-width="3.5"/>` +
+    `<ellipse cx="38" cy="48" rx="3.4" ry="3" fill="${INK}"/><ellipse cx="62" cy="48" rx="3.4" ry="3" fill="${INK}"/>` +
+    `<rect x="30" y="64" width="24" height="30" rx="4" fill="#b0703c" ${S} stroke-width="3.5" transform="rotate(-12 42 80)"/>` +
+    `<rect x="52" y="62" width="24" height="30" rx="4" fill="#4da3e8" ${S} stroke-width="3.5" transform="rotate(10 64 78)"/>`,
+  // 精霊カード（仮の絵：色と形で見分ける。大精霊は光の輪つき）
+  fireSpirit: () => spiritArt('#ffd9a8', '#f2622e', '#ffc83d'),
+  greatFireSpirit: () => spiritArt('#ffd9a8', '#f2622e', '#ffc83d', true),
+  waterSpirit: () => spiritArt('#cdeafb', '#4db8f0', '#e4f6ff'),
+  greatWaterSpirit: () => spiritArt('#cdeafb', '#4db8f0', '#e4f6ff', true),
+  windSpirit: () => spiritArt('#d8f5e6', '#5fd0a0', '#f0fff8'),
+  greatWindSpirit: () => spiritArt('#d8f5e6', '#5fd0a0', '#f0fff8', true),
+  earthSpirit: () => spiritArt('#ecdcc2', '#b0834f', '#f6ead4'),
+  greatEarthSpirit: () => spiritArt('#ecdcc2', '#b0834f', '#f6ead4', true),
+  // 魔法の追加カード（仮の絵：既存の絵の色違い）
+  minorHeal: () => bg('#e2f7d8', '#f5fdee') +
+    `<path d="M50 78 Q22 58 25 40 Q28 28 40 31 Q46 33 50 39 Q54 33 60 31 Q72 28 75 40 Q78 58 50 78 Z" fill="#f9a1b4" ${S} stroke-width="4"/>` +
+    `<path d="M80 14 v12 M74 20 h12" stroke="#3fb950" stroke-width="5" stroke-linecap="round"/>`,
+  toxicRain: () => bg('#d4c2ec', '#ece2f9') +
+    `<path d="M18 44 Q6 40 12 28 Q18 18 30 22 Q36 8 52 12 Q66 8 72 22 Q90 22 90 36 Q90 46 76 46 Z" fill="#7d5fb0" ${S} stroke-width="4"/>` +
+    `<g stroke="#9ed12a" stroke-width="5" stroke-linecap="round"><path d="M30 58 v10 M48 62 v14 M66 58 v10 M38 78 v8 M58 80 v8"/></g>`,
+  glacier: () => bg('#9fd6f2', '#dff2fc') +
+    `<path d="M10 90 L28 40 L40 62 L56 16 L72 58 L84 40 L94 90 Z" fill="#cfeeff" ${S} stroke-width="4"/>` +
+    `<path d="M56 16 L48 50 L62 54 Z" fill="#fff" opacity=".85"/>`,
+  bolt: () => bg('#cdd5f0', '#eaeefb') +
+    `<path d="M58 8 L30 52 H48 L38 92 L72 40 H54 Z" fill="#ffe94d" ${S} stroke-width="4"/>` +
+    `<path d="M16 30 l8 4 M80 24 l-8 6 M84 70 l-8 -4" stroke="#8a93c8" stroke-width="4" stroke-linecap="round"/>`,
   sandbag: () => bg('#eadfc6', '#f8f1df') +
     `<path d="M8 86 Q6 66 22 62 H46 Q62 66 60 86 Z" fill="#d7bf8a" ${S} stroke-width="4"/>` +
     `<path d="M40 62 Q38 42 54 38 H76 Q92 42 90 62 Z" fill="#c9ae74" ${S} stroke-width="4"/>` +
     `<path d="M28 74 h18 M58 52 h18" stroke="#a88f58" stroke-width="3" stroke-linecap="round"/>`,
 };
+
+
+/** 精霊の絵：ゆらゆらした体と顔。大精霊は後ろに光の輪と星がつく */
+function spiritArt(back, body, light, great = false) {
+  return bg(back, light) +
+    (great ? `<circle cx="50" cy="50" r="42" fill="none" stroke="#ffd93b" stroke-width="5" stroke-dasharray="4 8" stroke-linecap="round"/>` +
+      `<path d="M50 4 l3 7 l7 1 l-5 5 l1 7 l-6 -4 l-6 4 l1 -7 l-5 -5 l7 -1 Z" fill="#ffd93b" ${S} stroke-width="2"/>` : '') +
+    `<path d="M50 20 Q78 30 74 58 Q72 80 50 88 Q28 80 26 58 Q22 30 50 20 Z" fill="${body}" ${S} stroke-width="4"/>` +
+    `<path d="M36 36 Q40 28 50 27" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".8"/>` +
+    face(50, 56, 1);
+}
 
 /** カードの絵（知らない種類は、名前の1文字目を出す） */
 export function cardArt(type, color = 'blue', name = '') {
@@ -296,7 +356,8 @@ const ICONS = {
   snow: `<g ${S} stroke-width="3.6" fill="none"><path d="M12 2 V22 M3.5 7 L20.5 17 M3.5 17 L20.5 7"/></g><g stroke="#8fdcff" stroke-width="1.5" stroke-linecap="round"><path d="M12 2 V22 M3.5 7 L20.5 17 M3.5 17 L20.5 7"/></g>`,
   fire: `<path d="M12 2 Q14 7 18 9 Q22 14 19 19 Q16 23 12 22 Q6 23 4 17 Q3 12 7 9 Q8 12 10 11 Q9 6 12 2 Z" fill="#f2622e" ${S} stroke-width="2"/><path d="M12 12 Q15 15 14 18 Q12 20 10 18 Q9 15 12 12 Z" fill="#ffc83d"/>`,
   water: `<path d="M12 2 Q20 12 19 16 Q18 22 12 22 Q6 22 5 16 Q4 12 12 2 Z" fill="#4db8f0" ${S} stroke-width="2"/><path d="M9 14 q0 4 3 5" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>`,
-  wood: `<path d="M12 22 V12" ${S} stroke-width="2.4"/><path d="M12 14 Q2 14 3 3 Q13 3 12 14 Z M12 16 Q21 17 21 8 Q13 7 12 16 Z" fill="#7cc45a" ${S} stroke-width="2"/>`,
+  wind: `<path d="M3 8 H14 Q18 8 18 5 Q18 3 15.5 3 M3 13 H18 Q22 13 22 16 Q22 19 19 19 M3 18 H10" fill="none" ${S} stroke-width="2.4"/><path d="M3 8 H14 M3 13 H18" fill="none" stroke="#5fd0a0" stroke-width="1.2" stroke-linecap="round"/>`,
+  earth: `<path d="M2 21 L9 7 L13 13 L16 9 L22 21 Z" fill="#b0834f" ${S} stroke-width="2"/><path d="M9 7 L10.5 11 L7.5 11 Z" fill="#f6ead4"/>`,
   crown: `<path d="M3 19 L2 7 L8 12 L12 4 L16 12 L22 7 L21 19 Z" fill="#ffcf3f" ${S} stroke-width="2"/><circle cx="12" cy="15" r="1.8" fill="#e2475b"/>`,
   hammer: `<path d="M6 21 L14 11" ${S} stroke-width="4.4"/><path d="M6 21 L14 11" stroke="#a9753f" stroke-width="2" stroke-linecap="round"/><path d="M10 6 L15 2 L22 9 L18 13 Z" fill="${STEEL_D}" ${S} stroke-width="2"/>`,
   stone: `<path d="M3 17 L7 8 L16 6 L21 13 L18 19 L7 20 Z" fill="${STEEL}" ${S} stroke-width="2"/><path d="M8 11 L15 9" stroke="#fff" stroke-width="2" stroke-linecap="round"/>`,

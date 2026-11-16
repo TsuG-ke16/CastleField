@@ -237,7 +237,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
       soldiers: [{
         soldierId: "s03", type: "knight", hp: 4, attack: 6, position: 3, roadId: "p1-p2", targetId: "p2",
         weapon: "waterSpear",  // 持っている武器のカード種類か null
-        element: "water",      // "fire" | "water" | "wood" | null
+        element: "water",      // "fire" | "water" | "wind" | "earth" | null
         shield: 0,             // 盾の残り
         statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */ }
       }]
@@ -295,6 +295,12 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `defenseEnded` | `{ defenderId }` … 防御が終わった。このあと攻撃が当たる（`castleDamaged` / `soldierDamaged` …） |
 | `roadClosed` | `{ roadId, monsterIds }` … 道がなくなった。その道の魔物（`monsterIds`）も消える |
 | `roadOpened` | `{ roadId, players }` … 抜けた人の両どなりをつなぐ道ができた |
+| `spellReflected` | `{ defenderId, attackerId, amount }` … 反射。このあと撃った人の城に `castleDamaged` |
+| `soldierDecoyed` | `{ defenderId, attackerId, soldierId }` … 身代わり。このあと兵士の `soldierDestroyed`（`"reachedCastle"`）。城にダメージは入らない |
+| `cardStolen` | `{ playerId, victimId, cardId }` … 盗賊。`cardId` から種類は分からない（奪った本人だけが `state` で種類を見られる） |
+| `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
+| `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
+| `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
 
 #### イベントの順番
@@ -335,6 +341,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
   "initialHand": 5,
   "drawPerTurn": 1,
   "firstTurnDraw": 1,
+  "drawUntilHand": 5,
   "maxHand": 8,
   "laneLength": 3,
   "laneCount": 3,
@@ -366,7 +373,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - カードの `scope`（`damageEnemySoldiers` / `poisonEnemySoldiers` / `freezeEnemySoldiers` の魔法だけ。省略すると `"all"`）：`"all"` は相手の全レーンの兵士に効く。`"lane"` は選んだ1レーンの相手の兵士だけに効く（対象は `{ playerId, roadId }`）。`laneCount` が1のときは `"lane"` でも `"all"` と同じ（対象を選ばない）
 - `monsterFirstRound`：魔物が出はじめる周回（省略すると3）。`monsterCooldownRounds`：魔物を倒した道に次の魔物が出ない周回の数（省略すると0）。`monsterSpawnChance`：周回の始めに、魔物がいない道ごとに魔物が出る確率（0〜1の数。省略すると0）
 - `elementBonus`：属性が強いときに増えるダメージ（省略すると0）
-- カードの `kind`：`soldier` / `spell` / `weapon`（`attackBonus`、`element`）/ `defense`（`effect`: `shieldSoldier` / `armorCastle`、`amount`）。魔法の `effect` に `poisonEnemySoldiers`（`amount`, `turns`）と `freezeEnemySoldiers`（`turns`）が増えた。`element` は `fire` / `water` / `wood`
+- カードの `kind`：`soldier` / `spell` / `weapon`（`attackBonus`、`element`）/ `defense`（`effect`: `shieldSoldier` / `armorCastle`、`amount`）。魔法の `effect` に `poisonEnemySoldiers`（`amount`, `turns`）と `freezeEnemySoldiers`（`turns`）が増えた。`element` は `fire` / `water` / `wind` / `earth`
 - `secondPlayerCastleBonus`：後攻（p2）の城だけ、HPと上限がこのぶん多い（先攻有利をやわらげるため）。0以上の整数
 - `advanceAfterWin`：`true` なら、戦いで相手だけが消えたとき、残りの歩数で進み続ける（`false` ならそのターンはその場で止まる）。省略すると `false`
 - `soldierCastleDamageMultiplier`：城に着いた兵士が与えるダメージ ＝ 攻撃力 × この値（1以上の整数）。省略すると 1
@@ -482,7 +489,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 付加・防御も、出しても何も起きないときは出せない（例：道の上に自分の兵士がいないときの武器、同じ武器をもう持っている兵士、全員がもう同じ状態のときの毒の霧・氷の息、今と同じか強い城壁があるときの城壁）
 
 ### 属性
-- 属性は 火（`fire`）・水（`water`）・木（`wood`）の3つ。**水は火に強い、火は木に強い、木は水に強い**（じゃんけん）
+- 属性は 火（`fire`）・水（`water`）・風（`wind`）・土（`earth`）の4つ（人間に確認して、木をなくして風・土にした）。**水は火に強い、火は風に強い、風は土に強い、土は水に強い**（4つの輪。火と土・水と風は、どちらも強くも弱くもない。**強弱の組み合わせは仮**）
 - 兵士は、属性つきの武器を持つとその属性になる（持っていなければ属性なし）
 - 兵士同士の戦いで、自分の属性が相手の属性に強いとき、与えるダメージが `rules.elementBonus`（仮：2）増える。属性なしの相手には増えない
 - 理由：武器で強くすると、相手が「強い属性」の武器で返せる。強くするほど狙われるので、出す順番と読み合いが生まれる（大きな見返りには、大きなリスク）
@@ -506,13 +513,14 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - 付加・防御を出せば、そのぶん手札が減る。これが付加・防御を出すときの代わり（コスト）になる（レビューで決めた）
 
 ### STEP 2 のカード（仮）
-枚数：炎の剣・水の槍・木の斧 各2、盾・城壁・毒の霧・氷の息 各3（山札は32 → 50枚。調整後は、ファイアボール6・ヒール3に変えたので49枚）。
+枚数：炎の剣・水の槍・（木の斧→風の弓）各2、盾・城壁・毒の霧・氷の息 各3（山札は32 → 50枚。調整後は、ファイアボール6・ヒール3に変えたので49枚）。
 
 | 名前（type） | 種類 | 効果 | 長所 | 短所 |
 |---|---|---|---|---|
-| 炎の剣（`flameSword`） | 武器・火 | 攻撃+1、火 | 木の兵士に強い | 水の武器に返される |
-| 水の槍（`waterSpear`） | 武器・水 | 攻撃+1、水 | 火の兵士に強い | 木の武器に返される |
-| 木の斧（`woodAxe`） | 武器・木 | 攻撃+1、木 | 水の兵士に強い | 火の武器に返される |
+| 炎の剣（`flameSword`） | 武器・火 | 攻撃+1、火 | 風の兵士に強い | 水の武器に返される |
+| 水の槍（`waterSpear`） | 武器・水 | 攻撃+1、水 | 火の兵士に強い | 土の武器に返される |
+| 風の弓（`windBow`） | 武器・風 | 攻撃+1、風 | 土の兵士に強い | 火の武器に返される |
+| 土の槌（`earthHammer`） | 武器・土 | 攻撃+1、土 | 水の兵士に強い | 風の武器に返される |
 | 盾（`shield`） | 防御 | 兵士に盾3 | 何枚でも重なる。兵士が城まで届きやすくなる | 城は守れない。攻撃力は上がらない |
 | 城壁（`wall`） | 防御 | 自分の城を5守る（次の自分のターンまで）。**使い切り** | ファイアボールも兵士も止める | 1ターンで消える。重ならない。1試合に3回まで |
 | 毒の霧（`poisonMist`） | 魔法（メイン） | 相手1人の兵士全員に毒（1ダメージ×4回） | サンダー（3）より合計のダメージが大きく（4）、盾が効かない | すぐには効かない。その間に城に着かれることがある |
@@ -569,7 +577,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ### ロジックとUIの約束に足すもの（STEP 2）
 - `getState()`
-  - 兵士：`weapon`（武器のカード種類か `null`）、`element`（`"fire"` / `"water"` / `"wood"` / `null`）、`shield`（盾の残り）、`statuses`（`{ poison: { amount, turns } | null, frozen: 回数 | 0 }`）
+  - 兵士：`weapon`（武器のカード種類か `null`）、`element`（`"fire"` / `"water"` / `"wind"` / `"earth"` / `null`）、`shield`（盾の残り）、`statuses`（`{ poison: { amount, turns } | null, frozen: 回数 | 0 }`）
   - プレイヤー：`armor`（城壁の残り）、`cardsPlayedThisTurn`
 - イベント（「Gameが出すイベント」の表に足す）
   - `weaponEquipped`：`{ playerId, soldierId, type, attack, element }`（`attack` は持たせたあとの攻撃力）
@@ -626,7 +634,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | type | 名前 | HP | 攻撃 | 属性 | ごほうび | 放置したとき | 出やすさ |
 |---|---|---|---|---|---|---|---|
 | `slime` | スライム | 4 | 1 | 水 | 2 | 3周ごとに城へ2 | 5 |
-| `goblin` | ゴブリン | 7 | 3 | 木 | 3 | 2周ごとに城へ3 | 3 |
+| `goblin` | ゴブリン | 7 | 3 | 風 | 3 | 2周ごとに城へ3 | 3 |
 | `dragon` | ドラゴン | 12 | 5 | 火 | 6 | 2周ごとに城へ5 | 1 |
 
 - 強い魔物ほどごほうびが多いが、倒しに行った兵士がやられやすい（大きな見返りには大きなリスク）
@@ -638,7 +646,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 |---|---|---|---|---|---|---|---|---|
 | `bat` | コウモリ | 3 | 2 | なし | 1 | 2周ごとに城へ1 | 4 | すぐ倒せるが、ごほうびが少ない |
 | `skeleton` | スケルトン | 6 | 3 | なし | 3 | 2周ごとに城へ2 | 3 | 属性がないので、属性の武器の強みも弱みも出ない |
-| `golem` | ゴーレム | 14 | 2 | 木 | 5 | 4周ごとに城へ3 | 2 | 硬くて倒すのに時間がかかるが、城への攻撃はゆっくり |
+| `golem` | ゴーレム | 14 | 2 | 土 | 5 | 4周ごとに城へ3 | 2 | 硬くて倒すのに時間がかかるが、城への攻撃はゆっくり |
 | `demon` | デーモン | 10 | 4 | 火 | 5 | 2周ごとに城へ4 | 1 | ごほうびが多いが、倒しに行った兵士がやられやすい |
 
 | id | 名前 | 値段 | 効果 | 回数 |
@@ -771,6 +779,68 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - `roadClosed`：`{ roadId, monsterIds }` → その道の兵士の `soldierDestroyed`（`reason: "roadClosed"`）／`roadOpened`：`{ roadId, players }`
   - `gameOver`：`{ winner, reason }`
 - 順番（`"lastStanding"` で城が落ちたとき）：`castleDamaged`（兵士が城に着いたときは、そのあとの `soldierDestroyed`（`"reachedCastle"`））→ `playerEliminated` → 抜けた人の兵士の `soldierDestroyed`（`"eliminated"`）→ `roadClosed` →（その道の兵士の `soldierDestroyed`（`"roadClosed"`））→ `roadOpened` →（残りが1人なら）`gameOver`
+
+## ゴッドフィールド風の変更（人間に確認して決めた）
+
+「ゴッドフィールドに似せる」ため、ターン進行とカードを変えた。案の全体は `docs/godfield-proposal.md`。採用したのは A1 と B1〜B5（A2・A3・B6 は採用しない）。**数値はすべて仮。**
+
+- **A1 補充**：`rules.drawUntilHand`（省略すると 0 ＝ 今までどおり）。0 より大きいと、毎ターンのドローは「手札がその枚数になるまで」（`drawPerTurn` は最低枚数）。仮：5
+- カード（`data/cards.json`。説明文は `description` に書いてある）
+
+| 名前（type） | 種類 | 効果 | 長所 | 短所 | 枚数 |
+|---|---|---|---|---|---|
+| 反射（`reflect`） | 防御（`reflectSpell`） | 城に魔法（ファイアボール・隕石）を撃たれたとき、相手の城に返す | 大ダメージを逆手に取れる | 魔法にしか使えない。自分のターンには出せない | 2 |
+| 身代わり（`decoy`） | 防御（`nullifySoldier`）・使い切り | 城に着いた兵士1体のダメージを無効にする（兵士は消える） | 城への一撃を確実に止める | 魔法には使えない。使い切り | 2 |
+| 天の恵み（`blessing`） | 魔法（`redrawHand`） | 手札を全部捨てて、同じ枚数を引き直す | 手札事故を直せる | 何も攻めない。メインを使う | 2 |
+| 神頼み（`prayer`） | 魔法（`randomEffect`） | 山札の上の1枚をタダで出す（対象は出せる中からランダム。出せないカードは捨てるだけ） | 当たれば逆転 | 外れもある。メインを使う | 2 |
+| 盗賊（`thief`） | 魔法（`stealCard`）・使い切り | 相手の手札から1枚ランダムに奪う | 切り札を奪える | 相手に手札がないと出せない。使い切り | 2 |
+
+- 反射・身代わりは、`rules.defenseReaction` が `true` のときの「攻撃を受けたとき」にだけ出せる（`defend()`）。出すと防御はそこで終わり、攻撃は反射／無効になる。自分のターンに `canPlayCard` で調べると「攻撃を受けたときにだけ使えます」
+- 神頼みでタダで出したカードの `cardPlayed` には `free: true` が付く。盗賊で奪ったカードの ID は `cardStolen` で全員に見えるが、種類は奪った本人にしか見えない
+- 確かめたこと（`node tests/sim/run.js --games 300` / `--games 400`）：全組み合わせが決着。smart 同士は平均62手番、CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 16%・defensive 41%・smart 61%）。CPU の `smart`（`guard` も）は新カードを使う：反射・身代わりは城壁より先に出す。ほかに出すものがないとき、相手の手札が3枚以上なら盗賊、自分の手札が4枚以上なら天の恵み、最後に神頼み（先攻のとき random に勝つ割合は smart 78%）
+- 画面（人間に確認して、同じ変更で入れた）：新カードの仮の絵（`js/ui/art.js`）、`spellReflected` / `soldierDecoyed` / `cardStolen` の演出と、神頼み（`cardPlayed` の `free: true`）の扱い（`js/ui/Animations.js`）、反射・身代わりの説明（`js/ui/text.js`）。出せるカードを光らせるのは、防御カード全般と同じしくみ（`canDefend`）。専用の絵ができたら `art.js` を差しかえる。UI 担当のレビューを受けること
+
+### 魔法カードの追加（「魔法カード増やして」）
+既存の `effect` だけで4種を足した（ルール・イベントの変更なし）。**数値はすべて仮**。
+
+| 名前（type） | 効果 | 長所 | 短所 | 枚数 |
+|---|---|---|---|---|
+| 小回復（`minorHeal`） | 自分の城HP+5 | 使い切りでないので何度も使える | ヒール（10）の半分 | 2 |
+| 毒の雨（`toxicRain`） | 選んだ1レーンの相手の兵士に毒（1×6回） | 毒の霧（4）より合計が大きい（6） | 1レーンだけ。効くのが遅い | 2 |
+| 氷河（`glacier`） | 選んだ1レーンの相手の兵士を3回休ませる | 氷の息（1回）より長く止められる | 1レーンだけ・使い切り | 2 |
+| 雷光（`bolt`） | 相手の全レーンの兵士に2ダメージ | 使い切りでなく、全レーンに届く | サンダー（3）より弱い | 3 |
+
+- 防御側が増えて試合が長くなったので、城壁・土嚢・毒の霧・氷の息を各4→3枚に減らした（山札は86枚。攻撃側39・防御側47で、「半々」からは防御に寄っている。遊んで確かめる）
+- 確かめたこと（`node tests/sim/run.js --games 400`）：全組み合わせが決着。smart 同士は平均64手番（追加前は58〜62）。CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 8%・defensive 38%・smart 75%）。**試合は少し長くなった**ので、遊んで確かめる
+- 見た目は仮の絵（`js/ui/art.js`）
+
+### 精霊カード（人間に確認して決めた）
+基本4属性（火・水・風・土）それぞれに「精霊」と「大精霊」を作った。**数値はすべて仮**。`kind: "spell"`・`effect: "summonSpirit"`、`spirit` に種類、`amount` と `turns`（続くターン数）を書く（`data/cards.json`）。
+
+- **1人1体まで**（複数枚で強くなりすぎないように、1種類だけ選ぶ形）。新しく呼ぶと、今の精霊と入れ替わる（`spiritEnded` の `reason: "replaced"`）。同じカードの精霊が来ているときは呼べない（「同じ精霊がもう来ています」）
+- **呼んだターンは効かない。** 次の自分のターンから `turns` 回効き、自分のターンの終わりに残りが1つ減り、0で消える。`getState().players.pX.spirit` は `{ type, spirit, amount, turns, targetId }` か `null`
+- 「ここでの火・水・風・土」は精霊カードだけの属性。**兵士同士の戦いの属性も、火・水・風・土の4つにした**（精霊の風・土とは別の仕組みで、効き方は関係ない）
+
+| 種類 | 精霊（枚数2） | 大精霊（使い切り・枚数1） | 効き方 |
+|---|---|---|---|
+| 火 | 3ダメージ×3ターン | 5×3 | 自分のターンの始めに、選んだ相手の城にダメージ（城壁は受ける。防御は聞かない） |
+| 水 | +2×4ターン | +3×4 | 自分のターンの始めに、自分の城を回復 |
+| 風 | 速さ最低2・3ターン | 最低3・3ターン | 自分の兵士の速さが、最低でもその値になる |
+| 土 | -1・3ターン | -2・3ターン | 自分の城と兵士が受けるダメージ（城・兵士同士の戦い・魔法・魔物）が軽くなる。ただし最低1（毒は軽くならない） |
+
+- 長所と短所：火・水は少しずつ効くので、すぐには効かず、入れ替えられると無駄になる。風は兵士がいないと意味がない。土はダメージを0にはできない。大精霊は強いが使い切り・1枚だけ
+- CPU（`smart` 系）は、精霊が来ていなければ呼ぶ（大精霊は城HPが半分を切ったときだけ）
+- 確かめたこと（`node tests/sim/run.js --games 400`）：全組み合わせが決着。smart 同士は平均65手番、CPU の強さの順は変わらない（先攻のとき random に勝つ割合：rush 7%・defensive 25%・smart 64%）。精霊を足して、random に勝つ割合は下がった（random も精霊を出すため）。**試合の長さと迷う場面は、遊んで確かめる**
+- 画面：城のそばに「💧 あと4」のバッジを出す（`js/ui/Renderer.js`）。絵は仮（`js/ui/art.js`）
+
+### 戦いの属性を4つにした（木 → 風・土）
+人間の指示で、兵士同士の戦いの属性を 火・水・風・土 の4つにした（木はなくした）。**強弱の組み合わせは仮。**
+
+- 強弱：水→火→風→土→水の輪（矢印の先の属性に強い）。向かい合う属性（火と土・水と風）は、強くも弱くもない
+- 武器：木の斧をやめて、風の弓（`windBow`）と土の槌（`earthHammer`）にした（各1枚。武器は炎の剣・水の槍・風の弓・土の槌 各1と鉄の剣1）。魔物は、ゴブリンを風、ゴーレムを土にした
+- デッキ（`data/decks.json`）：木の斧を風の弓に置きかえた（土の槌は入れていない）
+- 確かめたこと：`node --test` は全部通る。`node tests/sim/run.js --games 400` は全組み合わせが決着し、CPU の強さの順は変わらない。**デッキ対戦の勝率は、バランスに勝つ割合が突撃61%・籠城58%で、仮の目安（49〜52%）よりずれている**（これは A1 の5枚補充を入れたときからで、属性の変更のせいではない）。デッキの調整は、遊んで確かめてから決める
+- 画面：属性のアイコン・武器の絵・説明文を風・土に直した（`js/ui/look.js`・`art.js`・`text.js`）。絵は仮
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

@@ -5,7 +5,8 @@
 export const ELEMENT_LOOK = {
   fire: { name: '火', icon: '🔥', iconName: 'fire', color: '#f97316' },
   water: { name: '水', icon: '💧', iconName: 'water', color: '#38bdf8' },
-  wood: { name: '木', icon: '🌿', iconName: 'wood', color: '#4ade80' },
+  wind: { name: '風', icon: '🌀', iconName: 'wind', color: '#34d399' },
+  earth: { name: '土', icon: '⛰️', iconName: 'earth', color: '#b08850' },
 };
 
 /** 兵士の駒に出す文字（なければカード名の1文字目） */
@@ -21,7 +22,8 @@ export const SOLDIER_MARK = {
 export const WEAPON_ICON = {
   flameSword: '🗡️',
   waterSpear: '🔱',
-  woodAxe: '🪓',
+  windBow: '🏹',
+  earthHammer: '🔨',
   ironSword: '⚔️',
 };
 

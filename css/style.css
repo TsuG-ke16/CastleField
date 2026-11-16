@@ -205,7 +205,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 .castle[data-color="blue"] .castle-label { border-color: #2a6cab; }
 .castle[data-color="orange"] .castle-label { border-color: #c05a1c; }
 .castle.current .castle-label { background: var(--gold); transform: scale(1.06); }
-.castle-armor {
+.castle-armor,
+.castle-spirit {
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -217,6 +218,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
   font-weight: 900;
   white-space: nowrap;
 }
+.castle-spirit { background: #ffeaa8; }
 .castle-hp {
   justify-self: start;
   width: min(100%, 112px);

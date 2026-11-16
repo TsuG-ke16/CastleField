@@ -236,6 +236,12 @@ export class Animations {
       case 'defenseEnded':
         model.phase = 'main';
         return undefined;
+      case 'spiritSummoned': return this.spiritSummoned(p, model);
+      case 'spiritTriggered': return this.spiritTriggered(p);
+      case 'spiritEnded': return this.spiritEnded(p, model);
+      case 'spellReflected': return this.spellReflected();
+      case 'soldierDecoyed': return this.soldierDecoyed();
+      case 'cardStolen': return this.cardStolen(p, model, ctx);
       case 'castleArmored': return this.castleArmored(p, model);
       case 'armorExpired': return this.armorExpired(p, model);
       case 'statusApplied': return this.statusesApplied(ev, queue, model);
@@ -342,18 +348,22 @@ export class Animations {
     }
   }
 
-  async cardPlayed({ playerId, cardId, type }, model, ctx) {
+  async cardPlayed({ playerId, cardId, type, free }, model, ctx) {
     const pl = model.players[playerId];
-    pl.handCount = Math.max(0, pl.handCount - 1);
     const def = this.cards[type] ?? {};
-    if (def.kind !== 'weapon' && def.kind !== 'defense') pl.playedThisTurn = true;
+    // 神頼みでタダで出したカード（free）は、山札の上から直接出る。手札は減らない
+    if (free) model.deckCount = Math.max(0, model.deckCount - 1);
+    else pl.handCount = Math.max(0, pl.handCount - 1);
+    if (!free && def.kind !== 'weapon' && def.kind !== 'defense') pl.playedThisTurn = true;
     pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
     if (!def.exhaust) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
     model.hand = model.hand.filter((c) => c.cardId !== cardId);
     let clone;
     let from;
     const app = this.el.app.getBoundingClientRect();
-    if (playerId === ctx.viewerId) {
+    if (free) {
+      // 手札からではなく、画面の上から出てくる
+    } else if (playerId === ctx.viewerId) {
       const taken = this.handView.takeCard(cardId);
       // 演出のあいだは手札を暗くしておく（出せるかどうかは、演出のあと main.js が canPlayCard で決め直す）
       this.handView.blockAll();
@@ -514,8 +524,72 @@ export class Animations {
     if (def.effect === 'damageEnemyCastle') return this.fireball(playerId, enemy);
     if (def.effect === 'damageEnemySoldiers') return this.thunder(enemy, roadId);
     if (SPELL_TINT[def.effect]) return this.mist(enemy, SPELL_TINT[def.effect], roadId);
+    if (def.effect === 'redrawHand') return this.banner('手札を引き直す！', UI_CONFIG.timing.shuffle, 'small');
+    if (def.effect === 'randomEffect') return this.banner('神頼み！', UI_CONFIG.timing.shuffle, 'small');
+    if (def.effect === 'stealCard') return this.banner('盗賊！', UI_CONFIG.timing.shuffle, 'small');
     // 回復などは castleHealed 側で見せる
     return undefined;
+  }
+
+  /** 精霊を呼ぶ：城のそばにバッジが出る */
+  async spiritSummoned({ playerId, type, spirit, amount, turns, targetId }, model) {
+    model.players[playerId].spirit = { type, spirit, amount, turns, targetId };
+    this.renderer.setSpirit(playerId, model.players[playerId].spirit);
+    if (this.skipping) return;
+    sound.play('heal');
+    this.banner(`${this.cards[type]?.name ?? '精霊'}！`, UI_CONFIG.timing.shuffle, 'small');
+    await this.delay(UI_CONFIG.timing.shuffle * 0.8);
+  }
+
+  /** 精霊が効く（このあと castleDamaged / castleHealed） */
+  async spiritTriggered({ type }) {
+    if (this.skipping) return;
+    this.banner(`${this.cards[type]?.name ?? '精霊'}`, UI_CONFIG.timing.shuffle * 0.7, 'small');
+    await this.delay(UI_CONFIG.timing.shuffle * 0.4);
+  }
+
+  async spiritEnded({ playerId }, model) {
+    model.players[playerId].spirit = null;
+    this.renderer.setSpirit(playerId, null);
+  }
+
+  /** 反射：撃たれた魔法が、撃った人の城に返る（このあと castleDamaged） */
+  async spellReflected() {
+    if (this.skipping) return;
+    sound.play('block');
+    this.banner('反射！', UI_CONFIG.timing.shuffle, 'turn mine');
+    await this.delay(UI_CONFIG.timing.shuffle * 0.8);
+  }
+
+  /** 身代わり：城に着いた兵士のダメージが消える（このあと兵士が消える） */
+  async soldierDecoyed() {
+    if (this.skipping) return;
+    sound.play('block');
+    this.banner('身代わり！', UI_CONFIG.timing.shuffle, 'turn mine');
+    await this.delay(UI_CONFIG.timing.shuffle * 0.8);
+  }
+
+  /** 盗賊：相手の手札から1枚奪う。自分が奪われたら手札から消え、奪ったら手札に入る */
+  async cardStolen({ playerId, victimId, cardId }, model, ctx) {
+    model.players[playerId].handCount += 1;
+    model.players[victimId].handCount = Math.max(0, model.players[victimId].handCount - 1);
+    if (victimId === ctx.viewerId) {
+      model.hand = model.hand.filter((c) => c.cardId !== cardId);
+      this.handView.takeCard(cardId);
+    } else {
+      this.renderer.setOppHandCount(model.players[victimId].handCount);
+    }
+    if (playerId === ctx.viewerId) {
+      const card = ctx.lookupCard(cardId);
+      if (card) {
+        model.hand.push(card);
+        this.handView.addCard(card);
+        sound.play('draw');
+      }
+    } else {
+      this.renderer.setOppHandCount(model.players[playerId].handCount);
+    }
+    await this.delay(UI_CONFIG.timing.draw * 3);
   }
 
   /** 毒の霧・氷の息：相手の兵士の列に色のついた霧をかける */

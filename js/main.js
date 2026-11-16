@@ -701,6 +701,7 @@ function modelFromState(st) {
       castleHp: p.castleHp,
       castleMaxHp: p.castleMaxHp,
       armor: p.armor ?? 0,
+      spirit: p.spirit ?? null,
       coins: p.coins ?? 0,
       handCount: p.handCount,
       playedThisTurn: p.playedThisTurn,

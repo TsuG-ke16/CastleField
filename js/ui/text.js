@@ -26,6 +26,7 @@ export const KIND_LABEL = {
 export function slotNote(def) {
   if (!def) return '';
   if (def.kind === 'weapon') return '付加：何枚でも出せる';
+  if (def.effect === 'reflectSpell' || def.effect === 'nullifySoldier') return '防御：攻撃を受けたときだけ出せる';
   if (def.kind === 'defense') return '防御：何枚でも出せる';
   return 'メイン：1ターンに1枚';
 }
@@ -35,8 +36,8 @@ export function elementName(element) {
   return ELEMENT_LOOK[element]?.name ?? '';
 }
 
-/** その属性が強い相手の属性（水は火に強い、火は木に強い、木は水に強い） */
-const ELEMENT_BEATS = { water: 'fire', fire: 'wood', wood: 'water' };
+/** その属性が強い相手の属性（水は火に強い、火は風に強い、風は土に強い、土は水に強い） */
+const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 // 効果（cards.json の effect）ごとの説明文の型
 const EFFECT_TEXT = {
@@ -46,6 +47,16 @@ const EFFECT_TEXT = {
   poisonEnemySoldiers: (c) => `相手の兵士全員に毒（${c.amount}ダメージ×${c.turns}回・盾が効かない）`,
   freezeEnemySoldiers: (c) => `相手の兵士全員を${c.turns}回休みにする`,
   shieldSoldier: (c) => `自分の兵士に盾${c.amount}（ダメージを先に受ける）`,
+  summonSpirit: (c) => {
+    const t = c.turns;
+    const text = {
+      fire: `精霊を呼ぶ：${t}ターン、毎ターン相手の城に${c.amount}ダメージ`,
+      water: `精霊を呼ぶ：${t}ターン、毎ターン自分の城HP+${c.amount}`,
+      wind: `精霊を呼ぶ：${t}ターン、自分の兵士が1ターンに最低${c.amount}マス進む`,
+      earth: `精霊を呼ぶ：${t}ターン、自分の城と兵士が受けるダメージ-${c.amount}（最低1）`,
+    }[c.spirit];
+    return `${text}。1人1体まで（呼ぶと入れ替わる）`;
+  },
   armorCastle: (c) => `自分の城を${c.amount}守る（次の自分のターンまで）`,
 };
 
@@ -73,6 +84,8 @@ export function cardDescription(def, rules, opts = {}) {
     const make = EFFECT_TEXT[def.effect];
     text = make ? make(def, rules ?? {}, opts) : '';
   }
+  // レーンを選ぶ魔法は、選んだ1レーンの兵士だけに効く（rules.laneCount が2以上のとき）
+  if (def.scope === 'lane' && (rules?.laneCount ?? 1) > 1) text = text.replace('相手の兵士全員', '選んだ1レーンの相手の兵士');
   if (def.exhaust) text += '。使い切り';
   return text;
 }
