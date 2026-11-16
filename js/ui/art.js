@@ -290,6 +290,19 @@ const CARD_ART = {
     `<ellipse cx="38" cy="48" rx="3.4" ry="3" fill="${INK}"/><ellipse cx="62" cy="48" rx="3.4" ry="3" fill="${INK}"/>` +
     `<rect x="30" y="64" width="24" height="30" rx="4" fill="#b0703c" ${S} stroke-width="3.5" transform="rotate(-12 42 80)"/>` +
     `<rect x="52" y="62" width="24" height="30" rx="4" fill="#4da3e8" ${S} stroke-width="3.5" transform="rotate(10 64 78)"/>`,
+  // 魔法の追加カード（仮の絵：既存の絵の色違い）
+  minorHeal: () => bg('#e2f7d8', '#f5fdee') +
+    `<path d="M50 78 Q22 58 25 40 Q28 28 40 31 Q46 33 50 39 Q54 33 60 31 Q72 28 75 40 Q78 58 50 78 Z" fill="#f9a1b4" ${S} stroke-width="4"/>` +
+    `<path d="M80 14 v12 M74 20 h12" stroke="#3fb950" stroke-width="5" stroke-linecap="round"/>`,
+  toxicRain: () => bg('#d4c2ec', '#ece2f9') +
+    `<path d="M18 44 Q6 40 12 28 Q18 18 30 22 Q36 8 52 12 Q66 8 72 22 Q90 22 90 36 Q90 46 76 46 Z" fill="#7d5fb0" ${S} stroke-width="4"/>` +
+    `<g stroke="#9ed12a" stroke-width="5" stroke-linecap="round"><path d="M30 58 v10 M48 62 v14 M66 58 v10 M38 78 v8 M58 80 v8"/></g>`,
+  glacier: () => bg('#9fd6f2', '#dff2fc') +
+    `<path d="M10 90 L28 40 L40 62 L56 16 L72 58 L84 40 L94 90 Z" fill="#cfeeff" ${S} stroke-width="4"/>` +
+    `<path d="M56 16 L48 50 L62 54 Z" fill="#fff" opacity=".85"/>`,
+  bolt: () => bg('#cdd5f0', '#eaeefb') +
+    `<path d="M58 8 L30 52 H48 L38 92 L72 40 H54 Z" fill="#ffe94d" ${S} stroke-width="4"/>` +
+    `<path d="M16 30 l8 4 M80 24 l-8 6 M84 70 l-8 -4" stroke="#8a93c8" stroke-width="4" stroke-linecap="round"/>`,
   sandbag: () => bg('#eadfc6', '#f8f1df') +
     `<path d="M8 86 Q6 66 22 62 H46 Q62 66 60 86 Z" fill="#d7bf8a" ${S} stroke-width="4"/>` +
     `<path d="M40 62 Q38 42 54 38 H76 Q92 42 90 62 Z" fill="#c9ae74" ${S} stroke-width="4"/>` +
