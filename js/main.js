@@ -500,11 +500,13 @@ function startLocal(seedOverride, cpuLevel = null, options = null) {
     if (options) {
       Object.assign(opts.rules,{playerCount:options.playerCount,winCondition:options.winCondition,deckMode:options.deckMode,roadLayout:'plaza'});
       opts.castles=structuredClone(castles);opts.decks=structuredClone(decks);
-      opts.setup={castles:Array(options.playerCount).fill(rules.defaultCastle??'standard'),decks:Array(options.playerCount).fill(rules.defaultDeck??'balanced')};
+      opts.setup={castles:Array(options.playerCount).fill(rules.defaultCastle??'standard')};
+      if(options.deckMode==='own')opts.setup.decks=Array(options.playerCount).fill(rules.defaultDeck??'balanced');
       // 自分の席は後で決まるため、選択を割り当てる席を同じシードから求める。
       const seatRng=mulberry32(seed ^ 0x9e3779b9);
       const humanSeat=cpuLevel?Math.floor(seatRng()*options.playerCount):0;
-      opts.setup.castles[humanSeat]=options.castle;opts.setup.decks[humanSeat]=options.deck;
+      opts.setup.castles[humanSeat]=options.castle;
+      if(opts.setup.decks)opts.setup.decks[humanSeat]=options.deck;
       if(options.teams==='auto'){
         const seats=Array.from({length:options.playerCount},(_,i)=>i);
         for(let i=seats.length-1;i>0;i--){const j=Math.floor(seatRng()*(i+1));[seats[i],seats[j]]=[seats[j],seats[i]];}
