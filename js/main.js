@@ -142,6 +142,20 @@ async function loadOptionalJson(path) {
 
 function uiContext() { return { session, viewerId, busy, sending, luckFrom: upgrades?.luck?.fromRarity }; }
 
+// 読み込み中の画面：進み具合を出して、起動が終わったら消す
+function setLoading(ratio, text) {
+  const fill = document.getElementById('loading-fill');
+  if (fill) fill.style.width = `${Math.max(4, Math.round(ratio * 100))}%`;
+  const t = document.getElementById('loading-text');
+  if (t && text) t.textContent = text;
+}
+function hideLoading() {
+  const box = document.getElementById('loading');
+  if (!box) return;
+  box.classList.add('done');
+  setTimeout(() => box.remove(), 300);
+}
+
 async function boot() {
   try {
     [cards, rules, monsters, upgrades, rarities] = await Promise.all([
@@ -150,13 +164,17 @@ async function boot() {
     ]);
   } catch (err) {
     console.error(err);
+    hideLoading();
     showError(`起動できませんでした：${err.message}\n` +
       'リポジトリのルートで「python3 -m http.server」（Windows は「python -m http.server」）を実行し、' +
       'http://localhost:8000 を開いてください。');
     return;
   }
 
-  await preloadAssets(); // 画像を先に読み込む（読み込み中に代わりの絵が見えないように）
+  setLoading(0.05, 'データを読み込みました');
+  // 画像を先に読み込む（読み込み中に代わりの絵が見えないように）。進み具合は読み込み画面に出す
+  await preloadAssets(8000, (done, total) => setLoading(0.05 + 0.9 * done / total, `画像を読み込み中… ${done} / ${total}`));
+  setLoading(1, 'はじめます');
 
   // デバッグ：URL の rules={"monsterFirstRound":1,...} で、ルールの一部だけ変えて試せる（data/ は書き換えない）
   if (DEBUG && params.has('rules')) {
@@ -245,6 +263,7 @@ async function boot() {
     showTitle();
     resumeOnline(); // ページを読み直したとき：前の部屋が残っていれば、つなぎ直す
   }
+  hideLoading();
 }
 
 // ---------- タイトル・メニュー ----------
@@ -1238,4 +1257,8 @@ function showError(text) {
   el.error.hidden = false;
 }
 
-boot();
+boot().catch((err) => {
+  console.error(err);
+  hideLoading();
+  showError(`起動できませんでした：${err.message}`);
+});

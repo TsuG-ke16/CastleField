@@ -12,6 +12,14 @@
 </head>
 <body>
   <div id="app">
+    <!-- 読み込み中の画面：画像とデータがそろうまで、組みかけの盤面を見せないために出す（起動が終わったら main.js が消す） -->
+    <div id="loading" role="status" aria-live="polite">
+      <div class="loading-box">
+        <div class="loading-name">キャッスルフィールド</div>
+        <div class="loading-bar" aria-hidden="true"><span id="loading-fill"></span></div>
+        <div class="loading-text" id="loading-text">読み込み中…</div>
+      </div>
+    </div>
     <div id="scenery" aria-hidden="true"></div>
 
     <div class="game-brand"><span class="brand-seal" aria-hidden="true">✦</span><span>CASTLE FIELD</span><span class="brand-caption">城攻めカードバトル</span></div>

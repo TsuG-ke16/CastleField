@@ -390,16 +390,18 @@ const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
 const READY = new Set();
 export const isAssetReady = (path) => READY.has(path);
-export async function preloadAssets(timeoutMs = 8000) {
+export async function preloadAssets(timeoutMs = 8000, onProgress = null) {
   let paths = ['bg/board.png', 'bg/title.png', 'ui/logo.png'];
   try {
     const res = await fetch('assets/asset-manifest.json');
     if (res.ok) paths = [...new Set([...paths, ...Object.keys(await res.json())])].filter((p) => p !== 'style-reference.png');
   } catch { /* 一覧がなくても、読めた分だけで動く */ }
+  let done = 0;
+  const step = () => { done += 1; onProgress?.(done, paths.length); };
   const load = (path) => new Promise((resolve) => {
     const img = new Image();
-    img.onload = async () => { try { await img.decode?.(); } catch { /* 見られればよい */ } READY.add(path); resolve(); };
-    img.onerror = () => resolve();
+    img.onload = async () => { try { await img.decode?.(); } catch { /* 見られればよい */ } READY.add(path); step(); resolve(); };
+    img.onerror = () => { step(); resolve(); };
     img.src = `assets/${path}`;
   });
   await Promise.race([Promise.all(paths.map(load)), new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
