@@ -17,6 +17,7 @@ export const EFFECTS = {
     redrawHand: [], // 天の恵み：手札を全部引き直す
     randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
     stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
+    gainCoins: ['amount'], // コインを増やす
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
   },
   defense: {

@@ -118,3 +118,21 @@ test('ドロー：drawPerPlayed なら、前のターンに出した枚数ぶん
   g.endTurn(); // p1 に戻る：前のターンに1枚出した → 1枚引く
   assert.equal(p1(), before + 1);
 });
+
+test('コイン：最初に initialCoins、自分のターンの始めに coinPerTurn もらえる。コインのカードで増やせる', () => {
+  const { cards, rules } = buildData({ rules: { initialCoins: 5, coinPerTurn: 1 } });
+  const g = new Game({ cards, rules, rng: seededRng(7) });
+  assert.equal(g.getState('p1').players.p1.coins, 5);
+  assert.equal(g.getState('p1').players.p2.coins, 5);
+  g.debugSetHand('p1', ['coinPouch']);
+  const log = recordEvents(g, ['coinsChanged']);
+  g.start();
+  assert.equal(g.getState('p1').players.p1.coins, 6); // 最初のターンの始め
+  assert.equal(log[0].reason, 'turn');
+  const id = g.getState('p1').players.p1.hand.find((c) => c.type === 'coinPouch').cardId;
+  assert.equal(g.playCard(id).ok, true);
+  assert.equal(g.getState('p1').players.p1.coins, 6 + cards.coinPouch.amount);
+  assert.equal(log.at(-1).reason, 'card');
+  g.endTurn(); // p2 のターン
+  assert.equal(g.getState('p1').players.p2.coins, 6);
+});

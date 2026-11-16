@@ -108,6 +108,9 @@ const OPTIONAL_RULES = {
   deckSize: 100,
   // true なら、毎ターンのドローが「前のターンに出したカードの枚数」以上になる（出した分を引き直す）
   drawPerPlayed: false,
+  // 試合の最初に持っているコインと、自分のターンの始めにもらえるコイン
+  initialCoins: 0,
+  coinPerTurn: 0,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -188,6 +191,7 @@ export class Game {
       const cdef = castleType ? castles[castleType] : {};
       const maxHp = Math.max(1, this.rules.castleMaxHp + this.seatBonus(seat) + (cdef.hpBonus ?? 0));
       const player = new Player(id, maxHp);
+      player.coins = this.rules.initialCoins;
       player.castleType = castleType;
       player.castleDef = cdef;
       player.maxHand = Math.max(0, this.rules.maxHand + (cdef.maxHandBonus ?? 0));
@@ -266,7 +270,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -529,6 +533,9 @@ export class Game {
       player.armor = 0;
       this.emit('armorExpired', { playerId });
     }
+
+    // コイン：自分のターンの始めに coinPerTurn 枚もらえる
+    if (this.rules.coinPerTurn > 0) this.changeCoins(player, this.rules.coinPerTurn, 'turn');
 
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
@@ -980,6 +987,8 @@ export class Game {
           reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
         };
       }
+      case 'gainCoins':
+        return { targets: [{ playerId: player.id }], reason: '' };
       case 'redrawHand':
         return {
           targets: player.hand.some((c) => c.cardId !== card.cardId) ? [{ playerId: player.id }] : [],
@@ -1207,6 +1216,12 @@ export class Game {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         const healed = player.castle.heal(amount);
         this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        break;
+      }
+
+      case 'gainCoins': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        this.changeCoins(player, amount, 'card');
         break;
       }
 

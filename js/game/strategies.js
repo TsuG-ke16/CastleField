@@ -355,6 +355,8 @@ function smartTurn(game, pid, ctx) {
     ...typesWithEffect(ctx, 'healOwnCastle'),
   ]);
   if (played) return;
+  // 出すものがないとき、コインを増やすカード
+  if (playFirst(game, playable, typesWithEffect(ctx, 'gainCoins'))) return;
   // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み
   // 精霊：今いなければ、1体呼ぶ（大精霊は使い切りなので、城HPが半分を切ったときだけ）
   if (!me.spirit) {

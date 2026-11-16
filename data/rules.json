@@ -23,5 +23,7 @@
   "defaultCastle": "standard",
   "defaultDeck": "balanced",
   "deckSize": 100,
-  "drawPerPlayed": true
+  "drawPerPlayed": true,
+  "initialCoins": 5,
+  "coinPerTurn": 1
 }

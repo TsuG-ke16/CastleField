@@ -231,9 +231,10 @@ test('手札にないカードは、相手の手札にあってもなくても�
     assert.deepEqual(r1, r2);
     assert.equal(r1.reason, 'そのカードは手札にありません');
     // 強化のIDにプロトタイプのキーを送っても、コインは変わらない
+    const before = game.getState('p1').players.p1.coins;
     const r3 = await post(base, '/api/action', { token: a.token, method: 'buyUpgrade', args: ['constructor'] });
     assert.equal(r3.ok, false);
-    assert.equal(game.getState('p1').players.p1.coins, 0);
+    assert.equal(game.getState('p1').players.p1.coins, before);
   } finally {
     server.closeAllConnections();
     server.close();
