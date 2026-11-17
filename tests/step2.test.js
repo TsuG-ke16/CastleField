@@ -27,13 +27,13 @@ const after = (log, i) => log.slice(i).map((e) => e.event).filter((e) => e !== '
 test('付加・防御は何枚でも出せる。メインは1ターン1枚', () => {
   const { game } = setup({ p1: ['infantry', 'knight', 'wall', 'shield', 'shield', 'flameSword'] });
   assert.equal(play(game, 'infantry').ok, true);
-  assert.equal(play(game, 'knight').reason, 'このターンはもうメインのカードを出しました');
+  assert.equal(play(game, 'knight').reason, 'このターンに出せる兵士は1枚までです');
   assert.equal(play(game, 'wall').ok, true);
   assert.equal(play(game, 'shield').ok, true);
   assert.equal(play(game, 'shield').ok, true);
   assert.equal(play(game, 'flameSword').ok, true);
   const me = game.getState('p1').players.p1;
-  assert.equal(me.playedThisTurn, true);
+  assert.equal(me.soldiersPlayedThisTurn, 1);
   assert.equal(me.cardsPlayedThisTurn, 5);
 });
 
@@ -215,4 +215,24 @@ test('cards の間違い：兵士に element', () => {
   const cards = loadFixture('cards-step2.json');
   const rules = loadFixture('rules.json');
   assert.throws(() => new Game({ cards: { ...cards, infantry: { ...cards.infantry, element: 'fire' } }, rules }), /element/);
+});
+
+test('兵士は soldiersPerTurn 枚まで。回復はメイン1枠・精霊とコインは何枚でも、攻撃の魔法は別に1枚', () => {
+  const cards = loadFixture('cards.json');
+  const rules = { ...loadFixture('rules.json'), soldiersPerTurn: 2 };
+  const game = new Game({ cards, rules, rng: seededRng(1) });
+  game.debugSetHand('p1', ['infantry', 'infantry', 'infantry', 'fireball', 'fireball', 'heal', 'heal']);
+  game.debugSetHand('p2', ['infantry']);
+  game.debugSetDeck(Array(30).fill('heal'));
+  game.start();
+  const id = (t) => game.getState('p1').players.p1.hand.find((c) => c.type === t).cardId;
+  game.getState('p1');
+  assert.equal(game.playCard(id('infantry')).ok, true);
+  assert.equal(game.playCard(id('infantry')).ok, true);
+  assert.equal(game.canPlayCard(id('infantry')).ok, false);
+  assert.equal(game.playCard(id('fireball')).ok, true);
+  assert.equal(game.canPlayCard(id('fireball')).ok, false);
+  // 城HPを減らして、ヒールを2枚続けて出せる（メインは使わない）
+  game.debugSetCastleHp('p1', 10);
+  assert.equal(game.playCard(id('heal')).ok, false); // 攻撃の魔法でメインを使ったあとは、回復も出せない
 });

@@ -24,6 +24,7 @@
   "defaultDeck": "balanced",
   "deckSize": 100,
   "drawPerPlayed": true,
+  "soldiersPerTurn": 3,
   "initialCoins": 5,
   "coinPerTurn": 1,
   "monsterAttackGrowth": 1,

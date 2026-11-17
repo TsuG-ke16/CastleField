@@ -29,7 +29,10 @@ export function slotNote(def) {
   if (def.kind === 'weapon') return '付加：何枚でも出せる';
   if (def.effect === 'reflectSpell' || def.effect === 'nullifySoldier') return '防御：攻撃を受けたときだけ出せる';
   if (def.kind === 'defense') return '防御：何枚でも出せる';
-  return 'メイン：1ターンに1枚';
+  if (def.effect === 'wild') return '合成専用：どのカードとでも合成できる（出せません）';
+  if (def.kind === 'soldier') return '兵士：1ターンに複数枚出せる';
+  if (['summonSpirit', 'gainCoins'].includes(def.effect)) return '精霊・コイン：何枚でも出せる（メインを使わない）';
+  return 'メイン：攻撃の魔法・回復は1ターンに1枚';
 }
 
 /** 属性の名前（"fire" → "火"） */
@@ -43,7 +46,7 @@ const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'wate
 // 効果（cards.json の effect）ごとの説明文の型
 const missingDescriptions = new Set();
 const EFFECT_TEXT = {
-  gainCoins: (c) => `コインを${c.amount}獲得（メインの1枚）`,
+  gainCoins: (c) => `コインを${c.amount}獲得（何枚でも出せる）`,
   damageEnemyCastle: (c, rules, opts) => `相手の城に${c.amount}ダメージ${opts.monsters ? '（魔物も狙える）' : ''}`,
   damageEnemySoldiers: (c) => `相手の兵士全員に${c.amount}ダメージ`,
   healOwnCastle: (c) => `自分の城HP+${c.amount}（上限まで）`,

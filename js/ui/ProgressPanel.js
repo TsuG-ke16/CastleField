@@ -66,11 +66,20 @@ export class ProgressPanel {
     const { state, viewerId, busy, sending, session } = this.state();
     if (!state || state.phase !== 'main' || state.currentPlayer !== viewerId || busy || sending) return [];
     const groups = new Map();
-    for (const card of state.players[viewerId]?.hand ?? []) {
+    const hand = state.players[viewerId]?.hand ?? [];
+    for (const card of hand) {
       if (!this.cards[card.type]?.fuseTo) continue;
       const list = groups.get(card.type) ?? []; list.push(card); groups.set(card.type, list);
     }
-    return [...groups.values()].filter((list) => list.length >= 2 && (!session.canFuse || session.canFuse(list[0].cardId, list[1].cardId).ok));
+    // 適応：どのカードとでも合成できる。合成先のあるカードの種類ごとに「適応＋そのカード」の組を作る
+    const wild = hand.find((c) => this.cards[c.type]?.effect === 'wild');
+    const result = [];
+    for (const [type, list] of groups) {
+      const pair = list.length >= 2 ? list.slice(0, 2) : wild ? [wild, list[0]] : null;
+      if (pair) result.push({ pair, type, withWild: list.length < 2 });
+      if (list.length >= 2 && wild) result.push({ pair: [wild, list[0]], type, withWild: true });
+    }
+    return result.filter((x) => !session.canFuse || session.canFuse(x.pair[0].cardId, x.pair[1].cardId).ok);
   }
   refresh() {
     const { state, viewerId } = this.state();
@@ -84,19 +93,25 @@ export class ProgressPanel {
   }
   showFusion() {
     this.open('fusion', 'カードを合成');
-    this.content.append(make('p', 'progress-note', '同じ種類を2枚使い、次のレアリティのカードを1枚獲得。メインの1枚には数えません。'));
+    this.content.append(make('p', 'progress-note', '同じ種類を2枚（または適応＋好きな1枚）使い、次のレアリティのカードを1枚獲得。メインの1枚には数えません。'));
     const pairs = this.pairs();
     if (!pairs.length) {
       const { state, viewerId, busy, sending } = this.state();
       this.content.append(make('p', 'progress-empty', busy || sending ? '演出や操作の完了後に合成できます。' : state?.phase !== 'main' || state?.currentPlayer !== viewerId ? '自分のメインの場面で合成できます。' : '合成できる組み合わせがありません。同じ種類のカードを2枚集めてください。レジェンドは合成できません。'));
     }
-    for (const list of pairs) {
-      const def = this.cards[list[0].type], next = this.cards[def.fuseTo];
+    for (const { pair: list, type, withWild } of pairs) {
+      const def = this.cards[type], next = this.cards[def.fuseTo];
       const btn = make('button', 'fusion-pair'); btn.type = 'button';
       const art = make('div', 'fusion-art'); mountMiniCard(art, def.fuseTo, next, this.rarities, { showName: false });
       const text = make('span', 'fusion-text');
-      text.append(make('span', '', `${def.name} ×2 →`), make('b', '', next.name), make('small', '', this.rarities?.[next.rarity]?.name ?? next.rarity));
+      text.append(make('span', '', withWild ? `適応 ＋ ${def.name} →` : `${def.name} ×2 →`), make('b', '', next.name), make('small', '', this.rarities?.[next.rarity]?.name ?? next.rarity));
       btn.style.setProperty('--rarity', this.rarities?.[next.rarity]?.color ?? '#999');
+      if (withWild) {
+        const source = make('div', 'fusion-source');
+        const wild = list.find(card => this.cards[card.type]?.effect === 'wild');
+        mountMiniCard(source, wild.type, this.cards[wild.type], this.rarities);
+        btn.append(source);
+      }
       btn.append(art, text, make('span', 'fusion-label', '合成する'));
       btn.onclick = () => { this.close(); this.onFuse(list[0].cardId, list[1].cardId); };
       this.content.append(btn);

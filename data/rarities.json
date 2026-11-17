@@ -11,7 +11,7 @@
   },
   "rare": {
     "name": "レア",
-    "dropRate": 14,
+    "dropRate": 13.18,
     "color": "#3d7fe0"
   },
   "epic": {
@@ -23,5 +23,11 @@
     "name": "レジェンド",
     "dropRate": 2,
     "color": "#f0a020"
+  },
+  "special": {
+    "name": "スペシャル",
+    "dropRate": 0.82,
+    "color": "#c77dff",
+    "special": true
   }
 }

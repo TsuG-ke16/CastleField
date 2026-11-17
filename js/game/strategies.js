@@ -84,6 +84,13 @@ function weakest(game, targets) {
 }
 
 /** 種類の優先順に、出せる最初のカードを出す */
+/** 出せる順の優先度に従って、出せなくなるまで続けて出す（何枚でも出せるカード用） */
+function playRepeat(game, pid, typesInOrder) {
+  for (let i = 0; i < 15; i++) {
+    if (!playFirst(game, view(game, pid).playable, typesInOrder)) return;
+  }
+}
+
 function playFirst(game, playable, typesInOrder) {
   for (const t of typesInOrder) {
     const c = playable.find((x) => x.type === t);
@@ -210,8 +217,7 @@ const RAW_STRATEGIES = {
   /** 攻撃だけ：城を直接たたく魔法 → 兵士 */
   aggro: {
     takeTurn(game, pid, rng, ctx) {
-      const { playable } = view(game, pid);
-      playFirst(game, playable, [...typesWithEffect(ctx, 'damageEnemyCastle'), ...soldierTypes(ctx)]);
+      playRepeat(game, pid, [...typesWithEffect(ctx, 'damageEnemyCastle'), ...soldierTypes(ctx)]);
     },
     respond(game, pid, rng, ctx) {
       respondDefense(game, pid, rng, ctx, 'never');
@@ -235,10 +241,8 @@ const RAW_STRATEGIES = {
   /** 守り優先：回復 → 兵士への魔法 → 兵士 → 城への魔法 */
   defensive: {
     takeTurn(game, pid, rng, ctx) {
-      const { playable } = view(game, pid);
       playSupports(game, pid, ctx);
-      const after = view(game, pid).playable;
-      playFirst(game, after, [
+      playRepeat(game, pid, [
         ...typesWithEffect(ctx, 'healOwnCastle'),
         ...typesWithEffect(ctx, 'damageEnemySoldiers'),
         ...soldierTypes(ctx),
@@ -255,8 +259,7 @@ const RAW_STRATEGIES = {
   rush: {
     takeTurn(game, pid, rng, ctx) {
       buyUpgrades(game, pid, ctx);
-      const { playable } = view(game, pid);
-      playFirst(game, playable, [...typesWithEffect(ctx, 'damageEnemyCastle'), ...soldierTypes(ctx)]);
+      playRepeat(game, pid, [...typesWithEffect(ctx, 'damageEnemyCastle'), ...soldierTypes(ctx)]);
       playSupports(game, pid, ctx);
     },
     respond(game, pid, rng, ctx) {
@@ -313,21 +316,32 @@ function buyUpgrades(game, pid, ctx) {
   }
 }
 
-/** 手札に同じカードが2枚あれば合成する（1つ上のレアリティになる。レジェンドは合成できない） */
-function fuseAll(game, pid) {
+/**
+ * 手札に同じカードが2枚あれば合成する（1つ上のレアリティになる。レジェンドは合成できない）。
+ * そのあと、適応（どのカードとでも合成できる）は、合成先がある中でいちばん高いレアリティのカードと合成する
+ */
+function fuseAll(game, pid, ctx) {
+  const isWild = (c) => ctx.cards[c.type]?.effect === 'wild';
   for (let i = 0; i < 20; i++) {
     const hand = game.getState(pid).players[pid].hand;
     let done = false;
     for (let a = 0; a < hand.length && !done; a++) {
+      if (isWild(hand[a])) continue;
       const b = hand.findIndex((c, j) => j > a && c.type === hand[a].type);
       if (b >= 0 && game.fuse(hand[a].cardId, hand[b].cardId).ok) done = true;
     }
-    if (!done) return;
+    if (done) continue;
+    const wild = hand.find(isWild);
+    if (!wild) return;
+    const order = Object.keys(ctx.rarities ?? { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 });
+    const rank = (c) => order.indexOf(ctx.cards[c.type].rarity);
+    const partners = hand.filter((c) => !isWild(c) && ctx.cards[c.type].fuseTo).sort((x, y) => rank(y) - rank(x));
+    if (!partners.length || !game.fuse(wild.cardId, partners[0].cardId).ok) return;
   }
 }
 
-function smartTurn(game, pid, ctx) {
-  fuseAll(game, pid);
+function smartStep(game, pid, ctx) {
+  fuseAll(game, pid, ctx);
   const { me, enemies, playable } = view(game, pid);
   const enemy = enemies[0];
   const castleSpells = typesWithEffect(ctx, 'damageEnemyCastle');
@@ -340,37 +354,44 @@ function smartTurn(game, pid, ctx) {
       const m = st.monsters.find((x) => x.monsterId === t.monsterId);
       return m.hp <= ctx.cards[c.type].amount && (m.reward >= 5 || ['rare', 'epic', 'legendary'].includes(m.rewardRarity));
     });
-    if (kill && game.playCard(c.cardId, kill).ok) return;
+    if (kill && game.playCard(c.cardId, kill).ok) return true;
   }
   // とどめになるなら城への魔法
   for (const t of castleSpells) {
-    if (enemy && ctx.cards[t].amount >= enemy.castleHp && playFirst(game, playable, [t])) return;
+    if (enemy && ctx.cards[t].amount >= enemy.castleHp && playFirst(game, playable, [t])) return true;
   }
-  if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, typesWithEffect(ctx, 'healOwnCastle'))) return;
-  if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return;
+  if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, typesWithEffect(ctx, 'healOwnCastle'))) return true;
+  if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;
   const threat = enemy && enemy.soldiers.some((s) => s.position + ctx.cards[s.type].speed >= L);
-  if (threat && playFirst(game, playable, typesWithEffect(ctx, 'freezeEnemySoldiers'))) return;
-  if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'poisonEnemySoldiers'))) return;
+  if (threat && playFirst(game, playable, typesWithEffect(ctx, 'freezeEnemySoldiers'))) return true;
+  if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'poisonEnemySoldiers'))) return true;
   const played = playFirst(game, playable, [
     ...soldierTypes(ctx),
     ...castleSpells,
     ...typesWithEffect(ctx, 'damageEnemySoldiers'),
     ...typesWithEffect(ctx, 'healOwnCastle'),
   ]);
-  if (played) return;
+  if (played) return true;
   // 出すものがないとき、コインを増やすカード
-  if (playFirst(game, playable, typesWithEffect(ctx, 'gainCoins'))) return;
+  if (playFirst(game, playable, typesWithEffect(ctx, 'gainCoins'))) return true;
   // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み
   // 精霊：今いなければ、1体呼ぶ（大精霊は使い切りなので、城HPが半分を切ったときだけ）
   if (!me.spirit) {
     const spirits = typesWithEffect(ctx, 'summonSpirit').filter((t) => !ctx.cards[t].exhaust || me.castleHp * 2 < me.castleMaxHp);
-    if (playFirst(game, playable, spirits)) return;
+    if (playFirst(game, playable, spirits)) return true;
   }
-  if (enemy && enemy.handCount >= 3 && playFirst(game, playable, typesWithEffect(ctx, 'stealCard'))) return;
-  if (me.hand.length >= 4 && playFirst(game, playable, typesWithEffect(ctx, 'redrawHand'))) return;
-  playFirst(game, playable, typesWithEffect(ctx, 'randomEffect'));
+  if (enemy && enemy.handCount >= 3 && playFirst(game, playable, typesWithEffect(ctx, 'stealCard'))) return true;
+  if (me.hand.length >= 4 && playFirst(game, playable, typesWithEffect(ctx, 'redrawHand'))) return true;
+  return playFirst(game, playable, typesWithEffect(ctx, 'randomEffect'));
+}
+
+/** 出せるカードがなくなる（または役に立つ手がなくなる）まで、1枚ずつ出す。兵士・回復・精霊などは1ターンに何枚でも出せる */
+function smartTurn(game, pid, ctx) {
+  for (let i = 0; i < 15; i++) {
+    if (!smartStep(game, pid, ctx)) return;
+  }
 }
 
 /** どの戦い方も、ターンの最初に同点の選び方の乱数を入れる */

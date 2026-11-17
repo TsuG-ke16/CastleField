@@ -193,6 +193,12 @@ function svgCastleArt(color) {
 const bg = (a, b) => `<rect width="100" height="100" fill="${a}"/><circle cx="50" cy="50" r="46" fill="${b}" opacity=".6"/>`;
 
 const CARD_ART = {
+  adapt: () => bg('#f1e4ff', '#fff6e0') +
+    `<defs><linearGradient id="rbw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5d73"/><stop offset=".2" stop-color="#ffb347"/><stop offset=".4" stop-color="#fff176"/><stop offset=".6" stop-color="#5fd98f"/><stop offset=".8" stop-color="#4db8f0"/><stop offset="1" stop-color="#b57cf0"/></linearGradient></defs>` +
+    `<path d="M50 8 L90 50 L50 92 L10 50 Z" fill="url(#rbw)" ${S} stroke-width="4"/>` +
+    `<path d="M50 8 L50 92 M10 50 L90 50" fill="none" stroke="#fff" stroke-width="2.4" opacity=".7"/>` +
+    `<path d="M26 34 L40 20" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".85"/>` +
+    `<path d="M80 18 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 Z M18 70 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 Z" fill="#fff" ${S} stroke-width="1.6"/>`,
   infantry: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${infantryBody(c)}</g>`,
   knight: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${knightBody(c)}</g>`,
   fireball: () => bg('#ffd9a8', '#fff0cf') +
@@ -393,7 +399,7 @@ function escapeText(s) {
 }
 
 // 画像の割り当てはUIだけが持つ。読み込み前・失敗時は元のSVGを表示する。
-const CARD_TYPES = new Set([...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
+const CARD_TYPES = new Set(["adapt", ...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
 const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // 起動時に全部の画像を先に読み込んでおく。読み込めた画像は、代わりのSVGを出さず最初からPNGで描く
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
@@ -418,7 +424,7 @@ export async function preloadAssets(timeoutMs = 8000, onProgress = null, {phase 
 export function imageArt(path, fallback = '', cls = '') {
   return `<span class="asset-art ${READY.has(path)?'asset-loaded ':''}${cls}" aria-hidden="true"><span class="asset-wait">…</span><img class="asset-image" src="assets/${path}" alt="" decoding="async" draggable="false"></span>`;
 }
-document.addEventListener('error', e => { if(e.target instanceof HTMLImageElement && e.target.classList.contains('asset-image')){const wait=e.target.parentElement.querySelector('.asset-wait');if(wait)wait.textContent='画像なし';} },true);
+document.addEventListener('error', e => { if(e.target instanceof HTMLImageElement && e.target.classList.contains('asset-image')){if(e.target.parentElement.classList.contains('adapt-asset') || e.target.parentElement.classList.contains('icon-asset'))e.target.parentElement.classList.remove('asset-loaded');const wait=e.target.parentElement.querySelector('.asset-wait');if(wait)wait.textContent='画像なし';} },true);
 // loadはバブルしないためキャプチャする。インラインハンドラを使わない。
 document.addEventListener('load', (e) => {
   if (e.target instanceof HTMLImageElement && e.target.classList.contains('asset-image')) {
@@ -434,6 +440,10 @@ function generatedSoldierPng(path, cls, name) {
 export function cardArt(type, color = 'blue', name = '') {
   if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`cards/card-${kebab(type)}.png`, 'art card-art-svg', name);
   const fallback = svgCardArt(type, color, name);
+  if (type === 'adapt') {
+    return imageArt('cards/card-adapt.png', fallback, 'art card-art-svg adapt-asset')
+      .replace('<span class="asset-wait">…</span>', `<span class="asset-fallback">${fallback}</span>`);
+  }
   return CARD_TYPES.has(type) ? imageArt(`cards/card-${kebab(type)}.png`, fallback, 'art card-art-svg') : fallback;
 }
 export function unitArt(type, color, name = '') {
@@ -456,9 +466,15 @@ export function castleArt(color, damage = 0, kind = 'standard') {
 export function spiritSprite(element, great = false) {
   return imageArt(`units/${great ? 'great-' : ''}${element}-spirit.png`, '', 'art spirit-art');
 }
-export function icon(name) {
-  if(name === 'card') return imageArt('ui/card-back.png', '', 'ic card-back-icon');
-  const fallback = svgIcon(name);
-  return ['fire','water','wind','earth','heart','coin'].includes(name)
-    ? imageArt(`ui/icon-${name}.png`, fallback, `ic ic-${name}`) : fallback;
+// Existing SVGs and rarity characters remain visible until the PNG loads or if it fails.
+const ICON_FALLBACK = { 'kind-soldier': 'sword', 'kind-spell': 'fire', 'kind-weapon': 'hammer', 'kind-defense': 'shield', 'kind-wild': 'card' };
+const PNG_ICONS = new Set(['fire', 'water', 'wind', 'earth', 'heart', 'coin',
+  'kind-wild', 'kind-soldier', 'kind-spell', 'kind-weapon', 'kind-defense',
+  'rarity-common', 'rarity-uncommon', 'rarity-rare', 'rarity-epic', 'rarity-legendary', 'rarity-special']);
+export function icon(name, fallbackText = null) {
+  if (name === 'card') return imageArt('ui/card-back.png', '', 'ic card-back-icon');
+  const fallback = fallbackText === null ? svgIcon(ICON_FALLBACK[name] ?? name) : `<span class="icon-text">${escapeText(fallbackText)}</span>`;
+  if (!PNG_ICONS.has(name)) return fallback;
+  return imageArt(`ui/icon-${name}.png`, fallback, `ic ic-${name} icon-asset`)
+    .replace('<span class="asset-wait">…</span>', `<span class="asset-fallback">${fallback}</span>`);
 }

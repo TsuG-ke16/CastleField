@@ -13,14 +13,15 @@ const make = (extra = {}) => {
 
 test('レアリティ：data の全カードに rarity があり、合成先は1つ上のレアリティ（レジェンドは合成先なし）', () => {
   const cards = loadJson('cards.json');
-  const order = Object.keys(rarities);
+  const order = Object.keys(rarities).filter((id) => !rarities[id].special); // スペシャルは合成・ラッキーの並びに入らない
   for (const [t, d] of Object.entries(cards)) {
+    if (d.effect === 'wild' || rarities[d.rarity].special) { assert.equal(d.fuseTo, undefined, t); continue; } // 適応：合成先は相手のカードで決まる
     const i = order.indexOf(d.rarity);
     assert.ok(i >= 0, t);
     if (i === order.length - 1) assert.equal(d.fuseTo, undefined, t);
     else assert.equal(cards[d.fuseTo].rarity, order[i + 1], t);
   }
-  for (const r of order) assert.ok(Object.values(cards).some((d) => d.rarity === r), `${r} のカードがある`);
+  for (const r of Object.keys(rarities)) assert.ok(Object.values(cards).some((d) => d.rarity === r), `${r} のカードがある`);
 });
 
 test('排出率：カードごとの合計が100%、レアリティごとの合計が dropRate と一致する', () => {
@@ -232,4 +233,22 @@ test('訓練・鍛錬：買うと、いる兵士にも、これから出す兵�
   const added = s().at(-1); // 最初の1体は、もう城に着いて消えている
   assert.equal(added.attack, cards.infantry.attack + upgrades.hardTraining.amount);
   assert.equal(added.hp, cards.infantry.hp + upgrades.hardConditioning.amount);
+});
+
+test('適応：どのカードとでも合成できて、相手のカードの1つ上ができる。単体では出せない・適応どうしは合成できない', () => {
+  const game = make();
+  game.debugSetHand('p1', ['adapt', 'adapt', 'infantry', 'heal']);
+  game.start();
+  const hand = game.getState('p1').players.p1.hand;
+  const id = (t, n = 0) => hand.filter((c) => c.type === t)[n].cardId;
+  const cards = loadJson('cards.json');
+  assert.equal(game.canPlayCard(id('adapt')).ok, false);
+  assert.match(game.canPlayCard(id('adapt')).reason, /合成/);
+  assert.equal(game.canFuse(id('adapt', 0), id('adapt', 1)).ok, false);
+  assert.equal(game.canFuse(id('infantry'), id('heal')).ok, false);
+  assert.equal(game.fuse(id('adapt', 0), id('infantry')).ok, true);
+  const after = game.getState('p1').players.p1.hand.map((c) => c.type);
+  assert.equal(after.includes('infantry'), false);
+  assert.equal(after.includes(cards.infantry.fuseTo), true);
+  assert.equal(after.filter((t) => t === 'adapt').length, 1);
 });
