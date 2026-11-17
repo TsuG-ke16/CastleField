@@ -223,5 +223,7 @@
   "castles/fortress-blue.png": "exec-9f264513-3771-42fa-a2d8-380151b1f8cd.png",
   "ui/card-back.png": "exec-0c61b69b-3974-4d6e-9e33-6904fe1680eb.png",
   "ui/result-defeat.png": "exec-0c61b69b-3974-4d6e-9e33-6904fe1680eb.png",
-  "ui/result-victory.png": "exec-0c61b69b-3974-4d6e-9e33-6904fe1680eb.png"
+  "ui/result-victory.png": "exec-0c61b69b-3974-4d6e-9e33-6904fe1680eb.png",
+  "cards/card-adapt.png": "exec-ee9c9f4c-6e29-4917-b0af-9d4bfda4bf6a.png",
+  "cards/frame-special.png": "exec-1d773854-13ba-471d-b7cd-94d7b59ff8d6.png"
 }

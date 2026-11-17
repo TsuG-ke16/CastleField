@@ -7,8 +7,8 @@ const KIND_ICON = { soldier: 'sword', spell: 'fire', weapon: 'hammer', defense: 
 const RARITY_MARK = { common: '●', uncommon: '◆', rare: '✦', epic: '✶', legendary: '♛', special: '❖' };
 
 export function frameAsset(def, rarities) {
-  // スペシャル：専用の枠の絵がまだないので、レアの枠を虹色にして使う（css の data-rarity=special）
-  if (def?.rarity === 'special' && rarities?.special) return 'cards/frame-rare.png';
+  // スペシャルは真珠色・虹色の専用枠を使う。
+  if (def?.rarity === 'special' && rarities?.special) return 'cards/frame-special.png';
   if (def?.rarity && RARITY_IDS.includes(def.rarity) && rarities?.[def.rarity]) {
     return `cards/frame-${def.rarity}.png`;
   }

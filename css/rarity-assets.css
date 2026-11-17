@@ -114,7 +114,9 @@
 /* ---- 枠ごとに、絵の窓・左右の丸・名前の帯の位置を合わせる（枠の絵ごとに少しずつ違うため） ---- */
 .card.has-frame, .mini-card { --win-l: 16%; --win-t: 17%; --win-w: 71%; --win-h: 46%; --med-y: 14%; --med-l: 19%; --med-r: 84%; --name-y: 74%; }
 .card.has-frame[data-rarity=uncommon], .mini-card[data-rarity=uncommon] { --win-l: 13%; --win-t: 20%; --win-w: 72%; --win-h: 45%; --med-y: 16%; --med-l: 16%; --med-r: 83%; --name-y: 75%; }
-.card.has-frame[data-rarity=rare], .mini-card[data-rarity=rare], .card.has-frame[data-rarity=special], .mini-card[data-rarity=special] { --win-l: 15%; --win-t: 21%; --win-w: 72%; --win-h: 44%; --med-y: 18%; --med-l: 17%; --med-r: 84%; --name-y: 76%; }
+.card.has-frame[data-rarity=rare], .mini-card[data-rarity=rare] { --win-l: 15%; --win-t: 21%; --win-w: 72%; --win-h: 44%; --med-y: 18%; --med-l: 17%; --med-r: 84%; --name-y: 76%; }
+/* 専用スペシャル枠：レアと同じ窓・丸・帯の配置。 */
+.card.has-frame[data-rarity=special], .mini-card[data-rarity=special] { --win-l: 15%; --win-t: 21%; --win-w: 72%; --win-h: 44%; --med-y: 18%; --med-l: 17%; --med-r: 84%; --name-y: 76%; }
 .card.has-frame[data-rarity=epic], .mini-card[data-rarity=epic] { --win-l: 14%; --win-t: 24%; --win-w: 72%; --win-h: 42%; --med-y: 21%; --med-l: 15%; --med-r: 84%; --name-y: 75%; }
 .card.has-frame[data-rarity=legendary], .mini-card[data-rarity=legendary] { --win-l: 16%; --win-t: 26%; --win-w: 67%; --win-h: 40%; --med-y: 23%; --med-l: 17%; --med-r: 82%; --name-y: 76%; }
 .card.has-frame .card-art, .card.has-frame.spell .card-art, .card.has-frame.weapon .card-art, .card.has-frame.defense .card-art, .mini-card-image {
@@ -136,3 +138,13 @@
 #end-turn { min-width: 140px; padding: 8px 18px 8px 48px; font-size: 13px; }
 /* 背景の道（3マス）を消した草原にする。道は #road のレーンだけで描く（5マスと合わないため） */
 #scenery { background-image: url('../assets/bg/board-meadow-compact.png'); }
+
+/* 合成専用で出せなくても、宝石と専用枠の虹色を保つ。理由は詳細と合成可の表示で伝える。 */
+.card.has-frame.dim[data-rarity=special] { filter: brightness(.96); }
+
+.fusion-source.mini-card { width: 36px; height: auto; }
+.fusion-source .mini-card-name { font-size: 7px; }
+.fusion-source .mini-card-rarity { font-size: 9px; }
+.fusion-pair:has(.fusion-source) { gap: 8px; }
+
+.card.has-frame[data-rarity=special] .card-art .asset-image { padding: 0; }

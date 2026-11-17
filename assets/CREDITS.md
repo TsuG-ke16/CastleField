@@ -282,3 +282,16 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 
 ### 遊び方・図鑑の確認画像（2026-11-16）
 - `review/current-guide/*.png`：Playwright同梱Chromiumで12サイズの遊び方・図鑑と兵士詳細を撮影。確認画像のみPillowでパレット圧縮（各300KB以下）。ゲーム内素材の出どころ・利用条件は本ファイルの各項を参照。外部素材の追加なし。
+
+### 適応カード・スペシャル枠（2026-11-17）
+
+`assets/STYLE.md` の共通指示文を先頭に付け、`style-reference.png` を添付してOpenAI画像生成ツールで生成。枠には `frame-rare.png` と `frame-legendary.png` も添付。生成後はPillowによるリサイズ・透過パレット圧縮だけを実施し、描き足し・色替えはしていません。各PNGは300KB以下。利用条件は本ファイル「本番用PNG」のOpenAI Terms of Use・AI生成物の注意事項と同じ（独自のCC等のライセンス付与なし）。
+
+| ファイル | 作った道具 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `cards/card-adapt.png` | OpenAI画像生成・Pillow縮小圧縮 | 上記OpenAI規約・AI生成 | 2026-11-17 |
+| `cards/frame-special.png` | OpenAI画像生成・Pillow縮小圧縮 | 上記OpenAI規約・AI生成 | 2026-11-17 |
+| `review/adapt-art/card-adapt-{a,b}.png`、`review/adapt-art/frame-special-{a,b}.png` | OpenAI画像生成・Pillow縮小圧縮（比較案） | 上記OpenAI規約・AI生成 | 2026-11-17 |
+| `review/adapt-art/{hand,detail,fusion,guide,guide-detail,comparison,rarities,motion}.png` | Playwright同梱Chromiumによる本ゲームの撮影・Pillow圧縮 | ゲーム内素材の条件は本ファイル各項を参照 | 2026-11-17 |
+
+生成原本は `/workspace/generated_images/` に保持。採用画像との対応は `asset-manifest.json`、比較案と選定理由は `review/adapt-art/README.md`。

@@ -1,0 +1,11 @@
+{
+  "viewport": "390x844",
+  "browser": "Playwright bundled Chromium",
+  "reducedMotion": true,
+  "normalMotion": true,
+  "frameStyle": {
+    "animation": "none",
+    "filter": "none"
+  },
+  "errors": []
+}
