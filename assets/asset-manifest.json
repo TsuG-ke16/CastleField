@@ -225,5 +225,16 @@
   "ui/result-defeat.png": "exec-0c61b69b-3974-4d6e-9e33-6904fe1680eb.png",
   "ui/result-victory.png": "exec-0c61b69b-3974-4d6e-9e33-6904fe1680eb.png",
   "cards/card-adapt.png": "exec-ee9c9f4c-6e29-4917-b0af-9d4bfda4bf6a.png",
-  "cards/frame-special.png": "exec-1d773854-13ba-471d-b7cd-94d7b59ff8d6.png"
+  "cards/frame-special.png": "exec-1d773854-13ba-471d-b7cd-94d7b59ff8d6.png",
+  "ui/icon-kind-wild.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-rarity-special.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-kind-soldier.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-kind-spell.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-kind-weapon.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-kind-defense.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-rarity-common.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-rarity-uncommon.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-rarity-rare.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-rarity-epic.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "ui/icon-rarity-legendary.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png"
 }

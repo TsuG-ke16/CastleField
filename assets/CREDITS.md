@@ -295,3 +295,23 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 | `review/adapt-art/{hand,detail,fusion,guide,guide-detail,comparison,rarities,motion}.png` | Playwright同梱Chromiumによる本ゲームの撮影・Pillow圧縮 | ゲーム内素材の条件は本ファイル各項を参照 | 2026-11-17 |
 
 生成原本は `/workspace/generated_images/` に保持。採用画像との対応は `asset-manifest.json`、比較案と選定理由は `review/adapt-art/README.md`。
+
+### カードの種類・レアリティアイコン（2026-11-17）
+
+OpenAI画像生成ツールで本ゲーム用に11種類を1枚の4×3シートに生成。`STYLE.md` の共通指示文を先頭に付け、`style-reference.png`・`ui/icon-heart.png`・`ui/icon-fire.png` を添付し、絵柄・線の太さ・大きさを指定。原本は `exec-67e1373d-21c4-4973-858a-889c0c158b0b.png`（`/workspace/generated_images/` に保持）。Pillowで等間隔に切り出し、透明の余白だけをトリミング、縦横比を保って縮小して約12%の透明余白を配置し、パレット圧縮。描き足し・色替えなし。全て128×128・透明背景・300KB以下。
+
+| ファイル | 作った道具 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `ui/icon-kind-wild.png` | OpenAI画像生成・Pillow切り出し縮小圧縮 | 本ファイル「本番用PNG」のOpenAI規約・AI生成物の条件を継承 | 2026-11-17 |
+| `ui/icon-kind-soldier.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-kind-spell.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-kind-weapon.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-kind-defense.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-rarity-special.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-rarity-common.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-rarity-uncommon.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-rarity-rare.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-rarity-epic.png` | 同上 | 同上 | 2026-11-17 |
+| `ui/icon-rarity-legendary.png` | 同上 | 同上 | 2026-11-17 |
+
+`review/card-icons/*.png` と更新した `review/adapt-art/*.png`：2026-11-17、Playwright同梱Chromium・390×844で本ゲームと実寸一覧を撮影。確認画像のみPillowでパレット圧縮。ゲーム内素材の利用条件は本ファイル各項を参照。

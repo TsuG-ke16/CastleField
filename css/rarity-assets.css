@@ -148,3 +148,13 @@
 .fusion-pair:has(.fusion-source) { gap: 8px; }
 
 .card.has-frame[data-rarity=special] .card-art .asset-image { padding: 0; }
+
+/* Medallion PNGs include their own transparent margin. Keep them inside the round slots. */
+.card.has-frame .card-kind > .ic, .card.has-frame .card-rarity > .ic,
+.mini-card-kind > .ic, .mini-card-rarity > .ic {
+  display: block; width: 100%; height: 100%; max-width: 16px; max-height: 16px;
+}
+.card.has-frame .card-kind .asset-image, .card.has-frame .card-rarity .asset-image { padding: 0; }
+.icon-asset .asset-fallback > .ic { display: block; width: 100%; height: 100%; }
+.icon-asset .icon-text { display: grid; place-items: center; width: 100%; height: 100%; font-size: inherit; line-height: 1; }
+.card.has-frame .card-rarity, .mini-card-rarity { text-shadow: none; }

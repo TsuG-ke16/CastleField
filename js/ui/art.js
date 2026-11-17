@@ -424,7 +424,7 @@ export async function preloadAssets(timeoutMs = 8000, onProgress = null, {phase 
 export function imageArt(path, fallback = '', cls = '') {
   return `<span class="asset-art ${READY.has(path)?'asset-loaded ':''}${cls}" aria-hidden="true"><span class="asset-wait">…</span><img class="asset-image" src="assets/${path}" alt="" decoding="async" draggable="false"></span>`;
 }
-document.addEventListener('error', e => { if(e.target instanceof HTMLImageElement && e.target.classList.contains('asset-image')){if(e.target.parentElement.classList.contains('adapt-asset'))e.target.parentElement.classList.remove('asset-loaded');const wait=e.target.parentElement.querySelector('.asset-wait');if(wait)wait.textContent='画像なし';} },true);
+document.addEventListener('error', e => { if(e.target instanceof HTMLImageElement && e.target.classList.contains('asset-image')){if(e.target.parentElement.classList.contains('adapt-asset') || e.target.parentElement.classList.contains('icon-asset'))e.target.parentElement.classList.remove('asset-loaded');const wait=e.target.parentElement.querySelector('.asset-wait');if(wait)wait.textContent='画像なし';} },true);
 // loadはバブルしないためキャプチャする。インラインハンドラを使わない。
 document.addEventListener('load', (e) => {
   if (e.target instanceof HTMLImageElement && e.target.classList.contains('asset-image')) {
@@ -466,9 +466,15 @@ export function castleArt(color, damage = 0, kind = 'standard') {
 export function spiritSprite(element, great = false) {
   return imageArt(`units/${great ? 'great-' : ''}${element}-spirit.png`, '', 'art spirit-art');
 }
-export function icon(name) {
-  if(name === 'card') return imageArt('ui/card-back.png', '', 'ic card-back-icon');
-  const fallback = svgIcon(name);
-  return ['fire','water','wind','earth','heart','coin'].includes(name)
-    ? imageArt(`ui/icon-${name}.png`, fallback, `ic ic-${name}`) : fallback;
+// Existing SVGs and rarity characters remain visible until the PNG loads or if it fails.
+const ICON_FALLBACK = { 'kind-soldier': 'sword', 'kind-spell': 'fire', 'kind-weapon': 'hammer', 'kind-defense': 'shield', 'kind-wild': 'card' };
+const PNG_ICONS = new Set(['fire', 'water', 'wind', 'earth', 'heart', 'coin',
+  'kind-wild', 'kind-soldier', 'kind-spell', 'kind-weapon', 'kind-defense',
+  'rarity-common', 'rarity-uncommon', 'rarity-rare', 'rarity-epic', 'rarity-legendary', 'rarity-special']);
+export function icon(name, fallbackText = null) {
+  if (name === 'card') return imageArt('ui/card-back.png', '', 'ic card-back-icon');
+  const fallback = fallbackText === null ? svgIcon(ICON_FALLBACK[name] ?? name) : `<span class="icon-text">${escapeText(fallbackText)}</span>`;
+  if (!PNG_ICONS.has(name)) return fallback;
+  return imageArt(`ui/icon-${name}.png`, fallback, `ic ic-${name} icon-asset`)
+    .replace('<span class="asset-wait">…</span>', `<span class="asset-fallback">${fallback}</span>`);
 }

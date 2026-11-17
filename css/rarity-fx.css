@@ -71,4 +71,4 @@
 
 /* スペシャルの虹色は専用PNGに含む。名前と印は無地の部分に重ねる。 */
 .detail-rarity[style*="#c77dff"], .rarity-label[style*="#c77dff"] { border-image: linear-gradient(#ff5d73, #ffb347, #fff176, #5fd98f, #4db8f0, #b57cf0) 1; }
-.card[data-rarity=special] .card-rarity, .mini-card[data-rarity=special] .mini-card-rarity { background: transparent; color: #693d91; text-shadow: 0 1px 1px #fff; }
+.card[data-rarity=special] .card-rarity, .mini-card[data-rarity=special] .mini-card-rarity { background: transparent; color: #693d91; text-shadow: none; }

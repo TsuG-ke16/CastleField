@@ -14,6 +14,12 @@ export function frameAsset(def, rarities) {
   }
   return KINDS.has(def?.kind) ? `cards/frame-${def.kind}.png` : null;
 }
-export const kindIcon = (kind) => KIND_ICON[kind] ?? 'card';
+export function kindIcon(def) {
+  // Preserve the old identifier-only API; card UI passes the full definition for wild cards.
+  if (typeof def === 'string') return KIND_ICON[def] ?? 'card';
+  if (def?.effect === 'wild') return 'kind-wild';
+  return KINDS.has(def?.kind) ? `kind-${def.kind}` : 'card';
+}
+export const rarityIcon = (rarity) => RARITY_MARK[rarity] ? `rarity-${rarity}` : null;
 export const rarityMark = (rarity) => RARITY_MARK[rarity] ?? '';
 
