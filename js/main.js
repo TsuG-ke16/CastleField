@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { BattleLayout } from './ui/BattleLayout.js';
 import { renderHelp } from './ui/HelpView.js';
 import { setupAccessibility } from './ui/Accessibility.js';
 import { MatchStats } from './ui/MatchStats.js';
@@ -73,6 +74,7 @@ const el = {
   netLeave: $('net-leave'),
 };
 
+const battleLayout = new BattleLayout();
 const matchStats = new MatchStats();
 const tutorial = new Tutorial();
 let replayTutorial = false;
@@ -395,8 +397,9 @@ function setTitleWaiting(waiting) {
 function setHandVisible(visible) {
   if (!visible) handView?.select(null);
   el.controls.classList.toggle('hand-hidden', !visible);
-  el.handToggle.textContent = visible ? '手札 ▾' : '手札 ▴';
+  el.handToggle.textContent = visible ? '手札を隠す' : '手札を開く';
   el.handToggle.setAttribute('aria-expanded', String(visible));
+  el.handToggle.setAttribute('aria-label', visible ? '手札を隠す' : '手札を開く');
 }
 
 function setupMenu() {
@@ -414,6 +417,7 @@ function setupMenu() {
     // 降参は、オンラインと CPU 戦の、試合の途中だけ
     const st = session?.getState(viewerId);
     el.menuSurrender.hidden = !(st && (session.online || cpu) && st.phase !== 'gameOver' && st.phase !== 'ready' && !st.players[viewerId]?.eliminated);
+    if (st) battleLayout.update(st, viewerId);
     resetSurrenderButton();
     el.menu.hidden = false;
   });
@@ -493,6 +497,7 @@ function stopLocal() {
 function resetForNewGame() {
   matchStats.reset();
   renderer.monsterBirths.clear(); renderer.weaponStacks.clear();
+  $('match-info').open = false;
   el.app.classList.remove('spectating');
   document.getElementById('spectator-strip')?.setAttribute('hidden', '');
   gen += 1;
@@ -1005,6 +1010,7 @@ async function settle({ check = true } = {}) {
   if (st.phase !== 'gameOver') sound.setScene(st.monsters.length ? 'tension' : 'battle');
   renderer.setCurrentPlayer(st.phase === 'gameOver' ? null : st.currentPlayer);
   const me = st.players[viewerId];
+  battleLayout.update(st, viewerId);
   // 手札の表示は並べ替えてあるので、並びではなく、同じカードがそろっているかで比べる
   if (!handView.sameCards(me.hand)) handView.render(me.hand);
   const blocked = playability(st);
@@ -1034,7 +1040,7 @@ async function settle({ check = true } = {}) {
     el.endTurn.disabled = true;
     el.endTurn.classList.add('off');
     handView.exitDiscard();
-    setMessage('城が落ちました。このまま試合を見守っています');
+    setMessage('');
     return;
   }
   refreshUpgrades();
@@ -1064,7 +1070,7 @@ async function settle({ check = true } = {}) {
     handView.exitDiscard();
     el.endTurn.disabled = false;
     el.endTurn.classList.add('off');
-    setMessage(st.phase === 'discard' ? `${playerName(st.currentPlayer)}が手札を捨てています…` : `${playerName(st.currentPlayer)}の番です…`);
+    setMessage(st.phase === 'discard' ? `${playerName(st.currentPlayer)}が手札を捨てています…` : '');
     if (cpu?.ids.includes(st.currentPlayer)) cpuTurn();
     return;
   }
@@ -1142,7 +1148,7 @@ async function cpuTurn() {
   const group = cpu;
   const me = {...group, id: game.getState(null).currentPlayer};
   setBusy(true);
-  setMessage(`${playerName(me.id)}が考えています…`);
+  setMessage('');
   await new Promise((r) => setTimeout(r, UI_CONFIG.cpuThink / Math.max(1, me.ids.length) * UI_CONFIG.speed));
   if (g !== gen || cpu !== group || !game) return; // 待っているあいだに、やめた・やり直した
   try {

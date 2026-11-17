@@ -3,7 +3,7 @@ export class Tutorial {
   constructor() {
     this.box = document.createElement('aside');
     this.box.id = 'tutorial'; this.box.hidden = true;
-    this.box.innerHTML = '<p role="status" aria-live="polite"></p><button type="button" class="small-btn">スキップ</button>';
+    this.box.innerHTML = '<p role="status" aria-live="polite"></p><button type="button" class="small-btn">案内を閉じる</button>';
     document.getElementById('controls').prepend(this.box);
     this.box.querySelector('button').onclick = () => this.finish();
     document.getElementById('hand').addEventListener('click', e => {

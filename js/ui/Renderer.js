@@ -283,7 +283,7 @@ export class Renderer {
       const kind=this.players[id]?.castleType;
       const kindName=this.castleDefs[kind]?.name??'';
       castle.dataset.castleType=kind??'standard';
-      castle.querySelector('.castle-label').textContent = `席${model.playerOrder.indexOf(id)+1} ${members.includes(this.viewerId) && !members.some(m => playerName(m) === 'あなた') ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
+      castle.querySelector('.castle-label').textContent = `${model.playerOrder.length > 2 ? `席${model.playerOrder.indexOf(id)+1} ` : ''}${members.includes(this.viewerId) && !members.some(m => playerName(m) === 'あなた') ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
       castle.setAttribute('aria-label',`席${model.playerOrder.indexOf(id)+1}、${label}、${kindName}`);
       castle.querySelector('.castle-label').title = label;
       castle.classList.toggle('eliminated', Boolean(this.players[id]?.eliminated));
@@ -402,6 +402,11 @@ export class Renderer {
 
   /** 手番の人の城を目立たせる */
   setCurrentPlayer(playerId) {
+    const status = document.getElementById('turn-status');
+    if (status && playerId) {
+      status.textContent = this.players[this.viewerId]?.eliminated ? '観戦中' : playerId === this.viewerId ? 'あなたの番' : `${playerName(playerId)}の番`;
+      document.getElementById('hud').dataset.turn = playerId === this.viewerId ? 'mine' : 'other';
+    }
     for (const id of this.owners ?? this.playerOrder) this.castleEl(id).classList.toggle('current', id === this.ownerOf(playerId));
   }
 
