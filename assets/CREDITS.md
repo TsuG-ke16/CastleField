@@ -345,3 +345,15 @@ OpenAI image generationで `assets/style-reference.png` を参照し、STYLE.md�
 - `ui/kingdom-platform.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
 - `bg/kingdom-valley.png` — 生成元 `exec-a20ee589-dec8-4cb1-b8ce-4ff36c751525.png`
 - `bg/kingdom-meadow.png` — 生成元 `exec-766a7a7c-3d60-4a07-99c1-c880a327b0b0.png`
+
+## 引き伸ばしを使わない共通UI素材（2026-11-18）
+
+OpenAI image generation、STYLE.mdの共通指示文と `assets/style-reference.png` を添付して生成。利用条件: OpenAI Terms of Use（生成出力）。外部配布素材なし。
+
+- `ui/natural/{primary,neutral,selected,danger}-{40,44,72}-{left,middle,right}.png`: 生成元 `exec-9fa7748e-70dc-44cd-a094-a24537d36dcc.png`。高さ40/44/72 CSS px用に縦横比を維持して2倍密度で書き出し、左右端と中央2px（1 CSS px）を切り出し。左右固定・中央反復、非等方拡大なし。
+- `ui/natural/{paper,oak,leather}-tile.png`: 生成元 `exec-02fdc3cd-e1e2-4b77-9bce-577aad9a2045.png`。素材の中央を切り出し、ミラー配置で継ぎ目を合わせる。128 CSS px固定で反復。
+- `ui/natural/frame.png`、`round-neutral.png`、`round-selected.png`: 同じ生成元。角は14px固定・辺は同じ縮尺・辺反復、丸ボタンは40×40 CSS px固定。
+
+すべてPNG・1ファイル300KB以下。
+
+- `ui/natural/{primary,neutral}-wide-full.png`: 生成元 `exec-3d21dc1d-316b-49bf-b7a1-6c383cbd3523.png`。大型モード選択専用に同じ形状・約4:1で再生成。余白を整え、縦横比を保った縮小とcontain表示のみ。
