@@ -446,7 +446,7 @@ export class Animations {
     if (free && (model.deckMode !== 'own' || playerId === ctx.viewerId)) model.deckCount = Math.max(0, model.deckCount - 1);
     if (!free) pl.handCount = Math.max(0, pl.handCount - 1);
     if (!free && def.kind === 'soldier') pl.soldiersPlayedThisTurn = (pl.soldiersPlayedThisTurn ?? 0) + 1;
-    else if (!free && def.kind === 'spell' && !['healOwnCastle', 'summonSpirit', 'gainCoins'].includes(def.effect)) pl.playedThisTurn = true;
+    else if (!free && def.kind === 'spell' && !['summonSpirit', 'gainCoins'].includes(def.effect)) pl.playedThisTurn = true;
     pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
     if (!def.exhaust && (model.deckMode !== 'own' || playerId === ctx.viewerId)) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
     model.hand = model.hand.filter((c) => c.cardId !== cardId);

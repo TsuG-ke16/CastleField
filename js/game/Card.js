@@ -33,8 +33,8 @@ export const EFFECTS = {
 /** scope（レーンを選ぶか）を書ける effect。lane なら選んだ1レーンの相手の兵士だけに効く */
 export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers'];
 
-/** 攻撃ではない魔法（回復・精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
-export const SUPPORT_EFFECTS = ['healOwnCastle', 'summonSpirit', 'gainCoins'];
+/** 攻撃ではない魔法（精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
+export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、

@@ -217,7 +217,7 @@ test('cards の間違い：兵士に element', () => {
   assert.throws(() => new Game({ cards: { ...cards, infantry: { ...cards.infantry, element: 'fire' } }, rules }), /element/);
 });
 
-test('兵士は soldiersPerTurn 枚まで。回復・精霊・コインはメインを使わず何枚でも、攻撃の魔法は別に1枚', () => {
+test('兵士は soldiersPerTurn 枚まで。回復はメイン1枠・精霊とコインは何枚でも、攻撃の魔法は別に1枚', () => {
   const cards = loadFixture('cards.json');
   const rules = { ...loadFixture('rules.json'), soldiersPerTurn: 2 };
   const game = new Game({ cards, rules, rng: seededRng(1) });
@@ -234,6 +234,5 @@ test('兵士は soldiersPerTurn 枚まで。回復・精霊・コインはメイ
   assert.equal(game.canPlayCard(id('fireball')).ok, false);
   // 城HPを減らして、ヒールを2枚続けて出せる（メインは使わない）
   game.debugSetCastleHp('p1', 10);
-  assert.equal(game.playCard(id('heal')).ok, true);
-  assert.equal(game.playCard(id('heal')).ok, true);
+  assert.equal(game.playCard(id('heal')).ok, false); // 攻撃の魔法でメインを使ったあとは、回復も出せない
 });

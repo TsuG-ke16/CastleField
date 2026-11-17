@@ -30,8 +30,8 @@ export function slotNote(def) {
   if (def.effect === 'reflectSpell' || def.effect === 'nullifySoldier') return '防御：攻撃を受けたときだけ出せる';
   if (def.kind === 'defense') return '防御：何枚でも出せる';
   if (def.kind === 'soldier') return '兵士：1ターンに複数枚出せる';
-  if (['healOwnCastle', 'summonSpirit', 'gainCoins'].includes(def.effect)) return '回復・精霊・コイン：何枚でも出せる（メインを使わない）';
-  return 'メイン：攻撃の魔法は1ターンに1枚';
+  if (['summonSpirit', 'gainCoins'].includes(def.effect)) return '精霊・コイン：何枚でも出せる（メインを使わない）';
+  return 'メイン：攻撃の魔法・回復は1ターンに1枚';
 }
 
 /** 属性の名前（"fire" → "火"） */

@@ -13,7 +13,7 @@ export function renderHelp({cards,rules,monsters,rarities}){
   road.append(cells,el('b','','相手の城'));quick.append(road,el('p','help-short',`ふたりの盤面：${rules.laneCount??1}本の道から選ぶ。道は${rules.laneLength}マス。兵士は次の自分の番に進む。`));
   quick.append(document.getElementById('help-tutorial'));box.querySelector('.menu-title').after(quick);
   list.replaceChildren();
-  for(const text of ['相手の城HPを0にしよう。兵士が城に届くと大ダメージ！','兵士は1ターンに複数枚、攻撃の魔法は1枚。回復・精霊・コイン・武器・防御、強化、合成は何枚でも使える。'])list.append(el('li','',text));
+  for(const text of ['相手の城HPを0にしよう。兵士が城に届くと大ダメージ！','兵士は1ターンに複数枚、攻撃の魔法と回復は合わせて1枚。精霊・コイン・武器・防御、強化、合成は何枚でも使える。'])list.append(el('li','',text));
   const details=(title)=>{const section=el('details','help-more');section.append(el('summary','',title));list.after(section);return section;};
   const elements=box.querySelector('.element-guide');
   const attributes=details('属性の強弱を見る');attributes.append(elements,el('p','','水→火→風→土→水。矢印の先の属性に強い。武器で兵士の属性を変えられる。'));
