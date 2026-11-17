@@ -5,7 +5,7 @@ html,body { background:#2c221b; }
 body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 #app { background:#c0cc85; border-color:#8b6841; box-shadow:0 12px 70px #0008,0 0 0 2px #b18b50; }
 #app #scenery { background-image:url('../assets/bg/kingdom-meadow.png'); background-position:center; background-size:cover; filter:saturate(.8); }
-#app #hud { color:#fff0cc; background:none; border:10px solid transparent; border-image:url('../assets/ui/kingdom-wood.png') 45 58 fill / 14px 17px stretch; padding:0 4px; gap:8px; min-height:58px; }
+#app #hud { color:#fff0cc; background:none; border:10px solid transparent;  padding:0 4px; gap:8px; min-height:58px; }
 #app #turn-status { color:#fff0cc; font-size:13px; letter-spacing:.02em; display:flex; align-items:center; gap:6px; }
 #app #turn-status::before { content:''; display:inline-block; flex:none; width:25px; height:29px; margin:0; border-radius:0; background:url('../assets/ui/kingdom-crest.png') center/contain no-repeat; filter:drop-shadow(0 1px 1px #0005); }
 #app #hud[data-turn=other] #turn-status::before { opacity:.65; }
@@ -31,7 +31,7 @@ body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 #app .spoke-dot { width:28px; height:18px; border:0; background:url('../assets/ui/kingdom-platform.png') center/contain no-repeat; box-shadow:none; opacity:.75; }
 #app .plaza-zoom { border:1px solid #9c7942; background:#fff0d0eb; box-shadow:0 2px 4px #0002; }
 /* A wooden card rack frames the illustrated cards without competing with them. */
-#app #controls { background:none; border:10px solid transparent; border-image:url('../assets/ui/kingdom-wood.png') 45 58 fill / 14px 17px stretch; border-radius:10px 10px 0 0; box-shadow:0 -4px 12px #32200c40; }
+#app #controls { background:none; border:10px solid transparent;  border-radius:10px 10px 0 0; box-shadow:0 -4px 12px #32200c40; }
 #app #hand { background:linear-gradient(#29180826,#160e0838); border-radius:8px; scrollbar-color:#c7a461 #563a27; padding-inline:8px; }
 #app .hand-toolbar { padding-inline:4px; color:#ffe5b8; }
 #app .hand-toolbar #hand-toggle, #app .hand-toolbar .hand-scroll-hint { color:#e7c79b; }
@@ -42,7 +42,7 @@ body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 #app #message:not(:empty) { background:#fff0cc; color:#54361e; border:1px solid #cc9d58; }
 /* One material vocabulary for dialogs, catalog, lobby and result. */
 #app .screen-box.parchment, #app .guide-box, #app .progress-box, #app .title-choices, #app #card-detail, #app #upgrade-panel, #app #target-bar, #app #discard-bar {
-  border:12px solid transparent; border-image:url('../assets/ui/kingdom-parchment.png') 45 60 fill / 17px 20px stretch;
+  border:12px solid transparent;
   background:none; border-radius:14px; box-shadow:0 8px 28px #24150855; color:var(--kingdom-ink);
 }
 #app .menu-box { padding:10px; }
@@ -60,7 +60,7 @@ body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 #app .room-passphrase { background:#fff7e3; border:1px dashed #a27a3f; }
 /* Primary commands share the generated amber leather; alternate play modes use teal. */
 #app #controls #end-turn, #app #card-detail .detail-use, #app #menu .menu-box #menu-close, #app #rematch, #app .room-start, #app .settings-close, #app #help-close, #app #local-start {
-  border:9px solid transparent; border-image:url('../assets/ui/kingdom-primary.png') 42 58 fill / 13px 16px stretch;
+  border:9px solid transparent;
   background:none; border-radius:9px; color:#3e220e; text-shadow:0 1px #ffdc8d; box-shadow:0 2px 2px #1a0c0a40;
   padding:3px 8px; min-height:46px; filter:none;
 }
@@ -80,14 +80,14 @@ body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 #app .title-choices { padding:14px; }
 #app .title-pic { background:none; }
 #app .title-pic::before { background:none; box-shadow:none; }
-#app #title .mode-choice { border:10px solid transparent; border-image:url('../assets/ui/kingdom-primary.png') 42 58 fill / 15px 20px stretch; background:none; box-shadow:0 2px 2px #3d250c55; filter:none; border-radius:12px; padding:8px 9px; color:#3c230e; }
-#app #title #title-local, #app #title #title-online { border-image-source:url('../assets/ui/kingdom-secondary.png'); color:#fff0cf; text-shadow:0 1px #16464c; }
+#app #title .mode-choice { border:10px solid transparent;  background:none; box-shadow:0 2px 2px #3d250c55; filter:none; border-radius:12px; padding:8px 9px; color:#3c230e; }
+#app #title #title-local, #app #title #title-online {  color:#fff0cf; text-shadow:0 1px #16464c; }
 #app #title .mode-choice strong { font-size:17px; }
 #app #title .mode-choice small { font-size:11px; color:inherit; opacity:.9; }
 #app #title .mode-choice .mode-arrow { color:inherit; opacity:.8; }
 #app #title-main .title-links button { background:#fff2d1; border-color:#c6a268; color:#694620; }
-#app #title-levels .level { border-image-source:url('../assets/ui/kingdom-secondary.png'); color:#fff0ce; text-shadow:0 1px #214b50; }
-#app #result .screen-box { border:12px solid transparent; border-image:url('../assets/ui/kingdom-parchment.png') 45 60 fill / 17px 20px stretch; background:none; padding:20px; color:#4e331d; }
+#app #title-levels .level {  color:#fff0ce; text-shadow:0 1px #214b50; }
+#app #result .screen-box { border:12px solid transparent;  background:none; padding:20px; color:#4e331d; }
 #app #result .result-title { color:#674320; }
 @media(max-width:600px) and (min-height:501px) {
   #app #title .mode-choice { padding:5px 8px; }
@@ -107,7 +107,7 @@ body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 @media(min-width:900px) and (min-height:650px) {
   #app #scenery { background-image:url('../assets/bg/kingdom-valley.png'); }
   #app #title, #app #handover { background-image:url('../assets/bg/kingdom-valley.png'); }
-  #app #controls { border-width:12px; border-image-width:18px; }
+  #app #controls { border-width:12px;  }
   #app #hud { padding-inline:10px; }
   #app .hand-toolbar { padding-inline:5px; }
   #app #hand { padding-inline:7px; }
@@ -138,12 +138,12 @@ body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 #app .settings-box .set-row .pill-group { width:100%; }
 #app .settings-box .set-row input[name=name] { width:100%; }
 #app #settings .settings-close, #app #room-screen .room-start {
-  border:9px solid transparent; border-image:url('../assets/ui/kingdom-primary.png') 42 58 fill / 13px 16px stretch;
+  border:9px solid transparent;
   background:none; border-radius:9px; color:#3e220e; text-shadow:0 1px #ffdc8d; padding:3px 12px; min-height:46px; box-shadow:0 2px 2px #1a0c0a40; filter:none;
 }
 /* Reference/shop tabs use quiet enamel; selected text must never sit on an old pale image. */
-#app .guide-tabs > button, #app .shop-tabs > button { border:1px solid #b7985d; border-image:none; border-radius:7px; background:#fff1cf; color:#674523; opacity:1; filter:none; text-shadow:none; min-height:40px; padding:6px 10px; }
-#app .guide-tabs > button[aria-selected=true], #app .shop-tabs > button[aria-selected=true] { border-color:#1c5455; border-image:none; background:#2c6d6d; color:#fff2d4; filter:none; text-shadow:none; }
+#app .guide-tabs > button, #app .shop-tabs > button { border:1px solid #b7985d;  border-radius:7px; background:#fff1cf; color:#674523; opacity:1; filter:none; text-shadow:none; min-height:40px; padding:6px 10px; }
+#app .guide-tabs > button[aria-selected=true], #app .shop-tabs > button[aria-selected=true] { border-color:#1c5455;  background:#2c6d6d; color:#fff2d4; filter:none; text-shadow:none; }
 #app #upgrade-panel .shop-tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); width:100%; gap:4px; overflow:visible; }
 #app #upgrade-panel .shop-tabs > button { min-width:0; padding:5px 2px; font-size:12px; }
 #app #upgrade-panel .upgrade-list { display:flex; flex-direction:column; gap:8px; }

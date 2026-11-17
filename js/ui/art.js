@@ -405,7 +405,7 @@ const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
 const READY = new Set();
 export const isAssetReady = (path) => READY.has(path);
-const TITLE_ASSETS = ['bg/kingdom-meadow.png','bg/kingdom-valley.png','ui/kingdom-parchment.png','ui/kingdom-primary.png','ui/kingdom-secondary.png','ui/kingdom-wood.png','ui/kingdom-crest.png','ui/logo.png','ui/title-castle-blue.png','ui/title-castle-orange.png','ui/title-knight-blue.png','ui/title-infantry-orange.png'];
+const TITLE_ASSETS = ['ui/natural/paper-tile.png','ui/natural/oak-tile.png','ui/natural/frame.png','ui/natural/neutral-72-left.png','ui/natural/neutral-72-middle.png','ui/natural/neutral-72-right.png','ui/natural/primary-72-left.png','ui/natural/primary-72-middle.png','ui/natural/primary-72-right.png','ui/natural/primary-wide-full.png','ui/natural/neutral-wide-full.png','bg/kingdom-meadow.png','bg/kingdom-valley.png','ui/kingdom-crest.png','ui/logo.png','ui/title-castle-blue.png','ui/title-castle-orange.png','ui/title-knight-blue.png','ui/title-infantry-orange.png'];
 export async function preloadAssets(timeoutMs = 8000, onProgress = null, {phase = 'game'} = {}) {
   let paths = [...TITLE_ASSETS];
   if (phase !== 'title') {

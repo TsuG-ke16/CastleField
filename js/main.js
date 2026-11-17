@@ -5,6 +5,7 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { setupMaterialSkin } from './ui/MaterialSkin.js';
 import { BattleLayout } from './ui/BattleLayout.js';
 import { renderHelp } from './ui/HelpView.js';
 import { setupAccessibility } from './ui/Accessibility.js';
@@ -75,6 +76,7 @@ const el = {
 };
 
 const battleLayout = new BattleLayout();
+setupMaterialSkin();
 const matchStats = new MatchStats();
 const tutorial = new Tutorial();
 let replayTutorial = false;
