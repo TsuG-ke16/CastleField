@@ -54,6 +54,11 @@ export class Pile {
   }
 }
 
+/** 合成・ラッキーで「1つ上」になる、ふつうのレアリティの並び（`special: true` のスペシャルは入らない） */
+export function chainOrder(rarities) {
+  return Object.keys(rarities).filter((id) => !rarities[id].special);
+}
+
 /** rarities.json の中身をチェックする（キーの並びが低い順。dropRate は%で、合計100） */
 export function validateRarities(rarities) {
   if (!rarities || typeof rarities !== 'object' || Array.isArray(rarities)) {
@@ -67,6 +72,7 @@ export function validateRarities(rarities) {
     const where = `rarities.json の "${id}"`;
     if (!def || typeof def.name !== 'string' || def.name === '') throw new Error(`${where}: name を書いてください`);
     if (typeof def.dropRate !== 'number' || def.dropRate < 0) throw new Error(`${where}: dropRate は0以上の数（%）にしてください`);
+    if (def.special !== undefined && typeof def.special !== 'boolean') throw new Error(`${where}: special は true か false にしてください`);
     total += def.dropRate;
   }
   if (Math.abs(total - 100) > 1e-9) throw new Error(`rarities.json の dropRate の合計は100にしてください（今は${total}）`);
@@ -80,7 +86,7 @@ export function dropRates(cards, rarities, boost = null) {
   const sums = {};
   for (const def of Object.values(cards)) sums[def.rarity] = (sums[def.rarity] ?? 0) + (def.weight ?? 1);
   // boost: { from: レアリティ, multiplier } … from 以上のレアリティの割合を multiplier 倍にして、全体を100%に直す
-  const order = Object.keys(rarities);
+  const order = chainOrder(rarities);
   const factor = (id) => (boost && order.indexOf(id) >= order.indexOf(boost.from) ? boost.multiplier : 1);
   const live = Object.entries(rarities).filter(([id]) => sums[id] > 0);
   const total = live.reduce((n, [id, r]) => n + r.dropRate * factor(id), 0);
@@ -122,7 +128,8 @@ export function sampleTypeOfRarity(cards, rarity, rng) {
 
 /** base の1つ上のレアリティ（そのレアリティのカードがあるものだけ）。なければ null */
 export function nextRarityWithCards(cards, rarities, base) {
-  const order = Object.keys(rarities);
+  const order = chainOrder(rarities);
+  if (!order.includes(base)) return null;
   const next = order[order.indexOf(base) + 1];
   if (next === undefined) return null;
   return Object.values(cards).some((d) => d.rarity === next && (d.weight ?? 1) > 0) ? next : null;

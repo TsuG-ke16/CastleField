@@ -111,10 +111,10 @@ export class Card {
       if (rarities) {
         if (!Object.hasOwn(rarities, def.rarity)) throw new Error(`${where}: rarity は ${Object.keys(rarities).join(' / ')} のどれかにしてください`);
         if (def.weight !== undefined && !(typeof def.weight === 'number' && def.weight >= 0)) throw new Error(`${where}: weight は0以上の数にしてください（書かなければ 1）`);
-        const order = Object.keys(rarities);
+        const order = Object.keys(rarities).filter((id) => !rarities[id].special);
         const next = order[order.indexOf(def.rarity) + 1];
-        if (def.effect === 'wild') {
-          if (def.fuseTo !== undefined) throw new Error(`${where}: 適応（effect: "wild"）に fuseTo は書けません（合成の結果は相手のカードで決まる）`);
+        if (def.effect === 'wild' || rarities[def.rarity].special) {
+          if (def.fuseTo !== undefined) throw new Error(`${where}: 適応（effect: "wild"）やスペシャルのカードに fuseTo は書けません（合成の結果は相手のカードで決まる）`);
         } else if (next === undefined) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: いちばん上のレアリティのカードに fuseTo は書けません`);
         } else {

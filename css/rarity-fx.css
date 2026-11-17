@@ -68,3 +68,11 @@
 .card.wild { border-color: #c77dff; }
 .card.wild .card-art { background: radial-gradient(ellipse, #fff, #f6ecff); }
 @media (prefers-reduced-motion: reduce) { .card.wild, .mini-card.wild { animation: none; } }
+
+/* スペシャル（レアリティ）：虹色。枠の絵はレアの枠を使い、色相を回して虹色にする */
+@keyframes rainbow-hue { to { filter: hue-rotate(360deg) saturate(1.4); } }
+.card[data-rarity=special] .card-frame, .mini-card[data-rarity=special] .mini-card-frame { filter: saturate(1.4); animation: rainbow-hue 6s linear infinite; }
+.detail-rarity[style*="#c77dff"], .rarity-label[style*="#c77dff"] { border-image: linear-gradient(#ff5d73, #ffb347, #fff176, #5fd98f, #4db8f0, #b57cf0) 1; }
+.card-rarity[title="スペシャル"], .mini-card-rarity { text-shadow: 0 0 4px #fff; }
+.card[data-rarity=special] .card-rarity, .mini-card[data-rarity=special] .mini-card-rarity { background: linear-gradient(135deg, #ff5d73, #ffb347, #fff176, #5fd98f, #4db8f0, #b57cf0); color: #fff; }
+@media (prefers-reduced-motion: reduce) { .card[data-rarity=special] .card-frame, .mini-card[data-rarity=special] .mini-card-frame { animation: none; } }

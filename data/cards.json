@@ -79,7 +79,7 @@
   "waterKing": {"name": "水の精霊王", "kind": "spell", "effect": "summonSpirit", "spirit": "water", "amount": 5, "turns": 5, "count": 0, "rarity": "legendary"},
   "windKing": {"name": "風の精霊王", "kind": "spell", "effect": "summonSpirit", "spirit": "wind", "amount": 5, "turns": 4, "count": 0, "rarity": "legendary"},
   "earthKing": {"name": "土の精霊王", "kind": "spell", "effect": "summonSpirit", "spirit": "earth", "amount": 3, "turns": 4, "count": 0, "rarity": "legendary"},
-  "adapt": {"name": "適応", "kind": "spell", "effect": "wild", "count": 0, "rarity": "rare", "weight": 1, "description": "どのカードとでも合成できる（相手のカードを2枚合成したのと同じ結果）。出せないので、合成にだけ使う"},
+  "adapt": {"name": "適応", "kind": "spell", "effect": "wild", "count": 0, "rarity": "special", "weight": 1, "description": "どのカードとでも合成できる（相手のカードを2枚合成したのと同じ結果）。出せないので、合成にだけ使う"},
   "coinPouch": {"name": "小銭袋", "kind": "spell", "effect": "gainCoins", "amount": 1, "count": 0, "rarity": "common", "fuseTo": "goldCoin", "description": "コインを1枚もらう。コインは強化の購入に使える"},
   "goldCoin": {"name": "金貨", "kind": "spell", "effect": "gainCoins", "amount": 3, "count": 0, "rarity": "uncommon", "fuseTo": "treasure", "description": "コインを3枚もらう。コインは強化の購入に使える"},
   "treasure": {"name": "財宝", "kind": "spell", "effect": "gainCoins", "amount": 8, "count": 0, "rarity": "rare", "fuseTo": "goldVein", "description": "コインを8枚もらう。コインは強化の購入に使える"},

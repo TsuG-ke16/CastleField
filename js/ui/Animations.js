@@ -391,7 +391,8 @@ export class Animations {
     const mine = reward.playerId === ctx.viewerId;
     const card = mine ? ctx.lookupCard(cardId) : null;
     const rarity = this.rarities?.[reward.rarity];
-    const rank = Math.max(0, Object.keys(this.rarities ?? {}).indexOf(reward.rarity));
+    const chain = Object.keys(this.rarities ?? {}).filter((id) => !this.rarities[id].special);
+    const rank = Math.max(0, chain.indexOf(reward.rarity));
     const cfg = UI_CONFIG.rewardFx;
     const duration = Math.min(cfg.max, cfg.base + rank * cfg.perRank + (reward.lucky ? cfg.luckyExtra : 0));
     const stage = this.fx(`fx-reward-stage${reward.lucky ? ' lucky' : ''}`, this.centerOf(this.renderer.el.field));
@@ -403,7 +404,7 @@ export class Animations {
     const badge = document.createElement('span'); badge.className = 'reward-rarity'; badge.textContent = rarity?.name ?? ''; stage.append(badge);
     sound.play(reward.lucky ? 'lucky' : 'fusion');
     this.sparks(this.centerOf(this.renderer.el.field), { count: cfg.sparksBase + rank * cfg.sparksPerRank, color: rarity?.color ?? '#ffdf82', spread: 50 + rank * 20, size: 6 + rank });
-    if (rank === Object.keys(this.rarities ?? {}).length - 1) this.screenFlash(rarity.color, duration * .4);
+    if (rank === chain.length - 1) this.screenFlash(rarity.color, duration * .4);
     try {
       await this.animate(stage, [{ opacity: 0, transform: 'translate(-50%, -50%) scale(.4)' }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1.08)', offset: .18 }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: .8 }, { opacity: 0, transform: `translate(-50%, calc(-50% + ${mine ? 65 : -65}px)) scale(.5)` }], { duration, fill: 'forwards' });
     } finally { stage.remove(); }

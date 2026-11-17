@@ -13,15 +13,15 @@ const make = (extra = {}) => {
 
 test('レアリティ：data の全カードに rarity があり、合成先は1つ上のレアリティ（レジェンドは合成先なし）', () => {
   const cards = loadJson('cards.json');
-  const order = Object.keys(rarities);
+  const order = Object.keys(rarities).filter((id) => !rarities[id].special); // スペシャルは合成・ラッキーの並びに入らない
   for (const [t, d] of Object.entries(cards)) {
-    if (d.effect === 'wild') { assert.equal(d.fuseTo, undefined, t); continue; } // 適応：合成先は相手のカードで決まる
+    if (d.effect === 'wild' || rarities[d.rarity].special) { assert.equal(d.fuseTo, undefined, t); continue; } // 適応：合成先は相手のカードで決まる
     const i = order.indexOf(d.rarity);
     assert.ok(i >= 0, t);
     if (i === order.length - 1) assert.equal(d.fuseTo, undefined, t);
     else assert.equal(cards[d.fuseTo].rarity, order[i + 1], t);
   }
-  for (const r of order) assert.ok(Object.values(cards).some((d) => d.rarity === r), `${r} のカードがある`);
+  for (const r of Object.keys(rarities)) assert.ok(Object.values(cards).some((d) => d.rarity === r), `${r} のカードがある`);
 });
 
 test('排出率：カードごとの合計が100%、レアリティごとの合計が dropRate と一致する', () => {
