@@ -62,6 +62,8 @@ export class Renderer {
       oppName: $('opp-name'),
       oppHandCount: $('opp-hand-count'),
       oppCoins: $('opp-coins'),
+      oppMp: $('opp-mp'),
+      myMp: $('my-mp'),
       myCoins: $('my-coins'),
       turnInfo: $('turn-info'),
       deckPile: $('deck-pile'),
@@ -374,6 +376,7 @@ export class Renderer {
       this.setArmor(id, p.armor);
       this.setSpirit(id, p.spirit);
       this.setCoins(id, p.coins);
+      this.setMp(id, p.mp, model.maxMp);
     }
     this.syncSoldiers(model);
     this.syncMonsters(model);
@@ -410,6 +413,25 @@ export class Renderer {
     this.el.oppCoins.title = this.playerOrder.length > 2 ? 'ほかの人のコイン（合計）' : '相手のコイン';
     el.textContent = String(coins ?? 0);
     if (bump) this.bump(this.coinEl(playerId));
+  }
+
+  /** MP の表示（自分は下の「MP 10/20」、相手は上のバー）。maxMp が 0 のときは出さない */
+  setMp(playerId, mp, maxMp = this.maxMp, { bump = false } = {}) {
+    if (maxMp !== undefined) this.maxMp = maxMp;
+    const on = (this.maxMp ?? 0) > 0;
+    this.el.myMp.hidden = !on;
+    this.el.oppMp.hidden = !on;
+    if (!on) return;
+    if (playerId === this.viewerId) {
+      $('my-mp-value').textContent = String(mp ?? 0);
+      $('my-mp-max').textContent = String(this.maxMp);
+      if (bump) this.bump(this.el.myMp);
+    } else if (this.playerOrder.length <= 2) {
+      this.el.oppMp.querySelector('b').textContent = String(mp ?? 0);
+      if (bump) this.bump(this.el.oppMp);
+    } else {
+      this.el.oppMp.hidden = true; // 3人以上は、相手のMPは出さない
+    }
   }
 
   coinEl(playerId) {

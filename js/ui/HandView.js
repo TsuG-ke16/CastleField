@@ -169,6 +169,7 @@ export class HandView {
     el.setAttribute('role', 'button');
     el.setAttribute('aria-label', `${def.name}。${cardDescription(def, this.rules, this.textOpts)}`);
     if (def.element) el.dataset.element = def.element;
+    const mpCost = this.mpCosts?.[card.type] ?? 0;
     el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
       '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
     if (def.rarity && this.rarities?.[def.rarity]) {
@@ -211,6 +212,15 @@ export class HandView {
       short.appendChild(span);
     }
     el.title = cardDescription(def, this.rules, this.textOpts);
+    // MP を使うカードは、右上に必要な MP を出す
+    if (mpCost > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'card-mp';
+      badge.textContent = `✦${mpCost}`;
+      badge.title = `MP ${mpCost} を使います`;
+      el.appendChild(badge);
+      el.setAttribute('aria-label', `${el.getAttribute('aria-label')}（MP${mpCost}）`);
+    }
     if (isNew) el.classList.add('new');
     this.applyCardClasses(el);
     return el;

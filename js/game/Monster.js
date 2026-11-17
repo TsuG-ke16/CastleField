@@ -23,11 +23,29 @@ export class Monster {
     /** 城を攻めた回数と、1回ごとに増えるダメージ（rules.monsterAttackGrowth。Game が入れる） */
     this.attackCount = 0;
     this.growth = 0;
+    /** ごほうびのレアリティ（放置されると1つずつ上がる）。コインだけの魔物は null */
+    this.rewardRarity = def.rewardRarity ?? null;
+    /** 放置で強くなった回数と、出てから過ぎた周回の数 */
+    this.evolveCount = 0;
+    this.age = 0;
+    /** 放置で強くなるたびに、城への攻撃にもかかる倍率（HP・攻撃と同じ） */
+    this.power = 1;
+  }
+
+  /** 放置されて強くなる：HP・攻撃・城への攻撃が multiplier 倍（HP は増えたぶん回復）、ごほうびのレアリティが rewardRarity になる */
+  evolve(multiplier, rewardRarity) {
+    const maxHp = Math.max(this.maxHp + 1, Math.round(this.maxHp * multiplier));
+    this.hp += maxHp - this.maxHp;
+    this.maxHp = maxHp;
+    this.attack = Math.max(this.attack + 1, Math.round(this.attack * multiplier));
+    this.power *= multiplier;
+    if (rewardRarity) this.rewardRarity = rewardRarity;
+    this.evolveCount += 1;
   }
 
   /** 次に城を攻めるときのダメージ（放置するほど重くなる） */
   get nextCastleAttack() {
-    return this.def.castleAttack + this.growth * this.attackCount;
+    return Math.round(this.def.castleAttack * this.power) + this.growth * this.attackCount;
   }
 
   takeDamage(amount) {
@@ -50,7 +68,8 @@ export class Monster {
       element: this.element,
       attackIn: this.attackIn,
       reward: this.def.reward ?? 0,
-      rewardRarity: this.def.rewardRarity ?? null,
+      rewardRarity: this.rewardRarity,
+      evolveCount: this.evolveCount,
       castleAttack: this.nextCastleAttack,
     };
   }
@@ -79,7 +98,7 @@ export class Monster {
   }
 }
 
-export const UPGRADE_EFFECTS = ['repairCastle', 'drawCards', 'sharpenSoldiers', 'boostDrops', 'gainCard', 'trainArmy', 'fortifyArmy'];
+export const UPGRADE_EFFECTS = ['repairCastle', 'drawCards', 'sharpenSoldiers', 'boostDrops', 'permanentLuck', 'gainCard', 'trainArmy', 'fortifyArmy'];
 
 /** upgrades.json の中身をチェックする（間違いは例外） */
 export function validateUpgrades(upgrades) {
@@ -94,7 +113,7 @@ export function validateUpgrades(upgrades) {
     for (const key of ['cost', 'amount']) {
       if (!Number.isInteger(def[key]) || def[key] < 1) throw new Error(`${where}: ${key} は1以上の整数にしてください`);
     }
-    if (def.effect === 'boostDrops') {
+    if (def.effect === 'boostDrops' || def.effect === 'permanentLuck') {
       if (typeof def.fromRarity !== 'string') throw new Error(`${where}: fromRarity（この以上のレアリティが出やすくなる）を書いてください`);
       if (typeof def.boost !== 'number' || def.boost < 1) throw new Error(`${where}: boost は1以上の数にしてください`);
     }

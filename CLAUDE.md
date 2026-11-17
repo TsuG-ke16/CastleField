@@ -199,7 +199,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 | `game.passDefense()` | 防御しないで（これ以上出さずに）攻撃を受ける |
 | `game.canFuse(cardIdA, cardIdB)` / `game.fuse(cardIdA, cardIdB)` | 手札の同じ種類のカード2枚を合成して、1つ上のレアリティのカード1枚にする（`phase` が `"main"` の自分の番に、何回でも。メインの1枚には数えない）。`canFuse` は読むだけ。レジェンドは合成できない |
 | `game.endTurn()` | ターンを終える。手札が上限を超えていたら `phase` が `"discard"` になり、捨て終わるまで次の人の番にならない |
-| `game.surrender(playerId)` | 降参する。`playerId` の負けで、相手の勝ちですぐ終わる（`gameOver` の `reason` は `"surrender"`）。自分の番でなくても使える。2人のときだけ（3人以上は `{ ok: false }`。まだ決めていない） |
+| `game.surrender(playerId)` | 降参する。自分の番でなくても使える。城が2つ（2人・2チーム）のときは、相手の勝ちですぐ終わる（`gameOver` の `reason` は `"surrender"`）。城が3つ以上のときは、降参した人（チーム戦はチーム全員）の城が壊れて（`castleDamaged`、`source: { kind: "surrender" }`）抜け、`playerEliminated` のあと、残りの試合を見守る（番が来ない）。残りの城が1つになったら `gameOver`（`reason` は `"lastStanding"`） |
 | `game.on(type, handler)` / `game.off(type, handler)` | イベントの購読と解除。`handler` はペイロードのオブジェクトを1つ受け取る。表にない `type` を渡すと `{ ok: false }` |
 
 - 操作が許されないとき（自分の番でない、1ターンに2枚目を出した、など）は例外を投げず、`{ ok: false, reason: "..." }` を返す。成功したら `{ ok: true }`。`reason` はそのまま画面に出せる日本語の文
@@ -294,7 +294,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spellCast` | `{ playerId, type, target, targetKind, roadId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）のときだけ入る。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
 | `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }` |
 | `castleHealed` | `{ playerId, amount, hp }` … `amount` は実際に増えた量（上限で止まったぶんは含まない） |
-| `weaponEquipped` | `{ playerId, soldierId, type, attack, element }` … 武器を持たせた。`attack` は持たせたあとの攻撃力 |
+| `weaponEquipped` | `{ playerId, soldierId, type, attack, element }` … 武器を持たせた。`attack` は持たせたあとの攻撃力（重ねると足し算。`element` は最後の武器の属性に上書き） |
 | `shieldAdded` | `{ playerId, soldierId, amount, shield }` … `shield` は足したあとの盾 |
 | `castleArmored` | `{ playerId, armor }` … 城壁を置いた |
 | `armorExpired` | `{ playerId }` … 城壁が消えた（その人のターンの始め） |
@@ -320,6 +320,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
 | `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
+| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）か `"card"`（マナ回復）。上限や0で止まったぶんは `delta` に含まない |
+| `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
 
 #### イベントの順番
@@ -465,9 +467,9 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 | 強さ | 戦い方 | random（ランダムに出す）に勝つ割合（先攻のとき） |
 |---|---|---|
-| よわい（`easy`） | `defensive`（守り優先） | 約23% |
-| ふつう（`normal`） | `rush`（攻め重視。守らない） | 約50% |
-| つよい（`hard`） | `smart`（ほどよく考える） | 約97% |
+| よわい（`easy`） | `defensive`（守り優先） | 約18% |
+| ふつう（`normal`） | `rush`（攻め重視。守らない） | 約21% |
+| つよい（`hard`） | `smart`（ほどよく考える） | 約91% |
 
 （コインの強化・精霊・兵士の追加で、以前の「rush が最弱」の順が入れかわったので、割り当てを直した。測定：`node tests/sim/run.js --games 200 --match <戦い方>,random`）
 
@@ -739,7 +741,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - 接続が切れただけなら、**自動では決着しない**（待つ時間の上限はない）。残った人には「接続が切れています。戻るのを待っています…」と「やめる」ボタンを出す。「やめる」は部屋を出てタイトルへ戻る（勝ち負けはつかない）
   - ページを読み直した・閉じて開き直した人は、同じタブなら元の部屋につなぎ直す（画面が `token` を `sessionStorage` に覚えておく）
   - **自分から部屋を出る**（`leave`。「タイトルへ戻る」を押したとき）：もう戻れない。残った人には `room` の `players[].left` で伝わり、「○○さんが部屋を出ました」と出る。出た人がいる部屋では「もう1回」はできず、同じ合言葉で入ると新しい部屋になる
-  - **降参**（`surrender`。メニューから、確認のため2回押す）：自分の番でなくてもできる。相手の勝ちで終わる（`gameOver` の `reason` は `"surrender"`）。2人のときだけ（3人以上はまだ決めていない）
+  - **降参**（`surrender`。メニューから、確認のため2回押す）：自分の番でなくてもできる。城が2つなら相手の勝ちで終わる（`gameOver` の `reason` は `"surrender"`）。3つ以上なら城が壊れて抜け、残りの試合を見守る（「MP・武器の加算・魔物の成長・降参の観戦」の節）
 - 画面は、イベントで演出し、`state` で答え合わせをする（同じ端末のときと同じ）。出せない理由は `playable` を使う（ブラウザに Game はない）
 
 ### 部屋（ロビー）（人間に確認して決めた）
@@ -1056,6 +1058,24 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **運命の祈り**（`upgrades.json` の `luck`、効果 `boostDrops`。仮：コスト5・1試合2回まで）：買うと、自分の**次の `amount` 枚（仮：5）のドロー**が、山札からではなく、`fromRarity`（仮：レア）以上のレアリティの排出率を `boost` 倍（仮：4倍）にして引き当てたカードになる（山札は減らない）。効いているあいだは重ねて買えない。`rarities` を渡していないと買えない。`getState().players.pX.luck` は `{ draws, boost }` か `null`。CPU の smart 系は、とぎ石の次に買う
 - **出した枚数ぶん引く**：`rules.drawPerPlayed`（省略すると `false`。仮：`true`）。ターンの始めに引く枚数は `max(drawPerTurn（先攻の最初は firstTurnDraw）, drawUntilHand − 手札, 前のターンに出した枚数)`。合成は「出した」に数えない
 - 確かめたこと（`node tests/sim/run.js --games 200`）：全組み合わせが決着。城HP100のときは平均110手番で上限60周に近かった。城HP40にして解消（上の城HPの項）。**運命の祈りの強さは遊んで確かめる**
+
+## MP・武器の加算・魔物の成長・降参の観戦（人間の指示。仮）
+
+**数値はすべて仮**。`data/` のJSONで調べて直す。
+
+- **MP（魔法のコスト）**：`rules.initialMp`（仮：10）・`rules.maxMp`（仮：20。0 なら MP を使わない＝コストなし）。**攻撃の魔法**（`damageEnemyCastle` / `damageEnemySoldiers` / `poisonEnemySoldiers` / `freezeEnemySoldiers`）と**精霊**（`summonSpirit`）を出すと、レアリティのぶん MP を使う（`rarities.json` の `mpCost`：コモン1・アンコモン2・レア3・エピック4・レジェンド5。カードの `mpCost` で個別に変えられる）。足りなければ出せない（`canPlayCard` の理由は「MPが足りません（○必要・あと○）」）。兵士・武器・防御・回復・コイン・神頼みでタダで出すカードは MP を使わない。自然回復はなく、マナ回復のカードだけで増える
+- **マナ回復のカード**（`effect: "gainMp"`、`amount`。メインを使わず何枚でも）：魔力のかけら（コモン+1）→魔力のしずく（アンコモン+2）→魔力の水晶（レア+5）→魔力の泉（エピック+10）→世界樹のしずく（レジェンド+20）の5段階の系統（合成でつながる）。上限を超えたぶんは捨てる。MP が満タンなら出せない
+- `getState()`：`maxMp`、`mpCosts`（MP を使うカード種類 → 必要な MP）、`players.pX.mp`。イベント `mpChanged`
+- CPU：MP が上限の半分以下になったら、ターンの最初にマナ回復のカードを出す（`pass` 以外）
+- **武器は重ねられる**：攻撃力は足し算（`weaponBonus` に足す）。属性は上書き（最後に持たせた武器。属性なしの鉄の剣なら属性が消える）。同じ武器も重ねられる。（以前は「1体に1つ」で、持ちかえると攻撃力が下がっていた）
+- **開幕のコインは 0**（`rules.initialCoins`）。**速さ**：歩兵2・騎兵3（騎兵は4→3。斥候騎兵は4のまま）
+- **排出率の恒久強化**（`upgrades.json` の `permLuck`、効果 `permanentLuck`：`amount`（買うたびに増える%）・`boost`・`fromRarity`。仮：コスト12・3回まで・15%ずつ・レア以上3倍）：買うと、その試合ずっと、ドローのたびに確率 `amount`% × 買った回数で、山札からではなく排出率（レア以上が `boost` 倍）で引き当てる（山札は減らない）。運命の祈り（次の5ドローだけ）とは別に重なる。`getState().players.pX.permLuck` は `{ chance, boost }` か `null`。CPU（`smart` 系）は、運命の祈りより先に買う
+- **魔物は後半ほど強く、放置するほど育つ**
+  - 後半ほど強い魔物が出やすい：`rules.monsterLateBias`（仮：0.15）。魔物の出やすさ（`weight`）に × (1 + 値 × ごほうびの段階（コモン0〜レジェンド4）× `monsterFirstRound` を過ぎた周回の数)
+  - 放置するとレアリティが上がる：`rules.monsterEvolveEvery`（仮：3。0 なら強くならない）周ごとに、魔物の HP・攻撃・城への攻撃が `rules.monsterEvolveMultiplier`（仮：1.2）倍（HP は増えたぶん回復）になり、ごほうびのレアリティが1つ上がる（レジェンドの上はない）。倒したときは、育ったあとのレアリティのごほうびが出る。イベント `monsterEvolved`。`getState().monsters[]` に `evolveCount`
+  - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均55手番・p1 勝率53%、smart vs random は91%（育たないときは93%）。放置の怖さは出た（魔物で決着する試合：random 同士で約4割、smart 同士は約2%）。**強すぎないかは遊んで確かめる**
+- **降参（3人以上）**：城が壊れて抜け、残りの試合を見守る（上の `surrender` の表）。画面は観戦中の帯を出し、ターン終了・強化・合成を押せなくする
+- 画面：MP の表示（上のバー。自分は「✦10/20」）、手札に必要な MP の札、合成の演出（レアリティが高いほど光・火花・揺れが大きい）、魔物が育つ演出、城が落ちた帯（`js/ui/Animations.js`）。マナ回復カードの絵は仮（`js/ui/art.js` に足すまで「魔」の仮の絵が出る）
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

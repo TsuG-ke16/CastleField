@@ -31,7 +31,7 @@ export function slotNote(def) {
   if (def.kind === 'defense') return '防御：何枚でも出せる';
   if (def.effect === 'wild') return '合成専用：どのカードとでも合成できる（出せません）';
   if (def.kind === 'soldier') return '兵士：1ターンに複数枚出せる';
-  if (['summonSpirit', 'gainCoins'].includes(def.effect)) return '精霊・コイン：何枚でも出せる（メインを使わない）';
+  if (['summonSpirit', 'gainCoins', 'gainMp'].includes(def.effect)) return '精霊・コイン・マナ：何枚でも出せる（メインを使わない）';
   return 'メイン：攻撃の魔法・回復は1ターンに1枚';
 }
 
@@ -47,6 +47,7 @@ const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'wate
 const missingDescriptions = new Set();
 const EFFECT_TEXT = {
   gainCoins: (c) => `コインを${c.amount}獲得（何枚でも出せる）`,
+  gainMp: (c) => `MPを${c.amount}回復（上限を超えたぶんは捨てる。何枚でも出せる）`,
   damageEnemyCastle: (c, rules, opts) => `相手の城に${c.amount}ダメージ${opts.monsters ? '（魔物も狙える）' : ''}`,
   damageEnemySoldiers: (c) => `相手の兵士全員に${c.amount}ダメージ`,
   healOwnCastle: (c) => `自分の城HP+${c.amount}（上限まで）`,
@@ -124,6 +125,7 @@ export function cardShort(def) {
   switch (def.effect) {
     case 'summonSpirit': return [{ icon: ELEMENT_LOOK[def.spirit]?.iconName ?? 'crown', text: `${def.amount}・${def.turns}回` }];
     case 'gainCoins': return [{ icon: 'coin', text: `+${def.amount}` }];
+    case 'gainMp': return [{ icon: 'water', text: `MP+${def.amount}` }];
     case 'damageEnemyCastle': return [{ icon: 'fire', text: `城 -${def.amount}` }];
     case 'damageEnemySoldiers': return [{ icon: 'sword', text: `兵士 -${def.amount}` }];
     case 'healOwnCastle': return [{ icon: 'heart', text: `城 +${def.amount}` }];

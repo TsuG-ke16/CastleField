@@ -33,12 +33,42 @@ test('降参：始まる前・終わったあと・知らない人はできな�
   assert.equal(game.getState(null).winner, 'p2');
 });
 
-test('降参：3人以上のときはできない（まだ決めていない）', () => {
+test('降参：3人以上のときは、城が壊れて抜け、残りの試合を見守れる', () => {
+  const game = newGame({ playerCount: 3 });
+  const log = recordEvents(game, EVENT_TYPES);
+  game.start();
+  assert.deepEqual(game.surrender('p3'), { ok: true }); // 自分の番でなくてもできる
+  const st = game.getState(null);
+  assert.equal(st.phase, 'main');
+  assert.equal(st.players.p3.eliminated, true);
+  assert.equal(st.players.p3.castleHp, 0);
+  assert.equal(st.currentPlayer, 'p1');
+  const hit = log.find((e) => e.event === 'castleDamaged');
+  assert.deepEqual([hit.playerId, hit.hp, hit.source], ['p3', 0, { kind: 'surrender' }]);
+  assert.ok(log.some((e) => e.event === 'playerEliminated' && e.playerId === 'p3'));
+  assert.equal(game.surrender('p3').ok, false); // 抜けた人はもう降参できない
+});
+
+test('降参：自分の番で降参したら、次の人の番になる。最後の2人になったら、そのあとは1人の降参で終わる', () => {
   const game = newGame({ playerCount: 3 });
   game.start();
-  const res = game.surrender('p1');
-  assert.equal(res.ok, false);
+  assert.equal(game.surrender('p1').ok, true);
+  assert.equal(game.getState(null).currentPlayer, 'p2');
   assert.equal(game.getState(null).phase, 'main');
+  assert.equal(game.surrender('p2').ok, true);
+  const st = game.getState(null);
+  assert.equal(st.phase, 'gameOver');
+  assert.equal(st.winner, 'p3');
+});
+
+test('降参：3人のとき、抜けた人は手番が来ない（見守るだけ）', () => {
+  const game = newGame({ playerCount: 3 });
+  game.start();
+  game.surrender('p2');
+  game.endTurn(); // p1 → p3
+  assert.equal(game.getState(null).currentPlayer, 'p3');
+  game.endTurn();
+  assert.equal(game.getState(null).currentPlayer, 'p1');
 });
 
 function newLobby() {

@@ -26,6 +26,10 @@ export class Player {
     this.upgradesBought = {};
     /** 運命の祈り：次の draws 枚は、排出率を boost 倍（fromRarity 以上）にして引き当てる。{ draws, boost, from } か null */
     this.luck = null;
+    /** MP（攻撃の魔法・精霊を使うと減り、マナ回復のカードで増える）。rules.maxMp が上限 */
+    this.mp = 0;
+    /** 排出率の恒久強化（コインで買う）：ドローのたびに chance の確率で、排出率を boost 倍（from 以上）にして引き当てる。{ chance, boost, from } か null */
+    this.permLuck = null;
     /** 軍の訓練：これから出す兵士と、いる兵士の攻撃力・HPが、ずっと増える（コインで買う） */
     this.armyAttack = 0;
     this.armyHp = 0;
@@ -69,6 +73,8 @@ export class Player {
       armor: this.armor,
       spirit: this.spirit ? { type: this.spirit.type, spirit: this.spirit.spirit, amount: this.spirit.amount, turns: this.spirit.turns, targetId: this.spirit.targetId } : null,
       coins: this.coins,
+      mp: this.mp,
+      permLuck: this.permLuck ? { chance: this.permLuck.chance, boost: this.permLuck.boost } : null,
       armyAttack: this.armyAttack,
       armyHp: this.armyHp,
       luck: this.luck ? { draws: this.luck.draws, boost: this.luck.boost } : null,

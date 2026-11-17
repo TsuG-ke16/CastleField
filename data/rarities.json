@@ -2,27 +2,32 @@
   "common": {
     "name": "コモン",
     "dropRate": 50,
-    "color": "#9aa3ad"
+    "color": "#9aa3ad",
+    "mpCost": 1
   },
   "uncommon": {
     "name": "アンコモン",
     "dropRate": 28,
-    "color": "#4caf6a"
+    "color": "#4caf6a",
+    "mpCost": 2
   },
   "rare": {
     "name": "レア",
     "dropRate": 13.18,
-    "color": "#3d7fe0"
+    "color": "#3d7fe0",
+    "mpCost": 3
   },
   "epic": {
     "name": "エピック",
     "dropRate": 6,
-    "color": "#9b59d0"
+    "color": "#9b59d0",
+    "mpCost": 4
   },
   "legendary": {
     "name": "レジェンド",
     "dropRate": 2,
-    "color": "#f0a020"
+    "color": "#f0a020",
+    "mpCost": 5
   },
   "special": {
     "name": "スペシャル",

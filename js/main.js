@@ -413,7 +413,7 @@ function setupMenu() {
     e.stopPropagation();
     // 降参は、オンラインと CPU 戦の、試合の途中だけ
     const st = session?.getState(viewerId);
-    el.menuSurrender.hidden = !(st && (session.online || cpu) && st.phase !== 'gameOver' && st.phase !== 'ready');
+    el.menuSurrender.hidden = !(st && (session.online || cpu) && st.phase !== 'gameOver' && st.phase !== 'ready' && !st.players[viewerId]?.eliminated);
     resetSurrenderButton();
     el.menu.hidden = false;
   });
@@ -868,6 +868,8 @@ function modelFromState(st) {
       armor: p.armor ?? 0,
       spirit: p.spirit ?? null,
       coins: p.coins ?? 0,
+      mp: p.mp ?? 0,
+      permLuck: p.permLuck ? { ...p.permLuck } : null,
       luck: p.luck ? structuredClone(p.luck) : null,
       armyAttack: p.armyAttack ?? 0, armyHp: p.armyHp ?? 0,
       handCount: p.handCount,
@@ -879,6 +881,8 @@ function modelFromState(st) {
   }
   return {
     deckMode:st.deckMode,
+    maxMp: st.maxMp ?? 0,
+    mpCosts: { ...(st.mpCosts ?? {}) },
     layout: st.layout, roads: structuredClone(st.roads ?? []), teams: structuredClone(st.teams ?? null), winnerTeam: st.winnerTeam,
     playerOrder: [...st.playerOrder],
     turn: st.turn,
@@ -989,6 +993,7 @@ async function settle({ check = true } = {}) {
   // デバッグ：演出で進めた値と本当の状態がずれていないか（ずれていたら console.warn('[sync]', ...)）
   if (DEBUG && check && st.phase !== 'gameOver') checkSync(model, st);
   if (model.gameOverReason === 'castleDestroyed' && lastCastleHit === 'monster') model.gameOverReason = 'monsterDestroyed';
+  handView.mpCosts = st.mpCosts ?? {};
   model = modelFromState(st);
   renderer.renderAll(model);
   if (st.phase !== 'gameOver') sound.setScene(st.monsters.length ? 'tension' : 'battle');
@@ -1005,6 +1010,16 @@ async function settle({ check = true } = {}) {
   }
 
   setBusy(false);
+  // 降参・脱落した人は、残りの試合を見守る（操作はできない）
+  const spectating = Boolean(me.eliminated);
+  el.app.classList.toggle('spectating', spectating);
+  if (spectating) {
+    el.endTurn.disabled = true;
+    el.endTurn.classList.add('off');
+    handView.exitDiscard();
+    setMessage('城が落ちました。このまま試合を見守っています');
+    return;
+  }
   refreshUpgrades();
   setEndTurnLabel(st.phase === 'defend' && st.defense?.defenderId === viewerId);
   if (st.phase === 'defend') {

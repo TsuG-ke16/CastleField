@@ -16,5 +16,6 @@
   "training": {"name": "訓練", "effect": "trainArmy", "amount": 1, "cost": 3, "limit": 3, "description": "自分の兵士全員（これから出す兵士も）の攻撃がずっと+1"},
   "hardTraining": {"name": "猛特訓", "effect": "trainArmy", "amount": 3, "cost": 10, "limit": 1, "description": "自分の兵士全員（これから出す兵士も）の攻撃がずっと+3"},
   "conditioning": {"name": "鍛錬", "effect": "fortifyArmy", "amount": 1, "cost": 3, "limit": 3, "description": "自分の兵士全員（これから出す兵士も）のHPがずっと+1"},
-  "hardConditioning": {"name": "超鍛錬", "effect": "fortifyArmy", "amount": 3, "cost": 10, "limit": 1, "description": "自分の兵士全員（これから出す兵士も）のHPがずっと+3"}
+  "hardConditioning": {"name": "超鍛錬", "effect": "fortifyArmy", "amount": 3, "cost": 10, "limit": 1, "description": "自分の兵士全員（これから出す兵士も）のHPがずっと+3"},
+  "permLuck": {"name": "幸運の加護", "effect": "permanentLuck", "amount": 15, "boost": 3, "fromRarity": "rare", "cost": 12, "limit": 3, "description": "この試合のあいだずっと、カードを引くとき15%の確率で、レア以上が3倍出やすい引き当てになる（重ねるほど確率アップ。山札は減らない）"}
 }

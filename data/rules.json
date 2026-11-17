@@ -25,11 +25,16 @@
   "deckSize": 100,
   "drawPerPlayed": true,
   "soldiersPerTurn": 3,
-  "initialCoins": 5,
+  "initialCoins": 0,
   "coinPerTurn": 1,
   "monsterAttackGrowth": 1,
   "rewardLuckyChance": 0.15,
   "roadLayout": "plaza",
   "teamTurns": "rotate",
-  "teamCastleHpShare": 0.25
+  "teamCastleHpShare": 0.25,
+  "initialMp": 10,
+  "maxMp": 20,
+  "monsterLateBias": 0.15,
+  "monsterEvolveEvery": 3,
+  "monsterEvolveMultiplier": 1.2
 }

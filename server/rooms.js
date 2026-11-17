@@ -418,7 +418,7 @@ export class Room {
     return this.seats.some((s) => s.left);
   }
 
-  /** 降参する。自分の番でなくてもできる。相手の勝ちで終わる（2人のときだけ） */
+  /** 降参する。自分の番でなくてもできる。城が2つなら相手の勝ち、3つ以上なら城が壊れて抜け、観戦する */
   surrender(seat) {
     if (!this.game) return { ok: false, reason: 'まだ試合が始まっていません' };
     const result = this.game.surrender(seat.playerId);

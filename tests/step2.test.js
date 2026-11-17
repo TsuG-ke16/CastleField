@@ -56,7 +56,7 @@ test('ドロー：使った枚数によらず、毎ターン drawPerTurn 枚', (
   assert.deepEqual(draws, [['p1', 1], ['p2', 1], ['p1', 1]]);
   assert.equal(game.getState('p1').players.p1.drawNextTurn, undefined);
 });
-test('武器：攻撃力が上がり属性がつく。1体に1つ（持ちかえ）', () => {
+test('武器：攻撃力が上がり属性がつく。重ねると攻撃力は足し算、属性は上書き', () => {
   const { game, log } = setup({ p1: ['infantry', 'flameSword', 'waterSpear'] });
   play(game, 'infantry');
   const sid = soldiers(game, 'p1')[0].soldierId;
@@ -64,7 +64,7 @@ test('武器：攻撃力が上がり属性がつく。1体に1つ（持ちかえ
   assert.deepEqual(log.at(-1), { event: 'weaponEquipped', playerId: 'p1', soldierId: sid, type: 'flameSword', attack: 4, element: 'fire' });
   play(game, 'waterSpear', { soldierId: sid });
   const s = soldiers(game, 'p1')[0];
-  assert.deepEqual([s.weapon, s.attack, s.element], ['waterSpear', 4, 'water']);
+  assert.deepEqual([s.weapon, s.attack, s.element], ['waterSpear', 5, 'water']); // 3 + 1 + 1。属性は水に上書き
 });
 
 test('属性：強い属性の兵士は elementBonus 多く与える。属性なしには増えない', () => {
@@ -173,11 +173,13 @@ test('cards.json の間違いは例外', () => {
   assert.throws(() => new Game({ cards, rules: { ...rules, elementBonus: -1 } }), /elementBonus/);
 });
 
-test('同じ武器をもう一度は持たせられない。全員もう凍結していたら氷の息は出せない', () => {
+test('同じ武器も重ねられる（攻撃力は足し算）。全員もう凍結していたら氷の息は出せない', () => {
   const { game } = setup({ p1: ['infantry', 'flameSword', 'flameSword'], p2: ['frostBreath'] });
   play(game, 'infantry');
   play(game, 'flameSword');
-  assert.equal(game.canPlayCard(idOf(game, 'flameSword')).reason, 'もう同じ武器を持っています');
+  assert.equal(game.canPlayCard(idOf(game, 'flameSword')).ok, true);
+  play(game, 'flameSword');
+  assert.equal(soldiers(game, 'p1')[0].attack, 5); // 3 + 1 + 1
   game.endTurn();
   game.players.p1.soldiers[0].frozen = 1;
   assert.equal(game.canPlayCard(idOf(game, 'frostBreath')).reason, 'もう同じ状態になっています');

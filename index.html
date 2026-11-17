@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/rarity-fx.css">
+  <link rel="stylesheet" href="css/mp.css">
   <link rel="stylesheet" href="css/step5.css">
   <link rel="stylesheet" href="css/tutorial.css">
   <link rel="stylesheet" href="css/settings.css">
@@ -41,10 +42,12 @@
       <div class="hud-opp">
         <span class="player-name" id="opp-name"></span>
         <span class="chip opp-hand" title="相手の手札"><span class="chip-icon" data-icon="card"></span><b id="opp-hand-count">0</b></span>
+        <span class="chip mp" id="opp-mp" title="相手のMP" hidden>✦<b>0</b></span>
         <span class="chip coins" id="opp-coins" title="相手のコイン" hidden><span class="chip-icon" data-icon="coin"></span><b>0</b></span>
       </div>
       <div class="chip turn-info" id="turn-info"></div>
       <div class="hud-right">
+        <span class="chip mp" id="my-mp" title="あなたのMP：攻撃の魔法と精霊を使うと減ります。マナ回復のカードで増えます" hidden><span aria-hidden="true">✦</span><b id="my-mp-value">0</b>/<span id="my-mp-max">0</span></span>
         <span class="chip pile" id="deck-pile" title="山札"><span class="chip-icon" data-icon="card"></span>山<b id="deck-count">0</b></span>
         <span class="chip pile" id="discard-pile" title="捨て札">捨<b id="discard-count">0</b></span>
         <button type="button" id="menu-open" class="round-btn" aria-label="メニュー">≡</button>
