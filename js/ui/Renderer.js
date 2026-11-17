@@ -18,6 +18,10 @@ const $ = (id) => document.getElementById(id);
 /** レーンの幅に対する、兵士を置く横の位置（%）。自分は右より・相手は左より */
 const X_ME = 74;
 const X_OPP = 26;
+/** 広場：城を置く円の半径（盤面の%）。左右の城の名札が画面の外に切れない大きさにする */
+const PLAZA_RADIUS = 37;
+/** 広場：城から最初のマスまでの間（マス何個ぶんか）。兵士が城の名札・HPに重ならないだけ離す */
+const PLAZA_SPOKE_START = 2;
 
 export class Renderer {
   /**
@@ -235,10 +239,12 @@ export class Renderer {
           castle.hidden = false; castle.classList.add('plaza-castle');
           const p = this.castlePoint(id);
           castle.style.left = `${p.x}%`; castle.style.top = `${p.y}%`;
+          // 上半分の城は名札・HPを絵の上（外側）に出す。広場へ向かう兵士と重ならないように
+          castle.classList.toggle('plaza-upper', p.y < 45);
           this.plazaStage.append(castle); this.castles.set(id, castle);
           for (let n = 0; n < this.middleSquare; n++) {
             const dot = document.createElement('span'); dot.className = 'spoke-dot';
-            const t = (n + .7) / (this.middleSquare + .7);
+            const t = (n + PLAZA_SPOKE_START) / (this.middleSquare + PLAZA_SPOKE_START);
             dot.style.left = `${p.x + (50-p.x)*t}%`; dot.style.top = `${p.y+(50-p.y)*t}%`;
             this.plazaStage.prepend(dot);
           }
@@ -267,7 +273,7 @@ export class Renderer {
       const kind=this.players[id]?.castleType;
       const kindName=this.castleDefs[kind]?.name??'';
       castle.dataset.castleType=kind??'standard';
-      castle.querySelector('.castle-label').textContent = `席${model.playerOrder.indexOf(id)+1} ${members.includes(this.viewerId) ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
+      castle.querySelector('.castle-label').textContent = `席${model.playerOrder.indexOf(id)+1} ${members.includes(this.viewerId) && !members.some(m => playerName(m) === 'あなた') ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
       castle.setAttribute('aria-label',`席${model.playerOrder.indexOf(id)+1}、${label}、${kindName}`);
       castle.querySelector('.castle-label').title = label;
       castle.classList.toggle('eliminated', Boolean(this.players[id]?.eliminated));
@@ -285,7 +291,7 @@ export class Renderer {
     const viewer = this.owners.indexOf(this.ownerOf(this.viewerId));
     const index = this.owners.indexOf(this.ownerOf(id));
     const angle = Math.PI / 2 + (index - viewer) * Math.PI * 2 / this.owners.length;
-    return { x: 50 + Math.cos(angle)*39, y: 50 + Math.sin(angle)*39 };
+    return { x: 50 + Math.cos(angle)*PLAZA_RADIUS, y: 50 + Math.sin(angle)*PLAZA_RADIUS };
   }
   plazaPoint(playerId, position, targetId) {
     const from = this.castlePoint(playerId);
@@ -293,7 +299,7 @@ export class Renderer {
     const mid = this.middleSquare;
     if (position >= this.laneLength) return target;
     const square = position < mid ? position : this.laneLength - 1 - position;
-    const t = (square + .65)/(mid + .65);
+    const t = (square + PLAZA_SPOKE_START)/(mid + PLAZA_SPOKE_START);
     const castle = position < mid ? from : target;
     return position === mid ? {x:50,y:50} : {x:castle.x+(50-castle.x)*t,y:castle.y+(50-castle.y)*t};
   }
@@ -536,7 +542,7 @@ export class Renderer {
       let p = this.plazaPoint(s.playerId, s.position, s.targetId);
       if (s.place?.at === 'plaza') p = {x:50,y:50};
       else if(s.place?.at === 'spoke') {
-        const castle = this.castlePoint(s.place.playerId), t = (s.place.square+.65)/(this.middleSquare+.65);
+        const castle = this.castlePoint(s.place.playerId), t = (s.place.square+PLAZA_SPOKE_START)/(this.middleSquare+PLAZA_SPOKE_START);
         p = {x:castle.x+(50-castle.x)*t,y:castle.y+(50-castle.y)*t};
       }
       s.el.style.top = `${p.y}%`; s.el.style.setProperty('--x', `${p.x}%`); return;

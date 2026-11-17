@@ -18,14 +18,32 @@ export class Settings {
     } catch {}
     this.box = document.createElement('div'); this.box.id = 'settings'; this.box.className = 'screen dim'; this.box.hidden = true;
     this.box.setAttribute('role','dialog'); this.box.setAttribute('aria-modal','true'); this.box.setAttribute('aria-labelledby','settings-title');
+    // 見た目はピル型のボタン。中身の select / checkbox は隠して残し、値の読み書きは今までどおりそこで行う
+    const pills=(name,label,options)=>`<div class="set-row"><span class="set-name">${label}</span><div class="pill-group" role="group" aria-label="${label}" data-for="${name}">${options.map(([v,t])=>`<button type="button" class="pill" data-value="${v}">${t}</button>`).join('')}</div></div>`;
     this.box.innerHTML = `<div class="screen-box parchment settings-box"><h2 id="settings-title">設定</h2>
-      <label>効果音 <output id="sfx-value"></output><input name="sfx" type="range" min="0" max="1" step=".05"></label>
-      <label>BGM <output id="bgm-value"></output><input name="bgm" type="range" min="0" max="1" step=".05"></label>
-      <label>演出の速さ<select name="speed"><option value="normal">ふつう</option><option value="fast">はやい</option><option value="skip">スキップ</option></select></label>
-      <label class="check-label"><input name="reduced" type="checkbox">動きを減らす（揺れ・点滅・一瞬の停止）</label>
-      <label>文字の大きさ<select name="text"><option value="small">小</option><option value="normal">中</option><option value="large">大</option></select></label>
-      <label>あなたの名前<input name="name" maxlength="16" autocomplete="nickname"></label>
+      <section class="set-group"><h3>サウンド</h3>
+        <label class="set-row"><span class="set-name">効果音</span><input name="sfx" type="range" min="0" max="1" step=".05"><output id="sfx-value"></output></label>
+        <label class="set-row"><span class="set-name">BGM</span><input name="bgm" type="range" min="0" max="1" step=".05"><output id="bgm-value"></output></label>
+      </section>
+      <section class="set-group"><h3>画面と演出</h3>
+        ${pills('speed','演出の速さ',[['normal','ふつう'],['fast','はやい'],['skip','スキップ']])}
+        ${pills('reduced','動きを減らす',[['true','ON'],['false','OFF']])}
+        <p class="set-note">ONにすると、揺れ・点滅・一瞬の停止をなくします。</p>
+        ${pills('text','文字の大きさ',[['small','小'],['normal','中'],['large','大']])}
+      </section>
+      <section class="set-group"><h3>なまえ</h3>
+        <label class="set-row"><span class="set-name">あなたの名前</span><input name="name" maxlength="16" autocomplete="nickname" placeholder="なまえ"></label>
+      </section>
+      <select name="speed" hidden><option value="normal"></option><option value="fast"></option><option value="skip"></option></select>
+      <input name="reduced" type="checkbox" hidden>
+      <select name="text" hidden><option value="small"></option><option value="normal"></option><option value="large"></option></select>
       <p role="status" class="settings-status"></p><button type="button" class="plank-btn settings-close">閉じる</button></div>`;
+    this.box.addEventListener('click', e => {
+      const pill=e.target.closest('.pill'); if(!pill)return;
+      const input=this.box.querySelector(`[name="${pill.parentElement.dataset.for}"]`);
+      if(input.type==='checkbox')input.checked=pill.dataset.value==='true';else input.value=pill.dataset.value;
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
     document.getElementById('app').append(this.box);
     for(const [k,v] of Object.entries(this.value)) { const input=this.box.querySelector(`[name="${k}"]`); if(input.type==='checkbox')input.checked=v;else input.value=v; }
     this.box.addEventListener('input', e => {
@@ -52,7 +70,8 @@ export class Settings {
     document.documentElement.dataset.textSize=v.text;
     document.documentElement.classList.toggle('reduced-motion',v.reduced);
     sound.sfxVolume=v.sfx; sound.bgmVolume=v.bgm; sound.updateVolumes?.();
-    for(const k of ['sfx','bgm'])this.box.querySelector(`#${k}-value`).textContent=`${Math.round(v[k]*100)}%`;
+    for(const k of ['sfx','bgm']){this.box.querySelector(`#${k}-value`).textContent=`${Math.round(v[k]*100)}%`;this.box.querySelector(`[name="${k}"]`).style.setProperty('--p',`${Math.round(v[k]*100)}%`);}
+    for(const group of this.box.querySelectorAll('.pill-group'))for(const pill of group.children){const on=String(v[group.dataset.for])===pill.dataset.value;pill.classList.toggle('on',on);pill.setAttribute('aria-pressed',String(on));}
     this.onChange(v);
   }
   open(){this.opener=document.activeElement;this.box.hidden=false;this.box.querySelector('input').focus();}

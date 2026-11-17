@@ -1371,7 +1371,9 @@ async function showResult(winner) {
   if (winningTeam) el.resultTitle.textContent = `${winningTeam.members.map(playerName).join('・')}のチームが勝利！`;
   $('back-to-room').hidden = !session?.online || room?.hostId !== viewerId;
   const how = (won ? GAME_OVER_TEXT : GAME_OVER_TEXT_LOST)[model.gameOverReason] ?? '';
-  el.resultSub.textContent = `${how ? `${how}　` : ''}${model.turn}ターンで決着`;
+  // 3人以上で負けたときは、だれが勝ったかも出す
+  const victor = online && !won && !winningTeam && model.playerOrder.length > 2 ? `${playerName(winner)}の勝ち　` : '';
+  el.resultSub.textContent = `${victor}${how ? `${how}　` : ''}${model.turn}ターンで決着`;
   const resultImage = new Image();
   resultImage.className='result-illustration';resultImage.alt='';
   resultImage.src=`assets/ui/result-${won ? 'victory' : 'defeat'}.png`;
