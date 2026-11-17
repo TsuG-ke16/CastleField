@@ -319,6 +319,7 @@ export class Animations {
         model.currentPlayer = p.playerId;
         for (const pl of Object.values(model.players)) {
           pl.playedThisTurn = false;
+          pl.soldiersPlayedThisTurn = 0;
           pl.cardsPlayedThisTurn = 0;
         }
         this.renderer.setTurnInfo(p.turn, model.round);
@@ -602,7 +603,8 @@ export class Animations {
     const mine = reward.playerId === ctx.viewerId;
     const card = mine ? ctx.lookupCard(cardId) : null;
     const rarity = this.rarities?.[reward.rarity];
-    const rank = Math.max(0, Object.keys(this.rarities ?? {}).indexOf(reward.rarity));
+    const chain = Object.keys(this.rarities ?? {}).filter((id) => !this.rarities[id].special);
+    const rank = Math.max(0, chain.indexOf(reward.rarity));
     const cfg = UI_CONFIG.rewardFx;
     const duration = Math.min(cfg.max, cfg.base + rank * cfg.perRank + (reward.lucky ? cfg.luckyExtra : 0));
     const stage = this.fx(`fx-reward-stage${reward.lucky ? ' lucky' : ''}`, this.centerOf(this.renderer.el.field));
@@ -614,7 +616,7 @@ export class Animations {
     const badge = document.createElement('span'); badge.className = 'reward-rarity'; badge.textContent = rarity?.name ?? ''; stage.append(badge);
     sound.play(reward.lucky ? 'lucky' : 'fusion');
     this.sparks(this.centerOf(this.renderer.el.field), { count: cfg.sparksBase + rank * cfg.sparksPerRank, color: rarity?.color ?? '#ffdf82', spread: 50 + rank * 20, size: 6 + rank });
-    if (rank === Object.keys(this.rarities ?? {}).length - 1) this.screenFlash(rarity.color, duration * .4);
+    if (rank === chain.length - 1) this.screenFlash(rarity.color, duration * .4);
     try {
       await this.animate(stage, [{ opacity: 0, transform: 'translate(-50%, -50%) scale(.4)' }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1.08)', offset: .18 }, { opacity: 1, transform: 'translate(-50%, -50%) scale(1)', offset: .8 }, { opacity: 0, transform: `translate(-50%, calc(-50% + ${mine ? 65 : -65}px)) scale(.5)` }], { duration, fill: 'forwards' });
     } finally { stage.remove(); }
@@ -691,7 +693,8 @@ export class Animations {
     // 神頼みでタダで出したカード（free）は、山札の上から直接出る。手札は減らない
     if (free && (model.deckMode !== 'own' || playerId === ctx.viewerId)) model.deckCount = Math.max(0, model.deckCount - 1);
     if (!free) pl.handCount = Math.max(0, pl.handCount - 1);
-    if (!free && def.kind !== 'weapon' && def.kind !== 'defense') pl.playedThisTurn = true;
+    if (!free && def.kind === 'soldier') pl.soldiersPlayedThisTurn = (pl.soldiersPlayedThisTurn ?? 0) + 1;
+    else if (!free && def.kind === 'spell' && !['summonSpirit', 'gainCoins'].includes(def.effect)) pl.playedThisTurn = true;
     pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
     if (!def.exhaust && (model.deckMode !== 'own' || playerId === ctx.viewerId)) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
     model.hand = model.hand.filter((c) => c.cardId !== cardId);

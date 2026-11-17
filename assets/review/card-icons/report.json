@@ -1,0 +1,33 @@
+{
+  "viewport": "390x844",
+  "sizes": [
+    13,
+    16
+  ],
+  "modes": {
+    "normal": {
+      "loaded": 33,
+      "wrappers": 33,
+      "visibleFallbacks": 0,
+      "medallions": 12,
+      "labelsAndFit": true,
+      "errors": []
+    },
+    "missing": {
+      "loaded": 0,
+      "wrappers": 33,
+      "visibleFallbacks": 33,
+      "medallions": 12,
+      "labelsAndFit": true,
+      "errors": []
+    },
+    "offline": {
+      "loaded": 0,
+      "wrappers": 33,
+      "visibleFallbacks": 33,
+      "medallions": 12,
+      "labelsAndFit": true,
+      "errors": []
+    }
+  }
+}

@@ -15,6 +15,7 @@ export class Player {
     /** @type {import('./Soldier.js').Soldier[]} 出した順に並ぶ */
     this.soldiers = [];
     this.playedThisTurn = false;
+    this.soldiersPlayedThisTurn = 0;
     /** 負けて抜けたか（3人以上のとき） */
     this.eliminated = false;
     /** このターンに出したカードの枚数（メイン・付加・防御すべて） */
@@ -74,6 +75,7 @@ export class Player {
       hand: showHand ? this.hand.map((c) => c.toState()) : null,
       handCount: this.hand.length,
       playedThisTurn: this.playedThisTurn,
+      soldiersPlayedThisTurn: this.soldiersPlayedThisTurn,
       soldiers: this.soldiers.map((s) => s.toState()),
     };
   }

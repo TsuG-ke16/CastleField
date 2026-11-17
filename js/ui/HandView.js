@@ -10,7 +10,7 @@ import { groupStarts, sortHand } from './handOrder.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
-import { frameAsset, kindIcon, rarityMark } from './cardFrame.js';
+import { frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -119,7 +119,10 @@ export class HandView {
     for (const c of this.hand) counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
     for (const el of box.querySelectorAll('.card')) {
       const c = this.hand.find((c) => c.cardId === el.dataset.id);
-      el.classList.toggle('can-fuse', counts.get(c.type) >= 2 && Boolean(this.cards[c.type]?.fuseTo));
+      const wildInHand = this.hand.some((h) => this.cards[h.type]?.effect === 'wild');
+      const isWild = this.cards[c.type]?.effect === 'wild';
+      const fusable = isWild ? this.hand.some((h) => this.cards[h.type]?.fuseTo) : Boolean(this.cards[c.type]?.fuseTo);
+      el.classList.toggle('can-fuse', fusable && (isWild || counts.get(c.type) >= 2 || wildInHand));
     }
     this.markGroups();
     this.layout();
@@ -160,7 +163,7 @@ export class HandView {
   makeCardEl(card, isNew = false) {
     const def = this.cards[card.type] ?? { name: card.type };
     const el = document.createElement('div');
-    el.className = `card ${def.kind ?? ''}${def.exhaust ? ' exhaust' : ''}`;
+    el.className = `card ${def.kind ?? ''}${def.exhaust ? ' exhaust' : ''}${def.effect === 'wild' ? ' wild' : ''}`;
     el.dataset.id = card.cardId;
     el.tabIndex = 0;
     el.setAttribute('role', 'button');
@@ -173,9 +176,10 @@ export class HandView {
       el.style.setProperty('--rarity', this.rarities[def.rarity].color);
       const badge = document.createElement('span');
       badge.className = 'card-rarity';
-      badge.textContent = rarityMark(def.rarity);
-      badge.title = this.rarities[def.rarity].name;
-      badge.setAttribute('aria-label', this.rarities[def.rarity].name);
+      badge.innerHTML = icon(rarityIcon(def.rarity), rarityMark(def.rarity));
+      badge.title = `${this.rarities[def.rarity].name}（${rarityMark(def.rarity)}）`;
+      badge.setAttribute('role', 'img');
+      badge.setAttribute('aria-label', badge.title);
       el.appendChild(badge);
     }
     const framePath = frameAsset(def, this.rarities);
@@ -190,8 +194,10 @@ export class HandView {
     }
     const kind = el.querySelector('.card-kind');
     if (framePath) {
-      kind.innerHTML = icon(kindIcon(def.kind));
-      kind.title = KIND_LABEL[def.kind] ?? '';
+      kind.innerHTML = icon(kindIcon(def));
+      kind.title = def.effect === 'wild' ? 'どれにもなれる（適応）' : KIND_LABEL[def.kind] ?? '';
+      kind.setAttribute('role', 'img');
+      kind.setAttribute('aria-label', kind.title);
     } else kind.textContent = KIND_LABEL[def.kind] ?? '';
     el.querySelector('.card-art').innerHTML = cardArt(card.type, this.color ?? 'blue', def.name ?? '');
     const name = el.querySelector('.card-name');

@@ -20,6 +20,7 @@ export const EFFECTS = {
     randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
     stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
     gainCoins: ['amount'], // コインを増やす
+    wild: [], // 適応：どのカードとでも合成できる（出せない。合成専用）
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
   },
   defense: {
@@ -33,9 +34,15 @@ export const EFFECTS = {
 /** scope（レーンを選ぶか）を書ける effect。lane なら選んだ1レーンの相手の兵士だけに効く */
 export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers'];
 
-/** kind → 出し方（slot）。main は1ターン1枚、addon と defense は何枚でも */
+/** 攻撃ではない魔法（精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
+export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins'];
+
+/**
+ * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
+ * addon・defense・support は何枚でも
+ */
 export const SLOT_OF_KIND = {
-  soldier: 'main',
+  soldier: 'soldier',
   spell: 'main',
   weapon: 'addon',
   defense: 'defense',
@@ -57,8 +64,9 @@ export class Card {
     return this.def.kind;
   }
 
-  /** "main" | "addon" | "defense" */
+  /** "soldier" | "main" | "addon" | "defense" | "support" */
   get slot() {
+    if (this.def.kind === 'spell' && SUPPORT_EFFECTS.includes(this.def.effect)) return 'support';
     return SLOT_OF_KIND[this.def.kind];
   }
 
@@ -103,9 +111,11 @@ export class Card {
       if (rarities) {
         if (!Object.hasOwn(rarities, def.rarity)) throw new Error(`${where}: rarity は ${Object.keys(rarities).join(' / ')} のどれかにしてください`);
         if (def.weight !== undefined && !(typeof def.weight === 'number' && def.weight >= 0)) throw new Error(`${where}: weight は0以上の数にしてください（書かなければ 1）`);
-        const order = Object.keys(rarities);
+        const order = Object.keys(rarities).filter((id) => !rarities[id].special);
         const next = order[order.indexOf(def.rarity) + 1];
-        if (next === undefined) {
+        if (def.effect === 'wild' || rarities[def.rarity].special) {
+          if (def.fuseTo !== undefined) throw new Error(`${where}: 適応（effect: "wild"）やスペシャルのカードに fuseTo は書けません（合成の結果は相手のカードで決まる）`);
+        } else if (next === undefined) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: いちばん上のレアリティのカードに fuseTo は書けません`);
         } else {
           if (typeof def.fuseTo !== 'string' || !Object.hasOwn(cards, def.fuseTo)) throw new Error(`${where}: fuseTo に、合成してできるカード種類を書いてください`);
