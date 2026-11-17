@@ -332,3 +332,16 @@ OpenAI image generation で assets/STYLE.md の共通指示文に沿って生成
 - `fx/evolve-3.png`
 - `castles/castle-blue-ruined.png`
 - `castles/castle-orange-ruined.png`
+
+## 王国の作戦卓：デザイン統一素材（2026-11-18）
+
+OpenAI image generationで `assets/style-reference.png` を参照し、STYLE.mdの共通指示文に沿って生成したオリジナル素材。第三者の配布素材は使用していません。利用条件: OpenAI Terms of Use（生成出力）。透過アトラスを分割・トリミング、背景PNGは縮小・減色。各300KB以下。
+
+- `ui/kingdom-parchment.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-primary.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-secondary.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-wood.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-crest.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-platform.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `bg/kingdom-valley.png` — 生成元 `exec-a20ee589-dec8-4cb1-b8ce-4ff36c751525.png`
+- `bg/kingdom-meadow.png` — 生成元 `exec-766a7a7c-3d60-4a07-99c1-c880a327b0b0.png`

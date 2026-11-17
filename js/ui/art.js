@@ -405,7 +405,7 @@ const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
 const READY = new Set();
 export const isAssetReady = (path) => READY.has(path);
-const TITLE_ASSETS = ['bg/title-compact.png','ui/logo.png','ui/title-castle-blue.png','ui/title-castle-orange.png','ui/title-knight-blue.png','ui/title-infantry-orange.png'];
+const TITLE_ASSETS = ['bg/kingdom-meadow.png','bg/kingdom-valley.png','ui/kingdom-parchment.png','ui/kingdom-primary.png','ui/kingdom-secondary.png','ui/kingdom-wood.png','ui/kingdom-crest.png','ui/logo.png','ui/title-castle-blue.png','ui/title-castle-orange.png','ui/title-knight-blue.png','ui/title-infantry-orange.png'];
 export async function preloadAssets(timeoutMs = 8000, onProgress = null, {phase = 'game'} = {}) {
   let paths = [...TITLE_ASSETS];
   if (phase !== 'title') {

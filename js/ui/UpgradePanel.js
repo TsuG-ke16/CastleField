@@ -21,7 +21,7 @@ export class UpgradePanel {
     this.onOpen = onOpen;
     this.onDenied = onDenied;
     this.category = 'repair';
-    this.groups = { repair: '回復', draw: '補充', army: '強化（兵士）', ticket: '入手券', special: '特殊' };
+    this.groups = { repair: '回復', draw: '補充', army: '兵士', ticket: '入手券', special: '特殊' };
     this.offReason = ''; // いま開けない理由（空なら開ける）
     this.el = {
       open: $('upgrade-open'),
