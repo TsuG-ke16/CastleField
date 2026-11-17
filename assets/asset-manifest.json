@@ -236,5 +236,17 @@
   "ui/icon-rarity-uncommon.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
   "ui/icon-rarity-rare.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
   "ui/icon-rarity-epic.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
-  "ui/icon-rarity-legendary.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png"
+  "ui/icon-rarity-legendary.png": "exec-67e1373d-21c4-4973-858a-889c0c158b0b.png",
+  "cards/card-mana-shard.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "cards/card-mana-drop.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "cards/card-mana-crystal.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "cards/card-mana-spring.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "cards/card-world-tree-dew.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "ui/icon-mp.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "ui/icon-luck.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "fx/evolve-1.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "fx/evolve-2.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "fx/evolve-3.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "castles/castle-blue-ruined.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png",
+  "castles/castle-orange-ruined.png": "exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png"
 }

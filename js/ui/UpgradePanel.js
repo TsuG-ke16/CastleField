@@ -95,9 +95,9 @@ export class UpgradePanel {
    * @param {{ [upgradeId: string]: { ok: boolean, reason?: string } }} status canBuyUpgrade の結果
    * @param {{ [upgradeId: string]: number }|null} bought このゲームで買った回数（分からないときは null）
    */
-  refresh(coins, status, bought) {
+  refresh(coins, status, bought, permLuck) {
     this.el.coins.innerHTML = `${icon('coin')}<b>${Number(coins)}</b>`;
-    this.snapshot = { coins, status, bought };
+    this.snapshot = { coins, status, bought, permLuck };
     this.render();
   }
 
@@ -128,6 +128,7 @@ export class UpgradePanel {
       btn.querySelector('.upgrade-icon').innerHTML = icon(UPGRADE_ICON_NAME[id] ?? 'crown');
       btn.querySelector('.upgrade-name').textContent = def.name;
       let desc = upgradeDescription(def);
+      if (def.effect === 'permanentLuck') desc += `。現在：毎ドロー${Math.round((this.snapshot.permLuck?.chance ?? 0) * 100)}%で加護（${this.snapshot.permLuck?.boost ?? def.boost}倍）。次の購入で＋${def.amount}%`;
       // 買った回数が分からないとき（オンラインでつなぎ直したあと）は、上限だけ出す
       if (def.limit !== undefined) desc += bought ? `（あと${Math.max(0, def.limit - (bought[id] ?? 0))}回）` : `（1試合${def.limit}回まで）`;
       btn.querySelector('.upgrade-desc').textContent = desc;

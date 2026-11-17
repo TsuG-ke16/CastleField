@@ -96,6 +96,7 @@ export function upgradeIcon(id) {
 
 /** 強化の記号（art.js の icon() の名前） */
 export const UPGRADE_ICON_NAME = {
+  permLuck: 'luck',
   repair: 'hammer',
   recruit: 'card',
   sharpen: 'stone',

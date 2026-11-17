@@ -562,6 +562,7 @@ export class Animations {
   }
 
   async cardsFused({ playerId, cardIds, cardId, from, to }, model, ctx) {
+    const wild = model.hand?.some(c => cardIds?.includes(c.cardId) && this.cards[c.type]?.effect === 'wild');
     const pl = model.players[playerId];
     pl.handCount = Math.max(0, pl.handCount - 1);
     if (playerId === ctx.viewerId) {
@@ -570,7 +571,6 @@ export class Animations {
       this.handView.render(model.hand, { newIds: [cardId] });
     } else this.renderer.setOppHandCount(pl.handCount);
     if (this.skipping) return;
-    sound.play('fusion');
     if (playerId !== ctx.viewerId) { await this.banner('相手がカードを合成！', UI_CONFIG.timing.fusion, 'fusion'); return; }
     const center = this.centerOf(this.renderer.el.field);
     const stage = this.fx('fx-fusion-stage', center);
@@ -580,12 +580,16 @@ export class Animations {
     // レアリティが高いほど、光・火花・揺れが大きく、長くなる
     const chain = Object.keys(this.rarities ?? {}).filter((id) => !this.rarities[id].special);
     const rank = Math.max(0, chain.indexOf(this.cards[to]?.rarity));
-    const total = UI_CONFIG.timing.fusion + rank * 120;
+    sound.play(wild ? 'adaptFusion' : 'fusion', rank / Math.max(1, chain.length - 1));
+    stage.classList.toggle('adapt-fusion', Boolean(wild));
+    const total = Math.min(1600, UI_CONFIG.timing.fusion + rank * 100);
     const glow = this.fx('fx-fusion-glow', center);
-    glow.style.background = `radial-gradient(circle, #fff 0%, ${color} 35%, transparent 70%)`;
+    glow.style.background = wild ? 'conic-gradient(#ff7b9c,#ffdf7a,#89eebc,#8abaff,#d79aff,#ff7b9c)' : `radial-gradient(circle, #fff 0%, ${color} 35%, transparent 70%)`;
+    if (wild) glow.style.borderRadius = '50%';
     this.animate(glow, [{ transform: 'scale(.2)', opacity: 0 }, { transform: 'scale(.6)', opacity: .9, offset: .45 }, { transform: `scale(${1.6 + rank * .35})`, opacity: 0 }], { duration: total, fill: 'forwards' }).then(() => glow.remove());
     for (const side of [0, 1]) {
-      const el = this.effectCard(from, this.cards[from]?.name); stage.append(el);
+      const inputType = wild && side === 0 ? 'adapt' : from;
+      const el = this.effectCard(inputType, this.cards[inputType]?.name); stage.append(el);
       this.animate(el, [
         { transform: `translate(${side ? 150 : -150}px, 20px) rotate(${side ? 20 : -20}deg) scale(.9)`, opacity: 0 },
         { transform: `translate(${side ? 80 : -80}px, 0) rotate(${side ? 12 : -12}deg)`, opacity: 1, offset: .18 },
@@ -713,6 +717,7 @@ export class Animations {
   }
 
   async cardPlayed({ playerId, cardId, type, free }, model, ctx) {
+    if (this.cards[type]?.effect === 'gainMp') model.players[playerId].manaCard = type;
     const pl = model.players[playerId];
     const def = this.cards[type] ?? {};
     // 神頼みでタダで出したカード（free）は、山札の上から直接出る。手札は減らない
@@ -1420,6 +1425,8 @@ export class Animations {
 
   async weaponEquipped({ playerId, soldierId, type, attack, element }, model) {
     const s = this.modelSoldier(model, playerId, soldierId);
+    const prev = this.renderer.weaponStacks.get(soldierId) ?? { count: s?.weapon ? null : 0, bonus: 0 };
+    this.renderer.weaponStacks.set(soldierId, { count: prev.count == null ? null : prev.count + 1, bonus: prev.bonus + (this.cards[type]?.attackBonus ?? 0) });
     if (s) Object.assign(s, { weapon: type, attack, element: element ?? null });
     this.renderer.updateSoldier(soldierId, { weapon: type, attack, element: element ?? null });
     const look = ELEMENT_LOOK[element];
@@ -1542,6 +1549,7 @@ export class Animations {
   // ---------- 魔物とコイン ----------
 
   async monsterAppeared(p, model) {
+    this.renderer.monsterBirths.set(p.monsterId, model.round);
     const def = this.monsterDefs?.[p.type] ?? {};
     const m = {
       monsterId: p.monsterId, type: p.type, roadId: p.roadId, square: p.square,
@@ -1663,16 +1671,23 @@ export class Animations {
       this.number(target, `✦${delta > 0 ? '+' : ''}${delta}`, { size: small.size, duration: small.duration, kind: delta > 0 ? 'heal' : 'block' });
     }
     if (reason === 'card') {
-      sound.play('coin');
+      const chain = Object.keys(this.rarities ?? {}).filter(id => !this.rarities[id].special);
+      const rank = Math.max(0, chain.indexOf(this.cards[model.players[playerId].manaCard]?.rarity));
+      if (target && !target.hidden) {
+        const center = this.centerOf(target);
+        this.ring(center, { size: 45 + rank * 12, color: '#8ae5ff', duration: 350 });
+        this.sparks(center, { count: 4 + rank * 3, color: '#8ae5ff', spread: 22 + rank * 6, size: 4 });
+      }
+      sound.play('fusion', rank / 4);
       await this.delay(UI_CONFIG.timing.coins);
     }
   }
 
   /** 放置された魔物が、レアリティが上がって強くなる */
-  async monsterEvolved({ monsterId, rewardRarity, hp, maxHp, attack, castleAttack }, model) {
+  async monsterEvolved({ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }, model) {
     const m = (model.monsters ?? []).find((x) => x.monsterId === monsterId);
-    if (m) Object.assign(m, { hp, maxHp, attack, castleAttack, rewardRarity });
-    this.renderer.updateMonster(monsterId, { hp, maxHp, attack, castleAttack, rewardRarity });
+    if (m) Object.assign(m, { hp, maxHp, attack, castleAttack, rewardRarity, evolveCount: count });
+    this.renderer.updateMonster(monsterId, { hp, maxHp, attack, castleAttack, rewardRarity, evolveCount: count });
     if (this.skipping) return;
     const name = this.monsterDefs?.[m?.type]?.name ?? '魔物';
     const rarity = this.rarities?.[rewardRarity];
@@ -1681,6 +1696,7 @@ export class Animations {
     const mEl = this.renderer.monsterEl(monsterId);
     if (mEl?.isConnected) {
       const feet = this.feetOf(mEl);
+      for (const stat of mEl.querySelectorAll('.st.atk, .monster-hp-text, .monster-reward')) this.animate(stat, [{transform:'scale(1)'},{transform:'scale(1.3)',offset:.4},{transform:'scale(1)'}], {duration:350});
       this.ring(feet, { size: 150, color: rarity?.color ?? '#ff6b6b', duration: 420 });
       this.sparks(feet, { count: 16, color: rarity?.color ?? '#ff6b6b', spread: 80, size: 9 });
     }

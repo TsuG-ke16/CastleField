@@ -156,7 +156,7 @@ async function loadOptionalJson(path) {
   }
 }
 
-function uiContext() { return { session, viewerId, busy, sending, luckFrom: upgrades?.luck?.fromRarity }; }
+function uiContext() { return { session, viewerId, busy, sending, luckFrom: upgrades?.luck?.fromRarity, permLuckFrom: upgrades?.permLuck?.fromRarity }; }
 
 // 読み込み中の画面：進み具合を出して、起動が終わったら消す
 function setLoading(ratio, text) {
@@ -492,6 +492,9 @@ function stopLocal() {
 /** 新しい試合の前に、画面の持ちものを空にする */
 function resetForNewGame() {
   matchStats.reset();
+  renderer.monsterBirths.clear(); renderer.weaponStacks.clear();
+  el.app.classList.remove('spectating');
+  document.getElementById('spectator-strip')?.setAttribute('hidden', '');
   gen += 1;
   cancelHandover?.();
   anim.skip();
@@ -994,6 +997,9 @@ async function settle({ check = true } = {}) {
   if (DEBUG && check && st.phase !== 'gameOver') checkSync(model, st);
   if (model.gameOverReason === 'castleDestroyed' && lastCastleHit === 'monster') model.gameOverReason = 'monsterDestroyed';
   handView.mpCosts = st.mpCosts ?? {};
+  handView.onMpSelect = cost => renderer.showMpShortage(Math.max(0, cost - (st.players[viewerId]?.mp ?? 0)));
+  renderer.round = st.round;
+  renderer.showMpShortage();
   model = modelFromState(st);
   renderer.renderAll(model);
   if (st.phase !== 'gameOver') sound.setScene(st.monsters.length ? 'tension' : 'battle');
@@ -1013,6 +1019,17 @@ async function settle({ check = true } = {}) {
   // 降参・脱落した人は、残りの試合を見守る（操作はできない）
   const spectating = Boolean(me.eliminated);
   el.app.classList.toggle('spectating', spectating);
+  let strip = document.getElementById('spectator-strip');
+  if (!strip) {
+    strip = document.createElement('aside'); strip.id = 'spectator-strip'; strip.setAttribute('aria-label', '観戦');
+    strip.innerHTML = '<strong>観戦中</strong><span class="spectator-flow"></span><span class="spectator-seats"></span><button type="button" class="small-btn">タイトルへ</button>';
+    strip.querySelector('button').onclick = () => document.getElementById('menu-title-btn').click();
+    document.getElementById('controls').prepend(strip);
+  }
+  strip.hidden = !spectating;
+  strip.querySelector('.spectator-seats').textContent = st.playerOrder.map((id,i) => `席${i+1} ${playerName(id)}${st.players[id].eliminated ? '：脱落' : '：対戦中'}`).join(' ／ ');
+  strip.querySelector('.spectator-flow').textContent = `${st.round}周目 · ${playerName(st.currentPlayer)}の番 · ${UI_CONFIG.speed === 0 ? '演出スキップ' : UI_CONFIG.speed < 1 ? 'はやい' : 'ふつう'} · タップで早送り`;
+  if (spectating) upgradePanel.setEnabled(false, { reason: '観戦中は強化を買えません' });
   if (spectating) {
     el.endTurn.disabled = true;
     el.endTurn.classList.add('off');
@@ -1266,7 +1283,7 @@ function refreshUpgrades() {
   const anyOk = Object.values(status).some((x) => x.ok);
   upgradePanel.setEnabled(myTurn, { highlight: anyOk, reason: why });
   // オンラインでは、つなぎ直すと買った回数が分からないので、残りの回数は出さない
-  if (me) upgradePanel.refresh(me.coins ?? 0, status, session.online ? null : (upgradeCounts[viewerId] ?? {}));
+  if (me) upgradePanel.refresh(me.coins ?? 0, status, session.online ? null : (upgradeCounts[viewerId] ?? {}), me.permLuck);
 }
 
 /** 強化を買えない場面の理由 */
