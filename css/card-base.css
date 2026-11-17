@@ -1,0 +1,50 @@
+/* カードの高さは、枠の装飾（王冠・宝石・翼など）を除いた「土台」で合わせる。
+   枠の絵は 512×768 の中で土台の位置がそれぞれ違うので、土台の上端 --fy（絵の高さに対する%）、
+   土台の高さ --fh（絵の高さに対する割合）、土台の横の中心 --fx（絵の幅に対する%）を枠ごとに持つ。
+   カードの箱（2:3）に土台の高さをぴったり合わせ、はみ出す装飾は箱の外に描く。
+   絵の窓・丸・名前の帯の位置（--win-* / --med-* / --name-y。絵全体に対する%）も同じ式で直す。
+   枠の絵と箱がどちらも 2:3 なので、縦横とも 1/--fh 倍になる。 */
+.card.has-frame, .mini-card { --fy: 3.906%; --fh: .9167; --fx: 51.76%; --bw: .686; }
+.card.has-frame[data-rarity=uncommon], .mini-card[data-rarity=uncommon] { --bw: .722; --fy: 5.729%; --fh: .8984; --fx: 49.22%; }
+.card.has-frame[data-rarity=rare], .mini-card[data-rarity=rare] { --bw: .746; --fy: 8.854%; --fh: .8711; --fx: 50.68%; }
+.card.has-frame[data-rarity=epic], .mini-card[data-rarity=epic] { --bw: .747; --fy: 8.464%; --fh: .8711; --fx: 49.80%; }
+.card.has-frame[data-rarity=legendary], .mini-card[data-rarity=legendary] { --bw: .808; --fy: 16.927%; --fh: .7799; --fx: 49.22%; }
+.card.has-frame[data-rarity=special], .mini-card[data-rarity=special] { --bw: .733; --fy: 7.161%; --fh: .8815; --fx: 50%; }
+/* レアリティのないときの種類別の枠 */
+.card.has-frame:has(> .card-frame[src$="frame-soldier.png"]), .mini-card:has(> .mini-card-frame[src$="frame-soldier.png"]) { --fy: 14.063%; --fh: .8086; --fx: 49.71%; }
+.card.has-frame:has(> .card-frame[src$="frame-spell.png"]), .mini-card:has(> .mini-card-frame[src$="frame-spell.png"]) { --fy: 13.672%; --fh: .8138; --fx: 50.88%; }
+.card.has-frame:has(> .card-frame[src$="frame-weapon.png"]), .mini-card:has(> .mini-card-frame[src$="frame-weapon.png"]) { --fy: 13.281%; --fh: .8151; --fx: 51.17%; }
+.card.has-frame:has(> .card-frame[src$="frame-defense.png"]), .mini-card:has(> .mini-card-frame[src$="frame-defense.png"]) { --fy: 12.760%; --fh: .8164; --fx: 51.27%; }
+
+#app .card.has-frame, #app .mini-card { overflow: visible; }
+#app .card.has-frame .card-frame, #app .mini-card-frame {
+  inset: auto; object-fit: fill;
+  width: calc(100% / var(--fh)); height: calc(100% / var(--fh));
+  left: calc(50% - var(--fx) / var(--fh)); top: calc(0% - var(--fy) / var(--fh));
+}
+#app .card.has-frame .card-art, #app .card.has-frame.spell .card-art, #app .card.has-frame.weapon .card-art, #app .card.has-frame.defense .card-art, #app .mini-card-image {
+  inset: auto;
+  left: calc(50% + (var(--win-l) - 1% - var(--fx)) / var(--fh));
+  top: calc((var(--win-t) - 1% - var(--fy)) / var(--fh));
+  width: calc((var(--win-w) + 2%) / var(--fh));
+  height: calc((var(--win-h) + 2%) / var(--fh));
+}
+#app .card.has-frame .card-kind, #app .card.has-frame .card-rarity, #app .mini-card-kind, #app .mini-card-rarity {
+  top: calc((var(--med-y) - 6% - var(--fy)) / var(--fh));
+  width: calc(16% / var(--fh)); height: calc(12% / var(--fh));
+}
+#app .card.has-frame .card-kind, #app .mini-card-kind { left: calc(50% + (var(--med-l) - 8% - var(--fx)) / var(--fh)); }
+#app .card.has-frame .card-rarity, #app .mini-card-rarity { right: auto; left: calc(50% + (var(--med-r) - 8% - var(--fx)) / var(--fh)); }
+#app .card.has-frame .card-name, #app .card.has-frame .card-name.long, #app .mini-card-name {
+  top: calc((var(--name-y) - 6% - var(--fy)) / var(--fh)); height: calc(12% / var(--fh));
+  left: calc(50% + (14% - var(--fx)) / var(--fh)); right: calc(50% - (86% - var(--fx)) / var(--fh));
+}
+
+/* 手札：土台の高さ --cb をそろえ、はみ出す装飾のぶんだけ上下・左右に余白をとる
+   （いちばん大きいレジェンドの王冠で、土台の高さの約22%が上にはみ出す） */
+#app #hand { --cb: 114px; padding-top: calc(var(--cb) * .22 + 2px); padding-bottom: calc(var(--cb) * .07 + 4px); }
+#app #hand .card.has-frame { width: calc(var(--cb) * 2 / 3); height: var(--cb); flex: none;
+  margin-inline: max(0px, calc(var(--cb) * (var(--bw, .6667) - .6667) / 2)); }
+@media(max-height:700px) and (min-height:501px) { #app #hand { --cb: 102px; } }
+@media(min-width:900px) and (min-height:650px) { #app #hand { --cb: 170px; row-gap: calc(var(--cb) * .29 + 8px); } }
+@media(max-height:500px) { #app #hand { --cb: 108px; row-gap: calc(var(--cb) * .29 + 6px); } }
