@@ -316,21 +316,32 @@ function buyUpgrades(game, pid, ctx) {
   }
 }
 
-/** 手札に同じカードが2枚あれば合成する（1つ上のレアリティになる。レジェンドは合成できない） */
-function fuseAll(game, pid) {
+/**
+ * 手札に同じカードが2枚あれば合成する（1つ上のレアリティになる。レジェンドは合成できない）。
+ * そのあと、適応（どのカードとでも合成できる）は、合成先がある中でいちばん高いレアリティのカードと合成する
+ */
+function fuseAll(game, pid, ctx) {
+  const isWild = (c) => ctx.cards[c.type]?.effect === 'wild';
   for (let i = 0; i < 20; i++) {
     const hand = game.getState(pid).players[pid].hand;
     let done = false;
     for (let a = 0; a < hand.length && !done; a++) {
+      if (isWild(hand[a])) continue;
       const b = hand.findIndex((c, j) => j > a && c.type === hand[a].type);
       if (b >= 0 && game.fuse(hand[a].cardId, hand[b].cardId).ok) done = true;
     }
-    if (!done) return;
+    if (done) continue;
+    const wild = hand.find(isWild);
+    if (!wild) return;
+    const order = Object.keys(ctx.rarities ?? { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 });
+    const rank = (c) => order.indexOf(ctx.cards[c.type].rarity);
+    const partners = hand.filter((c) => !isWild(c) && ctx.cards[c.type].fuseTo).sort((x, y) => rank(y) - rank(x));
+    if (!partners.length || !game.fuse(wild.cardId, partners[0].cardId).ok) return;
   }
 }
 
 function smartStep(game, pid, ctx) {
-  fuseAll(game, pid);
+  fuseAll(game, pid, ctx);
   const { me, enemies, playable } = view(game, pid);
   const enemy = enemies[0];
   const castleSpells = typesWithEffect(ctx, 'damageEnemyCastle');

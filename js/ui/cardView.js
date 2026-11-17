@@ -8,6 +8,7 @@ export function mountMiniCard(root, type, def, rarities, { showName = true } = {
     return root;
   }
   root.classList.add('mini-card');
+  if (def?.effect === 'wild') root.classList.add('wild');
   if (def?.rarity && rarities?.[def.rarity]) root.dataset.rarity = def.rarity;
   const frame = document.createElement('img');
   frame.className = 'mini-card-frame';

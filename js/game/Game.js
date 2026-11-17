@@ -1194,20 +1194,25 @@ export class Game {
     const a = player.hand.find((c) => c.cardId === cardIdA);
     const b = player.hand.find((c) => c.cardId === cardIdB);
     if (!a || !b) return fail('そのカードは手札にありません');
-    if (a.type !== b.type) return fail('同じ種類のカードどうしでないと合成できません');
-    if (!a.def.fuseTo) return fail('レジェンドはこれ以上合成できません');
-    return { ok: true, player, a, b };
+    const wildA = a.def.effect === 'wild';
+    const wildB = b.def.effect === 'wild';
+    if (wildA && wildB) return fail('適応どうしは合成できません');
+    // 適応は、どのカードとでも合成できる（相手のカードを2枚合成したのと同じ結果）
+    const base = wildA ? b : a;
+    if (!wildA && !wildB && a.type !== b.type) return fail('同じ種類のカードどうしでないと合成できません');
+    if (!base.def.fuseTo) return fail('レジェンドはこれ以上合成できません');
+    return { ok: true, player, a, b, base };
   }
 
   /** 手札の同じカード2枚を、1つ上のレアリティのカード1枚にする（メインの1枚には数えない。何回でもできる） */
   fuse(cardIdA, cardIdB) {
     const check = this.canFuse(cardIdA, cardIdB);
     if (!check.ok) return check;
-    const { player, a, b } = check;
+    const { player, a, b, base } = check;
     player.hand = player.hand.filter((c) => c !== a && c !== b);
-    const card = this.createCard(a.def.fuseTo);
+    const card = this.createCard(base.def.fuseTo);
     player.hand.push(card);
-    this.emit('cardsFused', { playerId: player.id, cardIds: [a.cardId, b.cardId], cardId: card.cardId, from: a.type, to: card.type });
+    this.emit('cardsFused', { playerId: player.id, cardIds: [a.cardId, b.cardId], cardId: card.cardId, from: base.type, to: card.type });
     return ok();
   }
 
@@ -1286,6 +1291,8 @@ export class Game {
       return { targets, reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません' };
     }
     switch (def.effect) {
+      case 'wild':
+        return { targets: [], reason: '適応は合成に使うカードです（出せません）' };
       case 'damageEnemyCastle':
         return {
           targets: [

@@ -193,6 +193,12 @@ function svgCastleArt(color) {
 const bg = (a, b) => `<rect width="100" height="100" fill="${a}"/><circle cx="50" cy="50" r="46" fill="${b}" opacity=".6"/>`;
 
 const CARD_ART = {
+  adapt: () => bg('#f1e4ff', '#fff6e0') +
+    `<defs><linearGradient id="rbw" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5d73"/><stop offset=".2" stop-color="#ffb347"/><stop offset=".4" stop-color="#fff176"/><stop offset=".6" stop-color="#5fd98f"/><stop offset=".8" stop-color="#4db8f0"/><stop offset="1" stop-color="#b57cf0"/></linearGradient></defs>` +
+    `<path d="M50 8 L90 50 L50 92 L10 50 Z" fill="url(#rbw)" ${S} stroke-width="4"/>` +
+    `<path d="M50 8 L50 92 M10 50 L90 50" fill="none" stroke="#fff" stroke-width="2.4" opacity=".7"/>` +
+    `<path d="M26 34 L40 20" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".85"/>` +
+    `<path d="M80 18 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 Z M18 70 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 Z" fill="#fff" ${S} stroke-width="1.6"/>`,
   infantry: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${infantryBody(c)}</g>`,
   knight: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${knightBody(c)}</g>`,
   fireball: () => bg('#ffd9a8', '#fff0cf') +

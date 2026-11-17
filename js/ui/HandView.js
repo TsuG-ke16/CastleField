@@ -119,7 +119,10 @@ export class HandView {
     for (const c of this.hand) counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
     for (const el of box.querySelectorAll('.card')) {
       const c = this.hand.find((c) => c.cardId === el.dataset.id);
-      el.classList.toggle('can-fuse', counts.get(c.type) >= 2 && Boolean(this.cards[c.type]?.fuseTo));
+      const wildInHand = this.hand.some((h) => this.cards[h.type]?.effect === 'wild');
+      const isWild = this.cards[c.type]?.effect === 'wild';
+      const fusable = isWild ? this.hand.some((h) => this.cards[h.type]?.fuseTo) : Boolean(this.cards[c.type]?.fuseTo);
+      el.classList.toggle('can-fuse', fusable && (isWild || counts.get(c.type) >= 2 || wildInHand));
     }
     this.markGroups();
     this.layout();
@@ -160,7 +163,7 @@ export class HandView {
   makeCardEl(card, isNew = false) {
     const def = this.cards[card.type] ?? { name: card.type };
     const el = document.createElement('div');
-    el.className = `card ${def.kind ?? ''}${def.exhaust ? ' exhaust' : ''}`;
+    el.className = `card ${def.kind ?? ''}${def.exhaust ? ' exhaust' : ''}${def.effect === 'wild' ? ' wild' : ''}`;
     el.dataset.id = card.cardId;
     el.tabIndex = 0;
     el.setAttribute('role', 'button');

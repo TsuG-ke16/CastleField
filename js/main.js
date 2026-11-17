@@ -1061,9 +1061,11 @@ function canBuyAnyUpgrade() {
 /** 手札に合成できる組（同じ種類の2枚で、合成先があるもの）があるか */
 function canFuseAny(hand) {
   const seen = new Set();
+  const wild = hand.some((c) => cards[c.type]?.effect === 'wild');
   for (const c of hand) {
+    if (cards[c.type]?.effect === 'wild') { if (hand.some((h) => cards[h.type]?.fuseTo)) return true; continue; }
     if (!cards[c.type]?.fuseTo) continue;
-    if (seen.has(c.type)) return true;
+    if (wild || seen.has(c.type)) return true;
     seen.add(c.type);
   }
   return false;

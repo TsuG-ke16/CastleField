@@ -29,6 +29,7 @@ export function slotNote(def) {
   if (def.kind === 'weapon') return '付加：何枚でも出せる';
   if (def.effect === 'reflectSpell' || def.effect === 'nullifySoldier') return '防御：攻撃を受けたときだけ出せる';
   if (def.kind === 'defense') return '防御：何枚でも出せる';
+  if (def.effect === 'wild') return '合成専用：どのカードとでも合成できる（出せません）';
   if (def.kind === 'soldier') return '兵士：1ターンに複数枚出せる';
   if (['summonSpirit', 'gainCoins'].includes(def.effect)) return '精霊・コイン：何枚でも出せる（メインを使わない）';
   return 'メイン：攻撃の魔法・回復は1ターンに1枚';

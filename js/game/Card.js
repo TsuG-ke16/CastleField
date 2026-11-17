@@ -20,6 +20,7 @@ export const EFFECTS = {
     randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
     stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
     gainCoins: ['amount'], // コインを増やす
+    wild: [], // 適応：どのカードとでも合成できる（出せない。合成専用）
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
   },
   defense: {
@@ -112,7 +113,9 @@ export class Card {
         if (def.weight !== undefined && !(typeof def.weight === 'number' && def.weight >= 0)) throw new Error(`${where}: weight は0以上の数にしてください（書かなければ 1）`);
         const order = Object.keys(rarities);
         const next = order[order.indexOf(def.rarity) + 1];
-        if (next === undefined) {
+        if (def.effect === 'wild') {
+          if (def.fuseTo !== undefined) throw new Error(`${where}: 適応（effect: "wild"）に fuseTo は書けません（合成の結果は相手のカードで決まる）`);
+        } else if (next === undefined) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: いちばん上のレアリティのカードに fuseTo は書けません`);
         } else {
           if (typeof def.fuseTo !== 'string' || !Object.hasOwn(cards, def.fuseTo)) throw new Error(`${where}: fuseTo に、合成してできるカード種類を書いてください`);
