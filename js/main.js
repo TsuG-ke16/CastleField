@@ -282,7 +282,7 @@ async function boot() {
     });
     // コンソールから Game を触れるようにする（デバッグのときだけ）
     // refresh()：コンソールから debugSet… を直接呼んだあと、画面を合わせ直す
-    window.castlefield = { game: () => game, seed: () => seed, renderer: () => renderer, refresh: () => settleSafely() };
+    window.castlefield = { game: () => game, seed: () => seed, renderer: () => renderer, anim: () => anim, refresh: () => settleSafely() };
   }
 
   // デバッグ・シード指定のときは、同じ端末ですぐ始める。そうでなければタイトルを出す
@@ -596,6 +596,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     renderer.renderAll(model);
     handView.render(model.hand);
     sound.play('turn');
+    introBoard();
     anim.banner(cpu.humanId === model.playerOrder[0] ? '対戦開始！ あなたが先攻' : '対戦開始！ CPU が先攻', 1100);
   }
   setBusy(true);
@@ -841,6 +842,7 @@ async function showBatch(batch) {
     setBusy(true);
     if (st.turn <= 1 && st.phase !== 'gameOver') {
       sound.play('turn');
+      introBoard();
       anim.banner(st.currentPlayer === viewerId ? '対戦開始！ あなたが先攻' : '対戦開始！ 相手が先攻', 1100);
       await anim.delay(900);
     }
@@ -1398,6 +1400,15 @@ async function showResult(winner) {
 }
 
 // ---------- 小物 ----------
+
+/** 対戦のはじまり：城がせり上がり、道がのび、手札が配られる（css/motion.css の .match-intro） */
+function introBoard() {
+  const app = $('app');
+  app.classList.remove('match-intro');
+  void app.offsetWidth;
+  app.classList.add('match-intro');
+  setTimeout(() => app.classList.remove('match-intro'), 1400);
+}
 
 function setMessage(text) {
   el.message.textContent = text;

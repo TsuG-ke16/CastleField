@@ -8,6 +8,8 @@ import { sound } from './Sound.js';
 import { cardArt, icon, imageArt } from './art.js';
 import { frameAsset } from './cardFrame.js';
 import { mountMiniCard } from './cardView.js';
+import { attackOf, attackFrames, impactSvg } from './motion.js';
+import { ELEMENT_BEATS } from '../game/Game.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -29,7 +31,28 @@ export class Animations {
     this.timers = new Set();     // 待っている delay
     this.running = new Set();    // 動いている Web Animation
     this.el = { app: $('app'), board: $('board'), fx: $('fx-layer') };
+    /** 攻撃を受ける向き（ぶつかった・撃たれた直後のダメージで、ノックバックに使う）。要素 → { x, y, weight, weak } */
+    this.hitDir = new WeakMap();
+    /** とどめを受けた向き（消えるときに、その向きへ吹き飛ぶ） */
+    this.koDir = new WeakMap();
     this.applyCssTiming();
+    this.buildAmbient();
+  }
+
+  /** 背景の小さな動き（風に流れる葉・雲の影）。数は少なく、盤面のじゃまをしない */
+  buildAmbient() {
+    const box = $('scenery');
+    if (!box || box.querySelector('.ambient')) return;
+    const layer = document.createElement('div');
+    layer.className = 'ambient';
+    const amb = UI_CONFIG.ambient;
+    let html = '<i class="cloud-shadow"></i><i class="cloud-shadow second"></i>';
+    for (let i = 0; i < amb.leaves; i++) {
+      const dur = amb.leafMin + Math.random() * (amb.leafMax - amb.leafMin);
+      html += `<i class="leaf${i % 3 === 0 ? ' petal' : ''}" style="top:${(8 + Math.random() * 78).toFixed(1)}%;--dur:${dur.toFixed(1)}s;--delay:${(-Math.random() * dur).toFixed(1)}s;--drop:${(30 + Math.random() * 90).toFixed(0)}px;--size:${(9 + Math.random() * 7).toFixed(0)}px"><b></b></i>`;
+    }
+    layer.innerHTML = html;
+    box.appendChild(layer);
   }
 
   /** config の時間を CSS 変数に反映する */
@@ -143,11 +166,16 @@ export class Animations {
     el.textContent = text;
     el.style.fontSize = `${size}px`;
     const base = 'translate(-50%, -50%)';
+    // ドンと出て、はずんで、少し流れながら上へ消える（毎回すこし傾きと流れる向きを変える）
+    const tilt = (Math.random() - 0.5) * (kind === 'damage' || kind === 'weak' ? 14 : 4);
+    const drift = (Math.random() - 0.5) * 18;
     this.animate(el, [
-      { transform: `${base} scale(2.4)`, opacity: 0 },
-      { transform: `${base} scale(1)`, opacity: 1, offset: 0.12 },
-      { transform: `${base} translateY(-8px) scale(1)`, opacity: 1, offset: 0.7 },
-      { transform: `${base} translateY(-36px) scale(0.9)`, opacity: 0 },
+      { transform: `${base} scale(2.6) rotate(${tilt * 2}deg)`, opacity: 0 },
+      { transform: `${base} scale(.86) rotate(${tilt}deg)`, opacity: 1, offset: 0.12 },
+      { transform: `${base} scale(1.12) rotate(${tilt}deg)`, opacity: 1, offset: 0.22 },
+      { transform: `${base} scale(1) rotate(${tilt}deg)`, opacity: 1, offset: 0.32 },
+      { transform: `${base} translate(${drift * 0.3}px, -8px) scale(1) rotate(${tilt}deg)`, opacity: 1, offset: 0.7 },
+      { transform: `${base} translate(${drift}px, -38px) scale(0.85) rotate(${tilt}deg)`, opacity: 0 },
     ], { duration, easing: 'ease-out', fill: 'forwards' }).then(() => el.remove());
   }
 
@@ -160,11 +188,13 @@ export class Animations {
     if (this.skipping) return Promise.resolve();
     const el = this.fx(`fx-banner ${variant}`.trim());
     el.textContent = text;
+    // 横からすべり込んで止まり、反対側へ抜ける（どちらへ流れたかで「始まり・終わり」が分かる）
     return this.animate(el, [
-      { transform: 'scale(1.6)', opacity: 0 },
-      { transform: 'scale(1)', opacity: 1, offset: 0.2 },
-      { transform: 'scale(1)', opacity: 1, offset: 0.75 },
-      { transform: 'scale(0.95)', opacity: 0 },
+      { transform: 'translateX(-60%) skewX(-14deg)', opacity: 0, easing: 'cubic-bezier(.1, .8, .2, 1)' },
+      { transform: 'translateX(2%) skewX(3deg)', opacity: 1, offset: 0.2 },
+      { transform: 'translateX(0) skewX(0)', opacity: 1, offset: 0.3 },
+      { transform: 'translateX(-1%) skewX(0)', opacity: 1, offset: 0.76, easing: 'cubic-bezier(.7, 0, .9, .4)' },
+      { transform: 'translateX(60%) skewX(-14deg)', opacity: 0 },
     ], { duration: ms, fill: 'forwards' }).then(() => el.remove());
   }
 
@@ -190,6 +220,86 @@ export class Animations {
     const el = this.fx('fx-flash');
     el.style.background = color;
     this.animate(el, [{ opacity: 0.85 }, { opacity: 0 }], { duration: ms, easing: 'ease-out', fill: 'forwards' }).then(() => el.remove());
+  }
+
+  /** 土けむり（assets/fx/dust.png）をひとつ出す（待たない） */
+  puff({ x, y }, { size = 34, dx = 0, dy = -10, duration = 420, delay = 0 } = {}) {
+    if (this.skipping) return;
+    const el = this.fx('fx-puff', { x, y });
+    el.style.width = el.style.height = `${size}px`;
+    el.innerHTML = imageArt('fx/dust.png', '', 'art');
+    this.animate(el, [
+      { transform: 'translate(-50%, -50%) scale(.3)', opacity: 0 },
+      { transform: 'translate(-50%, -50%) scale(.6)', opacity: .95, offset: .15 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.1) rotate(30deg)`, opacity: 0 },
+    ], { duration, delay: delay * UI_CONFIG.speed, easing: 'ease-out', fill: 'both' }).then(() => el.remove());
+  }
+
+  /** 当たった瞬間の印（斬撃・突き・爪・星）。angle は攻撃の向き（度） */
+  impact({ x, y }, style, { angle = 0, size = 70, color = '#fff', duration = 250 } = {}) {
+    if (this.skipping) return;
+    const el = this.fx('fx-impact', { x, y });
+    el.style.width = el.style.height = `${size}px`;
+    el.innerHTML = impactSvg(style, color);
+    const base = `translate(-50%, -50%) rotate(${angle}deg)`;
+    const frames = style === 'thrust'
+      ? [{ transform: `${base} translateX(-30%) scale(.2, 1)`, opacity: 1 }, { transform: `${base} scale(1.15, 1)`, opacity: 1, offset: .45 }, { transform: `${base} translateX(25%) scale(1.3, .25)`, opacity: 0 }]
+      : style === 'star'
+        ? [{ transform: `${base} scale(.3) rotate(-30deg)`, opacity: 1 }, { transform: `${base} scale(1.15)`, opacity: 1, offset: .4 }, { transform: `${base} scale(.85) rotate(25deg)`, opacity: 0 }]
+        : style === 'claw'
+          ? [{ transform: `${base} translateX(-35%) scale(.4, 1)`, opacity: 0 }, { transform: `${base} scale(1.1)`, opacity: 1, offset: .4 }, { transform: `${base} translateX(15%) scale(1.2, .8)`, opacity: 0 }]
+          // 斬撃：三日月が弧にそって振り抜かれる
+          : [{ transform: `${base} rotate(-55deg) scale(.55)`, opacity: 0 }, { transform: `${base} rotate(-8deg) scale(1.05)`, opacity: 1, offset: .38 }, { transform: `${base} rotate(40deg) scale(1.2)`, opacity: 0 }];
+    this.animate(el, frames, { duration, easing: 'ease-out', fill: 'both' }).then(() => el.remove());
+  }
+
+  /** 広がる輪（衝撃波・魔法の命中） */
+  ring({ x, y }, { size = 90, color = '#fff', duration = 320 } = {}) {
+    if (this.skipping) return;
+    const el = this.fx('fx-ring', { x, y });
+    el.style.width = el.style.height = `${size}px`;
+    el.style.borderColor = color;
+    this.animate(el, [
+      { transform: 'translate(-50%, -50%) scale(.15)', opacity: 1 },
+      { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 },
+    ], { duration, easing: 'cubic-bezier(.1, .7, .3, 1)', fill: 'both' }).then(() => el.remove());
+  }
+
+  /** がれき・かけら：はね上がって、重さで落ちる（待たない） */
+  debris({ x, y }, { count = 8, spread = 60, size = 9, colors = ['#d9cfbb', '#b9ad96', '#8f8572'] } = {}) {
+    if (this.skipping) return;
+    for (let i = 0; i < count; i++) {
+      const el = this.fx('fx-debris', { x, y });
+      el.style.background = colors[i % colors.length];
+      el.style.width = el.style.height = `${size * (0.6 + Math.random() * 0.8)}px`;
+      const dx = (Math.random() - 0.5) * 2 * spread;
+      const up = 18 + Math.random() * spread * 0.7;
+      const fall = 26 + Math.random() * 40;
+      const spin = (Math.random() - 0.5) * 720;
+      this.animate(el, [
+        { transform: 'translate(-50%, -50%)', opacity: 1, easing: 'cubic-bezier(.2, .7, .5, 1)' },
+        { transform: `translate(calc(-50% + ${dx * 0.6}px), calc(-50% - ${up}px)) rotate(${spin * 0.5}deg)`, opacity: 1, offset: 0.42, easing: 'cubic-bezier(.5, 0, .9, .5)' },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${fall}px)) rotate(${spin}deg)`, opacity: 0 },
+      ], { duration: 480 + Math.random() * 260, fill: 'forwards' }).then(() => el.remove());
+    }
+  }
+
+  /** 兵士か魔物の要素から、動かす部分・攻撃の型・属性を読む */
+  unitOf(el) {
+    const monster = el.classList.contains('monster');
+    const st = monster ? this.renderer.monster(el.dataset.id) : this.renderer.soldier(el.dataset.id);
+    return {
+      el,
+      token: el.querySelector('.soldier-token, .monster-token') ?? el,
+      attack: attackOf(el.dataset.motion),
+      element: st?.element ?? null,
+    };
+  }
+
+  /** 足もと（土けむりを出す場所） */
+  feetOf(el) {
+    const c = this.centerOf(el);
+    return { x: c.x, y: c.y + el.getBoundingClientRect().width * 0.28 };
   }
 
   // ---------- イベントの再生 ----------
@@ -298,34 +408,136 @@ export class Animations {
     return model.monsters?.find((m) => m.monsterId === monsterId) ?? null;
   }
 
-  /** 2つの要素の間に「ぶつかった」印を出す */
+  /**
+   * 戦い：おたがいに「ためる → 踏み込む → 当たる」を、種類ごとの型でやる。
+   * 当たった瞬間に戻るので、続くダメージのヒットストップが「当たった姿勢」で止まる。
+   */
   async clashBetween(aEl, bEl) {
     if (this.skipping || !aEl || !bEl) return;
     const a = this.centerOf(aEl);
     const b = this.centerOf(bEl);
-    sound.play('clash');
-    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-    this.sparks(mid, { count: 6, spread: 34, size: 6 });
-    const mark = this.fx('fx-clash', mid);
-    mark.innerHTML = imageArt('fx/dust.png', ICON.clash, 'art');
-    const dur = UI_CONFIG.timing.clash;
-    this.animate(mark, [
-      { transform: 'translate(-50%, -50%) scale(0.3)', opacity: 0 },
-      { transform: 'translate(-50%, -50%) scale(1.4)', opacity: 1, offset: 0.35 },
-      { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 },
-    ], { duration: dur * 1.6, easing: 'ease-out', fill: 'forwards' }).then(() => mark.remove());
-    // おたがいに少し前へ飛び出す
-    const lunge = (el, to, from) => {
-      const dx = (to.x - from.x) * 0.25;
-      const dy = (to.y - from.y) * 0.25;
-      const token = el.querySelector('.soldier-token, .monster-token') ?? el;
+    const ua = this.unitOf(aEl);
+    const ub = this.unitOf(bEl);
+    const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const ux = (b.x - a.x) / dist;
+    const uy = (b.y - a.y) / dist;
+    // 属性が強い側の攻撃は「弱点」として大きく見せる（ルールの elementBonus と同じ組み合わせ）
+    const weak = (x, y) => Boolean(x.element && ELEMENT_BEATS[x.element] === y.element);
+    this.hitDir.set(bEl, { x: ux, y: uy, weight: ua.attack.weight, weak: weak(ua, ub) });
+    this.hitDir.set(aEl, { x: -ux, y: -uy, weight: ub.attack.weight, weak: weak(ub, ua) });
+    const at = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const dur = UI_CONFIG.timing.clash * 1.5;
+    // 2体の「当たる瞬間」をそろえる（重い攻撃ほど、ためが長い）
+    const lastHit = (u) => dur * u.attack.time * attackFrames(u.attack.style, 0, 0, 0).hits.at(-1);
+    const wait = lastHit(ua) - lastHit(ub);
+    const hitA = new Promise((resolve) => {
+      this.delay(Math.max(0, -wait)).then(() => this.attackMove(ua, { ux, uy, dist, at, dur, loud: true, onHit: resolve })).then(resolve);
+    });
+    const hitB = new Promise((resolve) => {
+      this.delay(Math.max(0, wait)).then(() => this.attackMove(ub, { ux: -ux, uy: -uy, dist, at, dur, onHit: resolve })).then(resolve);
+    });
+    await Promise.all([hitA, hitB]);
+  }
+
+  /** 1体の攻撃の動き。最後の一撃が当たったら onHit を呼ぶ（もどる動きは待たせない） */
+  async attackMove(unit, { ux, uy, dist, at, dur, loud = false, onHit }) {
+    if (this.skipping) return;
+    const { style, weight, reach, time } = unit.attack;
+    const r = Math.max(12, Math.min(48, dist * reach));
+    const { frames, hits } = attackFrames(style, ux, uy, r);
+    const total = dur * time;
+    const angle = Math.atan2(uy, ux) * 180 / Math.PI;
+    const color = ELEMENT_LOOK[unit.element]?.color ?? '#fff';
+    const move = this.animate(unit.token, frames, { duration: total });
+    let prev = 0;
+    for (const [i, h] of hits.entries()) {
+      await this.delay(total * (h - prev));
+      prev = h;
+      if (this.skipping) break;
+      this.hitMark(at, style, { angle, weight, color, second: i > 0, loud });
+    }
+    onHit?.();
+    await move;
+  }
+
+  /** 当たった瞬間：型ごとの印・火花・土けむり・揺れ */
+  hitMark(at, style, { angle, weight, color, second, loud }) {
+    const pos = { x: at.x + (Math.random() - 0.5) * 10, y: at.y + (Math.random() - 0.5) * 10 };
+    const size = 52 + weight * 18;
+    const tint = color === '#fff' ? '#fff' : color;
+    const field = this.renderer.el.field;
+    if (loud || second) sound.play('clash');
+    switch (style) {
+      case 'smash':
+        this.impact(pos, 'star', { size: size * 1.1, color: '#ffe9a0' });
+        this.ring(pos, { size: size * 1.8, color: '#fff7df' });
+        this.puff(pos, { size: 38, dx: -22, dy: 4 });
+        this.puff(pos, { size: 38, dx: 22, dy: 4 });
+        this.shake(field, 2 + weight * 2, 200);
+        break;
+      case 'charge':
+        this.impact(pos, 'star', { size, color: '#ffe9a0' });
+        this.puff(pos, { size: 42, dy: -14 });
+        this.shake(field, 3, 160);
+        break;
+      case 'cross':
+        this.impact(pos, 'cross', { angle: angle + (second ? 42 : -42), size: size * 1.1, color: tint === '#fff' ? '#ffe680' : tint });
+        break;
+      case 'thrust':
+        this.impact(pos, 'thrust', { angle, size: size * 1.25, color: tint });
+        break;
+      case 'claw':
+        this.impact(pos, 'claw', { angle, size: size * 1.05, color: '#ffd9d0' });
+        if (weight >= 2) this.shake(field, 4, 180);
+        break;
+      case 'slam':
+      case 'bump':
+        this.impact(pos, 'star', { size: size * 0.8, color: '#fff3b8' });
+        break;
+      default:
+        this.impact(pos, 'slash', { angle, size, color: tint });
+    }
+    this.sparks(pos, { count: Math.round(3 + weight * 2), color: tint === '#fff' ? '#ffd93b' : tint, spread: 24 + weight * 8, size: 6 });
+  }
+
+  /** ダメージを受けた反応：攻撃された向きへノックバック（向きが分からない魔法は、上から押しつぶされる） */
+  recoil({ el, dir, power, cause }, cfg) {
+    const token = el.querySelector('.soldier-token, .monster-token');
+    if (!token) return undefined;
+    if (cause === 'poison') return this.shake(token, cfg.shake, cfg.shakeDuration);
+    if (!dir) {
       return this.animate(token, [
-        { transform: 'translate(0, 0)' },
-        { transform: `translate(${dx}px, ${dy}px)`, offset: 0.4 },
-        { transform: 'translate(0, 0)' },
-      ], { duration: dur, easing: 'ease-out' });
-    };
-    await Promise.all([lunge(aEl, b, a), lunge(bEl, a, b)]);
+        { transform: 'scale(1.28, .68)', offset: 0.18, easing: 'ease-out' },
+        { transform: 'scale(.92, 1.1)', offset: 0.55 },
+        { transform: 'none' },
+      ], { duration: cfg.shakeDuration * 1.5 });
+    }
+    const k = cfg.knockback * power * Math.sqrt(dir.weight ?? 1);
+    const kx = dir.x * k;
+    const ky = dir.y * k;
+    const tilt = (dir.y < 0 ? -1 : 1) * 7 * power;
+    return this.animate(token, [
+      { transform: `translate(${kx.toFixed(1)}px, ${ky.toFixed(1)}px) rotate(${tilt.toFixed(1)}deg) scale(.9, 1.1)`, offset: 0.2, easing: 'cubic-bezier(.1, .8, .3, 1)' },
+      { transform: `translate(${(kx * 0.85).toFixed(1)}px, ${(ky * 0.85).toFixed(1)}px) rotate(${(tilt * 0.5).toFixed(1)}deg)`, offset: 0.5, easing: 'ease-in-out' },
+      { transform: 'none' },
+    ], { duration: cfg.shakeDuration * (1.3 + power * 0.4) });
+  }
+
+  /** 城に着いた兵士が、城をなぐる（このあと城のダメージ） */
+  castleStrike(soldierId, castle) {
+    const el = this.renderer.soldierEl(soldierId);
+    if (!el || !castle || this.skipping) return undefined;
+    const a = this.centerOf(el);
+    const b = this.centerOf(castle.querySelector('.castle-pic') ?? castle);
+    const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    // 城の真上に重なっているときは、進んできた向き（自分は上へ、相手は下へ）でなぐる
+    const far = dist > 24;
+    const ux = far ? (b.x - a.x) / dist : 0;
+    const uy = far ? (b.y - a.y) / dist : (el.classList.contains('me') ? -1 : 1);
+    const at = far ? { x: a.x + (b.x - a.x) * 0.7, y: a.y + (b.y - a.y) * 0.7 } : { x: a.x, y: a.y + uy * 18 };
+    return new Promise((resolve) => {
+      this.attackMove(this.unitOf(el), { ux, uy, dist: Math.max(dist, 60), at, dur: UI_CONFIG.timing.clash * 1.5, loud: true, onHit: resolve }).then(resolve);
+    });
   }
 
   soldiersClashed({ attacker, defender }) {
@@ -429,6 +641,7 @@ export class Animations {
         if (card) {
           model.hand.push(card);
           this.handView.addCard(card);
+          this.flyFromDeck(card);
           sound.play('draw');
         }
       } else {
@@ -436,6 +649,40 @@ export class Animations {
       }
       await this.delay(UI_CONFIG.timing.draw);
     }
+  }
+
+  /** 引いたカードが、山札から手札の入る場所へ飛んでくる（待たない。着くまで手札の方は隠す） */
+  flyFromDeck(card) {
+    const el = this.handView.cardEl(card.cardId);
+    const pile = this.renderer.el.deckPile;
+    if (!el || !pile || this.skipping || UI_CONFIG.reducedMotion || UI_CONFIG.speed === 0) return;
+    const app = this.el.app.getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    if (!r.width) return; // 手札をたたんでいる
+    const from = this.centerOf(pile);
+    const to = { x: Math.max(r.width / 2, Math.min(app.width - r.width / 2, r.left - app.left + r.width / 2)), y: r.top - app.top + r.height / 2 };
+    const clone = el.cloneNode(true);
+    clone.classList.remove('new', 'selected', 'dim');
+    clone.classList.add('fx-card');
+    clone.style.left = `${to.x}px`;
+    clone.style.top = `${to.y}px`;
+    clone.style.width = `${r.width}px`;
+    clone.style.height = `${r.height}px`;
+    this.el.fx.appendChild(clone);
+    el.classList.remove('new');
+    el.style.visibility = 'hidden';
+    const dx = from.x - to.x;
+    const dy = from.y - to.y;
+    const base = 'translate(-50%, -50%)';
+    this.animate(clone, [
+      { transform: `${base} translate(${dx}px, ${dy}px) scale(.18) rotate(-30deg)`, opacity: 0.7, easing: 'cubic-bezier(.3, .6, .3, 1)' },
+      { transform: `${base} translate(${dx * 0.2}px, ${Math.min(-30, dy * 0.12)}px) scale(1.15) rotate(6deg)`, opacity: 1, offset: 0.68, easing: 'ease-in' },
+      { transform: `${base} translate(0, 4px) scale(1.03, .96)`, offset: 0.9 },
+      { transform: `${base} scale(1)` },
+    ], { duration: UI_CONFIG.timing.drawFly, fill: 'forwards' }).then(() => {
+      clone.remove();
+      el.style.visibility = '';
+    });
   }
 
   async cardPlayed({ playerId, cardId, type, free }, model, ctx) {
@@ -482,12 +729,22 @@ export class Animations {
     const dy = to.y - from.y;
     const base = 'translate(-50%, -50%)';
     const dur = UI_CONFIG.timing.cardPlay;
+    // 少し沈んでから（ため）、傾きながら盤面へ飛び、ドンと止まって見せる。レアなカードほど光が大きい
+    const lean = Math.max(-14, Math.min(14, dx * 0.08));
     const cardAnimation = this.animate(clone, [
       { transform: `${base} translate(0, 0) scale(1)` },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, offset: 0.35 },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75 },
+      { transform: `${base} translate(0, 8px) scale(.94, .9)`, offset: 0.07, easing: 'cubic-bezier(.2, .7, .3, 1)' },
+      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.86) rotate(${lean}deg)`, offset: 0.33 },
+      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.66) rotate(0deg)`, offset: 0.42 },
+      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75, easing: 'ease-in' },
       { transform: `${base} translate(${dx}px, ${dy - 30}px) scale(1.4)`, opacity: 0 },
-    ], { duration: dur, easing: 'ease-out', fill: 'forwards' }).then(() => clone.remove());
+    ], { duration: dur, fill: 'forwards' }).then(() => clone.remove());
+    const rank = Math.max(0, Object.keys(this.rarities ?? {}).indexOf(def.rarity));
+    const shine = this.rarities?.[def.rarity]?.color ?? '#fff7df';
+    this.delay(dur * 0.33).then(() => {
+      this.ring(to, { size: 170 + rank * 34, color: shine, duration: 300 + rank * 40 });
+      if (rank >= 2) this.sparks(to, { count: 3 + rank * 3, color: shine, spread: 70 + rank * 16, size: 7 });
+    });
     // 防御の帯はカードが消えてから見せる。ほかの効果は従来どおり重ねてテンポを保つ。
     if (type === 'reflect' || type === 'decoy') await cardAnimation;
     else await this.delay(dur * 0.7);
@@ -518,11 +775,49 @@ export class Animations {
       weapon: null, element: null, shield: 0, statuses: { poison: null, frozen: 0 },
     };
     model.players[playerId].soldiers.push(s);
-    this.renderer.addSoldier(playerId, s, { appear: true });
+    this.renderer.addSoldier(playerId, s, { appear: false });
     sound.play('deploy');
     const dEl = this.renderer.soldierEl(soldierId);
-    if (dEl && !this.skipping) this.sparks(this.centerOf(dEl), { count: 6, color: '#e9d3a6', spread: 30, size: 9 });
-    await this.delay(UI_CONFIG.timing.deploy);
+    if (dEl && !this.skipping) await this.enterField(dEl, playerId);
+    else await this.delay(UI_CONFIG.timing.deploy);
+  }
+
+  /** 登場：兵士は自分の城から飛び出して着地する。魔法使いは魔法陣からあらわれる */
+  async enterField(el, playerId) {
+    const token = el.querySelector('.soldier-token');
+    const here = this.centerOf(el);
+    const dur = UI_CONFIG.timing.deploy * 1.5;
+    if (el.dataset.motion === 'mage') {
+      this.ring(here, { size: 96, color: '#c79bff', duration: dur });
+      this.sparks(here, { count: 7, color: '#d9b8ff', spread: 34, size: 7 });
+      await this.animate(token, [
+        { transform: 'translateY(-10px) scale(.1, 1.6) rotate(-90deg)', opacity: 0 },
+        { transform: 'translateY(-8px) scale(1.15) rotate(8deg)', opacity: 1, offset: 0.6, easing: 'ease-out' },
+        { transform: 'none' },
+      ], { duration: dur });
+      return;
+    }
+    const castle = this.centerOf(this.renderer.castleEl(playerId).querySelector('.castle-pic'));
+    // 攻撃力・HP の札は、着地してから出す
+    const stats = el.querySelector('.soldier-stats');
+    if (stats) this.animate(stats, [{ opacity: 0 }, { opacity: 0, offset: 0.75 }, { opacity: 1 }], { duration: dur });
+    const scale = this.renderer.isPlaza ? this.renderer.plazaScale || 1 : 1;
+    const dx = (castle.x - here.x) / scale;
+    const dy = (castle.y - here.y) / scale;
+    const heavy = ['giant', 'heavy'].includes(el.dataset.motion);
+    await this.animate(token, [
+      { transform: `translate(${dx}px, ${dy}px) scale(.3)`, opacity: 0, easing: 'cubic-bezier(.2, .6, .4, 1)' },
+      { transform: `translate(${dx * 0.75}px, ${dy * 0.75}px) scale(.6)`, opacity: 1, offset: 0.18 },
+      { transform: `translate(${dx * 0.25}px, ${dy * 0.25 - 26}px) scale(1.06, 1.1)`, offset: 0.6, easing: 'cubic-bezier(.6, 0, 1, .7)' },
+      { transform: 'translate(0, 0) scale(1.22, .78)', offset: 0.8, easing: 'ease-out' },
+      { transform: 'translate(0, 0) scale(.95, 1.06)', offset: 0.9 },
+      { transform: 'none' },
+    ], { duration: dur * (heavy ? 1.25 : 1) });
+    if (this.skipping) return;
+    const feet = this.feetOf(el);
+    this.puff(feet, { size: heavy ? 44 : 30, dx: -16, dy: -4 });
+    this.puff(feet, { size: heavy ? 44 : 30, dx: 16, dy: -4 });
+    if (heavy) this.shake(this.renderer.el.field, 4, 200);
   }
 
   /** 進軍：ひと続きの進軍はまとめて同時に動かす（城への攻撃はそのあと順番に） */
@@ -542,13 +837,43 @@ export class Animations {
       const speed = this.cards[s?.type]?.speed ?? 1;
       const ms = UI_CONFIG.timing.soldierMove * Math.max(.65, Math.abs(m.to-m.from)/Math.max(speed,1));
       duration = Math.max(duration, ms);
-      if (el) el.style.transitionDuration = `${ms*UI_CONFIG.speed}ms`;
+      if (el) {
+        el.style.transitionDuration = `${ms*UI_CONFIG.speed}ms`;
+        el.classList.add('walking'); // 歩き方は種類ごと（css/motion.css）
+        // 騎兵は走り出しに土けむりを残す
+        if (el.dataset.motion === 'rider' && !this.skipping) {
+          const feet = this.feetOf(el);
+          this.puff(feet, { size: 30 });
+          this.puff(feet, { size: 26, delay: ms * 0.3, dy: -6 });
+        }
+      }
       this.renderer.moveSoldier(m.soldierId, m.to);
     }
     this.renderer.layoutStacks();
     sound.play('step');
     await this.delay(duration || UI_CONFIG.timing.soldierMove);
-    for (const m of moves) this.renderer.soldierEl(m.soldierId)?.style.removeProperty('transition-duration');
+    for (const m of moves) {
+      const el = this.renderer.soldierEl(m.soldierId);
+      if (!el) continue;
+      el.style.removeProperty('transition-duration');
+      el.classList.remove('walking');
+      this.settle(el);
+    }
+  }
+
+  /** 止まった瞬間：体が沈んで戻る（重い兵士は地面が揺れる。待たない） */
+  settle(el) {
+    if (this.skipping) return;
+    const motion = el.dataset.motion;
+    const heavy = motion === 'giant' || motion === 'heavy';
+    const token = el.querySelector('.soldier-token');
+    this.animate(token, [
+      { transform: `scale(${heavy ? 1.2 : 1.12}, ${heavy ? 0.8 : 0.88})`, offset: 0.3, easing: 'ease-out' },
+      { transform: 'scale(.97, 1.04)', offset: 0.65 },
+      { transform: 'none' },
+    ], { duration: heavy ? 260 : 190 });
+    if (heavy || motion === 'rider') this.puff(this.feetOf(el), { size: heavy ? 40 : 28, dy: -4 });
+    if (motion === 'giant') this.shake(this.renderer.el.field, 3, 160);
   }
 
   /** 兵士へのダメージ：続けて来たものはまとめて同時に見せる。盾が受けたぶんと毒は見た目を変える */
@@ -556,8 +881,8 @@ export class Animations {
     const hits = this.takeRun(first, queue);
     const cfg = UI_CONFIG.soldierHit;
     const small = UI_CONFIG.smallNumber;
-    const shaken = [];
-    let anyHit = false;
+    const reacts = [];
+    let power = 0; // いちばん強く当たったぶん（ヒットストップの長さ）
     let anyBlock = false;
     let anyPoison = false;
     for (const h of hits) {
@@ -575,43 +900,115 @@ export class Animations {
       this.renderer.updateSoldier(h.soldierId, { hp: h.hp, shield: s?.shield ?? 0, ...(s ? { statuses: s.statuses } : {}) });
       const el = this.renderer.soldierEl(h.soldierId);
       if (!el) continue;
+      const dir = this.hitDir.get(el) ?? null;
+      this.hitDir.delete(el);
       const poison = h.cause === 'poison';
       if (dealt > 0) {
-        anyHit = true;
-        el.classList.add(poison ? 'hit-poison' : 'hit');
+        // 強い攻撃ほど：数字が大きく、長く止まり、遠くへ押される
+        const p = Math.min(cfg.powerMax, cfg.powerBase + dealt * cfg.powerPerDamage);
+        const lethal = h.hp <= 0;
+        power = Math.max(power, p + (lethal ? cfg.lethalBonus : 0) + (dir?.weak ? cfg.weakBonus : 0));
         if (poison) anyPoison = true;
-        shaken.push(el.querySelector('.soldier-token'));
-        this.number(el, `${poison ? STATUS_ICON.poison : ''}-${dealt}`,
-          { size: cfg.numberSize, duration: cfg.numberDuration, kind: poison ? 'poison' : 'damage' });
+        el.classList.add(poison ? 'hit-poison' : 'hit');
+        this.number(el, `${poison ? STATUS_ICON.poison : ''}-${dealt}`, {
+          size: cfg.numberSize * (0.8 + p * 0.25) * (dir?.weak ? 1.2 : 1),
+          duration: cfg.numberDuration, kind: poison ? 'poison' : dir?.weak ? 'weak' : 'damage',
+        });
+        if (dir?.weak) this.number(el, '弱点！', { size: small.size * 0.85, duration: cfg.numberDuration, kind: 'weak', dy: -30 });
+        if (lethal) this.koDir.set(el, poison ? { melt: true } : dir ?? { x: 0, y: 0 });
+        reacts.push({ el, dir, power: p, cause: h.cause });
       }
       if (blocked > 0) {
         anyBlock = true;
         el.classList.add('blocked');
         this.number(el, `${ICON.shield}${blocked}`, { size: small.size, duration: small.duration, kind: 'block', dy: dealt > 0 ? -26 : 0 });
+        if (!this.skipping) this.ring(this.centerOf(el), { size: 70, color: GLOW.shield, duration: 260 });
       }
     }
-    if (anyHit) sound.play(anyPoison ? 'poison' : 'smallHit');
+    if (power > 0) sound.play(anyPoison ? 'poison' : 'smallHit');
     else if (anyBlock) sound.play('block');
-    if (anyHit) await this.hitstop(cfg.hitstop);
+    if (power > 0) await this.hitstop(Math.min(cfg.hitstopMax, cfg.hitstop * power));
     for (const h of hits) this.renderer.soldierEl(h.soldierId)?.classList.remove('hit', 'hit-poison', 'blocked');
-    for (const token of shaken) if (token) this.shake(token, cfg.shake, cfg.shakeDuration);
+    for (const r of reacts) this.recoil(r, cfg);
     await this.delay(UI_CONFIG.timing.afterSoldierHit);
   }
 
+  /** 弓兵・魔法使いが撃つ：ねらう（ため）→ 放つ（反動）→ 飛ぶ → 当たる */
   async soldierShot({ playerId, soldierId, role, target, amount }, model) {
     const from = this.renderer.soldierEl(soldierId);
     const to = target.kind === 'soldier' ? this.renderer.soldierEl(target.soldierId)
-      : target.kind === 'monster' ? this.renderer.monsterEl(target.monsterId) : this.renderer.castleEl(target.playerId);
+      : target.kind === 'monster' ? this.renderer.monsterEl(target.monsterId) : this.renderer.castleEl(target.playerId)?.querySelector('.castle-pic');
     if (!from || !to) return;
-    const a = this.centerOf(from), b = this.centerOf(to);
-    const projectile = this.fx(role === 'mage' ? 'shot-magic' : 'shot-arrow', a);
-    const angle = Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
-    sound.play(role === 'mage' ? 'magicShot' : 'bow', Math.min(1, amount / 12));
-    await this.animate(projectile, [
-      {transform:`translate(-50%,-50%) rotate(${angle}deg)`,opacity:1},
-      {transform:`translate(calc(-50% + ${b.x-a.x}px),calc(-50% + ${b.y-a.y}px)) rotate(${angle}deg)`,opacity:1},
-    ], {duration:UI_CONFIG.timing.soldierShot,easing:'ease-in',fill:'forwards'});
-    projectile.remove();
+    if (!this.skipping) {
+      const a = this.centerOf(from), b = this.centerOf(to);
+      const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      const ux = (b.x - a.x) / dist, uy = (b.y - a.y) / dist;
+      const angle = Math.atan2(uy, ux) * 180 / Math.PI;
+      const mage = role === 'mage';
+      const power = Math.min(1, amount / 12);
+      const t = UI_CONFIG.timing;
+      const token = from.querySelector('.soldier-token');
+      // ねらう：弓兵は体を引いてしぼる。魔法使いは浮いて杖の先に光をためる
+      this.animate(token, mage ? [
+        { transform: 'none' },
+        { transform: 'translateY(-8px) scale(1.08)', offset: 0.6, easing: 'ease-out' },
+        { transform: `translate(${ux * 5}px, ${uy * 5}px) scale(.95, 1.05)`, offset: 0.7 },
+        { transform: 'none' },
+      ] : [
+        { transform: 'none' },
+        { transform: `translate(${-ux * 8}px, ${-uy * 8}px) rotate(-7deg) scale(1.07, .94)`, offset: 0.6, easing: 'ease-out' },
+        { transform: `translate(${ux * 6}px, ${uy * 6}px) rotate(4deg)`, offset: 0.68 },
+        { transform: 'none' },
+      ], { duration: t.shotAim / 0.6 });
+      const muzzle = { x: a.x + ux * 16, y: a.y + uy * 16 - (mage ? 10 : 0) };
+      if (mage) {
+        const orb = this.fx('shot-charge', muzzle);
+        this.animate(orb, [
+          { transform: 'translate(-50%, -50%) scale(.1)', opacity: 0.5 },
+          { transform: `translate(-50%, -50%) scale(${1 + power})`, opacity: 1 },
+        ], { duration: t.shotAim, easing: 'ease-in', fill: 'forwards' }).then(() => orb.remove());
+      }
+      await this.delay(t.shotAim);
+      sound.play(mage ? 'magicShot' : 'bow', power);
+      if (!this.skipping) {
+        const flight = Math.max(150, Math.min(340, dist * 1.15));
+        const projectile = this.fx(mage ? 'shot-magic' : 'shot-arrow', muzzle);
+        const dx = b.x - muzzle.x, dy = b.y - muzzle.y;
+        const size = mage ? 0.8 + power * 0.9 : 0.9 + power * 0.5;
+        const at = (x, y, sy = 1) => `translate(calc(-50% + ${x.toFixed(1)}px), calc(-50% + ${y.toFixed(1)}px)) rotate(${angle}deg) scale(${size}, ${size * sy})`;
+        // 魔法の弾は、光のつぶを残しながら飛ぶ
+        if (mage) {
+          for (let i = 1; i <= 5; i++) {
+            const k = i / 6;
+            const mote = this.fx('fx-mote', { x: muzzle.x + dx * k + (Math.random() - 0.5) * 8, y: muzzle.y + dy * k + (Math.random() - 0.5) * 8 });
+            this.animate(mote, [
+              { transform: 'translate(-50%, -50%) scale(0)', opacity: 0 },
+              { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 0.1 },
+              { transform: 'translate(-50%, -50%) scale(.1)', opacity: 0 },
+            ], { duration: 320, delay: flight * k * UI_CONFIG.speed, fill: 'both' }).then(() => mote.remove());
+          }
+        }
+        // 矢は少し山なりに、速くなりながら飛ぶ
+        const bow = mage ? 0 : dist * 0.07;
+        await this.animate(projectile, [
+          { transform: at(0, 0, 0.6), opacity: 1 },
+          { transform: at(dx * 0.5 - uy * bow, dy * 0.5 + ux * bow), opacity: 1, offset: 0.5 },
+          { transform: at(dx, dy), opacity: 1 },
+        ], { duration: flight, easing: mage ? 'ease-in' : 'cubic-bezier(.3, 0, .7, .6)', fill: 'forwards' });
+        projectile.remove();
+        if (!this.skipping) {
+          if (mage) {
+            this.ring(b, { size: 60 + power * 50, color: '#c79bff', duration: 300 });
+            this.sparks(b, { count: 5 + Math.round(power * 5), color: '#d9b8ff', spread: 30 + power * 20, size: 7 });
+          } else {
+            this.impact(b, 'star', { size: 34 + power * 24, color: '#fff3b8', duration: 200 });
+            this.sparks(b, { count: 3 + Math.round(power * 3), color: '#e9d3a6', spread: 22, size: 5 });
+          }
+          // 撃たれた相手は、矢の向きへ押される
+          if (target.kind !== 'castle') this.hitDir.set(to, { x: ux, y: uy, weight: 0.7 + power * 0.8, weak: false });
+        }
+      }
+    }
     const soldier = this.modelSoldier(model,playerId,soldierId);
     if(soldier?.turnsLeft != null) {
       soldier.turnsLeft = Math.max(0,soldier.turnsLeft-1);
@@ -635,25 +1032,52 @@ export class Animations {
           {transform:'translate(-50%,-50%) scale(1)',opacity:1},
           {transform:`translate(calc(-50% + ${b.x-a.x}px),calc(-50% + ${b.y-a.y}px)) scale(.3)`,opacity:0},
         ],{duration:UI_CONFIG.timing.soldierReturn,easing:'ease-in',fill:'forwards'});
+      } else if (el && d.reason !== 'reachedCastle' && !this.skipping) {
+        await this.knockOut(el, this.koDir.get(el));
       } else {
         el?.classList.add(d.reason === 'reachedCastle' ? 'arrived' : 'dying');
-        if (el && d.reason !== 'reachedCastle' && !this.skipping) this.sparks(this.centerOf(el),{count:7,color:'#fff',spread:36,size:9});
         await this.delay(UI_CONFIG.timing.soldierDeath);
       }
       this.renderer.removeSoldier(d.soldierId);
     }));
   }
 
+  /** やられた兵士：とどめの向きへ吹き飛んで、土けむりになって消える。毒はその場でとける */
+  async knockOut(el, ko) {
+    const at = this.centerOf(el);
+    const base = 'translate(-50%, -50%)';
+    const dur = UI_CONFIG.timing.soldierDeath * 1.5;
+    if (ko?.melt) {
+      this.sparks(at, { count: 6, color: '#b98ae6', spread: 26, size: 7 });
+      await this.animate(el, [
+        { transform: base, opacity: 1 },
+        { transform: `${base} translateY(18%) scale(1.25, .3)`, opacity: 0.9, offset: 0.7 },
+        { transform: `${base} translateY(24%) scale(1.4, .1)`, opacity: 0 },
+      ], { duration: dur, easing: 'ease-in', fill: 'forwards' });
+      return;
+    }
+    const x = (ko?.x ?? 0) * UI_CONFIG.soldierHit.knockOut;
+    const y = (ko?.y ?? 0) * UI_CONFIG.soldierHit.knockOut;
+    const spin = (x - y >= 0 ? 1 : -1) * 260;
+    this.sparks(at, { count: 7, color: '#fff', spread: 36, size: 9 });
+    this.puff({ x: at.x + x * 0.9, y: at.y + y * 0.9 }, { size: 50, delay: dur * 0.55, dy: -14 });
+    await this.animate(el, [
+      { transform: base, opacity: 1, easing: 'cubic-bezier(.1, .7, .4, 1)' },
+      { transform: `${base} translate(${x * 0.8}px, ${y * 0.8 - 18}px) rotate(${spin * 0.6}deg) scale(.9)`, opacity: 1, offset: 0.6, easing: 'ease-in' },
+      { transform: `${base} translate(${x}px, ${y}px) rotate(${spin}deg) scale(.4)`, opacity: 0 },
+    ], { duration: dur, fill: 'forwards' });
+  }
+
   async spellCast({ playerId, type, target, targetKind, roadId }) {
     const def = this.cards[type] ?? {};
     if (targetKind === 'monster') {
       const mEl = this.renderer.monsterEl(target);
-      if (mEl) return this.projectile(this.renderer.castleEl(playerId), mEl);
+      if (mEl) return this.projectile(this.renderer.castleEl(playerId), mEl, { amount: Math.min(def.amount ?? 8, 11) });
       return undefined;
     }
     const enemy = typeof target === 'string' ? target : this.renderer.opponentOf(playerId);
-    if (def.effect === 'damageEnemyCastle') return this.fireball(playerId, enemy);
-    if (def.effect === 'damageEnemySoldiers') return this.thunder(enemy, roadId);
+    if (def.effect === 'damageEnemyCastle') return this.fireball(playerId, enemy, def.amount);
+    if (def.effect === 'damageEnemySoldiers') return this.thunder(enemy, roadId, def.amount);
     if (SPELL_TINT[def.effect]) return this.mist(enemy, SPELL_TINT[def.effect], roadId);
     if (def.effect === 'redrawHand') return this.banner('手札を引き直す！', UI_CONFIG.timing.shuffle, 'small');
     if (def.effect === 'randomEffect') return this.banner('神頼み！', UI_CONFIG.timing.shuffle, 'small');
@@ -673,8 +1097,13 @@ export class Animations {
   }
 
   /** 精霊が効く（このあと castleDamaged / castleHealed） */
-  async spiritTriggered({ type, playerId }) {
+  async spiritTriggered({ type, playerId, spirit, targetId }) {
     if (this.skipping) return;
+    // 火の精霊は、相手の城へ小さな火を飛ばす
+    if (spirit === 'fire' && targetId && this.renderer.castleEl(targetId)) {
+      const badge = this.renderer.castleEl(playerId).querySelector('.castle-spirit');
+      this.fireShot(this.centerOf(badge && !badge.hidden ? badge : this.renderer.castleEl(playerId)), this.centerOf(this.renderer.castleEl(targetId).querySelector('.castle-pic')), { scale: 0.8, duration: UI_CONFIG.timing.spellProjectile, arc: 30 });
+    }
     this.banner(`${this.cards[type]?.name ?? '精霊'}が力を貸してくれた！`, UI_CONFIG.timing.shuffle * 0.7, 'small');
     const badge=this.renderer.castleEl(playerId)?.querySelector('.castle-spirit');
     if(badge&&!badge.hidden)this.animate(badge,[{filter:'brightness(1)',scale:1},{filter:'brightness(1.4)',scale:1.15},{filter:'brightness(1)',scale:1}],{duration:UI_CONFIG.timing.shuffle});
@@ -742,31 +1171,84 @@ export class Animations {
     await this.delay(dur * 0.5);
   }
 
-  async fireball(fromId, toId) {
-    return this.projectile(this.renderer.castleEl(fromId), this.renderer.castleEl(toId));
+  async fireball(fromId, toId, amount) {
+    return this.projectile(this.renderer.castleEl(fromId), this.renderer.castleEl(toId).querySelector('.castle-pic'), { amount });
   }
 
-  /** 火の玉を fromEl から toEl へ飛ばす */
-  async projectile(fromEl, toEl) {
+  /**
+   * 火の魔法を飛ばす。威力で見せ方が変わる：
+   * 弱い（ファイアボール・業火）は城から弧をえがいて飛ぶ。隕石より上は、空から落ちてくる（落ちる場所に影が広がる）。
+   */
+  async projectile(fromEl, toEl, { amount = 8 } = {}) {
     if (this.skipping) return;
-    const from = this.centerOf(fromEl);
+    const cfg = UI_CONFIG.fireFx;
     const to = this.centerOf(toEl);
-    sound.play('fire');
+    const tier = cfg.tiers.filter((min) => amount >= min).length; // 0〜3
+    sound.play('fire', Math.min(1, amount / 20));
+    if (tier === 0) {
+      await this.fireShot(this.centerOf(fromEl), to, { scale: cfg.scaleBase + amount * cfg.scalePerDamage, duration: UI_CONFIG.timing.spellProjectile, arc: 46 });
+      return;
+    }
+    const app = this.el.app.getBoundingClientRect();
+    const side = to.x < app.width / 2 ? 1 : -1;
+    const sky = { x: to.x + side * 170, y: Math.min(-70, to.y - 420) };
+    const dur = UI_CONFIG.timing.spellProjectile * (1.3 + tier * 0.4);
+    // 落ちる場所の影（だんだん濃く・大きく）
+    const mark = this.fx('fx-target-shadow', to);
+    this.animate(mark, [
+      { transform: 'translate(-50%, -50%) scale(.2)', opacity: 0 },
+      { transform: `translate(-50%, -50%) scale(${0.8 + tier * 0.25})`, opacity: 0.75 },
+    ], { duration: dur, easing: 'ease-in', fill: 'forwards' }).then(() => mark.remove());
+    if (tier >= 3) {
+      // 最上位：空が暗くなり、地面がふるえる
+      const dark = this.fx('fx-flash');
+      dark.style.background = '#3b0f0a';
+      this.animate(dark, [{ opacity: 0 }, { opacity: 0.55, offset: 0.25 }, { opacity: 0.55, offset: 0.85 }, { opacity: 0 }], { duration: dur * 1.25, fill: 'forwards' }).then(() => dark.remove());
+      this.shake(this.el.board, 4, dur);
+    }
+    if (tier >= 2) {
+      // 星降り以上：小さな火の玉が先にばらばらと落ちる
+      for (let i = 0; i < tier * 2 - 1; i++) {
+        const off = { x: (Math.random() - 0.5) * 120, y: (Math.random() - 0.5) * 50 };
+        this.fireShot({ x: sky.x + off.x, y: sky.y }, { x: to.x + off.x, y: to.y + off.y }, { scale: 0.9, duration: dur * 0.7, delay: i * dur * 0.11, embers: 3 })
+          .then(() => { if (!this.skipping) { this.impact({ x: to.x + off.x, y: to.y + off.y }, 'star', { size: 50, color: '#ffd27a', duration: 200 }); } });
+      }
+    }
+    await this.fireShot(sky, to, { scale: cfg.skyScaleBase + tier * cfg.skyScalePerTier, duration: dur, easing: 'cubic-bezier(.6, 0, 1, .7)' });
+  }
+
+  /** 火の玉をひとつ飛ばす（進む向きに絵を回し、火の粉を残す） */
+  async fireShot(from, to, { scale = 1, duration, arc = 0, delay = 0, easing = 'cubic-bezier(.5, 0, 1, 1)', embers } = {}) {
+    if (this.skipping) return;
     const ball = this.fx('fx-fireball', from);
     const dx = to.x - from.x;
     const dy = to.y - from.y;
-    const side = (dy < 0 ? 1 : -1) * 46; // 少し弧をえがいて飛ぶ
+    const side = (dy < 0 ? 1 : -1) * arc; // 少し弧をえがいて飛ぶ
+    const rot = Math.atan2(dy, dx) * 180 / Math.PI - 135; // 絵は左下向き
+    const at = (x, y, k) => `translate(calc(-50% + ${x.toFixed(1)}px), calc(-50% + ${y.toFixed(1)}px)) rotate(${rot.toFixed(1)}deg) scale(${k.toFixed(2)})`;
+    const n = embers ?? Math.round(4 + scale * 3);
+    for (let i = 1; i <= n; i++) {
+      const k = i / (n + 1);
+      const el = this.fx('fx-ember', { x: from.x + dx * k + side * (1 - Math.abs(2 * k - 1)) + (Math.random() - 0.5) * 14, y: from.y + dy * k + (Math.random() - 0.5) * 14 });
+      el.style.width = el.style.height = `${(5 + Math.random() * 6) * Math.min(2, scale)}px`;
+      this.animate(el, [
+        { transform: 'translate(-50%, -50%) scale(0)', opacity: 0 },
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 0.12 },
+        { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 16}px), calc(-50% - ${6 + Math.random() * 12}px)) scale(.15)`, opacity: 0 },
+      ], { duration: 340, delay: (delay + duration * k ** 0.6) * UI_CONFIG.speed, fill: 'both' }).then(() => el.remove());
+    }
     await this.animate(ball, [
-      { transform: 'translate(-50%, -50%) scale(0.5)' },
-      { transform: `translate(calc(-50% + ${dx * 0.5 + side}px), calc(-50% + ${dy * 0.5}px)) scale(1.3)`, offset: 0.5 },
-      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.7)` },
-    ], { duration: UI_CONFIG.timing.spellProjectile, easing: 'cubic-bezier(.5, 0, 1, 1)', fill: 'forwards' });
+      { transform: at(0, 0, scale * 0.45) },
+      { transform: at(dx * 0.5 + side, dy * 0.5, scale * 0.85), offset: 0.5 },
+      { transform: at(dx, dy, scale * 1.1) },
+    ], { duration, delay: delay * UI_CONFIG.speed, easing, fill: 'both' });
     ball.remove();
   }
 
   /** 雷：相手の兵士1体ずつに落とす */
-  async thunder(targetId, roadId) {
+  async thunder(targetId, roadId, amount = 3) {
     if (this.skipping) return;
+    const big = Math.min(1, amount / 12); // 強い雷ほど、太く・明るく・大きく揺れる
     sound.play('thunder');
     const app = this.el.app.getBoundingClientRect();
     const top = this.renderer.el.board.getBoundingClientRect().top - app.top;
@@ -782,10 +1264,12 @@ export class Animations {
         { opacity: 0 }, { opacity: 1, offset: 0.1 }, { opacity: 0.15, offset: 0.3 },
         { opacity: 1, offset: 0.45 }, { opacity: 0 },
       ], { duration: dur, delay: i * 40 * UI_CONFIG.speed, fill: 'forwards' }).then(() => bolt.remove());
-      this.sparks(c, { count: 5, color: '#ffe95a', spread: 30, size: 6 });
+      bolt.style.setProperty('--bolt-w', (0.8 + big * 1.1).toFixed(2));
+      this.sparks(c, { count: Math.round(4 + big * 8), color: '#ffe95a', spread: 28 + big * 30, size: 6 });
+      this.ring(c, { size: 60 + big * 70, color: '#ffe95a', duration: dur });
     });
-    this.screenFlash('#fffbe0', dur * 0.6);
-    this.shake(this.renderer.el.field, 5, dur);
+    this.screenFlash('#fffbe0', dur * (0.5 + big * 0.5));
+    this.shake(this.renderer.el.field, 4 + big * 10, dur * (1 + big * 0.5));
     await this.delay(dur * 0.6);
   }
 
@@ -796,8 +1280,10 @@ export class Animations {
     }
   }
 
-  async castleDamaged({ playerId, amount, hp, blocked = 0 }, model) {
+  async castleDamaged({ playerId, amount, hp, blocked = 0, source }, model) {
     const pl = model.players[playerId];
+    // 城に着いた兵士は、なぐってからダメージが入る
+    if (source?.kind === 'soldier') await this.castleStrike(source.soldierId, this.renderer.castleEl(playerId));
     this.patchCastle(model, playerId, {castleHp:hp});
     if (blocked > 0) {
       this.patchCastle(model, playerId, {armor:Math.max(0,(pl.armor ?? 0)-blocked)});
@@ -841,9 +1327,21 @@ export class Animations {
     // 2) 一瞬止める（ダメージが大きいほど長く）
     await this.hitstop(stop);
     castle.classList.remove('flash');
-    // 3) 揺れ＋大きな数字
+    // 3) 揺れ＋大きな数字。城そのものも、重さのぶんだけ沈んではね返る。がれきが飛ぶ
     this.number(castle, `-${amount}`, { size, duration: cfg.numberDuration });
-    this.sparks(this.centerOf(castle), { count: finish ? 22 : 6 + Math.min(12, amount), color: '#d9cfbb', spread: finish ? 130 : 50 + amount * 3, size: finish ? 14 : 10 });
+    const pic = castle.querySelector('.castle-pic');
+    const at = this.centerOf(pic);
+    const k = Math.min(1, amount / 20);
+    if (!finish) {
+      this.animate(pic, [
+        { transform: `translateY(${(k * 5).toFixed(1)}px) scale(${(1 + k * 0.1).toFixed(3)}, ${(1 - k * 0.14).toFixed(3)})`, offset: 0.18, easing: 'ease-out' },
+        { transform: `scale(${(1 - k * 0.04).toFixed(3)}, ${(1 + k * 0.06).toFixed(3)})`, offset: 0.5 },
+        { transform: 'none' },
+      ], { duration: 280 + k * 160 });
+    }
+    this.debris(at, { count: finish ? 20 : Math.round(3 + Math.min(9, amount / 2)), spread: finish ? 120 : 36 + amount * 2.5, size: finish ? 14 : 9 });
+    this.sparks(at, { count: finish ? 10 : 3 + Math.min(5, Math.round(amount / 4)), color: '#ffd93b', spread: finish ? 130 : 40 + amount * 2, size: finish ? 12 : 7 });
+    if (finish) for (let i = 0; i < 4; i++) this.puff({ x: at.x + (i - 1.5) * 26, y: at.y + 14 }, { size: 60, delay: i * 70, dy: -26, duration: 700 });
     this.animate(burst, [{ opacity: 1 }, { opacity: 0, transform: `scale(${1 + Math.min(amount, 30) / 15})` }],
       { duration: 260, fill: 'forwards' }).then(() => burst.remove());
     this.shake(this.el.board, amp, cfg.shakeDuration * (finish ? 1.6 : 1));
@@ -861,7 +1359,17 @@ export class Animations {
     sound.play('heal');
     const aura = this.fx('fx-heal-sprite', this.centerOf(castle));
     this.animate(aura, [{ opacity: 0, transform: 'scale(.7)' }, { opacity: 1, offset: .3 }, { opacity: 0, transform: 'scale(1.3)' }], { duration: UI_CONFIG.timing.heal, fill: 'forwards' }).then(() => aura.remove());
-    this.sparks(this.centerOf(castle), { count: 10, color: '#7fe08a', spread: 60, size: 8 });
+    // 回復の光のつぶが、城をつつんで上へのぼる（回復が大きいほど多い）
+    const hc = this.centerOf(castle.querySelector('.castle-pic'));
+    for (let i = 0; i < Math.min(12, 4 + Math.round(amount / 2)); i++) {
+      const plus = this.fx('fx-plus', { x: hc.x + (Math.random() - 0.5) * 80, y: hc.y + 10 + Math.random() * 26 });
+      plus.textContent = '+';
+      this.animate(plus, [
+        { transform: 'translate(-50%, -50%) scale(.2)', opacity: 0 },
+        { transform: 'translate(-50%, calc(-50% - 14px)) scale(1)', opacity: 1, offset: 0.25 },
+        { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 16}px), calc(-50% - ${50 + Math.random() * 30}px)) scale(.6)`, opacity: 0 },
+      ], { duration: UI_CONFIG.timing.heal * 1.6, delay: i * 35 * UI_CONFIG.speed, easing: 'ease-out', fill: 'both' }).then(() => plus.remove());
+    }
     this.number(castle, `+${amount}`, { kind: 'heal', size: UI_CONFIG.healNumber.size, duration: UI_CONFIG.healNumber.duration });
     await this.delay(UI_CONFIG.timing.heal);
     castle.classList.remove('heal-glow');
@@ -965,6 +1473,23 @@ export class Animations {
       const icon = STATUS_ICON[a.status] ?? '';
       this.number(el, `${icon}${a.status === 'poison' ? '毒' : '凍結'}`, { size: small.size, duration: small.duration, kind: a.status });
       el.classList.add(`apply-${a.status}`);
+      // 凍結：氷がパキッと閉じる。毒：毒のけむりが立ちのぼる
+      const c = this.centerOf(el);
+      const frozen = a.status === 'frozen';
+      const stamp = this.fx('fx-status-stamp', c);
+      stamp.style.width = stamp.style.height = `${el.getBoundingClientRect().width * 1.5}px`;
+      stamp.innerHTML = imageArt(`fx/${frozen ? 'ice' : 'poison'}.png`, '', 'art');
+      this.animate(stamp, frozen ? [
+        { transform: 'translate(-50%, -50%) scale(1.9)', opacity: 0 },
+        { transform: 'translate(-50%, -50%) scale(.9)', opacity: 1, offset: 0.3, easing: 'ease-out' },
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 0.6 },
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 },
+      ] : [
+        { transform: 'translate(-50%, -30%) scale(.4)', opacity: 0 },
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.95, offset: 0.4, easing: 'ease-out' },
+        { transform: 'translate(-50%, -75%) scale(1.15)', opacity: 0 },
+      ], { duration: UI_CONFIG.timing.status * 1.6, fill: 'forwards' }).then(() => stamp.remove());
+      if (frozen) this.debris(c, { count: 5, spread: 30, size: 6, colors: ['#e6f7ff', '#a9defa', '#7cc4ee'] });
     }
     await this.delay(UI_CONFIG.timing.status);
     for (const a of list) this.renderer.soldierEl(a.soldierId)?.classList.remove(`apply-${a.status}`);
@@ -977,6 +1502,12 @@ export class Animations {
     if (status === 'frozen') statuses.frozen = 0;
     if (s) s.statuses = statuses;
     this.renderer.updateSoldier(soldierId, { statuses });
+    // 凍結がとける：氷がくだけて、兵士がぶるっと動き出す
+    const cEl = this.renderer.soldierEl(soldierId);
+    if (cEl && status === 'frozen' && !this.skipping) {
+      this.debris(this.centerOf(cEl), { count: 8, spread: 40, size: 7, colors: ['#e6f7ff', '#a9defa', '#7cc4ee'] });
+      this.shake(cEl.querySelector('.soldier-token'), 3, 220);
+    }
     await this.delay(UI_CONFIG.timing.statusCleared);
   }
 
@@ -995,8 +1526,17 @@ export class Animations {
     else this.renderer.addMonster(m, { appear: true });
     if (this.skipping) return;
     sound.play('monster');
-    this.banner(`${def.name ?? '魔物'}があらわれた！`, UI_CONFIG.timing.monsterAppear, 'monster');
-    this.shake(this.renderer.el.field, 6, UI_CONFIG.timing.monsterAppear * 0.5);
+    this.banner(`${def.name ?? '魔物'}があらわれた！`, UI_CONFIG.timing.monsterAppear, 'threat');
+    // 上から落ちてきて、着地で地面が揺れ、土けむりと輪が広がる（落ちる動きは css の drop-in）
+    const mEl = this.renderer.monsterEl(m.monsterId);
+    this.delay(300).then(() => {
+      if (this.skipping || !mEl?.isConnected) return;
+      const feet = this.feetOf(mEl);
+      this.ring(feet, { size: 130, color: '#d9b8ff', duration: 380 });
+      this.puff(feet, { size: 46, dx: -26, dy: -6 });
+      this.puff(feet, { size: 46, dx: 26, dy: -6 });
+      this.shake(this.renderer.el.field, 6, UI_CONFIG.timing.monsterAppear * 0.5);
+    });
     await this.delay(UI_CONFIG.timing.monsterAppear);
   }
 
@@ -1014,11 +1554,14 @@ export class Animations {
       const token = mEl.querySelector('.monster-token');
       const dx = (to.x - from.x) * 0.7;
       const dy = (to.y - from.y) * 0.7;
+      // 身をかがめてためてから、城へ飛びかかる
       await this.animate(token, [
         { transform: 'translate(0, 0) scale(1)' },
-        { transform: `translate(${dx}px, ${dy}px) scale(1.3)`, offset: 0.6 },
-        { transform: `translate(${dx}px, ${dy}px) scale(1.3)` },
-      ], { duration: UI_CONFIG.timing.monsterAttack, easing: 'ease-in' });
+        { transform: `translate(${-dx * 0.06}px, ${-dy * 0.06}px) scale(1.25, .75)`, offset: 0.35, easing: 'cubic-bezier(.7, 0, 1, .6)' },
+        { transform: `translate(${dx}px, ${dy}px) scale(1.2, 1.4)`, offset: 0.85 },
+        { transform: `translate(${dx}px, ${dy}px) scale(1.4, 1.2)` },
+      ], { duration: UI_CONFIG.timing.monsterAttack * 1.5 });
+      this.impact(to, 'claw', { angle: Math.atan2(dy, dx) * 180 / Math.PI, size: 110, color: '#ffd9d0' });
       this.animate(token, [
         { transform: `translate(${dx}px, ${dy}px) scale(1.3)` },
         { transform: 'translate(0, 0) scale(1)' },
@@ -1035,12 +1578,16 @@ export class Animations {
     const el = this.renderer.monsterEl(monsterId);
     if (!el || this.skipping) return;
     const cfg = UI_CONFIG.monsterHit;
+    const dir = this.hitDir.get(el) ?? null;
+    this.hitDir.delete(el);
+    const power = Math.min(cfg.powerMax, cfg.powerBase + amount * cfg.powerPerDamage);
     el.classList.add('hit');
     sound.play('smallHit');
-    this.number(el, `-${amount}`, { size: cfg.numberSize, duration: cfg.numberDuration });
-    await this.hitstop(cfg.hitstop);
+    this.number(el, `-${amount}`, { size: cfg.numberSize * (0.8 + power * 0.25) * (dir?.weak ? 1.2 : 1), duration: cfg.numberDuration, kind: dir?.weak ? 'weak' : 'damage' });
+    if (dir?.weak) this.number(el, '弱点！', { size: UI_CONFIG.smallNumber.size * 0.85, duration: cfg.numberDuration, kind: 'weak', dy: -34 });
+    await this.hitstop(Math.min(cfg.hitstopMax, cfg.hitstop * (power + (hp <= 0 ? cfg.lethalBonus : 0) + (dir?.weak ? cfg.weakBonus : 0))));
     el.classList.remove('hit');
-    this.shake(el.querySelector('.monster-token'), cfg.shake, cfg.shakeDuration);
+    this.recoil({ el, dir, power, cause: 'fight' }, cfg);
     await this.delay(UI_CONFIG.timing.afterMonsterHit);
   }
 
@@ -1059,7 +1606,22 @@ export class Animations {
     this.sparks(this.centerOf(el), { count: 12, color: this.rarities?.[rewardRarity]?.color ?? '#ffcf3f', spread: 55, size: 8 });
     if (!rewardRarity) this.banner(`とどめ！ ${ICON.coin}${reward}`, UI_CONFIG.timing.reward, 'reward');
     await this.hitstop(UI_CONFIG.monsterHit.hitstop);
-    await this.animate(el, [{ opacity: 1, transform: 'translate(-50%, -50%) scale(1)' }, { opacity: 0, transform: 'translate(-50%, -50%) scale(.1) rotate(25deg)' }], { duration: UI_CONFIG.rewardFx.collapse, fill: 'forwards' });
+    // ふくらんで、はじける（輪・土けむり・星）
+    const at = this.centerOf(el);
+    const glow = this.rarities?.[rewardRarity]?.color ?? '#ffcf3f';
+    const base = 'translate(-50%, -50%)';
+    await this.animate(el, [
+      { opacity: 1, transform: `${base} scale(1)` },
+      { opacity: 1, transform: `${base} scale(.86, 1.12) rotate(-6deg)`, offset: 0.3, easing: 'ease-out' },
+      { opacity: 1, transform: `${base} scale(1.3) rotate(5deg)`, offset: 0.75, easing: 'ease-in' },
+      { opacity: 0, transform: `${base} scale(1.7, .3)` },
+    ], { duration: UI_CONFIG.rewardFx.collapse * 2, fill: 'forwards' });
+    if (!this.skipping) {
+      this.ring(at, { size: 150, color: glow, duration: 420 });
+      this.impact(at, 'star', { size: 96, color: '#fff3b8', duration: 300 });
+      for (const [dx, dy] of [[-30, -8], [30, -8], [0, -30]]) this.puff(at, { size: 50, dx, dy, duration: 520 });
+      this.shake(this.renderer.el.field, 5, 220);
+    }
     this.renderer.removeMonster(monsterId);
   }
 
@@ -1069,6 +1631,23 @@ export class Animations {
     if (this.skipping) return;
     if (delta > 0) sound.play('coin');
     const target = this.renderer.coinEl(playerId);
+    // カード・ごほうびで増えたコインは、盤面から財布へ飛んでいく
+    if (target && !target.hidden && delta > 0 && (reason === 'card' || reason === 'reward')) {
+      const from = this.centerOf(this.renderer.el.field);
+      const to = this.centerOf(target);
+      const n = Math.min(UI_CONFIG.coinFx.flyMax, delta);
+      for (let i = 0; i < n; i++) {
+        const coin = this.fx('fx-coin', from);
+        coin.innerHTML = icon('coin');
+        const sx = (Math.random() - 0.5) * 90, sy = (Math.random() - 0.5) * 60;
+        this.animate(coin, [
+          { transform: 'translate(-50%, -50%) scale(.2)', opacity: 0 },
+          { transform: `translate(calc(-50% + ${sx}px), calc(-50% + ${sy}px)) scale(1.2) rotate(${sx * 2}deg)`, opacity: 1, offset: 0.3, easing: 'cubic-bezier(.6, 0, .9, .6)' },
+          { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(.6) rotate(360deg)`, opacity: 1, offset: 0.95 },
+          { transform: `translate(calc(-50% + ${to.x - from.x}px), calc(-50% + ${to.y - from.y}px)) scale(.2)`, opacity: 0 },
+        ], { duration: UI_CONFIG.coinFx.flyDuration, delay: i * 45 * UI_CONFIG.speed, fill: 'both' }).then(() => coin.remove());
+      }
+    }
     if (target && !target.hidden) {
       const small = UI_CONFIG.smallNumber;
       const fx = UI_CONFIG.coinFx;

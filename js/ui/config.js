@@ -27,6 +27,8 @@ export const UI_CONFIG = {
     fusion: 900,
     reward: 1100,        // 魔物報酬のレアリティを読む時間
     soldierShot: 520,
+    shotAim: 230,          // 弓兵・魔法使いがねらう（ため）
+    drawFly: 300,          // 引いたカードが山札から手札へ飛ぶ
     soldierReturn: 650,
     soldierMove: 280,      // 兵士が進む
     deploy: 240,           // 兵士が出てくる
@@ -70,8 +72,14 @@ export const UI_CONFIG = {
   },
 
   // 兵士にダメージが入ったとき
+  // power（強さ）= powerBase + powerPerDamage × ダメージ（powerMax で頭打ち）。数字の大きさ・止める時間・ノックバックにかかる
   soldierHit: {
-    hitstop: 50,
+    hitstop: 50, hitstopMax: 160,
+    powerBase: 0.7, powerPerDamage: 0.16, powerMax: 2.2,
+    lethalBonus: 0.5,      // とどめの一撃は、そのぶん長く止める
+    weakBonus: 0.4,        // 属性の弱点をついたとき
+    knockback: 9,          // 押される距離(px) × power
+    knockOut: 56,          // やられたときに吹き飛ぶ距離(px)
     shake: 3,
     numberSize: 26,
     numberDuration: 600,
@@ -80,7 +88,10 @@ export const UI_CONFIG = {
 
   // 魔物にダメージが入ったとき
   monsterHit: {
-    hitstop: 70,
+    hitstop: 70, hitstopMax: 200,
+    powerBase: 0.7, powerPerDamage: 0.14, powerMax: 2.2,
+    lethalBonus: 0.6, weakBonus: 0.4,
+    knockback: 6,          // 魔物は重いので、兵士より動かない
     shake: 4,
     numberSize: 30,
     numberDuration: 650,
@@ -91,7 +102,11 @@ export const UI_CONFIG = {
   healNumber: { size: 40, duration: 800 },
 
   rewardFx: { base: 650, perRank: 175, luckyExtra: 180, max: 1600, collapse: 160, sparksBase: 6, sparksPerRank: 5 },
-  coinFx: { turnScale: .7, cardScale: 1.4, turnDuration: 400, cardDuration: 900 },
+  coinFx: { turnScale: .7, cardScale: 1.4, turnDuration: 400, cardDuration: 900, flyMax: 8, flyDuration: 520 },
+  // 火の魔法の見せ方。tiers：このダメージ以上で一段ずつ大きくなる（1段目から、空から落ちてくる）
+  fireFx: { tiers: [12, 18, 30], scaleBase: 0.9, scalePerDamage: 0.06, skyScaleBase: 1.9, skyScalePerTier: 0.5 },
+  // 背景の小さな動き（葉の数と、画面を横切る秒数）
+  ambient: { leaves: 7, leafMin: 14, leafMax: 26 },
   warningHpRatio: .25,
 
   // コイン・盾・城壁などの小さな数字
