@@ -110,6 +110,8 @@ const OPTIONAL_RULES = {
   deckSize: 100,
   // true なら、毎ターンのドローが「前のターンに出したカードの枚数」以上になる（出した分を引き直す）
   drawPerPlayed: false,
+  // 1ターンに出せる兵士の枚数（攻撃の魔法は別に1枚。回復・精霊・コイン・武器・防御は何枚でも）
+  soldiersPerTurn: 1,
   // 試合の最初に持っているコインと、自分のターンの始めにもらえるコイン
   initialCoins: 0,
   coinPerTurn: 0,
@@ -377,6 +379,9 @@ export class Game {
         throw new Error(`rules.json の ${key} は 0 以上 1 以下の数にしてください`);
       }
     }
+    if (rules.soldiersPerTurn !== undefined && !(Number.isInteger(rules.soldiersPerTurn) && rules.soldiersPerTurn >= 1)) {
+      throw new Error('rules.json の soldiersPerTurn は1以上の整数にしてください（書かなければ 1）');
+    }
     if (rules.drawPerPlayed !== undefined && typeof rules.drawPerPlayed !== 'boolean') {
       throw new Error('rules.json の drawPerPlayed は true か false にしてください（書かなければ false）');
     }
@@ -632,6 +637,7 @@ export class Game {
     this.turn += 1;
     this.phase = 'main';
     player.playedThisTurn = false;
+    player.soldiersPlayedThisTurn = 0;
     const playedLastTurn = player.cardsPlayedThisTurn;
     player.cardsPlayedThisTurn = 0;
     this.emit('turnStarted', { playerId, turn: this.turn });
@@ -1370,7 +1376,10 @@ export class Game {
       if (this.opponentsOf(player.id).some((p) => p.findInHand(cardId))) return fail('あなたの番ではありません');
       return fail('そのカードは手札にありません');
     }
-    // メイン（兵士・魔法）は1ターン1枚。付加（武器）と防御は何枚でも
+    // 兵士は1ターン soldiersPerTurn 枚、メイン（攻撃の魔法）は1枚。付加（武器）・防御・回復や精霊などは何枚でも
+    if (card.slot === 'soldier' && player.soldiersPlayedThisTurn >= this.rules.soldiersPerTurn) {
+      return fail(`このターンに出せる兵士は${this.rules.soldiersPerTurn}枚までです`);
+    }
     if (card.slot === 'main' && player.playedThisTurn) return fail('このターンはもうメインのカードを出しました');
     return { ok: true, player, card };
   }
@@ -1432,6 +1441,7 @@ export class Game {
 
     const card = player.takeFromHand(cardId);
     if (card.slot === 'main') player.playedThisTurn = true;
+    if (card.slot === 'soldier') player.soldiersPlayedThisTurn += 1;
     player.cardsPlayedThisTurn += 1;
     // 使ったカードは（兵士も）すぐ捨て札へ。使い切りのカードは、二度と山札に戻らない置き場へ
     if (card.isExhaust) this.pileOf(player.id).exhausted.push(card);
@@ -1881,6 +1891,7 @@ export class Game {
   passTurn() {
     const player = this.players[this.currentPlayer];
     player.playedThisTurn = false;
+    player.soldiersPlayedThisTurn = 0;
     this.tickSpirit(player);
     this.beginTurn(this.nextPlayerAfter(this.currentPlayer));
   }

@@ -1129,13 +1129,22 @@ STEP 2 以降で作り直しにならないよう、Game をどう広げるか�
 
 - `canPlayCard(cardId, target)` も同じ `target` を受け取る。`target` を省略して、対象が2つ以上あるときは `{ ok: true, needsTarget: true }`（出せるけど選ぶ必要がある）。そのまま `playCard(cardId)` を呼ぶと `{ ok: false, reason: "対象を選んでください", needsTarget: true }`
 
-### 1ターンに出せる枚数（STEP 2 から）
+### 1ターンに出せる枚数（STEP 2 から。のちに変更：下の「出せる枚数を増やした」）
 - カードは `kind` から決まる `slot` で3つに分かれる（`cards.json` に `slot` は書かない）
   - `"main"`（メイン）：1ターン1枚。兵士・城や兵士を攻める魔法・**ヒール**（回復が何枚も重なって決着しなくならないように、メインにする）
   - `"addon"`（付加）：自分の兵士につける（武器など）。メインと一緒に、何枚でも出せる。**その兵士の次の進軍・戦いから効く**。「この攻撃にこの付加をつける」形にはせず、兵士につける形にする（1枚ずつ `playCard` で出せて、画面も「兵士をタップ」だけで分かるため）
   - `"defense"`（防御）：何枚でも出せる（兵士の盾・城の守り）
 - `getState().players.pX.playedThisTurn` は「このターンにメインのカードを出したか」の意味のまま残す。ほかに `cardsPlayedThisTurn`（出した枚数）を足す
 - ドローは `drawPerTurn` 枚が最低で、`drawPerPlayed` なら前のターンに出した枚数ぶん（STEP 2 の「ドロー」）
+
+### 出せる枚数を増やした（人間の指示：試合が遅いため）
+カードを出せる枚数が少なく試合が遅かったので、出し方（`slot`）を5つにした。**数値は仮**（`data/rules.json`）。
+- `soldier`（兵士）：1ターンに `rules.soldiersPerTurn` 枚まで（仮：3。省略すると1。1以上の整数）。`getState().players.pX.soldiersPlayedThisTurn` に出した枚数
+- `main`（攻撃の魔法：城・兵士へのダメージ、毒、凍結、天の恵み、神頼み、盗賊）：1ターン1枚。兵士とは別枠（兵士を出したあとでも1枚出せる）。`playedThisTurn` は「この枠を使ったか」
+- `support`（回復・精霊・コインを増やすカード＝`healOwnCastle` / `summonSpirit` / `gainCoins`）：メインを使わず何枚でも。ヒールが何枚でも使える分、決着しなくなるおそれがあるので、遊んで確かめる
+- `addon`（武器）・`defense`（防御）：今までどおり何枚でも
+- 出した枚数ぶん次のターンに引く（`drawPerPlayed`）ので、たくさん出すと手札もすぐ戻る
+- 確かめたこと（`node tests/sim/run.js --games 200`）：smart 同士は平均手番が58→43、全組み合わせが決着。CPU は smart 系が出せなくなるまで続けて出し、aggro・rush・defensive も兵士・城への魔法を続けて出す。**短くなりすぎていないか、遊んで確かめる**
 
 ### カードID（済）
 - カードIDはシャッフルしたあとの順に振る（IDから種類が分からないように）。ただし捨て札から山札を作り直すときは同じIDのまま戻るので、一度見たカードはIDで分かる。オンライン（STEP 4）では、相手の `cardDrawn` に `cardIds` を見せない

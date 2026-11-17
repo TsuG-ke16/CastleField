@@ -77,11 +77,11 @@ test('start: turnStarted → cardDrawn（先攻も firstTurnDraw 枚）', () => 
 });
 
 test('1ターンに2枚は出せない。相手の番には出せない', () => {
-  const { game } = setup({ p1: ['infantry', 'infantry'], p2: ['infantry'], deck: ['heal', 'heal'] });
+  const { game } = setup({ p1: ['infantry', 'infantry'], p2: ['infantry'], deck: ['heal', 'heal'], rules: { soldiersPerTurn: 1 } });
   assert.equal(play(game, 'infantry').ok, true);
   const second = game.canPlayCard(handId(game, 'p1', 'infantry'));
   assert.equal(second.ok, false);
-  assert.equal(second.reason, 'このターンはもうメインのカードを出しました');
+  assert.equal(second.reason, 'このターンに出せる兵士は1枚までです');
   const p2card = game.getState('p2').players.p2.hand[0].cardId;
   assert.equal(game.playCard(p2card).reason, 'あなたの番ではありません');
 });

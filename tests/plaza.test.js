@@ -27,6 +27,7 @@ function place(game, playerId, targetId, position) {
   const r = game.playCard(card.cardId, { playerId: targetId });
   assert.equal(r.ok, true, r.reason);
   game.players[playerId].playedThisTurn = false;
+  game.players[playerId].soldiersPlayedThisTurn = 0;
   game.currentPlayer = saved;
   const s = game.players[playerId].soldiers.at(-1);
   s.position = position;

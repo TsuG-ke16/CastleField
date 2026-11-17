@@ -33,9 +33,15 @@ export const EFFECTS = {
 /** scope（レーンを選ぶか）を書ける effect。lane なら選んだ1レーンの相手の兵士だけに効く */
 export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers'];
 
-/** kind → 出し方（slot）。main は1ターン1枚、addon と defense は何枚でも */
+/** 攻撃ではない魔法（回復・精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
+export const SUPPORT_EFFECTS = ['healOwnCastle', 'summonSpirit', 'gainCoins'];
+
+/**
+ * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
+ * addon・defense・support は何枚でも
+ */
 export const SLOT_OF_KIND = {
-  soldier: 'main',
+  soldier: 'soldier',
   spell: 'main',
   weapon: 'addon',
   defense: 'defense',
@@ -57,8 +63,9 @@ export class Card {
     return this.def.kind;
   }
 
-  /** "main" | "addon" | "defense" */
+  /** "soldier" | "main" | "addon" | "defense" | "support" */
   get slot() {
+    if (this.def.kind === 'spell' && SUPPORT_EFFECTS.includes(this.def.effect)) return 'support';
     return SLOT_OF_KIND[this.def.kind];
   }
 
