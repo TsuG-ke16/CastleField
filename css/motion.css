@@ -1,0 +1,518 @@
+/* 動き（アニメーション）。兵士・魔物の待機と歩き方、状態異常、当たったときの印、UI の手応え、背景の小さな動き。
+   - 種類ごとの型は js/ui/motion.js（data-motion）。攻撃・被弾など、イベントに合わせた動きは js/ui/Animations.js
+   - 「動きを減らす」設定（.reduced-motion）では、css/settings.css がすべて止める */
+
+/* ===== 兵士・魔物：足もとを軸に動かす ===== */
+.soldier-pic, .monster-pic { transform-origin: 50% 88%; }
+.soldier-token, .monster-token { transform-origin: 50% 88%; }
+.castle-pic { transform-origin: 50% 92%; }
+
+/* 足もとの影：はねると小さく、沈むと大きくなる（体が浮いたのが分かる） */
+#unit-layer .soldier::before, .monster::before {
+  content: "";
+  position: absolute;
+  left: 16%;
+  right: 16%;
+  top: calc(var(--unit) * .8);
+  height: calc(var(--unit) * .17);
+  border-radius: 50%;
+  background: rgba(60, 40, 20, .28);
+  pointer-events: none;
+}
+.monster::before { top: calc(var(--unit) * 1.06); height: calc(var(--unit) * .2); }
+
+/* --- 待機（種類ごと） --- */
+#unit-layer .soldier .soldier-pic { animation: idle-foot 2.3s ease-in-out var(--idle-delay, 0s) infinite; }
+#unit-layer .soldier::before { animation: shadow-breathe 2.3s ease-in-out var(--idle-delay, 0s) infinite; }
+/* 歩兵：呼吸しながら、左右に体重を移す */
+@keyframes idle-foot {
+  0%, 100% { transform: scale(1, 1) rotate(0deg); }
+  25% { transform: scale(.985, 1.03) rotate(-1.4deg); }
+  50% { transform: scale(1.02, .975) rotate(0deg); }
+  75% { transform: scale(.985, 1.03) rotate(1.4deg); }
+}
+@keyframes shadow-breathe { 50% { transform: scale(1.06); } }
+/* 槍兵：前のめりにかまえ、ときどき槍を小さく突く */
+#unit-layer .soldier[data-motion="lancer"] .soldier-pic { animation-name: idle-lancer; animation-duration: 2.8s; }
+@keyframes idle-lancer {
+  0%, 100% { transform: rotate(0deg) scale(1, 1); }
+  30% { transform: rotate(2deg) scale(.985, 1.025); }
+  60% { transform: rotate(1deg) scale(1.02, .98); }
+  70% { transform: rotate(-3deg) translateY(-3%) scale(.97, 1.05); }
+  80% { transform: rotate(2deg) scale(1.03, .97); }
+}
+/* 重装兵・巨人：ゆっくり深い呼吸。横に広がって、どっしり沈む */
+#unit-layer .soldier[data-motion="heavy"] .soldier-pic,
+#unit-layer .soldier[data-motion="giant"] .soldier-pic { animation-name: idle-heavy; animation-duration: 3.4s; }
+#unit-layer .soldier[data-motion="giant"] .soldier-pic { animation-duration: 4s; }
+@keyframes idle-heavy {
+  0%, 100% { transform: scale(1, 1); }
+  45% { transform: scale(1.045, .96) translateY(1%); }
+  70% { transform: scale(.985, 1.035); }
+}
+/* 勇者：胸を張って呼吸し、ときどき軽く身がまえる */
+#unit-layer .soldier[data-motion="hero"] .soldier-pic { animation-name: idle-hero; animation-duration: 3.2s; }
+@keyframes idle-hero {
+  0%, 100% { transform: scale(1, 1); }
+  30% { transform: scale(.98, 1.04); }
+  55% { transform: scale(1.02, .98); }
+  66% { transform: translateY(-7%) scale(.97, 1.05) rotate(-2deg); }
+  76% { transform: scale(1.06, .93); }
+  86% { transform: scale(.99, 1.02); }
+}
+/* 騎兵：馬がその場で足ぶみ（2拍子で前後にゆれて、小さくはねる） */
+#unit-layer .soldier[data-motion="rider"] .soldier-pic { animation-name: idle-rider; animation-duration: 1.3s; animation-timing-function: ease-in-out; }
+@keyframes idle-rider {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  20% { transform: rotate(-3deg) translateY(-4%); }
+  40% { transform: rotate(0deg) translateY(0) scale(1.03, .97); }
+  60% { transform: rotate(2.5deg) translateY(-2.5%); }
+  80% { transform: rotate(0deg) translateY(0) scale(1.02, .98); }
+}
+#unit-layer .soldier[data-motion="rider"]::before { animation-name: shadow-hop; animation-duration: .65s; }
+@keyframes shadow-hop { 35% { transform: scale(.86); opacity: .7; } }
+/* 弓兵：ねらいを左右に振り、ときどき弓を引きしぼる */
+#unit-layer .soldier[data-motion="archer"] .soldier-pic { animation-name: idle-archer; animation-duration: 3.6s; }
+@keyframes idle-archer {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20% { transform: translateX(-2.5%) rotate(-2deg) scale(.99, 1.02); }
+  45% { transform: translateX(2.5%) rotate(2deg) scale(1.01, .99); }
+  62% { transform: translateX(-1%) rotate(-5deg) scale(1.04, .96); }
+  78% { transform: translateX(-1.5%) rotate(-6deg) scale(1.05, .95); }
+  84% { transform: translateX(1%) rotate(2deg) scale(.98, 1.03); }
+}
+/* 魔法使い：ふわりと浮いている。影は、浮くと小さくなる */
+#unit-layer .soldier[data-motion="mage"] .soldier-pic { animation-name: idle-mage; animation-duration: 2.8s; }
+@keyframes idle-mage {
+  0%, 100% { transform: translateY(-2%) rotate(-1.5deg); }
+  50% { transform: translateY(-10%) rotate(1.5deg); }
+}
+#unit-layer .soldier[data-motion="mage"]::before { animation-name: shadow-float; animation-duration: 2.8s; }
+@keyframes shadow-float { 0%, 100% { transform: scale(.95); opacity: .9; } 50% { transform: scale(.7); opacity: .55; } }
+/* 魔法使いのまわりを回る光のつぶ */
+#unit-layer .soldier[data-motion="mage"] .soldier-token::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 7px;
+  height: 7px;
+  margin: -3px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 6px 3px #c79bff;
+  animation: mote-orbit 2.2s linear var(--idle-delay, 0s) infinite;
+  pointer-events: none;
+}
+@keyframes mote-orbit {
+  0% { transform: translate(calc(var(--unit) * .46), 0) scale(1); opacity: 1; }
+  25% { transform: translate(0, calc(var(--unit) * .16)) scale(1.25); opacity: 1; }
+  50% { transform: translate(calc(var(--unit) * -.46), 0) scale(1); opacity: 1; }
+  62% { opacity: 0; }
+  75% { transform: translate(0, calc(var(--unit) * -.16)) scale(.6); opacity: 0; }
+  88% { opacity: 0; }
+  100% { transform: translate(calc(var(--unit) * .46), 0) scale(1); opacity: 1; }
+}
+
+/* --- 歩く・走る（進軍のあいだだけ .walking がつく） --- */
+/* 歩兵：左右に体をゆらして、トコトコ歩く */
+#unit-layer .soldier.walking .soldier-pic { animation: walk-foot .34s ease-in-out infinite; }
+#unit-layer .soldier.walking::before { animation: shadow-step .17s ease-in-out infinite; }
+@keyframes walk-foot {
+  0%, 100% { transform: translateY(0) rotate(-6deg) scale(1.03, .97); }
+  25% { transform: translateY(-11%) rotate(0deg) scale(.97, 1.04); }
+  50% { transform: translateY(0) rotate(6deg) scale(1.03, .97); }
+  75% { transform: translateY(-11%) rotate(0deg) scale(.97, 1.04); }
+}
+@keyframes shadow-step { 50% { transform: scale(.8); opacity: .65; } }
+/* 槍兵：前のめりで小走り */
+#unit-layer .soldier.walking[data-motion="lancer"] .soldier-pic { animation: walk-lancer .28s ease-in-out infinite; }
+@keyframes walk-lancer {
+  0%, 100% { transform: translateY(0) rotate(5deg) scale(1.03, .97); }
+  50% { transform: translateY(-9%) rotate(8deg) scale(.97, 1.04); }
+}
+/* 重装兵・巨人：ドスン、ドスンと重い一歩。着地でつぶれる */
+#unit-layer .soldier.walking[data-motion="heavy"] .soldier-pic,
+#unit-layer .soldier.walking[data-motion="giant"] .soldier-pic { animation: walk-heavy .52s cubic-bezier(.5, 0, .7, 1) infinite; }
+#unit-layer .soldier.walking[data-motion="giant"] .soldier-pic { animation-duration: .62s; }
+#unit-layer .soldier.walking[data-motion="heavy"]::before,
+#unit-layer .soldier.walking[data-motion="giant"]::before { animation-duration: .26s; }
+@keyframes walk-heavy {
+  0%, 100% { transform: translateY(0) rotate(-4deg) scale(1.1, .9); }
+  22% { transform: translateY(-7%) rotate(-1deg) scale(.97, 1.04); }
+  50% { transform: translateY(0) rotate(4deg) scale(1.1, .9); }
+  72% { transform: translateY(-7%) rotate(1deg) scale(.97, 1.04); }
+}
+/* 勇者：マントをなびかせて大またで走る */
+#unit-layer .soldier.walking[data-motion="hero"] .soldier-pic { animation: walk-hero .3s ease-in-out infinite; }
+@keyframes walk-hero {
+  0%, 100% { transform: translateY(0) rotate(4deg) scale(1.05, .95); }
+  50% { transform: translateY(-15%) rotate(9deg) scale(.95, 1.07); }
+}
+/* 騎兵：ギャロップ。前足を上げてから、前へ伸びる。動き出しは速く */
+#unit-layer .soldier.walking[data-motion="rider"] { transition-timing-function: cubic-bezier(.5, 0, .2, 1); }
+#unit-layer .soldier.walking[data-motion="rider"] .soldier-pic { animation: walk-rider .26s linear infinite; }
+#unit-layer .soldier.walking[data-motion="rider"]::before { animation-duration: .26s; }
+@keyframes walk-rider {
+  0%, 100% { transform: translateY(0) rotate(7deg) scale(1.08, .93); }
+  30% { transform: translateY(-13%) rotate(-9deg) scale(.96, 1.05); }
+  60% { transform: translateY(-9%) rotate(2deg) scale(1.03, .98); }
+}
+
+/* --- 魔物の待機（種類ごと） --- */
+.monster .monster-pic { animation: idle-imp 1.5s ease-in-out infinite; }
+.monster::before { animation: shadow-breathe 1.5s ease-in-out infinite; }
+/* ゴブリンなど：落ち着きなく、小さく2回はねる */
+@keyframes idle-imp {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  15% { transform: translateY(-7%) scale(.97, 1.04); }
+  30% { transform: translateY(0) scale(1.05, .95); }
+  42% { transform: translateY(-4%) scale(.98, 1.02); }
+  54% { transform: translateY(0) scale(1.03, .97); }
+  78% { transform: rotate(-2.5deg); }
+}
+/* スライム：ぷるぷる。つぶれて、のびる */
+.monster[data-motion="jelly"] .monster-pic { animation: idle-jelly 1.3s ease-in-out infinite; }
+@keyframes idle-jelly {
+  0%, 100% { transform: scale(1.09, .9); }
+  28% { transform: scale(.93, 1.1) translateY(-3%); }
+  52% { transform: scale(1.05, .95); }
+  74% { transform: scale(.98, 1.03); }
+}
+/* コウモリ：羽ばたいて、8の字に浮く */
+.monster[data-motion="flyer"] .monster-pic { animation: idle-flyer-y .42s ease-in-out infinite alternate, idle-flyer-x 2.6s ease-in-out infinite; animation-composition: add; }
+@keyframes idle-flyer-y { from { transform: translateY(-6%) scale(1.06, .94); } to { transform: translateY(-17%) scale(.94, 1.06); } }
+@keyframes idle-flyer-x { 0%, 100% { transform: translateX(-7%) rotate(-4deg); } 50% { transform: translateX(7%) rotate(4deg); } }
+.monster[data-motion="flyer"]::before { animation: shadow-float .84s ease-in-out infinite; }
+/* ゴースト・ヴァンパイア：ゆらりと漂い、すこし透ける */
+.monster[data-motion="specter"] .monster-pic { animation: idle-specter 3.4s ease-in-out infinite; }
+@keyframes idle-specter {
+  0%, 100% { transform: translate(-4%, -4%) rotate(-3deg); opacity: 1; }
+  35% { transform: translate(3%, -12%) rotate(2deg) scale(1.03, .98); opacity: .82; }
+  70% { transform: translate(5%, -6%) rotate(4deg); opacity: 1; }
+}
+.monster[data-motion="specter"]::before { animation: shadow-float 3.4s ease-in-out infinite; }
+/* スケルトン：カタカタと骨が鳴る（じっとして、急に小きざみに震える） */
+.monster[data-motion="bones"] .monster-pic { animation: idle-bones 2.4s linear infinite; }
+@keyframes idle-bones {
+  0%, 58%, 100% { transform: rotate(0deg); }
+  20% { transform: scale(.99, 1.02); }
+  62% { transform: rotate(-4deg) translateY(-2%); }
+  66% { transform: rotate(4deg); }
+  70% { transform: rotate(-4deg) translateY(-2%); }
+  74% { transform: rotate(4deg); }
+  78% { transform: rotate(-2deg); }
+  82% { transform: rotate(0deg) scale(1.03, .97); }
+}
+/* ミミック：宝箱のふりでじっとして、急にガブッと口を開ける */
+.monster[data-motion="mimic"] .monster-pic { animation: idle-mimic 3s ease-in-out infinite; }
+@keyframes idle-mimic {
+  0%, 66%, 100% { transform: scale(1, 1); }
+  72% { transform: scale(1.12, .84); }
+  78% { transform: translateY(-14%) scale(.9, 1.16) rotate(-4deg); }
+  84% { transform: scale(1.14, .86); }
+  90% { transform: translateY(-5%) scale(.97, 1.04) rotate(3deg); }
+  95% { transform: scale(1.04, .96); }
+}
+/* ゴーレム：岩のかたまり。とてもゆっくり、重く息をする */
+.monster[data-motion="titan"] .monster-pic { animation: idle-heavy 4.2s ease-in-out infinite; }
+.monster[data-motion="titan"]::before { animation-duration: 4.2s; }
+/* トレント：風にゆれる木。根もとを軸に、こずえがしなる */
+.monster[data-motion="tree"] .monster-pic { animation: idle-tree 3.6s ease-in-out infinite; transform-origin: 50% 96%; }
+@keyframes idle-tree {
+  0%, 100% { transform: rotate(-3deg) skewX(1.5deg); }
+  40% { transform: rotate(3.5deg) skewX(-2deg); }
+  60% { transform: rotate(2deg) skewX(-1deg); }
+}
+/* ドラゴン・デーモン：大きく息を吸い、うなって身を乗り出す */
+.monster[data-motion="beast"] .monster-pic { animation: idle-beast 3s ease-in-out infinite; }
+.monster[data-motion="lord"] .monster-pic { animation: idle-beast 3.6s ease-in-out infinite, lord-aura 1.8s ease-in-out infinite; }
+@keyframes idle-beast {
+  0%, 100% { transform: scale(1, 1); }
+  30% { transform: scale(.97, 1.05) translateY(-2%); }
+  52% { transform: scale(1.04, .97); }
+  64% { transform: scale(1.08, 1.02) rotate(-4deg) translateY(-3%); }
+  72% { transform: scale(1.1, .96) rotate(3deg); }
+  84% { transform: scale(.99, 1.01); }
+}
+/* 魔王：まがまがしい光が脈うつ */
+@keyframes lord-aura {
+  0%, 100% { filter: drop-shadow(0 0 4px rgba(190, 40, 60, .7)); }
+  50% { filter: drop-shadow(0 0 13px rgba(230, 60, 80, .95)) drop-shadow(0 0 4px #ffb35a); }
+}
+
+/* --- 状態異常 --- */
+/* 凍結：氷に閉じこめられて止まる（氷の絵を重ねる。影もそのまま） */
+#unit-layer .soldier.frozen .soldier-pic { animation: none; }
+#unit-layer .soldier.frozen::before { animation: none; }
+#unit-layer .soldier.frozen .soldier-token::after {
+  content: "";
+  position: absolute;
+  inset: 18% -14% -12%;
+  margin: 0;
+  width: auto;
+  height: auto;
+  border-radius: 0;
+  box-shadow: none;
+  background: url("../assets/fx/ice.png") center bottom / contain no-repeat;
+  opacity: .82;
+  animation: frost-glint 2.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes frost-glint { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.25); } }
+/* 毒：ふらふらして、毒のあわが立ちのぼる */
+#unit-layer .soldier.poisoned:not(.frozen):not(.walking) .soldier-pic { animation: idle-sick 1.9s ease-in-out var(--idle-delay, 0s) infinite; }
+@keyframes idle-sick {
+  0%, 100% { transform: rotate(-4deg) scale(1.02, .97); }
+  40% { transform: rotate(3deg) translateX(2%) scale(.99, 1.01); }
+  55% { transform: rotate(5deg) translateX(3%) scale(1.03, .96); }
+  75% { transform: rotate(-2deg); }
+}
+#unit-layer .soldier.poisoned:not(.frozen) .soldier-token::before {
+  content: "";
+  position: absolute;
+  inset: -22% 6% 30%;
+  border: 0;
+  border-radius: 0;
+  background:
+    radial-gradient(circle 4px at 22% 90%, #c9a1f2 55%, #6b3fa0 60% 75%, transparent 80%),
+    radial-gradient(circle 3px at 68% 96%, #c9a1f2 55%, #6b3fa0 60% 75%, transparent 80%),
+    radial-gradient(circle 5px at 48% 78%, #c9a1f2 55%, #6b3fa0 60% 75%, transparent 80%);
+  background-size: 100% 100%;
+  animation: poison-bubbles 1.5s linear infinite;
+  pointer-events: none;
+}
+#unit-layer .soldier.poisoned.targetable .soldier-token::before { background: rgba(255, 225, 77, .25); inset: -8%; border: 4px solid #ffe14d; border-radius: 50%; animation: target .8s ease-in-out infinite; }
+@keyframes poison-bubbles {
+  0% { transform: translateY(20%) scale(.8); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-34%) scale(1.1); opacity: 0; }
+}
+/* 属性の武器：光がゆっくり脈うつ */
+#unit-layer .soldier.has-element .soldier-token { animation: element-pulse 1.8s ease-in-out infinite; }
+@keyframes element-pulse { 50% { filter: drop-shadow(0 0 6px var(--element)); } }
+
+/* ===== 演出の部品（#fx-layer の中） ===== */
+.fx-puff, .fx-impact, .fx-ring, .fx-debris, .fx-ember, .fx-mote, .fx-plus, .fx-coin, .fx-status-stamp, .fx-target-shadow, .shot-charge { position: absolute; pointer-events: none; }
+.fx-puff .asset-art, .fx-status-stamp .asset-art { display: block; width: 100%; height: 100%; }
+.fx-puff .asset-image, .fx-status-stamp .asset-image { width: 100%; height: 100%; object-fit: contain; }
+.fx-puff .asset-wait, .fx-status-stamp .asset-wait { display: none; }
+.fx-impact svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.fx-impact { filter: drop-shadow(0 2px 0 rgba(74, 46, 26, .25)); }
+.fx-ring { border: 5px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px rgba(74, 46, 26, .35), inset 0 0 0 2px rgba(74, 46, 26, .2); }
+.fx-debris { border: 2px solid var(--ink); border-radius: 30% 45% 35% 50%; }
+.fx-ember { border-radius: 50%; background: radial-gradient(circle, #fff6b0 20%, #ffb03d 55%, #f2622e); box-shadow: 0 0 6px #ff9a3d; }
+.fx-mote { width: 9px; height: 9px; border-radius: 50%; background: #fff; box-shadow: 0 0 7px 3px #c578f4; }
+.fx-plus { font-family: var(--head); font-size: 22px; line-height: 1; color: #8dffa0; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; }
+.fx-coin { width: 26px; height: 26px; font-size: 24px; line-height: 1; }
+.fx-coin > * { width: 100%; height: 100%; }
+.fx-target-shadow { width: 120px; height: 62px; border: 4px dashed #e2574c; border-radius: 50%; background: radial-gradient(ellipse, rgba(120, 30, 20, .55), rgba(120, 30, 20, .1) 70%); }
+.shot-charge { z-index: 41; width: 20px; height: 20px; border-radius: 50%; background: #fff4ff; box-shadow: 0 0 10px 5px #c578f4, 0 0 22px 8px #8a58db; }
+/* 矢：うしろに風の筋を引く */
+.shot-arrow::before { content: ""; position: absolute; right: 100%; top: 0; width: 26px; height: 3px; border-radius: 2px; background: linear-gradient(90deg, transparent, rgba(255, 255, 255, .9)); }
+.fx-bolt.sprite-fx { transform-origin: 50% 0; scale: var(--bolt-w, 1) 1; }
+.fx-number.weak { color: #ff9a3d; }
+.fx-banner.threat { color: #ffb8a8; }
+
+/* ===== 城 ===== */
+/* HP の看板：減ったらガタッと揺れて赤く、増えたらふわっと光る */
+.castle-hp.hp-down { animation: hp-down .34s ease-out; }
+.castle-hp.hp-up { animation: hp-up .5s ease-out; }
+@keyframes hp-down {
+  0% { transform: translateX(0); filter: none; }
+  15% { transform: translateX(-5px) rotate(-3deg); filter: brightness(1.5) saturate(1.6) hue-rotate(-18deg); }
+  35% { transform: translateX(5px) rotate(3deg); }
+  55% { transform: translateX(-3px) rotate(-1.5deg); }
+  75% { transform: translateX(2px); }
+}
+@keyframes hp-up { 30% { transform: scale(1.1); filter: brightness(1.25) drop-shadow(0 0 8px #5fe07a); } }
+/* いたんだ城から、けむりが上がる（絵の上に重ねる） */
+.castle[data-damage="2"] .castle-pic::before, .castle[data-damage="3"] .castle-pic::before {
+  content: "";
+  position: absolute;
+  left: 52%;
+  top: -6%;
+  width: 34%;
+  aspect-ratio: 1;
+  z-index: 2;
+  background: url("../assets/fx/dust.png") center / contain no-repeat;
+  filter: grayscale(1) brightness(.55);
+  animation: castle-smoke 2.6s ease-out infinite;
+  pointer-events: none;
+}
+.castle[data-damage="3"] .castle-pic::before { left: 26%; width: 46%; animation-duration: 2s; }
+@keyframes castle-smoke {
+  0% { transform: translateY(40%) scale(.4) rotate(0deg); opacity: 0; }
+  25% { opacity: .75; }
+  100% { transform: translate(18%, -70%) scale(1.25) rotate(50deg); opacity: 0; }
+}
+/* 手番の城：名札がふわっと上下する */
+.castle.current .castle-label { animation: label-float 1.8s ease-in-out infinite; }
+@keyframes label-float { 0%, 100% { transform: scale(1.06) translateY(0); } 50% { transform: scale(1.06) translateY(-3px); } }
+/* 精霊のバッジ：ゆらゆら浮く */
+.castle-spirit:not([hidden]) { animation: spirit-float 2.4s ease-in-out infinite; }
+@keyframes spirit-float { 50% { transform: translateY(-3px) rotate(-2deg); } }
+
+/* ===== 対戦のはじまり：城が地面からせり上がり、道がのびる ===== */
+#app.match-intro .castle-pic { animation: castle-rise .7s cubic-bezier(.3, 1.4, .5, 1) both; }
+#app.match-intro #castle-opp .castle-pic { animation-delay: .12s; }
+#app.match-intro .castle-hp, #app.match-intro .castle-side { animation: slide-up .45s ease-out .35s both; }
+#app.match-intro #road .lane { animation: lane-unroll .5s cubic-bezier(.2, .8, .3, 1) both; transform-origin: 50% 100%; }
+#app.match-intro #road .lane:nth-child(2) { animation-delay: .08s; }
+#app.match-intro #road .lane:nth-child(3) { animation-delay: .16s; }
+#app.match-intro #road .lane:nth-child(n+4) { animation-delay: .24s; }
+#app.match-intro #hand .card { animation: card-deal .42s cubic-bezier(.3, 1.3, .5, 1) both; animation-delay: calc(.3s + var(--i, 0) * .06s); }
+@keyframes castle-rise {
+  0% { transform: translateY(60%) scale(.5, .3); opacity: 0; }
+  60% { transform: translateY(-4%) scale(.96, 1.08); opacity: 1; }
+  80% { transform: scale(1.05, .94); }
+}
+@keyframes slide-up { from { transform: translateY(10px); opacity: 0; } }
+@keyframes lane-unroll { from { transform: scaleY(0); opacity: 0; } }
+@keyframes card-deal { from { transform: translateY(120%) rotate(8deg); opacity: 0; } }
+#hand .card:nth-child(1) { --i: 0; } #hand .card:nth-child(2) { --i: 1; } #hand .card:nth-child(3) { --i: 2; }
+#hand .card:nth-child(4) { --i: 3; } #hand .card:nth-child(5) { --i: 4; } #hand .card:nth-child(6) { --i: 5; }
+#hand .card:nth-child(7) { --i: 6; } #hand .card:nth-child(n+8) { --i: 7; }
+
+/* ===== UI の手応え ===== */
+/* ボタン：押すと沈み、離すとはね返る */
+.plank-btn:not(:disabled):active, .small-btn:not(:disabled):active, .round-btn:not(:disabled):active { transform: translateY(2px) scale(.95); transition-duration: .05s; }
+.round-btn, .small-btn, .plank-btn, .chip { transition: transform .22s cubic-bezier(.3, 1.8, .5, 1), box-shadow .18s ease, filter .18s ease, background .18s ease; }
+@media (hover: hover) {
+  .plank-btn:not(:disabled):hover, .small-btn:not(:disabled):hover, .round-btn:not(:disabled):hover { transform: translateY(-2px); }
+  /* カード：マウスをのせると少し浮いて、こちらへ傾く */
+  #hand .card:not(.selected):not(.dim):hover { transform: translateY(-7px) rotate(-1.5deg); z-index: 2; }
+}
+#hand .card:active { transform: translateY(-3px) scale(.96); transition-duration: .06s; }
+/* 選んだカード：持ち上がって、ゆっくり上下する（「これを使う」が分かる） */
+#hand .card.selected { animation: card-hold 1.5s ease-in-out infinite; }
+@keyframes card-hold { 0%, 100% { transform: translateY(-12px) rotate(0deg); } 50% { transform: translateY(-16px) rotate(-1.2deg); } }
+/* 出せるカード：ときどき光がよぎる（出せないカードは暗いまま） */
+#hand .card:not(.dim):not(.selected):not(.discard-pick)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  background: linear-gradient(110deg, transparent 38%, rgba(255, 255, 255, .55) 50%, transparent 62%) no-repeat;
+  background-size: 250% 100%;
+  background-position: 160% 0;
+  animation: card-glint 4.5s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * .18s);
+  pointer-events: none;
+}
+@keyframes card-glint { 0%, 70% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
+/* 数が変わったチップ（山札・コイン）：はずむ */
+.bump { animation: bump-pop .36s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes bump-pop { 0% { transform: scale(1); } 30% { transform: scale(1.3) rotate(-4deg); } 60% { transform: scale(.94) rotate(2deg); } 100% { transform: scale(1); } }
+/* パネル（カードの説明・対象選び・捨てる）：下からはね上がる */
+.panel:not([hidden]) { animation: panel-pop .26s cubic-bezier(.3, 1.4, .5, 1) both; }
+@keyframes panel-pop { from { transform: translateY(14px) scale(.96); opacity: 0; } }
+/* 画面の切り替え：かぶさる画面はふわっと、箱は少し遅れてはね上がる */
+.screen:not([hidden]):not(#handover) { animation: screen-in .28s ease-out both; }
+.screen:not([hidden]) > .screen-box { animation: box-in .42s cubic-bezier(.3, 1.4, .5, 1) .05s both; }
+@keyframes screen-in { from { opacity: 0; } }
+@keyframes box-in { from { transform: translateY(26px) scale(.92); opacity: 0; } }
+#title:not([hidden]), #loading { animation: none; }
+/* 対象を選ぶ道：矢印が流れて「ここに出せる」と分かる */
+.lane.targetable::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, transparent 0 26px, rgba(255, 255, 255, .42) 26px 34px);
+  -webkit-mask: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  mask: linear-gradient(transparent, #000 30%, #000 70%, transparent);
+  animation: lane-flow .9s linear infinite;
+  pointer-events: none;
+}
+@keyframes lane-flow { from { background-position: 0 34px; } to { background-position: 0 0; } }
+/* 魔物の出る場所：魔法陣がゆっくり息づく */
+#road .cell.mid .stone { animation: rune-pulse 3.2s ease-in-out infinite; }
+@keyframes rune-pulse { 50% { box-shadow: 0 3px 0 #ae955c, 0 0 0 5px rgba(158, 132, 180, .28), 0 0 14px rgba(158, 132, 180, .6); transform: scale(1.05); } }
+
+/* ===== 勝敗の画面：順番に出て、勝ちは派手に、負けは静かに ===== */
+#result:not([hidden]) .result-crown { animation: crown-slam .7s cubic-bezier(.2, 1.5, .4, 1) .1s both, bob2 1.8s ease-in-out .9s infinite; }
+@keyframes crown-slam {
+  0% { transform: translateY(-160px) scale(2) rotate(-14deg); opacity: 0; }
+  55% { transform: translateY(6px) scale(.94, 1.06) rotate(3deg); opacity: 1; }
+  75% { transform: translateY(0) scale(1.08, .92) rotate(-1deg); }
+}
+#result:not([hidden]) .result-pic { animation: result-pic-in .6s cubic-bezier(.3, 1.4, .5, 1) .3s both; }
+@keyframes result-pic-in { from { transform: translateY(40px) scale(.6); opacity: 0; } }
+#result:not([hidden]):not(.lost) .result-illustration { animation: victory-bounce 1.2s ease-in-out 1s infinite; transform-origin: 50% 90%; }
+@keyframes victory-bounce {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  20% { transform: translateY(0) scale(1.04, .95); }
+  45% { transform: translateY(-9px) scale(.98, 1.03) rotate(-1.5deg); }
+  70% { transform: translateY(0) scale(1.03, .97); }
+}
+#result:not([hidden]) .result-title { animation: title-slam .5s cubic-bezier(.2, 1.6, .4, 1) .5s both; }
+@keyframes title-slam { 0% { transform: scale(2.6); opacity: 0; } 60% { transform: scale(.92); opacity: 1; } }
+#result:not([hidden]) .result-sub, #result:not([hidden]) #result-encouragement, #result:not([hidden]) #match-stats { animation: slide-up .4s ease-out .8s both; }
+#result:not([hidden]) button { animation: slide-up .4s ease-out 1s both; }
+#result:not([hidden]) button + button { animation-delay: 1.1s; }
+/* 負け：絵がしょんぼり沈み、雲が流れる（次へ気持ちを向けるため、長くしない） */
+#result.lost:not([hidden]) .result-pic { animation: result-pic-in .6s ease-out .3s both; }
+#result.lost:not([hidden]) .result-illustration { animation: defeat-sag 3.2s ease-in-out 1s infinite; transform-origin: 50% 95%; }
+@keyframes defeat-sag { 0%, 100% { transform: rotate(-1.2deg) scale(1, 1); } 50% { transform: rotate(1.2deg) scale(1.015, .975); } }
+#result.lost:not([hidden]) .result-title { animation: title-drop .7s cubic-bezier(.4, 0, .5, 1.3) .5s both; }
+@keyframes title-drop { 0% { transform: translateY(-30px); opacity: 0; } 70% { transform: translateY(4px) rotate(-1.5deg); opacity: 1; } }
+
+/* ===== タイトル：兵士と城が生きている ===== */
+#title .title-unit.left { animation: title-march 1.9s ease-in-out infinite; transform-origin: 50% 90%; }
+#title .title-unit.right { animation: title-march 2.2s ease-in-out -.9s infinite; transform-origin: 50% 90%; }
+@keyframes title-march {
+  0%, 100% { transform: translateY(0) rotate(-3deg) scale(1.03, .97); }
+  25% { transform: translateY(-7%) rotate(0deg) scale(.98, 1.03); }
+  50% { transform: translateY(0) rotate(3deg) scale(1.03, .97); }
+  75% { transform: translateY(-7%) rotate(0deg) scale(.98, 1.03); }
+}
+#title-main .plank-btn { animation: slide-up .4s ease-out both; }
+#title-main .plank-btn:nth-child(2) { animation-delay: .07s; }
+#title-main .plank-btn:nth-child(3) { animation-delay: .14s; }
+#title-main .plank-btn:nth-child(n+4) { animation-delay: .21s; }
+
+/* ===== 背景の小さな動き ===== */
+.ambient { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+html.at-title .ambient { display: none; }
+/* 雲の影が、草原をゆっくり横切る */
+.cloud-shadow {
+  position: absolute;
+  left: -70%;
+  top: 14%;
+  width: 62%;
+  height: 26%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(40, 70, 60, .16), transparent 68%);
+  animation: cloud-drift 46s linear infinite;
+}
+.cloud-shadow.second { top: 54%; width: 80%; height: 30%; animation-duration: 64s; animation-delay: -30s; }
+@keyframes cloud-drift { to { transform: translateX(280%); } }
+/* 葉・花びらが、風に乗って流れる */
+.leaf { position: absolute; left: -24px; width: var(--size, 12px); height: var(--size, 12px); animation: leaf-drift var(--dur, 18s) linear var(--delay, 0s) infinite; }
+.leaf b {
+  display: block;
+  width: 100%;
+  height: 62%;
+  border: 2px solid rgba(74, 46, 26, .6);
+  border-radius: 80% 10% 80% 10%;
+  background: linear-gradient(135deg, #b9e07a, #6fb24a);
+  animation: leaf-tumble 2.6s ease-in-out infinite;
+}
+.leaf.petal b { border-radius: 60% 60% 60% 10%; background: linear-gradient(135deg, #fff5d0, #ffd27a); animation-duration: 3.4s; }
+@keyframes leaf-drift {
+  0% { transform: translate(0, 0); opacity: 0; }
+  6% { opacity: .9; }
+  50% { transform: translate(55vw, calc(var(--drop, 60px) * .7)); }
+  94% { opacity: .9; }
+  100% { transform: translate(min(110vw, 560px), var(--drop, 60px)); opacity: 0; }
+}
+@keyframes leaf-tumble {
+  0%, 100% { transform: rotate(-25deg) scaleY(1) translateY(0); }
+  30% { transform: rotate(40deg) scaleY(.5) translateY(-6px); }
+  60% { transform: rotate(120deg) scaleY(1) translateY(5px); }
+  80% { transform: rotate(60deg) scaleY(.6) translateY(-3px); }
+}
+
+/* 早送り中は、盤面の待機の動きも止めない（すぐ元に戻るため）。演出の部品だけ消す */
+#app.skipping .fx-puff, #app.skipping .fx-impact, #app.skipping .fx-ring, #app.skipping .fx-debris, #app.skipping .fx-ember, #app.skipping .fx-mote, #app.skipping .fx-plus, #app.skipping .fx-coin { display: none; }

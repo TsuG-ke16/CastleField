@@ -11,6 +11,7 @@ import { RARITY_NAMES } from './rarity.js';
 import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
 import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite } from './art.js';
+import { soldierMotion, monsterMotion } from './motion.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -448,9 +449,31 @@ export class Renderer {
       castle.querySelector('.castle-pic').innerHTML = this.castlePicture(playerId, Number(damage));
     }
     castle.dataset.damage = damage;
-    castle.querySelector('.hp-value').textContent = String(Math.max(0, hp));
+    this.rollHp(castle, Math.max(0, hp), instant);
     castle.querySelector('.hp-max').textContent = `/${maxHp}`;
     this.updateThreatWarnings();
+  }
+
+  /** 城HPの数字を、前の値から今の値まで数えて見せる（減った・増えたが目で追える） */
+  rollHp(castle, to, instant) {
+    const el = castle.querySelector('.hp-value');
+    const from = Number(el.textContent);
+    cancelAnimationFrame(castle._hpRoll);
+    const quiet = instant || !Number.isFinite(from) || from === to || UI_CONFIG.reducedMotion || UI_CONFIG.speed === 0 || this.el.app.classList.contains('skipping');
+    if (quiet) { el.textContent = String(to); return; }
+    const ms = Math.min(520, 160 + Math.abs(to - from) * 22);
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / ms);
+      el.textContent = String(Math.round(from + (to - from) * (1 - (1 - k) ** 3)));
+      if (k < 1 && !this.el.app.classList.contains('skipping')) castle._hpRoll = requestAnimationFrame(step);
+      else el.textContent = String(to);
+    };
+    castle._hpRoll = requestAnimationFrame(step);
+    const sign = castle.querySelector('.castle-hp');
+    sign.classList.remove('hp-down', 'hp-up');
+    void sign.offsetWidth;
+    sign.classList.add(to < from ? 'hp-down' : 'hp-up');
   }
 
   /** 城壁（armor）の表示 */
@@ -539,6 +562,8 @@ export class Renderer {
     el.dataset.id = st.soldierId;
     el.tabIndex=0;el.setAttribute('role','button');
     el.dataset.role = st.role ?? def.role ?? 'melee';
+    el.dataset.motion = soldierMotion(st.type, def); // 待機・歩き方・攻撃の型（css/motion.css）
+    el.style.setProperty('--idle-delay', `${(-Math.random() * 3).toFixed(2)}s`); // 全員が同じ拍で動かないように
     const team = this.players[playerId]?.team;
     el.dataset.team = team ?? '';
     el.style.setProperty('--team-color', UI_CONFIG.teamColors[team] ?? UI_CONFIG.teamColors[this.playerOrder.indexOf(playerId)]);
@@ -714,6 +739,7 @@ export class Renderer {
     const el = document.createElement('div');
     el.className = 'monster';
     el.dataset.id = st.monsterId;
+    el.dataset.motion = monsterMotion(st.type);
     el.tabIndex=0;el.setAttribute('role','button');
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="monster-token"><div class="monster-pic"></div>' +
