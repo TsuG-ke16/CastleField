@@ -215,7 +215,7 @@ body { position: fixed; inset: 0; height: auto; }
 #opp-name { display: none; }
 
 /* --- 下の操作：案内文・手札の枚数・カードの説明文は出さない --- */
-.hand-toolbar, .detail-desc, .detail-kind, .detail-hint:not(.warn) { display: none !important; }
+.detail-desc, .detail-kind, .detail-hint:not(.warn) { display: none !important; }
 #message {
   position: absolute;
   left: 10px;
