@@ -357,3 +357,7 @@ OpenAI image generation、STYLE.mdの共通指示文と `assets/style-reference.
 すべてPNG・1ファイル300KB以下。
 
 - `ui/natural/{primary,neutral}-wide-full.png`: 生成元 `exec-3d21dc1d-316b-49bf-b7a1-6c383cbd3523.png`。大型モード選択専用に同じ形状・約4:1で再生成。余白を整え、縦横比を保った縮小とcontain表示のみ。
+
+## カード枠の切り抜きの修正（2026-11-17）
+
+- `cards/frame-{common,uncommon,rare,epic,legendary,special}.png`：生成元の背景（生成りの紙色）が枠の外に残っていたのを、Pillow で外側から背景色だけ透明にした。本体とつながっていない紙色の小さなかけらも消した。256色パレットで圧縮（各110KB以下）。描き足し・色替えなし。出どころ・ライセンスは上の各行と同じ。
