@@ -216,10 +216,13 @@ export class HandView {
     if (mpCost > 0) {
       const badge = document.createElement('span');
       badge.className = 'card-mp';
-      badge.textContent = `✦${mpCost}`;
+      badge.innerHTML = `${icon('mp')}<b>${mpCost}</b>`;
       badge.title = `MP ${mpCost} を使います`;
       el.appendChild(badge);
       el.setAttribute('aria-label', `${el.getAttribute('aria-label')}（MP${mpCost}）`);
+    }
+    if (def.effect === 'gainMp') {
+      const mark = document.createElement('span'); mark.className = 'mana-recovery'; mark.textContent = `MP +${def.amount}`; el.append(mark);
     }
     if (isNew) el.classList.add('new');
     this.applyCardClasses(el);
@@ -333,6 +336,7 @@ export class HandView {
   updateDetail() {
     const card = this.hand.find((c) => c.cardId === this.selectedId);
     if (!card || this.discardCount) {
+      this.onMpSelect?.(0);
       this.el.detail.hidden = true;
       return;
     }

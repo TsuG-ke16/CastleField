@@ -10,7 +10,7 @@ import { UI_CONFIG } from './config.js';
 import { RARITY_NAMES } from './rarity.js';
 import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
-import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite } from './art.js';
+import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt } from './art.js';
 import { soldierMotion, monsterMotion } from './motion.js';
 
 const $ = (id) => document.getElementById(id);
@@ -52,6 +52,8 @@ export class Renderer {
     this.players = {};
     this.castles = new Map();
     this.zoom = 1;
+    this.monsterBirths = new Map();
+    this.weaponStacks = new Map();
 
     this.el = {
       app: $('app'),
@@ -206,6 +208,7 @@ export class Renderer {
   ownerOf(id) { return this.players[id]?.castleOwner ?? id; }
 
   castlePicture(id, damage = 0) {
+    if (this.players[id]?.eliminated || Number(this.castleEl(id)?.dataset.hp) === 0) return castleArt(colorOf(id), 4);
     const size = this.teamSize(id);
     const tier = UI_CONFIG.castleTiers.filter(t => size >= t.min).at(-1);
     const art = castleArt(colorOf(this.ownerOf(id)), damage, this.players[this.ownerOf(id)]?.castleType);
@@ -214,6 +217,9 @@ export class Renderer {
   teamSize(id) { return this.teams?.[this.players[id]?.team]?.size ?? (Object.values(this.players).filter(p => p.castleOwner === this.ownerOf(id)).length || 1); }
 
   configureBoard(model) {
+    if (this.previousTurn > model.turn) { this.monsterBirths.clear(); this.weaponStacks.clear(); }
+    this.previousTurn = model.turn;
+    this.round = model.round;
     this.players = model.players;
     this.teams = model.teams;
     this.playerOrder = model.playerOrder;
@@ -231,6 +237,8 @@ export class Renderer {
       this.el.field.hidden = this.isPlaza;
       if (this.isPlaza) {
         this.zoom = 1;
+    this.monsterBirths = new Map();
+    this.weaponStacks = new Map();
         this.plazaSize = this.owners.length <= 4 ? UI_CONFIG.plazaSizeCompact : UI_CONFIG.plazaSize;
         this.plazaStage.style.width = this.plazaStage.style.height = `${this.plazaSize}px`;
         this.plazaStage.append(this.el.units);
@@ -279,6 +287,10 @@ export class Renderer {
       castle.setAttribute('aria-label',`席${model.playerOrder.indexOf(id)+1}、${label}、${kindName}`);
       castle.querySelector('.castle-label').title = label;
       castle.classList.toggle('eliminated', Boolean(this.players[id]?.eliminated));
+      if (this.players[id]?.eliminated) {
+        castle.querySelector('.castle-label').textContent += ' · 脱落';
+        castle.querySelector('.castle-pic').innerHTML = castleArt(colorOf(id), 4);
+      }
       const tier = UI_CONFIG.castleTiers.filter(t => members.length >= t.min).at(-1);
       if (castle.dataset.tier !== tier.name || castle.dataset.artColor !== colorOf(id) || castle.dataset.artKind !== (kind??'standard')) {
         castle.dataset.artKind=kind??'standard';
@@ -423,6 +435,11 @@ export class Renderer {
     this.el.oppMp.hidden = !on;
     if (!on) return;
     if (playerId === this.viewerId) {
+      const meter = this.el.myMp.querySelector('.mp-track');
+      meter.setAttribute('aria-valuemax', String(this.maxMp));
+      meter.setAttribute('aria-valuenow', String(mp ?? 0));
+      meter.querySelector('.mp-fill').style.width = `${Math.min(100, Math.max(0, (mp ?? 0) / this.maxMp * 100))}%`;
+      this.el.myMp.classList.toggle('mp-low', (mp ?? 0) < this.maxMp / 4);
       $('my-mp-value').textContent = String(mp ?? 0);
       $('my-mp-max').textContent = String(this.maxMp);
       if (bump) this.bump(this.el.myMp);
@@ -432,6 +449,10 @@ export class Renderer {
     } else {
       this.el.oppMp.hidden = true; // 3人以上は、相手のMPは出さない
     }
+  }
+
+  showMpShortage(amount = 0) {
+    this.el.myMp.querySelector('.mp-shortage').textContent = amount > 0 ? `あと${amount}足りない` : '';
   }
 
   coinEl(playerId) {
@@ -640,7 +661,12 @@ export class Renderer {
     s.el.classList.toggle('has-element', Boolean(look));
     const weapon = q('.soldier-weapon');
     weapon.hidden = !s.weapon;
+    const stack = this.weaponStacks.get(s.soldierId);
     weapon.innerHTML = s.weapon ? icon(look?.iconName ?? 'sword') : '';
+    if (s.weapon) {
+      const label = document.createElement('b'); label.textContent = stack?.count != null ? `武器×${stack.count} +${stack.bonus}` : '武器あり'; weapon.append(label);
+      s.el.setAttribute('aria-label', `${s.el.getAttribute('aria-label')}、${label.textContent}、${look?.label ?? s.element ?? '属性なし'}`);
+    }
     const shield = q('.soldier-shield');
     shield.hidden = !(s.shield > 0);
     shield.innerHTML = s.shield > 0 ? `${icon('shield')}<b>${Number(s.shield)}</b>` : '';
@@ -817,6 +843,23 @@ export class Renderer {
     if (!reward) { reward = document.createElement('div'); reward.className = 'monster-reward'; m.el.appendChild(reward); }
     reward.textContent = m.rewardRarity ? `${RARITY_NAMES[m.rewardRarity] ?? m.rewardRarity}カード` : `コイン${m.reward ?? 0}`;
     attackIn.classList.toggle('soon', soon);
+    const count = m.evolveCount ?? 0;
+    m.el.dataset.evolved = String(Math.min(3, count));
+    m.el.dataset.rarity = m.rewardRarity ?? 'common';
+    const colors = { common: '#a99c87', uncommon: '#52ad78', rare: '#529ce1', epic: '#b074d4', legendary: '#dbab32' };
+    m.el.style.setProperty('--reward-color', colors[m.rewardRarity] ?? '#a99c87');
+    let growth = m.el.querySelector('.monster-growth');
+    if (!growth) { growth = document.createElement('div'); growth.className = 'monster-growth'; m.el.append(growth); }
+    const every = this.rules.monsterEvolveEvery ?? 0;
+    const born = this.monsterBirths.get(monsterId);
+    const remaining = born == null ? null : every - ((Math.max(0, (this.round ?? born) - born)) % every);
+    growth.textContent = `成長${count}回${every > 0 ? remaining == null ? ` · ${every}周ごと` : ` · あと${remaining}周で成長` : ' · 成長なし'}`;
+    m.el.setAttribute('aria-label', `${m.el.getAttribute('aria-label')}、${growth.textContent}、報酬${reward.textContent}`);
+    let aura = m.el.querySelector('.monster-aura');
+    if (!aura) { aura = document.createElement('span'); aura.className = 'monster-aura'; m.el.prepend(aura); }
+    const stage = Math.min(3, count);
+    if (aura.dataset.stage !== String(stage)) { aura.dataset.stage = String(stage); aura.innerHTML = stage ? imageArt(`fx/evolve-${stage}.png`) : ''; }
+
   }
 
   updateThreatWarnings() {

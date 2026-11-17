@@ -315,3 +315,20 @@ OpenAI画像生成ツールで本ゲーム用に11種類を1枚の4×3シート�
 | `ui/icon-rarity-legendary.png` | 同上 | 同上 | 2026-11-17 |
 
 `review/card-icons/*.png` と更新した `review/adapt-art/*.png`：2026-11-17、Playwright同梱Chromium・390×844で本ゲームと実寸一覧を撮影。確認画像のみPillowでパレット圧縮。ゲーム内素材の利用条件は本ファイル各項を参照。
+
+## MP・成長・降参の素材（2026-11-18）
+
+OpenAI image generation で assets/STYLE.md の共通指示文に沿って生成したオリジナル素材。外部配布素材の使用なし。利用条件: OpenAI Terms of Use（生成出力）。生成元: `exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png`。アトラスから分割、透明PNG・512×512・各300KB以下。
+
+- `cards/card-mana-shard.png`
+- `cards/card-mana-drop.png`
+- `cards/card-mana-crystal.png`
+- `cards/card-mana-spring.png`
+- `cards/card-world-tree-dew.png`
+- `ui/icon-mp.png`
+- `ui/icon-luck.png`
+- `fx/evolve-1.png`
+- `fx/evolve-2.png`
+- `fx/evolve-3.png`
+- `castles/castle-blue-ruined.png`
+- `castles/castle-orange-ruined.png`
