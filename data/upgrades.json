@@ -10,7 +10,7 @@
   "ticketUncommon": {"name": "アンコモン入手券", "effect": "gainCard", "amount": 1, "rarity": "uncommon", "cost": 3, "limit": 3, "description": "アンコモンのカードを1枚、手札に加える"},
   "ticketRare": {"name": "レア入手券", "effect": "gainCard", "amount": 1, "rarity": "rare", "cost": 7, "limit": 2, "description": "レアのカードを1枚、手札に加える"},
   "ticketEpic": {"name": "エピック入手券", "effect": "gainCard", "amount": 1, "rarity": "epic", "cost": 15, "limit": 1, "description": "エピックのカードを1枚、手札に加える"},
-  "ticketLegendary": {"name": "レジェンド入手券", "effect": "gainCard", "amount": 1, "rarity": "legendary", "cost": 35, "limit": 1, "description": "レジェンドのカードを1枚、手札に加える"},
+  "ticketLegendary": {"name": "レジェンド入手券", "effect": "gainCard", "amount": 1, "rarity": "legendary", "cost": 25, "limit": 1, "description": "レジェンドのカードを1枚、手札に加える"},
   "superRepair": {"name": "超修理", "effect": "repairCastle", "amount": 20, "cost": 20, "limit": 1},
   "hugeRecruit": {"name": "大量補充", "effect": "drawCards", "amount": 5, "cost": 12, "limit": 1},
   "training": {"name": "訓練", "effect": "trainArmy", "amount": 1, "cost": 3, "limit": 3, "description": "自分の兵士全員（これから出す兵士も）の攻撃がずっと+1"},
