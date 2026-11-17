@@ -20,6 +20,7 @@ export const EFFECTS = {
     randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
     stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
     gainCoins: ['amount'], // コインを増やす
+    gainMp: ['amount'], // マナ回復：MP を増やす（上限を超えたぶんは捨てる）
     wild: [], // 適応：どのカードとでも合成できる（出せない。合成専用）
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
   },
@@ -35,7 +36,10 @@ export const EFFECTS = {
 export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers'];
 
 /** 攻撃ではない魔法（精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
-export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins'];
+export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp'];
+
+/** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers', 'summonSpirit'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
@@ -122,6 +126,7 @@ export class Card {
           if (cards[def.fuseTo].rarity !== next) throw new Error(`${where}: fuseTo は1つ上のレアリティ（${next}）のカードにしてください`);
         }
       }
+      if (def.mpCost !== undefined && !isCount(def.mpCost)) throw new Error(`${where}: mpCost は0以上の整数にしてください（書かなければレアリティで決まる）`);
       if (def.exhaust !== undefined && typeof def.exhaust !== 'boolean') {
         throw new Error(`${where}: exhaust は true か false にしてください（書かなければ false）`);
       }

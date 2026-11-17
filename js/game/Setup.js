@@ -72,6 +72,7 @@ export function validateRarities(rarities) {
     const where = `rarities.json の "${id}"`;
     if (!def || typeof def.name !== 'string' || def.name === '') throw new Error(`${where}: name を書いてください`);
     if (typeof def.dropRate !== 'number' || def.dropRate < 0) throw new Error(`${where}: dropRate は0以上の数（%）にしてください`);
+    if (def.mpCost !== undefined && !(Number.isInteger(def.mpCost) && def.mpCost >= 0)) throw new Error(`${where}: mpCost は0以上の整数にしてください`);
     if (def.special !== undefined && typeof def.special !== 'boolean') throw new Error(`${where}: special は true か false にしてください`);
     total += def.dropRate;
   }

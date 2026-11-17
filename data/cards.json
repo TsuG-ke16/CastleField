@@ -5,7 +5,7 @@
   "giant": {"name": "巨人", "kind": "soldier", "hp": 13, "attack": 9, "speed": 2, "count": 1, "rarity": "epic", "fuseTo": "hero", "weight": 0.5},
   "hero": {"name": "勇者", "kind": "soldier", "hp": 16, "attack": 12, "speed": 3, "count": 0, "rarity": "legendary", "weight": 0.5},
   "scout": {"name": "斥候騎兵", "kind": "soldier", "hp": 3, "attack": 4, "speed": 4, "count": 2, "rarity": "common", "fuseTo": "cavalry", "weight": 1},
-  "cavalry": {"name": "騎兵", "kind": "soldier", "hp": 4, "attack": 5, "speed": 4, "count": 2, "rarity": "uncommon", "fuseTo": "knight", "weight": 0.75},
+  "cavalry": {"name": "騎兵", "kind": "soldier", "hp": 4, "attack": 5, "speed": 3, "count": 2, "rarity": "uncommon", "fuseTo": "knight", "weight": 0.75},
   "knight": {"name": "騎士", "kind": "soldier", "hp": 5, "attack": 7, "speed": 5, "count": 1, "rarity": "rare", "fuseTo": "paladin", "weight": 0.5},
   "paladin": {"name": "聖騎士", "kind": "soldier", "hp": 8, "attack": 8, "speed": 5, "count": 1, "rarity": "epic", "fuseTo": "dragonKnight", "weight": 0.5},
   "dragonKnight": {"name": "竜騎士", "kind": "soldier", "hp": 10, "attack": 10, "speed": 5, "count": 0, "rarity": "legendary", "weight": 0.5},
@@ -84,5 +84,10 @@
   "goldCoin": {"name": "金貨", "kind": "spell", "effect": "gainCoins", "amount": 3, "count": 0, "rarity": "uncommon", "fuseTo": "treasure", "description": "コインを3枚もらう。コインは強化の購入に使える"},
   "treasure": {"name": "財宝", "kind": "spell", "effect": "gainCoins", "amount": 8, "count": 0, "rarity": "rare", "fuseTo": "goldVein", "description": "コインを8枚もらう。コインは強化の購入に使える"},
   "goldVein": {"name": "金脈", "kind": "spell", "effect": "gainCoins", "amount": 20, "count": 0, "rarity": "epic", "fuseTo": "kingTreasure", "description": "コインを20枚もらう。コインは強化の購入に使える"},
-  "kingTreasure": {"name": "王の財宝", "kind": "spell", "effect": "gainCoins", "amount": 50, "count": 0, "rarity": "legendary", "description": "コインを50枚もらう。コインは強化の購入に使える"}
+  "kingTreasure": {"name": "王の財宝", "kind": "spell", "effect": "gainCoins", "amount": 50, "count": 0, "rarity": "legendary", "description": "コインを50枚もらう。コインは強化の購入に使える"},
+  "manaShard": {"name": "魔力のかけら", "kind": "spell", "effect": "gainMp", "amount": 1, "count": 0, "rarity": "common", "fuseTo": "manaDrop", "description": "MPを1回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
+  "manaDrop": {"name": "魔力のしずく", "kind": "spell", "effect": "gainMp", "amount": 2, "count": 0, "rarity": "uncommon", "fuseTo": "manaCrystal", "description": "MPを2回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
+  "manaCrystal": {"name": "魔力の水晶", "kind": "spell", "effect": "gainMp", "amount": 5, "count": 0, "rarity": "rare", "fuseTo": "manaSpring", "description": "MPを5回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
+  "manaSpring": {"name": "魔力の泉", "kind": "spell", "effect": "gainMp", "amount": 10, "count": 0, "rarity": "epic", "fuseTo": "worldTreeDew", "description": "MPを10回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
+  "worldTreeDew": {"name": "世界樹のしずく", "kind": "spell", "effect": "gainMp", "amount": 20, "count": 0, "rarity": "legendary", "description": "MPを20回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"}
 }

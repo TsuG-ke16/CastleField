@@ -5,6 +5,8 @@
 // - 演出中は操作を受け付けない（画面タップで演出を飛ばせる）
 // UI はゲームの状態を直接書き換えない。セッション（js/ui/Session.js）のメソッドだけを使う。
 
+import { setupMaterialSkin } from './ui/MaterialSkin.js';
+import { BattleLayout } from './ui/BattleLayout.js';
 import { renderHelp } from './ui/HelpView.js';
 import { setupAccessibility } from './ui/Accessibility.js';
 import { MatchStats } from './ui/MatchStats.js';
@@ -73,6 +75,8 @@ const el = {
   netLeave: $('net-leave'),
 };
 
+const battleLayout = new BattleLayout();
+setupMaterialSkin();
 const matchStats = new MatchStats();
 const tutorial = new Tutorial();
 let replayTutorial = false;
@@ -156,7 +160,7 @@ async function loadOptionalJson(path) {
   }
 }
 
-function uiContext() { return { session, viewerId, busy, sending, luckFrom: upgrades?.luck?.fromRarity }; }
+function uiContext() { return { session, viewerId, busy, sending, luckFrom: upgrades?.luck?.fromRarity, permLuckFrom: upgrades?.permLuck?.fromRarity }; }
 
 // 読み込み中の画面：進み具合を出して、起動が終わったら消す
 function setLoading(ratio, text) {
@@ -395,8 +399,9 @@ function setTitleWaiting(waiting) {
 function setHandVisible(visible) {
   if (!visible) handView?.select(null);
   el.controls.classList.toggle('hand-hidden', !visible);
-  el.handToggle.textContent = visible ? '手札 ▾' : '手札 ▴';
+  el.handToggle.textContent = visible ? '手札を隠す' : '手札を開く';
   el.handToggle.setAttribute('aria-expanded', String(visible));
+  el.handToggle.setAttribute('aria-label', visible ? '手札を隠す' : '手札を開く');
 }
 
 function setupMenu() {
@@ -413,7 +418,8 @@ function setupMenu() {
     e.stopPropagation();
     // 降参は、オンラインと CPU 戦の、試合の途中だけ
     const st = session?.getState(viewerId);
-    el.menuSurrender.hidden = !(st && (session.online || cpu) && st.phase !== 'gameOver' && st.phase !== 'ready');
+    el.menuSurrender.hidden = !(st && (session.online || cpu) && st.phase !== 'gameOver' && st.phase !== 'ready' && !st.players[viewerId]?.eliminated);
+    if (st) battleLayout.update(st, viewerId);
     resetSurrenderButton();
     el.menu.hidden = false;
   });
@@ -492,6 +498,10 @@ function stopLocal() {
 /** 新しい試合の前に、画面の持ちものを空にする */
 function resetForNewGame() {
   matchStats.reset();
+  renderer.monsterBirths.clear(); renderer.weaponStacks.clear();
+  $('match-info').open = false;
+  el.app.classList.remove('spectating');
+  document.getElementById('spectator-strip')?.setAttribute('hidden', '');
   gen += 1;
   cancelHandover?.();
   anim.skip();
@@ -868,6 +878,8 @@ function modelFromState(st) {
       armor: p.armor ?? 0,
       spirit: p.spirit ?? null,
       coins: p.coins ?? 0,
+      mp: p.mp ?? 0,
+      permLuck: p.permLuck ? { ...p.permLuck } : null,
       luck: p.luck ? structuredClone(p.luck) : null,
       armyAttack: p.armyAttack ?? 0, armyHp: p.armyHp ?? 0,
       handCount: p.handCount,
@@ -879,6 +891,8 @@ function modelFromState(st) {
   }
   return {
     deckMode:st.deckMode,
+    maxMp: st.maxMp ?? 0,
+    mpCosts: { ...(st.mpCosts ?? {}) },
     layout: st.layout, roads: structuredClone(st.roads ?? []), teams: structuredClone(st.teams ?? null), winnerTeam: st.winnerTeam,
     playerOrder: [...st.playerOrder],
     turn: st.turn,
@@ -989,11 +1003,16 @@ async function settle({ check = true } = {}) {
   // デバッグ：演出で進めた値と本当の状態がずれていないか（ずれていたら console.warn('[sync]', ...)）
   if (DEBUG && check && st.phase !== 'gameOver') checkSync(model, st);
   if (model.gameOverReason === 'castleDestroyed' && lastCastleHit === 'monster') model.gameOverReason = 'monsterDestroyed';
+  handView.mpCosts = st.mpCosts ?? {};
+  handView.onMpSelect = cost => renderer.showMpShortage(Math.max(0, cost - (st.players[viewerId]?.mp ?? 0)));
+  renderer.round = st.round;
+  renderer.showMpShortage();
   model = modelFromState(st);
   renderer.renderAll(model);
   if (st.phase !== 'gameOver') sound.setScene(st.monsters.length ? 'tension' : 'battle');
   renderer.setCurrentPlayer(st.phase === 'gameOver' ? null : st.currentPlayer);
   const me = st.players[viewerId];
+  battleLayout.update(st, viewerId);
   // 手札の表示は並べ替えてあるので、並びではなく、同じカードがそろっているかで比べる
   if (!handView.sameCards(me.hand)) handView.render(me.hand);
   const blocked = playability(st);
@@ -1005,6 +1024,27 @@ async function settle({ check = true } = {}) {
   }
 
   setBusy(false);
+  // 降参・脱落した人は、残りの試合を見守る（操作はできない）
+  const spectating = Boolean(me.eliminated);
+  el.app.classList.toggle('spectating', spectating);
+  let strip = document.getElementById('spectator-strip');
+  if (!strip) {
+    strip = document.createElement('aside'); strip.id = 'spectator-strip'; strip.setAttribute('aria-label', '観戦');
+    strip.innerHTML = '<strong>観戦中</strong><span class="spectator-flow"></span><span class="spectator-seats"></span><button type="button" class="small-btn">タイトルへ</button>';
+    strip.querySelector('button').onclick = () => document.getElementById('menu-title-btn').click();
+    document.getElementById('controls').prepend(strip);
+  }
+  strip.hidden = !spectating;
+  strip.querySelector('.spectator-seats').textContent = st.playerOrder.map((id,i) => `席${i+1} ${playerName(id)}${st.players[id].eliminated ? '：脱落' : '：対戦中'}`).join(' ／ ');
+  strip.querySelector('.spectator-flow').textContent = `${st.round}周目 · ${playerName(st.currentPlayer)}の番 · ${UI_CONFIG.speed === 0 ? '演出スキップ' : UI_CONFIG.speed < 1 ? 'はやい' : 'ふつう'} · タップで早送り`;
+  if (spectating) upgradePanel.setEnabled(false, { reason: '観戦中は強化を買えません' });
+  if (spectating) {
+    el.endTurn.disabled = true;
+    el.endTurn.classList.add('off');
+    handView.exitDiscard();
+    setMessage('');
+    return;
+  }
   refreshUpgrades();
   setEndTurnLabel(st.phase === 'defend' && st.defense?.defenderId === viewerId);
   if (st.phase === 'defend') {
@@ -1032,7 +1072,7 @@ async function settle({ check = true } = {}) {
     handView.exitDiscard();
     el.endTurn.disabled = false;
     el.endTurn.classList.add('off');
-    setMessage(st.phase === 'discard' ? `${playerName(st.currentPlayer)}が手札を捨てています…` : `${playerName(st.currentPlayer)}の番です…`);
+    setMessage(st.phase === 'discard' ? `${playerName(st.currentPlayer)}が手札を捨てています…` : '');
     if (cpu?.ids.includes(st.currentPlayer)) cpuTurn();
     return;
   }
@@ -1110,7 +1150,7 @@ async function cpuTurn() {
   const group = cpu;
   const me = {...group, id: game.getState(null).currentPlayer};
   setBusy(true);
-  setMessage(`${playerName(me.id)}が考えています…`);
+  setMessage('');
   await new Promise((r) => setTimeout(r, UI_CONFIG.cpuThink / Math.max(1, me.ids.length) * UI_CONFIG.speed));
   if (g !== gen || cpu !== group || !game) return; // 待っているあいだに、やめた・やり直した
   try {
@@ -1251,7 +1291,7 @@ function refreshUpgrades() {
   const anyOk = Object.values(status).some((x) => x.ok);
   upgradePanel.setEnabled(myTurn, { highlight: anyOk, reason: why });
   // オンラインでは、つなぎ直すと買った回数が分からないので、残りの回数は出さない
-  if (me) upgradePanel.refresh(me.coins ?? 0, status, session.online ? null : (upgradeCounts[viewerId] ?? {}));
+  if (me) upgradePanel.refresh(me.coins ?? 0, status, session.online ? null : (upgradeCounts[viewerId] ?? {}), me.permLuck);
 }
 
 /** 強化を買えない場面の理由 */

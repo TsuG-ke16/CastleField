@@ -1,0 +1,35 @@
+/* MP・成長の情報は色と文字の両方で伝える。 */
+#my-mp { position:relative; flex-wrap:wrap; gap:3px; min-width:82px; padding-bottom:10px; }
+.mp-track { position:absolute; bottom:3px; left:7px; right:7px; height:5px; border-radius:6px; background:#173653; overflow:hidden; }
+.mp-fill { display:block; height:100%; background:linear-gradient(90deg,#238ce4,#87efff); transition:width .35s ease; box-shadow:0 0 6px #78dbff; }
+.mp-low .mp-fill { background:#e39c48; }
+.mp-shortage { position:absolute; top:100%; right:0; z-index:30; color:#a51f28; background:#fff0dc; border-radius:5px; white-space:nowrap; font-size:12px; font-weight:900; }
+.mp-shortage:not(:empty) { padding:4px 7px; border:1px solid #a51f28; }
+.card-mp { display:flex; align-items:center; gap:2px; }
+.card-mp .ic { width:15px; height:15px; }
+.mana-recovery { position:absolute; bottom:5px; left:50%; transform:translateX(-50%); z-index:8; font-size:11px; font-weight:900; color:#103d65; background:#d7f7ff; border:1px solid #396785; border-radius:5px; padding:1px 4px; white-space:nowrap; }
+.card.can-fuse::after { content:'合成可'; position:absolute; left:3px; top:32px; z-index:9; background:#fff4ca; color:#56351d; border:1px solid #aa853b; border-radius:5px; font-size:10px; font-weight:900; padding:2px 4px; }
+.monster-growth { font-size:10px; line-height:1.4; font-weight:900; white-space:nowrap; color:#543312; background:#fff2cf; border-radius:5px; padding:2px 4px; }
+.monster-reward { border:2px solid var(--reward-color,#a99c87); border-radius:6px; }
+.monster-aura { position:absolute; inset:-25%; pointer-events:none; z-index:-1; }
+.monster-aura .asset-art { width:100%;height:100%; }
+.monster[data-evolved="2"],.monster[data-evolved="3"] { filter:drop-shadow(0 0 5px var(--reward-color)); }
+.soldier-weapon b { font-size:10px; white-space:nowrap; }
+#spectator-strip { display:flex; gap:7px; align-items:center; padding:6px 9px; border:2px solid #9c7c43; background:#fff0ce; border-radius:8px; color:#54361c; font-size:12px; }
+#spectator-strip[hidden] { display:none; }
+#spectator-strip strong { white-space:nowrap; }
+#spectator-strip .spectator-flow { flex:1; }
+#spectator-strip button { min-height:40px; white-space:nowrap; }
+.adapt-fusion { filter:drop-shadow(0 0 18px #7fcbff); background:conic-gradient(from 30deg,transparent,#ff75984d,#ffde644d,#85e9b74d,#95baff4d,transparent); border-radius:50%; }
+@media(max-height:650px) { #spectator-strip { font-size:11px; padding:3px 6px; } }
+@media(prefers-reduced-motion:reduce) { .mp-fill { transition:none; } .monster { filter:none!important; } }
+@media(max-width:430px) {
+  #hud { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px; padding-block:3px; }
+  #hud .hud-opp { grid-column:1; grid-row:1; }
+  #hud .turn-info { grid-column:2; grid-row:1; justify-self:end; }
+  #hud .hud-right { grid-column:1/-1; grid-row:2; justify-content:flex-end; }
+  #my-mp { margin-right:auto; }
+  #menu-open { min-width:40px; min-height:40px; }
+}
+#spectator-strip { flex-wrap:wrap; }
+.spectator-seats { flex:1 0 100%; font-size:10px; order:4; }

@@ -149,9 +149,10 @@ export class HandView {
     const cards = box.querySelectorAll('.card');
     box.style.setProperty('--gap', '8px');
     const count = $('hand-count');
-    if (count) count.textContent = String(cards.length);
+    if (count) count.textContent = `手札 ${cards.length}枚`;
     // 描画直後にも測定できるよう、幅はレイアウト済みの値を使う。
     const overflow = box.scrollWidth > box.clientWidth;
+    const hint = document.querySelector('.hand-scroll-hint'); if (hint) hint.hidden = !overflow;
     this.el.controls.classList.toggle('hand-scrolls', overflow);
   }
 
@@ -169,6 +170,7 @@ export class HandView {
     el.setAttribute('role', 'button');
     el.setAttribute('aria-label', `${def.name}。${cardDescription(def, this.rules, this.textOpts)}`);
     if (def.element) el.dataset.element = def.element;
+    const mpCost = this.mpCosts?.[card.type] ?? 0;
     el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
       '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
     if (def.rarity && this.rarities?.[def.rarity]) {
@@ -211,6 +213,18 @@ export class HandView {
       short.appendChild(span);
     }
     el.title = cardDescription(def, this.rules, this.textOpts);
+    // MP を使うカードは、右上に必要な MP を出す
+    if (mpCost > 0) {
+      const badge = document.createElement('span');
+      badge.className = 'card-mp';
+      badge.innerHTML = `${icon('mp')}<b>${mpCost}</b>`;
+      badge.title = `MP ${mpCost} を使います`;
+      el.appendChild(badge);
+      el.setAttribute('aria-label', `${el.getAttribute('aria-label')}（MP${mpCost}）`);
+    }
+    if (def.effect === 'gainMp') {
+      const mark = document.createElement('span'); mark.className = 'mana-recovery'; mark.textContent = `MP +${def.amount}`; el.append(mark);
+    }
     if (isNew) el.classList.add('new');
     this.applyCardClasses(el);
     return el;
@@ -309,6 +323,7 @@ export class HandView {
   // ---------- 選択と「使う」 ----------
 
   select(cardId) {
+    if (cardId !== this.selectedId) this.el.detail.querySelector('.detail-extra').open = false;
     if (cardId && cardId !== this.selectedId) sound.play('tap');
     this.selectedId = cardId;
     this.refreshClasses();
@@ -323,10 +338,12 @@ export class HandView {
   updateDetail() {
     const card = this.hand.find((c) => c.cardId === this.selectedId);
     if (!card || this.discardCount) {
+      this.onMpSelect?.(0);
       this.el.detail.hidden = true;
       return;
     }
     const def = this.cards[card.type] ?? { name: card.type };
+    this.onMpSelect?.(this.mpCosts?.[card.type] ?? 0);
     const input = UI_CONFIG.input;
     this.el.detailKind.textContent = KIND_LABEL[def.kind] ?? '';
     this.el.detailName.textContent = def.name;
@@ -344,7 +361,7 @@ export class HandView {
     const rates = currentRates(context, this.cards, this.rarities);
     const boosted = Boolean(context.session?.getState(context.viewerId)?.players[context.viewerId]?.luck);
     const next = def.fuseTo ? this.cards[def.fuseTo]?.name : null;
-    meta.textContent = `${next ? `合成先：${next}（同じカード2枚）` : '合成：これ以上合成できません'} ／ 排出率${boosted ? '（祈り中）' : ''} ${Number(rates[card.type] ?? 0).toFixed(3)}%`;
+    meta.textContent = `${next ? `合成先：${next}（同じカード2枚）` : def.effect === 'wild' ? '合成：合成先のあるカードと組み合わせられます' : '合成：これ以上合成できません'} ／ 排出率${boosted ? '（祈り中）' : ''} ${Number(rates[card.type] ?? 0).toFixed(3)}%`;
     this.el.detailUse.disabled = this.locked;
     this.el.detailUse.hidden = !input.useButton;
     this.el.detailUse.classList.toggle('blocked', Boolean(reason) || this.blocked.has(card.cardId));

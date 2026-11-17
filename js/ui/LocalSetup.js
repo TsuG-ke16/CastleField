@@ -17,9 +17,8 @@ export class LocalSetup {
     const note=document.createElement('p');note.textContent='CPUは残りの席。同じ端末では全員が人。自分以外の城・デッキは標準です。2チームの城は共有になります。';note.className='local-note';this.fields.append(note);
     this.inputs.deckMode.onchange=()=>{this.inputs.deck.disabled=this.inputs.deckMode.value!=='own';};this.inputs.deckMode.onchange();
     box.querySelector('.levels-title').after(detail);
-    const recommended=document.createElement('button');recommended.type='button';recommended.className='small-btn';recommended.textContent='おすすめですぐ遊ぶ';recommended.id='local-recommended';recommended.onclick=()=>{this.reset();onStart(this.mode==='solo'?'normal':null,this.read());};
     const local=document.createElement('button');local.type='button';local.className='plank-btn big';local.textContent='この設定ではじめる';local.id='local-start';local.hidden=true;local.onclick=()=>onStart(null,this.read());
-    document.getElementById('levels-back').before(local,recommended);
+    document.getElementById('levels-back').before(local);
     this.localButton=local;this.title=box.querySelector('.levels-title');this.reset();
   }
   reset(){for(const [k,v] of Object.entries({playerCount:2,winCondition:'firstDestroy',castle:this.rules.defaultCastle??'standard',deckMode:'shared',deck:this.rules.defaultDeck??'balanced',teams:'off'}))this.inputs[k].value=v;this.inputs.deckMode.onchange();for(const el of Object.values(this.inputs))el._pillSync?.();}

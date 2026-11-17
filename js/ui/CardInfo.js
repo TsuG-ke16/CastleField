@@ -1,11 +1,15 @@
 import { dropRates } from '../game/Setup.js';
 
-export function currentRates({ session, viewerId, luckFrom }, cards, rarities) {
+export function currentRates({ session, viewerId, luckFrom, permLuckFrom }, cards, rarities) {
   if (!rarities) return {};
-  const luck = session?.getState(viewerId)?.players[viewerId]?.luck;
-  if (luck) return dropRates(cards, rarities, { from: luckFrom, multiplier: luck.boost });
-  const local = session?.getDropRates?.();
-  return local ? Object.fromEntries(Object.entries(local.cards).map(([id, c]) => [id, c.rate])) : dropRates(cards, rarities);
+  const player = session?.getState(viewerId)?.players[viewerId];
+  const luck = player?.luck;
+  if (luck) return dropRates(cards, rarities, { from: luck.from ?? luckFrom, multiplier: luck.boost });
+  const base = dropRates(cards, rarities);
+  const perm = player?.permLuck;
+  if (!perm) return base;
+  const boosted = dropRates(cards, rarities, { from: perm.from ?? permLuckFrom, multiplier: perm.boost });
+  return Object.fromEntries(Object.keys(base).map(id => [id, base[id] * (1 - perm.chance) + boosted[id] * perm.chance]));
 }
 
 export function fusionPaths(type, cards) {

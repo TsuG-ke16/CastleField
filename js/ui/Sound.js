@@ -104,7 +104,8 @@ class Sound {
 const SOUNDS = {
   bow: (s,p) => { s.noise({dur:.08,gain:.10+p*.15,freq:4800,endFreq:900});s.tone({freq:350,endFreq:110,dur:.16,gain:.1+p*.12,type:'triangle'}); },
   magicShot: (s,p) => s.tone({freq:750,endFreq:180,dur:.24,gain:.12+p*.2,type:'sine'}),
-  fusion: s => [440,554,659,880].forEach((freq,i)=>s.tone({freq,dur:.25,at:i*.08,gain:.14,type:'triangle'})),
+  fusion: (s,p) => [440,554,659,880,1109,1318].slice(0, 2 + Math.round(p*4)).forEach((freq,i)=>s.tone({freq,dur:.18+p*.1,at:i*.06,gain:.09+p*.07,type:'triangle'})),
+  adaptFusion: s => [523,659,784,988,1047].forEach((freq,i)=>s.tone({freq,endFreq:freq*1.12,dur:.24,at:i*.07,gain:.13,type:'sine'})),
   lucky: s => [784,988,1175,1568,1976].forEach((freq,i)=>s.tone({freq,dur:.3,at:i*.07,gain:.16,type:'triangle'})),
   collapse: s => {s.noise({dur:.7,gain:.4,freq:700,endFreq:70});s.tone({freq:90,endFreq:25,dur:.6,gain:.3,type:'sawtooth'});},
   tap: (s) => s.tone({ freq: 720, endFreq: 900, dur: 0.05, type: 'triangle', gain: 0.12 }),

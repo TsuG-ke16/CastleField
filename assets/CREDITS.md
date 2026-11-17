@@ -315,3 +315,45 @@ OpenAI画像生成ツールで本ゲーム用に11種類を1枚の4×3シート�
 | `ui/icon-rarity-legendary.png` | 同上 | 同上 | 2026-11-17 |
 
 `review/card-icons/*.png` と更新した `review/adapt-art/*.png`：2026-11-17、Playwright同梱Chromium・390×844で本ゲームと実寸一覧を撮影。確認画像のみPillowでパレット圧縮。ゲーム内素材の利用条件は本ファイル各項を参照。
+
+## MP・成長・降参の素材（2026-11-18）
+
+OpenAI image generation で assets/STYLE.md の共通指示文に沿って生成したオリジナル素材。外部配布素材の使用なし。利用条件: OpenAI Terms of Use（生成出力）。生成元: `exec-f207a3a9-c2a3-4f6c-b517-a9d1835d9886.png`。アトラスから分割、透明PNG・512×512・各300KB以下。
+
+- `cards/card-mana-shard.png`
+- `cards/card-mana-drop.png`
+- `cards/card-mana-crystal.png`
+- `cards/card-mana-spring.png`
+- `cards/card-world-tree-dew.png`
+- `ui/icon-mp.png`
+- `ui/icon-luck.png`
+- `fx/evolve-1.png`
+- `fx/evolve-2.png`
+- `fx/evolve-3.png`
+- `castles/castle-blue-ruined.png`
+- `castles/castle-orange-ruined.png`
+
+## 王国の作戦卓：デザイン統一素材（2026-11-18）
+
+OpenAI image generationで `assets/style-reference.png` を参照し、STYLE.mdの共通指示文に沿って生成したオリジナル素材。第三者の配布素材は使用していません。利用条件: OpenAI Terms of Use（生成出力）。透過アトラスを分割・トリミング、背景PNGは縮小・減色。各300KB以下。
+
+- `ui/kingdom-parchment.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-primary.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-secondary.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-wood.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-crest.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `ui/kingdom-platform.png` — 生成元 `exec-0ddc49bb-e06a-4d22-9dd7-3852a04f29af.png`
+- `bg/kingdom-valley.png` — 生成元 `exec-a20ee589-dec8-4cb1-b8ce-4ff36c751525.png`
+- `bg/kingdom-meadow.png` — 生成元 `exec-766a7a7c-3d60-4a07-99c1-c880a327b0b0.png`
+
+## 引き伸ばしを使わない共通UI素材（2026-11-18）
+
+OpenAI image generation、STYLE.mdの共通指示文と `assets/style-reference.png` を添付して生成。利用条件: OpenAI Terms of Use（生成出力）。外部配布素材なし。
+
+- `ui/natural/{primary,neutral,selected,danger}-{40,44,72}-{left,middle,right}.png`: 生成元 `exec-9fa7748e-70dc-44cd-a094-a24537d36dcc.png`。高さ40/44/72 CSS px用に縦横比を維持して2倍密度で書き出し、左右端と中央2px（1 CSS px）を切り出し。左右固定・中央反復、非等方拡大なし。
+- `ui/natural/{paper,oak,leather}-tile.png`: 生成元 `exec-02fdc3cd-e1e2-4b77-9bce-577aad9a2045.png`。素材の中央を切り出し、ミラー配置で継ぎ目を合わせる。128 CSS px固定で反復。
+- `ui/natural/frame.png`、`round-neutral.png`、`round-selected.png`: 同じ生成元。角は14px固定・辺は同じ縮尺・辺反復、丸ボタンは40×40 CSS px固定。
+
+すべてPNG・1ファイル300KB以下。
+
+- `ui/natural/{primary,neutral}-wide-full.png`: 生成元 `exec-3d21dc1d-316b-49bf-b7a1-6c383cbd3523.png`。大型モード選択専用に同じ形状・約4:1で再生成。余白を整え、縦横比を保った縮小とcontain表示のみ。

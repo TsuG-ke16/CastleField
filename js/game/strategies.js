@@ -307,6 +307,7 @@ function buyUpgrades(game, pid, ctx) {
       ...by('trainArmy'),
       ...by('fortifyArmy'),
       ...by('gainCard').sort((a, b) => ctx.upgrades[b].cost - ctx.upgrades[a].cost),
+      ...by('permanentLuck'),
       ...by('boostDrops'),
       ...by('drawCards'),
     ];
@@ -394,6 +395,27 @@ function smartTurn(game, pid, ctx) {
   }
 }
 
+/**
+ * MP が少ないとき、マナ回復のカードを出す（MP を使う魔法が撃てなくなるのを防ぐ）。
+ * 上限を超えて無駄にしないよう、回復量が入る分だけの余裕があるカードを、小さいものから出す
+ */
+function refillMp(game, pid, ctx) {
+  const maxMp = game.getState(null).maxMp;
+  if (!maxMp) return;
+  const types = typesWithEffect(ctx, 'gainMp').sort((a, b) => ctx.cards[a].amount - ctx.cards[b].amount);
+  if (!types.length) return;
+  for (let i = 0; i < 6; i++) {
+    const me = game.getState(pid).players[pid];
+    if (me.mp > maxMp / 2) return;
+    const room = maxMp - me.mp;
+    const hand = me.hand.filter((c) => types.includes(c.type) && game.canPlayCard(c.cardId).ok);
+    // 入りきる最大のカード。なければ、いちばん小さいカード
+    const fits = hand.filter((c) => ctx.cards[c.type].amount <= room).sort((a, b) => ctx.cards[b.type].amount - ctx.cards[a.type].amount);
+    const card = fits[0] ?? hand.sort((a, b) => ctx.cards[a.type].amount - ctx.cards[b.type].amount)[0];
+    if (!card || !game.playCard(card.cardId).ok) return;
+  }
+}
+
 /** どの戦い方も、ターンの最初に同点の選び方の乱数を入れる */
 export const STRATEGIES = Object.fromEntries(
   Object.entries(RAW_STRATEGIES).map(([name, st]) => [
@@ -404,6 +426,7 @@ export const STRATEGIES = Object.fromEntries(
         tieRng = rng;
         curCards = ctx.cards;
         curCtx = ctx;
+        if (name !== 'pass') refillMp(game, pid, ctx);
         return st.takeTurn(game, pid, rng, ctx);
       },
     },

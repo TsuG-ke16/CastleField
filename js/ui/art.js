@@ -399,13 +399,13 @@ function escapeText(s) {
 }
 
 // 画像の割り当てはUIだけが持つ。読み込み前・失敗時は元のSVGを表示する。
-const CARD_TYPES = new Set(["adapt", ...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
+const CARD_TYPES = new Set(["manaShard","manaDrop","manaCrystal","manaSpring","worldTreeDew","adapt", ...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
 const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // 起動時に全部の画像を先に読み込んでおく。読み込めた画像は、代わりのSVGを出さず最初からPNGで描く
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
 const READY = new Set();
 export const isAssetReady = (path) => READY.has(path);
-const TITLE_ASSETS = ['bg/title-compact.png','ui/logo.png','ui/title-castle-blue.png','ui/title-castle-orange.png','ui/title-knight-blue.png','ui/title-infantry-orange.png'];
+const TITLE_ASSETS = ['ui/natural/paper-tile.png','ui/natural/oak-tile.png','ui/natural/frame.png','ui/natural/neutral-72-left.png','ui/natural/neutral-72-middle.png','ui/natural/neutral-72-right.png','ui/natural/primary-72-left.png','ui/natural/primary-72-middle.png','ui/natural/primary-72-right.png','ui/natural/primary-wide-full.png','ui/natural/neutral-wide-full.png','bg/kingdom-meadow.png','bg/kingdom-valley.png','ui/kingdom-crest.png','ui/logo.png','ui/title-castle-blue.png','ui/title-castle-orange.png','ui/title-knight-blue.png','ui/title-infantry-orange.png'];
 export async function preloadAssets(timeoutMs = 8000, onProgress = null, {phase = 'game'} = {}) {
   let paths = [...TITLE_ASSETS];
   if (phase !== 'title') {
@@ -459,6 +459,7 @@ export function monsterArt(type, name = '') {
 }
 export function castleArt(color, damage = 0, kind = 'standard') {
   const team = color === 'orange' ? 'orange' : 'blue';
+  if (damage >= 4) return imageArt(`castles/castle-${team}-ruined.png`, '', 'art castle-art');
   const stage = Math.max(0, Math.min(3, damage));
   const prefix = ['fortress','tower','barracks'].includes(kind) ? kind : 'castle';
   return imageArt(`castles/${prefix}-${team}${stage ? `-damaged-${stage}` : ''}.png`, svgCastleArt(team), 'art castle-art').replace('<span ', `<span data-damage-stage="${stage}" `);
@@ -468,7 +469,7 @@ export function spiritSprite(element, great = false) {
 }
 // Existing SVGs and rarity characters remain visible until the PNG loads or if it fails.
 const ICON_FALLBACK = { 'kind-soldier': 'sword', 'kind-spell': 'fire', 'kind-weapon': 'hammer', 'kind-defense': 'shield', 'kind-wild': 'card' };
-const PNG_ICONS = new Set(['fire', 'water', 'wind', 'earth', 'heart', 'coin',
+const PNG_ICONS = new Set(['mp', 'luck', 'fire', 'water', 'wind', 'earth', 'heart', 'coin',
   'kind-wild', 'kind-soldier', 'kind-spell', 'kind-weapon', 'kind-defense',
   'rarity-common', 'rarity-uncommon', 'rarity-rare', 'rarity-epic', 'rarity-legendary', 'rarity-special']);
 export function icon(name, fallbackText = null) {

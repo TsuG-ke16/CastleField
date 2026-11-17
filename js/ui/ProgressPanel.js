@@ -88,7 +88,7 @@ export class ProgressPanel {
     this.openButton.classList.toggle('ready', count > 0);
     this.openButton.setAttribute('aria-label', count ? `合成できる組み合わせが${count}種類あります` : 'カードを合成する');
     const me = state?.players[viewerId];
-    this.status.textContent = me ? [me.armyAttack ? `軍の攻撃＋${me.armyAttack}` : '', me.armyHp ? `軍のHP＋${me.armyHp}` : '', me.luck ? `運命の祈り：あと${me.luck.draws}枚` : ''].filter(Boolean).join(' ／ ') : '';
+    this.status.textContent = me ? [me.armyAttack ? `軍の攻撃＋${me.armyAttack}` : '', me.armyHp ? `軍のHP＋${me.armyHp}` : '', me.luck ? `運命の祈り：あと${me.luck.draws}枚` : '', me.permLuck ? `幸運の加護：${Math.round(me.permLuck.chance * 100)}%` : ''].filter(Boolean).join(' ／ ') : '';
     this.status.hidden = !this.status.textContent;
   }
   showFusion() {
