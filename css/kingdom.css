@@ -1,0 +1,156 @@
+/* 王国の作戦卓: honey oak, parchment, teal enamel, amber actions.
+   Generated material assets carry decoration; HTML retains every label and number. */
+:root { --kingdom-ink:#422b18; --kingdom-paper:#fff2d3; --kingdom-gold:#d8aa51; --kingdom-teal:#235f62; --kingdom-wood:#573421; }
+html,body { background:#2c221b; }
+body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
+#app { background:#c0cc85; border-color:#8b6841; box-shadow:0 12px 70px #0008,0 0 0 2px #b18b50; }
+#app #scenery { background-image:url('../assets/bg/kingdom-meadow.png'); background-position:center; background-size:cover; filter:saturate(.8); }
+#app #hud { color:#fff0cc; background:none; border:10px solid transparent; border-image:url('../assets/ui/kingdom-wood.png') 45 58 fill / 14px 17px stretch; padding:0 4px; gap:8px; min-height:58px; }
+#app #turn-status { color:#fff0cc; font-size:13px; letter-spacing:.02em; display:flex; align-items:center; gap:6px; }
+#app #turn-status::before { content:''; display:inline-block; flex:none; width:25px; height:29px; margin:0; border-radius:0; background:url('../assets/ui/kingdom-crest.png') center/contain no-repeat; filter:drop-shadow(0 1px 1px #0005); }
+#app #hud[data-turn=other] #turn-status::before { opacity:.65; }
+#app #turn-info { color:#f4d193; font-size:11px; }
+#app #my-mp { background:linear-gradient(#e4f6f5,#b9dcdf); border:1px solid #ddbe73; color:#174952; box-shadow:inset 0 1px #fff9,0 1px 2px #0006; border-radius:8px; }
+#app .mp-track { background:#174b56; border:1px solid #113b43; }
+#app .mp-fill { background:linear-gradient(90deg,#3299ac,#c0faff); }
+#app #menu-open { width:40px; min-width:40px; height:40px; min-height:40px; background:#fff0ce; border:2px solid #a67d3c; color:#5b371f; box-shadow:inset 0 1px #fff; }
+/* Paths are functional grid markings, not three giant opaque panels. */
+#app #road { inset:0 3%; border:0; background:none; box-shadow:none; }
+#app #road .lane { border:1px solid #6e75434d; border-radius:22px; background:linear-gradient(90deg,#d8c28a30,#e9dcae4d 48%,#d8c28a30); }
+#app #road.multi .lane + .lane { border-left:1px solid #6e75434d; }
+#app #road .stone { display:block; width:35%; height:24%; border:0; background:url('../assets/ui/kingdom-platform.png') center/100% 100% no-repeat; border-radius:0; box-shadow:none; opacity:.52; }
+#app #road .cell.mid .stone { width:45%; height:30%; opacity:.8; }
+#app #road .stone::after { display:none; }
+#app #road .lane::after { display:block; top:5px; color:#64613e; font-size:10px; letter-spacing:.08em; }
+#app #road .lane.targetable { border:2px solid #d39a31; background:#fff0b85e; box-shadow:inset 0 0 12px #ffdf78a6; }
+#app .castle-label { background:#fff2d4ef; color:var(--kingdom-ink); border:1px solid #a78042; border-bottom:3px solid var(--team-color,#a78042); box-shadow:0 2px 3px #3b2b202b; font-size:12px; }
+#app .castle.current .castle-label { background:#fff0b9; box-shadow:0 0 0 2px #ddb85b80; }
+#app .castle-pic::before { content:''; position:absolute; left:0; right:0; height:30%; bottom:-2%; z-index:-1; background:url('../assets/ui/kingdom-platform.png') center/contain no-repeat; opacity:.8; }
+#app .castle.eliminated .castle-pic::before { opacity:.3; }
+#app .plaza-hub { width:100px; height:82px; border:0; box-shadow:none; padding-top:53px; background:url('../assets/ui/kingdom-platform.png') center/contain no-repeat; color:#665036; font-weight:800; text-shadow:0 1px #fff8; }
+#app .spoke-dot { width:28px; height:18px; border:0; background:url('../assets/ui/kingdom-platform.png') center/contain no-repeat; box-shadow:none; opacity:.75; }
+#app .plaza-zoom { border:1px solid #9c7942; background:#fff0d0eb; box-shadow:0 2px 4px #0002; }
+/* A wooden card rack frames the illustrated cards without competing with them. */
+#app #controls { background:none; border:10px solid transparent; border-image:url('../assets/ui/kingdom-wood.png') 45 58 fill / 14px 17px stretch; border-radius:10px 10px 0 0; box-shadow:0 -4px 12px #32200c40; }
+#app #hand { background:linear-gradient(#29180826,#160e0838); border-radius:8px; scrollbar-color:#c7a461 #563a27; padding-inline:8px; }
+#app .hand-toolbar { padding-inline:4px; color:#ffe5b8; }
+#app .hand-toolbar #hand-toggle, #app .hand-toolbar .hand-scroll-hint { color:#e7c79b; }
+#app .control-row { padding:3px 2px 6px; gap:7px; }
+#app .control-row #fusion-open, #app .control-row #upgrade-open { background:#fff0ce; border:1px solid #dbb674; color:#583b21; box-shadow:inset 0 1px #fff8; border-radius:8px; min-width:58px; padding:5px 8px; }
+#app .control-row #fusion-open.ready { background:#ffe39a; box-shadow:0 0 0 1px #edc360,inset 0 1px #fff; }
+#app #tutorial { margin:0 0 6px; border:1px solid #d2ab65; background:#ffefcf; }
+#app #message:not(:empty) { background:#fff0cc; color:#54361e; border:1px solid #cc9d58; }
+/* One material vocabulary for dialogs, catalog, lobby and result. */
+#app .screen-box.parchment, #app .guide-box, #app .progress-box, #app .title-choices, #app #card-detail, #app #upgrade-panel, #app #target-bar, #app #discard-bar {
+  border:12px solid transparent; border-image:url('../assets/ui/kingdom-parchment.png') 45 60 fill / 17px 20px stretch;
+  background:none; border-radius:14px; box-shadow:0 8px 28px #24150855; color:var(--kingdom-ink);
+}
+#app .menu-box { padding:10px; }
+#app .menu-title, #app .settings-box h2 { margin:0 0 10px; padding:4px 8px 10px; border:0; border-bottom:1px solid #b9904c77; border-radius:0; color:#674320; background:none; text-shadow:none; box-shadow:none; font-size:20px; }
+#app .guide-box .menu-title, #app .progress-box .menu-title { font-size:17px; margin:0; padding:3px 0; border:0; }
+#app .screen.dim { background:#211a15b5; backdrop-filter:blur(4px); }
+#app .settings-box .set-group, #app .local-options, #app .room-settings { background:#f1dfb9aa; border:1px solid #c6a46a; border-radius:9px; box-shadow:inset 0 1px #fff7; }
+#app .pill-group .pill { border:1px solid #c2a778; background:#fff5dc; border-radius:7px; color:#624725; box-shadow:0 2px 0 #b4925e66; min-height:36px; }
+#app .pill-group .pill.on { background:#2c6d6d; border-color:#194f51; color:#fff0ce; box-shadow:inset 0 1px #81b2a977; }
+#app .guide-tabs button[aria-selected=true], #app .shop-tabs button[aria-selected=true] { background:#2c6d6d; color:#fff0ce; border-color:#194f51; }
+#app .guide-filters select { color:#51391e; background:#fff5dc; border:1px solid #b99b64; border-radius:7px; }
+#app .guide-monster, #app .rate-group, #app .room-seat { background:#fff4d9c9; border:1px solid #cfaf78; box-shadow:0 2px 0 #b8965c33; border-radius:9px; }
+#app .room-seat.room-self { border-color:#4e8380; box-shadow:inset 4px 0 #4e8380; }
+#app #room-screen { background:linear-gradient(#fff1d5ee,#e4cfaaed),url('../assets/bg/kingdom-valley.png') center/cover; }
+#app .room-passphrase { background:#fff7e3; border:1px dashed #a27a3f; }
+/* Primary commands share the generated amber leather; alternate play modes use teal. */
+#app #controls #end-turn, #app #card-detail .detail-use, #app #menu .menu-box #menu-close, #app #rematch, #app .room-start, #app .settings-close, #app #help-close, #app #local-start {
+  border:9px solid transparent; border-image:url('../assets/ui/kingdom-primary.png') 42 58 fill / 13px 16px stretch;
+  background:none; border-radius:9px; color:#3e220e; text-shadow:0 1px #ffdc8d; box-shadow:0 2px 2px #1a0c0a40;
+  padding:3px 8px; min-height:46px; filter:none;
+}
+#app #controls #end-turn { font-size:14px; }
+#app #card-detail { padding:8px; }
+#app #card-detail .detail-desc { color:#493219; }
+#app #card-detail .detail-name { color:#674320; }
+#app #card-detail .detail-extra { color:#7b5b32; }
+#app #card-detail .detail-close { background:#ebd6ad; color:#674320; }
+#app #menu .menu-box > button { background:#fff4d6; border-color:#c5a16b; color:#5a3c22; box-shadow:inset 0 1px #fff8; }
+#app #menu .menu-box #menu-surrender { color:#9f392c; }
+#app #spectator-strip { border:1px solid #d5b773; background:#fff0ce; }
+/* A shared kingdom landscape replaces the unrelated title and battle backdrops. */
+#app #title, #app #handover { background:#a5bb79 url('../assets/bg/kingdom-meadow.png') center/cover no-repeat; }
+#app #title::before { content:''; position:absolute; inset:0; background:linear-gradient(#e1f1ef14,transparent 45%,#2f452c40); pointer-events:none; }
+#app .title-box { position:relative; }
+#app .title-choices { padding:14px; }
+#app .title-pic { background:none; }
+#app .title-pic::before { background:none; box-shadow:none; }
+#app #title .mode-choice { border:10px solid transparent; border-image:url('../assets/ui/kingdom-primary.png') 42 58 fill / 15px 20px stretch; background:none; box-shadow:0 2px 2px #3d250c55; filter:none; border-radius:12px; padding:8px 9px; color:#3c230e; }
+#app #title #title-local, #app #title #title-online { border-image-source:url('../assets/ui/kingdom-secondary.png'); color:#fff0cf; text-shadow:0 1px #16464c; }
+#app #title .mode-choice strong { font-size:17px; }
+#app #title .mode-choice small { font-size:11px; color:inherit; opacity:.9; }
+#app #title .mode-choice .mode-arrow { color:inherit; opacity:.8; }
+#app #title-main .title-links button { background:#fff2d1; border-color:#c6a268; color:#694620; }
+#app #title-levels .level { border-image-source:url('../assets/ui/kingdom-secondary.png'); color:#fff0ce; text-shadow:0 1px #214b50; }
+#app #result .screen-box { border:12px solid transparent; border-image:url('../assets/ui/kingdom-parchment.png') 45 60 fill / 17px 20px stretch; background:none; padding:20px; color:#4e331d; }
+#app #result .result-title { color:#674320; }
+@media(max-width:600px) and (min-height:501px) {
+  #app #title .mode-choice { padding:5px 8px; }
+  #app #title .mode-choice strong { font-size:15px; }
+  #app #title .title-pic { height:48px; }
+  #app #title .title-logo { max-width:245px; }
+}
+@media(max-height:700px) and (min-height:501px) {
+  #app #hud { min-height:52px; border-width:7px; }
+  #app #controls { border-width:7px; }
+  #app #turn-status { font-size:12px; gap:4px; }
+  #app #turn-status::before { width:21px; height:25px; }
+  #app #title .title-logo { max-width:180px; }
+  #app #title .title-pic { height:30px; }
+  #app #title .mode-choice strong { font-size:14px; }
+}
+@media(min-width:900px) and (min-height:650px) {
+  #app #scenery { background-image:url('../assets/bg/kingdom-valley.png'); }
+  #app #title, #app #handover { background-image:url('../assets/bg/kingdom-valley.png'); }
+  #app #controls { border-width:12px; border-image-width:18px; }
+  #app #hud { padding-inline:10px; }
+  #app .hand-toolbar { padding-inline:5px; }
+  #app #hand { padding-inline:7px; }
+  #app #hand .card { width:130px; height:182px; }
+  #app .title-choices { padding:18px; }
+}
+@media(max-height:500px) {
+  #app #scenery { background-image:url('../assets/bg/kingdom-valley.png'); }
+  #app #hud { border-width:6px; padding-inline:5px; min-height:0; }
+  #app #controls { border-width:6px; }
+  #app #controls .control-row { padding:4px 0 0; gap:4px; }
+  #app #controls #end-turn { min-height:44px; font-size:12px; padding:2px 5px; }
+  #app #title { background-image:url('../assets/bg/kingdom-valley.png'); }
+  #app #title .mode-choice { padding:3px 7px; min-height:58px; }
+  #app #title .mode-choice strong { font-size:14px; }
+}
+@media(prefers-reduced-motion:reduce) { #app #title-solo { animation:none; } }
+#app #hud #turn-status::before { content:''; width:25px; height:29px; margin:0; border-radius:0; background:url('../assets/ui/kingdom-crest.png') center/contain no-repeat; }
+#app #field, #app #board.plaza-board { background:none; }
+#app #road .lane { border:1px solid #77734140; background:linear-gradient(90deg,transparent,#d9c18b36 50%,transparent); }
+#app #road .lane + .lane { border-left:1px solid #77734140; }
+@media(max-height:700px) and (min-height:501px) { #app #hud #turn-status::before { width:21px; height:25px; } }
+/* Settings labels stay whole; control choices have their own line on narrow parchment. */
+#app .settings-box .set-row { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; padding:7px 12px; }
+#app .settings-box .set-name { width:auto; white-space:nowrap; line-height:1.4; }
+#app .settings-box .set-group:first-of-type .set-row { grid-template-columns:48px minmax(0,1fr) 38px; gap:7px; }
+#app .settings-box .set-row output { width:auto; }
+#app .settings-box .set-row .pill-group { width:100%; }
+#app .settings-box .set-row input[name=name] { width:100%; }
+#app #settings .settings-close, #app #room-screen .room-start {
+  border:9px solid transparent; border-image:url('../assets/ui/kingdom-primary.png') 42 58 fill / 13px 16px stretch;
+  background:none; border-radius:9px; color:#3e220e; text-shadow:0 1px #ffdc8d; padding:3px 12px; min-height:46px; box-shadow:0 2px 2px #1a0c0a40; filter:none;
+}
+/* Reference/shop tabs use quiet enamel; selected text must never sit on an old pale image. */
+#app .guide-tabs > button, #app .shop-tabs > button { border:1px solid #b7985d; border-image:none; border-radius:7px; background:#fff1cf; color:#674523; opacity:1; filter:none; text-shadow:none; min-height:40px; padding:6px 10px; }
+#app .guide-tabs > button[aria-selected=true], #app .shop-tabs > button[aria-selected=true] { border-color:#1c5455; border-image:none; background:#2c6d6d; color:#fff2d4; filter:none; text-shadow:none; }
+#app #upgrade-panel .shop-tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); width:100%; gap:4px; overflow:visible; }
+#app #upgrade-panel .shop-tabs > button { min-width:0; padding:5px 2px; font-size:12px; }
+#app #upgrade-panel .upgrade-list { display:flex; flex-direction:column; gap:8px; }
+#app #upgrade-panel .upgrade-item { display:grid; grid-template-columns:26px minmax(0,1fr) auto; align-items:start; gap:7px; padding:10px; flex:none; border:1px solid #be9b5d; background:#fff4d8; box-shadow:none; }
+#app #upgrade-panel .upgrade-icon { display:inline-flex; width:26px; height:28px; font-size:25px; opacity:1; }
+#app #upgrade-panel .upgrade-text { width:auto; font-size:12px; line-height:1.55; }
+#app #upgrade-panel .upgrade-name { color:#604324; opacity:1; font-size:14px; }
+#app #upgrade-panel .upgrade-cost { grid-column:3; grid-row:1; font-size:12px; padding:2px 5px; color:#755020; }
+#app #upgrade-panel .upgrade-item.blocked { background:#f1e3c3; border-color:#d1b788; }
+#app #upgrade-panel .upgrade-reason { color:#98382b; }
