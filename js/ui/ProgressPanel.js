@@ -106,6 +106,12 @@ export class ProgressPanel {
       const text = make('span', 'fusion-text');
       text.append(make('span', '', withWild ? `適応 ＋ ${def.name} →` : `${def.name} ×2 →`), make('b', '', next.name), make('small', '', this.rarities?.[next.rarity]?.name ?? next.rarity));
       btn.style.setProperty('--rarity', this.rarities?.[next.rarity]?.color ?? '#999');
+      if (withWild) {
+        const source = make('div', 'fusion-source');
+        const wild = list.find(card => this.cards[card.type]?.effect === 'wild');
+        mountMiniCard(source, wild.type, this.cards[wild.type], this.rarities);
+        btn.append(source);
+      }
       btn.append(art, text, make('span', 'fusion-label', '合成する'));
       btn.onclick = () => { this.close(); this.onFuse(list[0].cardId, list[1].cardId); };
       this.content.append(btn);

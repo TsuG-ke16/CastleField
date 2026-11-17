@@ -1,5 +1,6 @@
 import { cardArt, icon } from './art.js';
-import { frameAsset, kindIcon, rarityMark } from './cardFrame.js';
+import { KIND_LABEL } from './text.js';
+import { frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
 
 export function mountMiniCard(root, type, def, rarities, { showName = true } = {}) {
   const path = frameAsset(def, rarities);
@@ -20,11 +21,16 @@ export function mountMiniCard(root, type, def, rarities, { showName = true } = {
   illustration.innerHTML = cardArt(type, 'blue', def?.name ?? '');
   const kind = document.createElement('span');
   kind.className = 'mini-card-kind';
-  kind.innerHTML = icon(kindIcon(def?.kind));
-  kind.title = def?.kind ?? '';
+  kind.innerHTML = icon(kindIcon(def));
+  kind.title = def?.effect === 'wild' ? 'どれにもなれる（適応）' : KIND_LABEL[def?.kind] ?? '';
+  kind.setAttribute('role', 'img');
+  kind.setAttribute('aria-label', kind.title);
   const rarity = document.createElement('span');
   rarity.className = 'mini-card-rarity';
-  rarity.textContent = rarityMark(def?.rarity);
+  rarity.innerHTML = icon(rarityIcon(def?.rarity), rarityMark(def?.rarity));
+  rarity.title = `${rarities?.[def?.rarity]?.name ?? def?.rarity ?? ''}（${rarityMark(def?.rarity)}）`;
+  rarity.setAttribute('role', 'img');
+  rarity.setAttribute('aria-label', rarity.title);
   rarity.style.setProperty('--rarity', rarities?.[def?.rarity]?.color ?? '#9aa3ad');
   const banner = document.createElement('span');
   banner.className = 'mini-card-name';
