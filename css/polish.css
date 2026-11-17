@@ -1,0 +1,626 @@
+/* 仕上げ：見た目の統一（いちばん最後に読む）。
+   ボタンの木枠を引き伸ばさずに貼る（9スライス）・フォーム部品の世界観合わせ・メニューや名札の整列。 */
+
+/* ---------- ボタン：木枠の角を保ったまま伸ばす ---------- */
+.plank-btn:not(.mode-choice):not(#end-turn),
+.small-btn:not(#title-help) {
+  background: none;
+  border: 1px solid transparent;
+  border-image-slice: 118 150 fill;
+  border-image-width: 17px 22px;
+  border-image-repeat: stretch;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 44px;
+  padding: 9px 22px;
+  color: #4a2f17;
+  font-family: var(--head);
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-shadow: 0 1px 0 #ffe2a3b0;
+  filter: drop-shadow(0 3px 0 #3d281430);
+  transition: transform .07s, filter .12s;
+}
+.plank-btn:not(.mode-choice):not(#end-turn) { border-image-source: url('../assets/ui/btn-orange.png'); }
+.plank-btn.alt:not(.mode-choice):not(#end-turn) { border-image-source: url('../assets/ui/btn-blue.png'); text-shadow: 0 1px 0 #d9f0ffb0; }
+.plank-btn.alt2:not(.mode-choice):not(#end-turn) { border-image-source: url('../assets/ui/btn-green.png'); text-shadow: 0 1px 0 #e3f7c8b0; }
+.small-btn:not(#title-help) {
+  border-image-source: url('../assets/ui/btn-cream.png');
+  border-image-slice: 106 150 fill;
+  border-image-width: 14px 19px;
+  min-height: 38px;
+  padding: 7px 18px;
+  font-size: 13px;
+  text-shadow: none;
+}
+.small-btn.danger:not(#title-help) { border-image-source: url('../assets/ui/btn-red.png'); border-image-slice: 118 150 fill; color: #fff3e6; text-shadow: 0 1px 2px #5c1410; }
+.plank-btn.big:not(.mode-choice) { min-height: 58px; padding: 10px 24px; border-image-width: 21px 27px; font-size: 19px; }
+.plank-btn.big.level { font-size: 18px; padding: 9px 24px; }
+.plank-btn.big small { font-size: 11px; opacity: .8; letter-spacing: 0; }
+@media (hover: hover) {
+  .plank-btn:not(:disabled):hover, .small-btn:not(:disabled):hover { filter: drop-shadow(0 3px 0 #3d281430) brightness(1.06); }
+}
+.plank-btn:not(.mode-choice):not(:disabled):active, .small-btn:not(:disabled):active {
+  transform: translateY(2px);
+  filter: brightness(.9);
+}
+.plank-btn:disabled, .plank-btn.off, .plank-btn.blocked, .plank-btn.not-ready { filter: grayscale(.75) brightness(.96); opacity: .7; }
+
+/* ---------- メニュー：文字を枠のまん中に ---------- */
+.menu-box { gap: 10px; }
+.small-btn.wide { justify-content: center; text-align: center; min-height: 48px; padding: 10px 26px; font-size: 15px; }
+.menu-box .plank-btn { min-height: 54px; margin-top: 6px; font-size: 17px; }
+.menu-title { font-family: var(--head); }
+
+/* ---------- フォーム部品：羊皮紙と木の色にそろえる ---------- */
+#app select,
+#app input[type=text],
+#app input:not([type]) {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 2px solid #c9ab72;
+  border-radius: 10px;
+  background-color: #fffdf6;
+  box-shadow: inset 0 2px 0 #f1e6cc;
+  color: #3f321f;
+  font: inherit;
+  font-weight: 700;
+}
+#app select {
+  padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a5a24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px 8px;
+  cursor: pointer;
+}
+#app select:disabled { opacity: .5; cursor: default; }
+#app select:focus-visible, #app input[type=text]:focus-visible, #app input:not([type]):focus-visible {
+  outline: 3px solid #e9a63a80;
+  border-color: #b9812d;
+}
+#app input::placeholder { color: #b3a488; font-weight: 400; }
+#app input[type=range] { accent-color: #e08a2c; height: 28px; }
+#app input[type=checkbox] { accent-color: #e08a2c; }
+
+.settings-box h2 { font-family: var(--head); color: #284b43; font-size: 22px; letter-spacing: .06em; margin: 0 0 8px; }
+.settings-box label { font-weight: 800; color: #3f4a37; margin: 16px 0; }
+.settings-box output { font-family: var(--head); color: #8a5a24; }
+.settings-box .check-label { flex-wrap: nowrap; align-items: flex-start; gap: 10px; padding: 12px; border-radius: 10px; background: #f4ecd8; }
+.settings-box .settings-close { display: block; margin: 4px auto 0; min-width: 180px; }
+.settings-status { text-align: center; color: #5d7a52; }
+
+.local-options { border: 2px solid #e5d9bd; border-radius: 12px; background: #fff7e2; margin: 12px 0 14px; }
+.local-options summary { padding: 11px 10px; font-size: 12px; font-weight: 800; color: #6a5632; }
+.local-fields { padding: 0 12px 10px; }
+.local-fields label { font-size: 12px; font-weight: 800; color: #5d6d5c; }
+.local-fields select { margin-top: 4px; }
+.levels-title { font-family: var(--head); letter-spacing: .04em; }
+#title-form label { font-weight: 800; }
+
+/* ---------- 盤面：城の名札を1行に ---------- */
+#board:not(.plaza-board) .castle-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; max-width: 148px; }
+
+/* ---------- タイトル：遊び方の3つを木の看板に。下の小さいボタンは1列にまとめる ---------- */
+.title-choices { background: linear-gradient(#2a5a50, #1b3f39); border: 3px solid #14322c; box-shadow: inset 0 0 0 2px #4a7d6d, 0 12px 26px #1b3a3338; }
+#title-main { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: center; }
+#title-main > .mode-choice, #offline-status { grid-column: 1 / -1; }
+.plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 {
+  grid-template-columns: 48px 1fr 18px;
+  gap: 12px;
+  min-height: 76px;
+  padding: 12px 26px 12px 22px;
+  background: none;
+  border: 1px solid transparent;
+  border-image: url('../assets/ui/btn-orange.png') 118 150 fill / 24px 31px stretch;
+  border-radius: 0;
+  color: #4a2f17;
+  filter: drop-shadow(0 4px 0 #0c221d80);
+  transition: transform .08s, filter .12s;
+}
+.plank-btn.mode-choice.alt2 { border-image-source: url('../assets/ui/btn-green.png'); color: #f6ffe6; }
+.plank-btn.mode-choice.alt { border-image-source: url('../assets/ui/btn-blue.png'); color: #eef7ff; }
+.mode-choice strong { font-family: var(--head); font-size: 19px; letter-spacing: .04em; text-shadow: 0 1px 0 #ffe2a3b0; }
+.mode-choice small, .mode-choice.alt small, .mode-choice.alt2 small { margin-top: 3px; font-size: 11px; font-weight: 700; color: inherit; opacity: .82; }
+.mode-choice.alt strong, .mode-choice.alt2 strong { text-shadow: 0 2px 0 #0000004d; }
+.mode-choice .mode-arrow { font-size: 18px; font-weight: 900; opacity: .7; }
+.mode-symbol, .mode-choice.alt .mode-symbol, .mode-choice.alt2 .mode-symbol { width: 48px; height: 48px; background: center / contain no-repeat; filter: drop-shadow(0 2px 0 #0000003d); }
+.mode-symbol svg { display: none; }
+#title-solo .mode-symbol { background-image: url('../assets/ui/icon-mode-solo.png'); }
+#title-local .mode-symbol { background-image: url('../assets/ui/icon-mode-local.png'); }
+#title-online .mode-symbol { background-image: url('../assets/ui/icon-mode-online.png'); }
+.mode-choice:hover { transform: translateY(-2px); filter: drop-shadow(0 6px 0 #0c221d80) brightness(1.05); }
+.plank-btn.mode-choice:active { transform: translateY(2px); filter: brightness(.92); }
+#title-solo { animation: title-invite 2.4s ease-in-out infinite; }
+@keyframes title-invite { 50% { filter: drop-shadow(0 4px 0 #0c221d80) drop-shadow(0 0 10px #ffd66b) brightness(1.06); } }
+.reduced-motion #title-solo { animation: none; }
+@media (prefers-reduced-motion: reduce) { #title-solo { animation: none; } }
+
+#offline-status { margin: 0; min-height: 0; color: #b9d0c0; font-size: 11px; }
+#offline-status:empty { display: none; }
+#title-record { grid-column: 1 / 3; margin: 4px 0 0; padding: 0 4px; text-align: left; font-family: var(--head); font-size: 14px; letter-spacing: .04em; color: #ffe9b0; }
+#title-main #record-clear {
+  grid-column: 3; justify-self: end; min-height: 0; margin-top: 4px; padding: 4px 6px;
+  border: 0; border-image: none; background: none; filter: none;
+  color: #a9c3b3; font-family: var(--font); font-size: 11px; font-weight: 700; text-decoration: underline; letter-spacing: 0;
+}
+#title-main #title-catalog, #title-main #title-settings, #title-main #title-help {
+  width: 100%; min-height: 42px; margin: 0; padding: 6px 4px;
+  background: none; border: 1px solid transparent; border-radius: 0; box-shadow: none;
+  border-image: url('../assets/ui/btn-cream.png') 106 150 fill / 14px 19px stretch;
+  color: #4a2f17; font-family: var(--head); font-size: 12px; font-weight: 900; letter-spacing: 0; white-space: nowrap;
+  filter: drop-shadow(0 3px 0 #0c221d66);
+}
+#title-main > * { min-width: 0; }
+.mode-choice > span { min-width: 0; }
+.mode-choice small { white-space: normal; line-height: 1.3; }
+@media (max-width: 360px) {
+  .plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { grid-template-columns: 38px 1fr; gap: 8px; min-height: 62px; padding: 9px 18px 9px 16px; border-image-width: 20px 26px; }
+  .mode-symbol, .mode-choice.alt .mode-symbol, .mode-choice.alt2 .mode-symbol { width: 38px; height: 38px; }
+  .mode-choice strong { font-size: 15px; letter-spacing: 0; }
+  .mode-choice small { font-size: 10px; }
+  .mode-choice .mode-arrow { display: none; }
+  .title-choices { padding: 12px; }
+}
+@media (max-height: 480px) {
+  .plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { min-height: 54px; padding-block: 6px; }
+  .mode-symbol, .mode-choice.alt .mode-symbol, .mode-choice.alt2 .mode-symbol { width: 40px; height: 40px; }
+  .mode-choice strong { font-size: 15px; }
+}
+
+/* ---------- カードの説明：説明文を主役に、補足は小さく ---------- */
+.detail-name { font-family: var(--head); font-size: 17px; letter-spacing: .03em; }
+.detail-desc { font-size: var(--reading-size, 14px); line-height: 1.55; color: #3f4a37; font-weight: 700; }
+.detail-meta { margin-top: 6px; font-size: 11px; font-weight: 700; color: #8a7b5c; }
+#card-detail .detail-hint { font-size: 12px; font-weight: 800; color: #6b7a55; }
+#card-detail .detail-hint.warn { color: #b3402f; }
+#card-detail .detail-use { min-width: 96px; min-height: 48px; font-size: 17px; }
+
+/* ---------- 強化ボタン：コイン袋らしく、木のボタンと同じ仲間に ---------- */
+#upgrade-open {
+  border: 2px solid #b98a2e; border-radius: 12px;
+  background: linear-gradient(#fff3c4, #f6d67a);
+  box-shadow: 0 3px 0 #9a6f1f, inset 0 1px 0 #fffbe6;
+  color: #5a3d10; font-family: var(--head);
+}
+#upgrade-open.off { background: linear-gradient(#f3ecd9, #e2d7ba); border-color: #b9ab86; box-shadow: 0 3px 0 #9d9070; }
+
+/* ---------- タブ（図鑑・強化）：選んでいるタブがひと目で分かるように ---------- */
+.guide-tabs > button, .shop-tabs > button {
+  flex: none; min-height: 40px; padding: 7px 16px;
+  background: none; border: 1px solid transparent; border-radius: 0; box-shadow: none;
+  border-image: url('../assets/ui/btn-cream.png') 106 150 fill / 14px 19px stretch;
+  color: #6a5632; font-family: var(--head); font-size: 13px; font-weight: 900; letter-spacing: .02em;
+  opacity: .82;
+}
+.guide-tabs > [aria-selected=true], .shop-tabs > [aria-selected=true] {
+  border-image-source: url('../assets/ui/btn-orange.png'); border-image-slice: 118 150 fill;
+  background: none; color: #4a2f17; opacity: 1; text-shadow: 0 1px 0 #ffe2a3b0;
+  filter: drop-shadow(0 3px 0 #3d281430);
+}
+@media (max-width: 400px) { .shop-tabs { gap: 3px; } .shop-tabs > button { padding-inline: 11px; font-size: 12px; } }
+
+/* ---------- 強化を買う：買えるものを明るく、買えないものは静かに ---------- */
+.upgrade-head b { font-family: var(--head); font-size: 19px; color: #284b43; letter-spacing: .04em; }
+.upgrade-coins { font-family: var(--head); font-size: 17px; color: #7a5312; padding: 3px 10px; border-radius: 999px; background: #fbe9b0; box-shadow: inset 0 0 0 2px #e2bb5c; }
+#upgrade-panel .upgrade-item:not(.blocked) { border: 2px solid #dcae45; background: linear-gradient(#fffdf3, #fff3cf); box-shadow: 0 3px 0 #c99a3a; transition: transform .07s; }
+#upgrade-panel .upgrade-item:not(.blocked):active { transform: translateY(2px); box-shadow: 0 1px 0 #c99a3a; }
+#upgrade-panel .upgrade-item.blocked { border: 2px solid #e2dcc8; background: #f3f0e4; }
+.upgrade-item .upgrade-name { font-family: var(--head); font-size: 15px; color: #3f321f; }
+.upgrade-item.blocked .upgrade-name { color: #8d8672; }
+.upgrade-item .upgrade-desc { color: #5d6d5c; }
+.upgrade-cost { font-family: var(--head); background: #fbe9b0; box-shadow: inset 0 0 0 1px #e2bb5c; color: #6b4a10; }
+.upgrade-item.blocked .upgrade-cost { background: #e9e4d2; box-shadow: none; color: #8d8672; }
+.upgrade-note { color: #8a7b5c; font-size: 11px; }
+#app select { font-size: max(13px, 1em); }
+.guide-filters select, .guide-box select { min-height: 40px; padding-block: 6px; }
+
+/* ---------- 結果：勝ちは金色に輝かせ、負けは夕暮れで静かに ---------- */
+#result { background: radial-gradient(ellipse at 50% 34%, #fffbe0 0%, #ffe9a0 38%, #f7c35a 72%, #e9a13c 100%); }
+#result .result-rays { opacity: .5; top: 34%; }
+#result .result-title {
+  font-family: var(--head); font-size: clamp(32px, 9.5vw, 42px); letter-spacing: .02em; line-height: 1.15;
+  color: #fff6c9; -webkit-text-stroke: 0;
+  text-shadow: 0 2px 0 #7a3d08, 2px 0 0 #7a3d08, -2px 0 0 #7a3d08, 0 -2px 0 #7a3d08, 2px 2px 0 #7a3d08, -2px 2px 0 #7a3d08, 2px -2px 0 #7a3d08, -2px -2px 0 #7a3d08, 0 6px 0 #7a3d0855;
+}
+#result .result-sub { color: #6d4a17; font-size: 13px; font-weight: 800; margin: 8px 0 14px; }
+#result.lost { background: linear-gradient(#566b86 0%, #7d8fa3 45%, #c5b9a6 100%); }
+#result.lost .result-title { color: #f3f6fa; text-shadow: 0 2px 0 #2a3a4f, 2px 0 0 #2a3a4f, -2px 0 0 #2a3a4f, 0 -2px 0 #2a3a4f, 2px 2px 0 #2a3a4f, -2px 2px 0 #2a3a4f, 2px -2px 0 #2a3a4f, -2px -2px 0 #2a3a4f; font-size: clamp(28px, 8.4vw, 36px); }
+#result.lost .result-sub { color: #f2f4f6; text-shadow: 0 1px 2px #2a3a4f; }
+#result-stats { border: 2px solid #c9a35a; border-radius: 14px; background: #fffaeb; box-shadow: 0 4px 0 #b4863a55, inset 0 0 0 3px #fff3cf; padding: 10px 16px; color: #3f321f; }
+#result-stats p { font-family: var(--head); color: #8a5a24; letter-spacing: .06em; text-align: center; }
+#result-stats dt { color: #5b4d33; font-weight: 700; }
+#result-stats dd { font-family: var(--head); font-size: 16px; color: #3f321f; }
+#result-encouragement { color: #5a3d10; font-weight: 800; }
+#result.lost #result-encouragement { color: #fff; text-shadow: 0 1px 2px #2a3a4f; }
+#result #rematch { margin-top: 2px; }
+
+/* ---------- 部屋（ロビー）：席に城の絵、合言葉を看板に ---------- */
+#room-screen { background: radial-gradient(ellipse at 50% 0%, #fdf6dc, #f1e7c9 60%, #e6dab8); }
+.room-eyebrow { color: #8a5a24; }
+.room-box h1 { font-family: var(--head); color: #284b43; letter-spacing: .04em; }
+.room-box h2 { font-family: var(--head); color: #3f321f; letter-spacing: .03em; }
+.room-passphrase { border: 3px solid #c9a35a; border-radius: 14px; background: #fffaeb; box-shadow: inset 0 0 0 3px #fff3cf, 0 4px 0 #b4863a40; color: #5a3d10; font-family: var(--head); text-align: center; }
+.room-seat { position: relative; min-height: 96px; border: 2px solid #dccb9f; border-left: 6px solid var(--seat-color, #c9a35a); border-radius: 14px; background: #fffdf5; box-shadow: 0 3px 0 #cdbb8d55; }
+.room-seat.room-self { border-color: #e0a63a; border-left-color: var(--seat-color, #e0a63a); background: #fffbe9; box-shadow: 0 0 0 3px #f6d67a80, 0 3px 0 #cdbb8d55; }
+.room-seat h3 { font-family: var(--head); font-size: 17px; color: #3f321f; padding-right: 76px; }
+.room-seat h3 small { background: #f6d67a; color: #5a3d10; font-family: var(--font); font-weight: 800; border-radius: 999px; padding: 3px 8px; }
+.room-seat > .room-note { font-size: 12px; margin: 3px 0; padding-right: 76px; }
+.room-seat-pic { position: absolute; top: 8px; right: 10px; width: 68px; height: 60px; pointer-events: none; }
+.room-seat-pic .castle-art { display: block; width: 100%; height: 100%; }
+.room-seat-pic img { width: 100%; height: 100%; object-fit: contain; }
+.room-select { font-weight: 800; color: #5b4d33; }
+.room-settings { border: 2px solid #d6dcc0; border-radius: 14px; background: #eef1df; padding: 12px 14px 14px; }
+.room-start { min-height: 60px; font-size: 19px; }
+.room-box > .room-note { text-align: center; font-weight: 700; }
+
+/* ---------- 小さい画面：下の操作ボタンが1列におさまるように ---------- */
+#controls .control-row .small-btn { padding-inline: 14px; }
+@media (max-width: 380px) {
+  #controls .control-row { gap: 5px; padding-inline: 8px; }
+  #controls .control-row .small-btn { min-width: 0; padding-inline: 10px; font-size: 12px; border-image-width: 12px 14px; letter-spacing: 0; }
+  #controls #upgrade-open { padding-inline: 7px; }
+  #controls #end-turn { min-width: 112px; padding: 8px 10px 8px 38px; font-size: 12px; letter-spacing: 0; }
+}
+@media (max-width: 340px) {
+  #controls .control-row { gap: 3px; padding-inline: 5px; }
+  #controls .control-row .small-btn { padding-inline: 7px; font-size: 11px; }
+  #controls #upgrade-open .upgrade-open-label { display: none; }
+  #controls #end-turn { min-width: 100px; padding-left: 32px; font-size: 11px; }
+}
+
+/* ---------- パネル：白い箱をやめて、木の枠＋羊皮紙に（ボタンだけ木で、箱が浮かないように） ---------- */
+.parchment, .panel {
+  border: 5px solid #8f5a2a;
+  border-radius: 18px;
+  background: linear-gradient(#fff8e0, #f7e9c3);
+  box-shadow: 0 0 0 2px #3f2511, inset 0 0 0 2px #e0b06a, inset 0 3px 0 2px #fff6d8, 0 8px 0 #2a180a59, 0 18px 30px #00000059;
+  color: #3f321f;
+}
+#title-levels.parchment, #title-form.parchment { border: 4px solid #8f5a2a; box-shadow: 0 0 0 2px #3f2511, inset 0 0 0 2px #e0b06a; background: linear-gradient(#fff8e0, #f7e9c3); border-radius: 14px; }
+#card-detail, #discard-bar, #upgrade-panel { border-width: 4px; border-radius: 14px; }
+#target-bar { border: 4px solid #2f6f6a; box-shadow: 0 0 0 2px #173a37, inset 0 0 0 2px #a9d6cf, 0 6px 0 #0c221d4d; }
+.screen.dim { background: #1b120acc; backdrop-filter: blur(3px); }
+
+/* 見出しは木の帯 */
+.menu-title, .settings-box h2 {
+  margin: -26px -26px 16px; padding: 11px 12px 10px;
+  border-radius: 11px 11px 0 0; border-bottom: 3px solid #4f2e12;
+  background: linear-gradient(#b0703a, #8a5324);
+  box-shadow: inset 0 2px 0 #d39b5c, inset 0 -2px 0 #6f411b;
+  color: #fff3d0; font-family: var(--head); font-size: 20px; letter-spacing: .12em; text-align: center;
+  text-shadow: 0 2px 0 #3f2511;
+}
+.guide-box h2, .progress-box h2, .upgrade-head b { color: #5a3415; }
+
+/* ---------- メニュー：2列のボタン＋飾りの区切り ---------- */
+.menu-box { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 12px; }
+.menu-box > .menu-title, .menu-box > #menu-close { grid-column: 1 / -1; }
+.menu-box > .menu-title { order: 0; }
+#menu-sound { order: 1; } #menu-settings { order: 2; }
+#menu-catalog { order: 3; } #menu-rates { order: 4; }
+#menu-help { order: 5; } #menu-title-btn { order: 6; }
+.menu-box::after {
+  content: '◆'; order: 7; grid-column: 1 / -1; height: 14px; margin: 4px 0; line-height: 14px; text-align: center; font-size: 9px; color: #c2925a;
+  background: linear-gradient(#c2925a, #c2925a) left center / calc(50% - 12px) 2px no-repeat, linear-gradient(#c2925a, #c2925a) right center / calc(50% - 12px) 2px no-repeat;
+}
+#menu-surrender { order: 8; grid-column: 1 / -1; justify-self: center; width: 62%; }
+#menu-close { order: 9; }
+.menu-box .small-btn.wide { min-width: 0; min-height: 46px; padding: 8px 12px; gap: 7px; font-size: 14px; white-space: nowrap; }
+.menu-box .small-btn.wide::before { content: ''; flex: none; width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat; opacity: .85; }
+#menu-sound::before { display: none; }
+#menu-settings { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 2h4l.6 3 2.5 1.4 2.9-1 2 3.5-2.3 2v2.2l2.3 2-2 3.5-2.9-1-2.5 1.400-.6 3h-4l-.6-3-2.500-1.400-2.900 1-2-3.500 2.300-2v-2.200l-2.300-2 2-3.500 2.900 1 2.500-1.400zM12 8.500a3.500 3.500 0 1 0 0 7 3.500 3.500 0 0 0 0-7z' fill-rule='evenodd'/%3E%3C/svg%3E"); }
+#menu-catalog { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4h7a2 2 0 0 1 2 2 2 2 0 0 1 2-2h7v15h-7a2 2 0 0 0-2 2 2 2 0 0 0-2-2H3zm8 3H5v10h6zm2 0v10h6V7z' fill-rule='evenodd'/%3E%3C/svg%3E"); }
+#menu-rates { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l2.900 6.300 6.900.800-5.100 4.700 1.400 6.800L12 17.200 5.900 20.600l1.400-6.800L2.200 9.100l6.900-.8z'/%3E%3C/svg%3E"); }
+#menu-help { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.200 13.500h2.400v2.400h-2.400zM12 6c2.300 0 4 1.500 4 3.500 0 1.600-.9 2.400-1.800 3-.7.500-1 .8-1 1.700h-2.400c0-1.800.8-2.600 1.700-3.200.7-.5 1.100-.8 1.100-1.500 0-.7-.6-1.200-1.600-1.200-.9 0-1.600.5-1.900 1.400L8 8.900C8.600 7.100 10.100 6 12 6z' fill-rule='evenodd'/%3E%3C/svg%3E"); }
+#menu-title-btn { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 4v4h5a6 6 0 0 1 0 12H7v-3h8a3 3 0 0 0 0-6h-5v4l-7-5.500z'/%3E%3C/svg%3E"); }
+#menu-surrender { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v20H5zm4 2c4-2 6 2 10 0v9c-4 2-6-2-10 0z'/%3E%3C/svg%3E"); }
+.menu-box .plank-btn { margin-top: 0; }
+
+/* ---------- 設定：項目ごとの帯・ピル型の切り替え・木のスライダー ---------- */
+.settings-box { padding-bottom: 18px; }
+.set-group { margin: 0 0 12px; padding: 0 0 6px; border: 2px solid #d8b67c; border-radius: 12px; background: #fffaea; overflow: hidden; }
+.set-group h3 { margin: 0 0 4px; padding: 6px 12px; background: linear-gradient(#f0cf8e, #e6bd72); border-bottom: 2px solid #d8b67c; color: #6a4318; font-family: var(--head); font-size: 14px; letter-spacing: .08em; }
+.settings-box .set-row { display: flex; flex-wrap: nowrap; align-items: center; gap: 10px; margin: 0; padding: 7px 12px; font-size: 14px; font-weight: 800; color: #4a3a22; }
+.set-name { flex: none; width: 5.6em; line-height: 1.25; }
+.settings-box .set-row output { flex: none; width: 3.2em; margin: 0; text-align: right; font-family: var(--head); color: #8a5a24; }
+.settings-box .set-row input[name=name] { flex: 1; min-width: 0; width: auto; }
+.set-note { margin: -2px 12px 4px; font-size: 11px; line-height: 1.4; color: #8a7b5c; }
+.pill-group { flex: 1; display: flex; gap: 6px; min-width: 0; }
+.pill {
+  flex: 1; min-width: 0; min-height: 38px; padding: 4px 6px;
+  border: 2px solid #8d8672; border-radius: 999px;
+  background: linear-gradient(#f4f1e6, #d9d4c2); box-shadow: 0 2px 0 #6f6957, inset 0 1px 0 #fff;
+  color: #6f6957; font-family: var(--head); font-size: 13px; font-weight: 900; white-space: nowrap;
+}
+.pill.on { border-color: #7a4a12; background: linear-gradient(#ffe27a, #f6b62e); box-shadow: 0 2px 0 #7a4a12, inset 0 1px 0 #fff6c9; color: #4a2f17; }
+.pill:active { transform: translateY(2px); box-shadow: none; }
+#app .settings-box input[type=range] {
+  -webkit-appearance: none; appearance: none; flex: 1; min-width: 0; width: auto; height: 16px; min-height: 0; padding: 0;
+  border: 2px solid #5a3415; border-radius: 999px;
+  background: linear-gradient(90deg, #3fc7b4 var(--p, 50%), #4a3523 var(--p, 50%));
+  box-shadow: inset 0 2px 0 #ffffff59;
+}
+.settings-box input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border: 3px solid #7a4a12; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff3b0, #f6b62e); box-shadow: 0 2px 0 #3f2511; }
+.settings-box input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border: 3px solid #7a4a12; border-radius: 50%; background: #f6b62e; }
+.settings-status { margin: 4px 0; }
+/* 図鑑・合成など、見出しの横に閉じるボタンがある箱は、帯にしないで文字だけ木の色に */
+.guide-box .menu-title, .progress-box .menu-title, .guide-head .menu-title {
+  margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  color: #5a3415; text-shadow: none; text-align: left; letter-spacing: .06em;
+}
+.pill { font-size: 12px; letter-spacing: 0; padding-inline: 2px; }
+.set-name { width: 5.2em; }
+
+/* =====================================================================
+   色の役割（色彩構成）：
+     ベース（約7割）… 絵の世界の色。空の青・草の緑（背景の絵）
+     メイン（約2.5割）… UIの色。木の茶と羊皮紙のクリーム（空の青の補色側なので、絵の上で自然に立つ）
+     アクセント（約0.5割）… 金〜橙。いちばん押してほしいボタンだけに使う。赤は危険の合図だけ
+   UIに青緑（ダークティール）や、橙・緑・青の同格ボタンを並べない（主役が分からなくなるため）。
+   ===================================================================== */
+:root { --wood: #8f5a2a; --wood-dark: #3f2511; --wood-ink: #4a2f17; --parch: #fff8e0; --parch-deep: #f7e9c3; --accent: #f6a52e; }
+
+/* ---------- タイトル：用意してあった空と草原の絵を背景に。UIは木と羊皮紙、主役のボタンだけ橙 ---------- */
+#title { background: #7cc4f5 url('../assets/bg/title-compact.png') center bottom / cover no-repeat; }
+@media (min-width: 900px) { #title { background-image: url('../assets/bg/title.png'); background-position: center 62%; } }
+.title-pic { background: none; }
+.title-pic::before { display: none; }
+.title-logo { filter: drop-shadow(0 6px 0 #1d4f7a33) drop-shadow(0 0 18px #ffffffb0); }
+.title-choices {
+  border: 5px solid var(--wood); border-radius: 18px;
+  background: linear-gradient(var(--parch), var(--parch-deep));
+  box-shadow: 0 0 0 2px var(--wood-dark), inset 0 0 0 2px #e0b06a, inset 0 3px 0 2px #fff6d8, 0 8px 0 #2a180a40, 0 16px 26px #1d4f7a40;
+  color: var(--wood-ink);
+}
+#title-levels.parchment, #title-form.parchment { border: 0; box-shadow: none; background: none; padding: 4px; color: var(--wood-ink); }
+.levels-title, #title-form label { color: var(--wood-ink); }
+/* 主役は「ひとりで遊ぶ」だけ橙。ほかの2つは同じ木のクリーム（色はメダルの絵が持っている） */
+.plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { border-image-source: url('../assets/ui/btn-cream.png'); border-image-slice: 106 150 fill; color: var(--wood-ink); min-height: 66px; }
+.mode-choice.alt strong, .mode-choice.alt2 strong { text-shadow: none; font-size: 17px; }
+.plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 { filter: drop-shadow(0 4px 0 #3f251140); }
+.mode-choice:hover { filter: drop-shadow(0 6px 0 #3f251140) brightness(1.05); }
+@keyframes title-invite { 50% { filter: drop-shadow(0 4px 0 #3f251140) drop-shadow(0 0 10px #ffc94d) brightness(1.06); } }
+#title-record { color: #7a4a12; }
+#title-main #record-clear { color: #9a8560; }
+#offline-status { color: #8a7b5c; }
+#title-main #title-catalog, #title-main #title-settings, #title-main #title-help { filter: drop-shadow(0 3px 0 #3f251133); }
+
+/* ---------- UIから青緑をなくす：文字と小さい札は木の色に ---------- */
+.turn-info { background: linear-gradient(#a8692f, #7f4a1f); color: #fff3d0; box-shadow: inset 0 1px 0 #d39b5c, 0 2px 0 #3f251166; font-family: var(--head); letter-spacing: .04em; }
+.detail-name, .room-box h1, .settings-box h2, .upgrade-head b, #result-stats { color: var(--wood-ink); }
+.settings-box h2 { color: #fff3d0; }
+.detail-kind { background: #f0dcae; color: #6a4318; }
+.guide-box, .progress-box, .help-box { color: #3f321f; }
+.help-list b { color: #b0661a; }
+#title::before { background: linear-gradient(#ffffff00 0%, #ffffff00 100%); }
+/* 城と兵士は、背景の地平線の上に立たせる。背景にも城があるので、ここの城は出さない */
+#title .title-castle { display: none; }
+#title .title-pic { height: 96px; margin: 6px 0 0; transform: translateY(14px); z-index: 1; }
+#title .title-unit { width: 22%; }
+#title .title-unit.left { left: 24%; } #title .title-unit.right { right: 24%; left: auto; }
+/* PCで見たときの外側とブランド帯も、青緑ではなく木の濃い茶に */
+body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%, #6b4423, transparent 65%); }
+.game-brand { background: linear-gradient(#7f4a1f, #5f3615); color: #ffe9b0; box-shadow: inset 0 -2px 0 #3f2511; }
+
+/* =====================================================================
+   仕上げ2：試合中の画面を「木枠＋羊皮紙」にそろえる
+   ===================================================================== */
+
+/* ---------- 1. 上のバー：白い帯をやめて、羊皮紙の板に木の縁（パネルと同じ作り） ---------- */
+#hud {
+  background: linear-gradient(var(--parch), var(--parch-deep));
+  border-bottom: 4px solid var(--wood);
+  box-shadow: 0 2px 0 var(--wood-dark), inset 0 -2px 0 #e0b06a, 0 6px 10px #2a180a40;
+}
+/* 札（山・捨て・手札・コイン）：羊皮紙の小さな札に木の縁。数字は濃い茶で読みやすく */
+.chip {
+  border: 2px solid var(--wood);
+  background: linear-gradient(#fffdf0, #f7e9c3);
+  box-shadow: inset 0 1px 0 #fff, 0 1px 0 #3f251140;
+  color: var(--wood-ink);
+}
+.chip b { color: var(--wood-ink); }
+#hud .player-name { color: var(--wood-ink); }
+/* 「n周目」の札は既に木。縁を同じ木の濃い色にして、ほかの札と同じ仲間に見せる */
+.turn-info { border-color: var(--wood-dark); }
+.turn-info { background: linear-gradient(#a8692f, #7f4a1f); color: #fff3d0; box-shadow: inset 0 1px 0 #d39b5c, 0 2px 0 #3f251166; }
+.castle-label { background: linear-gradient(#fffdf0, #f7e9c3); border: 2px solid var(--wood); color: var(--wood-ink); box-shadow: 0 2px 0 #3f251140; }
+.castle.current .castle-label { background: linear-gradient(#ffeaa0, #f6cf6a); box-shadow: 0 2px 0 #3f251140; }
+
+/* ---------- 1b. HP表示：未使用だった木の看板（sign-hp.png）に ----------
+   看板の画像は 512×270 で、まわりに透明の余白がある（見える絵は幅の約58%・高さの約69%）。
+   そこで .castle-hp 自体は「見える絵」と同じ大きさ（元の白い箱と同じ幅110px）にして、
+   画像は ::before に余白ぶん大きく敷く（はみ出した余白は透明なので、城や道には重ならない）。
+   --k は大きさの倍率。小さい画面・横向きで下げる。数字は max(18px, …) で、どの大きさでも18px以上。
+   ハートは看板の絵が持っているので、文字側のハート（.hp-heart）は出さない。 */
+.castle-hp {
+  --k: 1;
+  position: relative; isolation: isolate; box-sizing: border-box;
+  width: calc(110px * var(--k)); height: calc(69px * var(--k)); align-self: center;
+  padding: calc(22px * var(--k)) calc(13px * var(--k)) 0;
+  background: none; border: 0; border-radius: 0; box-shadow: none;
+  filter: drop-shadow(0 3px 0 #3f251140);
+}
+.castle-hp::before {
+  content: ''; position: absolute; z-index: -1; left: 50%; top: 50%; pointer-events: none;
+  width: calc(190px * var(--k)); height: calc(100px * var(--k)); transform: translate(-50%, -50%);
+  background: url('../assets/ui/sign-hp.png') center / 100% 100% no-repeat;
+  /* 画像の右側にある黒い点（画像の汚れ）を切り落とす。絵そのものは幅の78%までなので、右の20%を切る */
+  clip-path: inset(0 20% 0 0);
+}
+.castle-hp .hp-heart { display: none; }
+.castle-hp .hp-text { height: max(18px, calc(22px * var(--k))); align-items: center; }
+.castle-hp .hp-value { color: #fff8e0; font-size: max(18px, calc(22px * var(--k))); line-height: 1; letter-spacing: 0; text-shadow: 0 2px 0 #3f2511, 0 0 3px #3f2511; }
+.castle-hp .hp-max { color: #ffe9b0; font-size: 9px; text-shadow: 0 1px 0 #3f2511; }
+.castle-hp .hp-bar { height: 5px; margin-top: 1px; border: 1px solid #3f2511; border-radius: 4px; background: #3f2511; }
+@media (max-width: 360px) { .castle-hp { --k: .78; } }
+@media (max-height: 480px) { .castle-hp { --k: .6; } .castle-hp .hp-bar { height: 4px; } }
+
+/* ---------- 2. CPUの強さ：3つとも同格の選択肢なので、橙（アクセント）をやめて木のクリームに ---------- */
+/* いちばん押してほしい「ひとりで遊ぶ」が橙なので、ここで橙を使うと主役が分からなくなる。
+   ボタンの木枠は9スライスなので、画像と slice 値（クリームは 106 150）をセットで差し替える */
+.plank-btn.big.level:not(.mode-choice):not(#end-turn) {
+  border-image-source: url('../assets/ui/btn-cream.png');
+  border-image-slice: 106 150 fill;
+  border-image-width: 19px 25px;
+  color: var(--wood-ink);
+  text-shadow: none;
+}
+.plank-btn.big.level small { opacity: .75; }
+
+/* ---------- 3. 対象を選ぶ帯：青緑をやめて、羊皮紙＋金の枠。「いま選ぶ」ことが分かるよう、金色の光をゆっくり脈打たせる ---------- */
+#target-bar:not(#x) {
+  border: 4px solid #d9a02c;
+  background: linear-gradient(#fffbe6, #fbe6a6);
+  color: var(--wood-ink);
+  box-shadow: 0 0 0 2px var(--wood-dark), inset 0 0 0 2px #fff3c4, 0 6px 0 #2a180a4d, 0 0 14px 2px #f6c64a99;
+  animation: panel-in .14s ease-out, target-pulse 1.6s ease-in-out .2s infinite;
+}
+@keyframes target-pulse { 50% { box-shadow: 0 0 0 2px var(--wood-dark), inset 0 0 0 2px #fff3c4, 0 6px 0 #2a180a4d, 0 0 22px 6px #f6c64acc; } }
+.reduced-motion #target-bar { animation: none; }
+@media (prefers-reduced-motion: reduce) { #target-bar:not(#x) { animation: none; } }
+.target-msg { color: var(--wood-ink); font-weight: 800; }
+
+/* ---------- 4. 図鑑・強化（ショップ）のカード：白い箱を羊皮紙の色に ---------- */
+.guide-card { background: linear-gradient(#fff8e0, #f7e9c3); border: 2px solid #c9a35a; border-bottom-width: 4px; box-shadow: inset 0 0 0 2px #fff3cf, 0 2px 0 #3f251126; color: var(--wood-ink); }
+.guide-card small, .guide-short { color: #7a5a30; }
+.guide-effect { background: #f7e9c3; border: 2px solid #e0c58a; color: var(--wood-ink); }
+.fusion-path { background: #fff3d2; border: 2px solid #e0c58a; color: var(--wood-ink); }
+.guide-note, .guide-family-info, .guide-movement { color: #4a3a22; }
+.detail-kind { border-radius: 999px; }
+#upgrade-panel .upgrade-item:not(.blocked) { background: linear-gradient(#fff8e0, #f7e9c3); border: 2px solid #c9a35a; box-shadow: inset 0 0 0 2px #fff3cf, 0 3px 0 #b4863a; }
+#upgrade-panel .upgrade-item.blocked { background: #ecdcb2; border: 2px solid #d6bf86; box-shadow: none; }
+.upgrade-item .upgrade-desc { color: #5a4a2c; }
+.upgrade-item.blocked .upgrade-name { color: #8d7a55; }
+
+/* =====================================================================
+   仕上げ3
+   ===================================================================== */
+
+/* ---------- 5. 設定のスライダー：塗りを青緑から金〜橙に（アクセントはここでは「いまの値」を示す小さな線だけ） ---------- */
+#app .settings-box input[type=range] { background: linear-gradient(90deg, #e8a530 var(--p, 50%), #4a3523 var(--p, 50%)); }
+
+/* ---------- 6. 手札の「合成可」バッジ：濃い青緑をやめて木の茶＋羊皮紙の文字 ---------- */
+.card.can-fuse::after { background: linear-gradient(#a8692f, #7f4a1f); border: 1px solid var(--wood-dark); color: var(--parch); box-shadow: 0 1px 0 #3f251166; }
+.card.choosing { box-shadow: 0 0 0 2px #d9a02c; }
+
+/* ---------- 8. 手番交代の画面：前の人の手札を隠すので不透明のまま、タイトルと同じ空と草原の絵を敷く ---------- */
+#handover, #handover[data-player=p2] { background: #7cc4f5 url('../assets/bg/title-compact.png') center bottom / cover no-repeat; }
+@media (min-width: 900px) { #handover, #handover[data-player=p2] { background-image: url('../assets/bg/title.png'); background-position: center 62%; } }
+.handover-title { color: var(--wood-ink); }
+.handover-turn { color: var(--wood-ink); }
+
+/* ---------- 9. UIに残っていた青緑の文字を、木の茶に ---------- */
+.settings-box label, .detail-desc, .local-fields label, .economy-status { color: var(--wood-ink); }
+.settings-status { color: #7a5a30; }
+.help-road > b { color: var(--wood-ink); }
+.detail-hint, #card-detail .detail-hint { color: #7a5a30; }
+.economy-status { background: #f7e9c3; }
+.screen-sub { color: #7a5a30; }
+
+/* ---------- 7. 横向き：「ターン終了」の左の旗に文字がかぶって「ーン終」に見えていたので、幅と左の余白を広げる ---------- */
+@media (max-height: 480px) {
+  #controls #end-turn { min-width: 128px; padding: 8px 12px 8px 42px; font-size: 12px; white-space: nowrap; }
+}
+
+/* ---------- 1c. 広場（3人以上）：城が8つ並んで名札と重なるので、看板をやめて小さな羊皮紙の札（木の縁）に ---------- */
+.plaza-stage .castle-hp {
+  width: 92px; height: auto; padding: 2px 6px 4px; border: 2px solid var(--wood); border-radius: 10px;
+  background: linear-gradient(#fffdf0, #f7e9c3); box-shadow: 0 2px 0 #3f251140, inset 0 1px 0 #fff; filter: none;
+}
+.plaza-stage .castle-hp::before { display: none; }
+.plaza-stage .castle-hp .hp-heart { display: inline-flex; font-size: 13px; }
+.plaza-stage .castle-hp .hp-text { height: 24px; }
+.plaza-stage .castle-hp .hp-value { color: var(--wood-ink); text-shadow: none; font-size: 20px; }
+.plaza-stage .castle-hp .hp-max { color: #7a5a30; text-shadow: none; font-size: 10px; }
+.plaza-stage .castle-hp .hp-bar { height: 5px; border-color: var(--wood); background: #e6d3a2; }
+.plaza-zoom { background: linear-gradient(#fffdf0, #f7e9c3); border: 2px solid var(--wood); color: var(--wood-ink); }
+
+/* ---------- 9. 色の下地：theme.css が文字・縁の基本色 --ink を青緑がかった暗い色（#263e3b）にしていたので、木の濃い茶に戻す ----------
+   --ink は文字と細い縁のほぼ全部が使っている。ここを変えると、個別に直さなくても青緑の文字・縁がいっぺんに茶になる */
+:root { --ink: #3f2511; }
+#toast { background: #3f2511f5; border-color: #e0b06a; box-shadow: 0 8px 24px #2a180a55; }
+.title-logo { color: var(--wood-ink); }
+
+/* =====================================================================
+   仕上げ4
+   ===================================================================== */
+
+/* ---------- C. ロビーの選択をピル型に（js/ui/pills.js）：設定画面と同じ .pill-group / .pill を使う ----------
+   本物の値を持つ select は隠して残す（display:none。settings.css の display:block に負けないよう !important）。
+   選択肢が多いものは折り返し（pill-wrap）、文が長いものは縦に並べる（pill-stack）。 */
+.pill-source { display: none !important; }
+.pill-group.pill-wrap { flex-wrap: wrap; }
+.pill-wrap .pill { flex: 0 0 auto; min-width: 3.6em; padding-inline: 12px; }
+.pill-group.pill-stack { flex-direction: column; }
+.pill-stack .pill { flex: none; width: 100%; min-height: 36px; padding: 5px 14px; border-radius: 14px; white-space: normal; text-align: left; line-height: 1.3; }
+.pill:disabled { opacity: .55; cursor: default; }
+.pill:disabled:active { transform: none; box-shadow: 0 2px 0 #6f6957, inset 0 1px 0 #fff; }
+.pill.on:disabled { opacity: .85; }
+.local-fields .pill-group { margin-top: 5px; }
+.local-fields label { margin: 12px 0; }
+/* タイトルの「人数・城・デッキ」：白に近い箱をやめて羊皮紙に */
+.local-options { border: 2px solid #c9a35a; background: linear-gradient(#fff8e0, #f7e9c3); box-shadow: inset 0 0 0 2px #fff3cf; }
+.local-options summary { color: var(--wood-ink); }
+.local-fields label, .local-note { color: var(--wood-ink); }
+/* オンラインの部屋：ラベルを上、ピルを下に */
+.room-select.has-pills { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 5px; }
+.room-select.has-pills > span { color: var(--wood-ink); }
+.room-settings { border: 2px solid #c9a35a; background: linear-gradient(#fff8e0, #f7e9c3); box-shadow: inset 0 0 0 2px #fff3cf; }
+.room-seat { background: linear-gradient(#fffdf0, #f7e9c3); }
+.room-seat.room-self { background: linear-gradient(#fffbe3, #f9e5a8); }
+.room-select, .room-note { color: var(--wood-ink); }
+
+/* ---------- E. HPが少ないとき：木の看板の上で淡いピンクは弱い。数字は明るいクリームのまま、赤いふちと赤い光で危険を伝える ---------- */
+.castle.danger .castle-hp .hp-value {
+  color: #fff8e0; animation: danger-pulse .8s ease-in-out infinite;
+  text-shadow: 0 0 2px #a8190e, 0 2px 0 #a8190e, 2px 0 0 #a8190e, -2px 0 0 #a8190e, 0 -1px 0 #a8190e, 0 0 8px #e0483a;
+}
+@keyframes danger-pulse { 50% { transform: scale(1.12); } }
+.castle.under-threat .castle-hp { border: 0; box-shadow: none; filter: drop-shadow(0 0 6px #e0483a) drop-shadow(0 3px 0 #3f251140); }
+.plaza-stage .castle.under-threat .castle-hp { border: 2px solid #b84032; filter: none; box-shadow: 0 0 0 2px #e0483a66, 0 2px 0 #3f251140; }
+.plaza-stage .castle.danger .castle-hp .hp-value { color: #b3261a; text-shadow: none; }
+
+/* ---------- D. 魔物の予告バナー：魔物の上に幅115px・高さ45pxで出ていて、道の幅（約98px）からはみ出し、
+   となりの道の兵士の数値（攻撃力・HP）に重なっていた。道の幅におさまる小さな札にして、魔物の絵の下半分（体のあたり）に重ねる。
+   魔物の上や下は、戦っている兵士が立つマスで、兵士の数値を隠してしまうため。魔物の絵のほうが隠れても困らない。文言と出し方は変えていない。
+   羊皮紙＋木の縁にそろえ、下の兵士をタップできるよう pointer-events も切る。「次の周回で攻撃」の赤は危険の合図なので残す。 */
+.monster-attack-in {
+  top: 60%; min-width: 0; width: max-content; max-width: 94px; gap: 0; padding: 2px 6px; line-height: 1.15;
+  border: 2px solid var(--wood); border-radius: 10px;
+  background: linear-gradient(#fffdf0, #f7e9c3); color: var(--wood-ink);
+  box-shadow: 0 2px 0 #3f251140; pointer-events: none; z-index: 2;
+}
+.monster-attack-in b { font-size: 10.5px; }
+.monster-attack-in small { font-size: 9.5px; font-weight: 800; }
+.monster[data-danger=true] .monster-attack-in { background: linear-gradient(#c8493c, #a33c32); border-color: #3f2511; color: #fff8de; }
+
+/* ---------- 9b. キーボードフォーカスの枠：濃い青（#163e54）をやめて、木の濃い茶＋クリームのふち（どの背景でも見える） ---------- */
+:focus-visible { outline: 3px solid #3f2511 !important; box-shadow: 0 0 0 5px #fff7d6 !important; }
+/* 下のお知らせの灰緑の文字を茶に */
+#message { color: #5a3d1f; }
+.progress-note, .progress-empty { color: #7a5a30; }
+
+/* ---------- E2. 広場：名札の折り返しを文節で（「ホス/ト」を避ける）。横向きは拡大ボタンを小さくして、上の城の札に重ならないように ---------- */
+.plaza-stage .castle-label { word-break: auto-phrase; text-wrap: balance; }
+@media (min-width: 600px) { .plaza-stage .castle-label { max-width: 190px; } }
+@media (max-height: 480px) {
+  .plaza-zoom { top: 2px; right: 4px; gap: 3px; padding: 2px 4px; border-radius: 8px; }
+  /* rarity-assets.css の .small-btn:not(#title-help) がID並みに強いので、同じ :not(#title-help) を付けて上書きする */
+  .plaza-zoom .small-btn:not(#title-help) { min-width: 0; min-height: 28px; padding: 2px 8px; font-size: 14px; border-image-width: 9px 11px; }
+  .plaza-zoom span, .plaza-zoom output { font-size: 11px; }
+}
+
+/* ---------- 7. 広場：下半分の城（自分）の名札とHP札が、盤面の下端からはみ出して見えなかった ----------
+   城の箱は118×106pxの固定で、名札とHP札は箱の外に出る。下半分の城だけ上へずらして収める
+   （位置の定数 PLAZA_RADIUS は Renderer.js にあり、触らずに CSS だけで直す）。 */
+.plaza-stage .plaza-castle:not(.plaza-upper) { transform: translate(-50%, calc(-50% - 22px)); }
+@media (max-height: 480px) { .plaza-stage .plaza-castle:not(.plaza-upper) { transform: translate(-50%, calc(-50% - 36px)); } }
+
+/* ロビーの項目名：label から div＋span に変えたので、label 用だった書式を span にも当てる */
+.local-field { margin: 12px 0; }
+.local-field > span { display: block; font-size: 12px; font-weight: 800; color: var(--wood-ink); }
