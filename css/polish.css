@@ -545,3 +545,82 @@ body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%,
 :root { --ink: #3f2511; }
 #toast { background: #3f2511f5; border-color: #e0b06a; box-shadow: 0 8px 24px #2a180a55; }
 .title-logo { color: var(--wood-ink); }
+
+/* =====================================================================
+   仕上げ4
+   ===================================================================== */
+
+/* ---------- C. ロビーの選択をピル型に（js/ui/pills.js）：設定画面と同じ .pill-group / .pill を使う ----------
+   本物の値を持つ select は隠して残す（display:none。settings.css の display:block に負けないよう !important）。
+   選択肢が多いものは折り返し（pill-wrap）、文が長いものは縦に並べる（pill-stack）。 */
+.pill-source { display: none !important; }
+.pill-group.pill-wrap { flex-wrap: wrap; }
+.pill-wrap .pill { flex: 0 0 auto; min-width: 3.6em; padding-inline: 12px; }
+.pill-group.pill-stack { flex-direction: column; }
+.pill-stack .pill { flex: none; width: 100%; min-height: 36px; padding: 5px 14px; border-radius: 14px; white-space: normal; text-align: left; line-height: 1.3; }
+.pill:disabled { opacity: .55; cursor: default; }
+.pill:disabled:active { transform: none; box-shadow: 0 2px 0 #6f6957, inset 0 1px 0 #fff; }
+.pill.on:disabled { opacity: .85; }
+.local-fields .pill-group { margin-top: 5px; }
+.local-fields label { margin: 12px 0; }
+/* タイトルの「人数・城・デッキ」：白に近い箱をやめて羊皮紙に */
+.local-options { border: 2px solid #c9a35a; background: linear-gradient(#fff8e0, #f7e9c3); box-shadow: inset 0 0 0 2px #fff3cf; }
+.local-options summary { color: var(--wood-ink); }
+.local-fields label, .local-note { color: var(--wood-ink); }
+/* オンラインの部屋：ラベルを上、ピルを下に */
+.room-select.has-pills { flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 5px; }
+.room-select.has-pills > span { color: var(--wood-ink); }
+.room-settings { border: 2px solid #c9a35a; background: linear-gradient(#fff8e0, #f7e9c3); box-shadow: inset 0 0 0 2px #fff3cf; }
+.room-seat { background: linear-gradient(#fffdf0, #f7e9c3); }
+.room-seat.room-self { background: linear-gradient(#fffbe3, #f9e5a8); }
+.room-select, .room-note { color: var(--wood-ink); }
+
+/* ---------- E. HPが少ないとき：木の看板の上で淡いピンクは弱い。数字は明るいクリームのまま、赤いふちと赤い光で危険を伝える ---------- */
+.castle.danger .castle-hp .hp-value {
+  color: #fff8e0; animation: danger-pulse .8s ease-in-out infinite;
+  text-shadow: 0 0 2px #a8190e, 0 2px 0 #a8190e, 2px 0 0 #a8190e, -2px 0 0 #a8190e, 0 -1px 0 #a8190e, 0 0 8px #e0483a;
+}
+@keyframes danger-pulse { 50% { transform: scale(1.12); } }
+.castle.under-threat .castle-hp { border: 0; box-shadow: none; filter: drop-shadow(0 0 6px #e0483a) drop-shadow(0 3px 0 #3f251140); }
+.plaza-stage .castle.under-threat .castle-hp { border: 2px solid #b84032; filter: none; box-shadow: 0 0 0 2px #e0483a66, 0 2px 0 #3f251140; }
+.plaza-stage .castle.danger .castle-hp .hp-value { color: #b3261a; text-shadow: none; }
+
+/* ---------- D. 魔物の予告バナー：魔物の上に幅115px・高さ45pxで出ていて、道の幅（約98px）からはみ出し、
+   となりの道の兵士の数値（攻撃力・HP）に重なっていた。道の幅におさまる小さな札にして、魔物の絵の下半分（体のあたり）に重ねる。
+   魔物の上や下は、戦っている兵士が立つマスで、兵士の数値を隠してしまうため。魔物の絵のほうが隠れても困らない。文言と出し方は変えていない。
+   羊皮紙＋木の縁にそろえ、下の兵士をタップできるよう pointer-events も切る。「次の周回で攻撃」の赤は危険の合図なので残す。 */
+.monster-attack-in {
+  top: 60%; min-width: 0; width: max-content; max-width: 94px; gap: 0; padding: 2px 6px; line-height: 1.15;
+  border: 2px solid var(--wood); border-radius: 10px;
+  background: linear-gradient(#fffdf0, #f7e9c3); color: var(--wood-ink);
+  box-shadow: 0 2px 0 #3f251140; pointer-events: none; z-index: 2;
+}
+.monster-attack-in b { font-size: 10.5px; }
+.monster-attack-in small { font-size: 9.5px; font-weight: 800; }
+.monster[data-danger=true] .monster-attack-in { background: linear-gradient(#c8493c, #a33c32); border-color: #3f2511; color: #fff8de; }
+
+/* ---------- 9b. キーボードフォーカスの枠：濃い青（#163e54）をやめて、木の濃い茶＋クリームのふち（どの背景でも見える） ---------- */
+:focus-visible { outline: 3px solid #3f2511 !important; box-shadow: 0 0 0 5px #fff7d6 !important; }
+/* 下のお知らせの灰緑の文字を茶に */
+#message { color: #5a3d1f; }
+.progress-note, .progress-empty { color: #7a5a30; }
+
+/* ---------- E2. 広場：名札の折り返しを文節で（「ホス/ト」を避ける）。横向きは拡大ボタンを小さくして、上の城の札に重ならないように ---------- */
+.plaza-stage .castle-label { word-break: auto-phrase; text-wrap: balance; }
+@media (min-width: 600px) { .plaza-stage .castle-label { max-width: 190px; } }
+@media (max-height: 480px) {
+  .plaza-zoom { top: 2px; right: 4px; gap: 3px; padding: 2px 4px; border-radius: 8px; }
+  /* rarity-assets.css の .small-btn:not(#title-help) がID並みに強いので、同じ :not(#title-help) を付けて上書きする */
+  .plaza-zoom .small-btn:not(#title-help) { min-width: 0; min-height: 28px; padding: 2px 8px; font-size: 14px; border-image-width: 9px 11px; }
+  .plaza-zoom span, .plaza-zoom output { font-size: 11px; }
+}
+
+/* ---------- 7. 広場：下半分の城（自分）の名札とHP札が、盤面の下端からはみ出して見えなかった ----------
+   城の箱は118×106pxの固定で、名札とHP札は箱の外に出る。下半分の城だけ上へずらして収める
+   （位置の定数 PLAZA_RADIUS は Renderer.js にあり、触らずに CSS だけで直す）。 */
+.plaza-stage .plaza-castle:not(.plaza-upper) { transform: translate(-50%, calc(-50% - 22px)); }
+@media (max-height: 480px) { .plaza-stage .plaza-castle:not(.plaza-upper) { transform: translate(-50%, calc(-50% - 36px)); } }
+
+/* ロビーの項目名：label から div＋span に変えたので、label 用だった書式を span にも当てる */
+.local-field { margin: 12px 0; }
+.local-field > span { display: block; font-size: 12px; font-weight: 800; color: var(--wood-ink); }
