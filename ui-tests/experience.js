@@ -155,7 +155,7 @@ async function buyFromShop() {
   const url = new URL(base);
   url.search = new URLSearchParams({
     local: '1', cpu: 'hard', debug: '1', seed: '8',
-    rules: JSON.stringify({ initialCoins: 5 }),
+    rules: JSON.stringify({ initialCoins: 5, defenseReaction: false }),
   });
   await page.goto(url.href);
   await page.waitForFunction(() => document.querySelector('#hud').dataset.turn === 'mine' && !document.querySelector('#app').classList.contains('busy'));
