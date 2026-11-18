@@ -42,6 +42,7 @@ export class AccountPanel {
       </section>
       <p class="account-msg" data-part="msg" role="status"></p>
       <div class="account-danger">
+        <button type="button" class="small-btn" data-act="export">データを書き出す</button>
         <button type="button" class="small-btn" data-act="logout">ログアウト</button>
         <button type="button" class="small-btn danger" data-act="delete">アカウントを削除</button>
       </div>
@@ -123,6 +124,14 @@ export class AccountPanel {
       if (!r.ok) { this.say(r.reason, true); return this.render(); }
       if (act === 'switch') { this.toast('アカウントを切りかえました'); await account.init(); }
       return this.render();
+    }
+    if (act === 'export') {
+      const r = await fetch('/api/account/export', { credentials: 'same-origin', cache: 'no-store', headers: { 'X-CF-Client': '1' } });
+      if (!r.ok) { const j = await r.json().catch(() => null); return this.say(j?.reason ?? '書き出せませんでした', true); }
+      const url = URL.createObjectURL(await r.blob());
+      const a = Object.assign(document.createElement('a'), { href: url, download: 'castlefield-my-data.json' });
+      document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return this.say('自分のデータを書き出しました（ダウンロードを確認してください）');
     }
     if (act === 'logout') {
       const guest = account.user?.kind === 'guest';

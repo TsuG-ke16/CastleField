@@ -26,9 +26,10 @@ export class Accounts {
    * @param {object} [o.cards] cards.json（デッキに入れられるカード種類の確認用）
    * @param {() => number} [o.now]
    */
-  constructor(db, { cards = null, now = () => Date.now(), sessionAbsoluteMs = 90 * DAY, sessionIdleMs = 30 * DAY } = {}) {
+  constructor(db, { cards = null, modeIds = ['kingdom'], now = () => Date.now(), sessionAbsoluteMs = 90 * DAY, sessionIdleMs = 30 * DAY } = {}) {
     this.db = db;
     this.cards = cards;
+    this.modeIds = modeIds; // 使えるモード（世界）
     this.now = now;
     this.sessionAbsoluteMs = sessionAbsoluteMs;
     this.sessionIdleMs = sessionIdleMs;
@@ -240,33 +241,40 @@ export class Accounts {
     return { active, slots };
   }
 
-  /** @returns {{ active: number, slots: ({name:string,list:object}|null)[], revision: number }} */
-  getDecks(userId) {
+  checkMode(modeId) {
+    if (typeof modeId !== 'string' || !this.modeIds.includes(modeId)) throw new AccountError('そのモードは使えません');
+    return modeId;
+  }
+
+  /** @returns {{ active: number, slots: ({name:string,list:object}|null)[], revision: number }} モード（世界）ごと。省略すると王国 */
+  getDecks(userId, modeId = 'kingdom') {
     const slots = Array(DECK_SLOTS).fill(null);
-    for (const r of this.db.all('SELECT slot, name, list_json FROM user_decks WHERE user_id = ?', userId)) {
+    for (const r of this.db.all('SELECT slot, name, list_json FROM user_decks WHERE user_id = ? AND mode_id = ?', userId, modeId)) {
       if (r.slot < DECK_SLOTS) slots[r.slot] = { name: r.name, list: JSON.parse(r.list_json) };
     }
-    const s = this.db.get('SELECT active_deck, deck_revision FROM user_settings WHERE user_id = ?', userId) ?? { active_deck: 0, deck_revision: 0 };
+    const s = this.db.get('SELECT active_deck, deck_revision FROM user_deck_settings WHERE user_id = ? AND mode_id = ?', userId, modeId) ?? { active_deck: 0, deck_revision: 0 };
     return { active: s.active_deck, slots, revision: s.deck_revision };
   }
 
-  writeDecks(userId, { active, slots }) {
-    this.db.run('DELETE FROM user_decks WHERE user_id = ?', userId);
+  writeDecks(userId, { active, slots }, modeId = 'kingdom') {
+    this.db.run('DELETE FROM user_decks WHERE user_id = ? AND mode_id = ?', userId, modeId);
     const t = this.now();
     slots.forEach((d, slot) => {
-      if (d) this.db.run('INSERT INTO user_decks (user_id, slot, name, list_json, updated_at) VALUES (?, ?, ?, ?, ?)', userId, slot, d.name, JSON.stringify(d.list), t);
+      if (d) this.db.run('INSERT INTO user_decks (user_id, mode_id, slot, name, list_json, updated_at) VALUES (?, ?, ?, ?, ?, ?)', userId, modeId, slot, d.name, JSON.stringify(d.list), t);
     });
-    this.db.run('UPDATE user_settings SET active_deck = ?, deck_revision = deck_revision + 1 WHERE user_id = ?', active, userId);
+    this.db.run(`INSERT INTO user_deck_settings (user_id, mode_id, active_deck, deck_revision) VALUES (?, ?, ?, 1)
+      ON CONFLICT(user_id, mode_id) DO UPDATE SET active_deck = excluded.active_deck, deck_revision = deck_revision + 1`, userId, modeId, active);
   }
 
   /** 保存。baseRevision を渡すと、ほかの端末が先に変えていたときは 409（上書きして消さないため） */
-  putDecks(userId, input, baseRevision = null) {
+  putDecks(userId, input, baseRevision = null, modeId = 'kingdom') {
+    this.checkMode(modeId);
     const clean = this.validateDeckSlots(input);
     return this.db.tx(() => {
-      const cur = this.getDecks(userId);
+      const cur = this.getDecks(userId, modeId);
       if (baseRevision != null && baseRevision !== cur.revision) throw new AccountError('ほかの端末でデッキが変わっています', 409, { conflict: true, revision: cur.revision });
-      this.writeDecks(userId, clean);
-      return this.getDecks(userId);
+      this.writeDecks(userId, clean, modeId);
+      return this.getDecks(userId, modeId);
     });
   }
 
@@ -274,10 +282,11 @@ export class Accounts {
    * 端末のデッキの取り込み：持っているデッキは消さず、まだないデッキを空いている枠に入れる。
    * 同じ名前・同じ中身のデッキはもうあるものとして飛ばす（何度送っても結果は同じ）。枠が足りないぶんは skipped に数える
    */
-  importDecks(userId, input) {
+  importDecks(userId, input, modeId = 'kingdom') {
+    this.checkMode(modeId);
     const clean = this.validateDeckSlots(input);
     return this.db.tx(() => {
-      const cur = this.getDecks(userId);
+      const cur = this.getDecks(userId, modeId);
       const hadAny = cur.slots.some(Boolean);
       const slots = [...cur.slots];
       const same = (a, b) => a.name === b.name && JSON.stringify(Object.entries(a.list).sort()) === JSON.stringify(Object.entries(b.list).sort());
@@ -290,8 +299,8 @@ export class Accounts {
         slots[free] = d; imported += 1;
         if (i === clean.active) firstPlaced = free;
       });
-      if (imported) this.writeDecks(userId, { active: hadAny ? cur.active : (firstPlaced ?? slots.findIndex(Boolean)), slots });
-      return { ...this.getDecks(userId), imported: imported > 0, skipped };
+      if (imported) this.writeDecks(userId, { active: hadAny ? cur.active : (firstPlaced ?? slots.findIndex(Boolean)), slots }, modeId);
+      return { ...this.getDecks(userId, modeId), imported: imported > 0, skipped };
     });
   }
 }

@@ -35,6 +35,7 @@ import { RankedView, RankingView } from './ui/RankedView.js';
 import { SocialView } from './ui/SocialView.js';
 import { CollectionView } from './ui/CollectionView.js';
 import { Cosmetics } from './ui/Cosmetics.js';
+import { MissionView } from './ui/MissionView.js';
 import { showMatchProgress } from './ui/Progression.js';
 import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
@@ -339,6 +340,7 @@ async function boot() {
     onShop: () => collectionView.open('shop'),
     onGacha: () => collectionView.open('gacha'),
     onSkin: () => collectionView.open('collection'),
+    onMission: () => missionView.open(),
   });
   // ランクマッチ：相手が見つかったら、サーバーが作った部屋の鍵で入る（ページを読み直したときと同じつなぎ方）
   rankedView = new RankedView({
@@ -376,6 +378,7 @@ async function boot() {
     onEquipChanged: (equipped) => { cosmetics.setMine(equipped); loadMine(); },
     onBalance: () => home.refresh(),
   });
+  const missionView = new MissionView({ toast, onChanged: () => home.refresh() });
   let socialStarted = false;
   let homeOpened = false;
   account.onChange(() => {

@@ -292,7 +292,7 @@ export class SocialView {
       case 'toggle': this.expanded = this.expanded === id ? null : id; this.confirming = null; return this.render();
       case 'profile': this.close(); return this.onProfile(id);
       case 'copy': try { await navigator.clipboard.writeText(this.data.code); this.say('コピーしました'); } catch { this.say('コピーできませんでした。コードを見て入力してもらってください', true); } return undefined;
-      case 'request': { const r = await this.call('/api/friends/request', { userId: id }); if (r) { this.say(r.state === 'accepted' ? 'フレンドになりました' : '申請しました'); await this.search(); await this.refresh(); } return undefined; }
+      case 'request': { const r = await this.call('/api/friends/request', { userId: id }); if (r) { await this.search(); await this.refresh(); this.say(r.state === 'accepted' ? 'フレンドになりました' : '申請しました'); } return undefined; }
       case 'accept': case 'decline': await this.call('/api/friends/respond', { userId: id, accept: act === 'accept' }); return this.refresh();
       case 'cancel': await this.call('/api/friends/cancel', { userId: id }); return this.refresh();
       case 'remove': if (confirmed(`rm-${id}`)) { await this.call('/api/friends/remove', { userId: id }); this.expanded = null; await this.refresh(); } return undefined;

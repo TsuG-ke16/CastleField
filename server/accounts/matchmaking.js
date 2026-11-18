@@ -31,7 +31,7 @@ export class Matchmaker {
     const done = this.results.get(userId);
     if (done?.state === 'matched') return { ok: false, reason: 'すでに試合が成立しています', ...this.status(userId) };
     if (done) this.results.delete(userId); // 古いタイムアウトの知らせは捨てて、探し直す
-    if (!this.queue.has(userId)) this.queue.set(userId, { userId, mmr: this.mmrOf(userId), joinedAt: this.now(), modeId });
+    if (!this.queue.has(userId)) this.queue.set(userId, { userId, mmr: this.mmrOf(userId, modeId), joinedAt: this.now(), modeId });
     this.tick();
     return { ok: true, ...this.status(userId) };
   }

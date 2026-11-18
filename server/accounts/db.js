@@ -267,6 +267,51 @@ export const MIGRATIONS = [
       CREATE INDEX gacha_pulls_user ON gacha_pulls(user_id, id);
     `,
   },
+  {
+    id: 6,
+    name: 'missions-season-rewards-modes',
+    sql: `
+      CREATE TABLE mission_progress (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        mission_id    TEXT NOT NULL,
+        period_key    TEXT NOT NULL,
+        progress      INTEGER NOT NULL DEFAULT 0,
+        completed_at  INTEGER,
+        claimed_at    INTEGER,
+        PRIMARY KEY (user_id, mission_id, period_key)
+      );
+      CREATE TABLE season_rewards (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        season        INTEGER NOT NULL,
+        mode_id       TEXT NOT NULL DEFAULT 'kingdom',
+        tier_id       TEXT NOT NULL,
+        coins         INTEGER NOT NULL,
+        claimed_at    INTEGER NOT NULL,
+        PRIMARY KEY (user_id, season, mode_id)
+      );
+      -- デッキと「使っている枠」をモード（世界）ごとに分ける。いまあるものは王国に入れる
+      CREATE TABLE user_decks_v2 (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        mode_id       TEXT NOT NULL DEFAULT 'kingdom',
+        slot          INTEGER NOT NULL CHECK (slot >= 0 AND slot < 8),
+        name          TEXT NOT NULL,
+        list_json     TEXT NOT NULL,
+        updated_at    INTEGER NOT NULL,
+        PRIMARY KEY (user_id, mode_id, slot)
+      );
+      INSERT INTO user_decks_v2 (user_id, mode_id, slot, name, list_json, updated_at) SELECT user_id, 'kingdom', slot, name, list_json, updated_at FROM user_decks;
+      DROP TABLE user_decks;
+      ALTER TABLE user_decks_v2 RENAME TO user_decks;
+      CREATE TABLE user_deck_settings (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        mode_id       TEXT NOT NULL DEFAULT 'kingdom',
+        active_deck   INTEGER NOT NULL DEFAULT 0,
+        deck_revision INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (user_id, mode_id)
+      );
+      INSERT INTO user_deck_settings (user_id, mode_id, active_deck, deck_revision) SELECT user_id, 'kingdom', active_deck, deck_revision FROM user_settings;
+    `,
+  },
 ];
 
 export class Db {

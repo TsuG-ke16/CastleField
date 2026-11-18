@@ -1,0 +1,101 @@
+{
+  "_note": "ミッション（数値は仮）。進み具合はサーバーが、確定した試合の結果とゲームのイベントから数える。クライアントが達成を申告する口はない。期間の区切りは日本時間（JST）",
+  "pickDaily": 3,
+  "daily": [
+    {
+      "id": "d_play",
+      "name": "対戦を1回完了する",
+      "metric": "matches",
+      "target": 1,
+      "coins": 30
+    },
+    {
+      "id": "d_win",
+      "name": "対戦に1回勝利する",
+      "metric": "wins",
+      "target": 1,
+      "coins": 40
+    },
+    {
+      "id": "d_fuse",
+      "name": "カードを3回合成する",
+      "metric": "fuses",
+      "target": 3,
+      "coins": 30
+    },
+    {
+      "id": "d_monster",
+      "name": "魔物を1体倒す",
+      "metric": "monsters",
+      "target": 1,
+      "coins": 40
+    },
+    {
+      "id": "d_play2",
+      "name": "対戦を2回完了する",
+      "metric": "matches",
+      "target": 2,
+      "coins": 40
+    },
+    {
+      "id": "d_ranked",
+      "name": "ランクマッチを1回遊ぶ",
+      "metric": "rankedMatches",
+      "target": 1,
+      "coins": 50
+    }
+  ],
+  "weekly": [
+    {
+      "id": "w_play",
+      "name": "対戦を5回完了する",
+      "metric": "matches",
+      "target": 5,
+      "coins": 120
+    },
+    {
+      "id": "w_win",
+      "name": "対戦に3回勝利する",
+      "metric": "wins",
+      "target": 3,
+      "coins": 150
+    },
+    {
+      "id": "w_fuse",
+      "name": "カードを5回合成する",
+      "metric": "fuses",
+      "target": 5,
+      "coins": 120
+    },
+    {
+      "id": "w_monster",
+      "name": "魔物を3体倒す",
+      "metric": "monsters",
+      "target": 3,
+      "coins": 150
+    }
+  ],
+  "season": [
+    {
+      "id": "s_play",
+      "name": "シーズン中に対戦を30回完了する",
+      "metric": "matches",
+      "target": 30,
+      "coins": 600
+    },
+    {
+      "id": "s_win",
+      "name": "シーズン中に対戦に15回勝利する",
+      "metric": "wins",
+      "target": 15,
+      "coins": 800
+    },
+    {
+      "id": "s_ranked",
+      "name": "シーズン中にランクマッチで5回勝利する",
+      "metric": "rankedWins",
+      "target": 5,
+      "coins": 1000
+    }
+  ]
+}

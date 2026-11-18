@@ -211,6 +211,10 @@ export class Room {
       seats: this.seats.map((s, i) => ({ seat: i, playerId: s.playerId, userId: s.userId ?? null, name: s.name, cpu: s.cpu ?? null, team: teams?.[i] ?? null, deckName: rules.deckMode === 'cost' ? (s.deckList ? 'マイデッキ' : s.costDeck) : null })),
       deckMode: rules.deckMode, winCondition: rules.winCondition,
     };
+    // ミッション用：試合のあいだの、合成した回数・魔物のとどめを、席ごとに数える（サーバーが見たゲームのイベントから）
+    this.matchMeta.stats = Object.fromEntries(this.seats.map((s) => [s.playerId, { fuses: 0, monsters: 0 }]));
+    game.on('cardsFused', (p) => { const st = this.matchMeta?.stats?.[p.playerId]; if (st && this.game === game) st.fuses += 1; });
+    game.on('monsterDefeated', (p) => { const st = this.matchMeta?.stats?.[p.playerId]; if (st && this.game === game) st.monsters += 1; });
     game.on('gameOver', (payload) => this.finishMatch(game, payload));
     for (const type of EVENT_TYPES) {
       game.on(type, (payload) => {
@@ -233,10 +237,10 @@ export class Room {
     try {
       const seats = meta.seats.map((m) => {
         const won = payload.winnerTeam ? m.team === payload.winnerTeam : m.playerId === payload.winner;
-        return { seat: m.seat, userId: m.userId, name: m.name, cpu: m.cpu, won, left: !!this.seats[m.seat]?.left, deckName: m.deckName };
+        return { seat: m.seat, userId: m.userId, name: m.name, cpu: m.cpu, won, left: !!this.seats[m.seat]?.left, deckName: m.deckName, stats: meta.stats?.[m.playerId] ?? { fuses: 0, monsters: 0 } };
       });
       this.onMatchEnd({
-        matchId: meta.matchId, modeId: 'kingdom', roomId: this.roomId, startedAt: meta.startedAt, endedAt: Date.now(),
+        matchId: meta.matchId, modeId: this.ranked?.modeId ?? 'kingdom', roomId: this.roomId, startedAt: meta.startedAt, endedAt: Date.now(),
         turns: game.getState(null).turn, reason: payload.reason, ranked: !!this.ranked, deckMode: meta.deckMode, winCondition: meta.winCondition, seats,
       });
     } catch (err) {

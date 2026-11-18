@@ -38,7 +38,7 @@ const MENU = [
   { id: 'shop', label: 'ショップ', icon: 'shop', go: 'shop' },
   { id: 'gacha', label: 'ガチャ', icon: 'gacha', go: 'gacha' },
   { id: 'skin', label: 'スキン', icon: 'skin', go: 'skin' },
-  { id: 'mission', label: 'ミッション', icon: 'mission', soon: 'Phase 6' },
+  { id: 'mission', label: 'ミッション', icon: 'mission', go: 'mission' },
   { id: 'ranking', label: 'ランキング', icon: 'ranking', go: 'ranking' },
   { id: 'settings', label: '設定', icon: 'settings', go: 'settings' },
 ];
@@ -50,8 +50,8 @@ export class Home {
    * @param {() => void} o.onDeck  @param {() => void} o.onCatalog  @param {() => void} o.onSettings
    * @param {() => void} o.onProfile
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onSkin = () => {}, toast = () => {} }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onSkin, toast });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onSkin = () => {}, onMission = () => {}, toast = () => {} }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onSkin, onMission, toast });
     this.data = null;
     this.mode = 'solo';
     try { const m = localStorage.getItem(MODE_KEY); if (m in MODES) this.mode = m; } catch { /* 保存できなくても動く */ }
@@ -74,6 +74,7 @@ export class Home {
         </div>
       </header>
       <section class="home-hero parchment" aria-label="対戦">
+        <div class="home-worlds" role="tablist" aria-label="世界" data-part="worlds"></div>
         <div class="home-modes" role="tablist" aria-label="ゲームモード" data-part="modes"></div>
         <dl class="home-facts">
           <div><dt>デッキ</dt><dd><span data-part="deck">—</span><button type="button" class="small-btn" data-act="deck">変更</button></dd></div>
@@ -134,7 +135,16 @@ export class Home {
     av.replaceChildren();
     if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); } else av.textContent = [...(u?.displayName ?? '?')][0];
     this.part('coins').querySelector('b').textContent = String(d?.coins ?? 0);
-    this.part('dot').hidden = !(d?.rewardsAvailable > 0 || this.socialCount > 0);
+    this.part('dot').hidden = !(d?.rewardsAvailable > 0 || this.socialCount > 0 || d?.claimable > 0);
+    const mt = this.box.querySelector('.home-tile[data-id=mission]');
+    mt?.querySelector('.home-badge')?.remove();
+    if (d?.claimable > 0 && mt) { const b = document.createElement('em'); b.className = 'home-badge'; b.textContent = String(d.claimable); mt.append(b); }
+    // 世界（モード）：いまは王国だけ。ほかは準備中（アカウント・レベル・通貨・所持品は世界をこえて共通）
+    const worlds = this.part('worlds'); worlds.replaceChildren();
+    for (const w of d?.modes ?? [{ id: 'kingdom', name: '王国', available: true }]) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'home-world raw-btn'; b.textContent = w.name; b.disabled = !w.available;
+      b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(w.id === (d?.defaultMode ?? 'kingdom'))); if (!w.available) b.title = '準備中です'; worlds.append(b);
+    }
     const sum = d?.rank;
     const member = u?.kind === 'member';
     this.part('rankEmblem').innerHTML = member ? rankEmblem(sum?.rank ?? null, 26) : '';
@@ -205,6 +215,7 @@ export class Home {
     if (act === 'shop') return this.onShop();
     if (act === 'gacha') return this.onGacha();
     if (act === 'skin') return this.onSkin();
+    if (act === 'mission') return this.onMission();
     if (act === 'ranking') return this.onRanking();
     if (act === 'notice') {
       const n = this.data?.rewardsAvailable ?? 0;

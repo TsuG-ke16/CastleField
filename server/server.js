@@ -9,6 +9,7 @@ import { Lobby } from './rooms.js';
 import { Game } from '../js/game/Game.js';
 import { Db } from './accounts/db.js';
 import { createAccountRoutes } from './accounts/http.js';
+import { Logger, Metrics, routeClass, startMaintenance } from './ops.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -31,6 +32,8 @@ export function loadData(dir = join(ROOT, 'data')) {
     seasons: optional('seasons.json'),
     shop: optional('shop.json'),
     gacha: optional('gacha.json'),
+    missions: optional('missions.json'),
+    modes: optional('modes.json'),
   };
 }
 
@@ -92,23 +95,44 @@ function sendJson(res, status, body) {
  * @param {() => () => number} [o.makeRng] 試合ごとの乱数を作る関数（テストでシードを固定するため）
  * @param {number} [o.cpuDelayMs] CPU が1手ごとに待つ時間（ミリ秒。0 ならすぐ動く。テスト用）
  */
-export function createGameServer({ data = loadData(), makeRng = () => Math.random, cpuDelayMs = 700, accounts = null } = {}) {
+export function createGameServer({ data = loadData(), makeRng = () => Math.random, cpuDelayMs = 700, accounts = null, logger = null, maintenance = null } = {}) {
+  const env = accounts?.env ?? process.env;
+  const log = logger ?? new Logger({ level: env.CF_LOG_LEVEL ?? 'info', out: env.CF_LOG === 'off' || (!accounts && !maintenance) ? () => {} : undefined });
+  const metrics = new Metrics();
+  const startedAt = Date.now();
   // アカウント・保存（accounts: { dbPath, env, ... }）。省略すると使わない（今までのテスト・合言葉だけの対戦と同じ）
-  const account = accounts ? createAccountRoutes({ db: new Db(accounts.dbPath ?? ':memory:'), cards: data.cards, progression: data.progression, profile: data.profile, ranks: data.ranks, seasons: data.seasons, shop: data.shop, gacha: data.gacha, data, readJson, ...accounts.routes, env: accounts.env ?? process.env }) : null;
+  const account = accounts ? createAccountRoutes({ db: new Db(accounts.dbPath ?? ':memory:'), cards: data.cards, progression: data.progression, profile: data.profile, ranks: data.ranks, seasons: data.seasons, shop: data.shop, gacha: data.gacha, missions: data.missions, modes: data.modes, data, metrics, log, readJson, ...accounts.routes, env: accounts.env ?? process.env }) : null;
   // data/ が間違っていたら、起動したときに分かるようにする（試合が始まってから落ちないように）
   new Game({ ...data, rng: makeRng() });
   // 試合の結果の記録（アカウント機能があるときだけ）。サーバーが決めた勝敗だけを使う
   const lobby = new Lobby(data, makeRng, { cpuDelayMs, onMatchEnd: account ? (m) => account.onMatchEnd(m) : null, cosmeticsOf: account ? (u) => account.cosmeticsOf(u) : null });
   account?.attachLobby(lobby);
+  metrics.gauge('rooms', () => lobby.rooms.size);
+  metrics.gauge('ranked_queue', () => account?.matchmaker?.queue.size ?? 0);
+  metrics.gauge('sessions_active', () => account?.accounts.db.get('SELECT COUNT(*) AS n FROM sessions WHERE revoked_at IS NULL AND expires_at > ?', Date.now()).n ?? 0);
+  metrics.gauge('users_total', () => account?.accounts.db.get('SELECT COUNT(*) AS n FROM users').n ?? 0);
+  // 定期の掃除とバックアップ（アカウント機能があるときだけ）
+  const maint = account ? startMaintenance({ db: account.accounts.db, accounts: account.accounts, missions: account.missions, log, env, ...maintenance }) : null
   const sweeper = setInterval(() => lobby.sweep(30 * 60 * 1000), 60 * 1000);
   sweeper.unref();
 
   const server = createServer(async (req, res) => {
+    // どの要求も、URL の問い合わせ部分（token など）・ヘッダー・本文を残さずに、数と時間だけ記録する
+    const t0 = process.hrtime.bigint();
+    const route = routeClass(req.method, String(req.url ?? '').split('?')[0]);
+    const rid = Math.random().toString(16).slice(2, 10);
+    res.on('close', () => {
+      const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+      metrics.observe(route, res.statusCode, ms / 1000);
+      if (route === 'static') return;
+      const level = res.statusCode >= 500 ? 'error' : ms > 1500 ? 'warn' : 'debug';
+      log.log(level, 'request', { rid, route, status: res.statusCode, ms: Math.round(ms) });
+    });
     try {
       await handle(req, res);
     } catch (err) {
       // 1つのリクエストのエラーでサーバー全体が止まらないように
-      console.error(err);
+      log.error('unhandled', { rid, route, err });
       if (!res.headersSent) sendJson(res, 500, { ok: false, reason: 'サーバーでエラーが起きました' });
       else res.end();
     }
@@ -117,6 +141,21 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
   async function handle(req, res) {
     if (typeof req.url !== 'string' || !req.url.startsWith('/')) return sendJson(res, 400, { ok: false, reason: 'URL が正しくありません' });
     const url = new URL(req.url, 'http://localhost');
+    if (url.pathname === '/healthz' || url.pathname === '/readyz') {
+      // 稼働確認（詳細は出さない）。/readyz はデータベースにも触れて確かめる
+      let dbOk = true;
+      if (url.pathname === '/readyz' && account) { try { account.accounts.db.get('SELECT 1'); } catch { dbOk = false; } }
+      return sendJson(res, dbOk ? 200 : 503, { ok: dbOk, uptimeSec: Math.round((Date.now() - startedAt) / 1000) });
+    }
+    if (url.pathname === '/metrics') {
+      // メトリクス：CF_METRICS_TOKEN があれば Bearer で守る。なければ、同じ端末（localhost）からだけ
+      const token = env.CF_METRICS_TOKEN;
+      const local = ['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(req.socket.remoteAddress ?? '');
+      const authorized = token ? req.headers.authorization === `Bearer ${token}` : local;
+      if (!authorized) return sendJson(res, 403, { ok: false, reason: '許可されていません' });
+      res.writeHead(200, { 'Content-Type': 'text/plain; version=0.0.4; charset=utf-8', 'Cache-Control': 'no-store' });
+      return res.end(metrics.render());
+    }
     if (account && await account.handle(req, res, url)) return;
     if (req.method === 'OPTIONS') {
       res.writeHead(204, {
@@ -168,7 +207,8 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
   }
   server.lobby = lobby;
   server.account = account;
-  server.on('close', () => { clearInterval(sweeper); if (account) { account.close(); account.accounts.db.close(); } });
+  server.metrics = metrics; server.log = log;
+  server.on('close', () => { clearInterval(sweeper); maint?.stop(); if (account) { account.close(); account.accounts.db.close(); } });
   return server;
 }
 

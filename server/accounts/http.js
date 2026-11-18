@@ -11,10 +11,12 @@ import { Ranking } from './ranking.js';
 import { Matchmaker } from './matchmaking.js';
 import { Social } from './social.js';
 import { Economy } from './economy.js';
+import { Missions } from './missions.js';
+import { exportUserData } from './dataexport.js';
 import { checkCostDeck } from '../../js/game/Setup.js';
 import { randomInt } from 'node:crypto';
 
-export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/ranked/', '/api/ranking', '/api/social/', '/api/friends/', '/api/block', '/api/unblock', '/api/invites/', '/api/party/', '/api/shop', '/api/collection', '/api/gacha/', '/api/wallet', '/api/level-rewards', '/healthz'];
+export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/ranked/', '/api/ranking', '/api/social/', '/api/friends/', '/api/block', '/api/unblock', '/api/invites/', '/api/party/', '/api/shop', '/api/collection', '/api/gacha/', '/api/wallet', '/api/missions', '/api/season/', '/api/modes', '/api/level-rewards'];
 const isAccountPath = (p) => ACCOUNT_PREFIXES.some((x) => p === x || (x.endsWith('/') && p.startsWith(x)) || p.startsWith(`${x}/`));
 
 const AUTH_ERRORS = {
@@ -24,8 +26,10 @@ const AUTH_ERRORS = {
   linked: 'このアカウントは、別のキャッスルフィールドのアカウントに連携済みです',
 };
 
-export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, progression, profile, ranks, seasons, shop = null, gacha = null, data = null, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
-  const acc = accounts ?? new Accounts(db, { cards, now });
+export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, progression, profile, ranks, seasons, shop = null, gacha = null, missions: missionsCfg = null, modes: modesCfg = null, data = null, metrics = null, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
+  const modes = modesCfg ?? { default: 'kingdom', modes: { kingdom: { name: '王国', available: true } } };
+  const modeIds = Object.entries(modes.modes).filter(([, m]) => m.available).map(([id]) => id);
+  const acc = accounts ?? new Accounts(db, { cards, modeIds, now });
   const publicUrl = (env.CF_PUBLIC_URL ?? '').replace(/\/+$/, '');
   const trustProxy = env.CF_TRUST_PROXY === '1';
   const forceSecure = env.CF_SECURE_COOKIES === '1' || publicUrl.startsWith('https://');
@@ -34,6 +38,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
   const economy = shop && gacha ? new Economy({ db, catalog: shop, gacha, now, matchCoins: progression?.matchCoins }) : null;
   progress.ranking = ranking;
   progress.economy = economy;
+  const missions = economy && missionsCfg ? new Missions({ db, config: missionsCfg, economy, ranking, seasons: ranking.seasons, now }) : null;
   /** @type {import('../rooms.js').Lobby|null} */
   let lobby = null;
   const social = new Social({ db, accounts: acc, progress, now, isBusy: (u) => !!lobby?.activeSeatOfUser(u) });
@@ -43,11 +48,11 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     lobby = l;
     matchmaker = new Matchmaker({
       cfg: ranking.cfg.matchmaking, now,
-      mmrOf: (u) => ranking.internalMmr(u),
+      mmrOf: (u, mode) => ranking.internalMmr(u, mode),
       createMatch: (a, b) => {
         const order = randomInt(2) === 0 ? [a, b] : [b, a]; // 先攻・後攻はランダム
         const users = order.map((x) => ({ userId: x.userId, name: db.get('SELECT display_name AS n FROM users WHERE id = ?', x.userId)?.n ?? '？', deckList: activeDeckList(x.userId) }));
-        const made = lobby.createRankedRoom(users, { cfg: ranking.cfg.ranked, checkMs: env.CF_RANKED_CHECK_MS ? Number(env.CF_RANKED_CHECK_MS) : undefined });
+        const made = lobby.createRankedRoom(users, { cfg: ranking.cfg.ranked, modeId: a.modeId, checkMs: env.CF_RANKED_CHECK_MS ? Number(env.CF_RANKED_CHECK_MS) : undefined });
         made.room.onRankedVoid = (room) => matchmaker.finished(room.matchMeta.matchId);
         return made;
       },
@@ -62,7 +67,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     return checkCostDeck(slot.list, data.cards, data.rarities, data.rules).ok ? slot.list : null;
   }
   const idp = oidc ?? new Oidc(providersFromEnv(env), { redirectBase: publicUrl });
-  const purger = setInterval(() => { try { acc.purge(); } catch (e) { log.error('purge', e); } }, 10 * 60 * 1000);
+  const purger = setInterval(() => { try { acc.purge(); } catch (e) { log.error('purge', { err: e }); } }, 10 * 60 * 1000);
   purger.unref();
 
   const isSecure = (req) => forceSecure || !!req.socket.encrypted || (trustProxy && req.headers['x-forwarded-proto'] === 'https');
@@ -111,11 +116,6 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     const path = url.pathname;
     if (!isAccountPath(path)) return false;
     try {
-      if (path === '/healthz') {
-        db.get('SELECT 1');
-        send(req, res, 200, { ok: true });
-        return true;
-      }
       if (req.method === 'OPTIONS') { fail(req, res, 405, 'このAPIは同じサイトからだけ使えます'); return true; }
       const rl = limiter.check(`${ipOf(req)}:${path.startsWith('/api/auth/') ? 'auth' : 'api'}`, path.startsWith('/api/auth/') ? 30 : 240, 60_000);
       if (!rl.ok) { fail(req, res, 429, '操作が多すぎます。少し待ってください', {}, { 'Retry-After': String(rl.retryAfterSec) }); return true; }
@@ -185,7 +185,8 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
         send(req, res, 200, { ok: true, displayName: name });
         return true;
       }
-      if (req.method === 'GET' && path === '/api/home') { send(req, res, 200, { ok: true, ...progress.home(session.userId) }); return true; }
+      if (req.method === 'GET' && path === '/api/home') { const claimable = missions ? Object.values(missions.view(session.userId)).reduce((n, p) => n + p.missions.filter((m) => m.completed && !m.claimed).length, 0) + missions.seasonRewards(session.userId).filter((r) => r.eligible && !r.claimed && r.coins > 0).length : 0;
+        send(req, res, 200, { ok: true, ...progress.home(session.userId), claimable, modes: Object.entries(modes.modes).map(([id, m]) => ({ id, name: m.name, available: !!m.available })), defaultMode: modes.default }); return true; }
       if (req.method === 'GET' && path === '/api/profile/me') { send(req, res, 200, { ok: true, profile: progress.profile(session.userId, session.userId) }); return true; }
       const other = /^\/api\/profile\/user\/(u_[0-9a-f]{24})$/.exec(path);
       if (req.method === 'GET' && other) {
@@ -199,13 +200,17 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
         return true;
       }
       if (req.method === 'GET' && path === '/api/history') {
-        send(req, res, 200, { ok: true, matches: progress.history(session.userId, Number(url.searchParams.get('limit')) || 20), last: progress.lastMatch(session.userId) });
+        send(req, res, 200, { ok: true, matches: progress.history(session.userId, Number(url.searchParams.get('limit')) || 20, url.searchParams.get('mode')), last: progress.lastMatch(session.userId) });
         return true;
       }
       if (req.method === 'GET' && path === '/api/level-rewards') { send(req, res, 200, { ok: true, rewards: progress.availableRewards(session.userId), coins: progress.getCoins(session.userId) }); return true; }
       if (req.method === 'POST' && path === '/api/level-rewards/claim') { send(req, res, 200, { ok: true, ...progress.claimReward(session.userId, body.level) }); return true; }
       if (path.startsWith('/api/ranked/') || path === '/api/ranking') {
         const out = await rankedRoutes(req, res, url, path, session, body);
+        if (out) return true;
+      }
+      if (/^\/api\/(missions|season|modes)(\/|$)/.test(path) || path === '/api/account/export') {
+        const out = metaRoutes(req, res, url, path, session.userId, body);
         if (out) return true;
       }
       if (/^\/api\/(shop|collection|gacha|wallet)(\/|$)/.test(path)) {
@@ -216,24 +221,47 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
         const out = socialRoutes(req, res, path, session.userId, body);
         if (out) return true;
       }
-      if (req.method === 'GET' && path === '/api/decks') { send(req, res, 200, { ok: true, ...acc.getDecks(session.userId) }); return true; }
+      const modeOf = () => acc.checkMode(body.mode ?? url.searchParams.get('mode') ?? modes.default);
+      if (req.method === 'GET' && path === '/api/decks') { send(req, res, 200, { ok: true, ...acc.getDecks(session.userId, modeOf()) }); return true; }
       if (req.method === 'PUT' && path === '/api/decks') {
         const base = Number.isInteger(body.baseRevision) ? body.baseRevision : null;
-        send(req, res, 200, { ok: true, ...acc.putDecks(session.userId, body, base) });
+        send(req, res, 200, { ok: true, ...acc.putDecks(session.userId, body, base, modeOf()) });
         return true;
       }
       if (req.method === 'POST' && path === '/api/decks/import') {
-        send(req, res, 200, { ok: true, ...acc.importDecks(session.userId, body) });
+        send(req, res, 200, { ok: true, ...acc.importDecks(session.userId, body, modeOf()) });
         return true;
       }
       fail(req, res, 404, 'ありません');
       return true;
     } catch (err) {
       if (err instanceof AccountError) { fail(req, res, err.status, err.reason, err.extra); return true; }
-      log.error('accounts', err);
+      log.error('accounts', { err });
       if (!res.headersSent) fail(req, res, 500, 'サーバーでエラーが起きました');
       return true;
     }
+  }
+
+  /** ミッション・シーズン報酬・モード・データの書き出し */
+  function metaRoutes(req, res, url, path, uid, body) {
+    const ok = (data = {}) => { send(req, res, 200, { ok: true, ...data }); return true; };
+    if (req.method === 'GET' && path === '/api/modes') {
+      const mine = {};
+      for (const id of modeIds) mine[id] = { stats: progress.stats(uid, id), rank: acc.publicUser(uid).kind === 'member' ? ranking.summary(uid, id) : null };
+      return ok({ default: modes.default, modes: Object.entries(modes.modes).map(([id, m]) => ({ id, name: m.name, available: !!m.available, world: m.world, rank: m.rank })), mine });
+    }
+    if (req.method === 'GET' && path === '/api/account/export') {
+      social.rate(uid, 'export', 3, 3600_000, '書き出しは1時間に3回までです');
+      const data = exportUserData({ db, accounts: acc, progress, economy, ranking, social, missions, modes: modeIds }, uid);
+      send(req, res, 200, data, { 'Content-Disposition': 'attachment; filename="castlefield-my-data.json"' });
+      return true;
+    }
+    if (!missions) { fail(req, res, 503, 'ミッションはこのサーバーでは使えません'); return true; }
+    if (req.method === 'GET' && path === '/api/missions') return ok({ periods: missions.view(uid) });
+    if (req.method === 'POST' && path === '/api/missions/claim') return ok(missions.claim(uid, body.missionId));
+    if (req.method === 'GET' && path === '/api/season/rewards') return ok({ current: ranking.seasonAt(), rewards: missions.seasonRewards(uid, url.searchParams.get('mode') ?? modes.default), tiers: ranking.seasons.rewards ?? {} });
+    if (req.method === 'POST' && path === '/api/season/claim') return ok(missions.claimSeason(uid, body.season, body.mode ?? modes.default));
+    return false;
   }
 
   /** ショップ・ガチャ・所持品・装備・通貨（ゲストも使える。連携するとデータは引き継がれる） */
@@ -308,7 +336,9 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     if (req.method === 'POST' && path === '/api/ranked/queue') {
       if (user.kind !== 'member') { fail(req, res, 403, 'ランクマッチは、GoogleかAppleに連携したアカウントで遊べます（ゲストでは遊べません）', { code: 'needsMember' }); return true; }
       if (lobby.activeSeatOfUser(uid)) { fail(req, res, 409, 'ほかの試合の途中です。終わってから探してください', { code: 'busy' }); return true; }
-      const r = matchmaker.join(uid);
+      const mode = body.mode ?? modes.default;
+      if (!modeIds.includes(mode)) { fail(req, res, 400, 'そのモードは、まだ遊べません（準備中です）', { code: 'modeUnavailable' }); return true; }
+      const r = matchmaker.join(uid, mode);
       send(req, res, r.ok ? 200 : 409, r.ok ? { ok: true, ...r } : { ok: false, reason: r.reason, ...r });
       return true;
     }
@@ -330,7 +360,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     try {
       ({ subject } = await idp.finish(provider, { code, nonce: row.nonce, verifier: row.verifier }));
     } catch (err) {
-      log.error('oauth', provider, err?.message);
+      log.error('oauth', { provider, err });
       return back({ auth: 'error', why: 'failed' });
     }
     try {
@@ -342,7 +372,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       return back({ auth: out.result }, { 'Set-Cookie': cookieHeader(req, out.session.token, out.session.maxAgeSec) });
     } catch (err) {
       if (err instanceof AccountError) return back({ auth: 'error', why: 'linked' });
-      log.error('oauth', err);
+      log.error('oauth', { err });
       return back({ auth: 'error', why: 'failed' });
     }
   }
@@ -353,9 +383,10 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
   const onMatchEnd = (m) => db.tx(() => {
     const r = progress.recordMatch(m);
     if (r && m.ranked) ranking.applyMatch(m); // レーティングは、同じ試合 ID につき1回だけ・経験値と同じトランザクションで
+    if (r) missions?.applyMatch(m, r); // ミッションの進み具合（数える対象になった人だけ）
     if (m.ranked) matchmaker?.finished(m.matchId);
     return r;
   });
 
-  return { handle, userIdOf, onMatchEnd, attachLobby, social, economy, cosmeticsOf: (u) => economy?.cosmeticsOf(u) ?? {}, ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
+  return { handle, userIdOf, onMatchEnd, attachLobby, social, economy, missions, modes, modeIds, cosmeticsOf: (u) => economy?.cosmeticsOf(u) ?? {}, ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
 }

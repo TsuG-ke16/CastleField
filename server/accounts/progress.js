@@ -101,15 +101,23 @@ export class Progress {
   getXp(userId) { return this.db.get('SELECT xp FROM user_progress WHERE user_id = ?', userId)?.xp ?? 0; }
   getCoins(userId) { return this.db.get('SELECT free_coins FROM wallets WHERE user_id = ?', userId)?.free_coins ?? 0; }
 
-  stats(userId) {
-    const r = this.db.get("SELECT COUNT(*) AS n, COALESCE(SUM(result = 'win'), 0) AS w FROM match_players WHERE user_id = ? AND counted = 1", userId);
+  /** 戦績。modeId を渡すと、そのモード（世界）だけ */
+  stats(userId, modeId = null) {
+    const r = this.db.get(`SELECT COUNT(*) AS n, COALESCE(SUM(p.result = 'win'), 0) AS w FROM match_players p JOIN matches m ON m.id = p.match_id
+      WHERE p.user_id = ? AND p.counted = 1 AND (? IS NULL OR m.mode_id = ?)`, userId, modeId, modeId);
     return { matches: r.n, wins: r.w, losses: r.n - r.w, winRate: r.n ? Math.round((r.w / r.n) * 1000) / 10 : null };
   }
 
-  history(userId, limit = 20) {
+  /** モードごとの戦績（試合のあるモードだけ） */
+  statsByMode(userId) {
+    const modes = this.db.all('SELECT DISTINCT m.mode_id AS id FROM match_players p JOIN matches m ON m.id = p.match_id WHERE p.user_id = ? AND p.counted = 1', userId);
+    return Object.fromEntries(modes.map((m) => [m.id, this.stats(userId, m.id)]));
+  }
+
+  history(userId, limit = 20, modeId = null) {
     const n = Math.max(1, Math.min(50, Number.isInteger(limit) ? limit : 20));
     const rows = this.db.all(`SELECT m.id, m.mode_id, m.ended_at, m.turns, m.reason, m.player_count, p.result, p.xp_gained, p.deck_name, p.counted
-      FROM match_players p JOIN matches m ON m.id = p.match_id WHERE p.user_id = ? ORDER BY m.ended_at DESC, m.id DESC LIMIT ?`, userId, n);
+      FROM match_players p JOIN matches m ON m.id = p.match_id WHERE p.user_id = ? AND (? IS NULL OR m.mode_id = ?) ORDER BY m.ended_at DESC, m.id DESC LIMIT ?`, userId, modeId, modeId, n);
     return rows.map((r) => ({
       matchId: r.id, modeId: r.mode_id, endedAt: r.ended_at, turns: r.turns, reason: r.reason, playerCount: r.player_count,
       result: r.result, xpGained: r.xp_gained, deckName: r.deck_name, counted: !!r.counted,
@@ -197,7 +205,7 @@ export class Progress {
       equipped: null /* Phase 5：装備中スキン */,
     };
     if (self) out.privacy = privacy;
-    if (can('stats')) out.stats = this.stats(userId); else out.stats = null;
+    if (can('stats')) { out.stats = this.stats(userId); out.statsByMode = this.statsByMode(userId); } else { out.stats = null; out.statsByMode = null; }
     if (can('history')) out.history = this.history(userId, 10); else out.history = null;
     if (can('decks')) {
       const d = this.accounts.getDecks(userId);
