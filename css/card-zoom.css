@@ -17,7 +17,7 @@
 .zoom-stage {
   --zw: clamp(120px, min(56vw, 230px, calc((100dvh - 250px) * .667)), 230px);
   position: relative; display: grid; place-items: center; flex: none;
-  padding: calc(var(--zw) * .2) calc(var(--zw) * .14) calc(var(--zw) * .1);
+  padding: calc(var(--zw) * .26) calc(var(--zw) * .14) calc(var(--zw) * .1);  /* 上は王冠が箱の外にはみ出す分（レジェンドで約 0.22 × 幅）＋手前に浮かせた分 */
   perspective: calc(var(--zw) * 3.4); touch-action: none;
 }
 /* 影は、カードとは別の層に置く（動くカードに filter をかけると重くなってカクつくため）。傾きに合わせて CardZoom.js がずらす */
