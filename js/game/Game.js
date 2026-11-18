@@ -1211,6 +1211,7 @@ export class Game {
       player.armyHp += def.amount;
       for (const s of player.soldiers) {
         s.hp += def.amount;
+        s.maxHp += def.amount;
         this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack, hp: s.hp });
       }
     } else if (def.effect === 'gainCard') {
@@ -1548,6 +1549,7 @@ export class Game {
       soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
       soldier.baseAttack += player.armyAttack; // 訓練（コインで買う）
       soldier.hp += player.armyHp;
+      soldier.maxHp += player.armyHp;
       player.soldiers.push(soldier);
       this.emit('soldierDeployed', {
         playerId: player.id,

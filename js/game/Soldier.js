@@ -16,6 +16,8 @@ export class Soldier {
     this.targetId = targetId;
     this.type = card.type;
     this.hp = card.def.hp;
+    /** HPの上限（体力ゲージの満タン。鍛錬で増える。回復はないので、HPがこれを超えることはない） */
+    this.maxHp = card.def.hp;
     this.baseAttack = card.def.attack;
     this.speed = card.def.speed ?? 0;
     /** 役割（"melee" | "archer" | "mage"）。弓兵・魔法使いは動かずに撃つ */
@@ -71,6 +73,7 @@ export class Soldier {
       soldierId: this.soldierId,
       type: this.type,
       hp: this.hp,
+      maxHp: this.maxHp,
       attack: this.attack,
       position: this.position,
       role: this.role,

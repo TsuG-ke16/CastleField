@@ -71,6 +71,13 @@ export const UI_CONFIG = {
     finishShake: 30,
   },
 
+  // 画面ぜんたいの揺れ（盤面ごと揺らす）。ダメージを受けたとき・魔法を使ったとき。値 = base + perPower × 強さ（max で頭打ち）
+  screenShake: {
+    soldier: { base: 2, perPower: 1.2, max: 9, duration: 240 },
+    monster: { base: 2, perPower: 1.2, max: 9, duration: 240 },
+    spell: { base: 3, perPower: 0.6, max: 12, duration: 300 },
+  },
+
   // 兵士にダメージが入ったとき
   // power（強さ）= powerBase + powerPerDamage × ダメージ（powerMax で頭打ち）。数字の大きさ・止める時間・ノックバックにかかる
   soldierHit: {

@@ -619,7 +619,7 @@ export class Renderer {
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="soldier-token"><div class="soldier-pic"></div>' +
       '<span class="soldier-weapon" hidden></span><span class="soldier-shield" hidden></span><span class="soldier-status" hidden></span></div>' +
-      `<div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
+      `<div class="soldier-gauge" role="progressbar"><i class="soldier-gauge-lag"></i><i class="soldier-gauge-fill"></i></div><div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
     el.querySelector('.soldier-pic').innerHTML = unitArt(st.type, colorOf(playerId), def.name ?? st.type);
     const seat = document.createElement('span');seat.className='seat-mark';seat.textContent=String(this.playerOrder.indexOf(playerId)+1);seat.title=playerName(playerId);seat.setAttribute('aria-label',`席${seat.textContent}、${playerName(playerId)}`);el.append(seat);
     const turns = document.createElement('span'); turns.className = 'soldier-turns'; el.append(turns);
@@ -631,6 +631,7 @@ export class Renderer {
       roadId: st.roadId, targetId: st.targetId, place: st.place, role: st.role ?? def.role ?? 'melee', turnsLeft: st.turnsLeft ?? def.stay ?? null,
       type: st.type,
       hp: st.hp ?? def.hp,
+      maxHp: Math.max(st.maxHp ?? 0, st.hp ?? def.hp, def.hp ?? 0),
       attack: st.attack ?? def.attack,
       position: st.position,
       weapon: st.weapon ?? null,
@@ -655,6 +656,16 @@ export class Renderer {
     q('.soldier-turns').textContent = `${s.role === 'mage' ? '✦' : '➶'} あと${s.turnsLeft}回`;
     s.el.title = `${this.cards[s.type]?.name ?? ''} · ${playerName(s.playerId)}${s.turnsLeft == null ? '' : ` · あと${s.turnsLeft}回`}`;
     q('.st.hp b').textContent = String(Math.max(0, s.hp));
+    // 体力ゲージ（残りHP ÷ 上限。減ると緑 → 黄 → 赤。減った分は白い影が遅れて追いかける）
+    s.maxHp = Math.max(s.maxHp ?? 0, s.hp, 1);
+    const ratio = Math.max(0, Math.min(1, s.hp / s.maxHp));
+    const gauge = q('.soldier-gauge');
+    gauge.style.setProperty('--ratio', ratio.toFixed(3));
+    gauge.dataset.level = ratio > 0.6 ? 'high' : ratio > 0.3 ? 'mid' : 'low';
+    gauge.setAttribute('aria-valuemin', '0');
+    gauge.setAttribute('aria-valuemax', String(s.maxHp));
+    gauge.setAttribute('aria-valuenow', String(Math.max(0, s.hp)));
+    gauge.setAttribute('aria-label', `体力 ${Math.max(0, s.hp)}/${s.maxHp}`);
     q('.st.atk b').textContent = String(s.attack);
     const baseHp = this.cards[s.type]?.hp;
     q('.st.hp').classList.toggle('hurt', baseHp != null && s.hp < baseHp);
@@ -769,6 +780,7 @@ export class Renderer {
         Object.assign(s, {
           role: st.role, turnsLeft: st.turnsLeft, place: st.place, targetId: st.targetId,
           hp: st.hp,
+          maxHp: Math.max(s.maxHp ?? 0, st.maxHp ?? 0, st.hp),
           attack: st.attack,
           weapon: st.weapon ?? null,
           element: st.element ?? null,

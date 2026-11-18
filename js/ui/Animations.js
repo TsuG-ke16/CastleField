@@ -135,6 +135,14 @@ export class Animations {
     return this.animate(el, frames, { duration, easing: 'linear' });
   }
 
+  /** 画面ぜんたい（盤面ごと）を揺らす。kind は config の screenShake のキー、power は強さ（ダメージや魔法の値） */
+  screenShake(kind, power = 0) {
+    const c = UI_CONFIG.screenShake[kind];
+    if (!c || this.skipping) return Promise.resolve();
+    const amp = Math.min(c.max ?? c.base, c.base + (c.perPower ?? 0) * power);
+    return this.shake(this.el.board, amp, c.duration);
+  }
+
   /** el の中心（#app の中の座標） */
   centerOf(el) {
     const app = this.el.app.getBoundingClientRect();
@@ -960,6 +968,7 @@ export class Animations {
     }
     if (power > 0) sound.play(anyPoison ? 'poison' : 'smallHit');
     else if (anyBlock) sound.play('block');
+    if (power > 0) this.screenShake('soldier', power);
     if (power > 0) await this.hitstop(Math.min(cfg.hitstopMax, cfg.hitstop * power));
     for (const h of hits) this.renderer.soldierEl(h.soldierId)?.classList.remove('hit', 'hit-poison', 'blocked');
     for (const r of reacts) this.recoil(r, cfg);
@@ -1103,6 +1112,8 @@ export class Animations {
 
   async spellCast({ playerId, type, target, targetKind, roadId }) {
     const def = this.cards[type] ?? {};
+    // 魔法を使うと、画面が揺れる（強い魔法ほど大きく）
+    this.screenShake('spell', def.amount ?? 4);
     if (targetKind === 'monster') {
       const mEl = this.renderer.monsterEl(target);
       if (mEl) return this.projectile(this.renderer.castleEl(playerId), mEl, { amount: Math.min(def.amount ?? 8, 11) });
@@ -1619,6 +1630,7 @@ export class Animations {
     const power = Math.min(cfg.powerMax, cfg.powerBase + amount * cfg.powerPerDamage);
     el.classList.add('hit');
     sound.play('smallHit');
+    this.screenShake('monster', power);
     this.number(el, `-${amount}`, { size: cfg.numberSize * (0.8 + power * 0.25) * (dir?.weak ? 1.2 : 1), duration: cfg.numberDuration, kind: dir?.weak ? 'weak' : 'damage' });
     if (dir?.weak) this.number(el, '弱点！', { size: UI_CONFIG.smallNumber.size * 0.85, duration: cfg.numberDuration, kind: 'weak', dy: -34 });
     await this.hitstop(Math.min(cfg.hitstopMax, cfg.hitstop * (power + (hp <= 0 ? cfg.lethalBonus : 0) + (dir?.weak ? cfg.weakBonus : 0))));
