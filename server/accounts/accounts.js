@@ -212,6 +212,7 @@ export class Accounts {
   deleteAccount(userId) {
     this.db.tx(() => {
       this.audit('account_deleted', userId);
+      this.db.run("UPDATE match_players SET name = '（削除済み）' WHERE user_id = ?", userId); // 相手の戦績は残すが、名前は消す
       this.deleteUserRows(userId);
     });
   }

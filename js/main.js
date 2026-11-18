@@ -29,6 +29,9 @@ import { ChatView } from './ui/ChatView.js';
 import { DeckEditor } from './ui/DeckEditor.js';
 import { account } from './ui/Account.js';
 import { AccountPanel } from './ui/AccountPanel.js';
+import { Home } from './ui/Home.js';
+import { ProfileView } from './ui/ProfileView.js';
+import { showMatchProgress } from './ui/Progression.js';
 import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
@@ -137,6 +140,7 @@ let cpu = null;            // { id, level, strategy, rng }（ひとりで遊ぶ�
 // オンライン
 const SESSION_KEY = 'cf-online'; // つなぎ直し用に、部屋の鍵をこのタブに覚えておく（sessionStorage）
 let roomView;
+let home;                   // ホーム画面（アカウント機能があるサーバーのとき、タイトルの前に出る）
 let roomPassphrase = '';
 let room = null;           // サーバーから届いた部屋の状態
 let batches = [];          // 届いた「イベントの列 + 状態」。順番に見せる
@@ -312,7 +316,23 @@ async function boot() {
   settings = new Settings((value) => { el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
   // アカウント：サーバーにアカウント機能があるときだけボタンを出す（なければ今までどおり）
   const accountPanel = new AccountPanel({ toast });
-  account.onChange(() => { $('title-account').hidden = !account.enabled; });
+  const profileView = new ProfileView({ toast, onChanged: () => home.refresh() });
+  home = new Home({
+    toast,
+    onPlay: (mode, titleButton) => { if (mode === 'online' && !el.titleName.value && account.user) el.titleName.value = account.user.displayName; home.close(); el.title.hidden = false; el.titleMain.hidden = false; $(titleButton).click(); },
+    onDeck: () => deckEditor?.open(),
+    onCatalog: () => $('title-catalog').click(),
+    onSettings: () => settings.open(),
+    onProfile: () => profileView.open(),
+  });
+  let homeOpened = false;
+  account.onChange(() => {
+    $('title-account').hidden = !account.enabled;
+    $('title-home').hidden = !home.available();
+    // 起動してアカウントの準備ができたら、ホームを入口にする（タイトルの最初の画面にいるときだけ）
+    if (!homeOpened && home.available() && !el.title.hidden && !el.titleMain.hidden && document.documentElement.classList.contains('at-title')) { homeOpened = true; el.title.hidden = true; home.open(); }
+  });
+  $('title-home').addEventListener('click', () => { el.title.hidden = true; home.open(); });
   $('title-account').addEventListener('click', () => accountPanel.open());
   account.init().then(() => accountPanel.handleReturn());
   setupMenu();
@@ -455,6 +475,7 @@ function showTitle() {
   el.titleLevels.hidden = true;
   el.titleMain.hidden = false;
   el.title.hidden = false;
+  if (home?.available()) { el.title.hidden = true; home.open(); return; }
   if (!titleArrivalPlayed && !UI_CONFIG.reducedMotion && UI_CONFIG.speed > 0) {
     el.title.classList.add('title-arrival');
   }
@@ -1611,6 +1632,7 @@ async function showResult(winner) {
   }
   matchStats.render(viewerId, online);
   matchStats.finish(won, online);
+  if (online) showMatchProgress(el.result.querySelector('.result-box'), { reducedMotion: UI_CONFIG.reducedMotion });
   el.result.hidden = false;
   sound.enabled = true;
   sound.setScene(won ? 'victory' : 'defeat');

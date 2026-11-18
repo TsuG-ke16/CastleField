@@ -6,8 +6,9 @@
 import { Accounts, AccountError, safeEqual } from './accounts.js';
 import { Oidc, providersFromEnv } from './oidc.js';
 import { RateLimiter } from './ratelimit.js';
+import { Progress } from './progress.js';
 
-export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/healthz'];
+export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/level-rewards', '/healthz'];
 const isAccountPath = (p) => ACCOUNT_PREFIXES.some((x) => p === x || (x.endsWith('/') && p.startsWith(x)) || p.startsWith(`${x}/`));
 
 const AUTH_ERRORS = {
@@ -17,11 +18,12 @@ const AUTH_ERRORS = {
   linked: 'このアカウントは、別のキャッスルフィールドのアカウントに連携済みです',
 };
 
-export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
+export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, progression, profile, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
   const acc = accounts ?? new Accounts(db, { cards, now });
   const publicUrl = (env.CF_PUBLIC_URL ?? '').replace(/\/+$/, '');
   const trustProxy = env.CF_TRUST_PROXY === '1';
   const forceSecure = env.CF_SECURE_COOKIES === '1' || publicUrl.startsWith('https://');
+  const progress = new Progress(db, acc, { progression, profile, now });
   const idp = oidc ?? new Oidc(providersFromEnv(env), { redirectBase: publicUrl });
   const purger = setInterval(() => { try { acc.purge(); } catch (e) { log.error('purge', e); } }, 10 * 60 * 1000);
   purger.unref();
@@ -145,6 +147,25 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
         send(req, res, 200, { ok: true, displayName: name });
         return true;
       }
+      if (req.method === 'GET' && path === '/api/home') { send(req, res, 200, { ok: true, ...progress.home(session.userId) }); return true; }
+      if (req.method === 'GET' && path === '/api/profile/me') { send(req, res, 200, { ok: true, profile: progress.profile(session.userId, session.userId) }); return true; }
+      const other = /^\/api\/profile\/user\/(u_[0-9a-f]{24})$/.exec(path);
+      if (req.method === 'GET' && other) {
+        const p = progress.profile(other[1], session.userId);
+        if (!p) fail(req, res, 404, 'プレイヤーが見つかりません'); else send(req, res, 200, { ok: true, profile: p });
+        return true;
+      }
+      if (req.method === 'POST' && path === '/api/profile/settings') {
+        progress.updateProfile(session.userId, { icon: body.icon, privacy: body.privacy });
+        send(req, res, 200, { ok: true, profile: progress.profile(session.userId, session.userId) });
+        return true;
+      }
+      if (req.method === 'GET' && path === '/api/history') {
+        send(req, res, 200, { ok: true, matches: progress.history(session.userId, Number(url.searchParams.get('limit')) || 20), last: progress.lastMatch(session.userId) });
+        return true;
+      }
+      if (req.method === 'GET' && path === '/api/level-rewards') { send(req, res, 200, { ok: true, rewards: progress.availableRewards(session.userId), coins: progress.getCoins(session.userId) }); return true; }
+      if (req.method === 'POST' && path === '/api/level-rewards/claim') { send(req, res, 200, { ok: true, ...progress.claimReward(session.userId, body.level) }); return true; }
       if (req.method === 'GET' && path === '/api/decks') { send(req, res, 200, { ok: true, ...acc.getDecks(session.userId) }); return true; }
       if (req.method === 'PUT' && path === '/api/decks') {
         const base = Number.isInteger(body.baseRevision) ? body.baseRevision : null;
@@ -196,5 +217,10 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     }
   }
 
-  return { handle, accounts: acc, authErrors: AUTH_ERRORS, close: () => clearInterval(purger) };
+  /** 部屋に入るとき：ログイン中なら、そのアカウントの ID（なければ null） */
+  const userIdOf = (req) => { const t = readCookie(req); return (t && acc.getSession(t)?.userId) || null; };
+  /** 試合が決着したとき（Room から呼ばれる）。結果をアカウントごとに記録する */
+  const onMatchEnd = (m) => progress.recordMatch(m);
+
+  return { handle, userIdOf, onMatchEnd, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => clearInterval(purger) };
 }

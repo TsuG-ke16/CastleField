@@ -76,6 +76,61 @@ export const MIGRATIONS = [
       );
     `,
   },
+  {
+    id: 2,
+    name: 'profile-progress-matches-wallet',
+    sql: `
+      CREATE TABLE user_profiles (
+        user_id       TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        icon          TEXT NOT NULL DEFAULT 'infantry',
+        title         TEXT,
+        privacy_json  TEXT NOT NULL DEFAULT '{}'
+      );
+      CREATE TABLE user_progress (
+        user_id       TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        xp            INTEGER NOT NULL DEFAULT 0 CHECK (xp >= 0)
+      );
+      -- 通貨：無料通貨と、将来の有料通貨は別の列（混ぜない）。マイナスにはならない
+      CREATE TABLE wallets (
+        user_id       TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        free_coins    INTEGER NOT NULL DEFAULT 0 CHECK (free_coins >= 0)
+      );
+      CREATE TABLE matches (
+        id            TEXT PRIMARY KEY,
+        mode_id       TEXT NOT NULL DEFAULT 'kingdom',
+        room_id       TEXT,
+        started_at    INTEGER NOT NULL,
+        ended_at      INTEGER NOT NULL,
+        turns         INTEGER NOT NULL,
+        reason        TEXT NOT NULL,
+        player_count  INTEGER NOT NULL,
+        deck_mode     TEXT,
+        win_condition TEXT
+      );
+      CREATE TABLE match_players (
+        match_id      TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+        seat          INTEGER NOT NULL,
+        user_id       TEXT REFERENCES users(id) ON DELETE SET NULL,
+        name          TEXT NOT NULL,
+        cpu           TEXT,
+        result        TEXT NOT NULL CHECK (result IN ('win','loss')),
+        counted       INTEGER NOT NULL DEFAULT 1,
+        left_early    INTEGER NOT NULL DEFAULT 0,
+        xp_gained     INTEGER NOT NULL DEFAULT 0,
+        deck_name     TEXT,
+        PRIMARY KEY (match_id, seat)
+      );
+      CREATE UNIQUE INDEX match_players_user ON match_players(match_id, user_id) WHERE user_id IS NOT NULL;
+      CREATE INDEX match_players_by_user ON match_players(user_id, match_id);
+      CREATE TABLE level_rewards (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        level         INTEGER NOT NULL,
+        coins         INTEGER NOT NULL,
+        claimed_at    INTEGER NOT NULL,
+        PRIMARY KEY (user_id, level)
+      );
+    `,
+  },
 ];
 
 export class Db {

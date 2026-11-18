@@ -7,7 +7,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createGameServer, loadData } from '../server/server.js';
-import { Db } from '../server/accounts/db.js';
+import { Db, MIGRATIONS } from '../server/accounts/db.js';
 import { Accounts } from '../server/accounts/accounts.js';
 import { appleClientSecret } from '../server/accounts/oidc.js';
 
@@ -419,7 +419,7 @@ test('永続：サーバーを再起動してもデータが残る。バック�
     assert.equal(restored.get('SELECT COUNT(*) AS n FROM users WHERE id = ?', id).n, 1);
     restored.close();
     const again = new Db(file); // 移行は何度開いても同じ
-    assert.equal(again.get('SELECT COUNT(*) AS n FROM schema_migrations').n, 1);
+    assert.equal(again.get('SELECT COUNT(*) AS n FROM schema_migrations').n, MIGRATIONS.length); // 開き直しても、移行が増えない
     again.close();
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });

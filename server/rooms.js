@@ -6,6 +6,7 @@
 //   → 試合 → 「もう1回」（同じ設定）か「部屋に戻る」（設定を変える・人が入れる）
 import { randomBytes } from 'node:crypto';
 import { Game, EVENT_TYPES, TEAM_IDS, MAX_TEAM_SIZE } from '../js/game/Game.js';
+import { randomUUID } from 'node:crypto';
 import { filterEventFor } from '../js/game/visibility.js';
 import { STRATEGIES } from '../js/game/strategies.js';
 import { checkCostDeck } from '../js/game/Setup.js';
@@ -61,8 +62,11 @@ export class Room {
    * @param {() => () => number} makeRng 試合ごとに乱数を作る関数
    * @param {{ cpuDelayMs?: number }} [options] cpuDelayMs：CPU が1手ごとに待つ時間（0 ならすぐ動く。テスト用）
    */
-  constructor(roomId, data, makeRng, { cpuDelayMs = 700 } = {}) {
+  constructor(roomId, data, makeRng, { cpuDelayMs = 700, onMatchEnd = null } = {}) {
     this.roomId = roomId;
+    /** 試合が決着したときに、サーバーが確定した結果を渡す（戦績・経験値の記録。Game や画面は関与しない） */
+    this.onMatchEnd = onMatchEnd;
+    this.matchMeta = null;
     this.data = data;
     this.makeRng = makeRng;
     this.cpuDelayMs = cpuDelayMs;
@@ -99,10 +103,11 @@ export class Room {
     return this.game !== null;
   }
 
-  join(name) {
+  join(name, userId = null) {
     if (this.game) return { ok: false, reason: 'この部屋は試合中です。終わって部屋に戻るまで待ってください' };
     if (this.seats.length >= this.capacity) return { ok: false, reason: 'この部屋はもう満員です' };
     const seat = this.addSeat({ name, token: randomBytes(16).toString('hex'), cpu: null });
+    seat.userId = userId; // ログイン中のアカウント（なければ null）。戦績の記録に使う
     if (!this.host) this.host = seat;
     this.lastActive = Date.now();
     this.broadcastRoom();
@@ -192,6 +197,12 @@ export class Room {
     this.cpuActedTurn = null;
     this.rematchVotes.clear();
     const game = this.game;
+    this.matchMeta = {
+      matchId: randomUUID(), startedAt: Date.now(),
+      seats: this.seats.map((s, i) => ({ seat: i, playerId: s.playerId, userId: s.userId ?? null, name: s.name, cpu: s.cpu ?? null, team: teams?.[i] ?? null, deckName: rules.deckMode === 'cost' ? (s.deckList ? 'マイデッキ' : s.costDeck) : null })),
+      deckMode: rules.deckMode, winCondition: rules.winCondition,
+    };
+    game.on('gameOver', (payload) => this.finishMatch(game, payload));
     for (const type of EVENT_TYPES) {
       game.on(type, (payload) => {
         if (this.game !== game) return;
@@ -204,6 +215,24 @@ export class Room {
     this.broadcastRoom(); // started と、もう1回の投票を空に戻したことを知らせる
     this.broadcastState();
     this.runCpu();
+  }
+
+  /** 決着：確定した勝敗を、記録する側（戦績・経験値）へ渡す。失敗しても試合は止めない */
+  finishMatch(game, payload) {
+    const meta = this.matchMeta;
+    if (!this.onMatchEnd || !meta || this.game !== game) return;
+    try {
+      const seats = meta.seats.map((m) => {
+        const won = payload.winnerTeam ? m.team === payload.winnerTeam : m.playerId === payload.winner;
+        return { seat: m.seat, userId: m.userId, name: m.name, cpu: m.cpu, won, left: !!this.seats[m.seat]?.left, deckName: m.deckName };
+      });
+      this.onMatchEnd({
+        matchId: meta.matchId, modeId: 'kingdom', roomId: this.roomId, startedAt: meta.startedAt, endedAt: Date.now(),
+        turns: game.getState(null).turn, reason: payload.reason, deckMode: meta.deckMode, winCondition: meta.winCondition, seats,
+      });
+    } catch (err) {
+      console.error('match record', err);
+    }
   }
 
   /** つないだとき：部屋と状態を送る */
@@ -739,7 +768,7 @@ export class Lobby {
     this.nextRoom = 1;
   }
 
-  join(passphrase, name) {
+  join(passphrase, name, userId = null) {
     if (typeof passphrase !== 'string' || passphrase.trim().length < 1 || passphrase.length > 32) {
       return { ok: false, reason: '合言葉は1〜32文字で入れてください' };
     }
@@ -760,7 +789,7 @@ export class Lobby {
       room = new Room(`r${this.nextRoom++}`, this.data, this.makeRng, this.options);
       this.rooms.set(key, room);
     }
-    return room.join(name.trim());
+    return room.join(name.trim(), userId);
   }
 
   drop(key) {
