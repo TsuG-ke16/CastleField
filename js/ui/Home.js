@@ -3,6 +3,7 @@
 // まだ作っていない機能（ランクマッチ・フレンド・ショップなど）は「準備中」と表示して押せない。表示名などは textContent で入れる。
 import { account } from './Account.js';
 import { sound } from './Sound.js';
+import { rankEmblem } from './RankEmblem.js';
 
 const MODE_KEY = 'cf-home-mode';
 const MODES = {
@@ -28,7 +29,7 @@ const ICONS = {
 };
 // kind: go = 今ある画面へ進む／soon = まだ作っていない（Phase の予定を出す）
 const MENU = [
-  { id: 'rank', label: 'ランクマッチ', icon: 'rank', soon: 'Phase 3' },
+  { id: 'rank', label: 'ランクマッチ', icon: 'rank', go: 'rank' },
   { id: 'casual', label: 'カジュアル', icon: 'casual', go: 'casual' },
   { id: 'friend', label: 'フレンド対戦', icon: 'friend', soon: 'Phase 4' },
   { id: 'deck', label: 'デッキ編成', icon: 'deck', go: 'deck' },
@@ -38,7 +39,7 @@ const MENU = [
   { id: 'gacha', label: 'ガチャ', icon: 'gacha', soon: 'Phase 5' },
   { id: 'skin', label: 'スキン', icon: 'skin', soon: 'Phase 5' },
   { id: 'mission', label: 'ミッション', icon: 'mission', soon: 'Phase 6' },
-  { id: 'ranking', label: 'ランキング', icon: 'ranking', soon: 'Phase 6' },
+  { id: 'ranking', label: 'ランキング', icon: 'ranking', go: 'ranking' },
   { id: 'settings', label: '設定', icon: 'settings', go: 'settings' },
 ];
 
@@ -49,8 +50,8 @@ export class Home {
    * @param {() => void} o.onDeck  @param {() => void} o.onCatalog  @param {() => void} o.onSettings
    * @param {() => void} o.onProfile
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, toast = () => {} }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, toast });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked = () => {}, onRanking = () => {}, toast = () => {} }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked, onRanking, toast });
     this.data = null;
     this.mode = 'solo';
     try { const m = localStorage.getItem(MODE_KEY); if (m in MODES) this.mode = m; } catch { /* 保存できなくても動く */ }
@@ -76,7 +77,7 @@ export class Home {
         <div class="home-modes" role="tablist" aria-label="ゲームモード" data-part="modes"></div>
         <dl class="home-facts">
           <div><dt>デッキ</dt><dd><span data-part="deck">—</span><button type="button" class="small-btn" data-act="deck">変更</button></dd></div>
-          <div><dt>ランク</dt><dd data-part="rank">未参加（準備中）</dd></div>
+          <div><dt>ランク</dt><dd data-part="rank"><span class="home-rank-emblem" data-part="rankEmblem"></span><span data-part="rankText">—</span></dd></div>
           <div><dt>戦績</dt><dd data-part="stats">—</dd></div>
         </dl>
         <button type="button" class="plank-btn big home-start" data-act="start"><span data-part="startLabel">対戦開始</span></button>
@@ -134,6 +135,11 @@ export class Home {
     if (icon) { const img = new Image(); img.src = icon.image; img.alt = ''; av.append(img); } else av.textContent = [...(u?.displayName ?? '?')][0];
     this.part('coins').querySelector('b').textContent = String(d?.coins ?? 0);
     this.part('dot').hidden = !(d?.rewardsAvailable > 0);
+    const sum = d?.rank;
+    const member = u?.kind === 'member';
+    this.part('rankEmblem').innerHTML = member ? rankEmblem(sum?.rank ?? null, 26) : '';
+    this.part('rankText').textContent = !member ? 'ゲストはランクマッチ不可（連携すると遊べます）'
+      : sum?.rank ? `${sum.rank.divisionLabel}（${sum.rank.rp} RP）` : sum ? `認定戦 ${sum.placementTotal - sum.placementLeft}/${sum.placementTotal}` : '—';
     this.part('deck').textContent = d?.deck?.name ?? '未設定';
     this.part('stats').textContent = d?.stats?.matches ? `${d.stats.matches}戦 ${d.stats.wins}勝 ${d.stats.losses}敗（勝率 ${d.stats.winRate}%）` : 'まだ対戦がありません';
     this.renderFacts();
@@ -185,6 +191,8 @@ export class Home {
     if (act === 'catalog') return this.onCatalog();
     if (act === 'settings') return this.onSettings();
     if (act === 'profile') return this.onProfile();
+    if (act === 'rank') return this.onRanked();
+    if (act === 'ranking') return this.onRanking();
     if (act === 'notice') {
       const n = this.data?.rewardsAvailable ?? 0;
       if (n > 0) return this.onProfile();

@@ -1,9 +1,10 @@
 // プロフィール画面：自分の情報・戦績・最近の対戦・アイコンと公開設定・レベル報酬の受け取り。
 // 値はすべてサーバーから受け取って表示する（ここで経験値や勝敗を変えることはできない）。文字は textContent で入れる。
 import { account } from './Account.js';
+import { rankEmblem } from './RankEmblem.js';
 
 const REASON = { castleDestroyed: '城を落とした', surrender: '降参', roundLimit: '周回の上限', lastStanding: '最後の1人' };
-const PRIVACY_LABEL = { stats: '戦績（勝率など）', history: '対戦履歴', decks: '使用デッキ' };
+const PRIVACY_LABEL = { stats: '戦績（勝率など）', history: '対戦履歴', decks: '使用デッキ', ranking: 'ランキングの名前' };
 const LEVELS = { public: 'みんなに公開', friends: 'フレンドだけ（準備中）', private: '非公開' };
 const ago = (t) => {
   const m = Math.max(0, Math.round((Date.now() - t) / 60000));
@@ -33,7 +34,7 @@ export class ProfileView {
         </section>
         <section><h3>戦績</h3>
           <dl class="profile-stats" data-part="stats"></dl>
-          <p class="profile-note">ランク：未参加（ランクマッチは準備中）</p>
+          <p class="profile-note" data-part="rankLine"></p>
         </section>
         <section><h3>最近の対戦</h3><ol class="profile-history" data-part="history"></ol></section>
         <section data-part="deckSec" hidden><h3>使用デッキ</h3><p data-part="deck"></p></section>
@@ -84,6 +85,11 @@ export class ProfileView {
     const lv = homeJson?.level;
     p('xp').style.width = lv ? `${lv.maxed ? 100 : Math.round((lv.xpIntoLevel / Math.max(1, lv.xpForNext)) * 100)}%` : '0%';
     p('xptext').textContent = lv ? (lv.maxed ? '最大レベル' : `次のレベルまで ${lv.xpForNext - lv.xpIntoLevel} 経験値`) : '';
+    const rl = p('rankLine');
+    const r = pf.rank?.rank;
+    rl.innerHTML = '';
+    if (r) { const e = document.createElement('span'); e.className = 'home-rank-emblem'; e.innerHTML = rankEmblem(r, 24); rl.append(e); }
+    rl.append(document.createTextNode(pf.kind !== 'member' ? 'ランク：ゲストはランクマッチに参加できません' : r ? `ランク：${r.divisionLabel}${pf.bestRank ? `　最高：${pf.bestRank.divisionLabel}` : ''}` : 'ランク：認定戦中'));
     // レベル報酬
     const rw = rewardsJson?.rewards ?? [];
     p('rewards').hidden = rw.length === 0;

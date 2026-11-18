@@ -3,7 +3,7 @@ import { account } from './Account.js';
 
 let shownMatch = null;
 
-export async function showMatchProgress(root, { reducedMotion = false } = {}) {
+export async function showMatchProgress(root, { reducedMotion = false, ranked = false } = {}) {
   root.querySelector('.match-progress')?.remove();
   if (!account.enabled || !account.user) return;
   let last;
@@ -21,6 +21,19 @@ export async function showMatchProgress(root, { reducedMotion = false } = {}) {
   const bar = document.createElement('span'); bar.className = 'home-xp';
   const fill = document.createElement('i'); bar.append(fill);
   card.append(gain, bar, lv);
+  if (ranked) {
+    try {
+      const rc = (await account.api('GET', '/api/ranked/last')).json?.last;
+      if (rc) {
+        const line = document.createElement('p');
+        line.className = `rank-change ${rc.promoted ? 'up' : rc.demoted ? 'down' : ''}`;
+        line.textContent = rc.placement
+          ? (rc.rankAfter ? `認定戦が終わりました：${rc.rankAfter.divisionLabel}` : `認定戦（あと${rc.placementLeft}試合でランクが決まります）`)
+          : `${rc.rpDelta >= 0 ? '+' : ''}${rc.rpDelta} RP　${rc.rankAfter.divisionLabel}${rc.promoted ? '　昇格！' : rc.demoted ? '　降格…' : ''}${rc.scaled ? '（同じ相手と続けて対戦したため、増え方を減らしました）' : ''}`;
+        card.append(line);
+      }
+    } catch { /* ランクの表示だけ出せない */ }
+  }
   const anchor = root.querySelector('.result-actions') ?? root.lastElementChild;
   anchor.before(card);
   const pct = last.maxed ? 100 : Math.round((last.xpIntoLevel / Math.max(1, last.xpForNext)) * 100);

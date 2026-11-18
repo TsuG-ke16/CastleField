@@ -131,6 +131,45 @@ export const MIGRATIONS = [
       );
     `,
   },
+  {
+    id: 3,
+    name: 'ranked-seasons',
+    sql: `
+      ALTER TABLE matches ADD COLUMN ranked INTEGER NOT NULL DEFAULT 0;
+      CREATE TABLE season_stats (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        season        INTEGER NOT NULL,
+        mode_id       TEXT NOT NULL DEFAULT 'kingdom',
+        mmr           INTEGER NOT NULL,
+        rp            INTEGER NOT NULL DEFAULT 0 CHECK (rp >= 0),
+        peak_rp       INTEGER NOT NULL DEFAULT 0,
+        matches       INTEGER NOT NULL DEFAULT 0,
+        wins          INTEGER NOT NULL DEFAULT 0,
+        placement_left INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (user_id, season, mode_id)
+      );
+      CREATE INDEX season_stats_board ON season_stats(season, mode_id, placement_left, rp DESC);
+      CREATE TABLE rating_changes (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        match_id      TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+        user_id       TEXT REFERENCES users(id) ON DELETE CASCADE,
+        opponent_id   TEXT,
+        season        INTEGER NOT NULL,
+        mode_id       TEXT NOT NULL,
+        result        TEXT NOT NULL,
+        mmr_before    INTEGER NOT NULL,
+        mmr_after     INTEGER NOT NULL,
+        rp_before     INTEGER NOT NULL,
+        rp_after      INTEGER NOT NULL,
+        placement     INTEGER NOT NULL DEFAULT 0,
+        scale         REAL NOT NULL DEFAULT 1,
+        at            INTEGER NOT NULL,
+        UNIQUE (match_id, user_id)
+      );
+      CREATE INDEX rating_changes_user ON rating_changes(user_id, at);
+      CREATE INDEX rating_changes_pair ON rating_changes(user_id, opponent_id, at);
+    `,
+  },
 ];
 
 export class Db {

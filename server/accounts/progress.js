@@ -6,7 +6,7 @@ const DEFAULT_PROGRESSION = {
   maxLevel: 100, xpToNext: { base: 60, growth: 20 }, match: { base: 20, win: 15, minTurns: 4, cpuMultiplier: 0.5 },
   levelReward: { coins: 20, milestones: {} }, titles: [{ level: 1, name: '見習い兵' }],
 };
-const DEFAULT_PROFILE = { icons: [{ id: 'infantry', name: '歩兵', image: 'assets/units/infantry-blue.png' }], defaultPrivacy: { stats: 'public', history: 'private', decks: 'private' }, privacyLevels: ['public', 'friends', 'private'] };
+const DEFAULT_PROFILE = { icons: [{ id: 'infantry', name: '歩兵', image: 'assets/units/infantry-blue.png' }], defaultPrivacy: { stats: 'public', history: 'private', decks: 'private', ranking: 'public' }, privacyLevels: ['public', 'friends', 'private'] };
 
 export class Progress {
   constructor(db, accounts, { progression = DEFAULT_PROGRESSION, profile = DEFAULT_PROFILE, now = () => Date.now() } = {}) {
@@ -15,6 +15,7 @@ export class Progress {
     this.cfg = progression;
     this.profileCfg = profile;
     this.now = now;
+    this.ranking = null; // Ranking（あれば、ホーム・プロフィールにランクを出す）
     this.levelStarts = [0]; // levelStarts[L-1] = レベル L に必要な累計の経験値
     for (let l = 1; l < this.cfg.maxLevel; l++) this.levelStarts.push(this.levelStarts[l - 1] + this.xpToNext(l));
   }
@@ -161,7 +162,7 @@ export class Progress {
     const prow = this.profileRow(userId);
     const out = {
       userId, displayName: u.displayName, kind: u.kind, icon: prow.icon, title: prow.title ?? this.titleFor(lv.level),
-      level: lv.level, rank: null /* Phase 3 */, createdAt: u.createdAt, self,
+      level: lv.level, rank: this.rankSummary(userId, u), bestRank: u.kind === 'member' ? this.ranking?.bestRank(userId) ?? null : null, createdAt: u.createdAt, self,
       equipped: null /* Phase 5：装備中スキン */,
     };
     if (self) out.privacy = privacy;
@@ -174,6 +175,9 @@ export class Progress {
     return out;
   }
 
+  /** ランクは正会員だけ（ゲストはランクに参加できない）。ゲストの行は作らない */
+  rankSummary(userId, u) { return u.kind === 'member' ? this.ranking?.summary(userId) ?? null : null; }
+
   /** ホーム画面に出すもの */
   home(userId) {
     const u = this.accounts.publicUser(userId);
@@ -182,7 +186,7 @@ export class Progress {
     const d = this.accounts.getDecks(userId);
     return {
       user: u, icon: prow.icon, title: prow.title ?? this.titleFor(lv.level), level: lv, coins: this.getCoins(userId),
-      rank: null, season: null, // Phase 3
+      rank: this.rankSummary(userId, u), season: this.ranking ? this.ranking.seasonAt() : null,
       deck: d.slots[d.active] ? { slot: d.active, name: d.slots[d.active].name } : null,
       stats: this.stats(userId), rewardsAvailable: this.availableRewards(userId).length,
       icons: this.profileCfg.icons,

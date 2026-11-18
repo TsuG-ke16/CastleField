@@ -7,8 +7,12 @@ import { Accounts, AccountError, safeEqual } from './accounts.js';
 import { Oidc, providersFromEnv } from './oidc.js';
 import { RateLimiter } from './ratelimit.js';
 import { Progress } from './progress.js';
+import { Ranking } from './ranking.js';
+import { Matchmaker } from './matchmaking.js';
+import { checkCostDeck } from '../../js/game/Setup.js';
+import { randomInt } from 'node:crypto';
 
-export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/level-rewards', '/healthz'];
+export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/ranked/', '/api/ranking', '/api/level-rewards', '/healthz'];
 const isAccountPath = (p) => ACCOUNT_PREFIXES.some((x) => p === x || (x.endsWith('/') && p.startsWith(x)) || p.startsWith(`${x}/`));
 
 const AUTH_ERRORS = {
@@ -18,12 +22,40 @@ const AUTH_ERRORS = {
   linked: 'このアカウントは、別のキャッスルフィールドのアカウントに連携済みです',
 };
 
-export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, progression, profile, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
+export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, progression, profile, ranks, seasons, data = null, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
   const acc = accounts ?? new Accounts(db, { cards, now });
   const publicUrl = (env.CF_PUBLIC_URL ?? '').replace(/\/+$/, '');
   const trustProxy = env.CF_TRUST_PROXY === '1';
   const forceSecure = env.CF_SECURE_COOKIES === '1' || publicUrl.startsWith('https://');
   const progress = new Progress(db, acc, { progression, profile, now });
+  const ranking = new Ranking(db, { ranks, seasons, now });
+  progress.ranking = ranking;
+  /** @type {import('../rooms.js').Lobby|null} */
+  let lobby = null;
+  let matchmaker = null;
+  /** 部屋の管理（Lobby）とつなぐ：ランクマッチが成立したとき、サーバーが部屋を作る */
+  function attachLobby(l) {
+    lobby = l;
+    matchmaker = new Matchmaker({
+      cfg: ranking.cfg.matchmaking, now,
+      mmrOf: (u) => ranking.internalMmr(u),
+      createMatch: (a, b) => {
+        const order = randomInt(2) === 0 ? [a, b] : [b, a]; // 先攻・後攻はランダム
+        const users = order.map((x) => ({ userId: x.userId, name: db.get('SELECT display_name AS n FROM users WHERE id = ?', x.userId)?.n ?? '？', deckList: activeDeckList(x.userId) }));
+        const made = lobby.createRankedRoom(users, { cfg: ranking.cfg.ranked, checkMs: env.CF_RANKED_CHECK_MS ? Number(env.CF_RANKED_CHECK_MS) : undefined });
+        made.room.onRankedVoid = (room) => matchmaker.finished(room.matchMeta.matchId);
+        return made;
+      },
+    });
+  }
+  /** 自分のクラウドのデッキ（使っている枠）が、コスト制の決まりに合っていれば使う。合わなければ null（見本のデッキになる） */
+  function activeDeckList(userId) {
+    if (!data?.rarities) return null;
+    const d = acc.getDecks(userId);
+    const slot = d.slots[d.active];
+    if (!slot) return null;
+    return checkCostDeck(slot.list, data.cards, data.rarities, data.rules).ok ? slot.list : null;
+  }
   const idp = oidc ?? new Oidc(providersFromEnv(env), { redirectBase: publicUrl });
   const purger = setInterval(() => { try { acc.purge(); } catch (e) { log.error('purge', e); } }, 10 * 60 * 1000);
   purger.unref();
@@ -166,6 +198,10 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       }
       if (req.method === 'GET' && path === '/api/level-rewards') { send(req, res, 200, { ok: true, rewards: progress.availableRewards(session.userId), coins: progress.getCoins(session.userId) }); return true; }
       if (req.method === 'POST' && path === '/api/level-rewards/claim') { send(req, res, 200, { ok: true, ...progress.claimReward(session.userId, body.level) }); return true; }
+      if (path.startsWith('/api/ranked/') || path === '/api/ranking') {
+        const out = await rankedRoutes(req, res, url, path, session, body);
+        if (out) return true;
+      }
       if (req.method === 'GET' && path === '/api/decks') { send(req, res, 200, { ok: true, ...acc.getDecks(session.userId) }); return true; }
       if (req.method === 'PUT' && path === '/api/decks') {
         const base = Number.isInteger(body.baseRevision) ? body.baseRevision : null;
@@ -184,6 +220,34 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       if (!res.headersSent) fail(req, res, 500, 'サーバーでエラーが起きました');
       return true;
     }
+  }
+
+  /** ランクマッチ・ランキングの API（正会員だけ。ゲストはランクに参加できない） */
+  async function rankedRoutes(req, res, url, path, session, body) {
+    const uid = session.userId;
+    const user = acc.publicUser(uid);
+    if (req.method === 'GET' && path === '/api/ranking') {
+      const limit = Number(url.searchParams.get('limit')) || 50;
+      const mine = user.kind === 'member' ? ranking.summary(uid) : null;
+      send(req, res, 200, { ok: true, season: ranking.seasonAt(), board: ranking.leaderboard({ limit }), me: mine });
+      return true;
+    }
+    if (req.method === 'GET' && path === '/api/ranked/summary') {
+      send(req, res, 200, { ok: true, member: user.kind === 'member', season: ranking.seasonAt(), summary: user.kind === 'member' ? ranking.summary(uid) : null, history: ranking.history(uid), best: ranking.bestRank(uid) });
+      return true;
+    }
+    if (req.method === 'GET' && path === '/api/ranked/last') { send(req, res, 200, { ok: true, last: ranking.lastChange(uid) }); return true; }
+    if (!matchmaker) { fail(req, res, 503, 'ランクマッチはこのサーバーでは使えません'); return true; }
+    if (req.method === 'GET' && path === '/api/ranked/status') { send(req, res, 200, { ok: true, ...matchmaker.status(uid) }); return true; }
+    if (req.method === 'POST' && path === '/api/ranked/queue') {
+      if (user.kind !== 'member') { fail(req, res, 403, 'ランクマッチは、GoogleかAppleに連携したアカウントで遊べます（ゲストでは遊べません）', { code: 'needsMember' }); return true; }
+      if (lobby.activeSeatOfUser(uid)) { fail(req, res, 409, 'ほかの試合の途中です。終わってから探してください', { code: 'busy' }); return true; }
+      const r = matchmaker.join(uid);
+      send(req, res, r.ok ? 200 : 409, r.ok ? { ok: true, ...r } : { ok: false, reason: r.reason, ...r });
+      return true;
+    }
+    if (req.method === 'POST' && path === '/api/ranked/leave') { send(req, res, 200, matchmaker.leave(uid)); return true; }
+    return false;
   }
 
   async function oauthCallback(req, res, url, provider) {
@@ -220,7 +284,12 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
   /** 部屋に入るとき：ログイン中なら、そのアカウントの ID（なければ null） */
   const userIdOf = (req) => { const t = readCookie(req); return (t && acc.getSession(t)?.userId) || null; };
   /** 試合が決着したとき（Room から呼ばれる）。結果をアカウントごとに記録する */
-  const onMatchEnd = (m) => progress.recordMatch(m);
+  const onMatchEnd = (m) => db.tx(() => {
+    const r = progress.recordMatch(m);
+    if (r && m.ranked) ranking.applyMatch(m); // レーティングは、同じ試合 ID につき1回だけ・経験値と同じトランザクションで
+    if (m.ranked) matchmaker?.finished(m.matchId);
+    return r;
+  });
 
-  return { handle, userIdOf, onMatchEnd, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => clearInterval(purger) };
+  return { handle, userIdOf, onMatchEnd, attachLobby, ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
 }

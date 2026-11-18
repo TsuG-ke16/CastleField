@@ -27,6 +27,8 @@ export function loadData(dir = join(ROOT, 'data')) {
     stamps: optional('stamps.json'),
     progression: optional('progression.json'),
     profile: optional('profile.json'),
+    ranks: optional('ranks.json'),
+    seasons: optional('seasons.json'),
   };
 }
 
@@ -90,11 +92,12 @@ function sendJson(res, status, body) {
  */
 export function createGameServer({ data = loadData(), makeRng = () => Math.random, cpuDelayMs = 700, accounts = null } = {}) {
   // アカウント・保存（accounts: { dbPath, env, ... }）。省略すると使わない（今までのテスト・合言葉だけの対戦と同じ）
-  const account = accounts ? createAccountRoutes({ db: new Db(accounts.dbPath ?? ':memory:'), cards: data.cards, progression: data.progression, profile: data.profile, readJson, ...accounts.routes, env: accounts.env ?? process.env }) : null;
+  const account = accounts ? createAccountRoutes({ db: new Db(accounts.dbPath ?? ':memory:'), cards: data.cards, progression: data.progression, profile: data.profile, ranks: data.ranks, seasons: data.seasons, data, readJson, ...accounts.routes, env: accounts.env ?? process.env }) : null;
   // data/ が間違っていたら、起動したときに分かるようにする（試合が始まってから落ちないように）
   new Game({ ...data, rng: makeRng() });
   // 試合の結果の記録（アカウント機能があるときだけ）。サーバーが決めた勝敗だけを使う
   const lobby = new Lobby(data, makeRng, { cpuDelayMs, onMatchEnd: account ? (m) => account.onMatchEnd(m) : null });
+  account?.attachLobby(lobby);
   const sweeper = setInterval(() => lobby.sweep(30 * 60 * 1000), 60 * 1000);
   sweeper.unref();
 

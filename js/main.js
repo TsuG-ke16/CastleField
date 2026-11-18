@@ -31,6 +31,7 @@ import { account } from './ui/Account.js';
 import { AccountPanel } from './ui/AccountPanel.js';
 import { Home } from './ui/Home.js';
 import { ProfileView } from './ui/ProfileView.js';
+import { RankedView, RankingView } from './ui/RankedView.js';
 import { showMatchProgress } from './ui/Progression.js';
 import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
@@ -140,7 +141,8 @@ let cpu = null;            // { id, level, strategy, rng }（ひとりで遊ぶ�
 // オンライン
 const SESSION_KEY = 'cf-online'; // つなぎ直し用に、部屋の鍵をこのタブに覚えておく（sessionStorage）
 let roomView;
-let home;                   // ホーム画面（アカウント機能があるサーバーのとき、タイトルの前に出る）
+let home;
+let rankedView;                   // ホーム画面（アカウント機能があるサーバーのとき、タイトルの前に出る）
 let roomPassphrase = '';
 let room = null;           // サーバーから届いた部屋の状態
 let batches = [];          // 届いた「イベントの列 + 状態」。順番に見せる
@@ -324,7 +326,20 @@ async function boot() {
     onCatalog: () => $('title-catalog').click(),
     onSettings: () => settings.open(),
     onProfile: () => profileView.open(),
+    onRanked: () => rankedView.open(),
+    onRanking: () => rankingView.open(),
   });
+  // ランクマッチ：相手が見つかったら、サーバーが作った部屋の鍵で入る（ページを読み直したときと同じつなぎ方）
+  rankedView = new RankedView({
+    toast,
+    onNeedMember: () => accountPanel.open(),
+    onMatched: ({ token, playerId }) => {
+      try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, playerId, passphrase: '' })); } catch { /* 読み直せないだけ */ }
+      home.close(); el.title.hidden = false;
+      resumeOnline();
+    },
+  });
+  const rankingView = new RankingView();
   let homeOpened = false;
   account.onChange(() => {
     $('title-account').hidden = !account.enabled;
@@ -449,6 +464,20 @@ function setupTitle(deckOptions) {
   } catch { /* 覚えられなくても困らない */ }
 }
 
+/** ランク戦の途中で抜けると負けになるので、もう一度押さないと抜けない */
+let rankedLeaveArmed = null;
+function leaveWithRankedWarning() {
+  if (room?.ranked && model && model.phase !== 'gameOver') {
+    if (!rankedLeaveArmed) {
+      toast('ランク戦で抜けると負けになります。もう一度押すと抜けます', 'info');
+      rankedLeaveArmed = setTimeout(() => { rankedLeaveArmed = null; }, 4000);
+      return;
+    }
+    clearTimeout(rankedLeaveArmed); rankedLeaveArmed = null;
+  }
+  showTitle();
+}
+
 /** タイトルへ戻る（遊んでいた試合はやめる） */
 function showTitle() {
   startRequest++;
@@ -517,7 +546,7 @@ function setupMenu() {
     el.menu.hidden = false;
   });
   el.menuSurrender.addEventListener('click', surrender);
-  el.netLeave.addEventListener('click', () => showTitle());
+  el.netLeave.addEventListener('click', () => leaveWithRankedWarning());
   $('menu-close').addEventListener('click', () => { el.menu.hidden = true; });
   el.menu.addEventListener('click', (e) => { if (e.target === el.menu) el.menu.hidden = true; });
   el.menuSound.addEventListener('click', () => {
@@ -526,7 +555,7 @@ function setupMenu() {
     sound.play('tap');
   });
   $('menu-help').addEventListener('click', () => { el.menu.hidden = true; openHelp(); });
-  $('menu-title-btn').addEventListener('click', () => showTitle());
+  $('menu-title-btn').addEventListener('click', () => leaveWithRankedWarning());
   $('help-close').addEventListener('click', () => { el.help.hidden = true; });
   el.help.addEventListener('click', (e) => { if (e.target === el.help) el.help.hidden = true; });
 }
@@ -931,7 +960,7 @@ function onRoom(r) {
     el.result.hidden = true; el.title.hidden = true;
     roomView.render(r, roomPassphrase);
   } else roomView.hide();
-  $('back-to-room').hidden = r.you !== r.hostId;
+  $('back-to-room').hidden = r.you !== r.hostId || !!r.ranked;
   updateNetStatus();
   // もう1回：自分が押したら相手を待つ。相手が先に押していたら知らせる
   const votes = r.rematchVotes ?? [];
@@ -1533,6 +1562,7 @@ async function rematch() {
     startLocal(undefined, cpu?.level ?? null, lastLocalOptions); // CPU 戦は同じ強さでもう1回
     return;
   }
+  if (room?.ranked) { showTitle(); rankedView?.open?.(); return; } // ランク戦は同じ相手とのもう1回はない
   if (rematchSent) return;
   rematchSent = true;
   el.rematch.textContent = '相手を待っています…';
@@ -1609,7 +1639,7 @@ async function showResult(winner) {
   el.result.classList.toggle('lost', !won);
   el.resultTitle.textContent = online ? (won ? 'あなたの勝ち！' : '負けてしまった…') : `${playerName(winner)}の勝ち！`;
   if (winningTeam) el.resultTitle.textContent = `${winningTeam.members.map(playerName).join('・')}のチームが勝利！`;
-  $('back-to-room').hidden = !session?.online || room?.hostId !== viewerId;
+  $('back-to-room').hidden = !session?.online || room?.hostId !== viewerId || !!room?.ranked;
   const how = (won ? GAME_OVER_TEXT : GAME_OVER_TEXT_LOST)[model.gameOverReason] ?? '';
   // 3人以上で負けたときは、だれが勝ったかも出す
   const victor = online && !won && !winningTeam && model.playerOrder.length > 2 ? `${playerName(winner)}の勝ち　` : '';
@@ -1632,7 +1662,7 @@ async function showResult(winner) {
   }
   matchStats.render(viewerId, online);
   matchStats.finish(won, online);
-  if (online) showMatchProgress(el.result.querySelector('.result-box'), { reducedMotion: UI_CONFIG.reducedMotion });
+  if (online) showMatchProgress(el.result.querySelector('.result-box'), { reducedMotion: UI_CONFIG.reducedMotion, ranked: !!room?.ranked });
   el.result.hidden = false;
   sound.enabled = true;
   sound.setScene(won ? 'victory' : 'defeat');
@@ -1640,7 +1670,7 @@ async function showResult(winner) {
   if (!rematchSent) {
     el.rematch.disabled = false;
     const votes = room?.rematchVotes ?? [];
-    el.rematch.textContent = session?.online && votes.length ? 'もう1回（相手は準備OK）' : 'もう1回';
+    el.rematch.textContent = room?.ranked ? 'ランクマッチ画面へ' : session?.online && votes.length ? 'もう1回（相手は準備OK）' : 'もう1回';
     updateNetStatus(); // 相手が部屋を出ていたら、「もう1回」は押せない
   }
   el.rematch.focus({ preventScroll: true });

@@ -7,6 +7,6 @@
     { "id": "mage", "name": "魔法使い", "image": "assets/units/mage-blue.png" },
     { "id": "hero", "name": "勇者", "image": "assets/units/hero-blue.png" }
   ],
-  "defaultPrivacy": { "stats": "public", "history": "private", "decks": "private" },
+  "defaultPrivacy": { "stats": "public", "history": "private", "decks": "private", "ranking": "public" },
   "privacyLevels": ["public", "friends", "private"]
 }
