@@ -1,6 +1,6 @@
 // 選ばなければ従来どおりの2人戦。詳細設定は閉じておく。
 import { pillify } from './pills.js';
-import { deckChoice, deckSlot } from './DeckStore.js';
+import { deckChoice, deckSlot, loadDecks } from './DeckStore.js';
 export class LocalSetup {
   constructor({castles,decks,rules,onStart,savedDecks,presetDeck,previewDeck,openDeckEditor}) {
     const box=document.getElementById('title-levels');
@@ -70,7 +70,11 @@ export class LocalSetup {
     this.previewDeck(this.preview, deck);
   }
 
-  reset(){for(const [k,v] of Object.entries({playerCount:2,winCondition:'firstDestroy',castle:this.rules.defaultCastle??'standard',deckMode:'shared',deck:this.rules.defaultDeck??'balanced',teams:'off'})){this.inputs[k].value=v;if(k==='deckMode')this.inputs.deckMode.onchange();}for(const el of Object.values(this.inputs))el._pillSync?.();}
+  reset(){for(const [k,v] of Object.entries({playerCount:2,winCondition:'firstDestroy',castle:this.rules.defaultCastle??'standard',deckMode:this.deckChoices.cost.length?'cost':'shared',deck:this.deckChoices.cost.length?(this.rules.defaultCostDeck??this.deckChoices.cost[0][0]):(this.rules.defaultDeck??'balanced'),teams:'off'})){this.inputs[k].value=v;if(k==='deckMode')this.inputs.deckMode.onchange();}
+    // 山札は、プレイヤーごとに別（コスト制）が最初の設定。編成したデッキがあれば、それを選んでおく
+    const mine=this.inputs.deckMode.value==='cost'?this.savedDecks().find(d=>d?.valid&&d.slot===loadDecks().active):null;
+    if(mine){this.inputs.deck.value=deckChoice(mine.slot);this.renderPreview();}
+    for(const el of Object.values(this.inputs))el._pillSync?.();}
   open(mode){this.mode=mode;this.title.textContent=mode==='solo'?'CPU の強さを選んではじめる':'同じ端末で遊ぶ';this.localButton.hidden=mode==='solo';for(const e of document.querySelectorAll('#title-levels .level'))e.hidden=mode!=='solo';}
   read(){return Object.fromEntries(Object.entries(this.inputs).map(([k,el])=>[k,k==='playerCount'?Number(el.value):el.value]));}
 }

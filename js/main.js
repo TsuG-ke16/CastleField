@@ -27,7 +27,7 @@ import { LocalSession } from './ui/Session.js';
 import { OnlineClient } from './ui/OnlineClient.js';
 import { ChatView } from './ui/ChatView.js';
 import { DeckEditor } from './ui/DeckEditor.js';
-import { deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
+import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
 import { checkCostDeck } from './game/Setup.js';
@@ -597,6 +597,15 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
   if(request!==startRequest)return;
   $('asset-loading').hidden=true;
   document.documentElement.classList.remove('at-title');
+  // 設定を選ばずに始めたときも、山札は全員共通ではなくプレイヤーごと（コスト制）にする。
+  // 編成したデッキが決まりに合っていれば自分の席に使い、CPU は見本のデッキ。
+  if (!options && rarities && Object.values(decks ?? {}).some((d) => d.costDeck)) {
+    const active = loadDecks().active;
+    const mine = loadMyDeck(active);
+    const usable = mine && checkCostDeck(mine, cards, rarities, rules).ok;
+    options = { playerCount: 2, winCondition: 'firstDestroy', castle: rules.defaultCastle ?? 'standard',
+      deckMode: 'cost', deck: usable ? deckChoice(active) : rules.defaultCostDeck, teams: 'off' };
+  }
   lastLocalOptions = options ? structuredClone(options) : null;
   leaveOnline();
   stopLocal();
