@@ -12,11 +12,15 @@ import { STRATEGIES } from '../js/game/strategies.js';
 /** 試合中の操作（Game のメソッドに渡す） */
 const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense'];
 /** 部屋の操作（いつでも送れる。だめなときは理由を返す） */
-const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom'];
+const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
 const ACTIONS = [...GAME_ACTIONS, ...ROOM_ACTIONS];
 /** 攻撃を受けた人（自分の番でなくても）が送れる操作 */
 const DEFENSE_ACTIONS = ['defend', 'passDefense'];
 const MAX_ROOMS = 1000;
+/** チャット：1通の最大文字数・つづけて送れる間隔（ミリ秒）・部屋に残す履歴の数 */
+export const CHAT_MAX_LENGTH = 40;
+export const CHAT_INTERVAL_MS = 600;
+const CHAT_HISTORY = 30;
 /** 1部屋の最大人数（CPU を含む） */
 export const MAX_SEATS = 8;
 /** 試合を始められる最少人数（CPU を含む） */
@@ -82,6 +86,9 @@ export class Room {
     this.cpuTimer = null;
     this.cpuRng = null;
     this.cpuActedTurn = null;
+    /** チャットの履歴（新しくつないだ人に送る）。席そのものを持つので、席が詰まって playerId が変わっても送るときに引き直せる */
+    this.chatLog = [];
+    this.chatCount = 0;
   }
 
   get started() {
@@ -183,6 +190,7 @@ export class Room {
     if (seat.clients.size >= 3) seat.clients.delete(seat.clients.values().next().value);
     seat.clients.add(client);
     this.broadcastRoom();
+    if (this.chatLog.length > 0) client({ type: 'chatLog', messages: this.chatLog.map((m) => this.chatMessage(m)) });
     if (this.game) client({ type: 'state', ...this.stateFor(seat.playerId) });
     return () => {
       this.lastActive = Date.now();
@@ -207,6 +215,7 @@ export class Room {
       case 'addCpu': return this.addCpu(seat, args[0]);
       case 'removeCpu': return this.removeCpu(seat, args[0]);
       case 'backToRoom': return this.backToRoom(seat);
+      case 'chat': return this.chat(seat, args[0]);
       default: break;
     }
     if (!this.game) return { ok: false, reason: 'まだ試合が始まっていません' };
@@ -232,6 +241,47 @@ export class Room {
     this.broadcastState();
     this.runCpu();
     return result;
+  }
+
+  // ---------- チャットとスタンプ ----------
+
+  /**
+   * チャット（同じ部屋の全員に届く。試合の前・試合中・試合のあと、いつでも）。
+   * payload は { text }（1〜CHAT_MAX_LENGTH 文字）か { stamp }（data/stamps.json の id）のどちらか1つ。
+   * 文字は人が入れたものなので、画面は textContent で出す。続けて送れるのは CHAT_INTERVAL_MS ごと
+   */
+  chat(seat, payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return { ok: false, reason: 'メッセージの形が正しくありません' };
+    const hasText = payload.text !== undefined;
+    const hasStamp = payload.stamp !== undefined;
+    if (hasText === hasStamp) return { ok: false, reason: 'text か stamp のどちらか1つを送ってください' };
+    const body = {};
+    if (hasStamp) {
+      if (typeof payload.stamp !== 'string' || !(this.data.stamps ?? []).some((s) => s.id === payload.stamp)) return { ok: false, reason: 'そのスタンプはありません' };
+      body.stamp = payload.stamp;
+    } else {
+      if (typeof payload.text !== 'string') return { ok: false, reason: 'メッセージの形が正しくありません' };
+      // 制御文字・改行は空白にして、前後の空白を取る
+      const text = payload.text.replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
+      if (text === '') return { ok: false, reason: 'メッセージが空です' };
+      if ([...text].length > CHAT_MAX_LENGTH) return { ok: false, reason: `メッセージは${CHAT_MAX_LENGTH}文字までです` };
+      body.text = text;
+    }
+    const now = Date.now();
+    if (seat.lastChatAt !== undefined && now - seat.lastChatAt < CHAT_INTERVAL_MS) return { ok: false, reason: '少し待ってから送ってください' };
+    seat.lastChatAt = now;
+    const entry = { id: ++this.chatCount, seat, at: now, ...body };
+    this.chatLog.push(entry);
+    if (this.chatLog.length > CHAT_HISTORY) this.chatLog.shift();
+    const msg = { type: 'chat', ...this.chatMessage(entry) };
+    for (const s of this.seats) if (s.clients.size > 0) this.send(s, msg);
+    return { ok: true };
+  }
+
+  /** 履歴1件を、送る形にする（送る時点の席番号と名前） */
+  chatMessage(entry) {
+    const { seat, id, at, text, stamp } = entry;
+    return { id, playerId: seat.playerId, name: seat.name, at, ...(text !== undefined ? { text } : { stamp }) };
   }
 
   // ---------- 部屋（試合の前） ----------
