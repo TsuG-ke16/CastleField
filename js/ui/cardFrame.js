@@ -7,6 +7,7 @@ const KIND_ICON = { soldier: 'sword', spell: 'fire', weapon: 'hammer', defense: 
 const RARITY_MARK = { common: '●', uncommon: '◆', rare: '✦', epic: '✶', legendary: '♛', special: '❖' };
 
 export function frameAsset(def, rarities) {
+  if (def?.monster) return 'cards/frame-beast.png';
   // スペシャルは真珠色・虹色の専用枠を使う。
   if (def?.rarity === 'special' && rarities?.special) return 'cards/frame-special.png';
   if (def?.rarity && RARITY_IDS.includes(def.rarity) && rarities?.[def.rarity]) {

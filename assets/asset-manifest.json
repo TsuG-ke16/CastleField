@@ -304,5 +304,18 @@
   "ui/weather-storm.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
   "ui/weather-sandstorm.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
   "ui/weather-coin-rain.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
-  "cards/card-weather-call.png": "exec-4e9db26b-44cc-4e61-97da-354f9b08b7cb.png"
+  "cards/card-weather-call.png": "exec-4e9db26b-44cc-4e61-97da-354f9b08b7cb.png",
+  "cards/card-beast-slime.png": "exec-6846195d-ac74-42f8-b383-6deecbe3dafc.png",
+  "cards/card-beast-goblin.png": "exec-6846195d-ac74-42f8-b383-6deecbe3dafc.png",
+  "cards/card-beast-dragon.png": "exec-6846195d-ac74-42f8-b383-6deecbe3dafc.png",
+  "cards/card-beast-bat.png": "exec-6846195d-ac74-42f8-b383-6deecbe3dafc.png",
+  "cards/card-beast-skeleton.png": "exec-6846195d-ac74-42f8-b383-6deecbe3dafc.png",
+  "cards/card-beast-golem.png": "exec-6846195d-ac74-42f8-b383-6deecbe3dafc.png",
+  "cards/card-beast-demon.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
+  "cards/card-beast-ghost.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
+  "cards/card-beast-treant.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
+  "cards/card-beast-mimic.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
+  "cards/card-beast-vampire.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
+  "cards/card-beast-demon-king.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
+  "cards/frame-beast.png": "exec-c8cb0d1b-4d6c-46b3-b8ab-acd6a69ff240.png"
 }

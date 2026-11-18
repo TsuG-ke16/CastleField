@@ -769,17 +769,102 @@ export class Animations {
     } finally { stage.remove(); }
   }
 
+  async recruitBeast(piece, destination, mine) {
+    if (this.skipping || UI_CONFIG.speed === 0) return;
+    const def = this.cards[piece.type];
+    if (!def) return;
+    const center = this.centerOf(this.renderer.el.field);
+    const bounds = this.el.app.getBoundingClientRect();
+    const start = piece.from ?? center;
+    const rect = destination?.getBoundingClientRect();
+    const end = rect?.width ? {
+      x: Math.max(32, Math.min(bounds.width - 32, rect.left + rect.width / 2 - bounds.left)),
+      y: rect.top + rect.height / 2 - bounds.top,
+    } : this.centerOf(document.getElementById(mine ? 'hand-count' : 'opp-hand-count'));
+    const stage = this.fx('recruit-stage', center);
+    const rune = this.fx('recruit-sigil', start);
+    const title = document.createElement('strong');
+    title.className = 'recruit-heading';
+    title.textContent = mine ? '魔物の駒を獲得' : '相手が魔物の駒を獲得';
+    const badge = document.createElement('span');
+    badge.className = 'recruit-count';
+    badge.textContent = mine ? '手札に＋1枚' : '相手の手札に＋1枚';
+    const card = this.effectCard(piece.type, def.name);
+    stage.append(title, card, badge);
+    const timing = UI_CONFIG.timing;
+    sound.play('beastRecruit');
+    try {
+      if (UI_CONFIG.reducedMotion) {
+        rune.remove();
+        await this.delay(timing.beastRecruitStill);
+        return;
+      }
+      if (destination && rect?.width) destination.style.visibility = 'hidden';
+      const duration = timing.beastRecruit;
+      this.sparks(start, { color: '#a9ffd7', count: 13, size: 6, spread: 94, duration: duration * .5 });
+      this.ring(start, { color: '#68dda4', size: 160, duration: 360 });
+      const gleam = document.createElement('span');
+      gleam.className = 'recruit-gleam';
+      card.append(gleam);
+      const crest = document.createElement('span');
+      crest.className = 'recruit-crest';
+      stage.prepend(crest);
+      const sourceX = start.x - center.x;
+      const sourceY = start.y - center.y;
+      const x = end.x - center.x;
+      const y = end.y - center.y;
+      const pose = (x, y, scale, roll, yaw = 0) =>
+        `translate(-50%, -50%) translate(${x}px, ${y}px) perspective(650px) rotateY(${yaw}deg) rotate(${roll}deg) scale(${scale})`;
+      await Promise.all([
+        this.animate(crest, [
+          { opacity: 0, scale: .5, rotate: '-45deg' },
+          { opacity: .9, scale: 1, rotate: '0deg', offset: .38 },
+          { opacity: .68, scale: 1.12, rotate: '15deg', offset: .65 },
+          { opacity: 0, scale: 1.25, rotate: '36deg', offset: .88 },
+          { opacity: 0 },
+        ], { duration, fill: 'both' }),
+        this.animate(gleam, [
+          { opacity: 0, backgroundPosition: '110% 0' },
+          { opacity: 0, backgroundPosition: '110% 0', offset: .24 },
+          { opacity: 1, backgroundPosition: '62% 0', offset: .38 },
+          { opacity: 0, backgroundPosition: '-15% 0', offset: .57 },
+          { opacity: 0 },
+        ], { duration, fill: 'both' }),
+        this.animate(rune, [
+          { opacity: 0, scale: .25, rotate: '-30deg' },
+          { opacity: .95, scale: 1.05, rotate: '35deg', offset: .38 },
+          { opacity: 0, scale: 1.6, rotate: '75deg' },
+        ], { duration: duration * .58, fill: 'both' }),
+        this.animate(stage, [
+          { transform: pose(sourceX, sourceY, .14, -23, 62), opacity: 0 },
+          { transform: pose(sourceX * .24, sourceY * .2 - 18, .75, -10, -32), opacity: 1, offset: .22, easing: UI_CONFIG.easing.enter },
+          { transform: pose(0, -6, 1.08, 3), opacity: 1, offset: .38 },
+          { transform: pose(0, 0, 1, 0), opacity: 1, offset: .67, easing: UI_CONFIG.easing.exit },
+          { transform: pose(x * .43, y * .38 - 22, .69, 12), opacity: .98, offset: .83 },
+          { transform: pose(x, y, .39, 0), opacity: 0 },
+        ], { duration, fill: 'both' }),
+      ]);
+      if (destination && rect?.width && !this.skipping) {
+        this.ring(end, { color: '#9effc5', size: 64, duration: 170 });
+      }
+    } finally {
+      stage.remove();
+      rune.remove();
+      if (destination) destination.style.visibility = '';
+    }
+  }
+
   async cardDrawn({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
     // 駒は魔物撃破直後の別イベント。ごほうびと山札のドローから独立して扱う。
-    const piece = Boolean(pl.pendingPiece);
+    const piece = pl.pendingPiece;
     delete pl.pendingPiece;
     if (!piece && pl.pendingReward) {
       const reward = pl.pendingReward; delete pl.pendingReward;
       await this.revealReward(reward, cardIds[0], ctx);
     }
     for (const [index, cardId] of cardIds.entries()) {
-      const isPiece = piece && index === 0;
+      const isPiece = Boolean(piece && index === 0);
       pl.handCount += 1;
       if (isPiece) {
         // オンラインで相手に見せないIDは、枚数表示だけに使う。
@@ -792,18 +877,22 @@ export class Animations {
       else if (model.preShuffleDraws > 0) model.preShuffleDraws -= 1;
       else model.deckCount = Math.max(0, model.deckCount - 1);
       this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: !isPiece });
-      if (playerId === ctx.viewerId) {
+      const mine = playerId === ctx.viewerId;
+      if (mine) {
         const card = ctx.lookupCard(cardId);
         if (card) {
           model.hand.push(card);
           this.handView.addCard(card);
-          if (!isPiece) this.flyFromDeck(card);
-          sound.play('draw');
+          if (!isPiece) {
+            this.flyFromDeck(card);
+            sound.play('draw');
+          }
         }
       } else {
         this.renderer.setOppHandCount(pl.handCount);
       }
-      await this.delay(UI_CONFIG.timing.draw);
+      if (isPiece) await this.recruitBeast(piece, mine ? this.handView.cardEl(cardId) : null, mine);
+      else await this.delay(UI_CONFIG.timing.draw);
     }
   }
 
@@ -1761,13 +1850,13 @@ export class Animations {
   }
 
   async monsterDefeated({ monsterId, playerId, reward, rewardRarity, baseRarity, lucky, pieceType }, model) {
-    if (pieceType) model.players[playerId].pendingPiece = true;
+    const el = this.renderer.monsterEl(monsterId);
+    if (pieceType) model.players[playerId].pendingPiece = { type: pieceType, from: el ? this.centerOf(el) : null };
     if (rewardRarity) {
       model.players[playerId].generatedDraws = (model.players[playerId].generatedDraws ?? 0) + 1;
       model.players[playerId].pendingReward = { playerId, rarity: rewardRarity, base: baseRarity, lucky };
     }
     model.monsters = (model.monsters ?? []).filter((m) => m.monsterId !== monsterId);
-    const el = this.renderer.monsterEl(monsterId);
     if (!el || this.skipping) {
       this.renderer.removeMonster(monsterId);
       return;

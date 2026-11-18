@@ -172,6 +172,7 @@ export class HandView {
     const el = document.createElement('div');
     el.className = `card ${def.kind ?? ''}${def.exhaust ? ' exhaust' : ''}${def.effect === 'wild' ? ' wild' : ''}`;
     el.dataset.id = card.cardId;
+    if (def.monster) el.dataset.beast = def.monster;
     el.tabIndex = 0;
     el.setAttribute('role', 'button');
     el.setAttribute('aria-label', `${def.name}。${cardDescription(def, this.rules, this.textOpts)}`);

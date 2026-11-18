@@ -626,6 +626,7 @@ export class Renderer {
     const el = document.createElement('div');
     el.className = `soldier ${this.sideOf(playerId)} no-anim`;
     el.dataset.id = st.soldierId;
+    if (def.monster) el.dataset.beast = def.monster;
     el.tabIndex=0;el.setAttribute('role','button');
     el.dataset.role = st.role ?? def.role ?? 'melee';
     el.dataset.motion = soldierMotion(st.type, def); // 待機・歩き方・攻撃の型（css/motion.css）
@@ -639,6 +640,13 @@ export class Renderer {
       '<span class="soldier-weapon" hidden></span><span class="soldier-shield" hidden></span><span class="soldier-status" hidden></span></div>' +
       `<div class="soldier-gauge meter health-meter" role="meter"><i class="meter-fill health-lag"></i><i class="meter-fill health-fill"></i></div><div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
     el.querySelector('.soldier-pic').innerHTML = unitArt(st.type, colorOf(playerId), def.name ?? st.type);
+    if (def.monster) {
+      const insignia = document.createElement('span');
+      insignia.className = 'beast-insignia';
+      insignia.textContent = '駒';
+      insignia.setAttribute('aria-hidden', 'true');
+      el.querySelector('.soldier-token').append(insignia);
+    }
     const seat = document.createElement('span');seat.className='seat-mark';seat.textContent=String(this.playerOrder.indexOf(playerId)+1);seat.title=playerName(playerId);seat.setAttribute('aria-label',`席${seat.textContent}、${playerName(playerId)}`);el.append(seat);
     const turns = document.createElement('span'); turns.className = 'soldier-turns'; el.append(turns);
     this.el.units.appendChild(el);

@@ -368,3 +368,16 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 
 - `ui/weather-sunny.png`、`ui/weather-rain.png`、`ui/weather-heavy-rain.png`、`ui/weather-fog.png`、`ui/weather-storm.png`、`ui/weather-sandstorm.png`、`ui/weather-coin-rain.png` — 生成元 `exec-0d0424d1-028b-4281-b81d-d9d093775109.png`
 - `cards/card-weather-call.png` — 生成元 `exec-4e9db26b-44cc-4e61-97da-354f9b08b7cb.png`
+| `cards/card-beast-slime.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-goblin.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-dragon.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-bat.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-skeleton.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-golem.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-demon.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-ghost.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-treant.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-mimic.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-vampire.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/card-beast-demon-king.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/frame-beast.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |

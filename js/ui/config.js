@@ -36,6 +36,8 @@ export const UI_CONFIG = {
     weatherEnd: 520,       // 天候がおさまった
     lightning: 520,        // 大雨の雷
     fusion: 900,
+    beastRecruit: 920,    // 魔物の駒が手札へ入るまで
+    beastRecruitStill: 480,
     reward: 1100,        // 魔物報酬のレアリティを読む時間
     soldierShot: 520,
     shotAim: 230,          // 弓兵・魔法使いがねらう（ため）

@@ -453,10 +453,16 @@ export function weatherIcon(type, glyph = '🌤️') {
 function generatedSoldierPng(path, cls, name) {
   return `<span class="asset-art asset-loaded ${cls}"><img class="asset-image" src="assets/${path}" alt="${escapeText(name)}" decoding="sync" draggable="false"></span>`;
 }
-/** 倒した魔物の駒（beast_<魔物の種類>）は、魔物の絵をそのまま使う */
+/** 魔物の駒は、仲間になった姿の専用イラストを使う */
 const beastOf = (type) => (typeof type === 'string' && type.startsWith('beast_') ? type.slice(6) : null);
+function beastArt(beast, name, cls) {
+  const fallback = monsterArt(beast, name);
+  return imageArt(`cards/card-beast-${kebab(beast)}.png`, '', `art ${cls} icon-asset`)
+    .replace('<span class="asset-wait">…</span>', `<span class="asset-fallback">${fallback}</span>`);
+}
+
 export function cardArt(type, color = 'blue', name = '') {
-  if (beastOf(type)) return monsterArt(beastOf(type), name).replaceAll('monster-art', 'monster-art card-art-svg');
+  if (beastOf(type)) return beastArt(beastOf(type), name, 'card-art-svg');
   if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`cards/card-${kebab(type)}.png`, 'art card-art-svg', name);
   const fallback = svgCardArt(type, color, name);
   if (type === 'adapt' || type === 'weatherCall') {
@@ -467,7 +473,7 @@ export function cardArt(type, color = 'blue', name = '') {
   return CARD_TYPES.has(type) ? imageArt(`cards/card-${kebab(type)}.png`, fallback, 'art card-art-svg') : fallback;
 }
 export function unitArt(type, color, name = '') {
-  if (beastOf(type)) return monsterArt(beastOf(type), name).replaceAll('monster-art', 'monster-art unit-art');
+  if (beastOf(type)) return beastArt(beastOf(type), name, 'unit-art');
   if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`units/${kebab(type)}-${color === 'orange' ? 'orange' : 'blue'}.png`, 'art unit-art', name);
   const fallback = svgUnitArt(type, color, name);
   return ['infantry','knight','spearman','heavy','giant','hero'].includes(type)
