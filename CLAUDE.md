@@ -114,6 +114,7 @@ js/
     Tutorial.js・HelpView.js・CardGuide.js … 案内・遊び方・図鑑
     Settings.js・Sound.js・Music.js … 設定・効果音・BGM
     MatchStats.js  … 結果のまとめと戦績
+    ChatView.js    … チャットとスタンプ（💬ボタン・吹き出し）
     art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
     precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
 data/
@@ -125,6 +126,7 @@ data/
   rarities.json    … レアリティと排出率（コモン〜レジェンド）
   upgrades.json    … コインで買う強化（STEP 3）
   weather.json     … 天候（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨）
+  stamps.json      … チャットのスタンプの一覧
 ui-tests/          … 画面のスモークテスト（node ui-tests/smoke.js。Playwright は環境にあるものを使う。UI担当）
 docs/              … 設計メモ。archive/ は終わった依頼（Codex 向けのプロンプトなど）
 tests/             … 自動テスト（node --test）。Node.js だけで動く
@@ -1079,9 +1081,9 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **降参（3人以上）**：城が壊れて抜け、残りの試合を見守る（上の `surrender` の表）。画面は観戦中の帯を出し、ターン終了・強化・合成を押せなくする
 - 画面：MP の表示（上のバー。自分は「✦10/20」）、手札に必要な MP の札、合成の演出（レアリティが高いほど光・火花・揺れが大きい）、魔物が育つ演出、城が落ちた帯（`js/ui/Animations.js`）。マナ回復カードの絵は仮（`js/ui/art.js` に足すまで「魔」の仮の絵が出る）
 
-## 天候・魔物の駒・体力ゲージ（人間の指示。仮）
+## 天候・魔物の駒・チャット・体力ゲージ（人間の指示。仮）
 
-**数値はすべて仮**（`data/weather.json`・`data/rules.json`・`data/cards.json`）。
+**数値はすべて仮**（`data/weather.json`・`data/rules.json`・`data/cards.json`・`data/stamps.json`）。
 
 ### 天候（`new Game({ weather })`。`weather.json` を渡さなければ天候なし）
 - 周回の始め（`roundStarted` のすぐあと）に、天候が切り替わる。`rules.weatherFirstRound`（仮：2）周目から。ふつうの天気のときは、`rules.weatherChangeChance`（仮：0.6）の確率で新しい天候になる（`weight` の重みで選ぶ）。天候は `rounds: [最短, 最長]` 周続き、終わったらふつうの天気に戻る。`weatherChangeChance` が 0 なら乱数を使わず天候は出ない
@@ -1113,6 +1115,12 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 ### 画面の揺れ・体力ゲージ
 - **画面の揺れ**：兵士・魔物がダメージを受けたとき、魔法を使ったとき、天候が変わったときに、盤面ぜんたいが揺れる（強いほど大きく。`UI_CONFIG.screenShake`）。城に当たったときの揺れは今までどおり。設定で動きを減らしているときは揺れない
 - **兵士の体力ゲージ**：兵士の頭の上に細い帯。残りHP ÷ 上限で、緑 → 黄 → 赤。減った分は白い影が遅れて追いかける。`getState()` の兵士に `maxHp`（鍛錬で増える）を足した
+
+### チャットとスタンプ
+- 使える場所：**オンライン対戦**（文字とスタンプ）と、**ひとりで遊ぶ**（スタンプだけ。CPU がスタンプで返す。ずるはしない）。2人で交代して遊ぶときは出ない
+- スタンプは `data/stamps.json`（`{ id, icon, label }` の配列）。画面とサーバーが同じ一覧を読む
+- `POST /api/action` の `method` に `chat`（`args: [{ text }]` か `[{ stamp }]`）。文字は制御文字を空白にして前後を取り、1〜40文字。つづけて送れるのは0.6秒ごと。CPU の席・形の違う送り方は `{ ok: false, reason }`。試合の前・中・あとのいつでも送れる
+- 届くもの：`{ type: "chat", id, playerId, name, text | stamp, at }`。つないだとき（つなぎ直したときも）、直近30通が `{ type: "chatLog", messages }` で届く（つなぎ直すたびに全部届くので、画面は受けたら表示を作り直す）。もう部屋にいない人の発言は `playerId: null`・`left: true`（名前は残る）。文字は人が入れたものなので、画面は `textContent` で出す
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

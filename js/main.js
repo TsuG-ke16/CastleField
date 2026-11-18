@@ -25,6 +25,7 @@ import { UpgradePanel } from './ui/UpgradePanel.js';
 import { Targeting } from './ui/Targeting.js';
 import { LocalSession } from './ui/Session.js';
 import { OnlineClient } from './ui/OnlineClient.js';
+import { ChatView } from './ui/ChatView.js';
 import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
@@ -88,6 +89,8 @@ let startRequest = 0;
 let castles = null;
 let decks = null;
 let rarities = null;
+let stamps = null;   // data/stamps.json（読めなければ null：チャットなし）
+let chat = null;     // チャットとスタンプ（ChatView）
 let weather = null;  // data/weather.json（読めなければ null：天候なし）
 let progressPanel;
 let cardGuide;
@@ -118,6 +121,7 @@ const listeners = [];
 // 2026-11-16再測定（各200試合、seed 1、先攻でrandomと対戦）：defensive 23% < rush 50% < smart 97%。
 // 元の割り当ては修正済みだったため順序は維持し、UI_CONFIGに集約。
 const CPU_LEVELS = UI_CONFIG.cpuLevels;
+const CHAT_MAX_LENGTH = 40; // サーバー（server/rooms.js の CHAT_MAX_LENGTH）と同じ
 let cpu = null;            // { id, level, strategy, rng }（ひとりで遊ぶときだけ）
 
 // オンライン
@@ -179,9 +183,9 @@ function hideLoading() {
 
 async function boot() {
   try {
-    [cards, rules, monsters, upgrades, rarities, castles, decks, weather] = await Promise.all([
+    [cards, rules, monsters, upgrades, rarities, castles, decks, weather, stamps] = await Promise.all([
       loadJson('data/cards.json'), loadJson('data/rules.json'),
-      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'),
+      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'),
     ]);
   } catch (err) {
     console.error(err);
@@ -229,6 +233,7 @@ async function boot() {
     onPlay: playCard, onDiscard: discard, onNotice: toast,
   });
   anim = new Animations({ renderer, handView, cards, rules, monsters, upgrades, rarities });
+  if (stamps?.length) chat = new ChatView({ stamps, button: $('chat-open'), root: el.app, maxLength: CHAT_MAX_LENGTH });
   targeting = new Targeting({ renderer, handView, onChoose: (cardId, target) => doPlay(cardId, target) });
   if (upgrades && Object.keys(upgrades).length) {
     upgradePanel = new UpgradePanel({ upgrades, rarities, onBuy: buyUpgrade, onOpen: refreshUpgrades, onDenied: (r) => toast(r, 'info') });
@@ -490,6 +495,7 @@ function mulberry32(a) {
 }
 
 function stopLocal() {
+  stopChat();
   for (const [type, h] of listeners.splice(0)) game?.off(type, h);
   game = null;
   cpu = null;
@@ -598,6 +604,8 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
 
   // 開始前の状態を表示用に覚えてから start() する。p1 の turnStarted で最初の目隠しが出る
   viewerId = cpu ? cpu.humanId : null;
+  stopChat();
+  if (cpu) startLocalChat();
   matchStats.begin(game.getState(viewerId));
   model = modelFromState(game.getState(viewerId));
   if (cpu) {
@@ -660,6 +668,7 @@ async function joinOnline() {
       pump();
     },
     onConnection: (ok, info) => { if (session === client) onConnection(ok, info); },
+    onChat: (m) => { if (session === client) onChat(m); },
   });
   session = client;
   batches = [];
@@ -677,6 +686,7 @@ async function joinOnline() {
     return;
   }
   viewerId = res.playerId;
+  startOnlineChat(client);
   saveOnlineSession(client);
   setTitleWaiting(true);
   if (!room?.started) el.titleStatus.textContent = '相手を待っています… 同じ合言葉を入れてもらってください';
@@ -709,6 +719,7 @@ function resumeOnline() {
       pump();
     },
     onConnection: (ok, info) => { if (session === client) onConnection(ok, info, { resuming: true }); },
+    onChat: (m) => { if (session === client) onChat(m); },
   });
   session = client;
   batches = [];
@@ -720,10 +731,72 @@ function resumeOnline() {
   el.titleForm.hidden = false;
   setTitleWaiting(true);
   el.titleStatus.textContent = '前の部屋につなぎ直しています…';
+  startOnlineChat(client);
   client.resume(saved.token, saved.playerId);
 }
 
+/** オンライン：チャット（文字とスタンプ）を使えるようにする */
+function startOnlineChat(client) {
+  if (!chat) return;
+  chat.reset();
+  chat.myId = viewerId;
+  chat.send = (payload) => client.chat(payload);
+  chat.setEnabled(true, { text: true });
+}
+
+function onChat(m) {
+  if (!chat) return;
+  chat.myId = viewerId;
+  if (m.type === 'chatLog') chat.addAll(m.messages);
+  else chat.add(m);
+}
+
+function stopChat() {
+  if (!chat) return;
+  chat.setEnabled(false);
+  chat.send = null;
+  chat.reset();
+}
+
+// ---------- ひとりで遊ぶときの CPU のスタンプ ----------
+// 人がスタンプを送ると返す。大きなダメージ・勝ち負けにも、ときどき反応する（連発しない）
+const CPU_REPLY = { hello: ['hello'], nice: ['thanks', 'smug'], yay: ['nice', 'sorry'], thanks: ['nice'], go: ['scared', 'go'], smug: ['think', 'go'], think: ['smug'], ouch: ['sorry', 'smug'], scared: ['smug', 'go'], sorry: ['nice'], gg: ['gg'], again: ['go', 'yay'] };
+
+function startLocalChat() {
+  if (!chat || !cpu) return;
+  chat.reset();
+  chat.myId = cpu.humanId;
+  const cpuId = cpu.id;
+  const g = game;
+  let lastReact = 0;
+  const say = (stamp, delay = 700) => setTimeout(() => {
+    if (game !== g || !cpu) return;
+    chat.add({ id: `cpu-${Date.now()}`, playerId: cpuId, name: playerName(cpuId), stamp });
+  }, delay);
+  const pick = (list) => list[Math.floor(Math.random() * list.length)];
+  chat.send = async ({ stamp }) => {
+    if (!stamp || !chat.stampOf(stamp)) return { ok: false, reason: 'そのスタンプはありません' };
+    chat.add({ id: `me-${Date.now()}`, playerId: cpu.humanId, name: playerName(cpu.humanId), stamp });
+    if (Math.random() < 0.7) say(pick(CPU_REPLY[stamp] ?? ['hello']), 600 + Math.random() * 700);
+    return { ok: true };
+  };
+  const react = (stamp) => {
+    const now = Date.now();
+    if (now - lastReact < 8000 || Math.random() > 0.5) return;
+    lastReact = now;
+    say(stamp, 500);
+  };
+  const on = (type, h) => { g.on(type, h); listeners.push([type, h]); };
+  on('castleDamaged', (p) => {
+    if (p.amount - (p.blocked ?? 0) < 10) return;
+    react(p.playerId === cpuId ? pick(['ouch', 'scared']) : pick(['smug', 'go']));
+  });
+  on('gameOver', (p) => { say(p.winner === cpuId ? pick(['smug', 'gg']) : pick(['gg', 'sorry']), 1200); });
+  chat.setEnabled(true, { text: false });
+}
+
 function leaveOnline() {
+  stopChat();
   roomView?.hide();
   if (session?.online) {
     // 自分から出る：サーバーに知らせる（残った人に「部屋を出ました」と出る）。返事は待たない

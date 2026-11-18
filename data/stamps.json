@@ -1,0 +1,14 @@
+[
+  {"id": "hello", "icon": "👋", "label": "よろしく！"},
+  {"id": "nice", "icon": "👍", "label": "ナイス！"},
+  {"id": "yay", "icon": "🎉", "label": "やったー！"},
+  {"id": "thanks", "icon": "🙏", "label": "ありがとう"},
+  {"id": "go", "icon": "🔥", "label": "いくぞ！"},
+  {"id": "smug", "icon": "😎", "label": "ふふん"},
+  {"id": "think", "icon": "🤔", "label": "うーん…"},
+  {"id": "ouch", "icon": "😖", "label": "いたい！"},
+  {"id": "scared", "icon": "😱", "label": "ひえっ"},
+  {"id": "sorry", "icon": "🙇", "label": "ごめん"},
+  {"id": "gg", "icon": "🤝", "label": "いい試合！"},
+  {"id": "again", "icon": "🔁", "label": "もう1回！"}
+]
