@@ -65,6 +65,28 @@ test('編成：魔物の駒・知らないカード・枚数の形の間違い�
   assert.equal(check([]).ok, false);
 });
 
+test('編成：rules に合計コストの範囲が書いていなければ、既定の 90〜100 で確かめる', () => {
+  const { deckCostMin, deckCostMax, ...bare } = rules;
+  void deckCostMin; void deckCostMax;
+  assert.equal(checkCostDeck(GOOD, cards, rarities, bare).ok, true);
+  assert.ok(checkCostDeck({ ...GOOD, sage: 3 }, cards, rarities, bare).problems.some((p) => /100を超え/.test(p)));
+  assert.ok(checkCostDeck({ infantry: 10 }, cards, rarities, bare).problems.some((p) => /90未満/.test(p)));
+});
+
+test('部屋：rules.json に範囲がなくても、決まりに合わないデッキは setSeat で断る（開始時に例外にならない）', () => {
+  const data = loadData();
+  const { deckCostMin, deckCostMax, ...bare } = data.rules;
+  void deckCostMin; void deckCostMax;
+  const lobby = new Lobby({ ...data, rules: bare }, () => seededRng(1), { cpuDelayMs: 0 });
+  const r = lobby.join('deck-bare', 'A');
+  const { room, seat } = lobby.findSeat(r.token);
+  room.action(seat, 'setRules', [{ deckMode: 'cost' }]);
+  assert.equal(room.action(seat, 'setSeat', [{ deckList: { ...GOOD, sage: 3 } }]).ok, false);
+  assert.equal(room.action(seat, 'setSeat', [{ deckList: GOOD }]).ok, true);
+  room.action(seat, 'addCpu', []);
+  assert.equal(room.action(seat, 'start', []).ok, true);
+});
+
 test('decks.json のコスト制の見本は、どれも決まりに合う', () => {
   const presets = Object.entries(decks).filter(([, d]) => d.costDeck);
   assert.ok(presets.length >= 3);

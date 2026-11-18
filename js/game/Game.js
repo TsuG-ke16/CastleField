@@ -20,7 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, checkCostDeck, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
+import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -132,8 +132,7 @@ const OPTIONAL_RULES = {
   monsterEvolveEvery: 0,
   monsterEvolveMultiplier: 1,
   // デッキ編成（deckMode "cost"）：合計コストの範囲と、何も選ばなかった席が使う decks.json のデッキ
-  deckCostMin: 90,
-  deckCostMax: 100,
+  ...DECK_COST_DEFAULTS,
   defaultCostDeck: null,
   // 天候（weather.json を渡したとき）：出はじめる周回と、天候が切り替わるときに新しい天候になる確率（0 ならずっと天候なし）
   weatherFirstRound: 2,
