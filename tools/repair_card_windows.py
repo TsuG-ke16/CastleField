@@ -71,8 +71,9 @@ def main():
         changed = int(np.count_nonzero(alpha[m]))
         if changed:
             arr = np.array(image)
+            arr[m, :3] = 0  # invisible pixels: optimize PNG size
             arr[m, 3] = 0
-            # Preserve original colors (no generated or painted objects).
+            # Visible pixels remain unchanged (no generated or painted objects).
             Image.fromarray(arr, "RGBA").save(path, optimize=True)
         report[name] = {"window_mask_pixels": int(m.sum()),
                         "pixels_cleared": changed}
