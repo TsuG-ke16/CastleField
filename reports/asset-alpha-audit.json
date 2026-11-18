@@ -15,6 +15,15 @@
       "width": 640,
       "height": 1138,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -27,6 +36,15 @@
       "width": 720,
       "height": 1280,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -39,6 +57,15 @@
       "width": 720,
       "height": 1280,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -51,6 +78,15 @@
       "width": 640,
       "height": 1023,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -63,6 +99,15 @@
       "width": 1200,
       "height": 800,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -75,6 +120,15 @@
       "width": 720,
       "height": 1280,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -87,6 +141,15 @@
       "width": 1080,
       "height": 1920,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -99,6 +162,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        74,
+        233,
+        249,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 55.2,
+      "alpha_160plus_pct": 52.0,
       "transparent_pct": 38.4,
       "translucent_pct": 61.6,
       "opaque_border_pct": 0.0
@@ -111,6 +183,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        40,
+        146,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 53.75,
+      "alpha_160plus_pct": 48.84,
       "transparent_pct": 33.06,
       "translucent_pct": 66.94,
       "opaque_border_pct": 0.0
@@ -123,6 +204,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        232,
+        249,
+        251,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 58.49,
+      "alpha_160plus_pct": 57.4,
       "transparent_pct": 38.57,
       "translucent_pct": 61.43,
       "opaque_border_pct": 0.0
@@ -135,6 +225,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        246,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 57.83,
+      "alpha_160plus_pct": 57.07,
       "transparent_pct": 39.11,
       "translucent_pct": 58.93,
       "opaque_border_pct": 0.0
@@ -147,6 +246,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        8,
+        78,
+        250,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 64.69,
+      "alpha_160plus_pct": 61.45,
       "transparent_pct": 7.29,
       "translucent_pct": 92.62,
       "opaque_border_pct": 0.0
@@ -159,6 +267,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 64.79,
+      "alpha_160plus_pct": 64.26,
       "transparent_pct": 32.42,
       "translucent_pct": 62.24,
       "opaque_border_pct": 0.0
@@ -171,6 +288,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        19,
+        239,
+        250,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 63.61,
+      "alpha_160plus_pct": 60.64,
       "transparent_pct": 23.78,
       "translucent_pct": 76.22,
       "opaque_border_pct": 0.0
@@ -183,6 +309,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 52.28,
+      "alpha_160plus_pct": 51.63,
       "transparent_pct": 46.52,
       "translucent_pct": 51.72,
       "opaque_border_pct": 0.0
@@ -195,6 +330,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 31.55,
+      "alpha_160plus_pct": 31.04,
       "transparent_pct": 67.3,
       "translucent_pct": 11.12,
       "opaque_border_pct": 0.0
@@ -207,6 +351,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 59.68,
+      "alpha_160plus_pct": 59.1,
       "transparent_pct": 38.86,
       "translucent_pct": 8.4,
       "opaque_border_pct": 0.0
@@ -219,6 +372,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 49.0,
+      "alpha_160plus_pct": 48.24,
       "transparent_pct": 49.17,
       "translucent_pct": 11.81,
       "opaque_border_pct": 0.0
@@ -231,6 +393,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 43.88,
+      "alpha_160plus_pct": 43.26,
       "transparent_pct": 54.46,
       "translucent_pct": 20.3,
       "opaque_border_pct": 0.0
@@ -243,6 +414,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        254
+      ],
+      "alpha_80plus_pct": 47.94,
+      "alpha_160plus_pct": 47.29,
       "transparent_pct": 50.44,
       "translucent_pct": 9.62,
       "opaque_border_pct": 0.0
@@ -255,6 +435,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 41.89,
+      "alpha_160plus_pct": 41.28,
       "transparent_pct": 56.63,
       "translucent_pct": 16.36,
       "opaque_border_pct": 0.0
@@ -267,6 +456,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 55.13,
+      "alpha_160plus_pct": 54.57,
       "transparent_pct": 43.61,
       "translucent_pct": 16.07,
       "opaque_border_pct": 0.0
@@ -279,6 +477,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 49.33,
+      "alpha_160plus_pct": 48.77,
       "transparent_pct": 49.27,
       "translucent_pct": 7.59,
       "opaque_border_pct": 0.0
@@ -291,6 +498,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 33.68,
+      "alpha_160plus_pct": 33.08,
       "transparent_pct": 64.88,
       "translucent_pct": 15.99,
       "opaque_border_pct": 0.0
@@ -303,6 +519,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 40.68,
+      "alpha_160plus_pct": 40.06,
       "transparent_pct": 57.75,
       "translucent_pct": 16.73,
       "opaque_border_pct": 0.0
@@ -315,6 +540,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 53.53,
+      "alpha_160plus_pct": 52.9,
       "transparent_pct": 44.97,
       "translucent_pct": 14.41,
       "opaque_border_pct": 0.0
@@ -327,6 +561,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 38.93,
+      "alpha_160plus_pct": 38.38,
       "transparent_pct": 59.81,
       "translucent_pct": 6.48,
       "opaque_border_pct": 0.0
@@ -339,6 +582,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 53.9,
+      "alpha_160plus_pct": 53.51,
       "transparent_pct": 45.2,
       "translucent_pct": 54.8,
       "opaque_border_pct": 0.0
@@ -351,6 +603,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 54.66,
+      "alpha_160plus_pct": 54.09,
       "transparent_pct": 43.95,
       "translucent_pct": 53.64,
       "opaque_border_pct": 0.0
@@ -363,6 +624,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        22,
+        73,
+        243,
+        250,
+        251
+      ],
+      "alpha_80plus_pct": 62.65,
+      "alpha_160plus_pct": 54.68,
       "transparent_pct": 0.0,
       "translucent_pct": 100.0,
       "opaque_border_pct": 0.0
@@ -375,6 +645,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        19,
+        115,
+        249,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 40.46,
+      "alpha_160plus_pct": 37.43,
       "transparent_pct": 48.2,
       "translucent_pct": 51.8,
       "opaque_border_pct": 0.0
@@ -387,6 +666,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        37,
+        250,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 45.55,
+      "alpha_160plus_pct": 44.72,
       "transparent_pct": 46.12,
       "translucent_pct": 45.87,
       "opaque_border_pct": 0.0
@@ -399,6 +687,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 39.57,
+      "alpha_160plus_pct": 39.13,
       "transparent_pct": 59.67,
       "translucent_pct": 32.38,
       "opaque_border_pct": 0.0
@@ -411,6 +708,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        234,
+        250,
+        251,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 45.33,
+      "alpha_160plus_pct": 44.37,
       "transparent_pct": 52.72,
       "translucent_pct": 47.19,
       "opaque_border_pct": 0.0
@@ -423,6 +729,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        243,
+        250,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 36.91,
+      "alpha_160plus_pct": 36.22,
       "transparent_pct": 61.13,
       "translucent_pct": 38.87,
       "opaque_border_pct": 0.0
@@ -435,6 +750,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 46.3,
+      "alpha_160plus_pct": 45.72,
       "transparent_pct": 52.31,
       "translucent_pct": 47.69,
       "opaque_border_pct": 0.0
@@ -447,6 +771,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        7,
+        246,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 67.14,
+      "alpha_160plus_pct": 64.78,
       "transparent_pct": 12.25,
       "translucent_pct": 87.75,
       "opaque_border_pct": 0.0
@@ -459,6 +792,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 37.96,
+      "alpha_160plus_pct": 37.59,
       "transparent_pct": 61.15,
       "translucent_pct": 38.72,
       "opaque_border_pct": 0.0
@@ -471,6 +813,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 61.4,
+      "alpha_160plus_pct": 60.06,
       "transparent_pct": 35.86,
       "translucent_pct": 61.65,
       "opaque_border_pct": 0.0
@@ -483,6 +834,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        245,
+        251,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 30.61,
+      "alpha_160plus_pct": 30.06,
       "transparent_pct": 68.28,
       "translucent_pct": 31.71,
       "opaque_border_pct": 0.0
@@ -495,6 +855,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        235,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 66.9,
+      "alpha_160plus_pct": 65.13,
       "transparent_pct": 30.22,
       "translucent_pct": 63.42,
       "opaque_border_pct": 0.0
@@ -507,6 +876,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        8,
+        22,
+        249,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 29.97,
+      "alpha_160plus_pct": 28.85,
       "transparent_pct": 52.06,
       "translucent_pct": 47.67,
       "opaque_border_pct": 0.0
@@ -519,6 +897,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 45.16,
+      "alpha_160plus_pct": 44.51,
       "transparent_pct": 53.35,
       "translucent_pct": 40.59,
       "opaque_border_pct": 0.0
@@ -531,6 +918,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 35.67,
+      "alpha_160plus_pct": 34.98,
       "transparent_pct": 62.76,
       "translucent_pct": 37.14,
       "opaque_border_pct": 0.0
@@ -543,6 +939,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 44.18,
+      "alpha_160plus_pct": 43.35,
       "transparent_pct": 54.45,
       "translucent_pct": 45.4,
       "opaque_border_pct": 0.0
@@ -555,6 +960,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        247,
+        251,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 52.29,
+      "alpha_160plus_pct": 51.53,
       "transparent_pct": 45.87,
       "translucent_pct": 54.13,
       "opaque_border_pct": 0.0
@@ -567,6 +981,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 59.54,
+      "alpha_160plus_pct": 59.02,
       "transparent_pct": 39.1,
       "translucent_pct": 60.07,
       "opaque_border_pct": 0.0
@@ -579,6 +1002,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 65.07,
+      "alpha_160plus_pct": 64.57,
       "transparent_pct": 33.74,
       "translucent_pct": 50.41,
       "opaque_border_pct": 0.0
@@ -591,6 +1023,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 51.52,
+      "alpha_160plus_pct": 50.98,
       "transparent_pct": 47.6,
       "translucent_pct": 49.06,
       "opaque_border_pct": 0.0
@@ -603,6 +1044,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        245,
+        251,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 52.75,
+      "alpha_160plus_pct": 51.37,
       "transparent_pct": 46.11,
       "translucent_pct": 43.07,
       "opaque_border_pct": 0.0
@@ -615,6 +1065,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        44,
+        209,
+        248,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 50.88,
+      "alpha_160plus_pct": 46.72,
       "transparent_pct": 42.52,
       "translucent_pct": 57.48,
       "opaque_border_pct": 0.0
@@ -627,6 +1086,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        247,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 53.13,
+      "alpha_160plus_pct": 52.35,
       "transparent_pct": 45.39,
       "translucent_pct": 54.61,
       "opaque_border_pct": 0.0
@@ -639,6 +1107,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 41.26,
+      "alpha_160plus_pct": 40.96,
       "transparent_pct": 58.13,
       "translucent_pct": 23.28,
       "opaque_border_pct": 0.0
@@ -651,6 +1128,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 43.17,
+      "alpha_160plus_pct": 42.67,
       "transparent_pct": 55.62,
       "translucent_pct": 40.04,
       "opaque_border_pct": 0.0
@@ -663,6 +1149,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        41,
+        248,
+        251,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 53.97,
+      "alpha_160plus_pct": 52.29,
       "transparent_pct": 38.12,
       "translucent_pct": 61.88,
       "opaque_border_pct": 0.0
@@ -675,6 +1170,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        21,
+        89,
+        249,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 55.62,
+      "alpha_160plus_pct": 52.27,
       "transparent_pct": 28.01,
       "translucent_pct": 71.99,
       "opaque_border_pct": 0.0
@@ -687,6 +1191,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        91,
+        225,
+        250,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.66,
+      "alpha_160plus_pct": 46.2,
       "transparent_pct": 46.52,
       "translucent_pct": 53.48,
       "opaque_border_pct": 0.0
@@ -699,6 +1212,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        16,
+        237,
+        250,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 52.97,
+      "alpha_160plus_pct": 51.26,
       "transparent_pct": 35.61,
       "translucent_pct": 64.26,
       "opaque_border_pct": 0.0
@@ -711,6 +1233,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        21,
+        175,
+        249,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 54.35,
+      "alpha_160plus_pct": 51.43,
       "transparent_pct": 32.21,
       "translucent_pct": 67.79,
       "opaque_border_pct": 0.0
@@ -723,6 +1254,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        20,
+        83,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 53.86,
+      "alpha_160plus_pct": 48.18,
       "transparent_pct": 30.31,
       "translucent_pct": 64.38,
       "opaque_border_pct": 0.0
@@ -735,6 +1275,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 57.4,
+      "alpha_160plus_pct": 56.93,
       "transparent_pct": 41.48,
       "translucent_pct": 52.96,
       "opaque_border_pct": 0.0
@@ -747,6 +1296,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        245,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 43.36,
+      "alpha_160plus_pct": 42.54,
       "transparent_pct": 54.82,
       "translucent_pct": 45.18,
       "opaque_border_pct": 0.0
@@ -759,6 +1317,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        36,
+        131,
+        240,
+        249,
+        251
+      ],
+      "alpha_80plus_pct": 43.86,
+      "alpha_160plus_pct": 36.58,
       "transparent_pct": 46.74,
       "translucent_pct": 53.23,
       "opaque_border_pct": 0.0
@@ -771,6 +1338,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 41.06,
+      "alpha_160plus_pct": 40.67,
       "transparent_pct": 58.05,
       "translucent_pct": 24.16,
       "opaque_border_pct": 0.0
@@ -783,6 +1359,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        109,
+        237,
+        250,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 49.79,
+      "alpha_160plus_pct": 46.47,
       "transparent_pct": 46.84,
       "translucent_pct": 53.16,
       "opaque_border_pct": 0.0
@@ -795,6 +1380,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 42.15,
+      "alpha_160plus_pct": 41.65,
       "transparent_pct": 56.66,
       "translucent_pct": 35.23,
       "opaque_border_pct": 0.0
@@ -807,6 +1401,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        236,
+        250,
+        251,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 52.28,
+      "alpha_160plus_pct": 51.2,
       "transparent_pct": 45.34,
       "translucent_pct": 54.66,
       "opaque_border_pct": 0.0
@@ -819,6 +1422,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 25.32,
+      "alpha_160plus_pct": 24.92,
       "transparent_pct": 73.86,
       "translucent_pct": 26.07,
       "opaque_border_pct": 0.0
@@ -831,6 +1443,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        210,
+        249,
+        251,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 56.45,
+      "alpha_160plus_pct": 55.23,
       "transparent_pct": 39.9,
       "translucent_pct": 60.1,
       "opaque_border_pct": 0.0
@@ -843,6 +1464,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 64.27,
+      "alpha_160plus_pct": 63.7,
       "transparent_pct": 34.5,
       "translucent_pct": 45.99,
       "opaque_border_pct": 0.0
@@ -855,6 +1485,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 52.73,
+      "alpha_160plus_pct": 52.01,
       "transparent_pct": 45.61,
       "translucent_pct": 50.75,
       "opaque_border_pct": 0.0
@@ -867,6 +1506,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        210,
+        247,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 60.06,
+      "alpha_160plus_pct": 58.81,
       "transparent_pct": 32.9,
       "translucent_pct": 67.04,
       "opaque_border_pct": 0.0
@@ -879,6 +1527,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        18,
+        145,
+        250,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 52.77,
+      "alpha_160plus_pct": 46.73,
       "transparent_pct": 32.91,
       "translucent_pct": 67.09,
       "opaque_border_pct": 0.0
@@ -891,6 +1548,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        77,
+        244,
+        249,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 41.01,
+      "alpha_160plus_pct": 38.99,
       "transparent_pct": 54.27,
       "translucent_pct": 45.73,
       "opaque_border_pct": 0.0
@@ -903,6 +1569,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        9,
+        46,
+        250,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 18.54,
+      "alpha_160plus_pct": 17.19,
       "transparent_pct": 70.1,
       "translucent_pct": 29.77,
       "opaque_border_pct": 0.0
@@ -915,6 +1590,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        7,
+        22,
+        250,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 6.23,
+      "alpha_160plus_pct": 5.89,
       "transparent_pct": 88.63,
       "translucent_pct": 11.32,
       "opaque_border_pct": 0.0
@@ -927,6 +1611,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        6,
+        11,
+        67,
+        250,
+        251
+      ],
+      "alpha_80plus_pct": 3.06,
+      "alpha_160plus_pct": 2.53,
       "transparent_pct": 91.6,
       "translucent_pct": 8.4,
       "opaque_border_pct": 0.0
@@ -939,6 +1632,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        240,
+        250,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 27.42,
+      "alpha_160plus_pct": 27.15,
       "transparent_pct": 69.1,
       "translucent_pct": 30.63,
       "opaque_border_pct": 0.0
@@ -951,6 +1653,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 44.49,
+      "alpha_160plus_pct": 43.98,
       "transparent_pct": 54.03,
       "translucent_pct": 43.63,
       "opaque_border_pct": 0.0
@@ -963,6 +1674,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 27.19,
+      "alpha_160plus_pct": 26.91,
       "transparent_pct": 72.19,
       "translucent_pct": 24.09,
       "opaque_border_pct": 0.0
@@ -975,6 +1695,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        143,
+        246,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 59.54,
+      "alpha_160plus_pct": 57.21,
       "transparent_pct": 24.54,
       "translucent_pct": 75.44,
       "opaque_border_pct": 0.0
@@ -987,6 +1716,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        250,
+        251,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 49.84,
+      "alpha_160plus_pct": 49.2,
       "transparent_pct": 48.25,
       "translucent_pct": 51.75,
       "opaque_border_pct": 0.0
@@ -999,6 +1737,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 50.22,
+      "alpha_160plus_pct": 49.51,
       "transparent_pct": 48.51,
       "translucent_pct": 42.53,
       "opaque_border_pct": 0.0
@@ -1011,6 +1758,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        8,
+        80,
+        250,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 40.41,
+      "alpha_160plus_pct": 39.05,
       "transparent_pct": 46.15,
       "translucent_pct": 53.84,
       "opaque_border_pct": 0.0
@@ -1023,6 +1779,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        245,
+        250,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 58.19,
+      "alpha_160plus_pct": 56.88,
       "transparent_pct": 39.8,
       "translucent_pct": 60.2,
       "opaque_border_pct": 0.0
@@ -1035,6 +1800,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 46.82,
+      "alpha_160plus_pct": 46.43,
       "transparent_pct": 52.23,
       "translucent_pct": 47.7,
       "opaque_border_pct": 0.0
@@ -1047,6 +1821,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        7,
+        238,
+        250,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 67.27,
+      "alpha_160plus_pct": 64.31,
       "transparent_pct": 17.49,
       "translucent_pct": 82.51,
       "opaque_border_pct": 0.0
@@ -1059,6 +1842,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 42.28,
+      "alpha_160plus_pct": 41.83,
       "transparent_pct": 56.92,
       "translucent_pct": 41.74,
       "opaque_border_pct": 0.0
@@ -1071,6 +1863,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        12,
+        250,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 34.41,
+      "alpha_160plus_pct": 33.58,
       "transparent_pct": 55.29,
       "translucent_pct": 35.38,
       "opaque_border_pct": 0.0
@@ -1083,6 +1884,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 35.29,
+      "alpha_160plus_pct": 35.02,
       "transparent_pct": 64.01,
       "translucent_pct": 35.83,
       "opaque_border_pct": 0.0
@@ -1095,6 +1905,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        8,
+        148,
+        250,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 59.4,
+      "alpha_160plus_pct": 55.72,
       "transparent_pct": 16.04,
       "translucent_pct": 83.96,
       "opaque_border_pct": 0.0
@@ -1107,6 +1926,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        242,
+        249,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 66.28,
+      "alpha_160plus_pct": 65.21,
       "transparent_pct": 27.62,
       "translucent_pct": 72.28,
       "opaque_border_pct": 0.0
@@ -1119,6 +1947,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        100,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 51.78,
+      "alpha_160plus_pct": 48.52,
       "transparent_pct": 35.52,
       "translucent_pct": 64.41,
       "opaque_border_pct": 0.0
@@ -1131,6 +1968,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 40.5,
+      "alpha_160plus_pct": 40.01,
       "transparent_pct": 58.2,
       "translucent_pct": 33.65,
       "opaque_border_pct": 0.0
@@ -1143,6 +1989,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        101,
+        237,
+        249,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 34.49,
+      "alpha_160plus_pct": 32.87,
       "transparent_pct": 62.26,
       "translucent_pct": 37.74,
       "opaque_border_pct": 0.0
@@ -1155,6 +2010,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 36.01,
+      "alpha_160plus_pct": 35.75,
       "transparent_pct": 63.34,
       "translucent_pct": 20.46,
       "opaque_border_pct": 0.0
@@ -1167,6 +2031,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 53.68,
+      "alpha_160plus_pct": 53.22,
       "transparent_pct": 45.33,
       "translucent_pct": 52.74,
       "opaque_border_pct": 0.0
@@ -1179,6 +2052,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 47.34,
+      "alpha_160plus_pct": 46.82,
       "transparent_pct": 51.22,
       "translucent_pct": 48.37,
       "opaque_border_pct": 0.0
@@ -1191,6 +2073,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 45.34,
+      "alpha_160plus_pct": 44.76,
       "transparent_pct": 52.98,
       "translucent_pct": 44.93,
       "opaque_border_pct": 0.0
@@ -1203,6 +2094,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        247,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 49.13,
+      "alpha_160plus_pct": 48.25,
       "transparent_pct": 49.22,
       "translucent_pct": 50.03,
       "opaque_border_pct": 0.0
@@ -1215,6 +2115,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 44.75,
+      "alpha_160plus_pct": 44.27,
       "transparent_pct": 54.17,
       "translucent_pct": 35.32,
       "opaque_border_pct": 0.0
@@ -1227,6 +2136,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 40.64,
+      "alpha_160plus_pct": 40.13,
       "transparent_pct": 58.24,
       "translucent_pct": 37.92,
       "opaque_border_pct": 0.0
@@ -1239,6 +2157,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 54.4,
+      "alpha_160plus_pct": 53.96,
       "transparent_pct": 44.56,
       "translucent_pct": 54.31,
       "opaque_border_pct": 0.0
@@ -1251,6 +2178,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        242,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 63.55,
+      "alpha_160plus_pct": 61.94,
       "transparent_pct": 33.36,
       "translucent_pct": 62.52,
       "opaque_border_pct": 0.0
@@ -1263,6 +2199,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        142,
+        247,
+        250,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 29.62,
+      "alpha_160plus_pct": 28.64,
       "transparent_pct": 68.04,
       "translucent_pct": 31.96,
       "opaque_border_pct": 0.0
@@ -1275,6 +2220,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        233,
+        250,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 24.48,
+      "alpha_160plus_pct": 24.02,
       "transparent_pct": 74.07,
       "translucent_pct": 25.92,
       "opaque_border_pct": 0.0
@@ -1287,6 +2241,15 @@
       "width": 448,
       "height": 448,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 63.52,
+      "alpha_160plus_pct": 63.13,
       "transparent_pct": 35.59,
       "translucent_pct": 9.68,
       "opaque_border_pct": 0.0
@@ -1299,6 +2262,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        176,
+        248,
+        250,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 36.83,
+      "alpha_160plus_pct": 35.71,
       "transparent_pct": 60.88,
       "translucent_pct": 39.07,
       "opaque_border_pct": 0.0
@@ -1311,6 +2283,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        206,
+        249,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 55.79,
+      "alpha_160plus_pct": 54.34,
       "transparent_pct": 40.57,
       "translucent_pct": 57.51,
       "opaque_border_pct": 0.0
@@ -1323,6 +2304,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        37,
+        248,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 31.67,
+      "alpha_160plus_pct": 30.59,
       "transparent_pct": 63.83,
       "translucent_pct": 36.17,
       "opaque_border_pct": 0.0
@@ -1335,6 +2325,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        9,
+        47,
+        247,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 22.39,
+      "alpha_160plus_pct": 19.77,
       "transparent_pct": 64.83,
       "translucent_pct": 34.88,
       "opaque_border_pct": 0.0
@@ -1347,6 +2346,15 @@
       "width": 448,
       "height": 672,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        252,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.22,
+      "alpha_160plus_pct": 87.97,
       "transparent_pct": 11.17,
       "translucent_pct": 47.56,
       "opaque_border_pct": 0.0
@@ -1359,6 +2367,15 @@
       "width": 512,
       "height": 768,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        254,
+        254,
+        254,
+        255
+      ],
+      "alpha_80plus_pct": 55.62,
+      "alpha_160plus_pct": 55.08,
       "transparent_pct": 43.86,
       "translucent_pct": 1.84,
       "opaque_border_pct": 0.0
@@ -1371,6 +2388,15 @@
       "width": 512,
       "height": 768,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 42.59,
+      "alpha_160plus_pct": 41.91,
       "transparent_pct": 56.35,
       "translucent_pct": 41.45,
       "opaque_border_pct": 0.0
@@ -1383,6 +2409,15 @@
       "width": 512,
       "height": 768,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        254,
+        254,
+        254,
+        255
+      ],
+      "alpha_80plus_pct": 56.87,
+      "alpha_160plus_pct": 56.53,
       "transparent_pct": 42.58,
       "translucent_pct": 6.28,
       "opaque_border_pct": 0.0
@@ -1395,6 +2430,15 @@
       "width": 512,
       "height": 768,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        254,
+        254,
+        254,
+        254,
+        255
+      ],
+      "alpha_80plus_pct": 57.24,
+      "alpha_160plus_pct": 56.96,
       "transparent_pct": 42.31,
       "translucent_pct": 1.34,
       "opaque_border_pct": 0.0
@@ -1407,6 +2451,15 @@
       "width": 512,
       "height": 768,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        254,
+        254,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 57.44,
+      "alpha_160plus_pct": 56.88,
       "transparent_pct": 42.12,
       "translucent_pct": 4.45,
       "opaque_border_pct": 0.0
@@ -1419,6 +2472,15 @@
       "width": 512,
       "height": 768,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 39.98,
+      "alpha_160plus_pct": 39.31,
       "transparent_pct": 59.11,
       "translucent_pct": 39.54,
       "opaque_border_pct": 0.0
@@ -1431,6 +2493,15 @@
       "width": 512,
       "height": 768,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 58.02,
+      "alpha_160plus_pct": 57.46,
       "transparent_pct": 41.27,
       "translucent_pct": 58.73,
       "opaque_border_pct": 0.0
@@ -1443,6 +2514,15 @@
       "width": 512,
       "height": 768,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 41.25,
+      "alpha_160plus_pct": 40.72,
       "transparent_pct": 57.5,
       "translucent_pct": 41.69,
       "opaque_border_pct": 0.0
@@ -1455,6 +2535,15 @@
       "width": 512,
       "height": 768,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        254,
+        254,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 56.63,
+      "alpha_160plus_pct": 56.26,
       "transparent_pct": 42.85,
       "translucent_pct": 2.05,
       "opaque_border_pct": 0.0
@@ -1467,6 +2556,15 @@
       "width": 512,
       "height": 768,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 40.61,
+      "alpha_160plus_pct": 40.28,
       "transparent_pct": 58.26,
       "translucent_pct": 38.03,
       "opaque_border_pct": 0.0
@@ -1479,6 +2577,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        145,
+        249,
+        251,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 39.33,
+      "alpha_160plus_pct": 38.13,
       "transparent_pct": 57.35,
       "translucent_pct": 42.65,
       "opaque_border_pct": 0.0
@@ -1491,6 +2598,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        7,
+        17,
+        126,
+        235,
+        248
+      ],
+      "alpha_80plus_pct": 14.21,
+      "alpha_160plus_pct": 11.03,
       "transparent_pct": 68.46,
       "translucent_pct": 31.54,
       "opaque_border_pct": 0.0
@@ -1503,6 +2619,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        7,
+        18,
+        162,
+        246,
+        251
+      ],
+      "alpha_80plus_pct": 22.24,
+      "alpha_160plus_pct": 19.21,
       "transparent_pct": 56.32,
       "translucent_pct": 43.62,
       "opaque_border_pct": 0.0
@@ -1515,6 +2640,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        9,
+        26,
+        195,
+        249,
+        252
+      ],
+      "alpha_80plus_pct": 30.81,
+      "alpha_160plus_pct": 26.67,
       "transparent_pct": 50.31,
       "translucent_pct": 49.58,
       "opaque_border_pct": 0.0
@@ -1527,6 +2661,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        235,
+        250,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 42.11,
+      "alpha_160plus_pct": 41.28,
       "transparent_pct": 56.09,
       "translucent_pct": 43.9,
       "opaque_border_pct": 0.0
@@ -1539,6 +2682,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        250,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 34.51,
+      "alpha_160plus_pct": 33.89,
       "transparent_pct": 63.97,
       "translucent_pct": 33.85,
       "opaque_border_pct": 0.0
@@ -1551,6 +2703,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        213,
+        250,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 50.26,
+      "alpha_160plus_pct": 48.58,
       "transparent_pct": 47.13,
       "translucent_pct": 44.81,
       "opaque_border_pct": 0.0
@@ -1563,6 +2724,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        19,
+        149,
+        245,
+        250,
+        251
+      ],
+      "alpha_80plus_pct": 40.52,
+      "alpha_160plus_pct": 36.51,
       "transparent_pct": 49.63,
       "translucent_pct": 50.37,
       "opaque_border_pct": 0.0
@@ -1575,6 +2745,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        81,
+        244,
+        250,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 36.89,
+      "alpha_160plus_pct": 34.93,
       "transparent_pct": 59.35,
       "translucent_pct": 40.64,
       "opaque_border_pct": 0.0
@@ -1587,6 +2766,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        142,
+        247,
+        250,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 29.6,
+      "alpha_160plus_pct": 28.36,
       "transparent_pct": 68.39,
       "translucent_pct": 31.41,
       "opaque_border_pct": 0.0
@@ -1599,6 +2787,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        150,
+        248,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.43,
+      "alpha_160plus_pct": 47.05,
       "transparent_pct": 47.64,
       "translucent_pct": 52.35,
       "opaque_border_pct": 0.0
@@ -1611,6 +2808,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        250,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 38.9,
+      "alpha_160plus_pct": 38.07,
       "transparent_pct": 59.55,
       "translucent_pct": 40.3,
       "opaque_border_pct": 0.0
@@ -1623,6 +2829,15 @@
       "width": 192,
       "height": 192,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        254,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 77.48,
+      "alpha_160plus_pct": 76.51,
       "transparent_pct": 19.43,
       "translucent_pct": 7.45,
       "opaque_border_pct": 0.0
@@ -1635,6 +2850,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        254,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 77.37,
+      "alpha_160plus_pct": 76.45,
       "transparent_pct": 18.66,
       "translucent_pct": 9.02,
       "opaque_border_pct": 0.0
@@ -1647,6 +2871,15 @@
       "width": 512,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 30.89,
+      "alpha_160plus_pct": 30.45,
       "transparent_pct": 68.42,
       "translucent_pct": 29.08,
       "opaque_border_pct": 0.0
@@ -1659,6 +2892,15 @@
       "width": 1024,
       "height": 314,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 84.55,
+      "alpha_160plus_pct": 83.81,
       "transparent_pct": 14.04,
       "translucent_pct": 10.17,
       "opaque_border_pct": 0.0
@@ -1671,6 +2913,15 @@
       "width": 1024,
       "height": 289,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        254,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 84.75,
+      "alpha_160plus_pct": 84.08,
       "transparent_pct": 13.97,
       "translucent_pct": 2.86,
       "opaque_border_pct": 0.0
@@ -1683,6 +2934,15 @@
       "width": 1024,
       "height": 314,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 83.8,
+      "alpha_160plus_pct": 83.05,
       "transparent_pct": 14.87,
       "translucent_pct": 2.92,
       "opaque_border_pct": 0.0
@@ -1695,6 +2955,15 @@
       "width": 1024,
       "height": 314,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 83.75,
+      "alpha_160plus_pct": 83.25,
       "transparent_pct": 14.9,
       "translucent_pct": 2.6,
       "opaque_border_pct": 0.0
@@ -1707,6 +2976,15 @@
       "width": 1024,
       "height": 314,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 83.98,
+      "alpha_160plus_pct": 83.26,
       "transparent_pct": 14.66,
       "translucent_pct": 2.83,
       "opaque_border_pct": 0.0
@@ -1719,6 +2997,15 @@
       "width": 256,
       "height": 260,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 63.4,
+      "alpha_160plus_pct": 62.91,
       "transparent_pct": 35.46,
       "translucent_pct": 9.1,
       "opaque_border_pct": 0.0
@@ -1731,6 +3018,15 @@
       "width": 512,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        254,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 69.39,
+      "alpha_160plus_pct": 68.82,
       "transparent_pct": 29.81,
       "translucent_pct": 10.67,
       "opaque_border_pct": 0.0
@@ -1743,6 +3039,15 @@
       "width": 512,
       "height": 768,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 26.53,
+      "alpha_160plus_pct": 26.46,
       "transparent_pct": 73.21,
       "translucent_pct": 23.78,
       "opaque_border_pct": 0.0
@@ -1755,6 +3060,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 52.54,
+      "alpha_160plus_pct": 51.87,
       "transparent_pct": 46.24,
       "translucent_pct": 52.98,
       "opaque_border_pct": 0.0
@@ -1767,6 +3081,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 43.72,
+      "alpha_160plus_pct": 42.83,
       "transparent_pct": 55.08,
       "translucent_pct": 43.57,
       "opaque_border_pct": 0.0
@@ -1779,6 +3102,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 46.96,
+      "alpha_160plus_pct": 45.94,
       "transparent_pct": 51.38,
       "translucent_pct": 46.4,
       "opaque_border_pct": 0.0
@@ -1791,6 +3123,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 46.58,
+      "alpha_160plus_pct": 45.87,
       "transparent_pct": 52.19,
       "translucent_pct": 44.95,
       "opaque_border_pct": 0.0
@@ -1803,6 +3144,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        254,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 77.45,
+      "alpha_160plus_pct": 76.54,
       "transparent_pct": 20.05,
       "translucent_pct": 5.04,
       "opaque_border_pct": 0.0
@@ -1815,6 +3165,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 44.67,
+      "alpha_160plus_pct": 44.12,
       "transparent_pct": 54.05,
       "translucent_pct": 32.79,
       "opaque_border_pct": 0.0
@@ -1827,6 +3186,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 25.78,
+      "alpha_160plus_pct": 25.23,
       "transparent_pct": 72.78,
       "translucent_pct": 14.12,
       "opaque_border_pct": 0.0
@@ -1839,6 +3207,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        210,
+        251,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 27.81,
+      "alpha_160plus_pct": 26.99,
       "transparent_pct": 69.58,
       "translucent_pct": 17.9,
       "opaque_border_pct": 0.0
@@ -1851,6 +3228,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 30.04,
+      "alpha_160plus_pct": 29.52,
       "transparent_pct": 68.46,
       "translucent_pct": 21.09,
       "opaque_border_pct": 0.0
@@ -1863,6 +3249,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 31.96,
+      "alpha_160plus_pct": 31.07,
       "transparent_pct": 66.21,
       "translucent_pct": 19.04,
       "opaque_border_pct": 0.0
@@ -1875,6 +3270,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        7,
+        22,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 13.96,
+      "alpha_160plus_pct": 13.52,
       "transparent_pct": 73.57,
       "translucent_pct": 26.35,
       "opaque_border_pct": 0.0
@@ -1887,6 +3291,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        254,
+        254,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 77.19,
+      "alpha_160plus_pct": 76.57,
       "transparent_pct": 19.96,
       "translucent_pct": 5.36,
       "opaque_border_pct": 0.0
@@ -1899,6 +3312,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        254,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 77.43,
+      "alpha_160plus_pct": 76.56,
       "transparent_pct": 19.93,
       "translucent_pct": 5.42,
       "opaque_border_pct": 0.0
@@ -1911,6 +3333,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        254,
+        254,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 77.22,
+      "alpha_160plus_pct": 76.59,
       "transparent_pct": 19.88,
       "translucent_pct": 5.43,
       "opaque_border_pct": 0.0
@@ -1923,6 +3354,15 @@
       "width": 512,
       "height": 512,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        6,
+        171,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 9.91,
+      "alpha_160plus_pct": 9.83,
       "transparent_pct": 81.77,
       "translucent_pct": 18.22,
       "opaque_border_pct": 0.0
@@ -1935,6 +3375,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 44.33,
+      "alpha_160plus_pct": 43.65,
       "transparent_pct": 54.55,
       "translucent_pct": 11.29,
       "opaque_border_pct": 0.0
@@ -1947,6 +3396,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 33.17,
+      "alpha_160plus_pct": 32.39,
       "transparent_pct": 65.31,
       "translucent_pct": 23.52,
       "opaque_border_pct": 0.0
@@ -1959,6 +3417,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 30.88,
+      "alpha_160plus_pct": 30.16,
       "transparent_pct": 67.49,
       "translucent_pct": 27.37,
       "opaque_border_pct": 0.0
@@ -1971,6 +3438,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 24.55,
+      "alpha_160plus_pct": 23.91,
       "transparent_pct": 74.15,
       "translucent_pct": 22.99,
       "opaque_border_pct": 0.0
@@ -1983,6 +3459,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 26.21,
+      "alpha_160plus_pct": 25.29,
       "transparent_pct": 72.2,
       "translucent_pct": 18.77,
       "opaque_border_pct": 0.0
@@ -1995,6 +3480,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 30.8,
+      "alpha_160plus_pct": 30.35,
       "transparent_pct": 67.85,
       "translucent_pct": 24.84,
       "opaque_border_pct": 0.0
@@ -2007,6 +3501,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 41.47,
+      "alpha_160plus_pct": 40.8,
       "transparent_pct": 57.37,
       "translucent_pct": 42.58,
       "opaque_border_pct": 0.0
@@ -2019,6 +3522,15 @@
       "width": 128,
       "height": 128,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        184,
+        250,
+        251,
+        251,
+        251
+      ],
+      "alpha_80plus_pct": 43.63,
+      "alpha_160plus_pct": 42.14,
       "transparent_pct": 53.91,
       "translucent_pct": 46.09,
       "opaque_border_pct": 0.0
@@ -2031,6 +3543,15 @@
       "width": 331,
       "height": 380,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 72.83,
+      "alpha_160plus_pct": 72.52,
       "transparent_pct": 26.2,
       "translucent_pct": 9.17,
       "opaque_border_pct": 0.0
@@ -2043,6 +3564,15 @@
       "width": 453,
       "height": 236,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 97.03,
+      "alpha_160plus_pct": 96.29,
       "transparent_pct": 1.89,
       "translucent_pct": 15.61,
       "opaque_border_pct": 0.0
@@ -2055,6 +3585,15 @@
       "width": 479,
       "height": 232,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 78.98,
+      "alpha_160plus_pct": 78.59,
       "transparent_pct": 19.78,
       "translucent_pct": 15.36,
       "opaque_border_pct": 0.0
@@ -2067,6 +3606,15 @@
       "width": 459,
       "height": 209,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 95.91,
+      "alpha_160plus_pct": 95.68,
       "transparent_pct": 2.81,
       "translucent_pct": 10.95,
       "opaque_border_pct": 0.0
@@ -2079,6 +3627,15 @@
       "width": 460,
       "height": 209,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 95.95,
+      "alpha_160plus_pct": 95.73,
       "transparent_pct": 2.89,
       "translucent_pct": 12.34,
       "opaque_border_pct": 0.0
@@ -2091,6 +3648,15 @@
       "width": 455,
       "height": 235,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 96.97,
+      "alpha_160plus_pct": 96.53,
       "transparent_pct": 1.49,
       "translucent_pct": 14.03,
       "opaque_border_pct": 0.0
@@ -2103,6 +3669,15 @@
       "width": 768,
       "height": 523,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 66.22,
+      "alpha_160plus_pct": 65.79,
       "transparent_pct": 32.7,
       "translucent_pct": 66.17,
       "opaque_border_pct": 0.0
@@ -2115,6 +3690,15 @@
       "width": 28,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 89.02,
+      "alpha_160plus_pct": 87.59,
       "transparent_pct": 9.02,
       "translucent_pct": 21.96,
       "opaque_border_pct": 32.87
@@ -2129,6 +3713,15 @@
       "width": 2,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 97.5,
       "transparent_pct": 0.0,
       "translucent_pct": 10.0,
       "opaque_border_pct": 87.8
@@ -2141,6 +3734,15 @@
       "width": 28,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.48,
+      "alpha_160plus_pct": 86.96,
       "transparent_pct": 9.38,
       "translucent_pct": 18.57,
       "opaque_border_pct": 34.26
@@ -2153,6 +3755,15 @@
       "width": 32,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 89.31,
+      "alpha_160plus_pct": 88.1,
       "transparent_pct": 8.84,
       "translucent_pct": 21.73,
       "opaque_border_pct": 32.92
@@ -2167,6 +3778,15 @@
       "width": 2,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 97.73,
       "transparent_pct": 0.0,
       "translucent_pct": 11.36,
       "opaque_border_pct": 86.67
@@ -2179,6 +3799,15 @@
       "width": 32,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.85,
+      "alpha_160plus_pct": 87.18,
       "transparent_pct": 9.16,
       "translucent_pct": 18.04,
       "opaque_border_pct": 33.75
@@ -2191,6 +3820,15 @@
       "width": 52,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 89.05,
+      "alpha_160plus_pct": 88.15,
       "transparent_pct": 9.13,
       "translucent_pct": 23.12,
       "opaque_border_pct": 32.4
@@ -2205,6 +3843,15 @@
       "width": 2,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 99.31,
+      "alpha_160plus_pct": 98.61,
       "transparent_pct": 0.0,
       "translucent_pct": 11.46,
       "opaque_border_pct": 87.33
@@ -2217,6 +3864,15 @@
       "width": 52,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.43,
+      "alpha_160plus_pct": 86.83,
       "transparent_pct": 9.58,
       "translucent_pct": 19.3,
       "opaque_border_pct": 33.16
@@ -2229,6 +3885,15 @@
       "width": 202,
       "height": 202,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        198,
+        251,
+        253,
+        253,
+        255
+      ],
+      "alpha_80plus_pct": 30.35,
+      "alpha_160plus_pct": 29.74,
       "transparent_pct": 67.89,
       "translucent_pct": 15.0,
       "opaque_border_pct": 0.0
@@ -2243,6 +3908,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGB",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -2255,6 +3929,15 @@
       "width": 28,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.62,
+      "alpha_160plus_pct": 87.14,
       "transparent_pct": 9.11,
       "translucent_pct": 22.9,
       "opaque_border_pct": 34.72
@@ -2269,6 +3952,15 @@
       "width": 2,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        254
+      ],
+      "alpha_80plus_pct": 98.75,
+      "alpha_160plus_pct": 98.75,
       "transparent_pct": 0.0,
       "translucent_pct": 6.25,
       "opaque_border_pct": 91.46
@@ -2281,6 +3973,15 @@
       "width": 28,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.97,
+      "alpha_160plus_pct": 87.81,
       "transparent_pct": 8.97,
       "translucent_pct": 23.04,
       "opaque_border_pct": 33.33
@@ -2293,6 +3994,15 @@
       "width": 32,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 89.17,
+      "alpha_160plus_pct": 87.07,
       "transparent_pct": 9.16,
       "translucent_pct": 22.37,
       "opaque_border_pct": 33.75
@@ -2307,6 +4017,15 @@
       "width": 2,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        254
+      ],
+      "alpha_80plus_pct": 98.86,
+      "alpha_160plus_pct": 98.86,
       "transparent_pct": 0.0,
       "translucent_pct": 5.68,
       "opaque_border_pct": 92.22
@@ -2319,6 +4038,15 @@
       "width": 32,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 89.31,
+      "alpha_160plus_pct": 88.14,
       "transparent_pct": 8.77,
       "translucent_pct": 22.62,
       "opaque_border_pct": 32.5
@@ -2331,6 +4059,15 @@
       "width": 52,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        158,
+        251,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 39.13,
+      "alpha_160plus_pct": 37.33,
       "transparent_pct": 56.94,
       "translucent_pct": 26.8,
       "opaque_border_pct": 47.96
@@ -2345,6 +4082,15 @@
       "width": 2,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 98.96,
+      "alpha_160plus_pct": 98.61,
       "transparent_pct": 0.0,
       "translucent_pct": 9.38,
       "opaque_border_pct": 89.38
@@ -2357,6 +4103,15 @@
       "width": 52,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 96.63,
+      "alpha_160plus_pct": 95.89,
       "transparent_pct": 2.36,
       "translucent_pct": 11.89,
       "opaque_border_pct": 51.79
@@ -2369,6 +4124,15 @@
       "width": 593,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        254,
+        254,
+        254,
+        254
+      ],
+      "alpha_80plus_pct": 98.29,
+      "alpha_160plus_pct": 97.7,
       "transparent_pct": 1.48,
       "translucent_pct": 6.76,
       "opaque_border_pct": 0.0
@@ -2383,6 +4147,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGB",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -2397,6 +4170,15 @@
       "width": 256,
       "height": 256,
       "mode": "RGB",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        255,
+        255,
+        255,
+        255,
+        255
+      ],
+      "alpha_80plus_pct": 100.0,
+      "alpha_160plus_pct": 100.0,
       "transparent_pct": 0.0,
       "translucent_pct": 0.0,
       "opaque_border_pct": 100.0
@@ -2409,6 +4191,15 @@
       "width": 28,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.39,
+      "alpha_160plus_pct": 85.67,
       "transparent_pct": 9.46,
       "translucent_pct": 19.24,
       "opaque_border_pct": 35.19
@@ -2423,6 +4214,15 @@
       "width": 2,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 98.75,
+      "alpha_160plus_pct": 98.75,
       "transparent_pct": 0.0,
       "translucent_pct": 6.88,
       "opaque_border_pct": 90.85
@@ -2435,6 +4235,15 @@
       "width": 28,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.3,
+      "alpha_160plus_pct": 86.52,
       "transparent_pct": 9.91,
       "translucent_pct": 18.26,
       "opaque_border_pct": 33.8
@@ -2447,6 +4256,15 @@
       "width": 32,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.88,
+      "alpha_160plus_pct": 86.22,
       "transparent_pct": 9.27,
       "translucent_pct": 19.99,
       "opaque_border_pct": 34.17
@@ -2461,6 +4279,15 @@
       "width": 2,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 98.86,
+      "alpha_160plus_pct": 98.86,
       "transparent_pct": 0.0,
       "translucent_pct": 6.82,
       "opaque_border_pct": 91.11
@@ -2473,6 +4300,15 @@
       "width": 32,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.46,
+      "alpha_160plus_pct": 86.04,
       "transparent_pct": 9.59,
       "translucent_pct": 18.15,
       "opaque_border_pct": 33.33
@@ -2485,6 +4321,15 @@
       "width": 52,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.54,
+      "alpha_160plus_pct": 86.91,
       "transparent_pct": 9.63,
       "translucent_pct": 22.46,
       "opaque_border_pct": 32.4
@@ -2499,6 +4344,15 @@
       "width": 2,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 98.61,
+      "alpha_160plus_pct": 98.61,
       "transparent_pct": 0.0,
       "translucent_pct": 9.03,
       "opaque_border_pct": 89.73
@@ -2511,6 +4365,15 @@
       "width": 52,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 96.23,
+      "alpha_160plus_pct": 95.81,
       "transparent_pct": 2.4,
       "translucent_pct": 8.41,
       "opaque_border_pct": 59.95
@@ -2523,6 +4386,15 @@
       "width": 593,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        254,
+        254,
+        254
+      ],
+      "alpha_80plus_pct": 98.29,
+      "alpha_160plus_pct": 97.61,
       "transparent_pct": 1.48,
       "translucent_pct": 5.65,
       "opaque_border_pct": 0.0
@@ -2535,6 +4407,15 @@
       "width": 80,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 76.2,
+      "alpha_160plus_pct": 75.12,
       "transparent_pct": 21.39,
       "translucent_pct": 11.31,
       "opaque_border_pct": 0.0
@@ -2547,6 +4428,15 @@
       "width": 80,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 76.16,
+      "alpha_160plus_pct": 75.08,
       "transparent_pct": 21.44,
       "translucent_pct": 9.94,
       "opaque_border_pct": 0.0
@@ -2559,6 +4449,15 @@
       "width": 28,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.26,
+      "alpha_160plus_pct": 86.96,
       "transparent_pct": 9.42,
       "translucent_pct": 23.88,
       "opaque_border_pct": 35.19
@@ -2573,6 +4472,15 @@
       "width": 2,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 98.75,
+      "alpha_160plus_pct": 97.5,
       "transparent_pct": 0.0,
       "translucent_pct": 5.0,
       "opaque_border_pct": 92.68
@@ -2585,6 +4493,15 @@
       "width": 28,
       "height": 80,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 87.86,
+      "alpha_160plus_pct": 84.69,
       "transparent_pct": 10.0,
       "translucent_pct": 20.09,
       "opaque_border_pct": 32.41
@@ -2597,6 +4514,15 @@
       "width": 32,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.78,
+      "alpha_160plus_pct": 87.36,
       "transparent_pct": 9.2,
       "translucent_pct": 23.47,
       "opaque_border_pct": 35.0
@@ -2611,6 +4537,15 @@
       "width": 2,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 98.86,
+      "alpha_160plus_pct": 97.73,
       "transparent_pct": 0.0,
       "translucent_pct": 5.68,
       "opaque_border_pct": 92.22
@@ -2623,6 +4558,15 @@
       "width": 32,
       "height": 88,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.21,
+      "alpha_160plus_pct": 85.55,
       "transparent_pct": 9.66,
       "translucent_pct": 19.74,
       "opaque_border_pct": 33.33
@@ -2635,6 +4579,15 @@
       "width": 52,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 88.25,
+      "alpha_160plus_pct": 86.81,
       "transparent_pct": 9.68,
       "translucent_pct": 25.15,
       "opaque_border_pct": 34.95
@@ -2649,6 +4602,15 @@
       "width": 2,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        253,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 98.61,
+      "alpha_160plus_pct": 97.92,
       "transparent_pct": 0.69,
       "translucent_pct": 4.86,
       "opaque_border_pct": 93.15
@@ -2661,6 +4623,15 @@
       "width": 52,
       "height": 144,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 86.83,
+      "alpha_160plus_pct": 86.2,
       "transparent_pct": 10.31,
       "translucent_pct": 20.51,
       "opaque_border_pct": 33.67
@@ -2673,6 +4644,15 @@
       "width": 512,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        252,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 45.86,
+      "alpha_160plus_pct": 45.69,
       "transparent_pct": 53.5,
       "translucent_pct": 25.64,
       "opaque_border_pct": 0.0
@@ -2685,6 +4665,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 50.11,
+      "alpha_160plus_pct": 49.64,
       "transparent_pct": 48.61,
       "translucent_pct": 51.38,
       "opaque_border_pct": 0.0
@@ -2697,6 +4686,15 @@
       "width": 512,
       "height": 512,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 56.7,
+      "alpha_160plus_pct": 56.06,
       "transparent_pct": 41.26,
       "translucent_pct": 58.73,
       "opaque_border_pct": 0.0
@@ -2709,6 +4707,15 @@
       "width": 512,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 35.73,
+      "alpha_160plus_pct": 35.33,
       "transparent_pct": 63.51,
       "translucent_pct": 34.9,
       "opaque_border_pct": 0.0
@@ -2721,6 +4728,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        207,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 44.44,
+      "alpha_160plus_pct": 42.95,
       "transparent_pct": 51.95,
       "translucent_pct": 17.11,
       "opaque_border_pct": 0.0
@@ -2733,6 +4749,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 48.82,
+      "alpha_160plus_pct": 47.63,
       "transparent_pct": 48.52,
       "translucent_pct": 15.88,
       "opaque_border_pct": 0.0
@@ -2745,6 +4770,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        220,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 52.42,
+      "alpha_160plus_pct": 50.84,
       "transparent_pct": 43.74,
       "translucent_pct": 20.72,
       "opaque_border_pct": 0.0
@@ -2757,6 +4791,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 49.29,
+      "alpha_160plus_pct": 48.09,
       "transparent_pct": 48.03,
       "translucent_pct": 12.92,
       "opaque_border_pct": 0.0
@@ -2769,6 +4812,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 52.65,
+      "alpha_160plus_pct": 51.49,
       "transparent_pct": 44.71,
       "translucent_pct": 14.82,
       "opaque_border_pct": 0.0
@@ -2781,6 +4833,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 49.29,
+      "alpha_160plus_pct": 48.25,
       "transparent_pct": 48.44,
       "translucent_pct": 12.22,
       "opaque_border_pct": 0.0
@@ -2793,6 +4854,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        230,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 46.0,
+      "alpha_160plus_pct": 44.59,
       "transparent_pct": 50.62,
       "translucent_pct": 18.48,
       "opaque_border_pct": 0.0
@@ -2805,6 +4875,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 45.56,
+      "alpha_160plus_pct": 44.58,
       "transparent_pct": 52.25,
       "translucent_pct": 10.94,
       "opaque_border_pct": 0.0
@@ -2817,6 +4896,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 39.4,
+      "alpha_160plus_pct": 38.48,
       "transparent_pct": 58.51,
       "translucent_pct": 9.33,
       "opaque_border_pct": 0.0
@@ -2829,6 +4917,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 46.06,
+      "alpha_160plus_pct": 45.06,
       "transparent_pct": 51.5,
       "translucent_pct": 10.82,
       "opaque_border_pct": 0.0
@@ -2841,6 +4938,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        253,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 46.08,
+      "alpha_160plus_pct": 45.0,
       "transparent_pct": 51.46,
       "translucent_pct": 10.94,
       "opaque_border_pct": 0.0
@@ -2853,6 +4959,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        227,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 46.39,
+      "alpha_160plus_pct": 44.99,
       "transparent_pct": 50.01,
       "translucent_pct": 15.62,
       "opaque_border_pct": 0.0
@@ -2865,6 +4980,15 @@
       "width": 1024,
       "height": 336,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 67.05,
+      "alpha_160plus_pct": 66.75,
       "transparent_pct": 32.42,
       "translucent_pct": 32.13,
       "opaque_border_pct": 0.0
@@ -2877,6 +5001,15 @@
       "width": 192,
       "height": 192,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        245,
+        251,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 49.98,
+      "alpha_160plus_pct": 48.75,
       "transparent_pct": 48.17,
       "translucent_pct": 51.83,
       "opaque_border_pct": 0.0
@@ -2889,6 +5022,15 @@
       "width": 192,
       "height": 192,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        251,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 50.17,
+      "alpha_160plus_pct": 49.23,
       "transparent_pct": 48.47,
       "translucent_pct": 51.53,
       "opaque_border_pct": 0.0
@@ -2901,6 +5043,15 @@
       "width": 192,
       "height": 192,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        230,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 31.82,
+      "alpha_160plus_pct": 31.15,
       "transparent_pct": 66.98,
       "translucent_pct": 33.02,
       "opaque_border_pct": 0.0
@@ -2913,6 +5064,15 @@
       "width": 192,
       "height": 192,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        246,
+        249,
+        251,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 43.75,
+      "alpha_160plus_pct": 42.79,
       "transparent_pct": 54.59,
       "translucent_pct": 45.39,
       "opaque_border_pct": 0.0
@@ -2925,6 +5085,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        82,
+        249,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 19.53,
+      "alpha_160plus_pct": 18.38,
       "transparent_pct": 78.22,
       "translucent_pct": 10.21,
       "opaque_border_pct": 0.0
@@ -2937,6 +5106,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        219,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 25.65,
+      "alpha_160plus_pct": 24.74,
       "transparent_pct": 73.08,
       "translucent_pct": 8.23,
       "opaque_border_pct": 0.0
@@ -2949,6 +5127,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        207,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 29.36,
+      "alpha_160plus_pct": 28.5,
       "transparent_pct": 68.98,
       "translucent_pct": 9.15,
       "opaque_border_pct": 0.0
@@ -2961,6 +5148,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        184,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 26.07,
+      "alpha_160plus_pct": 25.14,
       "transparent_pct": 72.25,
       "translucent_pct": 9.18,
       "opaque_border_pct": 0.0
@@ -2973,6 +5169,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        106,
+        251,
+        252,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 27.51,
+      "alpha_160plus_pct": 26.1,
       "transparent_pct": 69.75,
       "translucent_pct": 16.8,
       "opaque_border_pct": 0.0
@@ -2985,6 +5190,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        152,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 25.13,
+      "alpha_160plus_pct": 24.1,
       "transparent_pct": 72.91,
       "translucent_pct": 12.15,
       "opaque_border_pct": 0.0
@@ -2997,6 +5211,15 @@
       "width": 128,
       "height": 128,
       "mode": "RGBA",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        205,
+        252,
+        253,
+        253,
+        253
+      ],
+      "alpha_80plus_pct": 29.18,
+      "alpha_160plus_pct": 28.28,
       "transparent_pct": 69.18,
       "translucent_pct": 10.39,
       "opaque_border_pct": 0.0
@@ -3009,6 +5232,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 39.78,
+      "alpha_160plus_pct": 39.24,
       "transparent_pct": 59.04,
       "translucent_pct": 38.2,
       "opaque_border_pct": 0.0
@@ -3021,6 +5253,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 39.72,
+      "alpha_160plus_pct": 39.18,
       "transparent_pct": 59.04,
       "translucent_pct": 38.65,
       "opaque_border_pct": 0.0
@@ -3033,6 +5274,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 41.41,
+      "alpha_160plus_pct": 40.87,
       "transparent_pct": 57.36,
       "translucent_pct": 41.07,
       "opaque_border_pct": 0.0
@@ -3045,6 +5295,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 41.23,
+      "alpha_160plus_pct": 40.81,
       "transparent_pct": 57.44,
       "translucent_pct": 40.36,
       "opaque_border_pct": 0.0
@@ -3057,6 +5316,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 46.94,
+      "alpha_160plus_pct": 46.29,
       "transparent_pct": 51.57,
       "translucent_pct": 43.87,
       "opaque_border_pct": 0.0
@@ -3069,6 +5337,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        252,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 46.89,
+      "alpha_160plus_pct": 46.3,
       "transparent_pct": 51.56,
       "translucent_pct": 47.02,
       "opaque_border_pct": 0.0
@@ -3081,6 +5358,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 50.5,
+      "alpha_160plus_pct": 49.8,
       "transparent_pct": 47.81,
       "translucent_pct": 52.18,
       "opaque_border_pct": 0.0
@@ -3093,6 +5379,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 50.39,
+      "alpha_160plus_pct": 49.71,
       "transparent_pct": 47.81,
       "translucent_pct": 52.19,
       "opaque_border_pct": 0.0
@@ -3105,6 +5400,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 48.33,
+      "alpha_160plus_pct": 47.53,
       "transparent_pct": 49.66,
       "translucent_pct": 44.95,
       "opaque_border_pct": 0.0
@@ -3117,6 +5421,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 48.17,
+      "alpha_160plus_pct": 47.48,
       "transparent_pct": 49.8,
       "translucent_pct": 44.32,
       "opaque_border_pct": 0.0
@@ -3129,6 +5442,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 47.81,
+      "alpha_160plus_pct": 47.02,
       "transparent_pct": 50.45,
       "translucent_pct": 49.54,
       "opaque_border_pct": 0.0
@@ -3141,6 +5463,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.22,
+      "alpha_160plus_pct": 47.44,
       "transparent_pct": 50.12,
       "translucent_pct": 49.84,
       "opaque_border_pct": 0.0
@@ -3153,6 +5484,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 18.84,
+      "alpha_160plus_pct": 18.52,
       "transparent_pct": 80.12,
       "translucent_pct": 19.5,
       "opaque_border_pct": 0.0
@@ -3165,6 +5505,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 19.76,
+      "alpha_160plus_pct": 19.28,
       "transparent_pct": 79.03,
       "translucent_pct": 20.44,
       "opaque_border_pct": 0.0
@@ -3177,6 +5526,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.43,
+      "alpha_160plus_pct": 47.74,
       "transparent_pct": 50.26,
       "translucent_pct": 48.75,
       "opaque_border_pct": 0.0
@@ -3189,6 +5547,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.65,
+      "alpha_160plus_pct": 48.04,
       "transparent_pct": 49.93,
       "translucent_pct": 48.87,
       "opaque_border_pct": 0.0
@@ -3201,6 +5568,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 50.79,
+      "alpha_160plus_pct": 49.75,
       "transparent_pct": 46.24,
       "translucent_pct": 53.56,
       "opaque_border_pct": 0.0
@@ -3213,6 +5589,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 49.07,
+      "alpha_160plus_pct": 48.26,
       "transparent_pct": 48.25,
       "translucent_pct": 50.76,
       "opaque_border_pct": 0.0
@@ -3225,6 +5610,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 47.06,
+      "alpha_160plus_pct": 46.06,
       "transparent_pct": 49.89,
       "translucent_pct": 49.96,
       "opaque_border_pct": 0.0
@@ -3237,6 +5631,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 50.91,
+      "alpha_160plus_pct": 49.58,
       "transparent_pct": 46.0,
       "translucent_pct": 53.81,
       "opaque_border_pct": 0.0
@@ -3249,6 +5652,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.81,
+      "alpha_160plus_pct": 48.36,
       "transparent_pct": 50.12,
       "translucent_pct": 47.22,
       "opaque_border_pct": 0.0
@@ -3261,6 +5673,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.43,
+      "alpha_160plus_pct": 47.93,
       "transparent_pct": 50.69,
       "translucent_pct": 48.42,
       "opaque_border_pct": 0.0
@@ -3273,6 +5694,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 45.15,
+      "alpha_160plus_pct": 44.59,
       "transparent_pct": 53.53,
       "translucent_pct": 45.21,
       "opaque_border_pct": 0.0
@@ -3285,6 +5715,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 44.95,
+      "alpha_160plus_pct": 44.2,
       "transparent_pct": 53.88,
       "translucent_pct": 45.64,
       "opaque_border_pct": 0.0
@@ -3297,6 +5736,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        245,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 31.48,
+      "alpha_160plus_pct": 30.98,
       "transparent_pct": 67.31,
       "translucent_pct": 27.72,
       "opaque_border_pct": 0.0
@@ -3309,6 +5757,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        252,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 31.47,
+      "alpha_160plus_pct": 30.94,
       "transparent_pct": 67.26,
       "translucent_pct": 27.75,
       "opaque_border_pct": 0.0
@@ -3321,6 +5778,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        246,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 43.23,
+      "alpha_160plus_pct": 42.52,
       "transparent_pct": 54.95,
       "translucent_pct": 44.19,
       "opaque_border_pct": 0.0
@@ -3333,6 +5799,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 43.2,
+      "alpha_160plus_pct": 42.5,
       "transparent_pct": 55.04,
       "translucent_pct": 44.28,
       "opaque_border_pct": 0.0
@@ -3345,6 +5820,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 44.73,
+      "alpha_160plus_pct": 44.0,
       "transparent_pct": 53.7,
       "translucent_pct": 45.76,
       "opaque_border_pct": 0.0
@@ -3357,6 +5841,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 44.63,
+      "alpha_160plus_pct": 43.97,
       "transparent_pct": 53.71,
       "translucent_pct": 45.81,
       "opaque_border_pct": 0.0
@@ -3369,6 +5862,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 39.23,
+      "alpha_160plus_pct": 38.66,
       "transparent_pct": 59.57,
       "translucent_pct": 40.09,
       "opaque_border_pct": 0.0
@@ -3381,6 +5883,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 39.52,
+      "alpha_160plus_pct": 38.95,
       "transparent_pct": 59.2,
       "translucent_pct": 40.57,
       "opaque_border_pct": 0.0
@@ -3393,6 +5904,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        233,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 26.06,
+      "alpha_160plus_pct": 25.51,
       "transparent_pct": 72.63,
       "translucent_pct": 26.97,
       "opaque_border_pct": 0.0
@@ -3405,6 +5925,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 63.16,
+      "alpha_160plus_pct": 62.4,
       "transparent_pct": 35.11,
       "translucent_pct": 64.32,
       "opaque_border_pct": 0.0
@@ -3417,6 +5946,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        245,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 40.6,
+      "alpha_160plus_pct": 39.74,
       "transparent_pct": 57.9,
       "translucent_pct": 41.97,
       "opaque_border_pct": 0.0
@@ -3429,6 +5967,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        232,
+        250,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 42.49,
+      "alpha_160plus_pct": 41.26,
       "transparent_pct": 55.6,
       "translucent_pct": 44.31,
       "opaque_border_pct": 0.0
@@ -3441,6 +5988,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 35.77,
+      "alpha_160plus_pct": 35.11,
       "transparent_pct": 63.13,
       "translucent_pct": 36.45,
       "opaque_border_pct": 0.0
@@ -3453,6 +6009,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 32.18,
+      "alpha_160plus_pct": 31.47,
       "transparent_pct": 66.47,
       "translucent_pct": 33.17,
       "opaque_border_pct": 0.0
@@ -3465,6 +6030,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        249,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 50.81,
+      "alpha_160plus_pct": 50.2,
       "transparent_pct": 47.62,
       "translucent_pct": 52.38,
       "opaque_border_pct": 0.0
@@ -3477,6 +6051,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 50.86,
+      "alpha_160plus_pct": 50.39,
       "transparent_pct": 48.36,
       "translucent_pct": 51.26,
       "opaque_border_pct": 0.0
@@ -3489,6 +6072,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        245,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 38.43,
+      "alpha_160plus_pct": 37.85,
       "transparent_pct": 60.08,
       "translucent_pct": 39.86,
       "opaque_border_pct": 0.0
@@ -3501,6 +6093,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        250,
+        251,
+        251,
+        252
+      ],
+      "alpha_80plus_pct": 29.29,
+      "alpha_160plus_pct": 28.61,
       "transparent_pct": 69.48,
       "translucent_pct": 30.47,
       "opaque_border_pct": 0.0
@@ -3513,6 +6114,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 58.27,
+      "alpha_160plus_pct": 57.37,
       "transparent_pct": 39.93,
       "translucent_pct": 59.83,
       "opaque_border_pct": 0.0
@@ -3525,6 +6135,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.54,
+      "alpha_160plus_pct": 47.86,
       "transparent_pct": 50.46,
       "translucent_pct": 45.93,
       "opaque_border_pct": 0.0
@@ -3537,6 +6156,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 46.07,
+      "alpha_160plus_pct": 45.25,
       "transparent_pct": 52.39,
       "translucent_pct": 47.51,
       "opaque_border_pct": 0.0
@@ -3549,6 +6177,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 46.14,
+      "alpha_160plus_pct": 45.49,
       "transparent_pct": 52.3,
       "translucent_pct": 47.57,
       "opaque_border_pct": 0.0
@@ -3561,6 +6198,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 55.55,
+      "alpha_160plus_pct": 54.47,
       "transparent_pct": 42.47,
       "translucent_pct": 57.52,
       "opaque_border_pct": 0.0
@@ -3573,6 +6219,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 55.47,
+      "alpha_160plus_pct": 54.6,
       "transparent_pct": 42.42,
       "translucent_pct": 57.58,
       "opaque_border_pct": 0.0
@@ -3585,6 +6240,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        253
+      ],
+      "alpha_80plus_pct": 37.48,
+      "alpha_160plus_pct": 36.97,
       "transparent_pct": 60.61,
       "translucent_pct": 34.33,
       "opaque_border_pct": 0.0
@@ -3597,6 +6261,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 37.41,
+      "alpha_160plus_pct": 36.86,
       "transparent_pct": 60.85,
       "translucent_pct": 35.86,
       "opaque_border_pct": 0.0
@@ -3609,6 +6282,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 45.2,
+      "alpha_160plus_pct": 44.33,
       "transparent_pct": 52.97,
       "translucent_pct": 46.52,
       "opaque_border_pct": 0.0
@@ -3621,6 +6303,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 45.11,
+      "alpha_160plus_pct": 44.29,
       "transparent_pct": 52.96,
       "translucent_pct": 46.9,
       "opaque_border_pct": 0.0
@@ -3633,6 +6324,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 48.23,
+      "alpha_160plus_pct": 47.41,
       "transparent_pct": 50.29,
       "translucent_pct": 48.23,
       "opaque_border_pct": 0.0
@@ -3645,6 +6345,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        252,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 47.95,
+      "alpha_160plus_pct": 47.36,
       "transparent_pct": 50.29,
       "translucent_pct": 48.84,
       "opaque_border_pct": 0.0
@@ -3657,6 +6366,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 45.67,
+      "alpha_160plus_pct": 44.78,
       "transparent_pct": 52.47,
       "translucent_pct": 47.2,
       "opaque_border_pct": 0.0
@@ -3669,6 +6387,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        251,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 45.75,
+      "alpha_160plus_pct": 45.12,
       "transparent_pct": 52.18,
       "translucent_pct": 47.66,
       "opaque_border_pct": 0.0
@@ -3681,6 +6408,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        241,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 32.97,
+      "alpha_160plus_pct": 32.29,
       "transparent_pct": 65.26,
       "translucent_pct": 33.03,
       "opaque_border_pct": 0.0
@@ -3693,6 +6429,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        244,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 33.17,
+      "alpha_160plus_pct": 32.59,
       "transparent_pct": 65.45,
       "translucent_pct": 32.15,
       "opaque_border_pct": 0.0
@@ -3705,6 +6450,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        248,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 18.37,
+      "alpha_160plus_pct": 17.94,
       "transparent_pct": 80.65,
       "translucent_pct": 18.95,
       "opaque_border_pct": 0.0
@@ -3717,6 +6471,15 @@
       "width": 256,
       "height": 256,
       "mode": "P",
+      "nonclear_alpha_p10_p25_p50_p75_p90": [
+        250,
+        251,
+        252,
+        252,
+        252
+      ],
+      "alpha_80plus_pct": 23.0,
+      "alpha_160plus_pct": 22.58,
       "transparent_pct": 75.87,
       "translucent_pct": 23.76,
       "opaque_border_pct": 0.0
