@@ -20,4 +20,4 @@ Playwrightのブラウザ配置を環境で変えている場合は `PLAYWRIGHT_
 
 ## デッキ編成
 
-`node server/server.js` を起動し、`node ui-tests/deck-editor.js` を実行する。390×844 と 360×640 で旧版デッキの読み込みと修正、編成・保存・複製・削除、偏光、同じ端末とオンラインでの対戦開始を確認する。画面と偏光の連続画像は `ui-tests/artifacts/` に出力する。
+`node server/server.js` を起動し、`node ui-tests/deck-editor.js` を実行する。390×844 と 360×640 で旧版デッキの読み込みと修正、編成・保存・複製・削除、偏光、同じ端末とオンラインでの対戦開始を確認する。オンラインでは再接続後も自分のデッキを表示できるか確かめる。画面と偏光の連続画像は `ui-tests/artifacts/` に出力する。

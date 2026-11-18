@@ -745,6 +745,7 @@ function saveOnlineSession(client) {
 }
 
 function forgetOnlineSession() {
+  roomView?.clearMyDeckSelection();
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch { /* 何もしない */ }

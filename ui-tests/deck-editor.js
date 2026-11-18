@@ -130,7 +130,10 @@ async function verify(width, height, reducedMotion) {
   await press('.room-self .pill[data-value="custom:0"]');
   const request = await pending;
   assert.ok(Object.keys(request.postDataJSON().args[0].deckList).length > 0);
-  await page.locator('.room-self .deck-preview').filter({ hasText: '確認用のデッキ' }).waitFor();
+  const roomPreview = page.locator('.room-self .deck-preview').filter({ hasText: '確認用のデッキ' });
+  await roomPreview.waitFor();
+  await page.reload();
+  await roomPreview.waitFor();
   await page.getByRole('button', { name: 'CPUを追加' }).click();
   await page.locator('.room-start').click();
   await page.waitForFunction(() => document.querySelector('#room-screen').hidden && !document.querySelector('#board').hidden);

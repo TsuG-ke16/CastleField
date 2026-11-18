@@ -2,6 +2,8 @@
 import { castleArt, colorOf } from './art.js';
 import { pillify } from './pills.js';
 import { deckChoice, deckSlot } from './DeckStore.js';
+
+const ROOM_DECK_KEY = 'cf-room-deck-v1';
 export class RoomView {
   constructor({ onAction, onLeave, onEditDeck, savedDecks, presetDeck, previewDeck }) {
     this.onAction = onAction;
@@ -15,8 +17,19 @@ export class RoomView {
     document.getElementById('app').append(this.el);
     this.pending = false;
     this.level = null;
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(ROOM_DECK_KEY));
+      if (cached && typeof cached.name === 'string' && cached.list && typeof cached.list === 'object') {
+        this.customSelection = cached;
+      }
+    } catch { /* 部屋のプレビューはページ内だけに保持する */ }
   }
   hide() { this.el.hidden = true; }
+
+  clearMyDeckSelection() {
+    this.customSelection = null;
+    try { sessionStorage.removeItem(ROOM_DECK_KEY); } catch { /* ストレージなし */ }
+  }
 
   ownSelection() {
     const { room } = this;
@@ -35,6 +48,8 @@ export class RoomView {
     const result = await this.act('setSeat', [{ deckList: deck.list }]);
     if (!result?.ok || this.room.roomId !== roomId || this.room.you !== you) return;
     this.customSelection = { ...deck, roomId, playerId: you };
+    // サーバーは部屋の表示に編成内容を含めないので、自分が送った内容をこのタブに覚える。
+    try { sessionStorage.setItem(ROOM_DECK_KEY, JSON.stringify(this.customSelection)); } catch { /* ストレージなし */ }
     if (!this.el.hidden) this.render(this.room, this.passphrase);
   }
 
