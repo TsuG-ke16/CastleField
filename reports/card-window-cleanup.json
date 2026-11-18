@@ -1,0 +1,26 @@
+{
+  "frame-common.png": {
+    "window_mask_pixels": 113998,
+    "pixels_cleared": 866
+  },
+  "frame-uncommon.png": {
+    "window_mask_pixels": 118202,
+    "pixels_cleared": 2621
+  },
+  "frame-rare.png": {
+    "window_mask_pixels": 114204,
+    "pixels_cleared": 1052
+  },
+  "frame-epic.png": {
+    "window_mask_pixels": 107127,
+    "pixels_cleared": 559
+  },
+  "frame-legendary.png": {
+    "window_mask_pixels": 90716,
+    "pixels_cleared": 894
+  },
+  "frame-special.png": {
+    "window_mask_pixels": 105153,
+    "pixels_cleared": 24153
+  }
+}

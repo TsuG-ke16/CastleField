@@ -1358,9 +1358,9 @@
       "notes": [],
       "width": 512,
       "height": 768,
-      "mode": "P",
-      "transparent_pct": 43.64,
-      "translucent_pct": 2.06,
+      "mode": "RGBA",
+      "transparent_pct": 43.86,
+      "translucent_pct": 1.84,
       "opaque_border_pct": 0.0
     },
     {
@@ -1382,9 +1382,9 @@
       "notes": [],
       "width": 512,
       "height": 768,
-      "mode": "P",
-      "transparent_pct": 42.44,
-      "translucent_pct": 6.43,
+      "mode": "RGBA",
+      "transparent_pct": 42.58,
+      "translucent_pct": 6.28,
       "opaque_border_pct": 0.0
     },
     {
@@ -1394,9 +1394,9 @@
       "notes": [],
       "width": 512,
       "height": 768,
-      "mode": "P",
-      "transparent_pct": 42.18,
-      "translucent_pct": 1.42,
+      "mode": "RGBA",
+      "transparent_pct": 42.31,
+      "translucent_pct": 1.34,
       "opaque_border_pct": 0.0
     },
     {
@@ -1406,9 +1406,9 @@
       "notes": [],
       "width": 512,
       "height": 768,
-      "mode": "P",
-      "transparent_pct": 41.85,
-      "translucent_pct": 4.64,
+      "mode": "RGBA",
+      "transparent_pct": 42.12,
+      "translucent_pct": 4.45,
       "opaque_border_pct": 0.0
     },
     {
@@ -1430,9 +1430,9 @@
       "notes": [],
       "width": 512,
       "height": 768,
-      "mode": "P",
-      "transparent_pct": 40.55,
-      "translucent_pct": 59.45,
+      "mode": "RGBA",
+      "transparent_pct": 41.27,
+      "translucent_pct": 58.73,
       "opaque_border_pct": 0.0
     },
     {
@@ -1454,9 +1454,9 @@
       "notes": [],
       "width": 512,
       "height": 768,
-      "mode": "P",
-      "transparent_pct": 42.2,
-      "translucent_pct": 2.64,
+      "mode": "RGBA",
+      "transparent_pct": 42.85,
+      "translucent_pct": 2.05,
       "opaque_border_pct": 0.0
     },
     {
