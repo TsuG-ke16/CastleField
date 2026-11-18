@@ -444,3 +444,7 @@ OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力�
 ### 天候の呪文
 
 - `cards/card-weather-call.png` — 参照元 `cards/card-weather-call.png`（差し替え前）・`style-reference.png`、生成原本 `exec-bdce4c6e-7903-41c6-8a93-c889925eb861.png`。
+
+### 魔物の枠（レビュー候補）
+
+- `review/visual-art-v2/frame-beast-candidate.png` — 参照元 `cards/frame-beast.png`・`cards/frame-rare.png`・`style-reference.png`、生成原本 `exec-b00e3120-e842-4ecd-8bbe-10227b0c1586.png`。レア枠の窓・帯・メダル位置を基準に形状を調整し、512×768の透過パレットPNGに書き出しました。
