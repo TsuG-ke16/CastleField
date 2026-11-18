@@ -129,4 +129,19 @@
   #app #card-guide .guide-filters { margin-bottom: 6px; gap: 6px; }
   #app #card-guide .guide-filters select { min-height: 36px; padding-block: 4px; }
   #app #card-guide .guide-group-title { margin: 8px 0 8px; }
+/* デッキの「管理」：横向き（高さが低い）では「完了」が画面の外にあり、スクロールしないと押せなかった。
+   幅を広げて、名前・見本・ボタンを2列に並べ、1画面に収める */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app .deck-subdialog.deck-management { width: min(calc(100% - 24px), 620px); padding: 10px 14px; }
+  #app .deck-subdialog.deck-management[open] { grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: end; }
+  #app .deck-management h3, #app .deck-management .deck-manage-status, #app .deck-management .deck-manage-close { grid-column: 1 / -1; }
+}
+/* ひとりで遊ぶ（CPUの強さ）：とても低い横向き（568×320 など）で「つよい」「もどる」が画面の外に出ていた。強さの3つは横に並べ、説明の小さい字を隠して詰める */
+@media (orientation: landscape) and (max-height: 400px) {
+  #app #title-levels:not([hidden]) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 6px; align-content: start; }
+  #app #title-levels > :not(.level) { grid-column: 1 / -1; }
+  #app #title-levels .levels-title { margin: 0 0 2px; font-size: 14px; }
+  #app #title-levels .local-options > summary { min-height: 36px; padding-block: 4px; }
+  #app #title-levels .level { min-height: 44px; padding-block: 2px; padding-inline: 4px; font-size: 15px; }
+  #app #title-levels .level small { display: none; }
 }
