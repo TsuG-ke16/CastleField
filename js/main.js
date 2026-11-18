@@ -355,16 +355,10 @@ async function boot() {
 function prepareBattleAssets() {
   return battleAssetsPromise ??= preloadAssets(8000, (done,total) => { $('asset-loading-text').textContent=`対戦の絵を準備中… ${done} / ${total}`; });
 }
+// オフライン（PWA）の準備は裏で静かに行う。ゲーム内に PWA の説明は出さない（人間の指示）
 async function setupOffline() {
   if (!('serviceWorker' in navigator) || !['http:','https:'].includes(location.protocol)) return;
-  try {
-    const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
-    const status=$('offline-status');
-    status.textContent='オフラインの準備中…';
-    await navigator.serviceWorker.ready;
-    status.textContent='ひとりで遊ぶ：オフラインでもOK';
-    reg.addEventListener('updatefound',()=>{const worker=reg.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)status.textContent='更新の準備ができました。次の起動で新しくなります';});});
-  } catch { $('offline-status').textContent='オフライン保存は利用できません'; }
+  try { await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}); } catch { /* 使えない端末では、オンラインのまま遊ぶ */ }
 }
 
 // ---------- タイトル・メニュー ----------
@@ -879,7 +873,21 @@ function stopChat() {
 }
 
 // ---------- ひとりで遊ぶときの CPU のスタンプ ----------
-// 人がスタンプを送ると返す。大きなダメージ・勝ち負けにも、ときどき反応する（連発しない）
+// 人がスタンプか文字を送ると、スタンプで返す。大きなダメージ・勝ち負けにも、ときどき反応する（連発しない）
+// 人が文字で送ったときは、ことばに合うスタンプで返す（上から順に見て、最初に当たったもの。当たらなければ「うーん…」など）
+const CPU_TEXT_REPLY = [
+  [/よろしく|はじめまして|こんにちは|こんばんは|おはよ|hello|hi/i, ['hello']],
+  [/ありがと|サンキュー|thx|thanks/i, ['nice', 'thanks']],
+  [/ごめん|すまん|すみません|失礼/, ['nice', 'smug']],
+  [/すご|ナイス|うまい|上手|強い|つよい|やるな|nice/i, ['thanks', 'smug']],
+  [/いい試合|おつかれ|お疲れ|gg/i, ['gg']],
+  [/もう1回|もう一回|もういっかい|再戦/, ['again', 'go']],
+  [/いくぞ|いけ|負けない|まけない|覚悟|かかってこい/, ['go', 'smug']],
+  [/いたい|痛|やられ|くそ|ひどい|ずるい/, ['smug', 'sorry']],
+  [/やった|勝った|よし/, ['scared', 'ouch']],
+  [/[?？]/, ['think']],
+  [/[wｗ笑]$/, ['smug', 'yay']],
+];
 const CPU_REPLY = { hello: ['hello'], nice: ['thanks', 'smug'], yay: ['nice', 'sorry'], thanks: ['nice'], go: ['scared', 'go'], smug: ['think', 'go'], think: ['smug'], ouch: ['sorry', 'smug'], scared: ['smug', 'go'], sorry: ['nice'], gg: ['gg'], again: ['go', 'yay'] };
 
 function startLocalChat() {
@@ -894,7 +902,17 @@ function startLocalChat() {
     chat.add({ id: `cpu-${Date.now()}`, playerId: cpuId, name: playerName(cpuId), stamp });
   }, delay);
   const pick = (list) => list[Math.floor(Math.random() * list.length)];
-  chat.send = async ({ stamp }) => {
+  chat.send = async ({ stamp, text }) => {
+    if (text !== undefined) {
+      // オンライン（server/rooms.js）と同じ決まり：制御文字は空白にして前後を取り、1〜40文字
+      const body = String(text).replace(/[\u0000-\u001f\u007f]+/g, ' ').trim();
+      if (body === '') return { ok: false, reason: 'メッセージが空です' };
+      if ([...body].length > CHAT_MAX_LENGTH) return { ok: false, reason: `メッセージは${CHAT_MAX_LENGTH}文字までです` };
+      chat.add({ id: `me-${Date.now()}`, playerId: cpu.humanId, name: playerName(cpu.humanId), text: body });
+      const hit = CPU_TEXT_REPLY.find(([pattern]) => pattern.test(body));
+      say(pick(hit ? hit[1] : ['think', 'smug', 'go']), 700 + Math.random() * 700);
+      return { ok: true };
+    }
     if (!stamp || !chat.stampOf(stamp)) return { ok: false, reason: 'そのスタンプはありません' };
     chat.add({ id: `me-${Date.now()}`, playerId: cpu.humanId, name: playerName(cpu.humanId), stamp });
     if (Math.random() < 0.7) say(pick(CPU_REPLY[stamp] ?? ['hello']), 600 + Math.random() * 700);
@@ -912,7 +930,7 @@ function startLocalChat() {
     react(p.playerId === cpuId ? pick(['ouch', 'scared']) : pick(['smug', 'go']));
   });
   on('gameOver', (p) => { say(p.winner === cpuId ? pick(['smug', 'gg']) : pick(['gg', 'sorry']), 1200); });
-  chat.setEnabled(true, { text: false });
+  chat.setEnabled(true, { text: true });
 }
 
 function leaveOnline() {
@@ -1633,6 +1651,26 @@ function handover(playerId, turn) {
           const back = (st.players[id]?.soldiers ?? []).filter((s) => isNinja(s) && !shown.has(s.soldierId));
           p.soldiers = [...(p.soldiers ?? []), ...back.map((s) => structuredClone(s))];
         }
+      }
+      if (model.deckMode !== 'shared') {
+        // 1人1つの山札：見る人が替わると、山札・捨て札の数はその人のものになる。
+        // このあと流れる「引く」演出で減らす前の数（＝引き終わりの数＋これから引く枚数）から始める
+        // 魔物を倒したごほうび・駒と、運命の祈りで引く分は、山札から引かないので数えない
+        let fromDeck = 0, notFromDeck = 0, luck = model.players[viewerId]?.luck?.draws ?? 0;
+        for (const ev of queue) {
+          const p = ev.payload;
+          if (ev.type === 'monsterDefeated' && p.playerId === viewerId) notFromDeck += (p.rewardRarity ? 1 : 0) + (p.pieceType ? 1 : 0);
+          if (ev.type !== 'cardDrawn' || p.playerId !== viewerId) continue;
+          for (let i = 0; i < p.cardIds.length; i++) {
+            if (notFromDeck > 0) notFromDeck -= 1;
+            else if (luck > 0) luck -= 1;
+            else fromDeck += 1;
+          }
+        }
+        const shuffle = queue.find((ev) => ev.type === 'deckShuffled' && ev.payload.playerId === viewerId);
+        model.deckCount = shuffle ? Math.max(0, fromDeck - (shuffle.payload.deckCount - st.deckCount)) : st.deckCount + fromDeck;
+        model.discardCount = st.discardCount;
+        model.preShuffleDraws = 0;
       }
       renderer.renderAll(model);
       renderer.setCurrentPlayer(playerId);
