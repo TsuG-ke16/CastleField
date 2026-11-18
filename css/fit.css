@@ -58,4 +58,27 @@
   #app .deck-filters { grid-area: filters; }
   #app .deck-footer { grid-area: foot; }
   #app .deck-grid { grid-area: grid; min-height: 0; }
+/* 対戦画面：低い縦画面（360×640・375×667 など）は、案内・知らせ・手札で盤面が押され、
+   天候や攻撃の知らせが重なると道が50px台まで潰れていた。案内・知らせは小さな字で2行まで、手札の帯は細くする */
+@media (orientation: portrait) and (max-height: 700px) {
+  #app #controls #message { font-size: 11px; line-height: 1.3; padding-block: 3px; min-height: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #app .hand-toolbar { min-height: 28px; }
+  #app .hand-toolbar .hand-scroll-hint { display: none; }
+  #app .hand-toolbar #hand-toggle { --button-h: 32px; min-height: 32px; }
+  #app #tutorial { padding: 3px 6px; }
+  #app #tutorial strong { font-size: 11px; }
+  #app #tutorial p { margin: 0; font-size: 11px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #app #tutorial button { --button-h: 36px; flex-basis: 36px; min-width: 36px; min-height: 36px; }
+}
+/* とても低い縦画面（320×568 など）：さらに案内の見出しを隠し、手札も少し小さくする */
+@media (orientation: portrait) and (max-height: 600px) {
+  #app #tutorial strong { display: none; }
+  :root { --hand-height: 104px; }
+  #app #hand .card { width: 62px; height: 88px; }
+  #app #hand { padding-block: 3px 4px; }
+}
+/* とても狭い画面（320幅）：天候のバッジが出ると、手番の文字が「防御を…」と切れていた。紋章を外して文字に場所を回す */
+@media (max-width: 340px) {
+  #app #hud #turn-status::before { display: none; }
+  #app #hud #turn-info { margin-left: 0; }
 }
