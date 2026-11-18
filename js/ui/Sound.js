@@ -102,6 +102,9 @@ class Sound {
 }
 
 const SOUNDS = {
+  deckAdd: (s, p) => s.tone({ freq: 520 + p * 400, endFreq: 780 + p * 500, dur: .08 + p * .06, gain: .09 + p * .08, type: 'triangle' }),
+  deckRemove: (s, p) => s.tone({ freq: 410 + p * 200, endFreq: 230, dur: .09 + p * .05, gain: .09 + p * .06, type: 'triangle' }),
+  deckReady: s => [523, 659, 784].forEach((freq, i) => s.tone({ freq, dur: .16, at: i * .06, gain: .1, type: 'triangle' })),
   bow: (s,p) => { s.noise({dur:.08,gain:.10+p*.15,freq:4800,endFreq:900});s.tone({freq:350,endFreq:110,dur:.16,gain:.1+p*.12,type:'triangle'}); },
   magicShot: (s,p) => s.tone({freq:750,endFreq:180,dur:.24,gain:.12+p*.2,type:'sine'}),
   fusion: (s,p) => [440,554,659,880,1109,1318].slice(0, 2 + Math.round(p*4)).forEach((freq,i)=>s.tone({freq,dur:.18+p*.1,at:i*.06,gain:.09+p*.07,type:'triangle'})),

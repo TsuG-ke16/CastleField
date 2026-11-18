@@ -27,7 +27,9 @@ import { LocalSession } from './ui/Session.js';
 import { OnlineClient } from './ui/OnlineClient.js';
 import { ChatView } from './ui/ChatView.js';
 import { DeckEditor } from './ui/DeckEditor.js';
-import { loadMyDeck } from './ui/DeckStore.js';
+import { deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
+import { renderDeckPreview } from './ui/DeckPreview.js';
+import { initHolograms } from './ui/Hologram.js';
 import { checkCostDeck } from './game/Setup.js';
 import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
@@ -227,7 +229,17 @@ async function boot() {
     onMonsterTap: (m) => toast(monsterInfo(m, { monsters }), 'info'),
     onTargetTap: (target) => { if (!busy) targeting.tap(target); },
   });
-  roomView = new RoomView({ onAction: (method, args) => session.act(method, args), onLeave: () => showTitle(), onEditDeck: () => deckEditor?.open(), getMyDeck: loadMyDeck });
+  const previewDeck = (root, deck) => renderDeckPreview(root, deck, cards, rarities);
+  const savedDecks = () => loadDecks().slots.map((deck, slot) => deck && ({
+    ...deck, slot, valid: checkCostDeck(deck.list, cards, rarities, rules).ok,
+  }));
+  const presetDeck = id => decks?.[id] ? { name: decks[id].name, list: decks[id].cards } : null;
+  const openDeckEditor = slot => deckEditor?.open(slot);
+  roomView = new RoomView({
+    onAction: (method, args) => session.act(method, args), onLeave: () => showTitle(),
+    onEditDeck: openDeckEditor, savedDecks, presetDeck, previewDeck,
+  });
+  initHolograms(el.app);
   $('back-to-room').addEventListener('click', async () => {
     const res = await session?.act('backToRoom');
     if (!res?.ok) toast(res?.reason ?? '部屋に戻れませんでした');
@@ -261,8 +273,22 @@ async function boot() {
   }, true);
 
   if (rarities && Object.values(decks ?? {}).some((d) => d.costDeck)) {
-    deckEditor = new DeckEditor({ cards, rarities, rules, decks, onSave: (list) => roomView?.onMyDeckSaved?.(list) });
-    $('title-deck').addEventListener('click', () => { sound.play('tap'); deckEditor.open(); });
+    const preview = document.createElement('div');
+    preview.id = 'title-deck-preview';
+    $('title-help').after(preview);
+    const refresh = (saved) => {
+      const active = savedDecks()[loadDecks().active];
+      previewDeck(preview, active ?? presetDeck(rules.defaultCostDeck));
+      localSetup?.refreshDecks();
+      if (saved) roomView.refreshDecks(saved);
+    };
+    deckEditor = new DeckEditor({
+      cards, rarities, rules, decks,
+      animate: (element, frames, options) => anim.animate(element, frames, options),
+      onChange: refresh,
+    });
+    $('title-deck').addEventListener('click', () => { sound.play('tap'); openDeckEditor(); });
+    refresh();
   } else {
     $('title-deck').hidden = true;
   }
@@ -278,7 +304,7 @@ async function boot() {
   });
   settings = new Settings((value) => { el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
   setupMenu();
-  setupTitle();
+  setupTitle({ savedDecks, presetDeck, previewDeck, openDeckEditor });
   renderHelp({cards,rules,monsters,rarities});
   setupAccessibility();
 
@@ -334,11 +360,11 @@ async function setupOffline() {
 
 // ---------- タイトル・メニュー ----------
 
-function setupTitle() {
+function setupTitle(deckOptions) {
   document.querySelector('#title .title-pic').innerHTML =
     `<div class="title-castle left">${imageArt('ui/title-castle-blue.png', '', 'art castle-art')}</div><div class="title-unit left">${imageArt('ui/title-knight-blue.png', '', 'art unit-art')}</div>` +
     `<div class="title-unit right">${imageArt('ui/title-infantry-orange.png', '', 'art unit-art')}</div><div class="title-castle right">${imageArt('ui/title-castle-orange.png', '', 'art castle-art')}</div>`;
-  localSetup = new LocalSetup({castles,decks,rules,onStart:(level,options)=>startLocal(undefined,level,options)});
+  localSetup = new LocalSetup({castles,decks,rules,...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
   $('title-local').addEventListener('click', () => { sound.play('tap'); localSetup.open('local'); el.titleMain.hidden=true; el.titleLevels.hidden=false; });
   $('title-solo').addEventListener('click', () => {
     sound.play('tap');
@@ -570,12 +596,13 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
       const seatRng=mulberry32(seed ^ 0x9e3779b9);
       const humanSeat=cpuLevel?Math.floor(seatRng()*options.playerCount):0;
       opts.setup.castles[humanSeat]=options.castle;
-      if(opts.setup.decks&&!(options.deckMode==='cost'&&options.deck==='custom'))opts.setup.decks[humanSeat]=options.deck;
-      if(options.deckMode==='cost'&&options.deck==='custom'){
+      const customSlot = options.deckMode === 'cost' ? deckSlot(options.deck) : null;
+      if (opts.setup.decks && customSlot === null) opts.setup.decks[humanSeat] = options.deck;
+      if (customSlot !== null) {
         // 自分で編成したデッキ（決まりに合わなければ、編成画面を開いて直してもらう）
-        const mine=loadMyDeck();
+        const mine=loadMyDeck(customSlot);
         if(!mine||!checkCostDeck(mine,cards,rarities,rules).ok){
-          showTitle();toast('マイデッキがまだ決まりに合っていません。「デッキ編成」で作ってください','info');deckEditor?.open();return;
+          showTitle();toast('マイデッキがまだ決まりに合っていません。「デッキ編成」で作ってください','info');deckEditor?.open(customSlot);return;
         }
         opts.setup.deckLists=Array(options.playerCount).fill(null);opts.setup.deckLists[humanSeat]=mine;
       }

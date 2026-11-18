@@ -1,0 +1,39 @@
+/* 枠の絵を共用し、カードの面にだけ偏光を重ねる。 */
+.foil-sheet {
+  position: absolute;
+  inset: 1% 14% 12%;
+  z-index: 2;
+  border-radius: 8%;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  opacity: .44;
+  background: var(--foil), var(--foil-grain, none);
+  background-size: 225% 200%, 15px 17px;
+  background-position: var(--foil-x, 50%) var(--foil-y, 50%), center;
+}
+
+:is(.card, .mini-card)[data-rarity="rare"] {
+  --foil: repeating-linear-gradient(118deg, transparent 0 38%, #d8fbff15 41%, #c9edffbd 45%, #fff 46%, transparent 53% 66%);
+}
+:is(.card, .mini-card)[data-rarity="epic"] {
+  --foil: conic-gradient(from 42deg at 45% 50%, transparent, #a184ffb0, #ff9fe4ae, #90d6ff87, transparent 65%);
+  --foil-grain: radial-gradient(circle at 70% 30%, #fff 0 .65px, transparent 1.1px);
+}
+:is(.card, .mini-card)[data-rarity="legendary"] {
+  --foil: conic-gradient(from 140deg, #ffdc7b30, #ffe775de, #fcab4466, #b3fff5ad, #f9b2eac9, #fff4bd, #ffdc7b30);
+  --foil-grain: radial-gradient(circle at 72% 30%, #fff 0 1px, #fffa9c70 1.4px, transparent 2.4px);
+}
+:is(.card, .mini-card)[data-rarity="special"] {
+  --foil: conic-gradient(from 50deg at 40% 58%, #ed9dee99, #91c6ffb3, #a6ffdfb5, #ffed9bb0, #ff8596c7, #ed9dee99);
+}
+:is(.card, .mini-card)[data-rarity="special"] > .foil-sheet { inset: 0 13% 6%; opacity: .58; }
+
+.foil-visible:not(.foil-input) > .foil-sheet { animation: card-foil-sweep 7s ease-in-out infinite; }
+@keyframes card-foil-sweep {
+  0%, 100% { background-position: 14% 40%, center; }
+  50% { background-position: 88% 62%, center; }
+}
+.reduced-motion .foil-visible > .foil-sheet { background-position: 50% 50%, center; }
+@media (prefers-reduced-motion: reduce) {
+  .foil-visible > .foil-sheet { animation: none; background-position: 50% 50%, center; }
+}

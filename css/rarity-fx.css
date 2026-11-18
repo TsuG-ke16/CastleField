@@ -58,16 +58,13 @@
 #hand .card.group-start:not(:first-child) { margin-left: 14px; }
 
 /* 適応（どのカードとでも合成できる）：虹色 */
-@keyframes rainbow-shift { to { background-position: 200% 0; } }
 .card.wild, .mini-card.wild {
   --rarity: #c77dff;
   background: linear-gradient(115deg, #ffd6e0, #ffe9c2, #fffbc2, #d4f5d9, #cdeaff, #e6d4ff, #ffd6e0) 0 0 / 200% 100%;
   box-shadow: 0 0 0 2px #fff, 0 0 14px #c77dff99, 0 0 24px #4db8f066;
-  animation: rainbow-shift 6s linear infinite;
 }
 .card.wild { border-color: #c77dff; }
 .card.wild .card-art { background: radial-gradient(ellipse, #fff, #f6ecff); }
-@media (prefers-reduced-motion: reduce) { .card.wild, .mini-card.wild { animation: none; } }
 
 /* スペシャルの虹色は専用PNGに含む。名前と印は無地の部分に重ねる。 */
 .detail-rarity[style*="#c77dff"], .rarity-label[style*="#c77dff"] { border-image: linear-gradient(#ff5d73, #ffb347, #fff176, #5fd98f, #4db8f0, #b57cf0) 1; }

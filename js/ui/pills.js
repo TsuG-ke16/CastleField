@@ -19,16 +19,16 @@ export function pillify(select, label) {
     group.append(pill);
   }
   const sync = () => {
-    for (const pill of group.children) {
+    for (const [index, pill] of [...group.children].entries()) {
       const on = select.value === pill.dataset.value;
       pill.classList.toggle('on', on);
       pill.setAttribute('aria-pressed', String(on));
-      pill.disabled = select.disabled;
+      pill.disabled = select.disabled || options[index].disabled;
     }
   };
   group.addEventListener('click', e => {
     const pill = e.target.closest('.pill');
-    if (!pill || select.disabled || select.value === pill.dataset.value) return;
+    if (!pill || pill.disabled || select.value === pill.dataset.value) return;
     select.value = pill.dataset.value;
     select.dispatchEvent(new Event('input', { bubbles: true }));
     select.dispatchEvent(new Event('change', { bubbles: true }));
