@@ -89,6 +89,24 @@ test('霧：兵士の戦い・攻撃魔法が外れる（attackMissed）', () =>
   assert.deepEqual(log.find((e) => e.event === 'attackMissed'), { event: 'attackMissed', playerId: 'p1', kind: 'spell', type: 'fireball' });
 });
 
+test('霧：魔物の攻撃が外れたときは、playerId が null（外した側は魔物）', () => {
+  const { game, log } = setup({ type: 'fog', p1: ['infantry'] });
+  const m = { monsterId: 'mX', type: 'slime', roadId: game.roads[0].roadId, square: 2, attack: 1, element: null, hp: 99, takeDamage() {}, isDead: false, def: {} };
+  game.fightMonster(game.players.p1, { soldierId: 'sX', roadId: game.roads[0].roadId, position: 1, attack: 1, element: null, takeDamage: () => 0, hp: 5, isDead: false }, m);
+  const misses = log.filter((e) => e.event === 'attackMissed');
+  assert.deepEqual(misses.map((e) => [e.playerId, e.soldierId ?? null, e.monsterId ?? null]), [['p1', 'sX', null], [null, null, 'mX']]);
+});
+
+test('晴れ：火属性の魔法使いが城を撃つときも +2', () => {
+  const { game, log } = setup({ type: 'sunny' });
+  const mage = { soldierId: 'sM', role: 'mage', position: 0, range: 2, attack: 4, element: 'fire', targetId: 'p2', roadId: game.roads[0].roadId, turnsLeft: 2 };
+  game.players.p1.soldiers.push(mage);
+  const hp = game.players.p2.castle.hp;
+  game.shoot(game.players.p1, mage);
+  assert.equal(log.find((e) => e.event === 'soldierShot').amount, 6);
+  assert.equal(game.players.p2.castle.hp, hp - 6);
+});
+
 test('霧でないときは、外れの判定で乱数を使わない', () => {
   const { game } = setup({ type: 'sunny' });
   let used = 0;
