@@ -1,14 +1,39 @@
 {
-  "version": 1,
+  "version": 2,
   "generator": "assets/review/card-materials/build.py",
   "channels": {
-    "mask.R": "metal (金・銀・鉄・紫の金属。鏡面ハイライト)",
+    "mask.R": "metal (金・銀・鉄・金色の飾り。鏡面ハイライト)",
     "mask.G": "gem (宝石。キラキラ・屈折)",
     "mask.B": "paper (羊皮紙・名前帯・メダルの中。ざらざら・マット)",
     "mask.A": "holo (虹色の帯。frame-special だけ。ホログラム)",
     "none": "R=G=B=A=0 は木・革・ツタ・輪郭線（マット）",
-    "height": "8bit グレー。0=枠の外。高いほど出っ張り。128段階に量子化",
-    "normal": "OpenGL 規約 (緑=+Y 上)。RGB=n*0.5+0.5、アルファ=枠のアルファ"
+    "height": "8bit グレー。0=枠の外、1..255=枠の中。高いほど出っ張り。1段 = heightScalePx ピクセル",
+    "normal": "OpenGL 規約 (緑=+Y 上)。RGB=n*0.5+0.5（X・Y は normalStep 段ごとに丸め、Z は計算し直し）、アルファ=枠のアルファ。高さ(小数)から Sobel で作成",
+    "lit": "確認用。左=左上からの光、右=右からの光（Lambert + Blinn-Phong、マスクで鏡面の強さを変える）"
+  },
+  "heightMethod": {
+    "summary": "inflate between outlines: 輪郭線(V<=0.30)と枠の外からの距離で区画ごとに丸い山（groove_cap で台地）、宝石は高く紙は低く、外のふちの面取りと塗りのハイパスを足す",
+    "params": {
+      "groove_cap": 7.0,
+      "outer_cap": 14.0,
+      "outer_amp": 4.5,
+      "dome_amp": {
+        "wood": 3.6,
+        "metal": 4.4,
+        "gem": 5.0,
+        "paper": 1.0,
+        "holo": 4.0
+      },
+      "offset": {
+        "wood": 0.0,
+        "metal": 0.9,
+        "gem": 2.5,
+        "paper": -1.8,
+        "holo": 0.4
+      },
+      "gem_cap": 9.0,
+      "paint": 1.2
+    }
   },
   "materials": {
     "metal": {
@@ -158,12 +183,15 @@
         "mask": "common/mask.png",
         "height": "common/height.png",
         "normal": "common/normal.png",
-        "preview": "common/preview.png"
+        "preview": "common/preview.png",
+        "lit": "common/lit.png"
       },
+      "heightScalePx": 0.0409,
+      "normalStep": 2,
       "coverage": {
-        "metal": 0.0787,
+        "metal": 0.1052,
         "gem": 0.0,
-        "paper": 0.2509,
+        "paper": 0.2363,
         "holo": 0.0
       }
     },
@@ -177,12 +205,15 @@
         "mask": "uncommon/mask.png",
         "height": "uncommon/height.png",
         "normal": "uncommon/normal.png",
-        "preview": "uncommon/preview.png"
+        "preview": "uncommon/preview.png",
+        "lit": "uncommon/lit.png"
       },
+      "heightScalePx": 0.04922,
+      "normalStep": 4,
       "coverage": {
-        "metal": 0.027,
-        "gem": 0.0158,
-        "paper": 0.2248,
+        "metal": 0.0475,
+        "gem": 0.0209,
+        "paper": 0.223,
         "holo": 0.0
       }
     },
@@ -196,12 +227,15 @@
         "mask": "rare/mask.png",
         "height": "rare/height.png",
         "normal": "rare/normal.png",
-        "preview": "rare/preview.png"
+        "preview": "rare/preview.png",
+        "lit": "rare/lit.png"
       },
+      "heightScalePx": 0.04936,
+      "normalStep": 6,
       "coverage": {
-        "metal": 0.1404,
-        "gem": 0.0256,
-        "paper": 0.235,
+        "metal": 0.1686,
+        "gem": 0.0296,
+        "paper": 0.2241,
         "holo": 0.0
       }
     },
@@ -215,12 +249,15 @@
         "mask": "epic/mask.png",
         "height": "epic/height.png",
         "normal": "epic/normal.png",
-        "preview": "epic/preview.png"
+        "preview": "epic/preview.png",
+        "lit": "epic/lit.png"
       },
+      "heightScalePx": 0.04941,
+      "normalStep": 4,
       "coverage": {
-        "metal": 0.2699,
-        "gem": 0.0212,
-        "paper": 0.2278,
+        "metal": 0.0909,
+        "gem": 0.0253,
+        "paper": 0.2151,
         "holo": 0.0
       }
     },
@@ -234,12 +271,15 @@
         "mask": "legendary/mask.png",
         "height": "legendary/height.png",
         "normal": "legendary/normal.png",
-        "preview": "legendary/preview.png"
+        "preview": "legendary/preview.png",
+        "lit": "legendary/lit.png"
       },
+      "heightScalePx": 0.04957,
+      "normalStep": 4,
       "coverage": {
-        "metal": 0.301,
-        "gem": 0.0143,
-        "paper": 0.1792,
+        "metal": 0.2976,
+        "gem": 0.0202,
+        "paper": 0.1874,
         "holo": 0.0
       }
     },
@@ -253,13 +293,16 @@
         "mask": "special/mask.png",
         "height": "special/height.png",
         "normal": "special/normal.png",
-        "preview": "special/preview.png"
+        "preview": "special/preview.png",
+        "lit": "special/lit.png"
       },
+      "heightScalePx": 0.0485,
+      "normalStep": 2,
       "coverage": {
-        "metal": 0.1173,
-        "gem": 0.024,
-        "paper": 0.2824,
-        "holo": 0.2172
+        "metal": 0.1097,
+        "gem": 0.0348,
+        "paper": 0.2755,
+        "holo": 0.1997
       }
     },
     "beast": {
@@ -272,12 +315,15 @@
         "mask": "beast/mask.png",
         "height": "beast/height.png",
         "normal": "beast/normal.png",
-        "preview": "beast/preview.png"
+        "preview": "beast/preview.png",
+        "lit": "beast/lit.png"
       },
+      "heightScalePx": 0.04912,
+      "normalStep": 2,
       "coverage": {
-        "metal": 0.0444,
-        "gem": 0.0092,
-        "paper": 0.5627,
+        "metal": 0.0293,
+        "gem": 0.0103,
+        "paper": 0.5624,
         "holo": 0.0
       }
     },
@@ -291,12 +337,15 @@
         "mask": "soldier/mask.png",
         "height": "soldier/height.png",
         "normal": "soldier/normal.png",
-        "preview": "soldier/preview.png"
+        "preview": "soldier/preview.png",
+        "lit": "soldier/lit.png"
       },
+      "heightScalePx": 0.04953,
+      "normalStep": 2,
       "coverage": {
-        "metal": 0.0668,
-        "gem": 0.0091,
-        "paper": 0.14,
+        "metal": 0.074,
+        "gem": 0.013,
+        "paper": 0.1397,
         "holo": 0.0
       }
     },
@@ -310,12 +359,15 @@
         "mask": "spell/mask.png",
         "height": "spell/height.png",
         "normal": "spell/normal.png",
-        "preview": "spell/preview.png"
+        "preview": "spell/preview.png",
+        "lit": "spell/lit.png"
       },
+      "heightScalePx": 0.04945,
+      "normalStep": 2,
       "coverage": {
-        "metal": 0.0437,
-        "gem": 0.0116,
-        "paper": 0.1252,
+        "metal": 0.0439,
+        "gem": 0.0174,
+        "paper": 0.125,
         "holo": 0.0
       }
     },
@@ -329,12 +381,15 @@
         "mask": "weapon/mask.png",
         "height": "weapon/height.png",
         "normal": "weapon/normal.png",
-        "preview": "weapon/preview.png"
+        "preview": "weapon/preview.png",
+        "lit": "weapon/lit.png"
       },
+      "heightScalePx": 0.04958,
+      "normalStep": 2,
       "coverage": {
-        "metal": 0.3851,
-        "gem": 0.0187,
-        "paper": 0.1281,
+        "metal": 0.4161,
+        "gem": 0.0217,
+        "paper": 0.1279,
         "holo": 0.0
       }
     },
@@ -348,12 +403,15 @@
         "mask": "defense/mask.png",
         "height": "defense/height.png",
         "normal": "defense/normal.png",
-        "preview": "defense/preview.png"
+        "preview": "defense/preview.png",
+        "lit": "defense/lit.png"
       },
+      "heightScalePx": 0.04959,
+      "normalStep": 2,
       "coverage": {
-        "metal": 0.3297,
-        "gem": 0.0501,
-        "paper": 0.1248,
+        "metal": 0.3516,
+        "gem": 0.0213,
+        "paper": 0.1245,
         "holo": 0.0
       }
     }
