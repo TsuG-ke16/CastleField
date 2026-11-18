@@ -1,0 +1,134 @@
+// 永続データの保存基盤（SQLite。Node.js 標準の node:sqlite。外部パッケージなし）。
+// - 1つのファイル（既定 data-store/castlefield.db。環境変数 CF_DB_PATH で変える。":memory:" も可）
+// - 起動のたびに migrations を順に適用する（schema_migrations に記録。適用済みは飛ばす）
+// - 書き込みは tx() の中で行う（BEGIN IMMEDIATE：同時リクエストが来ても1つずつ処理され、二重処理にならない）
+import { DatabaseSync } from 'node:sqlite';
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+
+/** 新しい変更は、末尾に足す（適用済みの項目は書きかえない） */
+export const MIGRATIONS = [
+  {
+    id: 1,
+    name: 'accounts-and-decks',
+    sql: `
+      CREATE TABLE users (
+        id            TEXT PRIMARY KEY,
+        kind          TEXT NOT NULL CHECK (kind IN ('guest','member')),
+        display_name  TEXT NOT NULL,
+        created_at    INTEGER NOT NULL,
+        last_seen_at  INTEGER NOT NULL
+      );
+      CREATE TABLE identities (
+        provider      TEXT NOT NULL CHECK (provider IN ('google','apple')),
+        subject       TEXT NOT NULL,
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        email_hash    TEXT,
+        created_at    INTEGER NOT NULL,
+        PRIMARY KEY (provider, subject)
+      );
+      CREATE INDEX identities_user ON identities(user_id);
+      CREATE TABLE sessions (
+        id_hash       TEXT PRIMARY KEY,
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        csrf          TEXT NOT NULL,
+        created_at    INTEGER NOT NULL,
+        last_used_at  INTEGER NOT NULL,
+        expires_at    INTEGER NOT NULL,
+        revoked_at    INTEGER
+      );
+      CREATE INDEX sessions_user ON sessions(user_id);
+      CREATE TABLE oauth_states (
+        state         TEXT PRIMARY KEY,
+        provider      TEXT NOT NULL,
+        nonce         TEXT NOT NULL,
+        verifier      TEXT NOT NULL,
+        user_id       TEXT REFERENCES users(id) ON DELETE CASCADE,
+        created_at    INTEGER NOT NULL,
+        expires_at    INTEGER NOT NULL
+      );
+      CREATE TABLE link_conflicts (
+        id            TEXT PRIMARY KEY,
+        guest_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        target_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at    INTEGER NOT NULL,
+        expires_at    INTEGER NOT NULL
+      );
+      CREATE TABLE user_decks (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        slot          INTEGER NOT NULL CHECK (slot >= 0 AND slot < 8),
+        name          TEXT NOT NULL,
+        list_json     TEXT NOT NULL,
+        updated_at    INTEGER NOT NULL,
+        PRIMARY KEY (user_id, slot)
+      );
+      CREATE TABLE user_settings (
+        user_id       TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        active_deck   INTEGER NOT NULL DEFAULT 0,
+        deck_revision INTEGER NOT NULL DEFAULT 0
+      );
+      CREATE TABLE audit_log (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        at            INTEGER NOT NULL,
+        event         TEXT NOT NULL,
+        user_hash     TEXT,
+        detail        TEXT
+      );
+    `,
+  },
+];
+
+export class Db {
+  /** @param {string} path ファイルのパスか ":memory:" */
+  constructor(path = ':memory:') {
+    this.path = path;
+    if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true });
+    this.raw = new DatabaseSync(path);
+    this.raw.exec('PRAGMA foreign_keys = ON; PRAGMA busy_timeout = 5000;');
+    if (path !== ':memory:') this.raw.exec('PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL;');
+    this.depth = 0;
+    this.migrate();
+  }
+
+  migrate() {
+    this.raw.exec('CREATE TABLE IF NOT EXISTS schema_migrations (id INTEGER PRIMARY KEY, name TEXT NOT NULL, applied_at INTEGER NOT NULL)');
+    const done = new Set(this.all('SELECT id FROM schema_migrations').map((r) => r.id));
+    for (const m of MIGRATIONS) {
+      if (done.has(m.id)) continue;
+      this.tx(() => {
+        this.raw.exec(m.sql);
+        this.run('INSERT INTO schema_migrations (id, name, applied_at) VALUES (?, ?, ?)', m.id, m.name, Date.now());
+      });
+    }
+  }
+
+  run(sql, ...params) { return this.raw.prepare(sql).run(...params); }
+  get(sql, ...params) { return this.raw.prepare(sql).get(...params); }
+  all(sql, ...params) { return this.raw.prepare(sql).all(...params); }
+
+  /** 1つのまとまりとして実行する（途中で例外が出たら全部なかったことにする）。入れ子は外側にまとめる */
+  tx(fn) {
+    if (this.depth > 0) return fn();
+    this.raw.exec('BEGIN IMMEDIATE');
+    this.depth = 1;
+    try {
+      const out = fn();
+      this.raw.exec('COMMIT');
+      return out;
+    } catch (err) {
+      try { this.raw.exec('ROLLBACK'); } catch { /* すでに閉じている */ }
+      throw err;
+    } finally {
+      this.depth = 0;
+    }
+  }
+
+  /** バックアップ（動いている最中でも、整合した1ファイルを作る）。同名のファイルがあるとエラー */
+  backupTo(file) {
+    mkdirSync(dirname(file), { recursive: true });
+    this.raw.prepare('VACUUM INTO ?').run(file);
+    return file;
+  }
+
+  close() { this.raw.close(); }
+}

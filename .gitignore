@@ -2,3 +2,10 @@
 ui-tests/artifacts/
 node_modules/
 .DS_Store
+
+# アカウントのデータベースとバックアップ（絶対にコミットしない）
+data-store/
+*.db
+*.db-wal
+*.db-shm
+.env

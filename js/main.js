@@ -27,6 +27,8 @@ import { LocalSession } from './ui/Session.js';
 import { OnlineClient } from './ui/OnlineClient.js';
 import { ChatView } from './ui/ChatView.js';
 import { DeckEditor } from './ui/DeckEditor.js';
+import { account } from './ui/Account.js';
+import { AccountPanel } from './ui/AccountPanel.js';
 import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
@@ -308,6 +310,11 @@ async function boot() {
     },
   });
   settings = new Settings((value) => { el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
+  // アカウント：サーバーにアカウント機能があるときだけボタンを出す（なければ今までどおり）
+  const accountPanel = new AccountPanel({ toast });
+  account.onChange(() => { $('title-account').hidden = !account.enabled; });
+  $('title-account').addEventListener('click', () => accountPanel.open());
+  account.init().then(() => accountPanel.handleReturn());
   setupMenu();
   setupTitle({ savedDecks, presetDeck, previewDeck, openDeckEditor });
   renderHelp({cards,rules,monsters,rarities});

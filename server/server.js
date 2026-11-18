@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Lobby } from './rooms.js';
 import { Game } from '../js/game/Game.js';
+import { Db } from './accounts/db.js';
+import { createAccountRoutes } from './accounts/http.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -65,7 +67,7 @@ function serveStatic(pathname, res) {
   const ext = path.slice(path.lastIndexOf('.'));
   const file = join(ROOT, path);
   if (!allowed || !STATIC_TYPES[ext] || !existsSync(file)) return sendJson(res, 404, { ok: false, reason: 'ありません' });
-  res.writeHead(200, { 'Content-Type': STATIC_TYPES[ext], 'Cache-Control': 'no-store' });
+  res.writeHead(200, { 'Content-Type': STATIC_TYPES[ext], 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff', 'Referrer-Policy': 'same-origin', 'X-Frame-Options': 'DENY' });
   res.end(readFileSync(file));
 }
 
@@ -84,7 +86,9 @@ function sendJson(res, status, body) {
  * @param {() => () => number} [o.makeRng] 試合ごとの乱数を作る関数（テストでシードを固定するため）
  * @param {number} [o.cpuDelayMs] CPU が1手ごとに待つ時間（ミリ秒。0 ならすぐ動く。テスト用）
  */
-export function createGameServer({ data = loadData(), makeRng = () => Math.random, cpuDelayMs = 700 } = {}) {
+export function createGameServer({ data = loadData(), makeRng = () => Math.random, cpuDelayMs = 700, accounts = null } = {}) {
+  // アカウント・保存（accounts: { dbPath, env, ... }）。省略すると使わない（今までのテスト・合言葉だけの対戦と同じ）
+  const account = accounts ? createAccountRoutes({ db: new Db(accounts.dbPath ?? ':memory:'), cards: data.cards, readJson, ...accounts.routes, env: accounts.env ?? process.env }) : null;
   // data/ が間違っていたら、起動したときに分かるようにする（試合が始まってから落ちないように）
   new Game({ ...data, rng: makeRng() });
   const lobby = new Lobby(data, makeRng, { cpuDelayMs });
@@ -105,6 +109,7 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
   async function handle(req, res) {
     if (typeof req.url !== 'string' || !req.url.startsWith('/')) return sendJson(res, 400, { ok: false, reason: 'URL が正しくありません' });
     const url = new URL(req.url, 'http://localhost');
+    if (account && await account.handle(req, res, url)) return;
     if (req.method === 'OPTIONS') {
       res.writeHead(204, {
         'Access-Control-Allow-Origin': '*',
@@ -154,12 +159,14 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
     return sendJson(res, 404, { ok: false, reason: 'ありません' });
   }
   server.lobby = lobby;
-  server.on('close', () => clearInterval(sweeper));
+  server.account = account;
+  server.on('close', () => { clearInterval(sweeper); if (account) { account.close(); account.accounts.db.close(); } });
   return server;
 }
 
 // 直接起動されたときだけ listen する
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   const port = Number(process.env.PORT || 8787);
-  createGameServer().listen(port, () => console.log(`キャッスルフィールドのサーバー：http://localhost:${port}`));
+  const dbPath = process.env.CF_DB_PATH || join(ROOT, 'data-store', 'castlefield.db');
+  createGameServer({ accounts: { dbPath } }).listen(port, () => console.log(`キャッスルフィールドのサーバー：http://localhost:${port}`));
 }
