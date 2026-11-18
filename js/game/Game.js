@@ -1392,13 +1392,15 @@ export class Game {
 
   /** 周回の始め：天候の残りを1つ減らし、終わったらふつうの天気に。ふつうの天気なら、確率で新しい天候になる */
   tickWeather() {
-    if (!this.weatherDefs || this.round < this.rules.weatherFirstRound) return;
+    if (!this.weatherDefs) return;
+    // 続いている天候は、weatherFirstRound より前でも減る（天候の呪文で早く始めた天候が、長く続きすぎないように）
     if (this.weather) {
       this.weather.roundsLeft -= 1;
       if (this.weather.roundsLeft > 0) return;
       this.setWeather(null, 'natural');
       return;
     }
+    if (this.round < this.rules.weatherFirstRound) return;
     if (this.rules.weatherChangeChance > 0 && this.rng() < this.rules.weatherChangeChance) {
       this.setWeather(this.pickWeather(), 'natural');
     }
@@ -1535,8 +1537,12 @@ export class Game {
           reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
         };
       }
-      case 'changeWeather':
-        return { targets: this.weatherDefs ? [{ playerId: player.id }] : [], reason: 'このルールでは天候を使いません' };
+      case 'changeWeather': {
+        // 今と違う天候に変える。変えられる天候がなければ出せない（出しても何も起きないので）
+        if (!this.weatherDefs) return { targets: [], reason: 'このルールでは天候を使いません' };
+        const others = Object.keys(this.weatherDefs).filter((t) => t !== this.weather?.type);
+        return { targets: others.length > 0 ? [{ playerId: player.id }] : [], reason: 'ほかに変えられる天候がありません' };
+      }
       case 'gainCoins':
         return { targets: [{ playerId: player.id }], reason: '' };
       case 'gainMp':

@@ -170,6 +170,39 @@ test('天候の呪文：天候を変える（今と違う天候になる）', ()
   assert.equal(game.getState(null).weather.type, changed.weather);
 });
 
+test('天候の呪文で weatherFirstRound より前に始めた天候も、周回ごとに減って終わる', () => {
+  const card = { name: '天候の呪文', kind: 'spell', effect: 'changeWeather', count: 0 };
+  const rules = { ...loadFixture('rules.json'), weatherFirstRound: 10, weatherChangeChance: 1 };
+  const game = new Game({ cards: { ...loadFixture('cards-step2.json'), weatherCall: card }, rules, rng: seededRng(1), weather: { storm: WEATHER.storm } });
+  game.debugSetHand('p1', ['weatherCall']);
+  game.debugSetDeck(Array(40).fill('heal'));
+  game.start();
+  assert.equal(game.playCard(idOf(game, 'weatherCall')).ok, true);
+  assert.equal(game.getState(null).weather.roundsLeft, 2);
+  game.endTurn(); game.endTurn(); // 2周目
+  assert.equal(game.getState(null).weather.roundsLeft, 1);
+  game.endTurn(); game.endTurn(); // 3周目：終わる（weatherFirstRound の前なので、新しい天候も出ない）
+  assert.equal(game.getState(null).weather, null);
+});
+
+test('天候の呪文：ほかに変えられる天候がなければ出せない（今の天候を消すだけにならない）', () => {
+  const card = { name: '天候の呪文', kind: 'spell', effect: 'changeWeather', count: 0 };
+  const game = new Game({ cards: { ...loadFixture('cards-step2.json'), weatherCall: card }, rules: loadFixture('rules.json'), rng: seededRng(1), weather: { storm: WEATHER.storm } });
+  game.debugSetHand('p1', ['weatherCall', 'weatherCall']);
+  game.debugSetDeck(Array(40).fill('heal'));
+  game.start();
+  // 天候なし → 嵐にはできる
+  const [a] = game.getState('p1').players.p1.hand;
+  assert.equal(game.playCard(a.cardId).ok, true);
+  assert.equal(game.getState(null).weather.type, 'storm');
+  // 嵐のあいだは、ほかに変えられる天候がない
+  game.players.p1.playedThisTurn = false;
+  const [b] = game.getState('p1').players.p1.hand;
+  const r = game.canPlayCard(b.cardId);
+  assert.equal(r.ok, false);
+  assert.match(r.reason, /ほかに変えられる天候/);
+});
+
 test('天候なしのゲームでは、天候の呪文は出せない', () => {
   const card = { name: '天候の呪文', kind: 'spell', effect: 'changeWeather', count: 0 };
   const game = new Game({ cards: { ...loadFixture('cards-step2.json'), weatherCall: card }, rules: loadFixture('rules.json'), rng: seededRng(1) });
