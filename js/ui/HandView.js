@@ -222,11 +222,13 @@ export class HandView {
     el.title = cardDescription(def, this.rules, this.textOpts);
     // MP を使うカードは、右上に必要な MP を出す
     if (mpCost > 0) {
+      // 絵に重ねず、下の効果の行に「MP 3」と書く
       const badge = document.createElement('span');
       badge.className = 'card-mp';
-      badge.innerHTML = `<small>MP</small><b>${mpCost}</b>`;
+      badge.textContent = `MP${mpCost}`;
       badge.title = `MP ${mpCost} を使います`;
-      el.appendChild(badge);
+      short.appendChild(badge);
+      el.title += `（MP${mpCost}を使う）`;
       el.setAttribute('aria-label', `${el.getAttribute('aria-label')}（MP${mpCost}）`);
     }
     if (def.effect === 'gainMp') {
