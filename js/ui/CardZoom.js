@@ -27,39 +27,64 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
   const textEl = dialog.querySelector('.zoom-text');
   let card = null;
 
-  /** 0〜1 の位置（stage の中）に合わせて、カードを傾け、光を動かす */
-  const tilt = (px, py) => {
+  // ---------- なめらかな傾き ----------
+  // 指・マウス・センサーの位置は「目標」に入れるだけ。描くのは1フレームに1回で、目標に向かって少しずつ近づける
+  // （入力の間隔がばらついても、動きがカクカクしない）。指を離すと、真ん中へゆっくり戻る。
+  const target = { x: 0.5, y: 0.5 };
+  const now = { x: 0.5, y: 0.5 };
+  let frame = 0;
+  let held = false;       // 指（マウス）が乗っているか
+  let rect = null;        // stage の位置（開いたとき・向きが変わったときに測る。動かすたびには測らない）
+  const measure = () => { rect = stage.getBoundingClientRect(); };
+
+  const paint = () => {
     if (!card) return;
-    const x = Math.min(1, Math.max(0, px));
-    const y = Math.min(1, Math.max(0, py));
-    if (!reduced()) card.style.transform = `perspective(760px) rotateX(${((0.5 - y) * 2 * MAX_TILT).toFixed(1)}deg) rotateY(${((x - 0.5) * 2 * MAX_TILT).toFixed(1)}deg)`;
-    card.style.setProperty('--foil-x', `${(x * 100).toFixed(1)}%`);
-    card.style.setProperty('--foil-y', `${(y * 100).toFixed(1)}%`);
-    card.style.setProperty('--gloss-x', `${(x * 100).toFixed(1)}%`);
-    card.style.setProperty('--gloss-y', `${(y * 100).toFixed(1)}%`);
-    card.classList.add('foil-input', 'zoom-active');
+    const rx = (0.5 - now.y) * 2 * MAX_TILT;
+    const ry = (now.x - 0.5) * 2 * MAX_TILT;
+    if (!reduced()) card.style.transform = `translate3d(0,0,0) rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg)`;
+    const fx = `${(now.x * 100).toFixed(1)}%`;
+    const fy = `${(now.y * 100).toFixed(1)}%`;
+    card.style.setProperty('--foil-x', fx);
+    card.style.setProperty('--foil-y', fy);
+    card.style.setProperty('--gloss-x', fx);
+    card.style.setProperty('--gloss-y', fy);
   };
-  const rest = () => {
+  const step = () => {
+    frame = 0;
     if (!card) return;
-    card.style.transform = '';
-    card.classList.remove('foil-input', 'zoom-active');
-    card.style.removeProperty('--foil-x');
-    card.style.removeProperty('--foil-y');
+    const k = held ? 0.28 : 0.12;           // 触れているあいだは素早く、戻るときはゆっくり
+    now.x += (target.x - now.x) * k;
+    now.y += (target.y - now.y) * k;
+    paint();
+    const settled = Math.abs(target.x - now.x) < 0.002 && Math.abs(target.y - now.y) < 0.002;
+    if (settled && !held) { card.classList.remove('foil-input'); card.style.removeProperty('--foil-x'); card.style.removeProperty('--foil-y'); return; }
+    frame = requestAnimationFrame(step);
   };
-  const pointerTilt = (event) => {
-    const rect = stage.getBoundingClientRect();
+  const aim = (px, py) => {
+    target.x = Math.min(1, Math.max(0, px));
+    target.y = Math.min(1, Math.max(0, py));
+    if (card) card.classList.add('foil-input');
+    if (!frame) frame = requestAnimationFrame(step);
+  };
+  const pointerAim = (event) => {
+    if (!rect || !rect.width) measure();
     if (!rect.width || !rect.height) return;
-    tilt((event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height);
+    aim((event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height);
   };
   const orient = (event) => {
-    if (event.gamma == null || event.beta == null || !dialog.open) return;
-    tilt(0.5 + event.gamma / 60, 0.5 + (event.beta - 40) / 60);
+    if (event.gamma == null || event.beta == null || !dialog.open || held) return;
+    aim(0.5 + event.gamma / 60, 0.5 + (event.beta - 40) / 60);
   };
+  const release = () => { held = false; aim(0.5, 0.5); };
 
-  let dragging = false;
-  stage.addEventListener('pointerdown', (event) => { dragging = true; pointerTilt(event); });
-  window.addEventListener('pointermove', (event) => { if (dialog.open && (dragging || event.pointerType === 'mouse')) pointerTilt(event); }, { passive: true });
-  window.addEventListener('pointerup', () => { if (dragging) { dragging = false; if (!orienting) rest(); } });
+  stage.addEventListener('pointerdown', (event) => { held = true; measure(); pointerAim(event); });
+  window.addEventListener('pointermove', (event) => {
+    if (!dialog.open) return;
+    if (held || event.pointerType === 'mouse') pointerAim(event);
+  }, { passive: true });
+  window.addEventListener('pointerup', () => { if (held) release(); });
+  window.addEventListener('pointercancel', () => { if (held) release(); });
+  window.addEventListener('resize', () => { if (dialog.open) measure(); });
   let orienting = false;
 
   const close = () => { if (dialog.open) dialog.close(); };
@@ -68,7 +93,9 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
   dialog.addEventListener('click', (event) => { if (!event.target.closest('.zoom-stage, .zoom-text, .zoom-name')) close(); });
   dialog.addEventListener('close', () => {
     window.removeEventListener('deviceorientation', orient);
-    orienting = false; dragging = false; card = null; stage.replaceChildren();
+    orienting = false; held = false; card = null; rect = null;
+    if (frame) { cancelAnimationFrame(frame); frame = 0; }
+    stage.replaceChildren();
   });
 
   const open = (type) => {
@@ -82,7 +109,9 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     stage.replaceChildren(card);
     nameEl.textContent = def.name ?? '';
     textEl.textContent = `${rarities?.[def.rarity]?.name ?? ''}　${cardDescription(def, rules)}`;
+    target.x = target.y = now.x = now.y = 0.5;
     if (!dialog.open) dialog.showModal();
+    measure();
     if (window.DeviceOrientationEvent) {
       window.addEventListener('deviceorientation', orient);
       orienting = true;
