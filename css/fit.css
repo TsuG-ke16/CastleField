@@ -43,3 +43,19 @@
 
 /* オンラインの部屋：grid の列が中身の幅（約900px）に広がり、スマホで右にはみ出していた。列を画面の幅に収める */
 #app #room-screen { grid-template-columns: minmax(0, 1fr); }
+/* デッキ編成：横向き（高さが低い）では、カード一覧が数十pxしか見えなかった。左に操作、右に一覧の2列にする */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app .deck-box {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "head grid" "tools grid" "tray grid" "filters grid" "foot grid";
+    column-gap: 12px;
+  }
+  #app .deck-heading { grid-area: head; }
+  #app .deck-heading h2 { font-size: 20px; }
+  #app .deck-tools { grid-area: tools; }
+  #app .deck-tray { grid-area: tray; min-height: 0; overflow: auto; }
+  #app .deck-filters { grid-area: filters; }
+  #app .deck-footer { grid-area: foot; }
+  #app .deck-grid { grid-area: grid; min-height: 0; }
+}
