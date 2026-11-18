@@ -40,3 +40,127 @@
   #app #hand { padding-block: 4px 6px; }
   #app #hand .card.has-frame .card-name { font-size: 10px; }
 }
+
+/* オンラインの部屋：grid の列が中身の幅（約900px）に広がり、スマホで右にはみ出していた。列を画面の幅に収める */
+#app #room-screen { grid-template-columns: minmax(0, 1fr); }
+
+/* デッキ編成：横向き（高さが低い）では、カード一覧が数十pxしか見えなかった。左に操作、右に一覧の2列にする */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app .deck-box {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "head grid" "tools grid" "tray grid" "filters grid" "foot grid";
+    column-gap: 12px;
+  }
+  #app .deck-heading { grid-area: head; }
+  #app .deck-heading h2 { font-size: 20px; }
+  #app .deck-tools { grid-area: tools; }
+  #app .deck-tray { grid-area: tray; min-height: 0; overflow: auto; }
+  #app .deck-filters { grid-area: filters; }
+  #app .deck-footer { grid-area: foot; }
+  #app .deck-grid { grid-area: grid; min-height: 0; }
+}
+
+/* 対戦画面：低い縦画面（360×640・375×667 など）は、案内・知らせ・手札で盤面が押され、
+   天候や攻撃の知らせが重なると道が50px台まで潰れていた。案内・知らせは小さな字で2行まで、手札の帯は細くする */
+@media (orientation: portrait) and (max-height: 700px) {
+  #app #controls #message { font-size: 11px; line-height: 1.3; padding-block: 3px; min-height: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #app .hand-toolbar { min-height: 28px; }
+  #app .hand-toolbar .hand-scroll-hint { display: none; }
+  #app .hand-toolbar #hand-toggle { --button-h: 32px; min-height: 32px; }
+  #app #tutorial { padding: 3px 6px; }
+  #app #tutorial strong { font-size: 11px; }
+  #app #tutorial p { margin: 0; font-size: 11px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #app #tutorial button { --button-h: 36px; flex-basis: 36px; min-width: 36px; min-height: 36px; }
+}
+/* とても低い縦画面（320×568 など）：さらに案内の見出しを隠し、手札も少し小さくする */
+@media (orientation: portrait) and (max-height: 600px) {
+  #app #tutorial strong { display: none; }
+  :root { --hand-height: 104px; }
+  #app #hand .card { width: 62px; height: 88px; }
+  #app #hand { padding-block: 3px 4px; }
+}
+/* とても狭い画面（320幅）：天候のバッジが出ると、手番の文字が「防御を…」と切れていた。紋章を外して文字に場所を回す */
+@media (max-width: 340px) {
+  #app #hud #turn-status::before { display: none; }
+  #app #hud #turn-info { margin-left: 0; }
+}
+
+/* 対戦画面・横向き：案内が4行（約120px）になり、手札のカードの下半分（名前・数値）が切れていた。
+   案内は2行までの小さな字にし、閉じるボタンは × にして、手札1段ぶんの高さを残す */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app #tutorial { gap: 5px; padding: 4px 7px; }
+  #app #tutorial strong { font-size: 11px; }
+  #app #tutorial p { margin: 0; font-size: 11px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  #app #tutorial button { --button-h: 36px; flex: 0 0 36px; min-width: 36px; min-height: 36px; padding-inline: 0 !important; font-size: 0; }
+  #app #tutorial button::after { content: '×'; font-size: 20px; }
+}
+/* とても低い横向き（568×320 など）：手札のカードを小さくして、1段が手札の枠に収まるようにする */
+@media (orientation: landscape) and (max-height: 340px) {
+  #app #hand { --cb: 74px; }
+}
+
+/* 狭い画面（320幅）：設定の「スキップ」がボタンの枠からはみ出し、手番交代の「プレイヤー1の番です」の「す」だけが次の行に落ちていた */
+@media (max-width: 340px) {
+  #app #settings.screen { padding-inline: 4px; }
+  #app #settings .settings-box { padding-inline: 12px; }
+  #app #settings .settings-box .set-row { padding-inline: 8px; }
+}
+/* 設定の3択のボタン（ふつう・はやい・スキップ）は、端の飾りを細くして字を収める */
+@media (max-width: 380px) {
+  #app #settings .set-row .pill { --button-cap: 9px; font-size: 11px; }
+}
+#app .handover-title { font-size: min(23px, 6.4vw); text-wrap: balance; }
+/* 遊び方の「案内つきで操作を練習する」：320幅で「る」だけが次の行に落ちていた */
+#app #help-tutorial { text-wrap: balance; }
+@media (max-width: 340px) { #app #help-tutorial { font-size: 12px; padding-inline: 4px; } }
+
+/* 低い縦画面：魔物の札（城へのダメージ・体力・攻撃・成長・ごほうび）が縦に5段重なり、自分の城にかぶっていた。
+   城へのダメージの札は1行にして魔物の顔を出し、ごほうびの札は隠して（魔物をタップすると出る）、成長の札は小さくする */
+@media (orientation: portrait) and (max-height: 700px) {
+  #app .monster .monster-reward { display: none; }
+  #app .monster .monster-growth { font-size: 9px; line-height: 1.2; padding: 1px 3px; }
+  #app .monster .monster-attack-in { display: flex; align-items: baseline; gap: 4px; min-width: 0; width: max-content; max-width: none; top: auto; bottom: -2px; padding: 1px 6px; border-radius: 7px; }
+  #app .monster .monster-attack-in[hidden] { display: none; }
+  #app .monster .monster-attack-in b { font-size: 10px; }
+  #app .monster .monster-attack-in small { font-size: 9px; }
+}
+
+/* 図鑑：横向き（高さが低い）では、見出し・検索・絞り込みで高さを使い切り、最初の画面にカードが1枚も見えなかった。
+   箱を画面いっぱいにして余白を詰め、検索と絞り込みを1行に並べる */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app #card-guide .guide-box { height: 100%; max-height: 100%; padding: 6px 14px 8px; }
+  #app #card-guide .guide-tabs { padding: 4px 0; }
+  #app #card-guide .guide-content:has(> .guide-query) { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr); column-gap: 10px; align-content: start; }
+  #app #card-guide .guide-content > :not(.guide-query):not(.guide-filters) { grid-column: 1 / -1; }
+  #app #card-guide .guide-query { font-size: 10px; }
+  #app #card-guide .guide-query input { min-height: 36px; padding-block: 4px; }
+  #app #card-guide .guide-filters { margin-bottom: 6px; gap: 6px; }
+  #app #card-guide .guide-filters select { min-height: 36px; padding-block: 4px; }
+  #app #card-guide .guide-group-title { margin: 8px 0 8px; }
+}
+
+/* デッキの「管理」：横向き（高さが低い）では「完了」が画面の外にあり、スクロールしないと押せなかった。
+   幅を広げて、名前・見本・ボタンを2列に並べ、1画面に収める */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app .deck-subdialog.deck-management { width: min(calc(100% - 24px), 620px); padding: 10px 14px; }
+  #app .deck-subdialog.deck-management[open] { grid-template-columns: 1fr 1fr; gap: 6px 10px; align-items: end; }
+  #app .deck-management h3, #app .deck-management .deck-manage-status, #app .deck-management .deck-manage-close { grid-column: 1 / -1; }
+}
+/* ひとりで遊ぶ（CPUの強さ）：とても低い横向き（568×320 など）で「つよい」「もどる」が画面の外に出ていた。強さの3つは横に並べ、説明の小さい字を隠して詰める */
+@media (orientation: landscape) and (max-height: 400px) {
+  #app #title-levels:not([hidden]) { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 6px; align-content: start; }
+  #app #title-levels > :not(.level) { grid-column: 1 / -1; }
+  #app #title-levels .levels-title { margin: 0 0 2px; font-size: 14px; }
+  #app #title-levels .local-options > summary { min-height: 36px; padding-block: 4px; }
+  #app #title-levels .level { min-height: 44px; padding-block: 2px; padding-inline: 4px; font-size: 15px; }
+  #app #title-levels .level small { display: none; }
+}
+
+/* 広場（3人以上）：拡大縮小のつまみが右上の城（席6など）と体力の札に重なっていた。城のない左下の角に置く */
+#app .plaza-zoom { top: auto; right: auto; bottom: 4px; left: 4px; }
+@media (max-width: 400px), (max-height: 700px) {
+  #app .plaza-zoom { gap: 2px; padding: 2px; }
+  #app .plaza-zoom > span { display: none; }
+  #app .plaza-zoom button { --button-h: 28px; --button-cap: 6px; min-width: 28px; min-height: 28px; width: 28px; height: 28px; padding: 0 !important; font-size: 13px; }
+}

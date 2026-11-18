@@ -18,7 +18,7 @@ try{
  for(const [width,height] of [[390,844],[360,640]]){
   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});page.setDefaultTimeout(15000);
   page.on('pageerror',e=>errors.push(e.message));
-  const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8';await page.goto(url.href);
+  const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8&rules='+encodeURIComponent(JSON.stringify({defenseReaction:false}));await page.goto(url.href);
   await page.waitForFunction(()=>window.castlefield?.game()&&!document.querySelector('#app').classList.contains('busy'));
   await page.addStyleTag({content:'#debug-toggle{display:none}'});
   const loaded=await page.evaluate(async names=>Promise.all(names.map(async name=>{const i=new Image();i.src=`assets/${name}`;try{await i.decode();return i.naturalWidth>0}catch{return false}})),assets);

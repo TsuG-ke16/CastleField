@@ -39,7 +39,6 @@ async function local() {
     const images = [...document.querySelectorAll('.chat-stamps img')];
     return images.length === 12 && images.every(image => !image.hidden && image.naturalWidth === 128);
   });
-  assert.equal(await page.locator('.chat-input').isVisible(), false);
   await page.evaluate(() => { Math.random = () => .1; });
   await page.locator('.chat-stamp[data-stamp="hello"]').click();
   assert.match(await page.locator('.chat-line.mine').innerText(), /よろしく！/);
@@ -52,6 +51,20 @@ async function local() {
   await open.click();
   assert.equal(await open.getAttribute('data-unread'), '');
   await snapshot(page, 'stamps-390x844');
+  // ひとりで遊ぶでも文字を送れる。CPU はことばに合うスタンプで返す
+  const input = page.locator('.chat-input');
+  assert.equal(await input.isVisible(), true);
+  const before = await page.locator('.chat-line').count();
+  await input.fill('よろしくお願いします');
+  await input.press('Enter');
+  assert.match(await page.locator('.chat-line.mine').last().innerText(), /よろしくお願いします/);
+  assert.equal(await input.inputValue(), '');
+  await page.waitForFunction(n => document.querySelectorAll('.chat-line').length >= n + 2, before);
+  assert.match(await page.locator('.chat-line:not(.mine)').last().innerText(), /よろしく！/);
+  await input.fill('   ');
+  await input.press('Enter');
+  assert.equal(await page.locator('.chat-line.mine').count(), 2, '空の文字は送らない');
+  await snapshot(page, 'text-390x844');
   await context.close();
 }
 
