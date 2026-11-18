@@ -424,3 +424,14 @@ OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力�
 - `cards/card-beast-mimic.png` — 参照元 `cards/card-beast-mimic.png`（差し替え前）・`style-reference.png`、生成原本 `exec-f89bd0eb-84f6-4835-9a72-702c238c3eba.png`。
 - `cards/card-beast-vampire.png` — 参照元 `cards/card-beast-vampire.png`（差し替え前）・`style-reference.png`、生成原本 `exec-dfb62b6b-e6a2-42ca-8a2c-e7cbea5d3fa2.png`。
 - `cards/card-beast-demon-king.png` — 参照元 `cards/card-beast-demon-king.png`（差し替え前）・`style-reference.png`、生成原本 `exec-0f8a7c74-537f-4702-9863-6258084b2580.png`。
+
+### 端で切れていたカード
+
+- `cards/card-fire-king.png` — 参照元 `cards/card-fire-king.png`（差し替え前）・`style-reference.png`、生成原本 `exec-8da1f9b2-b582-4bc5-85d6-69e9ac620476.png`。
+- `cards/card-water-king.png` — 参照元 `cards/card-water-king.png`（差し替え前）・`style-reference.png`、生成原本 `exec-c268b522-196b-44c4-b090-5a173f87f254.png`。
+- `cards/card-great-water-spirit.png` — 参照元 `cards/card-great-water-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-f21bc5f2-2e10-42a0-aca5-4e72f0d74475.png`。
+- `cards/card-great-fire-spirit.png` — 参照元 `cards/card-great-fire-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-b9e45b48-b6c8-4887-93a1-f2294875d120.png`。
+- `cards/card-great-wind-spirit.png` — 参照元 `cards/card-great-wind-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-8df8a091-9aac-47d5-bae2-acd2eb683d4c.png`。
+- `cards/card-king-treasure.png` — 参照元 `cards/card-king-treasure.png`（差し替え前）・`style-reference.png`、生成原本 `exec-ff0d6af3-a906-417a-b14e-b925842134f9.png`。
+- `cards/card-god-shield.png` — 参照元 `cards/card-god-shield.png`（差し替え前）・`style-reference.png`、生成原本 `exec-47a56306-5578-4052-b434-d4811cf6a97a.png`。
+- `cards/card-wind-spirit.png` — 参照元 `cards/card-wind-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-945a91d5-a948-4b09-a011-56ae46ec88ed.png`。
