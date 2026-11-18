@@ -102,6 +102,7 @@ js/
     Soldier.js
     Road.js        … 道（となりの席どうし・広場の通り道）
     Monster.js     … 魔物と、強化のデータのチェック
+    Weather.js     … 天候のデータのチェック
     Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
     strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
@@ -113,6 +114,7 @@ js/
     Tutorial.js・HelpView.js・CardGuide.js … 案内・遊び方・図鑑
     Settings.js・Sound.js・Music.js … 設定・効果音・BGM
     MatchStats.js  … 結果のまとめと戦績
+    ChatView.js    … チャットとスタンプ（💬ボタン・吹き出し）
     art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
     precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
 data/
@@ -123,6 +125,8 @@ data/
   decks.json       … デッキ対戦のデッキ（STEP 5）
   rarities.json    … レアリティと排出率（コモン〜レジェンド）
   upgrades.json    … コインで買う強化（STEP 3）
+  weather.json     … 天候（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨）
+  stamps.json      … チャットのスタンプの一覧
 ui-tests/          … 画面のスモークテスト（node ui-tests/smoke.js。Playwright は環境にあるものを使う。UI担当）
 docs/              … 設計メモ。archive/ は終わった依頼（Codex 向けのプロンプトなど）
 tests/             … 自動テスト（node --test）。Node.js だけで動く
@@ -1076,6 +1080,47 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均55手番・p1 勝率53%、smart vs random は91%（育たないときは93%）。放置の怖さは出た（魔物で決着する試合：random 同士で約4割、smart 同士は約2%）。**強すぎないかは遊んで確かめる**
 - **降参（3人以上）**：城が壊れて抜け、残りの試合を見守る（上の `surrender` の表）。画面は観戦中の帯を出し、ターン終了・強化・合成を押せなくする
 - 画面：MP の表示（上のバー。自分は「✦10/20」）、手札に必要な MP の札、合成の演出（レアリティが高いほど光・火花・揺れが大きい）、魔物が育つ演出、城が落ちた帯（`js/ui/Animations.js`）。マナ回復カードの絵は仮（`js/ui/art.js` に足すまで「魔」の仮の絵が出る）
+
+## 天候・魔物の駒・チャット・体力ゲージ（人間の指示。仮）
+
+**数値はすべて仮**（`data/weather.json`・`data/rules.json`・`data/cards.json`・`data/stamps.json`）。
+
+### 天候（`new Game({ weather })`。`weather.json` を渡さなければ天候なし）
+- 周回の始め（`roundStarted` のすぐあと）に、天候が切り替わる。`rules.weatherFirstRound`（仮：2）周目から。ふつうの天気のときは、`rules.weatherChangeChance`（仮：0.6）の確率で新しい天候になる（`weight` の重みで選ぶ）。天候は `rounds: [最短, 最長]` 周続き、終わったらふつうの天気に戻る。`weatherChangeChance` が 0 なら乱数を使わず天候は出ない
+- **天候の呪文**（`weatherCall`・`effect: "changeWeather"`・スペシャル・メインを使う）：今と違う天候にランダムに変える（`weatherChanged` の `cause` は `"card"`）。出る割合はスペシャルの中で適応と 2:1（適応の排出率は約0.82% → 約0.55%）。`weather` を渡していないと出せない
+- 天候の効果（`weather.json` のキー）
+
+| 天候 | キー | 効果 |
+|---|---|---|
+| 晴れ `sunny` | `elementBonus: { fire: 2 }` | 火属性の兵士・魔物・火の精霊のダメージ +2 |
+| 雨 `rain` | `elementBonus: { water: 2 }` | 水属性のダメージ +2・水の精霊の回復 +2 |
+| 大雨 `heavyRain` | 雨 ＋ `lightning: 5` | 周回の始めに雷が落ち、ランダムな1つの城に5ダメージ（城壁は受ける） |
+| 霧 `fog` | `missChance: 0.3` | 兵士の戦い・射撃（弓兵・魔法使い）・攻撃魔法（城・兵士・魔物へ）が30%で外れる（ダメージ0） |
+| 嵐 `storm` | `stopMarch: true` | 進む兵士（`melee`）が動かない。弓兵・魔法使いは撃てる |
+| 砂嵐 `sandstorm` | `sandDamage: 1` | 周回の始めに、全員の城（城壁は無視）と兵士に1ダメージ |
+| コインの雨 `coinRain` | `coinPerTurn: 2` | 自分のターンの始めに2コイン（`coinsChanged` の `reason` は `"weather"`） |
+
+- `getState().weather`：`{ type, name, icon, description, roundsLeft }`（ふつうの天気なら `null`）。`weatherEnabled`：天候を使うルールか
+- イベント：`weatherChanged`（`{ weather, previous, rounds, cause: "natural" | "card", playerId, name, icon, description, previousName }`。`weather` が `null` なら天候が終わった）／`weatherLightning`（`{ playerId, amount }`。このあと `castleDamaged`（`source: { kind: "weather", weather }`））／`attackMissed`（`{ playerId, kind: "fight" | "shot" | "spell", soldierId? / monsterId? / type? }`。外した側）
+- 砂嵐の城ダメージは `castleDamaged`（`blocked: 0`・`source: { kind: "weather" }`）、兵士は `soldierDamaged`（`cause: "weather"`）
+- 順番（周回の始め）：`turnStarted` → `roundStarted` → `weatherChanged` → 雷・砂嵐 → 魔物の城への攻撃 → …。天候で城が落ちたら、そこで `gameOver`
+- 画面：上のバッジ（天候名・あと何周）、背景の効果、変わった瞬間の**警報**（サイレン・赤いふち・帯。良い天候は金・雨は青。`js/ui/config.js` の `weatherTone`）。タップで飛ばせる
+- 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士の平均43手番・p1 勝率50%（天候なしと同じ）
+
+### 倒した魔物は駒になる
+- 魔物のとどめを刺した人の手札に、その魔物の**兵士カード**（`cards.json` の `beast_<魔物の種類>`、`monster: "<種類>"`）が1枚入る（ごほうびのカードとは別。`monsterDefeated` に `pieceType`、このあと `cardDrawn`）。兵士カードと同じように、兵士の枠で出せる
+- 魔物の駒は HP・攻撃が魔物と同じ（`monsters.json` の値）、速さは1〜2。合成できない（`fuseTo` なし）。山札・ごほうび・入手券では出ない（`weight: 0`）。魔物は放置で強くなる（`monsterEvolve*`）が、駒は元の強さ
+- 絵は魔物の絵を使う（`js/ui/art.js`）
+
+### 画面の揺れ・体力ゲージ
+- **画面の揺れ**：兵士・魔物がダメージを受けたとき、魔法を使ったとき、天候が変わったときに、盤面ぜんたいが揺れる（強いほど大きく。`UI_CONFIG.screenShake`）。城に当たったときの揺れは今までどおり。設定で動きを減らしているときは揺れない
+- **兵士の体力ゲージ**：兵士の頭の上に細い帯。残りHP ÷ 上限で、緑 → 黄 → 赤。減った分は白い影が遅れて追いかける。`getState()` の兵士に `maxHp`（鍛錬で増える）を足した
+
+### チャットとスタンプ
+- 使える場所：**オンライン対戦**（文字とスタンプ）と、**ひとりで遊ぶ**（スタンプだけ。CPU がスタンプで返す。ずるはしない）。2人で交代して遊ぶときは出ない
+- スタンプは `data/stamps.json`（`{ id, icon, label }` の配列）。画面とサーバーが同じ一覧を読む
+- `POST /api/action` の `method` に `chat`（`args: [{ text }]` か `[{ stamp }]`）。文字は制御文字を空白にして前後を取り、1〜40文字。つづけて送れるのは0.6秒ごと。CPU の席・形の違う送り方は `{ ok: false, reason }`。試合の前・中・あとのいつでも送れる
+- 届くもの：`{ type: "chat", id, playerId, name, text | stamp, at }`。つないだとき（つなぎ直したときも）、直近30通が `{ type: "chatLog", messages }` で届く。文字は人が入れたものなので、画面は `textContent` で出す
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

@@ -42,7 +42,10 @@ test('weather を渡さなければ天候は出ない', () => {
 test('周回の始めに天候が始まり、rounds 周で終わる（roundStarted → weatherChanged）', () => {
   const { game, log } = setup({ type: 'sunny' });
   assert.deepEqual(events(log).slice(0, 3), ['turnStarted', 'roundStarted', 'weatherChanged']);
-  assert.deepEqual(log[2], { event: 'weatherChanged', weather: 'sunny', previous: null, rounds: 2, cause: 'natural', playerId: null });
+  assert.deepEqual(log[2], {
+    event: 'weatherChanged', weather: 'sunny', previous: null, rounds: 2, cause: 'natural', playerId: null,
+    name: '晴れ', icon: null, description: null, previousName: null,
+  });
   assert.equal(game.getState(null).weather.type, 'sunny');
   for (let i = 0; i < 2; i++) game.endTurn(); // 2周目：まだ続く
   assert.equal(game.getState(null).weather.type, 'sunny');

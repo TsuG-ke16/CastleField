@@ -1254,6 +1254,7 @@ export class Game {
       player.armyHp += def.amount;
       for (const s of player.soldiers) {
         s.hp += def.amount;
+        s.maxHp += def.amount;
         this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack, hp: s.hp });
       }
     } else if (def.effect === 'gainCard') {
@@ -1372,7 +1373,12 @@ export class Game {
       rounds = min === max ? min : min + Math.floor(this.rng() * (max - min + 1));
     }
     this.weather = type === null ? null : { type, roundsLeft: rounds };
-    this.emit('weatherChanged', { weather: type, previous, rounds, cause, playerId });
+    const def = type === null ? null : this.weatherDefs[type];
+    this.emit('weatherChanged', {
+      weather: type, previous, rounds, cause, playerId,
+      name: def?.name ?? null, icon: def?.icon ?? null, description: def?.description ?? null,
+      previousName: previous === null ? null : this.weatherDefs[previous].name,
+    });
   }
 
   /** 重みで天候を1つ選ぶ（exclude は除く） */
@@ -1687,6 +1693,7 @@ export class Game {
       soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
       soldier.baseAttack += player.armyAttack; // 訓練（コインで買う）
       soldier.hp += player.armyHp;
+      soldier.maxHp += player.armyHp;
       player.soldiers.push(soldier);
       this.emit('soldierDeployed', {
         playerId: player.id,
@@ -2307,7 +2314,7 @@ export class Game {
       winnerTeam: this.winnerTeam,
       playerOrder: [...this.playerOrder],
       round: this.round,
-      weather: this.weather ? { type: this.weather.type, name: this.weatherDef().name, icon: this.weatherDef().icon ?? null, roundsLeft: this.weather.roundsLeft } : null,
+      weather: this.weather ? { type: this.weather.type, name: this.weatherDef().name, icon: this.weatherDef().icon ?? null, description: this.weatherDef().description ?? null, roundsLeft: this.weather.roundsLeft } : null,
       weatherEnabled: Boolean(this.weatherDefs),
       monsters: this.monsters.map((m) => m.toState()),
       roads: this.roads.map((r) => r.toState()),

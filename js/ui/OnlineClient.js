@@ -31,8 +31,10 @@ export class OnlineClient {
    * @param {(room: object) => void} h.onRoom 部屋の状態（人数・つながっているか・もう1回の投票）
    * @param {(batch: {events: {type: string, payload: object}[], state: object, playable: object[], upgrades: object}) => void} h.onBatch
    * @param {(connected: boolean, info: { fatal: boolean }) => void} h.onConnection fatal：もうつなぎ直せない（部屋がなくなった）
+   * @param {(msg: object) => void} [h.onChat] チャット（{ type: "chat", playerId, name, text | stamp } か、履歴 { type: "chatLog", messages }）
    */
-  constructor({ onRoom, onBatch, onConnection }) {
+  constructor({ onRoom, onBatch, onConnection, onChat }) {
+    this.onChat = onChat;
     this.online = true;
     this.onRoom = onRoom;
     this.onBatch = onBatch;
@@ -84,13 +86,15 @@ export class OnlineClient {
   close() {
     this.source?.close();
     this.source = null;
-    this.onRoom = this.onBatch = this.onConnection = null;
+    this.onRoom = this.onBatch = this.onConnection = this.onChat = null;
   }
 
   receive(msg) {
     if (msg.type === 'room') {
       this.playerId = msg.you;
       this.onRoom?.(msg);
+    } else if (msg.type === 'chat' || msg.type === 'chatLog') {
+      this.onChat?.(msg);
     } else if (msg.type === 'event') {
       this.pending.push(this.adapt(msg.event, msg.payload));
     } else if (msg.type === 'state') {
@@ -148,6 +152,8 @@ export class OnlineClient {
   passDefense() { return this.act('passDefense'); }
   discard(cardIds) { return this.act('discard', [cardIds]); }
   rematch() { return this.act('rematch'); }
+  /** チャット：{ text } か { stamp }（スタンプの id） */
+  chat(payload) { return this.act('chat', [payload]); }
   /** 降参する（自分の番でなくてもできる。相手の勝ちで終わる） */
   surrender() { return this.act('surrender'); }
   /** 部屋を出る（もう戻らない。残った人に伝わる） */

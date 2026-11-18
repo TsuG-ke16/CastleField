@@ -17,7 +17,7 @@ export class BattleLayout {
     info.append(summary, opponent, piles, this.seats, economy, $('menu-rates'));
     $('menu').querySelector('.menu-title').after(info);
     // Common resources remain next to the turn indicator; secondary counters are in the menu.
-    hud.append($('my-mp'), $('menu-open'));
+    hud.append($('my-mp'), $('chat-open'), $('menu-open'));
     hud.querySelector('.hud-right').remove();
     $('my-mp').querySelector('[data-icon]').insertAdjacentText('afterend', 'MP ');
     this.toolbar = document.createElement('div'); this.toolbar.className = 'hand-toolbar';
