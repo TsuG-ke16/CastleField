@@ -35,3 +35,14 @@
 .plaza-stage .castle-label {max-height:none;max-width:118px;}
 .plaza-stage .plaza-castle.plaza-upper { flex-direction:column-reverse; }.castle-side {align-items:center;}
 .castle[data-tier=fortress] { min-height:100px; }
+
+/* 兵士の体力ゲージ：兵士の足もとに細い帯を出す。減ると緑 → 黄 → 赤。減った分は白い影が遅れて追いかける */
+.soldier-gauge { --ratio: 1; position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 40px; height: 7px; pointer-events: none; border: 1.5px solid var(--ink, #4a2f1b); border-radius: 4px; background: #5b3a22; overflow: hidden; z-index: 2; }
+.soldier-gauge-fill, .soldier-gauge-lag { position: absolute; inset: 0 auto 0 0; width: calc(var(--ratio) * 100%); }
+.soldier-gauge-fill { background: #57c75a; transition: width .18s ease-out, background-color .2s; }
+.soldier-gauge[data-level="mid"] .soldier-gauge-fill { background: #f2c53b; }
+.soldier-gauge[data-level="low"] .soldier-gauge-fill { background: #e2574c; animation: gauge-warn .7s ease-in-out infinite; }
+.soldier-gauge-lag { background: #fff; opacity: .85; transition: width .6s .25s ease-out; }
+@keyframes gauge-warn { 50% { filter: brightness(1.35); } }
+@media (prefers-reduced-motion: reduce) { .soldier-gauge-fill, .soldier-gauge-lag { transition: none; } .soldier-gauge[data-level="low"] .soldier-gauge-fill { animation: none; } }
+
