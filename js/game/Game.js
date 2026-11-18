@@ -1601,10 +1601,9 @@ export class Game {
         };
       }
       case 'poisonEnemy': {
-        // 城か兵士のどれかが、今より弱い毒（毒なし含む）の相手だけ（全部もう同じかそれ以上の毒なら、出しても何も起きない）
+        // 毒は足し算で、城はいつも毒にできる。相手がいればいつでも出せる
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
-        const changes = (p) => (p.castle.poison ?? 0) < def.amount || p.soldiers.some((x) => (x.poison?.amount ?? 0) < def.amount || x.poison?.turns !== null);
-        return { targets: playerTargets(foes.filter(changes)), reason: foes.length ? 'もう同じかそれ以上の毒にかかっています' : '相手がいません' };
+        return { targets: playerTargets(foes), reason: '相手がいません' };
       }
       case 'curePoison':
         return {
@@ -1867,13 +1866,13 @@ export class Game {
       }
 
       case 'poisonEnemy': {
-        // 選んだ相手の兵士全員と城を、永続の毒にする（重ねがけは強い方）
+        // 選んだ相手の兵士全員と城を、永続の毒にする（重ねがけは足し算：毒の量が増える）
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
         for (const soldier of enemy.soldiers) {
-          soldier.poison = { amount: Math.max(amount, soldier.poison?.amount ?? 0), turns: null };
+          soldier.poison = { amount: amount + (soldier.poison?.amount ?? 0), turns: null };
           this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status: 'poison', turns: null, amount: soldier.poison.amount });
         }
-        enemy.castle.poison = Math.max(amount, enemy.castle.poison ?? 0);
+        enemy.castle.poison = amount + (enemy.castle.poison ?? 0);
         this.emit('castlePoisoned', { playerId: enemy.id, amount: enemy.castle.poison });
         break;
       }

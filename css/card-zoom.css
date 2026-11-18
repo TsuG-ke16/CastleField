@@ -1,0 +1,37 @@
+/* デッキ編成・図鑑のカードを長押しして、大きく見る（js/ui/CardZoom.js）。 */
+[data-zoom] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.card-zoom {
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0;
+  border: 0; background: rgba(14, 22, 20, .86); color: #fff4da;
+  overflow: hidden; touch-action: none; overscroll-behavior: contain;
+}
+.card-zoom[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; box-sizing: border-box; }
+.card-zoom::backdrop { background: rgba(8, 14, 12, .7); }
+.zoom-close {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; z-index: 3; width: 44px; height: 44px;
+  border-radius: 50%; border: 2px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 24px; line-height: 1;
+}
+.zoom-stage { display: grid; place-items: center; padding: 46px 30px 22px; perspective: 900px; touch-action: none; }
+.zoom-card.mini-card {
+  position: relative; width: min(56vw, 230px); height: auto; aspect-ratio: 2 / 3;
+  transform-style: preserve-3d; transition: transform .16s ease-out;
+  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, .55));
+  will-change: transform;
+}
+.zoom-card.mini-card:not(.zoom-active) { transition: transform .45s cubic-bezier(.2, .9, .3, 1); }
+/* 拡大したぶん、文字も大きく */
+.zoom-card .mini-card-name { font-size: clamp(15px, 5.4vw, 23px); }
+.zoom-card .mini-card-rarity { font-size: 24px; }
+/* 偏光：どのレアリティでも、指の位置にツヤの光を重ねる（レア以上は Hologram.js の虹色も重なる） */
+.zoom-card::after {
+  content: ""; position: absolute; inset: 3% 11% 8%; z-index: 6; border-radius: 8%; pointer-events: none; mix-blend-mode: soft-light;
+  background: radial-gradient(circle at var(--gloss-x, 40%) var(--gloss-y, 28%), #ffffffd9 0, #ffffff55 22%, transparent 55%);
+  opacity: .8;
+}
+.zoom-card .foil-sheet { opacity: .66; }
+.zoom-name { margin: 6px 0 0; font-weight: 900; font-size: 20px; text-align: center; }
+.zoom-text { margin: 0; max-width: min(92vw, 420px); font-size: 14px; line-height: 1.7; text-align: center; color: #f3e6c8; }
+.zoom-hint { margin: 2px 0 0; font-size: 11px; color: #cdbd9a; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .zoom-card.mini-card { transition: none; } }
+.reduced-motion .zoom-card.mini-card { transition: none; }
+@media (max-height: 640px) { .zoom-card.mini-card { width: min(44vw, 170px); } .zoom-text { font-size: 12px; } }

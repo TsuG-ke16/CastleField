@@ -53,15 +53,24 @@ test('毒は相手の兵士全員も永続の毒にする（ターン数で治�
   assert.equal(game.getState('p1').players.p1.soldiers.length, 0);
 });
 
-test('重ねがけは強い毒の方になる。同じかそれ以上の毒の相手には出せない', () => {
-  const { game } = setup({ p1: ['toxin1', 'toxin5', 'toxin1'] });
+test('重ねがけは足し算（城も兵士も、毒の量が増える）', () => {
+  const { game } = setup({ p1: ['toxin1', 'toxin5'], p2: ['tank'], extra: { tank: { name: '大男', kind: 'soldier', hp: 30, attack: 1, speed: 1, count: 0 } } });
+  game.endTurn();
+  play(game, 'tank'); game.endTurn();   // p2 が兵士を出して、p1 の番
   assert.equal(play(game, 'toxin1').ok, true);
-  // メインは1ターン1枚
-  game.endTurn(); game.endTurn();
+  game.endTurn(); game.endTurn();        // p2 のターン（毒を受ける）→ p1 の番
   assert.equal(play(game, 'toxin5').ok, true);
-  assert.equal(game.getState('p1').players.p2.castlePoison, 5);
-  game.endTurn(); game.endTurn();
-  assert.equal(game.canPlayCard(idOf(game, 'toxin1')).ok, false);
+  assert.equal(game.getState('p1').players.p2.castlePoison, 6);
+  const s = game.getState('p1').players.p2.soldiers[0];
+  assert.deepEqual(s.statuses.poison, { amount: 6, turns: null });
+});
+
+test('同じ毒をもう一度かけても、毒の量が増える（出せる）', () => {
+  const { game } = setup({ p1: ['toxin1', 'toxin1'] });
+  play(game, 'toxin1'); game.endTurn(); game.endTurn();
+  assert.equal(game.canPlayCard(idOf(game, 'toxin1')).ok, true);
+  play(game, 'toxin1');
+  assert.equal(game.getState('p1').players.p2.castlePoison, 2);
 });
 
 test('解毒薬は自分の毒（城・兵士）をすべて治す。メインを使わない', () => {
