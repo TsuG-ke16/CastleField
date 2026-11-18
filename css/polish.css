@@ -107,7 +107,7 @@
 /* ---------- タイトル：遊び方の3つを木の看板に。下の小さいボタンは1列にまとめる ---------- */
 .title-choices { background: linear-gradient(#2a5a50, #1b3f39); border: 3px solid #14322c; box-shadow: inset 0 0 0 2px #4a7d6d, 0 12px 26px #1b3a3338; }
 #title-main { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: center; }
-#title-main > .mode-choice, #offline-status { grid-column: 1 / -1; }
+#title-main > .mode-choice { grid-column: 1 / -1; }
 .plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 {
   grid-template-columns: 48px 1fr 18px;
   gap: 12px;
@@ -139,8 +139,6 @@
 .reduced-motion #title-solo { animation: none; }
 @media (prefers-reduced-motion: reduce) { #title-solo { animation: none; } }
 
-#offline-status { margin: 0; min-height: 0; color: #b9d0c0; font-size: 11px; }
-#offline-status:empty { display: none; }
 #title-record { grid-column: 1 / 3; margin: 4px 0 0; padding: 0 4px; text-align: left; font-family: var(--head); font-size: 14px; letter-spacing: .04em; color: #ffe9b0; }
 #title-main #record-clear {
   grid-column: 3; justify-self: end; min-height: 0; margin-top: 4px; padding: 4px 6px;
@@ -383,7 +381,6 @@
 @keyframes title-invite { 50% { filter: drop-shadow(0 4px 0 #3f251140) drop-shadow(0 0 10px #ffc94d) brightness(1.06); } }
 #title-record { color: #7a4a12; }
 #title-main #record-clear { color: #9a8560; }
-#offline-status { color: #8a7b5c; }
 #title-main #title-catalog, #title-main #title-settings, #title-main #title-help { filter: drop-shadow(0 3px 0 #3f251133); }
 
 /* ---------- UIから青緑をなくす：文字と小さい札は木の色に ---------- */
