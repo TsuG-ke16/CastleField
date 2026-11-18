@@ -224,7 +224,7 @@ export class HandView {
     if (mpCost > 0) {
       const badge = document.createElement('span');
       badge.className = 'card-mp';
-      badge.innerHTML = `${icon('mp')}<b>${mpCost}</b>`;
+      badge.innerHTML = `<small>MP</small><b>${mpCost}</b>`;
       badge.title = `MP ${mpCost} を使います`;
       el.appendChild(badge);
       el.setAttribute('aria-label', `${el.getAttribute('aria-label')}（MP${mpCost}）`);

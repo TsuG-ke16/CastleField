@@ -682,6 +682,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     handView.setColor(colorOf(viewerId));
     for (const c of model.hand) knownCards.set(c.cardId, { ...c });
     renderer.renderAll(model);
+    handView.mpCosts = model.mpCosts ?? {};
     handView.render(model.hand);
     sound.play('turn');
     introBoard();
@@ -992,6 +993,7 @@ async function showBatch(batch) {
     model = modelFromState(st);
     renderer.renderAll(model);
     renderer.setCurrentPlayer(st.currentPlayer);
+    handView.mpCosts = model.mpCosts ?? {};
     handView.render(model.hand);
     setBusy(true);
     if (st.turn <= 1 && st.phase !== 'gameOver') {
@@ -1539,6 +1541,7 @@ function handover(playerId, turn) {
       model.hand = st.players[viewerId].hand.filter((c) => !willDraw.has(c.cardId));
       renderer.renderAll(model);
       renderer.setCurrentPlayer(playerId);
+      handView.mpCosts = model.mpCosts ?? {};
       handView.render(model.hand);
       handView.setPlayability(new Map());
       el.handover.hidden = true;

@@ -8,3 +8,7 @@
 @keyframes mp-bump { 50% { transform: scale(1.25); box-shadow: 0 0 10px #6f8fff; } }
 .fx-evolve-stage { position: absolute; z-index: 57; width: 0; height: 0; pointer-events: none; }
 .spectating #end-turn, .spectating #fusion-open, .spectating #upgrade-open { opacity: .45; pointer-events: none; }
+/* コスト札：「MP 3」と書いて、上のバーの MP と結びつける */
+.card-mp { display: flex; align-items: baseline; justify-content: center; gap: 2px; padding: 1px 6px; }
+.card-mp small { font-size: 9px; font-weight: 800; letter-spacing: 0; opacity: .92; }
+.card-mp b { font-size: 13px; line-height: 1.2; }
