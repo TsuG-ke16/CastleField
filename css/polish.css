@@ -11,9 +11,9 @@
   border-image-repeat: stretch;
   border-radius: 0;
   box-shadow: none;
-  min-height: 44px;
+  min-height: var(--touch-target);
   padding: 9px 22px;
-  color: #4a2f17;
+  color: var(--wood-ink);
   font-family: var(--head);
   font-weight: 900;
   letter-spacing: .04em;
@@ -234,8 +234,6 @@
 #result-stats p { font-family: var(--head); color: #8a5a24; letter-spacing: .06em; text-align: center; }
 #result-stats dt { color: #5b4d33; font-weight: 700; }
 #result-stats dd { font-family: var(--head); font-size: 16px; color: #3f321f; }
-#result-encouragement { color: #5a3d10; font-weight: 800; }
-#result.lost #result-encouragement { color: #fff; text-shadow: 0 1px 2px #2a3a4f; }
 #result #rematch { margin-top: 2px; }
 
 /* ---------- 部屋（ロビー）：席に城の絵、合言葉を看板に ---------- */
@@ -362,7 +360,6 @@
      アクセント（約0.5割）… 金〜橙。いちばん押してほしいボタンだけに使う。赤は危険の合図だけ
    UIに青緑（ダークティール）や、橙・緑・青の同格ボタンを並べない（主役が分からなくなるため）。
    ===================================================================== */
-:root { --wood: #8f5a2a; --wood-dark: #3f2511; --wood-ink: #4a2f17; --parch: #fff8e0; --parch-deep: #f7e9c3; --accent: #f6a52e; }
 
 /* ---------- タイトル：用意してあった空と草原の絵を背景に。UIは木と羊皮紙、主役のボタンだけ橙 ---------- */
 #title { background: #7cc4f5 url('../assets/bg/title-compact.png') center bottom / cover no-repeat; }
@@ -419,7 +416,7 @@ body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%,
 /* 札（山・捨て・手札・コイン）：羊皮紙の小さな札に木の縁。数字は濃い茶で読みやすく */
 .chip {
   border: 2px solid var(--wood);
-  background: linear-gradient(#fffdf0, #f7e9c3);
+  background: linear-gradient(#fffdf0, var(--parch-deep));
   box-shadow: inset 0 1px 0 #fff, 0 1px 0 #3f251140;
   color: var(--wood-ink);
 }
@@ -505,7 +502,6 @@ body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%,
 #app .settings-box input[type=range] { background: linear-gradient(90deg, #e8a530 var(--p, 50%), #4a3523 var(--p, 50%)); }
 
 /* ---------- 6. 手札の「合成可」バッジ：濃い青緑をやめて木の茶＋羊皮紙の文字 ---------- */
-.card.can-fuse::after { background: linear-gradient(#a8692f, #7f4a1f); border: 1px solid var(--wood-dark); color: var(--parch); box-shadow: 0 1px 0 #3f251166; }
 .card.choosing { box-shadow: 0 0 0 2px #d9a02c; }
 
 /* ---------- 8. 手番交代の画面：前の人の手札を隠すので不透明のまま、タイトルと同じ空と草原の絵を敷く ---------- */
@@ -540,9 +536,7 @@ body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%,
 .plaza-stage .castle-hp .hp-bar { height: 5px; border-color: var(--wood); background: #e6d3a2; }
 .plaza-zoom { background: linear-gradient(#fffdf0, #f7e9c3); border: 2px solid var(--wood); color: var(--wood-ink); }
 
-/* ---------- 9. 色の下地：theme.css が文字・縁の基本色 --ink を青緑がかった暗い色（#263e3b）にしていたので、木の濃い茶に戻す ----------
-   --ink は文字と細い縁のほぼ全部が使っている。ここを変えると、個別に直さなくても青緑の文字・縁がいっぺんに茶になる */
-:root { --ink: #3f2511; }
+/* ---------- 9. トーストとタイトルの仕上げ ---------- */
 #toast { background: #3f2511f5; border-color: #e0b06a; box-shadow: 0 8px 24px #2a180a55; }
 .title-logo { color: var(--wood-ink); }
 

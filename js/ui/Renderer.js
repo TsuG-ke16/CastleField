@@ -12,6 +12,7 @@ import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
 import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt } from './art.js';
 import { soldierMotion, monsterMotion } from './motion.js';
+import { WeatherView } from './WeatherView.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -22,6 +23,26 @@ const X_OPP = 26;
 const PLAZA_RADIUS = 37;
 /** 広場：城から最初のマスまでの間（マス何個ぶんか）。兵士が城の名札・HPに重ならないだけ離す */
 const PLAZA_SPOKE_START = 2;
+
+/** 城・兵士・魔物で、同じ範囲・色・読み上げ情報を使う。 */
+function updateHealth(meter, hp, maxHp, label, instant = false) {
+  const max = Math.max(1, maxHp);
+  const value = Math.max(0, Math.min(max, hp));
+  const ratio = value / max;
+  meter.setAttribute('aria-label', label);
+  meter.setAttribute('aria-valuemin', '0');
+  meter.setAttribute('aria-valuemax', String(max));
+  meter.setAttribute('aria-valuenow', String(value));
+  meter.dataset.level = ratio <= 0.25 ? 'low' : ratio <= 0.5 ? 'mid' : 'high';
+  const width = `${ratio * 100}%`;
+  if (meter.style.getPropertyValue('--health') === width) return;
+  meter.classList.toggle('health-instant', instant);
+  meter.style.setProperty('--health', width);
+  if (instant) {
+    void meter.offsetWidth;
+    meter.classList.remove('health-instant');
+  }
+}
 
 export class Renderer {
   /**
@@ -55,6 +76,8 @@ export class Renderer {
     this.monsterBirths = new Map();
     this.weaponStacks = new Map();
 
+    this.weatherView = new WeatherView($('app'));
+
     this.el = {
       app: $('app'),
       board: $('board'),
@@ -68,7 +91,6 @@ export class Renderer {
       myMp: $('my-mp'),
       myCoins: $('my-coins'),
       turnInfo: $('turn-info'),
-      weatherChip: $('weather-chip'),
       deckPile: $('deck-pile'),
       discardPile: $('discard-pile'),
       deckCount: $('deck-count'),
@@ -404,23 +426,12 @@ export class Renderer {
 
   /** 今の天候を、上のバッジと背景の効果に出す（w は { type, name, icon, description, roundsLeft } か null） */
   setWeather(w) {
-    const chip = this.el.weatherChip;
-    const app = document.getElementById('app');
-    if (app) {
-      if (w) app.dataset.weather = w.type;
-      else delete app.dataset.weather;
-    }
-    if (!chip) return;
-    chip.hidden = !w;
-    if (!w) return;
-    chip.textContent = `${w.icon ?? '🌤️'} ${w.name}${w.roundsLeft != null ? ` あと${w.roundsLeft}周` : ''}`;
-    chip.title = w.description ?? w.name;
-    chip.setAttribute('aria-label', `天候：${w.name}。${w.description ?? ''}`);
+    this.weatherView.update(w);
   }
 
   /** 手番の人の城を目立たせる */
   setCurrentPlayer(playerId) {
-    const status = document.getElementById('turn-status');
+    const status = document.querySelector('#turn-status span');
     if (status && playerId) {
       status.textContent = this.players[this.viewerId]?.eliminated ? '観戦中' : playerId === this.viewerId ? 'あなたの番' : `${playerName(playerId)}の番`;
       document.getElementById('hud').dataset.turn = playerId === this.viewerId ? 'mine' : 'other';
@@ -494,20 +505,9 @@ export class Renderer {
     const maxHp = Number(castle.dataset.max) || this.rules.castleMaxHp;
     castle.dataset.hp = String(hp);
     const ratio = Math.max(0, Math.min(1, hp / maxHp));
-    const fill = castle.querySelector('.hp-fill');
-    const lag = castle.querySelector('.hp-lag');
-    if (instant) {
-      fill.style.transition = lag.style.transition = 'none';
-      void fill.offsetWidth;
-    }
-    fill.style.width = `${ratio * 100}%`;
-    lag.style.width = `${ratio * 100}%`;
-    if (instant) {
-      void fill.offsetWidth;
-      fill.style.transition = lag.style.transition = '';
-    }
-    fill.classList.toggle('mid', ratio <= 0.5 && ratio > 0.25);
-    fill.classList.toggle('low', ratio <= 0.25);
+    const name = castle.querySelector('.castle-label').textContent;
+    updateHealth(castle.querySelector('.hp-bar'), hp, maxHp, `${name}の城の体力`, instant);
+    castle.setAttribute('aria-label', `${name}の城、HP ${Math.max(0, hp)}/${maxHp}`);
     castle.classList.toggle('danger', ratio <= 0.25 && ratio > 0);
     // 城が壊れていく見た目（0：無傷 〜 3：落ちた）
     const damage = String(ratio <= 0 ? 3 : ratio <= 0.34 ? 2 : ratio <= 0.67 ? 1 : 0);
@@ -626,6 +626,7 @@ export class Renderer {
     const el = document.createElement('div');
     el.className = `soldier ${this.sideOf(playerId)} no-anim`;
     el.dataset.id = st.soldierId;
+    if (def.monster) el.dataset.beast = def.monster;
     el.tabIndex=0;el.setAttribute('role','button');
     el.dataset.role = st.role ?? def.role ?? 'melee';
     el.dataset.motion = soldierMotion(st.type, def); // 待機・歩き方・攻撃の型（css/motion.css）
@@ -637,8 +638,15 @@ export class Renderer {
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="soldier-token"><div class="soldier-pic"></div>' +
       '<span class="soldier-weapon" hidden></span><span class="soldier-shield" hidden></span><span class="soldier-status" hidden></span></div>' +
-      `<div class="soldier-gauge" role="progressbar"><i class="soldier-gauge-lag"></i><i class="soldier-gauge-fill"></i></div><div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
+      `<div class="soldier-gauge meter health-meter" role="meter"><i class="meter-fill health-lag"></i><i class="meter-fill health-fill"></i></div><div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
     el.querySelector('.soldier-pic').innerHTML = unitArt(st.type, colorOf(playerId), def.name ?? st.type);
+    if (def.monster) {
+      const insignia = document.createElement('span');
+      insignia.className = 'beast-insignia';
+      insignia.textContent = '駒';
+      insignia.setAttribute('aria-hidden', 'true');
+      el.querySelector('.soldier-token').append(insignia);
+    }
     const seat = document.createElement('span');seat.className='seat-mark';seat.textContent=String(this.playerOrder.indexOf(playerId)+1);seat.title=playerName(playerId);seat.setAttribute('aria-label',`席${seat.textContent}、${playerName(playerId)}`);el.append(seat);
     const turns = document.createElement('span'); turns.className = 'soldier-turns'; el.append(turns);
     this.el.units.appendChild(el);
@@ -668,22 +676,14 @@ export class Renderer {
 
   /** 兵士の見た目を、持っている値（HP・攻撃・武器・盾・状態異常）に合わせる */
   updateSoldierBadges(s) {
-    s.el.setAttribute('aria-label',`席${this.playerOrder.indexOf(s.playerId)+1} ${this.cards[s.type]?.name??''}、攻撃${s.attack}、HP${s.hp}`);
     const q = (sel) => s.el.querySelector(sel);
     q('.soldier-turns').hidden = s.turnsLeft == null;
     q('.soldier-turns').textContent = `${s.role === 'mage' ? '✦' : '➶'} あと${s.turnsLeft}回`;
     s.el.title = `${this.cards[s.type]?.name ?? ''} · ${playerName(s.playerId)}${s.turnsLeft == null ? '' : ` · あと${s.turnsLeft}回`}`;
     q('.st.hp b').textContent = String(Math.max(0, s.hp));
-    // 体力ゲージ（残りHP ÷ 上限。減ると緑 → 黄 → 赤。減った分は白い影が遅れて追いかける）
     s.maxHp = Math.max(s.maxHp ?? 0, s.hp, 1);
-    const ratio = Math.max(0, Math.min(1, s.hp / s.maxHp));
-    const gauge = q('.soldier-gauge');
-    gauge.style.setProperty('--ratio', ratio.toFixed(3));
-    gauge.dataset.level = ratio > 0.6 ? 'high' : ratio > 0.3 ? 'mid' : 'low';
-    gauge.setAttribute('aria-valuemin', '0');
-    gauge.setAttribute('aria-valuemax', String(s.maxHp));
-    gauge.setAttribute('aria-valuenow', String(Math.max(0, s.hp)));
-    gauge.setAttribute('aria-label', `体力 ${Math.max(0, s.hp)}/${s.maxHp}`);
+    s.el.setAttribute('aria-label', `席${this.playerOrder.indexOf(s.playerId) + 1} ${this.cards[s.type]?.name ?? '兵士'}、攻撃${s.attack}、HP ${Math.max(0, s.hp)}/${s.maxHp}`);
+    updateHealth(q('.soldier-gauge'), s.hp, s.maxHp, `${this.cards[s.type]?.name ?? '兵士'}の体力`, s.el.classList.contains('no-anim'));
     q('.st.atk b').textContent = String(s.attack);
     const baseHp = this.cards[s.type]?.hp;
     q('.st.hp').classList.toggle('hurt', baseHp != null && s.hp < baseHp);
@@ -827,7 +827,7 @@ export class Renderer {
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="monster-token"><div class="monster-pic"></div>' +
       '<span class="monster-element" hidden></span><span class="monster-attack-in" hidden></span></div>' +
-      '<div class="monster-hp"><div class="monster-hp-fill"></div><span class="monster-hp-text"></span></div>' +
+      '<div class="monster-hp meter health-meter" role="meter"><i class="meter-fill health-lag"></i><i class="meter-fill health-fill"></i><span class="monster-hp-text" aria-hidden="true"></span></div>' +
       `<div class="monster-stats"><span class="st atk">${icon('sword')}<b></b></span></div>`;
     el.querySelector('.monster-pic').innerHTML = monsterArt(st.type, def.name ?? st.type);
     el.style.top = `${((this.rowOfSquare(st.square) + 0.5) / this.laneLength) * 100}%`;
@@ -836,7 +836,7 @@ export class Renderer {
     this.el.units.appendChild(el);
     const m = { ...st, el };
     this.monsters.set(st.monsterId, m);
-    this.updateMonster(st.monsterId, {});
+    this.updateMonster(st.monsterId, {}, { instant: true });
     return el;
   }
 
@@ -848,12 +848,12 @@ export class Renderer {
     return this.monsters.get(monsterId) ?? null;
   }
 
-  updateMonster(monsterId, patch) {
+  updateMonster(monsterId, patch, { instant = false } = {}) {
     const m = this.monsters.get(monsterId);
     if (!m) return;
     const before = m.castleAttack;
     Object.assign(m, patch);
-    m.el.setAttribute('aria-label',`${this.monsterDefs?.[m.type]?.name??'魔物'}、HP${m.hp}、次の城への攻撃${m.castleAttack??0}`);
+    m.el.setAttribute('aria-label',`${this.monsterDefs?.[m.type]?.name??'魔物'}、HP ${Math.max(0, m.hp)}/${m.maxHp}、次の城への攻撃${m.castleAttack??0}`);
     if (before != null && m.castleAttack > before) {
       m.el.classList.remove('threat-grown'); void m.el.offsetWidth; m.el.classList.add('threat-grown');
     }
@@ -862,8 +862,7 @@ export class Renderer {
     const elBadge = m.el.querySelector('.monster-element');
     elBadge.hidden = !look;
     elBadge.innerHTML = look ? icon(look.iconName) : '';
-    const ratio = Math.max(0, Math.min(1, m.hp / (m.maxHp || 1)));
-    m.el.querySelector('.monster-hp-fill').style.width = `${ratio * 100}%`;
+    updateHealth(m.el.querySelector('.monster-hp'), m.hp, m.maxHp ?? 1, `${this.monsterDefs?.[m.type]?.name ?? '魔物'}の体力`, instant);
     m.el.querySelector('.monster-hp-text').textContent = `${Math.max(0, m.hp)}/${m.maxHp}`;
     m.el.querySelector('.st.atk b').textContent = m.attack == null ? '?' : String(m.attack);
     const attackIn = m.el.querySelector('.monster-attack-in');
@@ -888,8 +887,9 @@ export class Renderer {
     const every = this.rules.monsterEvolveEvery ?? 0;
     const born = this.monsterBirths.get(monsterId);
     const remaining = born == null ? null : every - ((Math.max(0, (this.round ?? born) - born)) % every);
-    growth.textContent = `成長${count}回${every > 0 ? remaining == null ? ` · ${every}周ごと` : ` · あと${remaining}周で成長` : ' · 成長なし'}`;
-    m.el.setAttribute('aria-label', `${m.el.getAttribute('aria-label')}、${growth.textContent}、報酬${reward.textContent}`);
+    growth.title = `成長${count}回${every > 0 ? remaining == null ? ` · ${every}周ごと` : ` · あと${remaining}周で成長` : ' · 成長なし'}`;
+    growth.textContent = every > 0 ? `成長${count} · ${remaining == null ? `${every}周ごと` : `あと${remaining}周`}` : '成長なし';
+    m.el.setAttribute('aria-label', `${m.el.getAttribute('aria-label')}、${growth.title}、報酬${reward.textContent}`);
     let aura = m.el.querySelector('.monster-aura');
     if (!aura) { aura = document.createElement('span'); aura.className = 'monster-aura'; m.el.prepend(aura); }
     const stage = Math.min(3, count);
@@ -928,7 +928,7 @@ export class Renderer {
       if (!this.monsters.has(st.monsterId)) this.addMonster(st);
       else {
         this.monsters.get(st.monsterId).el.classList.remove('appear', 'hit');
-        this.updateMonster(st.monsterId, { ...st });
+        this.updateMonster(st.monsterId, st, { instant: true });
       }
     }
     for (const id of [...this.monsters.keys()]) if (!alive.has(id)) this.removeMonster(id);

@@ -376,8 +376,9 @@
 
 /* ===== UI の手応え ===== */
 /* ボタン：押すと沈み、離すとはね返る */
-.plank-btn:not(:disabled):active, .small-btn:not(:disabled):active, .round-btn:not(:disabled):active { transform: translateY(2px) scale(.95); transition-duration: .05s; }
-.round-btn, .small-btn, .plank-btn, .chip { transition: transform .22s cubic-bezier(.3, 1.8, .5, 1), box-shadow .18s ease, filter .18s ease, background .18s ease; }
+.plank-btn:not(:disabled):active, .small-btn:not(:disabled):active, .round-btn:not(:disabled):active { transform: translateY(2px) scale(.95); transition-duration: var(--motion-press); }
+.round-btn, .small-btn, .plank-btn, .chip { transition: transform var(--motion-button-release) var(--ease-button-release),
+  box-shadow var(--motion-feedback) ease, filter var(--motion-feedback) ease, background var(--motion-feedback) ease; }
 @media (hover: hover) {
   .plank-btn:not(:disabled):hover, .small-btn:not(:disabled):hover, .round-btn:not(:disabled):hover { transform: translateY(-2px); }
   /* カード：マウスをのせると少し浮いて、こちらへ傾く */
@@ -403,14 +404,14 @@
 }
 @keyframes card-glint { 0%, 70% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
 /* 数が変わったチップ（山札・コイン）：はずむ */
-.bump { animation: bump-pop .36s cubic-bezier(.3, 1.6, .5, 1); }
+.bump { animation: bump-pop var(--motion-badge) var(--ease-badge); }
 @keyframes bump-pop { 0% { transform: scale(1); } 30% { transform: scale(1.3) rotate(-4deg); } 60% { transform: scale(.94) rotate(2deg); } 100% { transform: scale(1); } }
 /* パネル（カードの説明・対象選び・捨てる）：下からはね上がる */
-.panel:not([hidden]) { animation: panel-pop .26s cubic-bezier(.3, 1.4, .5, 1) both; }
+.panel:not([hidden]) { animation: panel-pop var(--motion-panel) var(--ease-panel) both; }
 @keyframes panel-pop { from { transform: translateY(14px) scale(.96); opacity: 0; } }
 /* 画面の切り替え：かぶさる画面はふわっと、箱は少し遅れてはね上がる */
-.screen:not([hidden]):not(#handover) { animation: screen-in .28s ease-out both; }
-.screen:not([hidden]) > .screen-box { animation: box-in .42s cubic-bezier(.3, 1.4, .5, 1) .05s both; }
+.screen:not([hidden]):not(#handover) { animation: screen-in var(--motion-screen) var(--ease-enter) both; }
+.screen:not([hidden]) > .screen-box { animation: box-in var(--motion-dialog) var(--ease-panel) var(--motion-dialog-delay) both; }
 @keyframes screen-in { from { opacity: 0; } }
 @keyframes box-in { from { transform: translateY(26px) scale(.92); opacity: 0; } }
 #title:not([hidden]), #loading { animation: none; }
@@ -430,33 +431,13 @@
 #road .cell.mid .stone { animation: rune-pulse 3.2s ease-in-out infinite; }
 @keyframes rune-pulse { 50% { box-shadow: 0 3px 0 #ae955c, 0 0 0 5px rgba(158, 132, 180, .28), 0 0 14px rgba(158, 132, 180, .6); transform: scale(1.05); } }
 
-/* ===== 勝敗の画面：順番に出て、勝ちは派手に、負けは静かに ===== */
-#result:not([hidden]) .result-crown { animation: crown-slam .7s cubic-bezier(.2, 1.5, .4, 1) .1s both, bob2 1.8s ease-in-out .9s infinite; }
-@keyframes crown-slam {
-  0% { transform: translateY(-160px) scale(2) rotate(-14deg); opacity: 0; }
-  55% { transform: translateY(6px) scale(.94, 1.06) rotate(3deg); opacity: 1; }
-  75% { transform: translateY(0) scale(1.08, .92) rotate(-1deg); }
+/* 勝敗の画面はすぐ操作できる。絵だけを短く動かす。 */
+#result:not([hidden]):not(.lost) .result-illustration {
+  animation: result-arrive var(--motion-dialog) var(--ease-panel) both;
 }
-#result:not([hidden]) .result-pic { animation: result-pic-in .6s cubic-bezier(.3, 1.4, .5, 1) .3s both; }
-@keyframes result-pic-in { from { transform: translateY(40px) scale(.6); opacity: 0; } }
-#result:not([hidden]):not(.lost) .result-illustration { animation: victory-bounce 1.2s ease-in-out 1s infinite; transform-origin: 50% 90%; }
-@keyframes victory-bounce {
-  0%, 100% { transform: translateY(0) scale(1, 1); }
-  20% { transform: translateY(0) scale(1.04, .95); }
-  45% { transform: translateY(-9px) scale(.98, 1.03) rotate(-1.5deg); }
-  70% { transform: translateY(0) scale(1.03, .97); }
+@keyframes result-arrive {
+  from { transform: translateY(12px) scale(.93); }
 }
-#result:not([hidden]) .result-title { animation: title-slam .5s cubic-bezier(.2, 1.6, .4, 1) .5s both; }
-@keyframes title-slam { 0% { transform: scale(2.6); opacity: 0; } 60% { transform: scale(.92); opacity: 1; } }
-#result:not([hidden]) .result-sub, #result:not([hidden]) #result-encouragement, #result:not([hidden]) #match-stats { animation: slide-up .4s ease-out .8s both; }
-#result:not([hidden]) button { animation: slide-up .4s ease-out 1s both; }
-#result:not([hidden]) button + button { animation-delay: 1.1s; }
-/* 負け：絵がしょんぼり沈み、雲が流れる（次へ気持ちを向けるため、長くしない） */
-#result.lost:not([hidden]) .result-pic { animation: result-pic-in .6s ease-out .3s both; }
-#result.lost:not([hidden]) .result-illustration { animation: defeat-sag 3.2s ease-in-out 1s infinite; transform-origin: 50% 95%; }
-@keyframes defeat-sag { 0%, 100% { transform: rotate(-1.2deg) scale(1, 1); } 50% { transform: rotate(1.2deg) scale(1.015, .975); } }
-#result.lost:not([hidden]) .result-title { animation: title-drop .7s cubic-bezier(.4, 0, .5, 1.3) .5s both; }
-@keyframes title-drop { 0% { transform: translateY(-30px); opacity: 0; } 70% { transform: translateY(4px) rotate(-1.5deg); opacity: 1; } }
 
 /* ===== タイトル：兵士と城が生きている ===== */
 #title .title-unit.left { animation: title-march 1.9s ease-in-out infinite; transform-origin: 50% 90%; }

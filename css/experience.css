@@ -1,0 +1,141 @@
+/* タイトルの一幕。操作できる面は最初のフレームから表示する。 */
+#app #title {
+  --ease-title: cubic-bezier(.17, .7, .27, 1);
+}
+#title .title-story { position: relative; isolation: isolate; }
+.title-sunrise {
+  position: absolute;
+  z-index: -1;
+  inset: -20% -7% -8%;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    conic-gradient(from 245deg at 50% 78%, transparent 0deg, #fff4be50 10deg 17deg, transparent 23deg 40deg, #fff6cd70 49deg 64deg, transparent 72deg 88deg, #fff8da90 105deg 128deg, transparent 141deg),
+    radial-gradient(ellipse at 50% 78%, #fff8cd 3%, #ffdc7e66 31%, transparent 64%);
+  mask-image: radial-gradient(ellipse at 50% 70%, black 18%, transparent 72%);
+}
+.title-sunrise::before {
+  content: '';
+  position: absolute;
+  inset: 9% 13% 7%;
+  opacity: .8;
+  background:
+    radial-gradient(circle at 23% 64%, #fff9df 0 2px, transparent 4px),
+    radial-gradient(circle at 31% 80%, #ffe895 0 3px, transparent 5px),
+    radial-gradient(circle at 72% 32%, #fffad9 0 2px, transparent 4px),
+    radial-gradient(circle at 83% 58%, #ffedb3 0 2px, transparent 5px),
+    radial-gradient(circle at 58% 72%, #fff5d2 0 2px, transparent 4px);
+}
+#app #title .title-unit { animation: none; }
+#app #title.title-arrival::before { animation: title-arrival-field var(--t-title, 1400ms) var(--ease-title) both; }
+#title.title-arrival .title-sunrise { animation: title-arrival-light var(--t-title, 1400ms) var(--ease-title) both; }
+#title.title-arrival .title-logo { animation: title-arrival-logo var(--t-title, 1400ms) var(--ease-title) both; }
+#title.title-arrival .title-choices { animation: title-arrival-panel var(--t-title, 1400ms) var(--ease-title) both; }
+#title .title-unit.left { --arrival-drift: -28px; }
+#title .title-unit.right { --arrival-drift: 28px; }
+#app #title.title-arrival .title-unit { animation: title-arrival-unit var(--t-title, 1400ms) var(--ease-title) both; }
+@keyframes title-arrival-field {
+  0% { background-color: #173824a6; }
+  40% { background-color: #17382438; }
+  100% { background-color: transparent; }
+}
+@keyframes title-arrival-light {
+  0%, 10% { opacity: 0; transform: scale(.63); }
+  48% { opacity: .9; }
+  100% { opacity: 0; transform: scale(1.12); }
+}
+@keyframes title-arrival-logo {
+  0% { opacity: .12; scale: .77; translate: 0 19px; filter: brightness(.78); }
+  34% { opacity: 1; scale: 1.045; translate: 0 -3px; filter: brightness(1.1); }
+  65%, 100% { opacity: 1; scale: 1; translate: 0 0; filter: none; }
+}
+@keyframes title-arrival-unit {
+  0%, 15% { opacity: 0; translate: var(--arrival-drift) 10px; }
+  48% { opacity: 1; translate: 0 -5px; }
+  65%, 100% { opacity: 1; translate: 0 0; }
+}
+@keyframes title-arrival-panel {
+  0% { translate: 0 7px; }
+  58%, 100% { translate: 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #title.title-arrival::before,
+  #title.title-arrival :is(.title-sunrise, .title-logo, .title-choices),
+  #app #title.title-arrival .title-unit { animation: none; }
+}
+
+/* 設定と対戦準備の入力欄。 */
+#app #settings .settings-box { display: flex; flex-direction: column; overflow: hidden; }
+#app #settings .settings-box h2 { margin: 0 0 12px; flex: none; }
+.settings-content { min-height: 0; overflow: auto; scrollbar-width: thin; }
+.settings-reading-preview {
+  margin: 0 12px 8px;
+  padding: 7px 9px;
+  border-radius: var(--radius-control);
+  background: var(--surface-inset);
+  color: var(--wood-ink);
+  font-size: var(--reading-size, 15px);
+}
+.settings-footer { flex: none; display: grid; gap: 4px; }
+.settings-footer .settings-status { margin: 0; font-size: 12px; }
+#app #settings .settings-footer .settings-close { width: 100%; }
+#app #settings .set-row .pill, #app #title .local-options > summary { min-height: var(--touch-target); }
+#app #title .local-options > summary { align-content: center; }
+#app #title .local-options[open] > summary { border-bottom: 1px solid var(--line-control); }
+#app #room-screen .room-launch {
+  display: grid;
+  justify-items: stretch;
+  gap: 6px;
+  margin: 12px 0;
+  padding: 10px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-panel);
+  background: var(--parch);
+  text-align: center;
+}
+.room-launch :is(.room-note, .room-status) { margin: 0; }
+.room-launch .room-status:empty { display: none; }
+
+/* 図鑑の検索、魔物の駒、排出率。 */
+.guide-query { display: grid; gap: 4px; margin: 6px 0 8px; color: var(--wood-ink); font-weight: 700; font-size: 12px; }
+#app .guide-query input {
+  width: 100%;
+  min-height: var(--touch-target);
+  padding-inline: 10px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-control);
+  background: var(--surface-inset);
+  color: var(--ink);
+  font: 16px var(--font);
+}
+#app .guide-filters select, #app .guide-tabs > button, #app .shop-tabs > button { min-height: var(--touch-target); }
+.guide-count { margin-block: 6px; color: var(--ink-muted); font-size: 12px; }
+.guide-reset { min-height: var(--touch-target); }
+#app .guide-monster .guide-beast-link { min-height: var(--touch-target); margin-top: 6px; }
+.rate-summary { min-height: var(--touch-target); align-content: center; }
+.rate-summary meter { display: block; width: 100%; height: 8px; margin: 4px 0; }
+.rate-summary meter::-webkit-meter-bar { border: none; background: #6b4a2e23; }
+.rate-summary meter::-webkit-meter-optimum-value { background: var(--rarity, #ad7d35); border-radius: var(--radius-pill); }
+.rate-summary meter::-moz-meter-bar { background: var(--rarity, #ad7d35); }
+
+/* 強化を買えるかどうかは、各カードの価格と行内の理由で分かる。 */
+#app #upgrade-panel .upgrade-item:not(.blocked) { border-color: #93a674; background: #f3f2d6; }
+#app #upgrade-panel .upgrade-item:not(.blocked) .upgrade-cost { color: #204f3a; background: #e4edd2; }
+#app #upgrade-panel .upgrade-reason:empty { display: none; }
+#app #upgrade-panel .upgrade-close { min-width: var(--touch-target); min-height: var(--touch-target); }
+
+#app #help .help-quick {
+  padding: 10px;
+  border: 1px solid var(--line-control);
+  border-radius: var(--radius-panel);
+  background: var(--surface-inset);
+}
+#app #help .help-more summary { min-height: var(--touch-target); align-content: center; }
+#app #help-tutorial { min-height: var(--touch-target); }
+#app #tutorial { border-color: #bd9850; border-inline-start: 4px solid #4f8263; }
+#app #tutorial > div { flex: 1; min-width: 0; }
+#app #tutorial strong { display: block; margin-bottom: 3px; color: #255240; font-size: 11px; }
+#app #tutorial p { font-size: clamp(12px, 3.35vw, var(--reading-size, 15px)); }
+#app #tutorial button { min-height: var(--touch-target); }
+#app #hand.tutorial-select .card.soldier:not(.dim) { outline: 2px solid #96d39d; outline-offset: -2px; }
+#app #end-turn.tutorial-end { outline: 2px solid #f8d485; outline-offset: 2px; }

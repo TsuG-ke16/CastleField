@@ -1,0 +1,18 @@
+/* スクロールする一覧など、パネルの中の明るい面。 */
+.inset-panel {
+  border: 2px solid var(--line-inset);
+  border-radius: var(--radius-control);
+  background: var(--surface-inset);
+}
+
+/* トラックの寸法と塗りは各ゲージで指定する。 */
+.meter {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-meter);
+}
+
+.meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+}

@@ -4,17 +4,6 @@
    演出の長さは js/ui/config.js から CSS 変数（--t-*）で入る。 */
 
 :root {
-  --ink: #4a2e1a;
-  --paper: #fbf0d2;
-  --paper-d: #ecd7a8;
-  --wood: #c99a5b;
-  --wood-d: #9a6a38;
-  --gold: #ffd35a;
-  --gold-d: #f0a82e;
-  --blue: #4da3e8;
-  --orange: #f5923e;
-  --red: #f2566e;
-  --green: #5fd35f;
   --cells: 3;
   --unit: clamp(44px, 7.4vh, 64px);
   --lanes: 1;
@@ -26,8 +15,6 @@
   --t-death: 260ms;
   --t-heal: 420ms;
   --t-equip: 300ms;
-  --font: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
-  --head: "Hiragino Maru Gothic ProN", "Yu Gothic UI", sans-serif;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -233,11 +220,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 .hp-value { font-family: var(--head); font-size: 26px; line-height: 1.15; color: #fff; }
 .hp-max { font-size: 11px; font-weight: 900; color: #fff3d6; }
 .hp-bar { position: relative; height: 10px; border: 2px solid var(--ink); border-radius: 6px; background: #5b3a22; overflow: hidden; }
-.hp-lag, .hp-fill { position: absolute; inset: 0 auto 0 0; width: 100%; }
-.hp-lag { background: #fff; transition: width .6s ease .25s; }
-.hp-fill { background: var(--green); transition: width .25s ease; }
-.hp-fill.mid { background: #ffc83d; }
-.hp-fill.low { background: var(--red); }
 .castle.danger .hp-value { color: #ffb0a8; animation: danger .8s ease-in-out infinite; }
 @keyframes danger { 50% { transform: scale(1.12); color: #ff7b6e; } }
 
@@ -442,7 +424,6 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
   background: #5b3a22;
   overflow: hidden;
 }
-.monster-hp-fill { position: absolute; inset: 0 auto 0 0; background: #e2574c; transition: width .2s; }
 .monster-hp-text { position: absolute; inset: 0; font-size: 9px; font-weight: 900; line-height: 9px; text-align: center; color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000; }
 .monster-stats { margin-top: 1px; }
 .monster.appear .monster-token { animation: drop-in .5s cubic-bezier(.3, 1.5, .5, 1) both; }
@@ -847,10 +828,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
   animation: spin 26s linear infinite;
   pointer-events: none;
 }
-#result.lost .result-rays, #result.lost .result-crown { display: none; }
+#result.lost .result-rays { display: none; }
 @keyframes spin { to { transform: rotate(360deg); } }
-.result-crown { margin: 0; font-size: 70px; line-height: 1; animation: crown 1s cubic-bezier(.3, 1.6, .5, 1) both, bob2 1.6s ease-in-out 1s infinite; }
-@keyframes crown { 0% { transform: translateY(-120px) rotate(-30deg); opacity: 0; } }
 @keyframes bob2 { 50% { transform: translateY(-6px); } }
 .result-pic { position: relative; width: 210px; height: 150px; margin: 0 auto; }
 .result-pic .castle-art { position: absolute; inset: 0 auto 0 0; width: 180px; }
@@ -869,7 +848,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
   width: 10px;
   height: 14px;
   border-radius: 2px;
-  animation: confetti linear infinite;
+  animation: confetti linear both;
 }
 @keyframes confetti { to { transform: translate(var(--dx, 0), 105vh) rotate(var(--rot, 720deg)); } }
 
@@ -1068,7 +1047,6 @@ html, body { background: radial-gradient(ellipse at top, #a9d4e4, #294957); }
 .plank-btn { background: #efbf6a url('../assets/ui/button-end-turn.png') center / 100% 100% no-repeat; color: #fff7df; text-shadow: 0 1px 3px #4a2e1a; }
 .plank-btn.alt, .plank-btn.alt2, .level { background-blend-mode: soft-light; }
 .castle-hp { background: #d0a367 url('../assets/ui/sign-hp.png') center / 100% 100% no-repeat; }
-.result-crown { width: 240px; height: 120px; margin: 0 auto; font-size: 0; background: url('../assets/ui/banner-win.png') center / contain no-repeat; }
 .element-guide { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 3px; padding: 10px 4px; border-radius: 12px; background: #f1ddb1; font-size: 12px; }
 .element-guide .asset-art { width: 20px; height: 20px; }
 @media (max-height: 650px) { :root { --card-w: 82px; --card-h: 116px; } .card-name { font-size: 11px; } .card-name.long { font-size: 9px; } }

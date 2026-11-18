@@ -1,0 +1,56 @@
+/* 既存画面と共通部品が使う色・書体・寸法・動きの値。 */
+:root {
+  --wood-dark: #3f2511;
+  --ink: var(--wood-dark);
+  --wood-ink: #4a2f17;
+  --ink-muted: #6b4a2e;
+  --wood: #8f5a2a;
+  --wood-d: #9a6a38;
+  --paper: #fffaf0;
+  --paper-d: #f0e6d2;
+  --parch: #fff8e0;
+  --parch-deep: #f7e9c3;
+  --surface-inset: #fffdf4;
+  --line-inset: #e7d6a8;
+  --line-control: #d9c48a;
+  --accent: #f6a52e;
+  --gold: #f6ca69;
+  --gold-d: #dfab42;
+  --blue: #5caecb;
+  --orange: #e89b62;
+  --red: #d96359;
+  --green: #65ae80;
+  --status-ok: #57c75a;
+  --status-danger: #e2574c;
+  --ink-danger: #b0291f;
+  --focus-outline: #163e54;
+  --focus-halo: #fff7d6;
+
+  --font: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+  --head: "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --radius-meter: 4px;
+  --radius-control: 8px;
+  --radius-panel: 12px;
+  --radius-pill: 999px;
+  --shadow-panel: 0 6px 18px rgb(0 0 0 / 35%);
+  --touch-target: 44px;
+
+  --motion-press: 50ms;
+  --motion-feedback: 180ms;
+  --motion-button-release: 220ms;
+  --motion-badge: 360ms;
+  --motion-panel: 260ms;
+  --motion-screen: 280ms;
+  --motion-dialog: 420ms;
+  --motion-dialog-delay: 50ms;
+  --motion-meter-lag: 600ms;
+  --motion-meter-lag-delay: 250ms;
+  --ease-enter: ease-out;
+  --ease-button-release: cubic-bezier(.3, 1.8, .5, 1);
+  --ease-badge: cubic-bezier(.3, 1.6, .5, 1);
+  --ease-panel: cubic-bezier(.3, 1.4, .5, 1);
+}

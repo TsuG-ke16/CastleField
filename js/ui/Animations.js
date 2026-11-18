@@ -5,8 +5,9 @@
 import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
-import { cardArt, icon, imageArt } from './art.js';
+import { cardArt, icon, imageArt, weatherIcon } from './art.js';
 import { frameAsset } from './cardFrame.js';
+import { playerName } from './text.js';
 import { mountMiniCard } from './cardView.js';
 import { attackOf, attackFrames, impactSvg } from './motion.js';
 import { ELEMENT_BEATS } from '../game/Game.js';
@@ -60,6 +61,7 @@ export class Animations {
     const t = UI_CONFIG.timing;
     const root = document.documentElement.style;
     root.setProperty('--t-move', `${t.soldierMove * UI_CONFIG.speed}ms`);
+    root.setProperty('--t-title', `${t.titleArrival * UI_CONFIG.speed}ms`);
     root.setProperty('--t-deploy', `${t.deploy * UI_CONFIG.speed}ms`);
     root.setProperty('--t-death', `${t.soldierDeath * UI_CONFIG.speed}ms`);
     root.setProperty('--t-heal', `${t.heal * UI_CONFIG.speed}ms`);
@@ -132,13 +134,13 @@ export class Animations {
       frames.push({ transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)` });
     }
     frames[n] = { transform: 'translate(0, 0)' };
-    return this.animate(el, frames, { duration, easing: 'linear' });
+    return this.animate(el, frames, { duration, easing: UI_CONFIG.easing.linear });
   }
 
   /** 画面ぜんたい（盤面ごと）を揺らす。kind は config の screenShake のキー、power は強さ（ダメージや魔法の値） */
   screenShake(kind, power = 0) {
     const c = UI_CONFIG.screenShake[kind];
-    if (!c || this.skipping) return Promise.resolve();
+    if (!c || this.skipping || power < (c.minPower ?? 0)) return Promise.resolve();
     const amp = Math.min(c.max ?? c.base, c.base + (c.perPower ?? 0) * power);
     return this.shake(this.el.board, amp, c.duration);
   }
@@ -184,7 +186,7 @@ export class Animations {
       { transform: `${base} scale(1) rotate(${tilt}deg)`, opacity: 1, offset: 0.32 },
       { transform: `${base} translate(${drift * 0.3}px, -8px) scale(1) rotate(${tilt}deg)`, opacity: 1, offset: 0.7 },
       { transform: `${base} translate(${drift}px, -38px) scale(0.85) rotate(${tilt}deg)`, opacity: 0 },
-    ], { duration, easing: 'ease-out', fill: 'forwards' }).then(() => el.remove());
+    ], { duration, easing: UI_CONFIG.easing.enter, fill: 'forwards' }).then(() => el.remove());
   }
 
   flashClass(el, className, ms) {
@@ -227,7 +229,7 @@ export class Animations {
     if (this.skipping) return;
     const el = this.fx('fx-flash');
     el.style.background = color;
-    this.animate(el, [{ opacity: 0.85 }, { opacity: 0 }], { duration: ms, easing: 'ease-out', fill: 'forwards' }).then(() => el.remove());
+    this.animate(el, [{ opacity: 0.85 }, { opacity: 0 }], { duration: ms, easing: UI_CONFIG.easing.enter, fill: 'forwards' }).then(() => el.remove());
   }
 
   /** 土けむり（assets/fx/dust.png）をひとつ出す（待たない） */
@@ -240,7 +242,7 @@ export class Animations {
       { transform: 'translate(-50%, -50%) scale(.3)', opacity: 0 },
       { transform: 'translate(-50%, -50%) scale(.6)', opacity: .95, offset: .15 },
       { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.1) rotate(30deg)`, opacity: 0 },
-    ], { duration, delay: delay * UI_CONFIG.speed, easing: 'ease-out', fill: 'both' }).then(() => el.remove());
+    ], { duration, delay: delay * UI_CONFIG.speed, easing: UI_CONFIG.easing.enter, fill: 'both' }).then(() => el.remove());
   }
 
   /** 当たった瞬間の印（斬撃・突き・爪・星）。angle は攻撃の向き（度） */
@@ -258,7 +260,7 @@ export class Animations {
           ? [{ transform: `${base} translateX(-35%) scale(.4, 1)`, opacity: 0 }, { transform: `${base} scale(1.1)`, opacity: 1, offset: .4 }, { transform: `${base} translateX(15%) scale(1.2, .8)`, opacity: 0 }]
           // 斬撃：三日月が弧にそって振り抜かれる
           : [{ transform: `${base} rotate(-55deg) scale(.55)`, opacity: 0 }, { transform: `${base} rotate(-8deg) scale(1.05)`, opacity: 1, offset: .38 }, { transform: `${base} rotate(40deg) scale(1.2)`, opacity: 0 }];
-    this.animate(el, frames, { duration, easing: 'ease-out', fill: 'both' }).then(() => el.remove());
+    this.animate(el, frames, { duration, easing: UI_CONFIG.easing.enter, fill: 'both' }).then(() => el.remove());
   }
 
   /** 広がる輪（衝撃波・魔法の命中） */
@@ -522,7 +524,7 @@ export class Animations {
     if (cause === 'poison') return this.shake(token, cfg.shake, cfg.shakeDuration);
     if (!dir) {
       return this.animate(token, [
-        { transform: 'scale(1.28, .68)', offset: 0.18, easing: 'ease-out' },
+        { transform: 'scale(1.28, .68)', offset: 0.18, easing: UI_CONFIG.easing.enter },
         { transform: 'scale(.92, 1.1)', offset: 0.55 },
         { transform: 'none' },
       ], { duration: cfg.shakeDuration * 1.5 });
@@ -533,7 +535,7 @@ export class Animations {
     const tilt = (dir.y < 0 ? -1 : 1) * 7 * power;
     return this.animate(token, [
       { transform: `translate(${kx.toFixed(1)}px, ${ky.toFixed(1)}px) rotate(${tilt.toFixed(1)}deg) scale(.9, 1.1)`, offset: 0.2, easing: 'cubic-bezier(.1, .8, .3, 1)' },
-      { transform: `translate(${(kx * 0.85).toFixed(1)}px, ${(ky * 0.85).toFixed(1)}px) rotate(${(tilt * 0.5).toFixed(1)}deg)`, offset: 0.5, easing: 'ease-in-out' },
+      { transform: `translate(${(kx * 0.85).toFixed(1)}px, ${(ky * 0.85).toFixed(1)}px) rotate(${(tilt * 0.5).toFixed(1)}deg)`, offset: 0.5, easing: UI_CONFIG.easing.inOut },
       { transform: 'none' },
     ], { duration: cfg.shakeDuration * (1.3 + power * 0.4) });
   }
@@ -572,41 +574,96 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.round * 0.5);
   }
 
-  /**
-   * 天候が変わった：警報（サイレンの音・赤い縁のふちどり・大きな帯・画面の揺れ）。タップで飛ばせる。
-   * 天候がおさまったときは、小さな帯だけ。
-   */
-  async weatherChanged({ weather, name, icon: glyph, description, rounds, cause, previousName }, model) {
+  async weatherChanged({ weather, name, icon: glyph, description, rounds, cause, previous, previousName }, model) {
     model.weather = weather ? { type: weather, name, icon: glyph, description, roundsLeft: rounds } : null;
     this.renderer.setWeather(model.weather);
-    if (this.skipping) return;
-    const t = UI_CONFIG.timing;
+    if (this.skipping || UI_CONFIG.speed === 0) return;
+    const timing = UI_CONFIG.timing;
+
     if (!weather) {
-      this.banner(`${previousName ?? '天候'}がおさまった`, t.weatherEnd, 'small');
-      await this.delay(t.weatherEnd * 0.6);
+      await this.weatherNotice({
+        tone: 'neutral', type: previous, name: '通常の天候に戻った',
+        description: previousName ? `${previousName}の効果が終了しました` : '',
+        duration: timing.weatherEnd,
+      });
       return;
     }
+
     const tone = UI_CONFIG.weatherTone[weather] ?? 'alert';
-    sound.play(tone === 'alert' ? 'alarm' : 'weatherChime');
-    const alarm = this.fx(`fx-alarm ${tone}`);
-    this.animate(alarm, [{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0.25, offset: 0.35 }, { opacity: 1, offset: 0.55 }, { opacity: 0.25, offset: 0.75 }, { opacity: 0 }],
-      { duration: t.weatherAlarm, fill: 'forwards' }).then(() => alarm.remove());
-    this.banner(`${tone === 'alert' ? '⚠ ' : ''}${glyph ?? ''} ${name}${cause === 'card' ? '（呪文）' : ''}`, t.weatherAlarm, `weather ${tone}`);
-    if (description) setTimeout(() => { if (!this.skipping) this.banner(description, t.weatherAlarm * 0.8, 'small weather-note'); }, t.weatherAlarm * 0.25 * UI_CONFIG.speed);
+    sound.play(tone === 'alert' ? 'weatherSiren' : tone === 'calm' ? 'weatherRain' : 'weatherChime');
+    const alarm = this.fx('weather-alarm');
+    alarm.dataset.tone = tone;
     this.screenShake('weather');
-    await this.delay(t.weatherAlarm * 0.8);
+    const animation = this.animate(alarm, [
+      { opacity: 0 }, { opacity: .9, offset: .13 }, { opacity: .64, offset: .7 }, { opacity: 0 },
+    ], { duration: timing.weatherAlarm, fill: 'forwards' });
+    try {
+      await Promise.all([animation, this.weatherNotice({
+        tone, type: weather, glyph, name, description, duration: timing.weatherAlarm,
+        caption: cause === 'card' ? '天候の呪文' : tone === 'alert' ? '天候警報' : '天候が変化',
+      })]);
+    } finally {
+      alarm.remove();
+    }
   }
 
-  /** 大雨の雷：白く光って、画面が大きく揺れる（このあと castleDamaged） */
+  async weatherNotice({ tone, type, name, glyph, caption, description, duration }) {
+    const notice = this.fx('weather-notice');
+    notice.dataset.tone = tone;
+    const heading = document.createElement('strong');
+    heading.className = 'weather-notice-title';
+    heading.textContent = name;
+    notice.append(weatherIcon(type, glyph));
+    if (caption) {
+      const source = document.createElement('span');
+      source.className = 'weather-notice-caption';
+      source.textContent = caption;
+      notice.append(source);
+    }
+    notice.append(heading);
+    if (description) {
+      const text = document.createElement('p');
+      text.className = 'weather-notice-description';
+      text.textContent = description;
+      notice.append(text);
+    }
+    try {
+      await Promise.all([
+        this.animate(notice, [
+          { translate: '0 -12px', opacity: 0 }, { translate: '0 0', opacity: 1, offset: .14 },
+          { translate: '0 0', opacity: 1, offset: .83 }, { translate: '0 -5px', opacity: 0 },
+        ], { duration, easing: UI_CONFIG.easing.enter, fill: 'forwards' }),
+        this.delay(duration),
+      ]);
+    } finally {
+      notice.remove();
+    }
+  }
+
+  /** 大雨の雷。落ちた城を示し、実際の被害は続く城ダメージのイベントで出す。 */
   async weatherLightning({ playerId }) {
-    if (this.skipping) return;
+    if (this.skipping || UI_CONFIG.speed === 0) return;
     sound.play('thunder');
-    this.screenFlash('#fffbe0', 360);
     this.screenShake('weather');
     const castle = this.renderer.castleEl(playerId);
-    if (castle) this.impact(this.centerOf(castle), 'star', { size: 120, color: '#fff7a8', duration: 300 });
-    this.banner('⚡ 雷！', UI_CONFIG.timing.lightning, 'small');
-    await this.delay(UI_CONFIG.timing.lightning * 0.5);
+    const duration = UI_CONFIG.timing.lightning;
+
+    if (castle && !UI_CONFIG.reducedMotion) {
+      const target = this.centerOf(castle.querySelector('.castle-pic') ?? castle);
+      const board = this.el.board;
+      const top = board.getBoundingClientRect().top - this.el.app.getBoundingClientRect().top;
+      const bolt = this.fx('fx-bolt');
+      bolt.style.left = `${target.x}px`;
+      bolt.style.top = `${top}px`;
+      bolt.style.height = `${Math.max(38, target.y - top)}px`;
+      this.animate(bolt, [
+        { opacity: 0 }, { opacity: 1, offset: .16 }, { opacity: 0 },
+      ], { duration, fill: 'forwards' }).then(() => bolt.remove());
+      this.impact(target, 'star', { size: 100, color: '#fff2ae', duration: duration * .65 });
+    }
+    await this.weatherNotice({
+      tone: 'alert', type: 'heavyRain', name: `${playerName(playerId)}の城に落雷`, duration,
+    });
   }
 
   /** 霧で攻撃が外れた：外した兵士・魔物の上に「ミス！」。魔法のときは帯 */
@@ -713,34 +770,130 @@ export class Animations {
     } finally { stage.remove(); }
   }
 
+  async recruitBeast(piece, destination, mine) {
+    if (this.skipping || UI_CONFIG.speed === 0) return;
+    const def = this.cards[piece.type];
+    if (!def) return;
+    const center = this.centerOf(this.renderer.el.field);
+    const bounds = this.el.app.getBoundingClientRect();
+    const start = piece.from ?? center;
+    const rect = destination?.getBoundingClientRect();
+    const end = rect?.width ? {
+      x: Math.max(32, Math.min(bounds.width - 32, rect.left + rect.width / 2 - bounds.left)),
+      y: rect.top + rect.height / 2 - bounds.top,
+    } : this.centerOf(document.getElementById(mine ? 'hand-count' : 'turn-status'));
+    const stage = this.fx('recruit-stage', center);
+    const rune = this.fx('recruit-sigil', start);
+    const title = document.createElement('strong');
+    title.className = 'recruit-heading';
+    title.textContent = mine ? '魔物の駒を獲得' : '相手が魔物の駒を獲得';
+    const badge = document.createElement('span');
+    badge.className = 'recruit-count';
+    badge.textContent = mine ? '手札に＋1枚' : '相手の手札に＋1枚';
+    const card = this.effectCard(piece.type, def.name);
+    stage.append(title, card, badge);
+    const timing = UI_CONFIG.timing;
+    sound.play('beastRecruit');
+    try {
+      if (UI_CONFIG.reducedMotion) {
+        rune.remove();
+        await this.delay(timing.beastRecruitStill);
+        return;
+      }
+      if (destination && rect?.width) destination.style.visibility = 'hidden';
+      const duration = timing.beastRecruit;
+      this.sparks(start, { color: '#a9ffd7', count: 13, size: 6, spread: 94, duration: duration * .5 });
+      this.ring(start, { color: '#68dda4', size: 160, duration: 360 });
+      const gleam = document.createElement('span');
+      gleam.className = 'recruit-gleam';
+      card.append(gleam);
+      const crest = document.createElement('span');
+      crest.className = 'recruit-crest';
+      stage.prepend(crest);
+      const sourceX = start.x - center.x;
+      const sourceY = start.y - center.y;
+      const x = end.x - center.x;
+      const y = end.y - center.y;
+      const pose = (x, y, scale, roll, yaw = 0) =>
+        `translate(-50%, -50%) translate(${x}px, ${y}px) perspective(650px) rotateY(${yaw}deg) rotate(${roll}deg) scale(${scale})`;
+      await Promise.all([
+        this.animate(crest, [
+          { opacity: 0, scale: .5, rotate: '-45deg' },
+          { opacity: .9, scale: 1, rotate: '0deg', offset: .38 },
+          { opacity: .68, scale: 1.12, rotate: '15deg', offset: .65 },
+          { opacity: 0, scale: 1.25, rotate: '36deg', offset: .88 },
+          { opacity: 0 },
+        ], { duration, fill: 'both' }),
+        this.animate(gleam, [
+          { opacity: 0, backgroundPosition: '110% 0' },
+          { opacity: 0, backgroundPosition: '110% 0', offset: .24 },
+          { opacity: 1, backgroundPosition: '62% 0', offset: .38 },
+          { opacity: 0, backgroundPosition: '-15% 0', offset: .57 },
+          { opacity: 0 },
+        ], { duration, fill: 'both' }),
+        this.animate(rune, [
+          { opacity: 0, scale: .25, rotate: '-30deg' },
+          { opacity: .95, scale: 1.05, rotate: '35deg', offset: .38 },
+          { opacity: 0, scale: 1.6, rotate: '75deg' },
+        ], { duration: duration * .58, fill: 'both' }),
+        this.animate(stage, [
+          { transform: pose(sourceX, sourceY, .14, -23, 62), opacity: 0 },
+          { transform: pose(sourceX * .24, sourceY * .2 - 18, .75, -10, -32), opacity: 1, offset: .22, easing: UI_CONFIG.easing.enter },
+          { transform: pose(0, -6, 1.08, 3), opacity: 1, offset: .38 },
+          { transform: pose(0, 0, 1, 0), opacity: 1, offset: .67, easing: UI_CONFIG.easing.exit },
+          { transform: pose(x * .43, y * .38 - 22, .69, 12), opacity: .98, offset: .83 },
+          { transform: pose(x, y, .39, 0), opacity: 0 },
+        ], { duration, fill: 'both' }),
+      ]);
+      if (destination && rect?.width && !this.skipping) {
+        this.ring(end, { color: '#9effc5', size: 64, duration: 170 });
+      }
+    } finally {
+      stage.remove();
+      rune.remove();
+      if (destination) destination.style.visibility = '';
+    }
+  }
+
   async cardDrawn({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
-    if (pl.pendingReward) {
+    // 駒は魔物撃破直後の別イベント。ごほうびと山札のドローから独立して扱う。
+    const piece = pl.pendingPiece;
+    delete pl.pendingPiece;
+    if (!piece && pl.pendingReward) {
       const reward = pl.pendingReward; delete pl.pendingReward;
       await this.revealReward(reward, cardIds[0], ctx);
     }
-    for (const cardId of cardIds) {
+    for (const [index, cardId] of cardIds.entries()) {
+      const isPiece = Boolean(piece && index === 0);
       pl.handCount += 1;
-      if (pl.generatedDraws > 0) pl.generatedDraws -= 1;
+      if (isPiece) {
+        // オンラインで相手に見せないIDは、枚数表示だけに使う。
+        if (!cardId.startsWith('hidden-')) model.pieceCards.add(cardId);
+      } else if (pl.generatedDraws > 0) pl.generatedDraws -= 1;
       else if (pl.luck?.draws > 0) {
         pl.luck.draws -= 1;
         if (!pl.luck.draws) pl.luck = null;
       } else if (model.deckMode !== 'shared' && playerId !== ctx.viewerId) { /* 相手の山札は自分の表示に反映しない */ }
       else if (model.preShuffleDraws > 0) model.preShuffleDraws -= 1;
       else model.deckCount = Math.max(0, model.deckCount - 1);
-      this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
-      if (playerId === ctx.viewerId) {
+      this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: !isPiece });
+      const mine = playerId === ctx.viewerId;
+      if (mine) {
         const card = ctx.lookupCard(cardId);
         if (card) {
           model.hand.push(card);
           this.handView.addCard(card);
-          this.flyFromDeck(card);
-          sound.play('draw');
+          if (!isPiece) {
+            this.flyFromDeck(card);
+            sound.play('draw');
+          }
         }
       } else {
         this.renderer.setOppHandCount(pl.handCount);
       }
-      await this.delay(UI_CONFIG.timing.draw);
+      if (isPiece) await this.recruitBeast(piece, mine ? this.handView.cardEl(cardId) : null, mine);
+      else await this.delay(UI_CONFIG.timing.draw);
     }
   }
 
@@ -752,7 +905,7 @@ export class Animations {
     const app = this.el.app.getBoundingClientRect();
     const r = el.getBoundingClientRect();
     if (!r.width) return; // 手札をたたんでいる
-    const from = this.centerOf(pile);
+    const from = this.centerOf(pile.getClientRects().length ? pile : document.getElementById('hud'));
     const to = { x: Math.max(r.width / 2, Math.min(app.width - r.width / 2, r.left - app.left + r.width / 2)), y: r.top - app.top + r.height / 2 };
     const clone = el.cloneNode(true);
     clone.classList.remove('new', 'selected', 'dim');
@@ -769,7 +922,7 @@ export class Animations {
     const base = 'translate(-50%, -50%)';
     this.animate(clone, [
       { transform: `${base} translate(${dx}px, ${dy}px) scale(.18) rotate(-30deg)`, opacity: 0.7, easing: 'cubic-bezier(.3, .6, .3, 1)' },
-      { transform: `${base} translate(${dx * 0.2}px, ${Math.min(-30, dy * 0.12)}px) scale(1.15) rotate(6deg)`, opacity: 1, offset: 0.68, easing: 'ease-in' },
+      { transform: `${base} translate(${dx * 0.2}px, ${Math.min(-30, dy * 0.12)}px) scale(1.15) rotate(6deg)`, opacity: 1, offset: 0.68, easing: UI_CONFIG.easing.exit },
       { transform: `${base} translate(0, 4px) scale(1.03, .96)`, offset: 0.9 },
       { transform: `${base} scale(1)` },
     ], { duration: UI_CONFIG.timing.drawFly, fill: 'forwards' }).then(() => {
@@ -788,7 +941,8 @@ export class Animations {
     if (!free && def.kind === 'soldier') pl.soldiersPlayedThisTurn = (pl.soldiersPlayedThisTurn ?? 0) + 1;
     else if (!free && def.kind === 'spell' && !['summonSpirit', 'gainCoins', 'gainMp'].includes(def.effect)) pl.playedThisTurn = true;
     pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
-    if (!def.exhaust && (model.deckMode === 'shared' || playerId === ctx.viewerId)) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
+    if (!def.exhaust && def.monster === undefined && (model.deckMode === 'shared' || playerId === ctx.viewerId)) model.discardCount += 1;
+    model.pieceCards.delete(cardId);
     model.hand = model.hand.filter((c) => c.cardId !== cardId);
     let clone;
     let from;
@@ -831,7 +985,7 @@ export class Animations {
       { transform: `${base} translate(0, 8px) scale(.94, .9)`, offset: 0.07, easing: 'cubic-bezier(.2, .7, .3, 1)' },
       { transform: `${base} translate(${dx}px, ${dy}px) scale(1.86) rotate(${lean}deg)`, offset: 0.33 },
       { transform: `${base} translate(${dx}px, ${dy}px) scale(1.66) rotate(0deg)`, offset: 0.42 },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75, easing: 'ease-in' },
+      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75, easing: UI_CONFIG.easing.exit },
       { transform: `${base} translate(${dx}px, ${dy - 30}px) scale(1.4)`, opacity: 0 },
     ], { duration: dur, fill: 'forwards' }).then(() => clone.remove());
     const rank = Math.max(0, Object.keys(this.rarities ?? {}).indexOf(def.rarity));
@@ -848,7 +1002,10 @@ export class Animations {
   async cardDiscarded({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
     pl.handCount = Math.max(0, pl.handCount - cardIds.length);
-    if (model.deckMode === 'shared' || playerId === ctx.viewerId) model.discardCount += cardIds.length;
+    if (model.deckMode === 'shared' || playerId === ctx.viewerId) {
+      model.discardCount += cardIds.filter(id => !model.pieceCards.has(id)).length;
+    }
+    for (const id of cardIds) model.pieceCards.delete(id);
     model.phase = 'main';
     model.discardRequired = 0;
     model.hand = model.hand.filter((c) => !cardIds.includes(c.cardId));
@@ -887,7 +1044,7 @@ export class Animations {
       this.sparks(here, { count: 7, color: '#d9b8ff', spread: 34, size: 7 });
       await this.animate(token, [
         { transform: 'translateY(-10px) scale(.1, 1.6) rotate(-90deg)', opacity: 0 },
-        { transform: 'translateY(-8px) scale(1.15) rotate(8deg)', opacity: 1, offset: 0.6, easing: 'ease-out' },
+        { transform: 'translateY(-8px) scale(1.15) rotate(8deg)', opacity: 1, offset: 0.6, easing: UI_CONFIG.easing.enter },
         { transform: 'none' },
       ], { duration: dur });
       return;
@@ -904,7 +1061,7 @@ export class Animations {
       { transform: `translate(${dx}px, ${dy}px) scale(.3)`, opacity: 0, easing: 'cubic-bezier(.2, .6, .4, 1)' },
       { transform: `translate(${dx * 0.75}px, ${dy * 0.75}px) scale(.6)`, opacity: 1, offset: 0.18 },
       { transform: `translate(${dx * 0.25}px, ${dy * 0.25 - 26}px) scale(1.06, 1.1)`, offset: 0.6, easing: 'cubic-bezier(.6, 0, 1, .7)' },
-      { transform: 'translate(0, 0) scale(1.22, .78)', offset: 0.8, easing: 'ease-out' },
+      { transform: 'translate(0, 0) scale(1.22, .78)', offset: 0.8, easing: UI_CONFIG.easing.enter },
       { transform: 'translate(0, 0) scale(.95, 1.06)', offset: 0.9 },
       { transform: 'none' },
     ], { duration: dur * (heavy ? 1.25 : 1) });
@@ -963,7 +1120,7 @@ export class Animations {
     const heavy = motion === 'giant' || motion === 'heavy';
     const token = el.querySelector('.soldier-token');
     this.animate(token, [
-      { transform: `scale(${heavy ? 1.2 : 1.12}, ${heavy ? 0.8 : 0.88})`, offset: 0.3, easing: 'ease-out' },
+      { transform: `scale(${heavy ? 1.2 : 1.12}, ${heavy ? 0.8 : 0.88})`, offset: 0.3, easing: UI_CONFIG.easing.enter },
       { transform: 'scale(.97, 1.04)', offset: 0.65 },
       { transform: 'none' },
     ], { duration: heavy ? 260 : 190 });
@@ -1047,12 +1204,12 @@ export class Animations {
       // ねらう：弓兵は体を引いてしぼる。魔法使いは浮いて杖の先に光をためる
       this.animate(token, mage ? [
         { transform: 'none' },
-        { transform: 'translateY(-8px) scale(1.08)', offset: 0.6, easing: 'ease-out' },
+        { transform: 'translateY(-8px) scale(1.08)', offset: 0.6, easing: UI_CONFIG.easing.enter },
         { transform: `translate(${ux * 5}px, ${uy * 5}px) scale(.95, 1.05)`, offset: 0.7 },
         { transform: 'none' },
       ] : [
         { transform: 'none' },
-        { transform: `translate(${-ux * 8}px, ${-uy * 8}px) rotate(-7deg) scale(1.07, .94)`, offset: 0.6, easing: 'ease-out' },
+        { transform: `translate(${-ux * 8}px, ${-uy * 8}px) rotate(-7deg) scale(1.07, .94)`, offset: 0.6, easing: UI_CONFIG.easing.enter },
         { transform: `translate(${ux * 6}px, ${uy * 6}px) rotate(4deg)`, offset: 0.68 },
         { transform: 'none' },
       ], { duration: t.shotAim / 0.6 });
@@ -1062,7 +1219,7 @@ export class Animations {
         this.animate(orb, [
           { transform: 'translate(-50%, -50%) scale(.1)', opacity: 0.5 },
           { transform: `translate(-50%, -50%) scale(${1 + power})`, opacity: 1 },
-        ], { duration: t.shotAim, easing: 'ease-in', fill: 'forwards' }).then(() => orb.remove());
+        ], { duration: t.shotAim, easing: UI_CONFIG.easing.exit, fill: 'forwards' }).then(() => orb.remove());
       }
       await this.delay(t.shotAim);
       sound.play(mage ? 'magicShot' : 'bow', power);
@@ -1090,7 +1247,7 @@ export class Animations {
           { transform: at(0, 0, 0.6), opacity: 1 },
           { transform: at(dx * 0.5 - uy * bow, dy * 0.5 + ux * bow), opacity: 1, offset: 0.5 },
           { transform: at(dx, dy), opacity: 1 },
-        ], { duration: flight, easing: mage ? 'ease-in' : 'cubic-bezier(.3, 0, .7, .6)', fill: 'forwards' });
+        ], { duration: flight, easing: mage ? UI_CONFIG.easing.exit : 'cubic-bezier(.3, 0, .7, .6)', fill: 'forwards' });
         projectile.remove();
         if (!this.skipping) {
           if (mage) {
@@ -1149,7 +1306,7 @@ export class Animations {
         { transform: base, opacity: 1 },
         { transform: `${base} translateY(18%) scale(1.25, .3)`, opacity: 0.9, offset: 0.7 },
         { transform: `${base} translateY(24%) scale(1.4, .1)`, opacity: 0 },
-      ], { duration: dur, easing: 'ease-in', fill: 'forwards' });
+      ], { duration: dur, easing: UI_CONFIG.easing.exit, fill: 'forwards' });
       return;
     }
     const x = (ko?.x ?? 0) * UI_CONFIG.soldierHit.knockOut;
@@ -1159,7 +1316,7 @@ export class Animations {
     this.puff({ x: at.x + x * 0.9, y: at.y + y * 0.9 }, { size: 50, delay: dur * 0.55, dy: -14 });
     await this.animate(el, [
       { transform: base, opacity: 1, easing: 'cubic-bezier(.1, .7, .4, 1)' },
-      { transform: `${base} translate(${x * 0.8}px, ${y * 0.8 - 18}px) rotate(${spin * 0.6}deg) scale(.9)`, opacity: 1, offset: 0.6, easing: 'ease-in' },
+      { transform: `${base} translate(${x * 0.8}px, ${y * 0.8 - 18}px) rotate(${spin * 0.6}deg) scale(.9)`, opacity: 1, offset: 0.6, easing: UI_CONFIG.easing.exit },
       { transform: `${base} translate(${x}px, ${y}px) rotate(${spin}deg) scale(.4)`, opacity: 0 },
     ], { duration: dur, fill: 'forwards' });
   }
@@ -1296,7 +1453,7 @@ export class Animations {
     this.animate(mark, [
       { transform: 'translate(-50%, -50%) scale(.2)', opacity: 0 },
       { transform: `translate(-50%, -50%) scale(${0.8 + tier * 0.25})`, opacity: 0.75 },
-    ], { duration: dur, easing: 'ease-in', fill: 'forwards' }).then(() => mark.remove());
+    ], { duration: dur, easing: UI_CONFIG.easing.exit, fill: 'forwards' }).then(() => mark.remove());
     if (tier >= 3) {
       // 最上位：空が暗くなり、地面がふるえる
       const dark = this.fx('fx-flash');
@@ -1432,7 +1589,7 @@ export class Animations {
     const k = Math.min(1, amount / 20);
     if (!finish) {
       this.animate(pic, [
-        { transform: `translateY(${(k * 5).toFixed(1)}px) scale(${(1 + k * 0.1).toFixed(3)}, ${(1 - k * 0.14).toFixed(3)})`, offset: 0.18, easing: 'ease-out' },
+        { transform: `translateY(${(k * 5).toFixed(1)}px) scale(${(1 + k * 0.1).toFixed(3)}, ${(1 - k * 0.14).toFixed(3)})`, offset: 0.18, easing: UI_CONFIG.easing.enter },
         { transform: `scale(${(1 - k * 0.04).toFixed(3)}, ${(1 + k * 0.06).toFixed(3)})`, offset: 0.5 },
         { transform: 'none' },
       ], { duration: 280 + k * 160 });
@@ -1466,7 +1623,7 @@ export class Animations {
         { transform: 'translate(-50%, -50%) scale(.2)', opacity: 0 },
         { transform: 'translate(-50%, calc(-50% - 14px)) scale(1)', opacity: 1, offset: 0.25 },
         { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 16}px), calc(-50% - ${50 + Math.random() * 30}px)) scale(.6)`, opacity: 0 },
-      ], { duration: UI_CONFIG.timing.heal * 1.6, delay: i * 35 * UI_CONFIG.speed, easing: 'ease-out', fill: 'both' }).then(() => plus.remove());
+      ], { duration: UI_CONFIG.timing.heal * 1.6, delay: i * 35 * UI_CONFIG.speed, easing: UI_CONFIG.easing.enter, fill: 'both' }).then(() => plus.remove());
     }
     this.number(castle, `+${amount}`, { kind: 'heal', size: UI_CONFIG.healNumber.size, duration: UI_CONFIG.healNumber.duration });
     await this.delay(UI_CONFIG.timing.heal);
@@ -1581,12 +1738,12 @@ export class Animations {
       stamp.innerHTML = imageArt(`fx/${frozen ? 'ice' : 'poison'}.png`, '', 'art');
       this.animate(stamp, frozen ? [
         { transform: 'translate(-50%, -50%) scale(1.9)', opacity: 0 },
-        { transform: 'translate(-50%, -50%) scale(.9)', opacity: 1, offset: 0.3, easing: 'ease-out' },
+        { transform: 'translate(-50%, -50%) scale(.9)', opacity: 1, offset: 0.3, easing: UI_CONFIG.easing.enter },
         { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 0.6 },
         { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 },
       ] : [
         { transform: 'translate(-50%, -30%) scale(.4)', opacity: 0 },
-        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.95, offset: 0.4, easing: 'ease-out' },
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.95, offset: 0.4, easing: UI_CONFIG.easing.enter },
         { transform: 'translate(-50%, -75%) scale(1.15)', opacity: 0 },
       ], { duration: UI_CONFIG.timing.status * 1.6, fill: 'forwards' }).then(() => stamp.remove());
       if (frozen) this.debris(c, { count: 5, spread: 30, size: 6, colors: ['#e6f7ff', '#a9defa', '#7cc4ee'] });
@@ -1666,7 +1823,7 @@ export class Animations {
       this.animate(token, [
         { transform: `translate(${dx}px, ${dy}px) scale(1.3)` },
         { transform: 'translate(0, 0) scale(1)' },
-      ], { duration: UI_CONFIG.timing.monsterAttack, easing: 'ease-out' });
+      ], { duration: UI_CONFIG.timing.monsterAttack, easing: UI_CONFIG.easing.enter });
     }
     if (amount > 0) await this.castleHit(playerId, amount, hp);
     else this.renderer.setCastleHp(playerId, hp);
@@ -1693,13 +1850,14 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.afterMonsterHit);
   }
 
-  async monsterDefeated({ monsterId, playerId, reward, rewardRarity, baseRarity, lucky }, model) {
+  async monsterDefeated({ monsterId, playerId, reward, rewardRarity, baseRarity, lucky, pieceType }, model) {
+    const el = this.renderer.monsterEl(monsterId);
+    if (pieceType) model.players[playerId].pendingPiece = { type: pieceType, from: el ? this.centerOf(el) : null };
     if (rewardRarity) {
       model.players[playerId].generatedDraws = (model.players[playerId].generatedDraws ?? 0) + 1;
       model.players[playerId].pendingReward = { playerId, rarity: rewardRarity, base: baseRarity, lucky };
     }
     model.monsters = (model.monsters ?? []).filter((m) => m.monsterId !== monsterId);
-    const el = this.renderer.monsterEl(monsterId);
     if (!el || this.skipping) {
       this.renderer.removeMonster(monsterId);
       return;
@@ -1714,8 +1872,8 @@ export class Animations {
     const base = 'translate(-50%, -50%)';
     await this.animate(el, [
       { opacity: 1, transform: `${base} scale(1)` },
-      { opacity: 1, transform: `${base} scale(.86, 1.12) rotate(-6deg)`, offset: 0.3, easing: 'ease-out' },
-      { opacity: 1, transform: `${base} scale(1.3) rotate(5deg)`, offset: 0.75, easing: 'ease-in' },
+      { opacity: 1, transform: `${base} scale(.86, 1.12) rotate(-6deg)`, offset: 0.3, easing: UI_CONFIG.easing.enter },
+      { opacity: 1, transform: `${base} scale(1.3) rotate(5deg)`, offset: 0.75, easing: UI_CONFIG.easing.exit },
       { opacity: 0, transform: `${base} scale(1.7, .3)` },
     ], { duration: UI_CONFIG.rewardFx.collapse * 2, fill: 'forwards' });
     if (!this.skipping) {
@@ -1823,13 +1981,13 @@ export class Animations {
 
   confetti(container, colors) {
     container.innerHTML = '';
-    const n = 70;
+    const n = 42;
     for (let i = 0; i < n; i++) {
       const c = document.createElement('i');
       c.style.left = `${Math.random() * 100}%`;
       c.style.background = colors[i % colors.length];
-      c.style.animationDuration = `${1800 + Math.random() * 1800}ms`;
-      c.style.animationDelay = `${Math.random() * 600}ms`;
+      c.style.animationDuration = `${i === n - 1 ? 1650 : 1050 + Math.random() * 550}ms`;
+      c.style.animationDelay = `${i === n - 1 ? 250 : Math.random() * 250}ms`;
       c.style.setProperty('--dx', `${(Math.random() - 0.5) * 160}px`);
       c.style.setProperty('--rot', `${(Math.random() - 0.5) * 1440}deg`);
       container.appendChild(c);

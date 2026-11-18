@@ -7,7 +7,6 @@
 .detail-rarity, .rarity-label { display: inline-block; border-left: 4px solid var(--rarity); padding: 2px 7px; font-size: 11px; margin-top: 6px; color: #354e40; background: #f3eedf; }
 .detail-meta { font-size: 10px; line-height: 1.7; margin-top: 8px; color: #7c765f; }
 .detail-close { justify-self: end; margin: 0; }.detail-use { grid-column: 2; align-self: end; }
-.card.can-fuse::after { content: '合成可'; position: absolute; bottom: -5px; right: 3px; z-index: 5; border-radius: 5px; background: #315d4e; color: #fff5cf; padding: 2px 4px; font-size: 8px; }
 .card[data-rarity=epic] { box-shadow: 0 0 0 1px var(--rarity), 0 4px 14px #9b59d026; }
 .card[data-rarity=legendary] { background: linear-gradient(135deg, #fff3ce, #fffaf0, #f9df91); box-shadow: 0 0 0 2px var(--rarity), 0 0 14px #f0a02066; }
 .card[data-rarity=legendary] .card-art { background: radial-gradient(ellipse, #ffe89e, #fff7df); }
@@ -58,16 +57,13 @@
 #hand .card.group-start:not(:first-child) { margin-left: 14px; }
 
 /* 適応（どのカードとでも合成できる）：虹色 */
-@keyframes rainbow-shift { to { background-position: 200% 0; } }
 .card.wild, .mini-card.wild {
   --rarity: #c77dff;
   background: linear-gradient(115deg, #ffd6e0, #ffe9c2, #fffbc2, #d4f5d9, #cdeaff, #e6d4ff, #ffd6e0) 0 0 / 200% 100%;
   box-shadow: 0 0 0 2px #fff, 0 0 14px #c77dff99, 0 0 24px #4db8f066;
-  animation: rainbow-shift 6s linear infinite;
 }
 .card.wild { border-color: #c77dff; }
 .card.wild .card-art { background: radial-gradient(ellipse, #fff, #f6ecff); }
-@media (prefers-reduced-motion: reduce) { .card.wild, .mini-card.wild { animation: none; } }
 
 /* スペシャルの虹色は専用PNGに含む。名前と印は無地の部分に重ねる。 */
 .detail-rarity[style*="#c77dff"], .rarity-label[style*="#c77dff"] { border-image: linear-gradient(#ff5d73, #ffb347, #fff176, #5fd98f, #4db8f0, #b57cf0) 1; }
