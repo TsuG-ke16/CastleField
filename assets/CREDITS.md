@@ -264,6 +264,8 @@ OpenAIの画像生成ツールで生成したオリジナル素材シートか�
 - `bg/title-compact.png`、`bg/board-meadow-compact.png`：既存の `bg/title.png`、`bg/board-meadow.png` をPillowで縮小・パレット圧縮。元画像の出どころ・利用条件を継承（本ファイルの元画像の項を参照）。新しい絵の生成は行っていません。
 - `ui/title-castle-blue.png`、`ui/title-castle-orange.png`、`ui/title-knight-blue.png`、`ui/title-infantry-orange.png`：既存の同名の城・兵士PNGのタイトル用縮小版。Pillowでリサイズ・圧縮。元画像の出どころ・利用条件を継承。
 - `ui/app-icon-192.png`、`ui/app-icon-512.png`：既存の `ui/icon-mode-solo.png` をPillowでリサイズ・圧縮。元画像の出どころ・利用条件を継承。
+- `ui/app-icon-maskable-512.png`、`ui/apple-touch-icon.png`：`ui/app-icon-512.png` を、背景色（#f6f1dc）の上にPillowで重ねたもの（Androidのマスク対応・iPhoneのホーム画面用。透明部分をなくした）。新しい絵の生成は行っていません。元画像の出どころ・利用条件を継承。（2026-11-18）
+- `cards/frame-*.png`（全11枚）：縁に残っていた背景の塗り（桃色・クリーム色）と、縁の白っぽい色のにじみをPillowで除去（透明な所につながる塊だけを消し、縁の色は内側の色に寄せた）。新しい絵の生成は行っていません。元画像の出どころ・利用条件を継承。（2026-11-18）
 - `review/offline/*.png`：Playwright同梱Chromiumで保存状態・オフラインCPU戦・決着を撮影。ゲーム内素材の条件は各項を参照。
 
 ### 城・精霊・カード裏面・勝敗（2026-11-16）

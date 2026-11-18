@@ -1,9 +1,10 @@
-/* 枠の絵を共用し、カードの面にだけ偏光を重ねる。 */
+/* 枠の絵を共用し、カードの面にだけ偏光を重ねる。
+   薄いフィルムは「絵の窓」と同じ大きさで、絵のすぐ上・枠の下に置く（枠をいちばん上にして、枠にかぶらない）。 */
 .foil-sheet {
   position: absolute;
   inset: 1% 14% 12%;
-  z-index: 2;
-  border-radius: 8%;
+  z-index: 1;
+  border-radius: 2px;
   pointer-events: none;
   mix-blend-mode: screen;
   opacity: .44;
@@ -26,7 +27,7 @@
 :is(.card, .mini-card)[data-rarity="special"] {
   --foil: conic-gradient(from 50deg at 40% 58%, #ed9dee99, #91c6ffb3, #a6ffdfb5, #ffed9bb0, #ff8596c7, #ed9dee99);
 }
-:is(.card, .mini-card)[data-rarity="special"] > .foil-sheet { inset: 0 13% 6%; opacity: .58; }
+:is(.card, .mini-card)[data-rarity="special"] > .foil-sheet { opacity: .58; }
 
 .foil-visible:not(.foil-input) > .foil-sheet { animation: card-foil-sweep 7s ease-in-out infinite; }
 @keyframes card-foil-sweep {
@@ -37,3 +38,14 @@
 @media (prefers-reduced-motion: reduce) {
   .foil-visible > .foil-sheet { animation: none; background-position: 50% 50%, center; }
 }
+
+/* 絵の窓と同じ位置・大きさ（card-base.css の絵の窓と同じ式）。手札のカードは絵が z-index 0・枠が 1、小さなカードは絵が 1・枠が 2 */
+#app .card.has-frame > .foil-sheet, #app .mini-card > .foil-sheet {
+  inset: auto;
+  left: calc(50% + (var(--win-l) - 1% - var(--fx)) / var(--fh));
+  top: calc((var(--win-t) - 1% - var(--fy)) / var(--fh));
+  width: calc((var(--win-w) + 2%) / var(--fh));
+  height: calc((var(--win-h) + 2%) / var(--fh));
+}
+#app .card.has-frame > .foil-sheet { z-index: 0; }
+#app .mini-card > .foil-sheet { z-index: 1; }

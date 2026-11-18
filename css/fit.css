@@ -1,0 +1,42 @@
+/* 画面の大きさに合わせる調整（最後に読む）。実機は「ブラウザの帯・ホーム画面アプリの帯」で高さが変わるので、
+   高さが足りないときは、余白・絵・説明文を段階的に縮めて、スクロールなしで収める。 */
+
+/* タイトル画面：縦長の画面 */
+@media (orientation: portrait) and (max-height: 830px) {
+  #app #title .title-pic { height: 22px; margin-block: 0 2px; }
+  #app #title .title-box { gap: 6px; }
+}
+@media (orientation: portrait) and (max-height: 700px) {
+  #app #title .title-pic { display: none; }
+  #app #title .title-logo { max-width: 160px; }
+  #app #title #title-main .mode-choice { min-height: 50px; padding-block: 2px; }
+  #app #title #title-main .title-links button { min-height: 36px; }
+  #app #title .mode-choice small { font-size: 10px; line-height: 1.25; }
+  #app #title-main { gap: 5px; }
+}
+@media (orientation: portrait) and (max-height: 680px) {
+  #title-deck-preview { display: none; }
+}
+@media (orientation: portrait) and (max-height: 620px) {
+  #app #title .title-pic { display: none; }
+  #app #title .title-logo { max-width: 130px; }
+  #app #title .mode-choice small { display: none; }
+  #app #title .mode-choice { min-height: 44px; }
+  #title-deck-preview { display: none; }
+}
+/* 小さな画面（幅）：ボタンの説明は2行までで、枠からはみ出さない */
+@media (max-width: 340px) {
+  #app #title .mode-choice small { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}
+/* 横向き：高さが足りないので、デッキのプレビューは出さない（デッキ編成の画面で見られる） */
+@media (orientation: landscape) and (max-height: 480px) {
+  #title-deck-preview { display: none; }
+}
+
+/* 対戦画面：高さが足りない小さな縦画面（iPhone SE など）は、手札を小さくして盤面を広げる */
+@media (orientation: portrait) and (max-height: 620px) {
+  :root { --hand-height: 118px; }
+  #app #hand .card { width: 70px; height: 100px; }
+  #app #hand { padding-block: 4px 6px; }
+  #app #hand .card.has-frame .card-name { font-size: 10px; }
+}

@@ -1,37 +1,47 @@
 /* デッキ編成・図鑑のカードを長押しして、大きく見る（js/ui/CardZoom.js）。 */
 [data-zoom] { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
 .card-zoom {
-  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0;
-  border: 0; background: rgba(14, 22, 20, .86); color: #fff4da;
-  overflow: hidden; touch-action: none; overscroll-behavior: contain;
+  position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; border: 0;
+  background: rgba(14, 22, 20, .86); color: #fff4da; box-sizing: border-box;
+  /* 画面の高さが足りないときは、上が切れずにスクロールできる（上下の安全領域もよける） */
+  padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
+  overflow-y: auto; overscroll-behavior: contain;
 }
-.card-zoom[open] { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; box-sizing: border-box; }
+.card-zoom[open] { display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 8px; }
 .card-zoom::backdrop { background: rgba(8, 14, 12, .7); }
 .zoom-close {
-  position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; z-index: 3; width: 44px; height: 44px;
+  position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); z-index: 3; width: 44px; height: 44px;
   border-radius: 50%; border: 2px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 24px; line-height: 1;
 }
-.zoom-stage { display: grid; place-items: center; padding: 46px 30px 22px; perspective: 900px; touch-action: none; }
+/* 画面の高さに合わせて、カードの大きさを決める（文字の分として約 230px を残す） */
+.zoom-stage {
+  --zw: clamp(120px, min(56vw, 230px, calc((100dvh - 250px) * .667)), 230px);
+  position: relative; display: grid; place-items: center; flex: none;
+  padding: calc(var(--zw) * .2) calc(var(--zw) * .14) calc(var(--zw) * .1);
+  perspective: 900px; touch-action: none;
+}
+/* 影は、動かさない別の層に置く（動くカードに filter をかけると重くなってカクつくため） */
+.zoom-stage::before {
+  content: ""; position: absolute; left: 14%; right: 14%; bottom: 3%; height: 7%; border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, .55), transparent 70%); pointer-events: none;
+}
 .zoom-card.mini-card {
-  position: relative; width: min(56vw, 230px); height: auto; aspect-ratio: 2 / 3;
-  transform-style: preserve-3d; transition: transform .16s ease-out;
-  filter: drop-shadow(0 18px 22px rgba(0, 0, 0, .55));
-  will-change: transform;
+  position: relative; width: var(--zw); height: auto; aspect-ratio: 2 / 3;
+  transform: translate3d(0, 0, 0); will-change: transform; backface-visibility: hidden;
 }
-.zoom-card.mini-card:not(.zoom-active) { transition: transform .45s cubic-bezier(.2, .9, .3, 1); }
-/* 拡大したぶん、文字も大きく */
-.zoom-card .mini-card-name { font-size: clamp(15px, 5.4vw, 23px); }
-.zoom-card .mini-card-rarity { font-size: 24px; }
-/* 偏光：どのレアリティでも、指の位置にツヤの光を重ねる（レア以上は Hologram.js の虹色も重なる） */
+/* 拡大したぶん、文字・マークも大きく */
+.zoom-card .mini-card-name { font-size: calc(var(--zw) * .092); }
+.zoom-card .mini-card-kind .ic, .zoom-card .mini-card-rarity .ic { width: 96%; height: 96%; max-width: none; max-height: none; }
+.zoom-card .mini-card-kind, .zoom-card .mini-card-rarity { font-size: calc(var(--zw) * .115); }
+.zoom-card .mini-card-rarity .icon-text, .zoom-card .mini-card-rarity .asset-fallback { font-size: calc(var(--zw) * .115); }
+/* 偏光：どのレアリティでも、指の位置にツヤの光を重ねる。絵の窓の中だけ（枠の下） */
 .zoom-card::after {
-  content: ""; position: absolute; inset: 3% 11% 8%; z-index: 6; border-radius: 8%; pointer-events: none; mix-blend-mode: soft-light;
+  content: ""; position: absolute; z-index: 1; pointer-events: none; mix-blend-mode: soft-light; opacity: .75;
+  left: calc(50% + (var(--win-l) - 1% - var(--fx)) / var(--fh)); top: calc((var(--win-t) - 1% - var(--fy)) / var(--fh));
+  width: calc((var(--win-w) + 2%) / var(--fh)); height: calc((var(--win-h) + 2%) / var(--fh));
   background: radial-gradient(circle at var(--gloss-x, 40%) var(--gloss-y, 28%), #ffffffd9 0, #ffffff55 22%, transparent 55%);
-  opacity: .8;
 }
-.zoom-card .foil-sheet { opacity: .66; }
-.zoom-name { margin: 6px 0 0; font-weight: 900; font-size: 20px; text-align: center; }
-.zoom-text { margin: 0; max-width: min(92vw, 420px); font-size: 14px; line-height: 1.7; text-align: center; color: #f3e6c8; }
+.zoom-name { margin: 4px 0 0; font-weight: 900; font-size: 20px; text-align: center; }
+.zoom-text { margin: 0; max-width: min(92vw, 420px); font-size: 14px; line-height: 1.6; text-align: center; color: #f3e6c8; }
 .zoom-hint { margin: 2px 0 0; font-size: 11px; color: #cdbd9a; text-align: center; }
-@media (prefers-reduced-motion: reduce) { .zoom-card.mini-card { transition: none; } }
-.reduced-motion .zoom-card.mini-card { transition: none; }
-@media (max-height: 640px) { .zoom-card.mini-card { width: min(44vw, 170px); } .zoom-text { font-size: 12px; } }
+@media (max-height: 640px) { .zoom-text { font-size: 12px; } .zoom-name { font-size: 17px; } }
