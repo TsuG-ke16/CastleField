@@ -31,6 +31,17 @@ export class MatchStats {
     const stats=ids.reduce((a,id)=>{const s=this.player(id);for(const k of Object.keys(a))a[k]+=s[k];return a;},{damage:0,monsters:0,cards:0});
     const el=document.getElementById('result-stats');el.replaceChildren();
     const title=document.createElement('p');title.textContent=this.partial?'再接続後に見届けた記録':competitive?'あなたの活躍':'みんなの試合のまとめ';el.append(title);
-    const dl=document.createElement('dl');for(const [label,value] of [['手番数',this.turn],['与えた城ダメージ',stats.damage],['倒した魔物',stats.monsters],['使ったカード',stats.cards]]){const dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=String(value);dl.append(dt,dd);}el.append(dl);
+    const dl = document.createElement('dl');
+    for (const [label, value] of [['手番数', this.turn], ['与えた城ダメージ', stats.damage], ['倒した魔物', stats.monsters], ['使ったカード', stats.cards]]) {
+      const item = document.createElement('div');
+      item.className = 'result-stat';
+      const dt = document.createElement('dt');
+      const dd = document.createElement('dd');
+      dt.textContent = label;
+      dd.textContent = String(value);
+      item.append(dt, dd);
+      dl.append(item);
+    }
+    el.append(dl);
   }
 }

@@ -27,7 +27,9 @@ import { LocalSession } from './ui/Session.js';
 import { OnlineClient } from './ui/OnlineClient.js';
 import { ChatView } from './ui/ChatView.js';
 import { DeckEditor } from './ui/DeckEditor.js';
-import { loadMyDeck } from './ui/DeckStore.js';
+import { deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
+import { renderDeckPreview } from './ui/DeckPreview.js';
+import { initHolograms } from './ui/Hologram.js';
 import { checkCostDeck } from './game/Setup.js';
 import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
@@ -84,6 +86,7 @@ setupMaterialSkin();
 const matchStats = new MatchStats();
 const tutorial = new Tutorial();
 let replayTutorial = false;
+let titleArrivalPlayed = false;
 let settings;
 let localSetup;
 let lastLocalOptions = null;
@@ -227,7 +230,17 @@ async function boot() {
     onMonsterTap: (m) => toast(monsterInfo(m, { monsters }), 'info'),
     onTargetTap: (target) => { if (!busy) targeting.tap(target); },
   });
-  roomView = new RoomView({ onAction: (method, args) => session.act(method, args), onLeave: () => showTitle(), onEditDeck: () => deckEditor?.open(), getMyDeck: loadMyDeck });
+  const previewDeck = (root, deck) => renderDeckPreview(root, deck, cards, rarities);
+  const savedDecks = () => loadDecks().slots.map((deck, slot) => deck && ({
+    ...deck, slot, valid: checkCostDeck(deck.list, cards, rarities, rules).ok,
+  }));
+  const presetDeck = id => decks?.[id] ? { name: decks[id].name, list: decks[id].cards } : null;
+  const openDeckEditor = slot => deckEditor?.open(slot);
+  roomView = new RoomView({
+    onAction: (method, args) => session.act(method, args), onLeave: () => showTitle(),
+    onEditDeck: openDeckEditor, savedDecks, presetDeck, previewDeck,
+  });
+  initHolograms(el.app);
   $('back-to-room').addEventListener('click', async () => {
     const res = await session?.act('backToRoom');
     if (!res?.ok) toast(res?.reason ?? '部屋に戻れませんでした');
@@ -251,7 +264,9 @@ async function boot() {
   $('help-monster').hidden = !monsters;
 
   el.endTurn.addEventListener('click', endTurn);
+  el.rematch.addEventListener('click', stopCelebration);
   el.rematch.addEventListener('click', (e) => { e.stopPropagation(); rematch(); });
+  el.result.addEventListener('click', stopCelebration);
   el.resultTitleBtn.addEventListener('click', (e) => { e.stopPropagation(); showTitle(); });
   // 最初のタップで音を出せるようにする。演出中に画面をタップしたら飛ばす（重ねて出す画面の上は除く）
   el.app.addEventListener('keydown', e => { if(['Enter',' '].includes(e.key)) sound.unlock(); });
@@ -261,8 +276,22 @@ async function boot() {
   }, true);
 
   if (rarities && Object.values(decks ?? {}).some((d) => d.costDeck)) {
-    deckEditor = new DeckEditor({ cards, rarities, rules, decks, onSave: (list) => roomView?.onMyDeckSaved?.(list) });
-    $('title-deck').addEventListener('click', () => { sound.play('tap'); deckEditor.open(); });
+    const preview = document.createElement('div');
+    preview.id = 'title-deck-preview';
+    $('title-help').after(preview);
+    const refresh = (saved) => {
+      const active = savedDecks()[loadDecks().active];
+      previewDeck(preview, active ?? presetDeck(rules.defaultCostDeck));
+      localSetup?.refreshDecks();
+      if (saved) roomView.refreshDecks(saved);
+    };
+    deckEditor = new DeckEditor({
+      cards, rarities, rules, decks,
+      animate: (element, frames, options) => anim.animate(element, frames, options),
+      onChange: refresh,
+    });
+    $('title-deck').addEventListener('click', () => { sound.play('tap'); openDeckEditor(); });
+    refresh();
   } else {
     $('title-deck').hidden = true;
   }
@@ -278,7 +307,7 @@ async function boot() {
   });
   settings = new Settings((value) => { el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
   setupMenu();
-  setupTitle();
+  setupTitle({ savedDecks, presetDeck, previewDeck, openDeckEditor });
   renderHelp({cards,rules,monsters,rarities});
   setupAccessibility();
 
@@ -334,21 +363,27 @@ async function setupOffline() {
 
 // ---------- タイトル・メニュー ----------
 
-function setupTitle() {
+function setupTitle(deckOptions) {
   document.querySelector('#title .title-pic').innerHTML =
     `<div class="title-castle left">${imageArt('ui/title-castle-blue.png', '', 'art castle-art')}</div><div class="title-unit left">${imageArt('ui/title-knight-blue.png', '', 'art unit-art')}</div>` +
     `<div class="title-unit right">${imageArt('ui/title-infantry-orange.png', '', 'art unit-art')}</div><div class="title-castle right">${imageArt('ui/title-castle-orange.png', '', 'art castle-art')}</div>`;
-  localSetup = new LocalSetup({castles,decks,rules,onStart:(level,options)=>startLocal(undefined,level,options)});
-  $('title-local').addEventListener('click', () => { sound.play('tap'); localSetup.open('local'); el.titleMain.hidden=true; el.titleLevels.hidden=false; });
-  $('title-solo').addEventListener('click', () => {
+  localSetup = new LocalSetup({castles,decks,rules,...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
+  let modeOpener;
+  const openLocalOptions = (mode, opener) => {
     sound.play('tap');
-    localSetup.open('solo');
+    modeOpener = opener;
+    localSetup.open(mode);
     el.titleMain.hidden = true;
     el.titleLevels.hidden = false;
-  });
+    const first = mode === 'local' ? $('local-start') : el.titleLevels.querySelector('.level');
+    first.focus({ preventScroll: true });
+  };
+  $('title-local').addEventListener('click', event => openLocalOptions('local', event.currentTarget));
+  $('title-solo').addEventListener('click', event => openLocalOptions('solo', event.currentTarget));
   $('levels-back').addEventListener('click', () => {
     el.titleLevels.hidden = true;
     el.titleMain.hidden = false;
+    modeOpener?.focus({ preventScroll: true });
   });
   for (const btn of el.titleLevels.querySelectorAll('.level')) {
     btn.addEventListener('click', () => { sound.play('tap'); startLocal(undefined, btn.dataset.level, localSetup.read()); });
@@ -370,6 +405,13 @@ function setupTitle() {
     leaveOnline();
     el.titleForm.hidden = true;
     el.titleMain.hidden = false;
+    $('title-online').focus({ preventScroll: true });
+  });
+  const endArrival = () => el.title.classList.remove('title-arrival');
+  el.title.addEventListener('pointerdown', endArrival);
+  el.title.addEventListener('keydown', endArrival);
+  el.title.addEventListener('animationend', event => {
+    if (event.animationName === 'title-arrival-light') endArrival();
   });
   el.titleForm.addEventListener('submit', (e) => { e.preventDefault(); joinOnline(); });
   try {
@@ -381,6 +423,7 @@ function setupTitle() {
 /** タイトルへ戻る（遊んでいた試合はやめる） */
 function showTitle() {
   startRequest++;
+  renderer.setWeather(null);
   document.documentElement.classList.add('at-title');
   $('asset-loading').hidden=true;
   sound.setScene('title');
@@ -403,6 +446,10 @@ function showTitle() {
   el.titleLevels.hidden = true;
   el.titleMain.hidden = false;
   el.title.hidden = false;
+  if (!titleArrivalPlayed && !UI_CONFIG.reducedMotion && UI_CONFIG.speed > 0) {
+    el.title.classList.add('title-arrival');
+  }
+  titleArrivalPlayed = true;
 }
 
 function setTitleWaiting(waiting) {
@@ -514,6 +561,7 @@ function stopLocal() {
 
 /** 新しい試合の前に、画面の持ちものを空にする */
 function resetForNewGame() {
+  renderer.setWeather(null);
   matchStats.reset();
   renderer.monsterBirths.clear(); renderer.weaponStacks.clear();
   $('match-info').open = false;
@@ -570,12 +618,13 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
       const seatRng=mulberry32(seed ^ 0x9e3779b9);
       const humanSeat=cpuLevel?Math.floor(seatRng()*options.playerCount):0;
       opts.setup.castles[humanSeat]=options.castle;
-      if(opts.setup.decks&&!(options.deckMode==='cost'&&options.deck==='custom'))opts.setup.decks[humanSeat]=options.deck;
-      if(options.deckMode==='cost'&&options.deck==='custom'){
+      const customSlot = options.deckMode === 'cost' ? deckSlot(options.deck) : null;
+      if (opts.setup.decks && customSlot === null) opts.setup.decks[humanSeat] = options.deck;
+      if (customSlot !== null) {
         // 自分で編成したデッキ（決まりに合わなければ、編成画面を開いて直してもらう）
-        const mine=loadMyDeck();
+        const mine=loadMyDeck(customSlot);
         if(!mine||!checkCostDeck(mine,cards,rarities,rules).ok){
-          showTitle();toast('マイデッキがまだ決まりに合っていません。「デッキ編成」で作ってください','info');deckEditor?.open();return;
+          showTitle();toast('マイデッキがまだ決まりに合っていません。「デッキ編成」で作ってください','info');deckEditor?.open(customSlot);return;
         }
         opts.setup.deckLists=Array(options.playerCount).fill(null);opts.setup.deckLists[humanSeat]=mine;
       }
@@ -718,6 +767,7 @@ function saveOnlineSession(client) {
 }
 
 function forgetOnlineSession() {
+  roomView?.clearMyDeckSelection();
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch { /* 何もしない */ }
@@ -1002,6 +1052,10 @@ function modelFromState(st) {
     monsters: (st.monsters ?? []).map((m) => ({ ...m })),
     players,
     hand: (st.players[viewerId]?.hand ?? []).map((c) => ({ ...c })),
+    pieceCards: new Set([
+      ...(model?.pieceCards ?? []),
+      ...(st.players[viewerId]?.hand ?? []).filter(c => cards[c.type]?.monster !== undefined).map(c => c.cardId),
+    ]),
   };
 }
 
@@ -1495,6 +1549,11 @@ function handover(playerId, turn) {
   });
 }
 
+function stopCelebration() {
+  el.result.classList.add('celebration-done');
+  el.confetti.replaceChildren();
+}
+
 async function showResult(winner) {
   setBusy(true);
   const s = session;
@@ -1511,21 +1570,25 @@ async function showResult(winner) {
   const how = (won ? GAME_OVER_TEXT : GAME_OVER_TEXT_LOST)[model.gameOverReason] ?? '';
   // 3人以上で負けたときは、だれが勝ったかも出す
   const victor = online && !won && !winningTeam && model.playerOrder.length > 2 ? `${playerName(winner)}の勝ち　` : '';
-  el.resultSub.textContent = `${victor}${how ? `${how}　` : ''}${model.turn}ターンで決着`;
+  el.resultSub.textContent = `${victor}${how}`.trim();
   const resultImage = new Image();
-  resultImage.className='result-illustration';resultImage.alt='';
-  resultImage.src=`assets/ui/result-${won ? 'victory' : 'defeat'}.png`;
-  await resultImage.decode().catch(()=>{});
-  if(s!==session)return;
+  resultImage.className = 'result-illustration';
+  resultImage.alt = '';
+  resultImage.src = `assets/ui/result-${won ? 'victory' : 'defeat'}.png`;
   el.resultPic.replaceChildren(resultImage);
   const colors = winner === 'p1'
     ? ['#4da3e8', '#bfe3fb', '#ffd93b', '#ffffff']
     : ['#f5923e', '#ffd9b0', '#ffd93b', '#ffffff'];
-  if (won) anim.confetti(el.confetti, colors);
-  else el.confetti.innerHTML = '';
+  stopCelebration();
+  if (won && !UI_CONFIG.reducedMotion) {
+    el.result.classList.remove('celebration-done');
+    anim.confetti(el.confetti, colors);
+    el.confetti.lastElementChild?.addEventListener('animationend', () => {
+      if (s === session && !el.result.hidden) stopCelebration();
+    }, { once: true });
+  }
   matchStats.render(viewerId, online);
   matchStats.finish(won, online);
-  $('result-encouragement').textContent = won ? '見事な采配！ 次の勝利に挑もう。' : '出す順番や攻める道を変えて、もう一度！';
   el.result.hidden = false;
   sound.enabled = true;
   sound.setScene(won ? 'victory' : 'defeat');

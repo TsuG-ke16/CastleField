@@ -8,6 +8,8 @@
   <meta name="theme-color" content="#5f3615">
   <title>キャッスルフィールド</title>
   <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/theme.css">
   <link rel="stylesheet" href="css/rarity-fx.css">
@@ -28,6 +30,12 @@
   <link rel="stylesheet" href="css/kingdom.css">
   <link rel="stylesheet" href="css/materials.css">
   <link rel="stylesheet" href="css/card-base.css">
+  <link rel="stylesheet" href="css/hologram.css">
+  <link rel="stylesheet" href="css/battle.css">
+  <link rel="stylesheet" href="css/weather.css">
+  <link rel="stylesheet" href="css/beast.css">
+  <link rel="stylesheet" href="css/experience.css">
+  <link rel="stylesheet" href="css/text-fit.css">
 </head>
 <body>
   <div id="app">
@@ -53,7 +61,16 @@
         <span class="chip coins" id="opp-coins" title="相手のコイン" hidden><span class="chip-icon" data-icon="coin"></span><b>0</b></span>
       </div>
       <div class="chip turn-info" id="turn-info"></div>
-      <button type="button" class="chip weather-chip" id="weather-chip" hidden aria-live="polite"></button>
+      <button type="button" class="chip weather-chip" id="weather-chip" hidden aria-live="polite" aria-expanded="false" aria-controls="weather-detail"></button>
+      <section id="weather-detail" aria-labelledby="weather-detail-name" hidden>
+        <div class="weather-detail-heading">
+          <span class="weather-detail-icon"></span>
+          <h2 id="weather-detail-name"></h2>
+          <button type="button" class="weather-detail-close round-btn" aria-label="天候の説明を閉じる">×</button>
+        </div>
+        <p id="weather-detail-remaining"></p>
+        <p id="weather-detail-description"></p>
+      </section>
       <div class="hud-right">
         <span class="chip mp" id="my-mp" title="あなたのMP：攻撃の魔法と精霊を使うと減ります。マナ回復のカードで増えます" hidden><span data-icon="mp"></span><b id="my-mp-value">0</b>/<span id="my-mp-max">0</span><span class="mp-track" role="meter" aria-label="あなたのMP" aria-valuemin="0"><span class="mp-fill"></span></span><span class="mp-shortage" role="status" aria-live="polite"></span></span>
         <span class="chip pile" id="deck-pile" title="山札"><span class="chip-icon" data-icon="card"></span>山<b id="deck-count">0</b></span>
@@ -75,7 +92,7 @@
         <div class="castle-pic"></div>
         <div class="castle-hp">
           <div class="hp-text"><span class="hp-heart" data-icon="heart"></span><b class="hp-value">0</b><span class="hp-max"></span></div>
-          <div class="hp-bar"><div class="hp-lag"></div><div class="hp-fill"></div></div>
+          <div class="hp-bar meter health-meter" role="meter"><div class="meter-fill health-lag"></div><div class="meter-fill health-fill"></div></div>
         </div>
       </section>
 
@@ -94,9 +111,10 @@
         <div class="castle-pic"></div>
         <div class="castle-hp">
           <div class="hp-text"><span class="hp-heart" data-icon="heart"></span><b class="hp-value">0</b><span class="hp-max"></span></div>
-          <div class="hp-bar"><div class="hp-lag"></div><div class="hp-fill"></div></div>
+          <div class="hp-bar meter health-meter" role="meter"><div class="meter-fill health-lag"></div><div class="meter-fill health-fill"></div></div>
         </div>
       </section>
+      <div id="weather-fx" aria-hidden="true"></div>
     </main>
 
     <!-- 下：自分の操作 -->
@@ -144,7 +162,6 @@
     </div>
 
     <div id="toast" role="status" aria-live="polite"></div>
-    <div id="weather-fx" aria-hidden="true"></div>
     <div id="fx-layer" aria-hidden="true"></div>
 
     <!-- 手番交代：相手の手札を隠す -->
@@ -161,16 +178,22 @@
     <div id="result" class="screen" aria-labelledby="result-heading" aria-describedby="result-description" hidden>
       <div class="confetti" aria-hidden="true"></div>
       <div class="result-rays" aria-hidden="true"></div>
-      <div class="screen-box">
-        <p class="result-crown" aria-hidden="true" data-icon="crown"></p>
-        <div class="result-pic"></div>
-        <p id="result-heading" class="result-title"></p>
-        <p id="result-description" class="result-sub"></p>
+      <div class="screen-box result-box">
+        <div class="result-summary">
+          <div class="result-pic"></div>
+          <div class="result-copy">
+            <h2 id="result-heading" class="result-title"></h2>
+            <p id="result-description" class="result-sub"></p>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button type="button" id="rematch" class="plank-btn big">もう1回</button>
+          <div class="result-secondary">
+            <button type="button" id="back-to-room" class="small-btn" hidden>部屋に戻る</button>
+            <button type="button" id="result-title-btn" class="small-btn">タイトルへ</button>
+          </div>
+        </div>
         <div id="result-stats"></div>
-        <p id="result-encouragement"></p>
-        <button type="button" id="rematch" class="plank-btn big">もう1回</button>
-        <button type="button" id="back-to-room" class="small-btn" hidden>部屋に戻る</button>
-        <button type="button" id="result-title-btn" class="small-btn">タイトルへ</button>
       </div>
     </div>
 
@@ -211,12 +234,13 @@
     <div id="title" class="screen" hidden>
       <div class="title-box">
         <div class="title-story">
+          <span class="title-sunrise" aria-hidden="true"></span>
           <h1 class="title-logo"><img src="assets/ui/logo.png" alt="キャッスルフィールド" width="768" height="523"></h1>
           <div class="title-pic" aria-hidden="true"></div>
         </div>
         <div class="title-choices">
           <div id="title-main">
-            <button type="button" id="title-solo" class="plank-btn big mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m0 1c5-4 7 4 13 0v10c-6 4-8-4-13 0"/></svg></span><span><strong>ひとりで遊ぶ</strong><small>自分のペースで、CPUに挑戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
+            <button type="button" id="title-solo" class="plank-btn big mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 21V3m0 1c5-4 7 4 13 0v10c-6 4-8-4-13 0"/></svg></span><span><strong>ひとりで遊ぶ</strong><small>兵士を出して、CPUの城を攻める</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
             <button type="button" id="title-local" class="plank-btn big alt2 mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M2 20v-2a6 6 0 0 1 12 0v2m2-15a3 3 0 0 1 0 6m1 3a5 5 0 0 1 5 5v1"/></svg></span><span><strong>同じ端末で遊ぶ</strong><small>2〜8人で、交代しながら</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
             <button type="button" id="title-online" class="plank-btn big alt mode-choice"><span class="mode-symbol" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><ellipse cx="12" cy="12" rx="4" ry="9"/><path d="M3 12h18"/></svg></span><span><strong>オンラインで遊ぶ</strong><small>合言葉を決めて、友だちと対戦</small></span><span class="mode-arrow" aria-hidden="true">→</span></button>
             <p id="offline-status" role="status"></p>

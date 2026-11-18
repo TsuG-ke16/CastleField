@@ -8,7 +8,6 @@
 .card-mp { display:flex; align-items:center; gap:2px; }
 .card-mp .ic { width:15px; height:15px; }
 .mana-recovery { position:absolute; bottom:5px; left:50%; transform:translateX(-50%); z-index:8; font-size:11px; font-weight:900; color:#103d65; background:#d7f7ff; border:1px solid #396785; border-radius:5px; padding:1px 4px; white-space:nowrap; }
-.card.can-fuse::after { content:'合成可'; position:absolute; left:3px; top:32px; right:auto; bottom:auto; width:auto; height:auto; z-index:9; background:#fff4ca; color:#56351d; border:1px solid #aa853b; border-radius:5px; font-size:10px; font-weight:900; padding:2px 4px; }
 .monster-growth { font-size:10px; line-height:1.4; font-weight:900; white-space:nowrap; color:#543312; background:#fff2cf; border-radius:5px; padding:2px 4px; }
 .monster-reward { border:2px solid var(--reward-color,#a99c87); border-radius:6px; }
 .monster-aura { position:absolute; inset:-25%; pointer-events:none; z-index:-1; }

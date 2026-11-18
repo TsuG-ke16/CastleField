@@ -2,7 +2,7 @@ import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 const {chromium}=createRequire(import.meta.url)('playwright');
 const base=process.env.UI_ONLINE_URL??'http://127.0.0.1:8787';
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.UI_TEST_CHROMIUM?{executablePath:process.env.UI_TEST_CHROMIUM}:{})});
 const errors=[];
 try {
  for(const teams of ['off','auto']) {

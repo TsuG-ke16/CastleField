@@ -102,13 +102,25 @@ class Sound {
 }
 
 const SOUNDS = {
+  deckAdd: (s, p) => s.tone({ freq: 520 + p * 400, endFreq: 780 + p * 500, dur: .08 + p * .06, gain: .09 + p * .08, type: 'triangle' }),
+  deckRemove: (s, p) => s.tone({ freq: 410 + p * 200, endFreq: 230, dur: .09 + p * .05, gain: .09 + p * .06, type: 'triangle' }),
+  deckReady: s => [523, 659, 784].forEach((freq, i) => s.tone({ freq, dur: .16, at: i * .06, gain: .1, type: 'triangle' })),
   bow: (s,p) => { s.noise({dur:.08,gain:.10+p*.15,freq:4800,endFreq:900});s.tone({freq:350,endFreq:110,dur:.16,gain:.1+p*.12,type:'triangle'}); },
   magicShot: (s,p) => s.tone({freq:750,endFreq:180,dur:.24,gain:.12+p*.2,type:'sine'}),
   fusion: (s,p) => [440,554,659,880,1109,1318].slice(0, 2 + Math.round(p*4)).forEach((freq,i)=>s.tone({freq,dur:.18+p*.1,at:i*.06,gain:.09+p*.07,type:'triangle'})),
   adaptFusion: s => [523,659,784,988,1047].forEach((freq,i)=>s.tone({freq,endFreq:freq*1.12,dur:.24,at:i*.07,gain:.13,type:'sine'})),
   lucky: s => [784,988,1175,1568,1976].forEach((freq,i)=>s.tone({freq,dur:.3,at:i*.07,gain:.16,type:'triangle'})),
   collapse: s => {s.noise({dur:.7,gain:.4,freq:700,endFreq:70});s.tone({freq:90,endFreq:25,dur:.6,gain:.3,type:'sawtooth'});},
-  alarm: (s) => [0, 0.28, 0.56, 0.84].forEach((at, i) => s.tone({ freq: i % 2 ? 520 : 760, endFreq: i % 2 ? 480 : 700, dur: 0.24, type: 'sawtooth', gain: 0.13, at })),
+  chatNotice: s => s.tone({ freq: 820, endFreq: 610, dur: .11, type: 'sine', gain: .085 }),
+  beastRecruit: (s) => {
+    s.tone({ freq: 164, endFreq: 329, dur: .32, gain: .13, type: 'triangle' });
+    [523, 659, 784, 1047].forEach((freq, i) => s.tone({ freq, dur: .23, at: .1 + i * .065, gain: .08 }));
+  },
+  weatherSiren: (s) => {
+    s.tone({ freq: 485, endFreq: 810, dur: .19, type: 'triangle', gain: .18 });
+    s.tone({ freq: 810, endFreq: 510, dur: .19, at: .2, type: 'triangle', gain: .16 });
+  },
+  weatherRain: (s) => [740, 554, 440].forEach((freq, i) => s.tone({ freq, endFreq: freq * .92, dur: .18, at: i * .085, gain: .095 })),
   weatherChime: (s) => [659, 880, 1175].forEach((f, i) => s.tone({ freq: f, dur: 0.25, type: 'triangle', gain: 0.14, at: i * 0.1 })),
   tap: (s) => s.tone({ freq: 720, endFreq: 900, dur: 0.05, type: 'triangle', gain: 0.12 }),
   deny: (s) => {
