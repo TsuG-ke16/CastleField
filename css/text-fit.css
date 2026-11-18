@@ -43,3 +43,25 @@
   #app .help-flow { grid-template-columns: repeat(3, max-content); justify-content: center; }
 }
 
+
+/* アーティファクト（claude.ai）で開くと、外側に「img { max-width: 100% }」が足される。
+   カードの枠の絵は、箱より大きく描いて装飾をはみ出させているので、横だけ縮んで枠と絵がずれる。
+   ふつうのブラウザと同じ（上限なし）に戻す */
+#app img { max-width: none; }
+
+/* 魔物の駒のカードには、左上（種類）・右上（レアリティ）の丸い印を出さない（専用の枠で魔物だと分かる） */
+#app .mini-card[data-beast] :is(.mini-card-kind, .mini-card-rarity),
+#app .card.has-frame[data-beast] :is(.card-kind, .card-rarity) { display: none; }
+
+/* 適応（虹色）：枠の絵のあるカードは、箱そのものの虹色の背景と白いふちを出さない（枠の外に四角が見えてしまう） */
+#app .mini-card.wild, #app .card.has-frame.wild { background: none; box-shadow: none; }
+
+/* 偏光（キラ）：枠の絵の窓（イラストの部分）にぴったり重ねる。窓の外に光の四角がはみ出さないように */
+#app :is(.card.has-frame, .mini-card) > .foil-sheet {
+  inset: auto;
+  left: calc(50% + (var(--win-l) - var(--fx)) / var(--fh));
+  top: calc((var(--win-t) - var(--fy)) / var(--fh));
+  width: calc(var(--win-w) / var(--fh));
+  height: calc(var(--win-h) / var(--fh));
+  border-radius: 6%;
+}
