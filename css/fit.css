@@ -43,6 +43,7 @@
 
 /* オンラインの部屋：grid の列が中身の幅（約900px）に広がり、スマホで右にはみ出していた。列を画面の幅に収める */
 #app #room-screen { grid-template-columns: minmax(0, 1fr); }
+
 /* デッキ編成：横向き（高さが低い）では、カード一覧が数十pxしか見えなかった。左に操作、右に一覧の2列にする */
 @media (orientation: landscape) and (max-height: 500px) {
   #app .deck-box {
@@ -58,6 +59,8 @@
   #app .deck-filters { grid-area: filters; }
   #app .deck-footer { grid-area: foot; }
   #app .deck-grid { grid-area: grid; min-height: 0; }
+}
+
 /* 対戦画面：低い縦画面（360×640・375×667 など）は、案内・知らせ・手札で盤面が押され、
    天候や攻撃の知らせが重なると道が50px台まで潰れていた。案内・知らせは小さな字で2行まで、手札の帯は細くする */
 @media (orientation: portrait) and (max-height: 700px) {
@@ -81,6 +84,8 @@
 @media (max-width: 340px) {
   #app #hud #turn-status::before { display: none; }
   #app #hud #turn-info { margin-left: 0; }
+}
+
 /* 対戦画面・横向き：案内が4行（約120px）になり、手札のカードの下半分（名前・数値）が切れていた。
    案内は2行までの小さな字にし、閉じるボタンは × にして、手札1段ぶんの高さを残す */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -94,6 +99,7 @@
 @media (orientation: landscape) and (max-height: 340px) {
   #app #hand { --cb: 74px; }
 }
+
 /* 狭い画面（320幅）：設定の「スキップ」がボタンの枠からはみ出し、手番交代の「プレイヤー1の番です」の「す」だけが次の行に落ちていた */
 @media (max-width: 340px) {
   #app #settings.screen { padding-inline: 4px; }
@@ -108,6 +114,7 @@
 /* 遊び方の「案内つきで操作を練習する」：320幅で「る」だけが次の行に落ちていた */
 #app #help-tutorial { text-wrap: balance; }
 @media (max-width: 340px) { #app #help-tutorial { font-size: 12px; padding-inline: 4px; } }
+
 /* 低い縦画面：魔物の札（城へのダメージ・体力・攻撃・成長・ごほうび）が縦に5段重なり、自分の城にかぶっていた。
    城へのダメージの札は1行にして魔物の顔を出し、ごほうびの札は隠して（魔物をタップすると出る）、成長の札は小さくする */
 @media (orientation: portrait) and (max-height: 700px) {
@@ -117,6 +124,8 @@
   #app .monster .monster-attack-in[hidden] { display: none; }
   #app .monster .monster-attack-in b { font-size: 10px; }
   #app .monster .monster-attack-in small { font-size: 9px; }
+}
+
 /* 図鑑：横向き（高さが低い）では、見出し・検索・絞り込みで高さを使い切り、最初の画面にカードが1枚も見えなかった。
    箱を画面いっぱいにして余白を詰め、検索と絞り込みを1行に並べる */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -129,6 +138,8 @@
   #app #card-guide .guide-filters { margin-bottom: 6px; gap: 6px; }
   #app #card-guide .guide-filters select { min-height: 36px; padding-block: 4px; }
   #app #card-guide .guide-group-title { margin: 8px 0 8px; }
+}
+
 /* デッキの「管理」：横向き（高さが低い）では「完了」が画面の外にあり、スクロールしないと押せなかった。
    幅を広げて、名前・見本・ボタンを2列に並べ、1画面に収める */
 @media (orientation: landscape) and (max-height: 500px) {
@@ -144,6 +155,8 @@
   #app #title-levels .local-options > summary { min-height: 36px; padding-block: 4px; }
   #app #title-levels .level { min-height: 44px; padding-block: 2px; padding-inline: 4px; font-size: 15px; }
   #app #title-levels .level small { display: none; }
+}
+
 /* 広場（3人以上）：拡大縮小のつまみが右上の城（席6など）と体力の札に重なっていた。城のない左下の角に置く */
 #app .plaza-zoom { top: auto; right: auto; bottom: 4px; left: 4px; }
 @media (max-width: 400px), (max-height: 700px) {
