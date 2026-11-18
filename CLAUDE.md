@@ -1120,7 +1120,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 使える場所：**オンライン対戦**（文字とスタンプ）と、**ひとりで遊ぶ**（スタンプだけ。CPU がスタンプで返す。ずるはしない）。2人で交代して遊ぶときは出ない
 - スタンプは `data/stamps.json`（`{ id, icon, label }` の配列）。画面とサーバーが同じ一覧を読む
 - `POST /api/action` の `method` に `chat`（`args: [{ text }]` か `[{ stamp }]`）。文字は制御文字を空白にして前後を取り、1〜40文字。つづけて送れるのは0.6秒ごと。CPU の席・形の違う送り方は `{ ok: false, reason }`。試合の前・中・あとのいつでも送れる
-- 届くもの：`{ type: "chat", id, playerId, name, text | stamp, at }`。つないだとき（つなぎ直したときも）、直近30通が `{ type: "chatLog", messages }` で届く。文字は人が入れたものなので、画面は `textContent` で出す
+- 届くもの：`{ type: "chat", id, playerId, name, text | stamp, at }`。つないだとき（つなぎ直したときも）、直近30通が `{ type: "chatLog", messages }` で届く（つなぎ直すたびに全部届くので、画面は受けたら表示を作り直す）。もう部屋にいない人の発言は `playerId: null`・`left: true`（名前は残る）。文字は人が入れたものなので、画面は `textContent` で出す
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

@@ -278,10 +278,15 @@ export class Room {
     return { ok: true };
   }
 
-  /** 履歴1件を、送る形にする（送る時点の席番号と名前） */
+  /**
+   * 履歴1件を、送る形にする（送る時点の席番号と名前）。
+   * もう部屋にいない人（始まる前に出た・部屋に戻るときに消えた席）の発言は playerId を null にする
+   * （席が詰まって、同じ番号の別の人の発言に見えないように）
+   */
   chatMessage(entry) {
     const { seat, id, at, text, stamp } = entry;
-    return { id, playerId: seat.playerId, name: seat.name, at, ...(text !== undefined ? { text } : { stamp }) };
+    const here = this.seats.includes(seat);
+    return { id, playerId: here ? seat.playerId : null, name: seat.name, at, ...(here ? {} : { left: true }), ...(text !== undefined ? { text } : { stamp }) };
   }
 
   // ---------- 部屋（試合の前） ----------
