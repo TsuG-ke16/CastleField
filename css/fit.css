@@ -40,3 +40,14 @@
   #app #hand { padding-block: 4px 6px; }
   #app #hand .card.has-frame .card-name { font-size: 10px; }
 }
+
+/* 低い縦画面：魔物の札（城へのダメージ・体力・攻撃・成長・ごほうび）が縦に5段重なり、自分の城にかぶっていた。
+   城へのダメージの札は1行にして魔物の顔を出し、ごほうびの札は隠して（魔物をタップすると出る）、成長の札は小さくする */
+@media (orientation: portrait) and (max-height: 700px) {
+  #app .monster .monster-reward { display: none; }
+  #app .monster .monster-growth { font-size: 9px; line-height: 1.2; padding: 1px 3px; }
+  #app .monster .monster-attack-in { display: flex; align-items: baseline; gap: 4px; min-width: 0; width: max-content; max-width: none; top: auto; bottom: -2px; padding: 1px 6px; border-radius: 7px; }
+  #app .monster .monster-attack-in[hidden] { display: none; }
+  #app .monster .monster-attack-in b { font-size: 10px; }
+  #app .monster .monster-attack-in small { font-size: 9px; }
+}
