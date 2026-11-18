@@ -40,3 +40,17 @@
   #app #hand { padding-block: 4px 6px; }
   #app #hand .card.has-frame .card-name { font-size: 10px; }
 }
+
+/* 図鑑：横向き（高さが低い）では、見出し・検索・絞り込みで高さを使い切り、最初の画面にカードが1枚も見えなかった。
+   箱を画面いっぱいにして余白を詰め、検索と絞り込みを1行に並べる */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app #card-guide .guide-box { height: 100%; max-height: 100%; padding: 6px 14px 8px; }
+  #app #card-guide .guide-tabs { padding: 4px 0; }
+  #app #card-guide .guide-content:has(> .guide-query) { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 2fr); column-gap: 10px; align-content: start; }
+  #app #card-guide .guide-content > :not(.guide-query):not(.guide-filters) { grid-column: 1 / -1; }
+  #app #card-guide .guide-query { font-size: 10px; }
+  #app #card-guide .guide-query input { min-height: 36px; padding-block: 4px; }
+  #app #card-guide .guide-filters { margin-bottom: 6px; gap: 6px; }
+  #app #card-guide .guide-filters select { min-height: 36px; padding-block: 4px; }
+  #app #card-guide .guide-group-title { margin: 8px 0 8px; }
+}
