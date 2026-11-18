@@ -1,11 +1,10 @@
 /* 魔物の駒には、レアリティを示す印と翡翠の専用枠を併用する。 */
-.card.has-frame[data-beast], .mini-card[data-beast] {
-  --fy: 1%; --fh: .98; --fx: 50%; --bw: .667;
-  --win-l: 12%; --win-t: 20%; --win-w: 76%; --win-h: 46%;
-  --med-y: 10.5%; --med-l: 10.5%; --med-r: 89.5%; --name-y: 80%;
+:is(.card.has-frame, .mini-card)[data-beast] {
+  --card-window: url('../assets/cards/window-beast.png');
 }
-#app .card.has-frame[data-beast] .card-art, #app .mini-card[data-beast] .mini-card-image { z-index: 2; }
-#app .mini-card[data-beast] .mini-card-image { z-index: 3; }
+/* 共通のメダル台に、種類と取得元のレアリティを表示する。 */
+#app .card.has-frame[data-beast][data-rarity] > :is(.card-kind, .card-rarity) { display: flex; }
+#app .mini-card[data-beast][data-rarity] > :is(.mini-card-kind, .mini-card-rarity) { display: grid; }
 #app [data-beast] :is(.card-art, .mini-card-image) .asset-image { padding: 0; }
 #app .mini-card[data-beast] .mini-card-name:not(:empty) { font-size: clamp(7px, 1.35vw, 10px); }
 .soldier[data-beast] .soldier-pic { filter: drop-shadow(0 2px 3px #144a2680); }

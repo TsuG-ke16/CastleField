@@ -448,3 +448,19 @@ OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力�
 ### 魔物の枠（レビュー候補）
 
 - `review/visual-art-v2/frame-beast-candidate.png` — 参照元 `cards/frame-beast.png`・`cards/frame-rare.png`・`style-reference.png`、生成原本 `exec-b00e3120-e842-4ecd-8bbe-10227b0c1586.png`。レア枠の窓・帯・メダル位置を基準に形状を調整し、512×768の透過パレットPNGに書き出しました。
+
+## レアリティ枠と窓背景 v2（2026-11-19）
+
+OpenAI ImageGen を使用。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。各生成に `style-reference.png`、`review/frame-v2/layout-guide.png` と同名の差し替え前の枠を参照しました。枠は描画の輪郭と材質を切り出し、共通座標に透過窓・丸・帯・台を組み込みました。描画部分は等比で処理し、枠は512×768のRGBA PNG、背景は512×512の不透明PNGです。
+
+| 枠 | 枠の生成原本 | 窓背景 | 窓背景の生成原本 |
+|---|---|---|---|
+| `cards/frame-common.png` | `exec-af049282-8ff9-4a24-90fe-18385351faee.png` | `cards/window-common.png` | `exec-2a083d0f-1e1f-4768-9ac7-872e071891dd.png` |
+| `cards/frame-uncommon.png` | `exec-0cba4264-3bc1-4b6b-846b-411a7ffcb470.png` | `cards/window-uncommon.png` | `exec-1d53e19d-e7d6-43e4-be0f-270bb7b1ded6.png` |
+| `cards/frame-rare.png` | `exec-ee016e1d-3857-463d-a89c-ee9c82877456.png` | `cards/window-rare.png` | `exec-05d3439f-d8aa-4dc6-97fc-a3afaa8eda59.png` |
+| `cards/frame-epic.png` | `exec-10864d80-c829-456a-a508-f377f7bd8a22.png` | `cards/window-epic.png` | `exec-a7b7bae9-2dac-4c94-b6bb-570cbd39a50b.png` |
+| `cards/frame-legendary.png` | `exec-de448fe3-aaba-4e53-b846-501a411639cd.png` | `cards/window-legendary.png` | `exec-9c5ecd7c-2061-4d78-93f3-bb703d67914a.png` |
+| `cards/frame-special.png` | `exec-8e126037-9fc4-414d-b8b3-d97c5144d020.png` | `cards/window-special.png` | `exec-06562f87-9056-436d-a9fa-1a4657e8d3aa.png` |
+| `cards/frame-beast.png` | `exec-b50963cc-36c8-40d6-8a96-efc34bd2abe6.png` | `cards/window-beast.png` | `exec-5c2fb752-6c1b-4b64-ab5c-4189097fb44f.png` |
+
+- `cards/relief/frame-{common,uncommon,rare,epic,legendary,special,beast}-{relief,raised}.png` — 上記の枠から `node js/ui/build-card-relief.js` で再生成。素材の利用条件は元の枠と同じ。
