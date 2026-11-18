@@ -30,6 +30,8 @@ export class UpgradePanel {
       coins: document.querySelector('#upgrade-panel .upgrade-coins'),
       close: document.querySelector('#upgrade-panel .upgrade-close'),
     };
+    this.el.open.setAttribute('aria-controls', 'upgrade-panel');
+    this.el.open.setAttribute('aria-expanded', 'false');
     this.tabs = document.createElement('div'); this.tabs.className = 'shop-tabs'; this.tabs.setAttribute('role', 'tablist');
     this.el.list.id = 'shop-items'; this.el.list.setAttribute('role', 'tabpanel');
     for (const [key, label] of Object.entries(this.groups)) {
@@ -51,7 +53,7 @@ export class UpgradePanel {
       else if (this.el.panel.hidden) this.open();
       else this.close();
     });
-    this.el.close.addEventListener('click', () => this.close());
+    this.el.close.addEventListener('click', () => { this.close(); this.el.open.focus(); });
     this.el.panel.addEventListener('keydown', (e) => { if (e.key === 'Escape') { this.close(); this.el.open.focus(); } });
     this.el.list.addEventListener('click', (e) => {
       const btn = e.target.closest('.upgrade-item');
@@ -71,11 +73,13 @@ export class UpgradePanel {
   open() {
     this.onOpen();
     this.el.panel.hidden = false;
+    this.el.open.setAttribute('aria-expanded', 'true');
     this.el.close.focus({ preventScroll: true });
   }
 
   close() {
     this.el.panel.hidden = true;
+    this.el.open.setAttribute('aria-expanded', 'false');
   }
 
   /**
@@ -132,7 +136,12 @@ export class UpgradePanel {
       // 買った回数が分からないとき（オンラインでつなぎ直したあと）は、上限だけ出す
       if (def.limit !== undefined) desc += bought ? `（あと${Math.max(0, def.limit - (bought[id] ?? 0))}回）` : `（1試合${def.limit}回まで）`;
       btn.querySelector('.upgrade-desc').textContent = desc;
-      btn.querySelector('.upgrade-reason').textContent = st.ok ? '' : (st.reason ?? '');
+      const reason = btn.querySelector('.upgrade-reason');
+      reason.textContent = st.ok ? '' : (st.reason ?? '');
+      if (reason.textContent) {
+        reason.id = `upgrade-reason-${id}`;
+        btn.setAttribute('aria-describedby', reason.id);
+      }
       btn.querySelector('.upgrade-cost').innerHTML = `${icon('coin')}<b>${Number(def.cost)}</b>`;
       list.appendChild(btn);
     }

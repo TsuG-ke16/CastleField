@@ -61,6 +61,7 @@ export class Animations {
     const t = UI_CONFIG.timing;
     const root = document.documentElement.style;
     root.setProperty('--t-move', `${t.soldierMove * UI_CONFIG.speed}ms`);
+    root.setProperty('--t-title', `${t.titleArrival * UI_CONFIG.speed}ms`);
     root.setProperty('--t-deploy', `${t.deploy * UI_CONFIG.speed}ms`);
     root.setProperty('--t-death', `${t.soldierDeath * UI_CONFIG.speed}ms`);
     root.setProperty('--t-heal', `${t.heal * UI_CONFIG.speed}ms`);
@@ -780,7 +781,7 @@ export class Animations {
     const end = rect?.width ? {
       x: Math.max(32, Math.min(bounds.width - 32, rect.left + rect.width / 2 - bounds.left)),
       y: rect.top + rect.height / 2 - bounds.top,
-    } : this.centerOf(document.getElementById(mine ? 'hand-count' : 'opp-hand-count'));
+    } : this.centerOf(document.getElementById(mine ? 'hand-count' : 'turn-status'));
     const stage = this.fx('recruit-stage', center);
     const rune = this.fx('recruit-sigil', start);
     const title = document.createElement('strong');

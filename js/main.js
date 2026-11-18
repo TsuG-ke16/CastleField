@@ -86,6 +86,7 @@ setupMaterialSkin();
 const matchStats = new MatchStats();
 const tutorial = new Tutorial();
 let replayTutorial = false;
+let titleArrivalPlayed = false;
 let settings;
 let localSetup;
 let lastLocalOptions = null;
@@ -367,16 +368,22 @@ function setupTitle(deckOptions) {
     `<div class="title-castle left">${imageArt('ui/title-castle-blue.png', '', 'art castle-art')}</div><div class="title-unit left">${imageArt('ui/title-knight-blue.png', '', 'art unit-art')}</div>` +
     `<div class="title-unit right">${imageArt('ui/title-infantry-orange.png', '', 'art unit-art')}</div><div class="title-castle right">${imageArt('ui/title-castle-orange.png', '', 'art castle-art')}</div>`;
   localSetup = new LocalSetup({castles,decks,rules,...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
-  $('title-local').addEventListener('click', () => { sound.play('tap'); localSetup.open('local'); el.titleMain.hidden=true; el.titleLevels.hidden=false; });
-  $('title-solo').addEventListener('click', () => {
+  let modeOpener;
+  const openLocalOptions = (mode, opener) => {
     sound.play('tap');
-    localSetup.open('solo');
+    modeOpener = opener;
+    localSetup.open(mode);
     el.titleMain.hidden = true;
     el.titleLevels.hidden = false;
-  });
+    const first = mode === 'local' ? $('local-start') : el.titleLevels.querySelector('.level');
+    first.focus({ preventScroll: true });
+  };
+  $('title-local').addEventListener('click', event => openLocalOptions('local', event.currentTarget));
+  $('title-solo').addEventListener('click', event => openLocalOptions('solo', event.currentTarget));
   $('levels-back').addEventListener('click', () => {
     el.titleLevels.hidden = true;
     el.titleMain.hidden = false;
+    modeOpener?.focus({ preventScroll: true });
   });
   for (const btn of el.titleLevels.querySelectorAll('.level')) {
     btn.addEventListener('click', () => { sound.play('tap'); startLocal(undefined, btn.dataset.level, localSetup.read()); });
@@ -398,6 +405,13 @@ function setupTitle(deckOptions) {
     leaveOnline();
     el.titleForm.hidden = true;
     el.titleMain.hidden = false;
+    $('title-online').focus({ preventScroll: true });
+  });
+  const endArrival = () => el.title.classList.remove('title-arrival');
+  el.title.addEventListener('pointerdown', endArrival);
+  el.title.addEventListener('keydown', endArrival);
+  el.title.addEventListener('animationend', event => {
+    if (event.animationName === 'title-arrival-light') endArrival();
   });
   el.titleForm.addEventListener('submit', (e) => { e.preventDefault(); joinOnline(); });
   try {
@@ -432,6 +446,10 @@ function showTitle() {
   el.titleLevels.hidden = true;
   el.titleMain.hidden = false;
   el.title.hidden = false;
+  if (!titleArrivalPlayed && !UI_CONFIG.reducedMotion && UI_CONFIG.speed > 0) {
+    el.title.classList.add('title-arrival');
+  }
+  titleArrivalPlayed = true;
 }
 
 function setTitleWaiting(waiting) {

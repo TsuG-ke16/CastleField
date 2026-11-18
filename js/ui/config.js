@@ -30,6 +30,7 @@ export const UI_CONFIG = {
   easing: { enter: 'ease-out', exit: 'ease-in', linear: 'linear', inOut: 'ease-in-out' },
 
   timing: {
+    titleArrival: 780,     // 初回のタイトル登場
     deckTransfer: 215,     // カードが編成の帯へ飛ぶ・帯から落ちる
     deckReady: 280,        // 目標コストに達したときの光
     weatherAlarm: 980,    // 天候が変わった警報

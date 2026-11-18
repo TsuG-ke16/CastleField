@@ -122,7 +122,6 @@ export class RoomView {
     const box = this.node('div', null, 'room-box'); this.el.append(box);
     const host = room.you === room.hostId;
     const choices = room.choices ?? {};
-    box.append(this.node('p', 'CASTLE FIELD / 対戦の準備', 'room-eyebrow'));
     box.append(this.node('h1', 'みんなの部屋'));
     box.append(this.node('p', '合言葉を伝えて、仲間を招待しよう', 'room-note'));
     box.append(this.node('strong', passphrase || room.roomId, 'room-passphrase'));
@@ -199,10 +198,17 @@ export class RoomView {
     if (room.players.length < room.minPlayers) reason = `開始には${room.minPlayers}人必要です。仲間を招待するかCPUを追加してください。`;
     else if (room.settings.teams === 'choose' && new Set(room.players.map(p => p.team)).size < 2) reason = '2つ以上のチームに分かれてください。';
     else if (room.settings.teams === 'choose' && room.players.some(p => room.players.filter(q => q.team === p.team).length > 7)) reason = '1チームは7人までです。';
-    box.append(this.node('p', host ? reason || '準備ができたら、対戦を始めよう！' : '部屋主が対戦を始めるのを待っています', 'room-note'));
-    if (host) this.button(box, '対戦をはじめる', () => this.act('start', []), Boolean(reason), 'plank-btn room-start');
+    const launch = this.node('section', null, 'room-launch');
+    box.insertBefore(launch, seats);
+    const description = this.node('p', host ? reason : '部屋主が対戦を始めるのを待っています', 'room-note');
+    description.id = 'room-start-reason';
+    if (description.textContent) launch.append(description);
+    if (host) {
+      const start = this.button(launch, '対戦をはじめる', () => this.act('start', []), Boolean(reason), 'plank-btn room-start');
+      if (reason) start.setAttribute('aria-describedby', description.id);
+    }
     const status = this.node('p', this.pending ? '送信しています…' : this.notice ?? '', 'room-status');
-    status.setAttribute('role', 'status'); box.append(status);
+    status.setAttribute('role', 'status'); launch.append(status);
     if (this.refocus && !this.pending) {
       const target = this.refocus; this.refocus = null;
       for (const sel of this.el.querySelectorAll('select[data-slot]')) {

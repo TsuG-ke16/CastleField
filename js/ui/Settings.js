@@ -21,6 +21,7 @@ export class Settings {
     // 見た目はピル型のボタン。中身の select / checkbox は隠して残し、値の読み書きは今までどおりそこで行う
     const pills=(name,label,options)=>`<div class="set-row"><span class="set-name">${label}</span><div class="pill-group" role="group" aria-label="${label}" data-for="${name}">${options.map(([v,t])=>`<button type="button" class="pill" data-value="${v}">${t}</button>`).join('')}</div></div>`;
     this.box.innerHTML = `<div class="screen-box parchment settings-box"><h2 id="settings-title">設定</h2>
+      <div class="settings-content">
       <section class="set-group"><h3>サウンド</h3>
         <label class="set-row"><span class="set-name">効果音</span><input name="sfx" type="range" min="0" max="1" step=".05"><output id="sfx-value"></output></label>
         <label class="set-row"><span class="set-name">BGM</span><input name="bgm" type="range" min="0" max="1" step=".05"><output id="bgm-value"></output></label>
@@ -28,16 +29,18 @@ export class Settings {
       <section class="set-group"><h3>画面と演出</h3>
         ${pills('speed','演出の速さ',[['normal','ふつう'],['fast','はやい'],['skip','スキップ']])}
         ${pills('reduced','動きを減らす',[['true','ON'],['false','OFF']])}
-        <p class="set-note">ONにすると、揺れ・点滅・一瞬の停止をなくします。</p>
+        <p class="set-note">揺れや点滅を抑え、カードの獲得は静止画で表示します。</p>
         ${pills('text','文字の大きさ',[['small','小'],['normal','中'],['large','大']])}
+        <p class="settings-reading-preview">兵士は次の自分の番から進軍します。</p>
       </section>
       <section class="set-group"><h3>なまえ</h3>
         <label class="set-row"><span class="set-name">あなたの名前</span><input name="name" maxlength="16" autocomplete="nickname" placeholder="なまえ"></label>
       </section>
+      </div>
       <select name="speed" hidden><option value="normal"></option><option value="fast"></option><option value="skip"></option></select>
       <input name="reduced" type="checkbox" hidden>
       <select name="text" hidden><option value="small"></option><option value="normal"></option><option value="large"></option></select>
-      <p role="status" class="settings-status"></p><button type="button" class="plank-btn settings-close">閉じる</button></div>`;
+      <footer class="settings-footer"><p role="status" class="settings-status"></p><button type="button" class="plank-btn settings-close">閉じる</button></footer></div>`;
     this.box.addEventListener('click', e => {
       const pill=e.target.closest('.pill'); if(!pill)return;
       const input=this.box.querySelector(`[name="${pill.parentElement.dataset.for}"]`);
