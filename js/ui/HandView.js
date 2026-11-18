@@ -115,16 +115,7 @@ export class HandView {
       box.innerHTML = '<div class="hand-empty">手札がありません</div>';
     }
     for (const card of this.hand) box.appendChild(this.makeCardEl(card, fresh.has(card.cardId)));
-    const counts = new Map();
-    for (const c of this.hand) counts.set(c.type, (counts.get(c.type) ?? 0) + 1);
-    for (const el of box.querySelectorAll('.card')) {
-      const c = this.hand.find((c) => c.cardId === el.dataset.id);
-      const wildInHand = this.hand.some((h) => this.cards[h.type]?.effect === 'wild');
-      const isWild = this.cards[c.type]?.effect === 'wild';
-      const fusable = isWild ? this.hand.some((h) => this.cards[h.type]?.fuseTo) : Boolean(this.cards[c.type]?.fuseTo);
-      el.classList.toggle('can-fuse', fusable && (isWild || counts.get(c.type) >= 2 || wildInHand));
-    }
-    this.markGroups();
+    this.markCards();
     this.layout();
     this.updateDetail();
     this.updateDiscardBar();
@@ -137,10 +128,25 @@ export class HandView {
     return hand.every((c) => ids.has(c.cardId));
   }
 
-  /** 種類のグループの最初のカードに印をつける（見た目で少し間をあける） */
-  markGroups() {
+  /** グループと合成の印は、手札が1枚増減したときも付け直す。 */
+  markCards() {
     const starts = groupStarts(this.hand, this.cards);
-    for (const el of this.el.hand.querySelectorAll('.card')) el.classList.toggle('group-start', starts.has(el.dataset.id));
+    const counts = new Map();
+    const types = new Map();
+    for (const { cardId, type } of this.hand) {
+      counts.set(type, (counts.get(type) ?? 0) + 1);
+      types.set(cardId, type);
+    }
+    const hasWild = [...counts.keys()].some(type => this.cards[type]?.effect === 'wild');
+    const canMatchWild = [...counts.keys()].some(type => this.cards[type]?.fuseTo);
+    for (const el of this.el.hand.querySelectorAll('.card')) {
+      const type = types.get(el.dataset.id);
+      const def = this.cards[type];
+      const fusable = def?.effect === 'wild' ? canMatchWild : Boolean(def?.fuseTo && (hasWild || counts.get(type) >= 2));
+      el.classList.toggle('group-start', starts.has(el.dataset.id));
+      el.classList.toggle('can-fuse', fusable);
+      this.applyCardClasses(el);
+    }
   }
 
   /** カードを重ねず、全体が読める幅で横に並べる。 */
@@ -232,8 +238,11 @@ export class HandView {
 
   applyCardClasses(el) {
     const id = el.dataset.id;
-    const reason=this.blocked.get(id);
-    if(reason)el.setAttribute('aria-description',`今は出せません：${reason}`);else el.removeAttribute('aria-description');
+    const reason = this.blocked.get(id);
+    const description = [reason && `今は出せません：${reason}`, el.classList.contains('can-fuse') && '合成できる組み合わせがあります。']
+      .filter(Boolean).join(' ');
+    if (description) el.setAttribute('aria-description', description);
+    else el.removeAttribute('aria-description');
     el.classList.toggle('selected', id === this.selectedId);
     el.classList.toggle('dim', this.blocked.has(id) && !this.discardCount);
     el.classList.toggle('discard-pick', this.discardPicks.has(id));
@@ -291,7 +300,7 @@ export class HandView {
     if (this.hand.length === 0 && !this.el.hand.querySelector('.hand-empty')) {
       this.el.hand.innerHTML = '<div class="hand-empty">手札がありません</div>';
     }
-    this.markGroups();
+    this.markCards();
     this.layout();
     this.updateDetail();
     return info;
@@ -306,7 +315,7 @@ export class HandView {
     const el = this.makeCardEl(card, true);
     const next = this.hand[at + 1] ? this.cardEl(this.hand[at + 1].cardId) : null;
     this.el.hand.insertBefore(el, next);
-    this.markGroups();
+    this.markCards();
     this.layout();
   }
 
@@ -331,6 +340,13 @@ export class HandView {
   }
 
   play(cardId) {
+    const reason = this.blocked.get(cardId);
+    if (reason) {
+      if (this.selectedId !== cardId) this.select(cardId);
+      this.deny(cardId);
+      this.onNotice(reason);
+      return;
+    }
     this.select(null);
     this.onPlay(cardId);
   }
@@ -364,7 +380,8 @@ export class HandView {
     meta.textContent = `${next ? `合成先：${next}（同じカード2枚）` : def.effect === 'wild' ? '合成：合成先のあるカードと組み合わせられます' : '合成：これ以上合成できません'} ／ 排出率${boosted ? '（祈り中）' : ''} ${Number(rates[card.type] ?? 0).toFixed(3)}%`;
     this.el.detailUse.disabled = this.locked;
     this.el.detailUse.hidden = !input.useButton;
-    this.el.detailUse.classList.toggle('blocked', Boolean(reason) || this.blocked.has(card.cardId));
+    this.el.detailUse.classList.toggle('blocked', this.blocked.has(card.cardId));
+    this.el.detailUse.textContent = reason ? '理由を確認' : '使う';
     this.el.detail.hidden = false;
   }
 

@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="css/materials.css">
   <link rel="stylesheet" href="css/card-base.css">
   <link rel="stylesheet" href="css/hologram.css">
+  <link rel="stylesheet" href="css/battle.css">
 </head>
 <body>
   <div id="app">
@@ -78,7 +79,7 @@
         <div class="castle-pic"></div>
         <div class="castle-hp">
           <div class="hp-text"><span class="hp-heart" data-icon="heart"></span><b class="hp-value">0</b><span class="hp-max"></span></div>
-          <div class="hp-bar"><div class="hp-lag"></div><div class="hp-fill"></div></div>
+          <div class="hp-bar meter health-meter" role="meter"><div class="meter-fill health-lag"></div><div class="meter-fill health-fill"></div></div>
         </div>
       </section>
 
@@ -97,9 +98,10 @@
         <div class="castle-pic"></div>
         <div class="castle-hp">
           <div class="hp-text"><span class="hp-heart" data-icon="heart"></span><b class="hp-value">0</b><span class="hp-max"></span></div>
-          <div class="hp-bar"><div class="hp-lag"></div><div class="hp-fill"></div></div>
+          <div class="hp-bar meter health-meter" role="meter"><div class="meter-fill health-lag"></div><div class="meter-fill health-fill"></div></div>
         </div>
       </section>
+      <div id="weather-fx" aria-hidden="true"></div>
     </main>
 
     <!-- 下：自分の操作 -->
@@ -147,7 +149,6 @@
     </div>
 
     <div id="toast" role="status" aria-live="polite"></div>
-    <div id="weather-fx" aria-hidden="true"></div>
     <div id="fx-layer" aria-hidden="true"></div>
 
     <!-- 手番交代：相手の手札を隠す -->
@@ -164,16 +165,22 @@
     <div id="result" class="screen" aria-labelledby="result-heading" aria-describedby="result-description" hidden>
       <div class="confetti" aria-hidden="true"></div>
       <div class="result-rays" aria-hidden="true"></div>
-      <div class="screen-box">
-        <p class="result-crown" aria-hidden="true" data-icon="crown"></p>
-        <div class="result-pic"></div>
-        <p id="result-heading" class="result-title"></p>
-        <p id="result-description" class="result-sub"></p>
+      <div class="screen-box result-box">
+        <div class="result-summary">
+          <div class="result-pic"></div>
+          <div class="result-copy">
+            <h2 id="result-heading" class="result-title"></h2>
+            <p id="result-description" class="result-sub"></p>
+          </div>
+        </div>
+        <div class="result-actions">
+          <button type="button" id="rematch" class="plank-btn big">もう1回</button>
+          <div class="result-secondary">
+            <button type="button" id="back-to-room" class="small-btn" hidden>部屋に戻る</button>
+            <button type="button" id="result-title-btn" class="small-btn">タイトルへ</button>
+          </div>
+        </div>
         <div id="result-stats"></div>
-        <p id="result-encouragement"></p>
-        <button type="button" id="rematch" class="plank-btn big">もう1回</button>
-        <button type="button" id="back-to-room" class="small-btn" hidden>部屋に戻る</button>
-        <button type="button" id="result-title-btn" class="small-btn">タイトルへ</button>
       </div>
     </div>
 

@@ -138,7 +138,7 @@ export class Animations {
   /** 画面ぜんたい（盤面ごと）を揺らす。kind は config の screenShake のキー、power は強さ（ダメージや魔法の値） */
   screenShake(kind, power = 0) {
     const c = UI_CONFIG.screenShake[kind];
-    if (!c || this.skipping) return Promise.resolve();
+    if (!c || this.skipping || power < (c.minPower ?? 0)) return Promise.resolve();
     const amp = Math.min(c.max ?? c.base, c.base + (c.perPower ?? 0) * power);
     return this.shake(this.el.board, amp, c.duration);
   }
@@ -715,26 +715,33 @@ export class Animations {
 
   async cardDrawn({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
-    if (pl.pendingReward) {
+    // 駒は魔物撃破直後の別イベント。ごほうびと山札のドローから独立して扱う。
+    const piece = Boolean(pl.pendingPiece);
+    delete pl.pendingPiece;
+    if (!piece && pl.pendingReward) {
       const reward = pl.pendingReward; delete pl.pendingReward;
       await this.revealReward(reward, cardIds[0], ctx);
     }
-    for (const cardId of cardIds) {
+    for (const [index, cardId] of cardIds.entries()) {
+      const isPiece = piece && index === 0;
       pl.handCount += 1;
-      if (pl.generatedDraws > 0) pl.generatedDraws -= 1;
+      if (isPiece) {
+        // オンラインで相手に見せないIDは、枚数表示だけに使う。
+        if (!cardId.startsWith('hidden-')) model.pieceCards.add(cardId);
+      } else if (pl.generatedDraws > 0) pl.generatedDraws -= 1;
       else if (pl.luck?.draws > 0) {
         pl.luck.draws -= 1;
         if (!pl.luck.draws) pl.luck = null;
       } else if (model.deckMode !== 'shared' && playerId !== ctx.viewerId) { /* 相手の山札は自分の表示に反映しない */ }
       else if (model.preShuffleDraws > 0) model.preShuffleDraws -= 1;
       else model.deckCount = Math.max(0, model.deckCount - 1);
-      this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
+      this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: !isPiece });
       if (playerId === ctx.viewerId) {
         const card = ctx.lookupCard(cardId);
         if (card) {
           model.hand.push(card);
           this.handView.addCard(card);
-          this.flyFromDeck(card);
+          if (!isPiece) this.flyFromDeck(card);
           sound.play('draw');
         }
       } else {
@@ -752,7 +759,7 @@ export class Animations {
     const app = this.el.app.getBoundingClientRect();
     const r = el.getBoundingClientRect();
     if (!r.width) return; // 手札をたたんでいる
-    const from = this.centerOf(pile);
+    const from = this.centerOf(pile.getClientRects().length ? pile : document.getElementById('hud'));
     const to = { x: Math.max(r.width / 2, Math.min(app.width - r.width / 2, r.left - app.left + r.width / 2)), y: r.top - app.top + r.height / 2 };
     const clone = el.cloneNode(true);
     clone.classList.remove('new', 'selected', 'dim');
@@ -788,7 +795,8 @@ export class Animations {
     if (!free && def.kind === 'soldier') pl.soldiersPlayedThisTurn = (pl.soldiersPlayedThisTurn ?? 0) + 1;
     else if (!free && def.kind === 'spell' && !['summonSpirit', 'gainCoins', 'gainMp'].includes(def.effect)) pl.playedThisTurn = true;
     pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
-    if (!def.exhaust && (model.deckMode === 'shared' || playerId === ctx.viewerId)) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
+    if (!def.exhaust && def.monster === undefined && (model.deckMode === 'shared' || playerId === ctx.viewerId)) model.discardCount += 1;
+    model.pieceCards.delete(cardId);
     model.hand = model.hand.filter((c) => c.cardId !== cardId);
     let clone;
     let from;
@@ -848,7 +856,10 @@ export class Animations {
   async cardDiscarded({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
     pl.handCount = Math.max(0, pl.handCount - cardIds.length);
-    if (model.deckMode === 'shared' || playerId === ctx.viewerId) model.discardCount += cardIds.length;
+    if (model.deckMode === 'shared' || playerId === ctx.viewerId) {
+      model.discardCount += cardIds.filter(id => !model.pieceCards.has(id)).length;
+    }
+    for (const id of cardIds) model.pieceCards.delete(id);
     model.phase = 'main';
     model.discardRequired = 0;
     model.hand = model.hand.filter((c) => !cardIds.includes(c.cardId));
@@ -1693,7 +1704,8 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.afterMonsterHit);
   }
 
-  async monsterDefeated({ monsterId, playerId, reward, rewardRarity, baseRarity, lucky }, model) {
+  async monsterDefeated({ monsterId, playerId, reward, rewardRarity, baseRarity, lucky, pieceType }, model) {
+    if (pieceType) model.players[playerId].pendingPiece = true;
     if (rewardRarity) {
       model.players[playerId].generatedDraws = (model.players[playerId].generatedDraws ?? 0) + 1;
       model.players[playerId].pendingReward = { playerId, rarity: rewardRarity, base: baseRarity, lucky };
@@ -1823,13 +1835,13 @@ export class Animations {
 
   confetti(container, colors) {
     container.innerHTML = '';
-    const n = 70;
+    const n = 42;
     for (let i = 0; i < n; i++) {
       const c = document.createElement('i');
       c.style.left = `${Math.random() * 100}%`;
       c.style.background = colors[i % colors.length];
-      c.style.animationDuration = `${1800 + Math.random() * 1800}ms`;
-      c.style.animationDelay = `${Math.random() * 600}ms`;
+      c.style.animationDuration = `${i === n - 1 ? 1650 : 1050 + Math.random() * 550}ms`;
+      c.style.animationDelay = `${i === n - 1 ? 250 : Math.random() * 250}ms`;
       c.style.setProperty('--dx', `${(Math.random() - 0.5) * 160}px`);
       c.style.setProperty('--rot', `${(Math.random() - 0.5) * 1440}deg`);
       container.appendChild(c);

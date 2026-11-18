@@ -234,8 +234,6 @@
 #result-stats p { font-family: var(--head); color: #8a5a24; letter-spacing: .06em; text-align: center; }
 #result-stats dt { color: #5b4d33; font-weight: 700; }
 #result-stats dd { font-family: var(--head); font-size: 16px; color: #3f321f; }
-#result-encouragement { color: #5a3d10; font-weight: 800; }
-#result.lost #result-encouragement { color: #fff; text-shadow: 0 1px 2px #2a3a4f; }
 #result #rematch { margin-top: 2px; }
 
 /* ---------- 部屋（ロビー）：席に城の絵、合言葉を看板に ---------- */
@@ -504,7 +502,6 @@ body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%,
 #app .settings-box input[type=range] { background: linear-gradient(90deg, #e8a530 var(--p, 50%), #4a3523 var(--p, 50%)); }
 
 /* ---------- 6. 手札の「合成可」バッジ：濃い青緑をやめて木の茶＋羊皮紙の文字 ---------- */
-.card.can-fuse::after { background: linear-gradient(#a8692f, #7f4a1f); border: 1px solid var(--wood-dark); color: var(--parch); box-shadow: 0 1px 0 #3f251166; }
 .card.choosing { box-shadow: 0 0 0 2px #d9a02c; }
 
 /* ---------- 8. 手番交代の画面：前の人の手札を隠すので不透明のまま、タイトルと同じ空と草原の絵を敷く ---------- */

@@ -10,6 +10,7 @@ const {chromium}=require('playwright');
 const root=fileURLToPath(new URL('../',import.meta.url));
 const artifacts=resolve(root,'ui-tests/artifacts');mkdirSync(artifacts,{recursive:true});
 const base=process.env.UI_TEST_URL??'http://127.0.0.1:8000/';
+const viewport = { width: Number(process.env.UI_TEST_WIDTH ?? 390), height: Number(process.env.UI_TEST_HEIGHT ?? 844) };
 let server,browser,page,serverLog='';
 const errors=[],warnings=[];
 const available=async()=>{try{return(await fetch(base,{signal:AbortSignal.timeout(1000)})).ok}catch{return false}};
@@ -49,7 +50,7 @@ async function play(card){
 try{
   await ensureServer();
   browser=await chromium.launch({headless:true,...(process.env.UI_TEST_CHROMIUM?{executablePath:process.env.UI_TEST_CHROMIUM}:{})});
-  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'});
+  const context=await browser.newContext({viewport,reducedMotion:'reduce'});
   page=await context.newPage();page.setDefaultTimeout(10000);
   page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{if(message.type()==='error')errors.push(message.text());if(message.text().startsWith('[sync]'))warnings.push(message.text())});
@@ -91,10 +92,14 @@ try{
   assert.equal(Number(values[0]),final.turn,'結果の手番数がGameと一致');
   assert.equal(Number(values[3]),used,'結果の使用カード数が実イベントと一致');
   assert.ok(used>0);assert.ok(await page.locator('#rematch').isEnabled());
+  assert.ok(await page.locator('#rematch').evaluate(el => {
+    const rect = el.getBoundingClientRect();
+    return rect.top >= 0 && rect.bottom <= innerHeight && rect.height >= 44;
+  }), '再戦がスクロールなしで押せる');
   await page.evaluate(()=>{window.__uiSmokePrevious=castlefield.game()});await press('#rematch');
   await page.waitForFunction(()=>Boolean(castlefield.game())&&castlefield.game()!==window.__uiSmokePrevious&&castlefield.game().getState(null).phase!=='gameOver');
   assert.deepEqual(errors,[],'コンソールとページにエラーがない');assert.deepEqual(warnings,[],'描画の同期警告がない');
-  const report={viewport:'390x844',deployed,ended,turns:final.turn,cards:used,errors,warnings,rematch:true};
+  const report={viewport:`${viewport.width}x${viewport.height}`,deployed,ended,turns:final.turn,cards:used,errors,warnings,rematch:true};
   writeFileSync(resolve(artifacts,'report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
 }catch(error){
   if(page)await snapshot('failure').catch(()=>{});

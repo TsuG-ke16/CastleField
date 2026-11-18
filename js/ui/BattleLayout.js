@@ -6,7 +6,12 @@ export class BattleLayout {
     const hud = $('hud');
     this.turn = document.createElement('strong'); this.turn.id = 'turn-status';
     this.turn.setAttribute('role', 'status'); this.turn.setAttribute('aria-live', 'polite');
-    hud.prepend(this.turn);
+    this.turnText = document.createElement('span');
+    this.turn.append(this.turnText);
+    const turnGroup = document.createElement('div');
+    turnGroup.className = 'hud-turn';
+    turnGroup.append(this.turn, $('turn-info'));
+    hud.prepend(turnGroup);
     const info = document.createElement('details'); info.id = 'match-info';
     const summary = document.createElement('summary'); summary.textContent = '対戦状況・山札';
     const piles = document.createElement('div'); piles.className = 'match-piles';
@@ -16,8 +21,13 @@ export class BattleLayout {
     const economy = $('economy-status');
     info.append(summary, opponent, piles, this.seats, economy, $('menu-rates'));
     $('menu').querySelector('.menu-title').after(info);
-    // Common resources remain next to the turn indicator; secondary counters are in the menu.
-    hud.append($('my-mp'), $('chat-open'), $('menu-open'));
+    const resources = document.createElement('div');
+    resources.className = 'hud-resources';
+    resources.append($('my-mp'), $('weather-chip'));
+    const actions = document.createElement('div');
+    actions.className = 'hud-actions';
+    actions.append($('chat-open'), $('menu-open'));
+    hud.append(resources, actions);
     hud.querySelector('.hud-right').remove();
     $('my-mp').querySelector('[data-icon]').insertAdjacentText('afterend', 'MP ');
     this.toolbar = document.createElement('div'); this.toolbar.className = 'hand-toolbar';
@@ -25,6 +35,7 @@ export class BattleLayout {
     this.hint = document.createElement('span'); this.hint.className = 'hand-scroll-hint'; this.hint.textContent = '横にスワイプ';
     this.toolbar.append(this.count, this.hint, $('hand-toggle'));
     $('hand').before(this.toolbar);
+    $('hand').after($('controls').querySelector('.control-row'));
     const extra = document.createElement('details'); extra.className = 'detail-extra';
     extra.innerHTML = '<summary>合成先・排出率</summary>';
     $('card-detail').querySelector('.detail-meta').before(extra);
@@ -40,7 +51,7 @@ export class BattleLayout {
   update(state, viewerId) {
     const me = state.players[viewerId];
     const defending = state.phase === 'defend';
-    this.turn.textContent = me.eliminated ? '観戦中' : defending
+    this.turnText.textContent = me.eliminated ? '観戦中' : defending
       ? state.defense?.defenderId === viewerId ? '防御を選んでください' : '相手が防御を選択中'
       : state.currentPlayer === viewerId ? 'あなたの番' : `${playerName(state.currentPlayer)}の番`;
     document.getElementById('hud').dataset.turn = state.currentPlayer === viewerId ? 'mine' : 'other';

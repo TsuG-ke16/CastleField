@@ -36,15 +36,8 @@
 .plaza-stage .plaza-castle.plaza-upper { flex-direction:column-reverse; }.castle-side {align-items:center;}
 .castle[data-tier=fortress] { min-height:100px; }
 
-/* 兵士の体力ゲージ：兵士の足もとに細い帯を出す。減ると緑 → 黄 → 赤。減った分は白い影が遅れて追いかける */
-.soldier-gauge { --ratio: 1; position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 40px; height: 7px; pointer-events: none; border: 1.5px solid var(--ink); background: #5b3a22; z-index: 2; }
-.soldier-gauge-fill, .soldier-gauge-lag { width: calc(var(--ratio) * 100%); }
-.soldier-gauge-fill { background: var(--status-ok); transition: width var(--motion-feedback) var(--ease-enter), background-color .2s; }
-.soldier-gauge[data-level="mid"] .soldier-gauge-fill { background: #f2c53b; }
-.soldier-gauge[data-level="low"] .soldier-gauge-fill { background: var(--status-danger); animation: gauge-warn .7s ease-in-out infinite; }
-.soldier-gauge-lag { background: #fff; opacity: .85; transition: width var(--motion-meter-lag) var(--motion-meter-lag-delay) var(--ease-enter); }
-@keyframes gauge-warn { 50% { filter: brightness(1.35); } }
-@media (prefers-reduced-motion: reduce) { .soldier-gauge-fill, .soldier-gauge-lag { transition: none; } .soldier-gauge[data-level="low"] .soldier-gauge-fill { animation: none; } }
+/* 兵士の体力ゲージを駒の頭上に置く。 */
+.soldier-gauge { position: absolute; top: -2px; left: 50%; transform: translateX(-50%); width: 40px; height: 7px; pointer-events: none; z-index: 2; }
 
 /* ===== 天候 ===== */
 .weather-chip { font-weight: 900; cursor: help; border: 0; font: inherit; }

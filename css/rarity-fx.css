@@ -7,7 +7,6 @@
 .detail-rarity, .rarity-label { display: inline-block; border-left: 4px solid var(--rarity); padding: 2px 7px; font-size: 11px; margin-top: 6px; color: #354e40; background: #f3eedf; }
 .detail-meta { font-size: 10px; line-height: 1.7; margin-top: 8px; color: #7c765f; }
 .detail-close { justify-self: end; margin: 0; }.detail-use { grid-column: 2; align-self: end; }
-.card.can-fuse::after { content: '合成可'; position: absolute; bottom: -5px; right: 3px; z-index: 5; border-radius: 5px; background: #315d4e; color: #fff5cf; padding: 2px 4px; font-size: 8px; }
 .card[data-rarity=epic] { box-shadow: 0 0 0 1px var(--rarity), 0 4px 14px #9b59d026; }
 .card[data-rarity=legendary] { background: linear-gradient(135deg, #fff3ce, #fffaf0, #f9df91); box-shadow: 0 0 0 2px var(--rarity), 0 0 14px #f0a02066; }
 .card[data-rarity=legendary] .card-art { background: radial-gradient(ellipse, #ffe89e, #fff7df); }

@@ -52,7 +52,7 @@ export const UI_CONFIG = {
     draw: 140,             // カードを引く（1枚ごとの間隔）
     shuffle: 420,          // 山札のシャッフル
     afterTurnStart: 120,   // 手番開始の画面を開いてから、進軍を始めるまで
-    gameOverDelay: 450,    // 決着の一撃のあと、勝敗画面を出すまで
+    gameOverDelay: 300,    // 決着の一撃のあと、勝敗画面を出すまで
     toast: 2200,           // 「出せない理由」などの表示時間
     clash: 220,            // 兵士同士・兵士と魔物がぶつかる
     equip: 300,            // 武器を持たせる・盾をつける・とぎ石
@@ -74,19 +74,19 @@ export const UI_CONFIG = {
   // 城にダメージが入ったときの手応え。値 = base + perDamage × ダメージ（max で頭打ち）
   castleHit: {
     hitstopBase: 60, hitstopPerDamage: 10, hitstopMax: 240,  // 一瞬止める時間
-    shakeBase: 4, shakePerDamage: 1.2, shakeMax: 22,         // 揺れ幅(px)
-    shakeDuration: 320,
+    shakeBase: 0, shakePerDamage: 0.75, shakeMax: 13,         // 揺れ幅(px)
+    shakeDuration: 210,
     numberBase: 36, numberPerDamage: 3, numberMax: 84,       // ダメージ数字の大きさ(px)
     numberDuration: 800,
     finishHitstop: 520,    // 決着の一撃だけはこの時間止める
-    finishShake: 30,
+    finishShake: 18,
   },
 
   // 画面ぜんたいの揺れ（盤面ごと揺らす）。ダメージを受けたとき・魔法を使ったとき。値 = base + perPower × 強さ（max で頭打ち）
   screenShake: {
-    soldier: { base: 2, perPower: 1.2, max: 9, duration: 240 },
-    monster: { base: 2, perPower: 1.2, max: 9, duration: 240 },
-    spell: { base: 3, perPower: 0.6, max: 12, duration: 300 },
+    soldier: { base: 0, minPower: 1.2, perPower: 2.1, max: 4, duration: 160 },
+    monster: { base: 0, minPower: 1.1, perPower: 2.5, max: 5, duration: 185 },
+    spell: { base: 0, minPower: 8, perPower: .35, max: 8, duration: 190 },
     weather: { base: 8, duration: 420 },
   },
 

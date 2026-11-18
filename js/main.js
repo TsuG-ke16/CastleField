@@ -263,7 +263,10 @@ async function boot() {
   $('help-monster').hidden = !monsters;
 
   el.endTurn.addEventListener('click', endTurn);
+  el.rematch.addEventListener('click', stopCelebration);
   el.rematch.addEventListener('click', (e) => { e.stopPropagation(); rematch(); });
+  el.result.addEventListener('click', stopCelebration);
+  $('weather-chip').addEventListener('click', () => toast($('weather-chip').title, 'info'));
   el.resultTitleBtn.addEventListener('click', (e) => { e.stopPropagation(); showTitle(); });
   // 最初のタップで音を出せるようにする。演出中に画面をタップしたら飛ばす（重ねて出す画面の上は除く）
   el.app.addEventListener('keydown', e => { if(['Enter',' '].includes(e.key)) sound.unlock(); });
@@ -1030,6 +1033,10 @@ function modelFromState(st) {
     monsters: (st.monsters ?? []).map((m) => ({ ...m })),
     players,
     hand: (st.players[viewerId]?.hand ?? []).map((c) => ({ ...c })),
+    pieceCards: new Set([
+      ...(model?.pieceCards ?? []),
+      ...(st.players[viewerId]?.hand ?? []).filter(c => cards[c.type]?.monster !== undefined).map(c => c.cardId),
+    ]),
   };
 }
 
@@ -1523,6 +1530,11 @@ function handover(playerId, turn) {
   });
 }
 
+function stopCelebration() {
+  el.result.classList.add('celebration-done');
+  el.confetti.replaceChildren();
+}
+
 async function showResult(winner) {
   setBusy(true);
   const s = session;
@@ -1539,21 +1551,25 @@ async function showResult(winner) {
   const how = (won ? GAME_OVER_TEXT : GAME_OVER_TEXT_LOST)[model.gameOverReason] ?? '';
   // 3人以上で負けたときは、だれが勝ったかも出す
   const victor = online && !won && !winningTeam && model.playerOrder.length > 2 ? `${playerName(winner)}の勝ち　` : '';
-  el.resultSub.textContent = `${victor}${how ? `${how}　` : ''}${model.turn}ターンで決着`;
+  el.resultSub.textContent = `${victor}${how}`.trim();
   const resultImage = new Image();
-  resultImage.className='result-illustration';resultImage.alt='';
-  resultImage.src=`assets/ui/result-${won ? 'victory' : 'defeat'}.png`;
-  await resultImage.decode().catch(()=>{});
-  if(s!==session)return;
+  resultImage.className = 'result-illustration';
+  resultImage.alt = '';
+  resultImage.src = `assets/ui/result-${won ? 'victory' : 'defeat'}.png`;
   el.resultPic.replaceChildren(resultImage);
   const colors = winner === 'p1'
     ? ['#4da3e8', '#bfe3fb', '#ffd93b', '#ffffff']
     : ['#f5923e', '#ffd9b0', '#ffd93b', '#ffffff'];
-  if (won) anim.confetti(el.confetti, colors);
-  else el.confetti.innerHTML = '';
+  stopCelebration();
+  if (won && !UI_CONFIG.reducedMotion) {
+    el.result.classList.remove('celebration-done');
+    anim.confetti(el.confetti, colors);
+    el.confetti.lastElementChild?.addEventListener('animationend', () => {
+      if (s === session && !el.result.hidden) stopCelebration();
+    }, { once: true });
+  }
   matchStats.render(viewerId, online);
   matchStats.finish(won, online);
-  $('result-encouragement').textContent = won ? '見事な采配！ 次の勝利に挑もう。' : '出す順番や攻める道を変えて、もう一度！';
   el.result.hidden = false;
   sound.enabled = true;
   sound.setScene(won ? 'victory' : 'defeat');
