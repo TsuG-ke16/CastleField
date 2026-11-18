@@ -34,7 +34,7 @@ export class BattleLayout {
     records.innerHTML = '<summary>戦績</summary>';
     $('title-record').before(records); records.append($('title-record'), $('record-clear'));
     const links = document.createElement('nav'); links.className = 'title-links'; links.setAttribute('aria-label', 'ゲームの案内');
-    $('title-main').append(links); links.append($('title-catalog'), $('title-settings'), $('title-help'));
+    $('title-main').append(links); links.append($('title-deck'), $('title-catalog'), $('title-settings'), $('title-help'));
     $('record-clear').textContent = '戦績をリセット';
   }
   update(state, viewerId) {

@@ -38,5 +38,8 @@
   "monsterEvolveEvery": 3,
   "monsterEvolveMultiplier": 1.2,
   "weatherFirstRound": 2,
-  "weatherChangeChance": 0.6
+  "weatherChangeChance": 0.6,
+  "deckCostMin": 90,
+  "deckCostMax": 100,
+  "defaultCostDeck": "costBalance"
 }

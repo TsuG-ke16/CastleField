@@ -26,6 +26,9 @@ import { Targeting } from './ui/Targeting.js';
 import { LocalSession } from './ui/Session.js';
 import { OnlineClient } from './ui/OnlineClient.js';
 import { ChatView } from './ui/ChatView.js';
+import { DeckEditor } from './ui/DeckEditor.js';
+import { loadMyDeck } from './ui/DeckStore.js';
+import { checkCostDeck } from './game/Setup.js';
 import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
@@ -90,6 +93,7 @@ let castles = null;
 let decks = null;
 let rarities = null;
 let stamps = null;   // data/stamps.json（読めなければ null：チャットなし）
+let deckEditor = null; // デッキ編成の画面（コスト制の見本のデッキがあるときだけ）
 let chat = null;     // チャットとスタンプ（ChatView）
 let weather = null;  // data/weather.json（読めなければ null：天候なし）
 let progressPanel;
@@ -223,7 +227,7 @@ async function boot() {
     onMonsterTap: (m) => toast(monsterInfo(m, { monsters }), 'info'),
     onTargetTap: (target) => { if (!busy) targeting.tap(target); },
   });
-  roomView = new RoomView({ onAction: (method, args) => session.act(method, args), onLeave: () => showTitle() });
+  roomView = new RoomView({ onAction: (method, args) => session.act(method, args), onLeave: () => showTitle(), onEditDeck: () => deckEditor?.open(), getMyDeck: loadMyDeck });
   $('back-to-room').addEventListener('click', async () => {
     const res = await session?.act('backToRoom');
     if (!res?.ok) toast(res?.reason ?? '部屋に戻れませんでした');
@@ -256,6 +260,12 @@ async function boot() {
     if (busy && !e.target.closest('.screen, #debug-panel, #debug-toggle, #menu-open')) anim.skip();
   }, true);
 
+  if (rarities && Object.values(decks ?? {}).some((d) => d.costDeck)) {
+    deckEditor = new DeckEditor({ cards, rarities, rules, decks, onSave: (list) => roomView?.onMyDeckSaved?.(list) });
+    $('title-deck').addEventListener('click', () => { sound.play('tap'); deckEditor.open(); });
+  } else {
+    $('title-deck').hidden = true;
+  }
   cardGuide = new CardGuide({ cards, rarities, rules, monsters, getContext: uiContext, debug: DEBUG });
   progressPanel = new ProgressPanel({ cards, rarities, rules, monsters,
     getContext: uiContext, onRates: () => cardGuide.open('rates'),
@@ -555,11 +565,20 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
       opts.castles=structuredClone(castles);opts.decks=structuredClone(decks);
       opts.setup={castles:Array(options.playerCount).fill(rules.defaultCastle??'standard')};
       if(options.deckMode==='own')opts.setup.decks=Array(options.playerCount).fill(rules.defaultDeck??'balanced');
+      if(options.deckMode==='cost')opts.setup.decks=Array(options.playerCount).fill(rules.defaultCostDeck);
       // 自分の席は後で決まるため、選択を割り当てる席を同じシードから求める。
       const seatRng=mulberry32(seed ^ 0x9e3779b9);
       const humanSeat=cpuLevel?Math.floor(seatRng()*options.playerCount):0;
       opts.setup.castles[humanSeat]=options.castle;
-      if(opts.setup.decks)opts.setup.decks[humanSeat]=options.deck;
+      if(opts.setup.decks&&!(options.deckMode==='cost'&&options.deck==='custom'))opts.setup.decks[humanSeat]=options.deck;
+      if(options.deckMode==='cost'&&options.deck==='custom'){
+        // 自分で編成したデッキ（決まりに合わなければ、編成画面を開いて直してもらう）
+        const mine=loadMyDeck();
+        if(!mine||!checkCostDeck(mine,cards,rarities,rules).ok){
+          showTitle();toast('マイデッキがまだ決まりに合っていません。「デッキ編成」で作ってください','info');deckEditor?.open();return;
+        }
+        opts.setup.deckLists=Array(options.playerCount).fill(null);opts.setup.deckLists[humanSeat]=mine;
+      }
       if(options.teams==='auto'){
         const seats=Array.from({length:options.playerCount},(_,i)=>i);
         for(let i=seats.length-1;i>0;i--){const j=Math.floor(seatRng()*(i+1));[seats[i],seats[j]]=[seats[j],seats[i]];}
