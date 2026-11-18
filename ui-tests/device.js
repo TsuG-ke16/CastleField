@@ -1,0 +1,102 @@
+// スマホの代わりに確かめる：オフラインで起動できるか（PWA）と、カードの長押し拡大・傾き。
+// 起動済みのサーバーに接続する。PORT=8787 node server/server.js
+// 実機でしか分からないこと（ホーム画面に追加する操作、iPhone の傾きの許可の確認、指の感触）は対象外。
+import assert from 'node:assert/strict';
+import { mkdirSync } from 'node:fs';
+import { createRequire } from 'node:module';
+import { fileURLToPath } from 'node:url';
+
+const { chromium, devices } = createRequire(import.meta.url)('playwright');
+const base = new URL(process.env.UI_TEST_URL ?? 'http://127.0.0.1:8787/');
+const output = new URL('./artifacts/', import.meta.url);
+mkdirSync(output, { recursive: true });
+const browser = await chromium.launch({
+  ...(process.env.UI_TEST_CHROMIUM ? { executablePath: process.env.UI_TEST_CHROMIUM } : {}),
+});
+const errors = [];
+const watch = (page, label) => {
+  page.on('pageerror', error => errors.push(`${label}: ${error.message}`));
+  page.on('console', message => { if (message.type() === 'error') errors.push(`${label}: ${message.text()}`); });
+};
+
+async function offline() {
+  const context = await browser.newContext({ ...devices['iPhone 13'] });
+  const page = await context.newPage();
+  watch(page, 'offline');
+  await page.goto(base.href);
+  await page.locator('#title-solo').waitFor();
+  const manifest = await page.evaluate(async () => {
+    const link = document.querySelector('link[rel=manifest]');
+    return (await fetch(link.href)).json();
+  });
+  assert.equal(manifest.display, 'standalone');
+  assert.ok(manifest.icons?.length >= 1, 'ホーム画面のアイコンがある');
+  // サービスワーカーが配るファイルを全部しまい、このページを受け持つまで待つ（受け持たないときは1回だけ読み直す）
+  let cached = 0;
+  for (let i = 0; i < 180; i++) {
+    cached = await page.evaluate(async () => {
+      let n = 0;
+      for (const key of await caches.keys()) n += (await (await caches.open(key)).keys()).length;
+      return n;
+    });
+    if (cached > 300 && await page.evaluate(() => Boolean(navigator.serviceWorker.controller))) break;
+    if (i === 30) await page.reload();
+    await page.waitForTimeout(1000);
+  }
+  assert.ok(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)), 'サービスワーカーがページを受け持つ');
+  await context.setOffline(true);
+  await page.reload();
+  await page.locator('#title-solo').click();
+  await page.locator('#title-levels .level[data-level="normal"]').click();
+  await page.waitForFunction(() => !document.querySelector('#board').hidden && !document.querySelector('#app').classList.contains('busy'), {}, { timeout: 60000 });
+  const broken = await page.evaluate(() => [...document.querySelectorAll('img')]
+    .filter(img => img.getClientRects().length && img.complete && img.naturalWidth === 0)
+    .map(img => img.getAttribute('src')));
+  assert.deepEqual(broken, [], 'オフラインでも絵が出る');
+  await page.screenshot({ path: fileURLToPath(new URL('device-offline.png', output)) });
+  await context.close();
+  console.log(`オフライン：${cached}ファイルを保存し、通信なしでひとりで遊ぶを始められる OK`);
+}
+
+async function zoom(device) {
+  const context = await browser.newContext({ ...devices[device], serviceWorkers: 'block' });
+  const page = await context.newPage();
+  watch(page, device);
+  await page.goto(base.href);
+  await page.locator('#title-deck').click();
+  await page.locator('.deck-grid-item').first().waitFor();
+  const before = await page.locator('.deck-summary').innerText();
+  const box = await page.locator('.deck-grid [data-zoom]').first().boundingBox();
+  const touch = await context.newCDPSession(page);
+  const point = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [point] });
+  await page.waitForTimeout(650);
+  await touch.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  const card = page.locator('.zoom-card');
+  await card.waitFor();
+  await page.waitForTimeout(300);
+  assert.equal(await page.locator('.deck-summary').innerText(), before, '長押しのあと指を離しても、カードは足されない');
+  const tilt = async (gamma, beta) => {
+    await page.evaluate(([g, b]) => window.dispatchEvent(new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta: b, gamma: g })), [gamma, beta]);
+    await page.waitForTimeout(500);
+    return card.evaluate(el => [parseFloat(el.style.getPropertyValue('--foil-x')), getComputedStyle(el).transform]);
+  };
+  const [leftX, leftTransform] = await tilt(-20, 30);
+  const [rightX, rightTransform] = await tilt(25, 60);
+  assert.ok(leftX < 40 && rightX > 60, `傾けると光が動く（${leftX}% → ${rightX}%）`);
+  assert.notEqual(leftTransform, rightTransform, '傾けるとカードの角度が変わる');
+  const rect = await card.boundingBox();
+  const view = page.viewportSize();
+  assert.ok(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= view.width && rect.y + rect.height <= view.height, '拡大したカードが画面に収まる');
+  await page.screenshot({ path: fileURLToPath(new URL(`device-zoom-${device.replace(/\s/g, '')}.png`, output)) });
+  await context.close();
+  console.log(`${device}：長押しで拡大・傾きで光と角度が動く OK`);
+}
+
+try {
+  await offline();
+  for (const device of ['iPhone SE', 'iPhone 13', 'Pixel 7']) await zoom(device);
+  assert.deepEqual(errors, []);
+} finally {
+  await browser.close();
+}
