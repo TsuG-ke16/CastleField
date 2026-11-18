@@ -196,7 +196,9 @@ export class Room {
       game.on(type, (payload) => {
         if (this.game !== game) return;
         for (const seat of this.seats) {
-          if (seat.clients.size > 0) this.send(seat, { type: 'event', event: type, payload: filterEventFor(type, payload, seat.playerId) });
+          if (seat.clients.size === 0) continue;
+          const shown = filterEventFor(type, payload, seat.playerId, game.side(seat.playerId));
+          if (shown) this.send(seat, { type: 'event', event: type, payload: shown });
         }
       });
     }

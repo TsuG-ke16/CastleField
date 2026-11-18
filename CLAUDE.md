@@ -1152,6 +1152,18 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **デッキ名**：保存済みのデッキは、名前を変えた時点ですぐ保存する（カードの変更は保存ボタンまで保存しない）
 - **山札の既定は「プレイヤーごと別（コスト制）」**：ひとりで遊ぶ（設定を選ばずに始めたときも）・同じ端末・オンラインの部屋で、最初から1人1つの山札。編成したマイデッキが決まりに合っていれば自分の席で使い、CPU は見本のデッキ。「みんな共通」は設定で選べる。`data/rules.json` の `deckMode` は変えていない（シミュレーションの基準を変えないため）
 
+## 忍者（`role: "ninja"`。日本バージョンのために足した。人間に確認して決めた）
+
+日本バージョン（タイトルで切り替える。カードは全部日本専用に作り直し、西洋版とは混ぜない）の忍者のための役割。**相手から見えず、敵の兵士をすり抜ける**（人間の指示）。ロジックだけ先に入れた（`data/cards.json`（西洋版）には忍者はいない）。
+
+- 書き方：`cards.json` の兵士に `role: "ninja"`。`hp`・`attack`・`speed` を書く（進む兵士。`range`・`stay` は書かない）
+- **すり抜け**：忍者は相手の兵士と戦わない。相手の兵士も忍者を止めず、弓兵・魔法使いも撃たない（`foesOf` が忍者を数えない）。**魔物には止められる**（倒すまで進めない）。城に着けば、ふつうの兵士と同じく攻撃力 × `soldierCastleDamageMultiplier` のダメージ（防御も聞く）
+- **見えない**：`getState(viewerId)` は、ほかの陣地の忍者を `soldiers` に入れない（`viewerId` が `null` のときも入れない）。味方（チーム戦の同じ陣地）には見える
+- **妖術（魔法）の的にならない**：兵士を狙う魔法・毒（`damageEnemySoldiers` / `poisonEnemySoldiers` / `freezeEnemySoldiers` / `poisonEnemy`）は忍者に当たらず、対象の数え方（「相手の兵士がいません」）にも入れない（いるかどうかが分からないように）。`Player.visibleSoldiers` が忍者を除いた兵士。天候（砂嵐）は当たる
+- **イベント**：忍者に関わるイベント（`soldierDeployed` / `soldierMoved` / `soldierDamaged` / `soldierDestroyed` / `statusApplied` / `statusCleared` / `weaponEquipped` / `shieldAdded` / `soldierBuffed` / `monsterClashed`）には、持ち主の陣地 `stealth`（例：`"p1"`）が付く。`filterEventFor(type, payload, viewerId, viewerSide)`（`js/game/visibility.js`）は、`stealth` がその人の陣地でなければ `null`（送らない）を返す。サーバーは `null` のイベントを送らない。**城・魔物へのダメージ（`castleDamaged` / `monsterDamaged`）と、カードを出したこと（`cardPlayed`）は見える**（「忍者を出した」ことは分かるが、どこにいるかは分からない）
+- 画面（ひとりで遊ぶ・同じ端末）は、オンラインと同じく、見ている人の陣地で `stealth` のイベントを飛ばす（UI担当。日本バージョンの画面のPRで入れる）
+- 確かめたこと：`tests/ninja.test.js`（見えない・すり抜け・弓兵に撃たれない・魔法の的にならない・魔物には止められる・イベントを隠す）。西洋版のシミュレーションは変わらない（忍者がいないため）
+
 ## 全体の設計（STEP 2〜5 の見通し）
 
 STEP 2 以降で作り直しにならないよう、Game をどう広げるかを先に決めておく。**ここに書いた形は「これから作るときの約束」で、各STEPの実装PRで少しずつ入る。** 入った時点で「ロジックとUIの約束」の表に移す。

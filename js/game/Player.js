@@ -57,6 +57,11 @@ export class Player {
     return this.hand.splice(i, 1)[0];
   }
 
+  /** 相手から見える兵士（忍者を除く）。妖術（魔法）の的・対象の数え方に使う */
+  get visibleSoldiers() {
+    return this.soldiers.filter((s) => !s.stealth);
+  }
+
   removeSoldier(soldierId) {
     this.soldiers = this.soldiers.filter((s) => s.soldierId !== soldierId);
   }
