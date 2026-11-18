@@ -259,3 +259,27 @@ test('魔物の駒は合成できず、排出（山札・ごほうび）では�
   assert.equal(game.canFuse(a.cardId, b.cardId).ok, false);
   assert.equal(game.getDropRates().cards.beast_bat.rate, 0);
 });
+
+test('魔物の駒は、出しても捨てても山札に戻らない（使い切り置き場へ）', () => {
+  const cards = loadJson('cards.json');
+  const rules = { ...loadJson('rules.json'), monsterSpawnChance: 0, weatherChangeChance: 0 };
+  const g = new Game({ cards, rules, rng: seededRng(1), monsters: loadJson('monsters.json'), rarities: loadJson('rarities.json') });
+  g.start();
+  const pile = g.pileOf('p1');
+  const ex = pile.exhausted.length;
+  const dis = pile.discard.length;
+  // 出す
+  g.debugSetHand('p1', ['beast_bat', 'beast_slime']);
+  const [a] = g.getState('p1').players.p1.hand;
+  assert.equal(g.playCard(a.cardId, { playerId: 'p2', roadId: g.roads[0].roadId }).ok, true);
+  assert.equal(pile.exhausted.length, ex + 1);
+  assert.equal(pile.discard.length, dis);
+  // 手札の上限で捨てる
+  g.players.p1.maxHand = 0;
+  g.endTurn();
+  assert.equal(g.getState(null).phase, 'discard');
+  const [b] = g.getState('p1').players.p1.hand;
+  assert.equal(g.discard([b.cardId]).ok, true);
+  assert.equal(pile.exhausted.length, ex + 2);
+  assert.ok(![...pile.deck, ...pile.discard].some((c) => c.def.monster));
+});

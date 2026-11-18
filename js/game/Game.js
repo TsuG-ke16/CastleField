@@ -1152,6 +1152,18 @@ export class Game {
     }
   }
 
+  /**
+   * 使った・捨てたカードを置き場へ。ふつうは捨て札（山札に戻る）。
+   * 使い切りのカードを使ったときと、倒した魔物の駒（使っても捨てても）は、使い切り置き場へ行き、山札に戻らない
+   * （駒は「山札では出ない」ので、シャッフルで山札に混ざらないように）
+   * @param {{used?: boolean}} [opts] used：出して使ったか（false なら手札の上限・引き直しなどで捨てた）
+   */
+  throwAway(playerId, card, { used = true } = {}) {
+    const pile = this.pileOf(playerId);
+    if (card.def.monster !== undefined || (used && card.isExhaust)) pile.exhausted.push(card);
+    else pile.discard.push(card);
+  }
+
   /** そのカードを出すのに必要な MP。MP を使わない設定（maxMp が 0）や、MP を使わないカードは 0 */
   mpCostOf(card) {
     if (this.rules.maxMp <= 0) return 0;
@@ -1682,8 +1694,7 @@ export class Game {
     if (card.slot === 'soldier') player.soldiersPlayedThisTurn += 1;
     player.cardsPlayedThisTurn += 1;
     // 使ったカードは（兵士も）すぐ捨て札へ。使い切りのカードは、二度と山札に戻らない置き場へ
-    if (card.isExhaust) this.pileOf(player.id).exhausted.push(card);
-    else this.pileOf(player.id).discard.push(card);
+    this.throwAway(player.id, card);
     this.emit('cardPlayed', { playerId: player.id, cardId: card.cardId, type: card.type });
 
     this.applyCard(player, card, resolved.target);
@@ -1824,7 +1835,7 @@ export class Game {
         const old = [...player.hand];
         this.drawCards(player, old.length);
         const cardIds = old.map((c) => c.cardId);
-        for (const c of old) this.pileOf(player.id).discard.push(player.takeFromHand(c.cardId));
+        for (const c of old) this.throwAway(player.id, player.takeFromHand(c.cardId), { used: false });
         this.emit('cardDiscarded', { playerId: player.id, cardIds });
         break;
       }
@@ -2011,7 +2022,7 @@ export class Game {
     const player = this.players[this.currentPlayer];
     if (!cardIds.every((id) => player.findInHand(id))) return fail('手札にないカードが選ばれています');
 
-    for (const id of cardIds) this.pileOf(player.id).discard.push(player.takeFromHand(id));
+    for (const id of cardIds) this.throwAway(player.id, player.takeFromHand(id), { used: false });
     this.discardCount = 0;
     this.emit('cardDiscarded', { playerId: player.id, cardIds: [...cardIds] });
     this.passTurn();
@@ -2128,8 +2139,7 @@ export class Game {
     const chosen = target ? targets.find((t) => Object.keys(target).every((k) => target[k] === undefined || t[k] === target[k])) : targets[0];
 
     defender.takeFromHand(cardId);
-    if (card.isExhaust) this.pileOf(defender.id).exhausted.push(card);
-    else this.pileOf(defender.id).discard.push(card);
+    this.throwAway(defender.id, card);
     this.emit('cardPlayed', { playerId: defender.id, cardId: card.cardId, type: card.type });
     if (card.def.effect === 'reflectSpell' || card.def.effect === 'nullifySoldier') {
       // 攻撃そのものを変えるカード：これで防御は終わり
@@ -2248,8 +2258,7 @@ export class Game {
     player.eliminated = true;
     this.emit('playerEliminated', { playerId: player.id, by });
     for (const s of [...player.soldiers]) this.removeSoldier(player, s, 'eliminated');
-    const pile = this.pileOf(player.id);
-    pile.discard.push(...player.hand);
+    for (const c of player.hand) this.throwAway(player.id, c, { used: false });
     player.hand = [];
     const { opened, closed } = this.rebuildRoads();
     for (const road of closed) {
