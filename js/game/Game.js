@@ -1683,6 +1683,8 @@ export class Game {
       if (this.opponentsOf(player.id).some((p) => p.findInHand(cardId))) return fail('あなたの番ではありません');
       return fail('そのカードは手札にありません');
     }
+    // 適応は合成専用。枠の決まりより先に答える（「もうメインを出しました」だと、次のターンなら出せるように読めてしまう）
+    if (card.def.effect === 'wild') return fail('適応は合成に使うカードです（出せません）');
     // 兵士は1ターン soldiersPerTurn 枚、メイン（攻撃の魔法）は1枚。付加（武器）・防御・回復や精霊などは何枚でも
     if (card.slot === 'soldier' && player.soldiersPlayedThisTurn >= this.rules.soldiersPerTurn) {
       return fail(`このターンに出せる兵士は${this.rules.soldiersPerTurn}枚までです`);
