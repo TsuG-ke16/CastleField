@@ -34,6 +34,18 @@ export class Tutorial {
   event({ type, payload: p }) {
     if (!this.step) return;
     if (type === 'gameOver') { this.finish(); return; }
+    // 攻撃を受けて防御を選ぶ場面：今の案内（「兵士を選ぶ」など）と食い違わないよう、防御の案内に切りかえて、終わったら戻す
+    if (type === 'defenseRequested' && p.defenderId === this.playerId) {
+      if (this.step !== 'defend') this.before = { step: this.step, heading: this.heading.textContent, instruction: this.instruction.textContent };
+      this.show('defend', '防御のチャンス！', '光っている防御カードをタップすると守れます。使わないなら「防御しない」を押そう。');
+      return;
+    }
+    if (type === 'defenseEnded' && this.step === 'defend') {
+      const before = this.before ?? { step: 'card', heading: '兵士を選ぶ', instruction: '手札の光っている兵士をタップ。' };
+      this.before = null;
+      this.show(before.step, before.heading, before.instruction);
+      return;
+    }
     if (type === 'soldierDeployed' && p.playerId === this.playerId && ['card', 'use'].includes(this.step)) {
       this.show('end', '出兵できた！', '「ターン終了」を押そう。兵士は次の自分の番に進むよ。');
       return;

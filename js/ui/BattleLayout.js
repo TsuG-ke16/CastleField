@@ -52,7 +52,7 @@ export class BattleLayout {
     const me = state.players[viewerId];
     const defending = state.phase === 'defend';
     this.turnText.textContent = me.eliminated ? '観戦中' : defending
-      ? state.defense?.defenderId === viewerId ? '防御を選んでください' : '相手が防御を選択中'
+      ? state.defense?.defenderId === viewerId ? '防御を選ぶ' : '相手が防御中'
       : state.currentPlayer === viewerId ? 'あなたの番' : `${playerName(state.currentPlayer)}の番`;
     document.getElementById('hud').dataset.turn = state.currentPlayer === viewerId ? 'mine' : 'other';
     this.count.textContent = `手札 ${me.handCount}枚`;

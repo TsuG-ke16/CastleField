@@ -67,7 +67,6 @@
 #app #record-clear { border:0; border-image:none; background:none; box-shadow:none; min-height:36px; padding:5px; font-size:11px; color:#97624e; }
 .title-links { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:6px; }
 #app .title-links .small-btn { border:1px solid #c7a976; border-image:none; border-radius:8px; background:#fff8e8; box-shadow:none; min-height:44px; padding:8px 4px; font-size:12px; }
-#app #offline-status { margin:4px 0; font-size:11px; }
 #app #title-levels .level { min-height:60px; }
 @media(max-width:600px) and (min-height:501px) {
   #app .title-logo { max-width:260px; margin-inline:auto; }

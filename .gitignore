@@ -2,3 +2,6 @@
 ui-tests/artifacts/
 node_modules/
 .DS_Store
+
+# Python のキャッシュ
+__pycache__/
