@@ -315,9 +315,19 @@ def main():
                        "art (assets/cards/card-<type>.png, transparent subject)",
                        "frame (assets/cards/frame-<rarity>.png)",
                        "text/icons (HTML)"],
+        # 窓・丸・名前の位置は css/rarity-assets.css の --win-* / --med-* / --name-y が正。
+        # ここは 2026-11-18 時点の写し（CSSを変えたらここも直す）。
         "cssRects": {
-            "artWindow": {"left": "12%", "top": "13%", "width": "76%", "height": "50%"},
-            "nameBanner": {"top": "68%", "height": "14%"},
+            "source": "css/rarity-assets.css (--win-l/t/w/h, --med-y/l/r, --name-y). The CSS is authoritative.",
+            "byRarity": {
+                "default":   {"winL": "16%", "winT": "17%", "winW": "71%", "winH": "46%", "medY": "14%", "medL": "19%", "medR": "84%", "nameY": "74%"},
+                "uncommon":  {"winL": "13%", "winT": "20%", "winW": "72%", "winH": "45%", "medY": "16%", "medL": "16%", "medR": "83%", "nameY": "75%"},
+                "rare":      {"winL": "15%", "winT": "21%", "winW": "72%", "winH": "44%", "medY": "18%", "medL": "17%", "medR": "84%", "nameY": "76%"},
+                "special":   {"winL": "15%", "winT": "21%", "winW": "72%", "winH": "44%", "medY": "18%", "medL": "17%", "medR": "84%", "nameY": "76%"},
+                "epic":      {"winL": "14%", "winT": "24%", "winW": "72%", "winH": "42%", "medY": "21%", "medL": "15%", "medR": "84%", "nameY": "75%"},
+                "legendary": {"winL": "16%", "winT": "26%", "winW": "67%", "winH": "40%", "medY": "23%", "medL": "17%", "medR": "82%", "nameY": "76%"},
+                "beast":     {"winL": "12%", "winT": "20%", "winW": "76%", "winH": "46%", "note": "css/beast.css"},
+            },
         },
         "frames": mats,
     }
