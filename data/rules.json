@@ -36,5 +36,7 @@
   "maxMp": 20,
   "monsterLateBias": 0.15,
   "monsterEvolveEvery": 3,
-  "monsterEvolveMultiplier": 1.2
+  "monsterEvolveMultiplier": 1.2,
+  "weatherFirstRound": 2,
+  "weatherChangeChance": 0.6
 }
