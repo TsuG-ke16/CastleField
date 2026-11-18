@@ -351,16 +351,10 @@ async function boot() {
 function prepareBattleAssets() {
   return battleAssetsPromise ??= preloadAssets(8000, (done,total) => { $('asset-loading-text').textContent=`対戦の絵を準備中… ${done} / ${total}`; });
 }
+// オフライン（PWA）の準備は裏で静かに行う。ゲーム内に PWA の説明は出さない（人間の指示）
 async function setupOffline() {
   if (!('serviceWorker' in navigator) || !['http:','https:'].includes(location.protocol)) return;
-  try {
-    const reg=await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
-    const status=$('offline-status');
-    status.textContent='オフラインの準備中…';
-    await navigator.serviceWorker.ready;
-    status.textContent='ひとりで遊ぶ：オフラインでもOK';
-    reg.addEventListener('updatefound',()=>{const worker=reg.installing;worker?.addEventListener('statechange',()=>{if(worker.state==='installed'&&navigator.serviceWorker.controller)status.textContent='更新の準備ができました。次の起動で新しくなります';});});
-  } catch { $('offline-status').textContent='オフライン保存は利用できません'; }
+  try { await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}); } catch { /* 使えない端末では、オンラインのまま遊ぶ */ }
 }
 
 // ---------- タイトル・メニュー ----------

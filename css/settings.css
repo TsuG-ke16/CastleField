@@ -32,7 +32,6 @@ html[data-text-size=large] .castle-label { font-size:14px; }
 html.at-title #scenery {background-image:url('../assets/bg/title-compact.png');}
 html.at-title #board, html.at-title #hud, html.at-title #controls {display:none;}
 #asset-loading {z-index:250;}
-#offline-status {font-size:12px;line-height:1.4;}
 .asset-wait {display:grid;place-items:center;width:100%;height:100%;font-size:12px;background:#eee5cf;color:#514936;}
 .asset-loaded .asset-wait {display:none;}
 .asset-art:not(.asset-loaded)>.asset-image {visibility:hidden;}
