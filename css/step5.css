@@ -46,3 +46,44 @@
 @keyframes gauge-warn { 50% { filter: brightness(1.35); } }
 @media (prefers-reduced-motion: reduce) { .soldier-gauge-fill, .soldier-gauge-lag { transition: none; } .soldier-gauge[data-level="low"] .soldier-gauge-fill { animation: none; } }
 
+/* ===== 天候 ===== */
+.weather-chip { font-weight: 900; cursor: help; border: 0; font: inherit; }
+#weather-fx { position: absolute; inset: 0; z-index: 12; pointer-events: none; overflow: hidden; opacity: 0; transition: opacity .6s; }
+#app[data-weather] #weather-fx { opacity: 1; }
+#weather-fx::before, #weather-fx::after { content: ''; position: absolute; inset: -20% 0; }
+/* 晴れ：あたたかい光 */
+#app[data-weather="sunny"] #weather-fx { background: radial-gradient(circle at 85% 0%, rgba(255, 220, 110, .45), rgba(255, 190, 80, .12) 45%, transparent 70%); }
+/* 雨・大雨：斜めの雨すじ */
+#app[data-weather="rain"] #weather-fx, #app[data-weather="heavyRain"] #weather-fx { background: rgba(60, 90, 140, .12); }
+#app[data-weather="rain"] #weather-fx::before, #app[data-weather="heavyRain"] #weather-fx::before {
+  background: repeating-linear-gradient(105deg, transparent 0 18px, rgba(220, 235, 255, .35) 18px 19px, transparent 19px 34px);
+  animation: weather-rain .5s linear infinite;
+}
+#app[data-weather="heavyRain"] #weather-fx { background: rgba(30, 45, 80, .28); }
+#app[data-weather="heavyRain"] #weather-fx::before { animation-duration: .32s; background: repeating-linear-gradient(105deg, transparent 0 11px, rgba(220, 235, 255, .45) 11px 12.5px, transparent 12.5px 22px); }
+@keyframes weather-rain { to { transform: translate(-40px, 90px); } }
+/* 霧：白いもや */
+#app[data-weather="fog"] #weather-fx { background: linear-gradient(rgba(235, 240, 245, .5), rgba(235, 240, 245, .28) 50%, rgba(235, 240, 245, .5)); backdrop-filter: blur(1.5px); }
+#app[data-weather="fog"] #weather-fx::before { background: radial-gradient(ellipse at 30% 40%, rgba(255, 255, 255, .5), transparent 55%), radial-gradient(ellipse at 75% 65%, rgba(255, 255, 255, .45), transparent 55%); animation: weather-drift 9s ease-in-out infinite alternate; }
+@keyframes weather-drift { to { transform: translateX(14%); } }
+/* 嵐：暗い空と横なぐりの雨 */
+#app[data-weather="storm"] #weather-fx { background: rgba(25, 30, 55, .35); }
+#app[data-weather="storm"] #weather-fx::before { background: repeating-linear-gradient(170deg, transparent 0 14px, rgba(220, 230, 250, .4) 14px 15.5px, transparent 15.5px 28px); animation: weather-storm .28s linear infinite; }
+@keyframes weather-storm { to { transform: translate(-90px, 40px); } }
+/* 砂嵐：砂色のもや */
+#app[data-weather="sandstorm"] #weather-fx { background: rgba(205, 160, 80, .32); }
+#app[data-weather="sandstorm"] #weather-fx::before { background: repeating-linear-gradient(8deg, transparent 0 9px, rgba(240, 200, 120, .5) 9px 10px, transparent 10px 19px); animation: weather-storm .4s linear infinite; }
+/* コインの雨：金色の粒が落ちる */
+#app[data-weather="coinRain"] #weather-fx::before { background: radial-gradient(circle, rgba(255, 213, 74, .95) 0 3px, transparent 4px) 0 0 / 46px 62px; animation: weather-coin 1.4s linear infinite; }
+#app[data-weather="coinRain"] #weather-fx::after { background: radial-gradient(circle, rgba(255, 233, 140, .9) 0 2px, transparent 3px) 17px 20px / 38px 53px; animation: weather-coin 1.9s linear infinite; }
+@keyframes weather-coin { to { transform: translateY(62px); } }
+@media (prefers-reduced-motion: reduce) { #weather-fx::before, #weather-fx::after { animation: none !important; } }
+
+/* 天候が変わった警報：画面のふちが点滅し、帯が出る */
+.fx-alarm { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 6px var(--alarm, #ff3b30), inset 0 0 70px 10px var(--alarm, #ff3b30); background: repeating-linear-gradient(45deg, transparent 0 22px, rgba(255, 255, 255, .06) 22px 44px); }
+.fx-alarm.good { --alarm: #ffc83d; }
+.fx-alarm.calm { --alarm: #4aa3ff; }
+.fx-banner.weather { font-size: 30px; top: 36%; z-index: 57; background: #b0291fee; color: #fff; }
+.fx-banner.weather.good { background: #a77a10ee; color: #fff8d6; }
+.fx-banner.weather.calm { background: #1f5ea8ee; color: #eaf4ff; }
+.fx-banner.weather-note { top: 46%; z-index: 57; }

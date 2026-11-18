@@ -21,6 +21,7 @@ export const EFFECTS = {
     stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
     gainCoins: ['amount'], // コインを増やす
     gainMp: ['amount'], // マナ回復：MP を増やす（上限を超えたぶんは捨てる）
+    changeWeather: [], // 天候の呪文：天候をランダムに変える
     wild: [], // 適応：どのカードとでも合成できる（出せない。合成専用）
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
   },

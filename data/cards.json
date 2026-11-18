@@ -89,5 +89,6 @@
   "manaDrop": {"name": "魔力のしずく", "kind": "spell", "effect": "gainMp", "amount": 2, "count": 0, "rarity": "uncommon", "fuseTo": "manaCrystal", "description": "MPを2回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
   "manaCrystal": {"name": "魔力の水晶", "kind": "spell", "effect": "gainMp", "amount": 5, "count": 0, "rarity": "rare", "fuseTo": "manaSpring", "description": "MPを5回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
   "manaSpring": {"name": "魔力の泉", "kind": "spell", "effect": "gainMp", "amount": 10, "count": 0, "rarity": "epic", "fuseTo": "worldTreeDew", "description": "MPを10回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
-  "worldTreeDew": {"name": "世界樹のしずく", "kind": "spell", "effect": "gainMp", "amount": 20, "count": 0, "rarity": "legendary", "description": "MPを20回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"}
+  "worldTreeDew": {"name": "世界樹のしずく", "kind": "spell", "effect": "gainMp", "amount": 20, "count": 0, "rarity": "legendary", "description": "MPを20回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
+  "weatherCall": {"name": "天候の呪文", "kind": "spell", "effect": "changeWeather", "count": 0, "rarity": "special", "weight": 0.5, "description": "天候をランダムに変える（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨のどれか）。メインを使う"}
 }

@@ -23,7 +23,13 @@ export const UI_CONFIG = {
   speed: 1.8,
 
   // 演出の長さ
+  // 天候が変わったときの警報の色合い：alert（赤）・good（金）・calm（青）。書いていない天候は alert
+  weatherTone: { sunny: 'good', coinRain: 'good', rain: 'calm' },
+
   timing: {
+    weatherAlarm: 1300,    // 天候が変わった警報
+    weatherEnd: 700,       // 天候がおさまった
+    lightning: 600,        // 大雨の雷
     fusion: 900,
     reward: 1100,        // 魔物報酬のレアリティを読む時間
     soldierShot: 520,
@@ -76,6 +82,7 @@ export const UI_CONFIG = {
     soldier: { base: 2, perPower: 1.2, max: 9, duration: 240 },
     monster: { base: 2, perPower: 1.2, max: 9, duration: 240 },
     spell: { base: 3, perPower: 0.6, max: 12, duration: 300 },
+    weather: { base: 8, duration: 420 },
   },
 
   // 兵士にダメージが入ったとき

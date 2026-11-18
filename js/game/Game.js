@@ -25,6 +25,7 @@ import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
 import { Castle } from './Castle.js';
+import { validateWeather } from './Weather.js';
 
 /** 2人のときのプレイヤーID（人数は rules.playerCount。3人以上は p3〜p8 が続く） */
 export const PLAYER_IDS = ['p1', 'p2'];
@@ -75,6 +76,9 @@ export const EVENT_TYPES = [
   'spiritTriggered',
   'spiritEnded',
   'soldierShot',
+  'weatherChanged',
+  'weatherLightning',
+  'attackMissed',
   'gameOver',
 ];
 
@@ -127,6 +131,9 @@ const OPTIONAL_RULES = {
   // 魔物を放置すると、この周回ごとにレアリティが1つ上がって強くなる（0 なら強くならない）。強くなる倍率は monsterEvolveMultiplier
   monsterEvolveEvery: 0,
   monsterEvolveMultiplier: 1,
+  // 天候（weather.json を渡したとき）：出はじめる周回と、天候が切り替わるときに新しい天候になる確率（0 ならずっと天候なし）
+  weatherFirstRound: 2,
+  weatherChangeChance: 0,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -172,7 +179,7 @@ export class Game {
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
     if (rarities !== null) validateRarities(rarities);
     Card.validateDefinitions(cards, rarities);
@@ -182,6 +189,7 @@ export class Game {
       Monster.validateDefinitions(monsters, ELEMENTS);
       if (rules.laneLength % 2 === 0) throw new Error('魔物を使うときは、真ん中のマスがひとつに決まるよう rules.json の laneLength を奇数にしてください');
     }
+    if (weather !== null) validateWeather(weather, ELEMENTS);
     if (upgrades !== null) validateUpgrades(upgrades);
     if (castles !== null) validateCastles(castles);
     if (decks !== null) validateDecks(decks, cards);
@@ -189,6 +197,9 @@ export class Game {
     this.cardDefs = cards;
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
+    this.weatherDefs = weather;
+    /** 今の天候 { type, roundsLeft }（なければ null＝ふつうの天気） */
+    this.weather = null;
     this.upgradeDefs = upgrades || {};
     this.rules = {
       ...OPTIONAL_RULES,
@@ -669,6 +680,9 @@ export class Game {
     if (isRoundStart) {
       this.round += 1;
       this.emit('roundStarted', { round: this.round });
+      this.tickWeather();
+      // 天候の雷・砂嵐で城が落ちたら、そこで止める
+      if (this.weatherRoundEffects() && this.checkGameOver()) return;
       this.monstersAttackCastles();
       // 魔物に城を落とされたら、そこで止める（魔物の出現・ドロー・進軍はしない）
       if (this.checkGameOver()) return;
@@ -689,6 +703,9 @@ export class Game {
 
     // コイン：自分のターンの始めに coinPerTurn 枚もらえる
     if (this.rules.coinPerTurn > 0) this.changeCoins(player, this.rules.coinPerTurn, 'turn');
+    // コインの雨：自分のターンの始めにコインがもらえる
+    const rainCoins = this.weatherDef()?.coinPerTurn ?? 0;
+    if (rainCoins > 0) this.changeCoins(player, rainCoins, 'weather');
 
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
@@ -743,6 +760,9 @@ export class Game {
         if (soldier.role !== 'melee') this.tickRanged(player, soldier);
         continue;
       }
+
+      // 嵐：進む兵士は動かない（弓兵・魔法使いは撃てる）
+      if (soldier.role === 'melee' && this.weatherDef()?.stopMarch) continue;
 
       // 弓兵・魔法使いは動かずに撃つ
       if (soldier.role !== 'melee') {
@@ -910,23 +930,37 @@ export class Game {
     let over = false;
     if (foes.length > 0) {
       const { owner, soldier: victim } = foes[0];
-      const amount = this.fightDamage(soldier, victim);
+      const miss = this.rollMiss();
+      const amount = miss ? 0 : this.fightDamage(soldier, victim);
       this.emit('soldierShot', { ...shot, target: { kind: 'soldier', playerId: owner.id, soldierId: victim.soldierId }, amount });
-      this.damageSoldier(owner, victim, amount, 'shot');
+      if (miss) this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
+      else this.damageSoldier(owner, victim, amount, 'shot');
     } else {
       const road = this.findRoad(soldier.roadId);
       const monster = this.monsters.find((m) =>
         inRange(m.roadId === PLAZA ? m.square : m.roadId === soldier.roadId ? road.toPosition(this.side(player.id), m.square) : null));
       if (monster) {
-        const amount = this.fightDamage(soldier, monster);
+        const miss = this.rollMiss();
+        const amount = miss ? 0 : this.fightDamage(soldier, monster);
         this.emit('soldierShot', { ...shot, target: { kind: 'monster', monsterId: monster.monsterId }, amount });
-        this.damageMonster(monster, amount, { playerId: player.id, soldierId: soldier.soldierId });
-        this.defeatMonsterIfDead(monster, player.id);
+        if (miss) {
+          this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
+        } else {
+          this.damageMonster(monster, amount, { playerId: player.id, soldierId: soldier.soldierId });
+          this.defeatMonsterIfDead(monster, player.id);
+        }
       } else if (soldier.role === 'mage') {
         const enemy = this.players[soldier.targetId];
-        this.emit('soldierShot', { ...shot, target: { kind: 'castle', playerId: enemy.id }, amount: soldier.attack });
-        this.damageCastle(enemy, soldier.attack, { kind: 'soldier', soldierId: soldier.soldierId });
-        over = this.checkGameOver();
+        const miss = this.rollMiss();
+        // 城を撃つときも、天候の属性ボーナスは効く（兵士・魔物を撃つときと同じ）
+        const amount = soldier.attack + this.weatherElementBonus(soldier.element);
+        this.emit('soldierShot', { ...shot, target: { kind: 'castle', playerId: enemy.id }, amount: miss ? 0 : amount });
+        if (miss) {
+          this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
+        } else {
+          this.damageCastle(enemy, amount, { kind: 'soldier', soldierId: soldier.soldierId });
+          over = this.checkGameOver();
+        }
       }
       // 撃つ相手がいないときは、撃たずに待つ（ターンは過ぎる）
     }
@@ -1142,8 +1176,13 @@ export class Game {
       roadId: road.roadId,
       square: road.toSquare(this.side(player.id), soldier.position),
     });
-    const toMonster = this.fightDamage(soldier, monster);
-    const toSoldier = this.reduceDamage(player, this.fightDamage(monster, soldier));
+    const missM = this.rollMiss();
+    const missS = this.rollMiss();
+    if (missM) this.emitMiss(player.id, 'fight', { soldierId: soldier.soldierId });
+    // 魔物の攻撃が外れたとき：外した側は魔物なので playerId は null
+    if (missS) this.emitMiss(null, 'fight', { monsterId: monster.monsterId });
+    const toMonster = missM ? 0 : this.fightDamage(soldier, monster);
+    const toSoldier = missS ? 0 : this.reduceDamage(player, this.fightDamage(monster, soldier));
     this.damageMonster(monster, toMonster, { playerId: player.id, soldierId: soldier.soldierId });
     const blocked = soldier.takeDamage(toSoldier);
     this.emit('soldierDamaged', {
@@ -1291,7 +1330,106 @@ export class Game {
   /** a が b に与えるダメージ（攻撃力 ＋ 属性が強ければ elementBonus） */
   fightDamage(a, b) {
     const strong = a.element && b.element && ELEMENT_BEATS[a.element] === b.element;
-    return a.attack + (strong ? this.rules.elementBonus : 0);
+    return a.attack + (strong ? this.rules.elementBonus : 0) + this.weatherElementBonus(a.element);
+  }
+
+  // ================= 天候 =================
+  // data/weather.json の天候が、周回の始めに切り替わる（天候の呪文でも変わる）。
+  //   晴れ・雨・大雨：その属性のダメージ・回復が増える　大雨：周回の始めに雷（どちらかの城へ）
+  //   霧：兵士の戦い・射撃・攻撃魔法が外れることがある　嵐：進む兵士が動かない
+  //   砂嵐：周回の始めに全員の城と兵士に1ダメージ　コインの雨：ターンの始めにコイン
+
+  /** 今の天候の定義（ふつうの天気なら null） */
+  weatherDef() {
+    return this.weather ? this.weatherDefs[this.weather.type] : null;
+  }
+
+  /** 今の天候で、その属性のダメージ・回復に足される量 */
+  weatherElementBonus(element) {
+    return element ? this.weatherDef()?.elementBonus?.[element] ?? 0 : 0;
+  }
+
+  /** 霧のとき、攻撃が外れるか（霧でなければ乱数を使わない） */
+  rollMiss() {
+    const chance = this.weatherDef()?.missChance ?? 0;
+    return chance > 0 && this.rng() < chance;
+  }
+
+  /** 外れたことを知らせる。kind は "fight" / "shot" / "spell" */
+  emitMiss(playerId, kind, extra = {}) {
+    this.emit('attackMissed', { playerId, kind, ...extra });
+  }
+
+  /** 天候を変える（type が null ならふつうの天気に戻す）。weatherChanged を出す */
+  setWeather(type, cause, playerId = null) {
+    const previous = this.weather?.type ?? null;
+    let rounds = 0;
+    if (type !== null) {
+      const [min, max] = this.weatherDefs[type].rounds;
+      rounds = min === max ? min : min + Math.floor(this.rng() * (max - min + 1));
+    }
+    this.weather = type === null ? null : { type, roundsLeft: rounds };
+    const def = type === null ? null : this.weatherDefs[type];
+    this.emit('weatherChanged', {
+      weather: type, previous, rounds, cause, playerId,
+      name: def?.name ?? null, icon: def?.icon ?? null, description: def?.description ?? null,
+      previousName: previous === null ? null : this.weatherDefs[previous].name,
+    });
+  }
+
+  /** 重みで天候を1つ選ぶ（exclude は除く） */
+  pickWeather(exclude = null) {
+    const types = Object.keys(this.weatherDefs).filter((t) => t !== exclude);
+    if (types.length === 0) return null;
+    const total = types.reduce((a, t) => a + this.weatherDefs[t].weight, 0);
+    let r = this.rng() * total;
+    return types.find((t) => (r -= this.weatherDefs[t].weight) < 0) ?? types.at(-1);
+  }
+
+  /** 周回の始め：天候の残りを1つ減らし、終わったらふつうの天気に。ふつうの天気なら、確率で新しい天候になる */
+  tickWeather() {
+    if (!this.weatherDefs) return;
+    // 続いている天候は、weatherFirstRound より前でも減る（天候の呪文で早く始めた天候が、長く続きすぎないように）
+    if (this.weather) {
+      this.weather.roundsLeft -= 1;
+      if (this.weather.roundsLeft > 0) return;
+      this.setWeather(null, 'natural');
+      return;
+    }
+    if (this.round < this.rules.weatherFirstRound) return;
+    if (this.rules.weatherChangeChance > 0 && this.rng() < this.rules.weatherChangeChance) {
+      this.setWeather(this.pickWeather(), 'natural');
+    }
+  }
+
+  /** 周回の始め：大雨の雷・砂嵐のダメージ。何か起きたら true（城が落ちたかは checkGameOver で確かめる） */
+  weatherRoundEffects() {
+    const def = this.weatherDef();
+    if (!def) return false;
+    let acted = false;
+    if (def.lightning) {
+      const sides = this.aliveSides();
+      const victim = this.players[sides[Math.floor(this.rng() * sides.length)]];
+      this.emit('weatherLightning', { playerId: victim.id, amount: def.lightning });
+      this.damageCastle(victim, def.lightning, { kind: 'weather', weather: this.weather.type });
+      acted = true;
+    }
+    if (def.sandDamage) {
+      for (const id of this.aliveSides()) {
+        const owner = this.players[id];
+        // 砂嵐では城を落とさない（HPは1で止まる。全員の城が同時に0になって勝者がいなくなるのを防ぐ）
+        const amount = Math.min(def.sandDamage, owner.castle.hp - 1);
+        if (amount <= 0) continue;
+        owner.castle.takeDamage(amount);
+        this.emit('castleDamaged', { playerId: id, amount, blocked: 0, hp: owner.castle.hp, source: { kind: 'weather', weather: this.weather.type } });
+      }
+      for (const id of this.alivePlayerIds()) {
+        const owner = this.players[id];
+        for (const soldier of [...owner.soldiers]) this.damageSoldier(owner, soldier, def.sandDamage, 'weather');
+      }
+      acted = true;
+    }
+    return acted;
   }
 
   /** 進軍中の attacker と、相手の defender が戦う。お互いに攻撃力ぶんのダメージを同時に与える */
@@ -1304,8 +1442,13 @@ export class Game {
       square: road.toSquare(this.side(player.id), attacker.position), // 攻める側が止まったマス
     });
 
-    const toDefender = this.reduceDamage(enemy, this.fightDamage(attacker, defender));
-    const toAttacker = this.reduceDamage(player, this.fightDamage(defender, attacker));
+    // 霧：攻撃が外れる（ダメージ0）
+    const missD = this.rollMiss();
+    const missA = this.rollMiss();
+    if (missD) this.emitMiss(player.id, 'fight', { soldierId: attacker.soldierId });
+    if (missA) this.emitMiss(enemy.id, 'fight', { soldierId: defender.soldierId });
+    const toDefender = missD ? 0 : this.reduceDamage(enemy, this.fightDamage(attacker, defender));
+    const toAttacker = missA ? 0 : this.reduceDamage(player, this.fightDamage(defender, attacker));
     const blockedD = defender.takeDamage(toDefender);
     const blockedA = attacker.takeDamage(toAttacker);
     this.emit('soldierDamaged', {
@@ -1389,6 +1532,12 @@ export class Game {
           targets: playerTargets(withSoldiers.filter((p) => p.soldiers.some(changes))),
           reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
         };
+      }
+      case 'changeWeather': {
+        // 今と違う天候に変える。変えられる天候がなければ出せない（出しても何も起きないので）
+        if (!this.weatherDefs) return { targets: [], reason: 'このルールでは天候を使いません' };
+        const others = Object.keys(this.weatherDefs).filter((t) => t !== this.weather?.type);
+        return { targets: others.length > 0 ? [{ playerId: player.id }] : [], reason: 'ほかに変えられる天候がありません' };
       }
       case 'gainCoins':
         return { targets: [{ playerId: player.id }], reason: '' };
@@ -1564,8 +1713,12 @@ export class Game {
     } else if (card.isSpell && target.monsterId) {
       const monster = this.findMonster(target.monsterId);
       this.emit('spellCast', { playerId: player.id, type: card.type, target: monster.monsterId, targetKind: 'monster' });
-      this.damageMonster(monster, card.def.amount, { playerId: player.id, type: card.type });
-      this.defeatMonsterIfDead(monster, player.id);
+      if (this.rollMiss()) {
+        this.emitMiss(player.id, 'spell', { type: card.type });
+      } else {
+        this.damageMonster(monster, card.def.amount, { playerId: player.id, type: card.type });
+        this.defeatMonsterIfDead(monster, player.id);
+      }
     } else if (card.isSpell) {
       this.castSpell(player, card, this.players[target.playerId], target.roadId);
     } else {
@@ -1587,6 +1740,10 @@ export class Game {
         // 魔法の塔は城への魔法が強い
         {
           const damage = amount + (player.castleDef.castleSpellBonus ?? 0);
+          if (this.rollMiss()) {
+            this.emitMiss(player.id, 'spell', { type: card.type });
+            break;
+          }
           this.requestDefense(
             { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage, from: 'spell', spellType: card.type },
             () => this.damageCastle(enemy, damage, { kind: 'spell', type: card.type }),
@@ -1599,6 +1756,10 @@ export class Game {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player', ...lane });
         {
           const hit = victims();
+          if (this.rollMiss()) {
+            this.emitMiss(player.id, 'spell', { type: card.type });
+            break;
+          }
           // 兵士を狙われた人は、当たる前に盾を出せる
           this.requestDefense(
             { kind: 'soldiers', defenderId: enemy.id, attackerId: player.id, amount, soldierIds: hit.map((x) => x.soldierId) },
@@ -1632,6 +1793,12 @@ export class Game {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         const healed = player.castle.heal(amount);
         this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        break;
+      }
+
+      case 'changeWeather': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        this.setWeather(this.pickWeather(this.weather?.type ?? null), 'card', player.id);
         break;
       }
 
@@ -1714,7 +1881,7 @@ export class Game {
     const sp = player.spirit;
     if (!sp || sp.fresh) return false;
     if (sp.spirit === 'water') {
-      const healed = player.castle.heal(sp.amount);
+      const healed = player.castle.heal(sp.amount + this.weatherElementBonus('water'));
       if (healed > 0) {
         this.emit('spiritTriggered', { playerId: player.id, type: sp.type, spirit: 'water', amount: healed });
         this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
@@ -1723,8 +1890,9 @@ export class Game {
       const foes = this.enemySides(player.id);
       const target = foes.find((p) => p.id === sp.targetId) ?? foes[0];
       if (!target) return false;
-      this.emit('spiritTriggered', { playerId: player.id, type: sp.type, spirit: 'fire', amount: sp.amount, targetId: target.id });
-      this.damageCastle(target, sp.amount, { kind: 'spirit', type: sp.type });
+      const amount = sp.amount + this.weatherElementBonus('fire');
+      this.emit('spiritTriggered', { playerId: player.id, type: sp.type, spirit: 'fire', amount, targetId: target.id });
+      this.damageCastle(target, amount, { kind: 'spirit', type: sp.type });
       return this.checkGameOver();
     }
     return false;
@@ -2151,6 +2319,8 @@ export class Game {
       winnerTeam: this.winnerTeam,
       playerOrder: [...this.playerOrder],
       round: this.round,
+      weather: this.weather ? { type: this.weather.type, name: this.weatherDef().name, icon: this.weatherDef().icon ?? null, description: this.weatherDef().description ?? null, roundsLeft: this.weather.roundsLeft } : null,
+      weatherEnabled: Boolean(this.weatherDefs),
       monsters: this.monsters.map((m) => m.toState()),
       roads: this.roads.map((r) => r.toState()),
       turn: this.turn,

@@ -21,6 +21,7 @@ export function loadData(dir = join(ROOT, 'data')) {
     castles: optional('castles.json'),
     decks: optional('decks.json'),
     rarities: optional('rarities.json'),
+    weather: optional('weather.json'),
   };
 }
 

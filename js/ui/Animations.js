@@ -335,6 +335,9 @@ export class Animations {
         if(['wind','earth'].includes(model.players[p.playerId]?.spirit?.spirit)) return this.spiritTriggered({playerId:p.playerId,type:model.players[p.playerId].spirit.type});
         return;
       case 'roundStarted': return this.roundStarted(p, model);
+      case 'weatherChanged': return this.weatherChanged(p, model);
+      case 'weatherLightning': return this.weatherLightning(p);
+      case 'attackMissed': return this.attackMissed(p);
       case 'cardsFused': return this.cardsFused(p, model, ctx);
       case 'cardDrawn': return this.cardDrawn(p, model, ctx);
       case 'deckShuffled':
@@ -567,6 +570,57 @@ export class Animations {
     if (round <= 1) return;
     this.banner(`${ICON.round} ${round}周目`, UI_CONFIG.timing.round, 'small');
     await this.delay(UI_CONFIG.timing.round * 0.5);
+  }
+
+  /**
+   * 天候が変わった：警報（サイレンの音・赤い縁のふちどり・大きな帯・画面の揺れ）。タップで飛ばせる。
+   * 天候がおさまったときは、小さな帯だけ。
+   */
+  async weatherChanged({ weather, name, icon: glyph, description, rounds, cause, previousName }, model) {
+    model.weather = weather ? { type: weather, name, icon: glyph, description, roundsLeft: rounds } : null;
+    this.renderer.setWeather(model.weather);
+    if (this.skipping) return;
+    const t = UI_CONFIG.timing;
+    if (!weather) {
+      this.banner(`${previousName ?? '天候'}がおさまった`, t.weatherEnd, 'small');
+      await this.delay(t.weatherEnd * 0.6);
+      return;
+    }
+    const tone = UI_CONFIG.weatherTone[weather] ?? 'alert';
+    sound.play(tone === 'alert' ? 'alarm' : 'weatherChime');
+    const alarm = this.fx(`fx-alarm ${tone}`);
+    this.animate(alarm, [{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0.25, offset: 0.35 }, { opacity: 1, offset: 0.55 }, { opacity: 0.25, offset: 0.75 }, { opacity: 0 }],
+      { duration: t.weatherAlarm, fill: 'forwards' }).then(() => alarm.remove());
+    this.banner(`${tone === 'alert' ? '⚠ ' : ''}${glyph ?? ''} ${name}${cause === 'card' ? '（呪文）' : ''}`, t.weatherAlarm, `weather ${tone}`);
+    if (description) setTimeout(() => { if (!this.skipping) this.banner(description, t.weatherAlarm * 0.8, 'small weather-note'); }, t.weatherAlarm * 0.25 * UI_CONFIG.speed);
+    this.screenShake('weather');
+    await this.delay(t.weatherAlarm * 0.8);
+  }
+
+  /** 大雨の雷：白く光って、画面が大きく揺れる（このあと castleDamaged） */
+  async weatherLightning({ playerId }) {
+    if (this.skipping) return;
+    sound.play('thunder');
+    this.screenFlash('#fffbe0', 360);
+    this.screenShake('weather');
+    const castle = this.renderer.castleEl(playerId);
+    if (castle) this.impact(this.centerOf(castle), 'star', { size: 120, color: '#fff7a8', duration: 300 });
+    this.banner('⚡ 雷！', UI_CONFIG.timing.lightning, 'small');
+    await this.delay(UI_CONFIG.timing.lightning * 0.5);
+  }
+
+  /** 霧で攻撃が外れた：外した兵士・魔物の上に「ミス！」。魔法のときは帯 */
+  async attackMissed({ soldierId, monsterId, kind }) {
+    if (this.skipping) return;
+    const el = soldierId ? this.renderer.soldierEl(soldierId) : monsterId ? this.renderer.monsterEl(monsterId) : null;
+    sound.play('deny');
+    if (el) {
+      const small = UI_CONFIG.smallNumber;
+      this.number(el, 'ミス！', { size: small.size * 1.2, duration: small.duration, kind: 'block' });
+    } else {
+      this.banner(kind === 'spell' ? '🌫️ 魔法が外れた！' : 'ミス！', UI_CONFIG.timing.shuffle, 'small');
+    }
+    await this.delay(UI_CONFIG.timing.afterSoldierHit);
   }
 
   async cardsFused({ playerId, cardIds, cardId, from, to }, model, ctx) {

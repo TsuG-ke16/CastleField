@@ -108,6 +108,8 @@ const SOUNDS = {
   adaptFusion: s => [523,659,784,988,1047].forEach((freq,i)=>s.tone({freq,endFreq:freq*1.12,dur:.24,at:i*.07,gain:.13,type:'sine'})),
   lucky: s => [784,988,1175,1568,1976].forEach((freq,i)=>s.tone({freq,dur:.3,at:i*.07,gain:.16,type:'triangle'})),
   collapse: s => {s.noise({dur:.7,gain:.4,freq:700,endFreq:70});s.tone({freq:90,endFreq:25,dur:.6,gain:.3,type:'sawtooth'});},
+  alarm: (s) => [0, 0.28, 0.56, 0.84].forEach((at, i) => s.tone({ freq: i % 2 ? 520 : 760, endFreq: i % 2 ? 480 : 700, dur: 0.24, type: 'sawtooth', gain: 0.13, at })),
+  weatherChime: (s) => [659, 880, 1175].forEach((f, i) => s.tone({ freq: f, dur: 0.25, type: 'triangle', gain: 0.14, at: i * 0.1 })),
   tap: (s) => s.tone({ freq: 720, endFreq: 900, dur: 0.05, type: 'triangle', gain: 0.12 }),
   deny: (s) => {
     s.tone({ freq: 170, dur: 0.09, type: 'square', gain: 0.1 });

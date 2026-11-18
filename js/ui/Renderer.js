@@ -68,6 +68,7 @@ export class Renderer {
       myMp: $('my-mp'),
       myCoins: $('my-coins'),
       turnInfo: $('turn-info'),
+      weatherChip: $('weather-chip'),
       deckPile: $('deck-pile'),
       discardPile: $('discard-pile'),
       deckCount: $('deck-count'),
@@ -378,6 +379,7 @@ export class Renderer {
     this.configureBoard(model);
     if (model.playerOrder) this.playerOrder = model.playerOrder;
     this.setTurnInfo(model.turn, model.round);
+    this.setWeather(model.weather ?? null);
     this.setPiles(model.deckCount, model.discardCount);
     const opp = this.opponentOf(this.viewerId);
     this.setOppHandCount(model.players[opp]?.handCount ?? 0);
@@ -398,6 +400,22 @@ export class Renderer {
   setTurnInfo(turn, round) {
     this.el.turnInfo.textContent = round ? `${round}周目` : (turn ? `ターン${turn}` : '');
     this.el.turnInfo.title = `通算ターン ${turn}`;
+  }
+
+  /** 今の天候を、上のバッジと背景の効果に出す（w は { type, name, icon, description, roundsLeft } か null） */
+  setWeather(w) {
+    const chip = this.el.weatherChip;
+    const app = document.getElementById('app');
+    if (app) {
+      if (w) app.dataset.weather = w.type;
+      else delete app.dataset.weather;
+    }
+    if (!chip) return;
+    chip.hidden = !w;
+    if (!w) return;
+    chip.textContent = `${w.icon ?? '🌤️'} ${w.name}${w.roundsLeft != null ? ` あと${w.roundsLeft}周` : ''}`;
+    chip.title = w.description ?? w.name;
+    chip.setAttribute('aria-label', `天候：${w.name}。${w.description ?? ''}`);
   }
 
   /** 手番の人の城を目立たせる */
