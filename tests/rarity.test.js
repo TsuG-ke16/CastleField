@@ -15,6 +15,7 @@ test('レアリティ：data の全カードに rarity があり、合成先は1
   const cards = loadJson('cards.json');
   const order = Object.keys(rarities).filter((id) => !rarities[id].special); // スペシャルは合成・ラッキーの並びに入らない
   for (const [t, d] of Object.entries(cards)) {
+    if (d.monster) { assert.equal(d.fuseTo, undefined, t); continue; } // 倒した魔物の兵士：合成しない
     if (d.effect === 'wild' || rarities[d.rarity].special) { assert.equal(d.fuseTo, undefined, t); continue; } // 適応：合成先は相手のカードで決まる
     const i = order.indexOf(d.rarity);
     assert.ok(i >= 0, t);
@@ -172,6 +173,7 @@ test('魔物のごほうび：rewardRarity の魔物を倒すと、そのレア�
   g.monsters.push(fake);
   g.defeatMonsterIfDead(fake, 'p1');
   assert.equal(log.find((e) => e.event === 'monsterDefeated').rewardRarity, 'rare');
+  // ごほうびのカード1枚（type のない仮の魔物なので、駒は出ない）
   assert.equal(me.hand.length, hand + 1);
   assert.equal(loadJson('cards.json')[me.hand.at(-1).type].rarity, 'rare');
   assert.equal(me.coins, coins);

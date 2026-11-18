@@ -90,5 +90,17 @@
   "manaCrystal": {"name": "魔力の水晶", "kind": "spell", "effect": "gainMp", "amount": 5, "count": 0, "rarity": "rare", "fuseTo": "manaSpring", "description": "MPを5回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
   "manaSpring": {"name": "魔力の泉", "kind": "spell", "effect": "gainMp", "amount": 10, "count": 0, "rarity": "epic", "fuseTo": "worldTreeDew", "description": "MPを10回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
   "worldTreeDew": {"name": "世界樹のしずく", "kind": "spell", "effect": "gainMp", "amount": 20, "count": 0, "rarity": "legendary", "description": "MPを20回復する（上限を超えたぶんは捨てる）。メインを使わず何枚でも出せる。魔法のコストになる"},
+  "beast_slime": {"name": "スライム（魔物）", "kind": "soldier", "monster": "slime", "hp": 4, "attack": 1, "speed": 2, "count": 0, "rarity": "common", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_goblin": {"name": "ゴブリン（魔物）", "kind": "soldier", "monster": "goblin", "hp": 7, "attack": 3, "speed": 2, "count": 0, "rarity": "uncommon", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_dragon": {"name": "ドラゴン（魔物）", "kind": "soldier", "monster": "dragon", "hp": 12, "attack": 5, "speed": 1, "count": 0, "rarity": "epic", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_bat": {"name": "コウモリ（魔物）", "kind": "soldier", "monster": "bat", "hp": 3, "attack": 2, "speed": 2, "count": 0, "rarity": "common", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_skeleton": {"name": "スケルトン（魔物）", "kind": "soldier", "monster": "skeleton", "hp": 6, "attack": 3, "speed": 2, "count": 0, "rarity": "uncommon", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_golem": {"name": "ゴーレム（魔物）", "kind": "soldier", "monster": "golem", "hp": 14, "attack": 2, "speed": 1, "count": 0, "rarity": "rare", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_demon": {"name": "デーモン（魔物）", "kind": "soldier", "monster": "demon", "hp": 10, "attack": 4, "speed": 2, "count": 0, "rarity": "rare", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_ghost": {"name": "ゴースト（魔物）", "kind": "soldier", "monster": "ghost", "hp": 5, "attack": 3, "speed": 2, "count": 0, "rarity": "uncommon", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_treant": {"name": "トレント（魔物）", "kind": "soldier", "monster": "treant", "hp": 9, "attack": 2, "speed": 2, "count": 0, "rarity": "uncommon", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_mimic": {"name": "ミミック（魔物）", "kind": "soldier", "monster": "mimic", "hp": 8, "attack": 1, "speed": 2, "count": 0, "rarity": "rare", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_vampire": {"name": "ヴァンパイア（魔物）", "kind": "soldier", "monster": "vampire", "hp": 11, "attack": 4, "speed": 2, "count": 0, "rarity": "epic", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "beast_demonKing": {"name": "魔王（魔物）", "kind": "soldier", "monster": "demonKing", "hp": 20, "attack": 6, "speed": 1, "count": 0, "rarity": "legendary", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
   "weatherCall": {"name": "天候の呪文", "kind": "spell", "effect": "changeWeather", "count": 0, "rarity": "special", "weight": 0.5, "description": "天候をランダムに変える（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨のどれか）。メインを使う"}
 }
