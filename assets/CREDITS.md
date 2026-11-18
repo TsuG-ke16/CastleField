@@ -405,3 +405,22 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 - 絵が小さすぎたので、透過の修正のあと、絵を切り出して中央に大きく置き直した（乗算済みアルファでLanczos拡大。倍率は1.2〜2.4倍）：`cards/card-mana-shard.png`、`card-mana-drop.png`、`card-mana-crystal.png`、`card-mana-spring.png`、`card-world-tree-dew.png`（かけら・しずくは2倍前後の拡大なので、作り直すまでの暫定）
 - `ui/card-back.png`：512×768 の中央に小さく描かれていたので、絵の部分だけを切り出した（281×426。拡大はしていない）
 - 確認画像：`review/visual-audit-v2/`（Playwright同梱Chromiumとpillowで作成）
+
+## カード素材の描き直し v2（2026-11-19）
+
+OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。カード絵は512×512の透過パレットPNGに書き出しました。
+
+### 魔物の駒
+
+- `cards/card-beast-bat.png` — 参照元 `cards/card-beast-bat.png`（差し替え前）・`style-reference.png`、生成原本 `exec-99448b87-c643-44a7-877a-787928e24a14.png`。
+- `cards/card-beast-slime.png` — 参照元 `cards/card-beast-slime.png`（差し替え前）・`style-reference.png`、生成原本 `exec-4fd1ed02-a31f-4ad1-aa93-f15b538a3889.png`。
+- `cards/card-beast-goblin.png` — 参照元 `cards/card-beast-goblin.png`（差し替え前）・`style-reference.png`、生成原本 `exec-3e183f42-5965-43ba-86f9-7d882dddf1eb.png`。
+- `cards/card-beast-skeleton.png` — 参照元 `cards/card-beast-skeleton.png`（差し替え前）・`style-reference.png`、生成原本 `exec-fedca43e-248b-4df1-be96-6e38d2d494ff.png`。
+- `cards/card-beast-golem.png` — 参照元 `cards/card-beast-golem.png`（差し替え前）・`style-reference.png`、生成原本 `exec-c091d2bf-8700-4e33-934e-10717fa7eb60.png`。
+- `cards/card-beast-demon.png` — 参照元 `cards/card-beast-demon.png`（差し替え前）・`style-reference.png`、生成原本 `exec-aaff9cd5-acfd-43fa-8640-661bc3ae51da.png`。
+- `cards/card-beast-dragon.png` — 参照元 `cards/card-beast-dragon.png`（差し替え前）・`style-reference.png`、生成原本 `exec-e3d08730-58a1-40fb-a8ea-7de2e21a00bb.png`。
+- `cards/card-beast-ghost.png` — 参照元 `cards/card-beast-ghost.png`（差し替え前）・`style-reference.png`、生成原本 `exec-dd82c891-0436-45e4-8c9b-0988f7cb82e9.png`。
+- `cards/card-beast-treant.png` — 参照元 `cards/card-beast-treant.png`（差し替え前）・`style-reference.png`、生成原本 `exec-edefadd4-4106-4b4b-9758-4da373846334.png`。
+- `cards/card-beast-mimic.png` — 参照元 `cards/card-beast-mimic.png`（差し替え前）・`style-reference.png`、生成原本 `exec-f89bd0eb-84f6-4835-9a72-702c238c3eba.png`。
+- `cards/card-beast-vampire.png` — 参照元 `cards/card-beast-vampire.png`（差し替え前）・`style-reference.png`、生成原本 `exec-dfb62b6b-e6a2-42ca-8a2c-e7cbea5d3fa2.png`。
+- `cards/card-beast-demon-king.png` — 参照元 `cards/card-beast-demon-king.png`（差し替え前）・`style-reference.png`、生成原本 `exec-0f8a7c74-537f-4702-9863-6258084b2580.png`。
