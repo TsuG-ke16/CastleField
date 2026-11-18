@@ -117,6 +117,7 @@ js/
     ChatView.js    … チャットとスタンプ（💬ボタン・吹き出し）
     DeckEditor.js・DeckStore.js … デッキ編成の画面と、マイデッキの保存（この端末の localStorage）
     CardZoom.js    … デッキ編成・図鑑でカードを長押しすると拡大（傾き・偏光）
+    edition.js     … 版（西洋・日本）の切り替え・和風の言葉・日本の仮の絵の割り当て
     art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
     precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
 data/
