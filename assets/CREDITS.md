@@ -397,7 +397,6 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 | `ui/stamps/again.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `cards/relief/frame-*-relief.png`・`cards/relief/frame-*-raised.png` | 自作スクリプト（`node js/ui/build-card-relief.js`）で、同じ名前の枠の絵から自動生成（高さ・法線・材質の地図と、浮かせる部品の形）。絵柄は含まない | 元の枠の絵と同じ | 2026-11-18 |
 
-
 ## カード素材の品質監査と透過の修正（2026-11-18）
 
 新しい絵は作っていない。既存の生成画像（出どころ・ライセンスは上の各節のまま：OpenAI画像生成・AI生成）を、Pillow と numpy で加工しただけ。手順と確認画像は `review/visual-audit-v2/README.md`。
