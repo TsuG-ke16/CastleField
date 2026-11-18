@@ -21,6 +21,7 @@ export const EFFECTS = {
     stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
     gainCoins: ['amount'], // コインを増やす
     gainMp: ['amount'], // マナ回復：MP を増やす（上限を超えたぶんは捨てる）
+    changeWeather: [], // 天候の呪文：天候をランダムに変える
     wild: [], // 適応：どのカードとでも合成できる（出せない。合成専用）
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
   },
@@ -117,7 +118,10 @@ export class Card {
         if (def.weight !== undefined && !(typeof def.weight === 'number' && def.weight >= 0)) throw new Error(`${where}: weight は0以上の数にしてください（書かなければ 1）`);
         const order = Object.keys(rarities).filter((id) => !rarities[id].special);
         const next = order[order.indexOf(def.rarity) + 1];
-        if (def.effect === 'wild' || rarities[def.rarity].special) {
+        if (def.monster !== undefined) {
+          // 倒した魔物の兵士カード：合成しない（魔物を倒したごほうびだけで手に入る）
+          if (def.fuseTo !== undefined) throw new Error(`${where}: 魔物の兵士カード（monster）に fuseTo は書けません`);
+        } else if (def.effect === 'wild' || rarities[def.rarity].special) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: 適応（effect: "wild"）やスペシャルのカードに fuseTo は書けません（合成の結果は相手のカードで決まる）`);
         } else if (next === undefined) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: いちばん上のレアリティのカードに fuseTo は書けません`);
@@ -148,6 +152,10 @@ export class Card {
         if (!LANE_SCOPE_EFFECTS.includes(def.effect)) {
           throw new Error(`${where}: scope を書けるのは ${LANE_SCOPE_EFFECTS.join(' / ')} の魔法だけです`);
         }
+      }
+
+      if (def.monster !== undefined && (typeof def.monster !== 'string' || def.kind !== 'soldier')) {
+        throw new Error(`${where}: monster（魔物の種類）を書けるのは兵士カード（kind: "soldier"）だけです`);
       }
 
       if (def.kind === 'soldier') {

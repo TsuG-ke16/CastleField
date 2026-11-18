@@ -88,6 +88,7 @@ let startRequest = 0;
 let castles = null;
 let decks = null;
 let rarities = null;
+let weather = null;  // data/weather.json（読めなければ null：天候なし）
 let progressPanel;
 let cardGuide;
 let cards;
@@ -178,9 +179,9 @@ function hideLoading() {
 
 async function boot() {
   try {
-    [cards, rules, monsters, upgrades, rarities, castles, decks] = await Promise.all([
+    [cards, rules, monsters, upgrades, rarities, castles, decks, weather] = await Promise.all([
       loadJson('data/cards.json'), loadJson('data/rules.json'),
-      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'),
+      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'),
     ]);
   } catch (err) {
     console.error(err);
@@ -563,6 +564,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     if (!cpuLevel) opts.rules.defenseReaction = false;
     if (monsters) opts.monsters = structuredClone(monsters);
     if (upgrades) opts.upgrades = structuredClone(upgrades);
+    if (weather) opts.weather = structuredClone(weather);
     game = new Game(opts);
   } catch (err) {
     console.error(err);

@@ -51,7 +51,7 @@ export const CPU_LEVELS = {
 export class Room {
   /**
    * @param {string} roomId
-   * @param {object} data { cards, rules, monsters, upgrades, castles, decks, rarities }
+   * @param {object} data { cards, rules, monsters, upgrades, castles, decks, rarities, weather }
    * @param {() => () => number} makeRng 試合ごとに乱数を作る関数
    * @param {{ cpuDelayMs?: number }} [options] cpuDelayMs：CPU が1手ごとに待つ時間（0 ならすぐ動く。テスト用）
    */
