@@ -102,5 +102,5 @@ test('弓兵・魔法使いのデータ：range と stay が必要で、speed �
   const make = (def) => new Game({ cards: { ...loadFixture('cards.json'), x: def }, rules: { ...loadFixture('rules.json'), laneLength: 5 } });
   assert.throws(() => make({ name: 'x', kind: 'soldier', role: 'archer', hp: 1, attack: 1, stay: 2, count: 1 }), /range/);
   assert.throws(() => make({ name: 'x', kind: 'soldier', role: 'archer', hp: 1, attack: 1, range: 2, stay: 2, speed: 1, count: 1 }), /speed/);
-  assert.throws(() => make({ name: 'x', kind: 'soldier', role: 'ninja', hp: 1, attack: 1, speed: 1, count: 1 }), /role/);
+  assert.throws(() => make({ name: 'x', kind: 'soldier', role: 'pirate', hp: 1, attack: 1, speed: 1, count: 1 }), /role/);
 });
