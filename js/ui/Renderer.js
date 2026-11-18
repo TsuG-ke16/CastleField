@@ -12,6 +12,7 @@ import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
 import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt } from './art.js';
 import { soldierMotion, monsterMotion } from './motion.js';
+import { WeatherView } from './WeatherView.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -75,6 +76,8 @@ export class Renderer {
     this.monsterBirths = new Map();
     this.weaponStacks = new Map();
 
+    this.weatherView = new WeatherView($('app'));
+
     this.el = {
       app: $('app'),
       board: $('board'),
@@ -88,7 +91,6 @@ export class Renderer {
       myMp: $('my-mp'),
       myCoins: $('my-coins'),
       turnInfo: $('turn-info'),
-      weatherChip: $('weather-chip'),
       deckPile: $('deck-pile'),
       discardPile: $('discard-pile'),
       deckCount: $('deck-count'),
@@ -424,34 +426,7 @@ export class Renderer {
 
   /** 今の天候を、上のバッジと背景の効果に出す（w は { type, name, icon, description, roundsLeft } か null） */
   setWeather(w) {
-    const chip = this.el.weatherChip;
-    const app = document.getElementById('app');
-    if (app) {
-      if (w) app.dataset.weather = w.type;
-      else delete app.dataset.weather;
-    }
-    if (!chip) return;
-    chip.hidden = !w;
-    if (!w) return;
-    const label = `天候：${w.name}。${w.roundsLeft != null ? `あと${w.roundsLeft}周。` : ''}${w.description ?? ''}`;
-    if (chip.getAttribute('aria-label') === label) return;
-    const icon = document.createElement('span');
-    icon.className = 'hud-weather-icon';
-    icon.setAttribute('aria-hidden', 'true');
-    icon.textContent = w.icon ?? '🌤️';
-    const caption = document.createElement('span');
-    caption.className = 'hud-weather-caption';
-    const name = document.createElement('b');
-    name.textContent = w.name;
-    caption.append(name);
-    if (w.roundsLeft != null) {
-      const remaining = document.createElement('small');
-      remaining.textContent = `あと${w.roundsLeft}周`;
-      caption.append(remaining);
-    }
-    chip.replaceChildren(icon, caption);
-    chip.title = w.description ?? w.name;
-    chip.setAttribute('aria-label', label);
+    this.weatherView.update(w);
   }
 
   /** 手番の人の城を目立たせる */

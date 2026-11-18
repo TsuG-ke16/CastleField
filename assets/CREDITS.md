@@ -361,3 +361,10 @@ OpenAI image generation、STYLE.mdの共通指示文と `assets/style-reference.
 ## カード枠の切り抜きの修正（2026-11-17）
 
 - `cards/frame-{common,uncommon,rare,epic,legendary,special}.png`：生成元の背景（生成りの紙色）が枠の外に残っていたのを、Pillow で外側から背景色だけ透明にした。本体とつながっていない紙色の小さなかけらも消した。256色パレットで圧縮（各110KB以下）。描き足し・色替えなし。出どころ・ライセンスは上の各行と同じ。
+
+## 天候の素材（2026-11-18）
+
+OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の共通指示文を使って生成。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。アイコンはアトラスから切り出し、カード絵とともに透過 PNG へ縮小しました。各300KB以下です。
+
+- `ui/weather-sunny.png`、`ui/weather-rain.png`、`ui/weather-heavy-rain.png`、`ui/weather-fog.png`、`ui/weather-storm.png`、`ui/weather-sandstorm.png`、`ui/weather-coin-rain.png` — 生成元 `exec-0d0424d1-028b-4281-b81d-d9d093775109.png`
+- `cards/card-weather-call.png` — 生成元 `exec-4e9db26b-44cc-4e61-97da-354f9b08b7cb.png`

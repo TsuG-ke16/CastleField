@@ -266,7 +266,6 @@ async function boot() {
   el.rematch.addEventListener('click', stopCelebration);
   el.rematch.addEventListener('click', (e) => { e.stopPropagation(); rematch(); });
   el.result.addEventListener('click', stopCelebration);
-  $('weather-chip').addEventListener('click', () => toast($('weather-chip').title, 'info'));
   el.resultTitleBtn.addEventListener('click', (e) => { e.stopPropagation(); showTitle(); });
   // 最初のタップで音を出せるようにする。演出中に画面をタップしたら飛ばす（重ねて出す画面の上は除く）
   el.app.addEventListener('keydown', e => { if(['Enter',' '].includes(e.key)) sound.unlock(); });
@@ -410,6 +409,7 @@ function setupTitle(deckOptions) {
 /** タイトルへ戻る（遊んでいた試合はやめる） */
 function showTitle() {
   startRequest++;
+  renderer.setWeather(null);
   document.documentElement.classList.add('at-title');
   $('asset-loading').hidden=true;
   sound.setScene('title');
@@ -543,6 +543,7 @@ function stopLocal() {
 
 /** 新しい試合の前に、画面の持ちものを空にする */
 function resetForNewGame() {
+  renderer.setWeather(null);
   matchStats.reset();
   renderer.monsterBirths.clear(); renderer.weaponStacks.clear();
   $('match-info').open = false;

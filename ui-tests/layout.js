@@ -23,7 +23,9 @@ try {
    rules:JSON.stringify({weatherFirstRound:1,weatherChangeChance:1,monsterFirstRound:1,monsterSpawnChance:1}),
   });
   await page.goto(url.href);
-  await page.waitForFunction(()=>window.castlefield?.game()&&!document.querySelector('#app').classList.contains('busy'));
+  await page.waitForFunction(()=>window.castlefield?.game(), {}, { timeout: 60000 });
+  await page.evaluate(async () => { (await import('./js/ui/config.js')).UI_CONFIG.speed = .05; });
+  await page.waitForFunction(()=>!document.querySelector('#app').classList.contains('busy'));
   // The developer-only floating toggle is not part of the shipped player layout.
   await page.addStyleTag({content:'#debug-toggle { display:none }'});
   assert.ok(await page.locator('#turn-status').isVisible());assert.ok(await page.locator('.hand-toolbar').isVisible());
@@ -71,8 +73,10 @@ try {
   assert.equal(await page.locator('#deck-pile').isVisible(),false,'secondary counters not constantly visible');
   await page.screenshot({path:new URL(`./artifacts/layout-${width}.png`,import.meta.url).pathname});
   await page.locator('#weather-chip').click();
-  assert.ok((await page.locator('#toast').textContent()).length > 0, 'weather explanation opens from the HUD');
-  await page.waitForFunction(() => !document.querySelector('#toast').classList.contains('show'));
+  assert.ok(await page.locator('#weather-detail').isVisible(), 'weather explanation opens from the HUD');
+  assert.match(await page.locator('#weather-detail-remaining').innerText(), /残り \d+周/);
+  await page.keyboard.press('Escape');
+  assert.ok(!await page.locator('#weather-detail').isVisible());
   // Many cards use the same public debug interface as the built-in debug panel.
   await page.evaluate(async()=>{const id=document.querySelector('#app').dataset.viewer;castlefield.game().debugSetHand(id,['infantry','infantry','fireball','manaShard','manaDrop','adapt','cavalry','thunder','shield','heal','earthHammer','prayer']);await castlefield.refresh()});
   assert.match(await page.locator('#hand-count').textContent(),/12枚/);

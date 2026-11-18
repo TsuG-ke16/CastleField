@@ -399,7 +399,7 @@ function escapeText(s) {
 }
 
 // 画像の割り当てはUIだけが持つ。読み込み前・失敗時は元のSVGを表示する。
-const CARD_TYPES = new Set(["manaShard","manaDrop","manaCrystal","manaSpring","worldTreeDew","adapt", ...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
+const CARD_TYPES = new Set(["weatherCall","manaShard","manaDrop","manaCrystal","manaSpring","worldTreeDew","adapt", ...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "prayer", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "coinPouch", "goldCoin", "treasure", "goldVein", "kingTreasure"]);
 const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // 起動時に全部の画像を先に読み込んでおく。読み込めた画像は、代わりのSVGを出さず最初からPNGで描く
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
@@ -434,6 +434,22 @@ document.addEventListener('load', (e) => {
     e.target.parentElement.classList.add('has-frame');
   }
 }, true);
+const WEATHER_ICONS = {
+  sunny: 'sunny', rain: 'rain', heavyRain: 'heavy-rain', fog: 'fog',
+  storm: 'storm', sandstorm: 'sandstorm', coinRain: 'coin-rain',
+};
+
+export function weatherIcon(type, glyph = '🌤️') {
+  const icon = document.createElement('span');
+  icon.className = 'weather-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  if (Object.hasOwn(WEATHER_ICONS, type)) {
+    icon.innerHTML = imageArt(`ui/weather-${WEATHER_ICONS[type]}.png`, '', 'icon-asset')
+      .replace('<span class="asset-wait">…</span>', `<span class="asset-fallback">${escapeText(glyph)}</span>`);
+  } else icon.textContent = glyph;
+  return icon;
+}
+
 function generatedSoldierPng(path, cls, name) {
   return `<span class="asset-art asset-loaded ${cls}"><img class="asset-image" src="assets/${path}" alt="${escapeText(name)}" decoding="sync" draggable="false"></span>`;
 }
@@ -443,8 +459,9 @@ export function cardArt(type, color = 'blue', name = '') {
   if (beastOf(type)) return monsterArt(beastOf(type), name).replaceAll('monster-art', 'monster-art card-art-svg');
   if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`cards/card-${kebab(type)}.png`, 'art card-art-svg', name);
   const fallback = svgCardArt(type, color, name);
-  if (type === 'adapt') {
-    return imageArt('cards/card-adapt.png', fallback, 'art card-art-svg adapt-asset')
+  if (type === 'adapt' || type === 'weatherCall') {
+    const fallbackClass = type === 'adapt' ? 'adapt-asset' : 'icon-asset';
+    return imageArt(`cards/card-${kebab(type)}.png`, fallback, `art card-art-svg ${fallbackClass}`)
       .replace('<span class="asset-wait">…</span>', `<span class="asset-fallback">${fallback}</span>`);
   }
   return CARD_TYPES.has(type) ? imageArt(`cards/card-${kebab(type)}.png`, fallback, 'art card-art-svg') : fallback;

@@ -32,9 +32,9 @@ export const UI_CONFIG = {
   timing: {
     deckTransfer: 215,     // カードが編成の帯へ飛ぶ・帯から落ちる
     deckReady: 280,        // 目標コストに達したときの光
-    weatherAlarm: 1300,    // 天候が変わった警報
-    weatherEnd: 700,       // 天候がおさまった
-    lightning: 600,        // 大雨の雷
+    weatherAlarm: 980,    // 天候が変わった警報
+    weatherEnd: 520,       // 天候がおさまった
+    lightning: 520,        // 大雨の雷
     fusion: 900,
     reward: 1100,        // 魔物報酬のレアリティを読む時間
     soldierShot: 520,
@@ -87,7 +87,7 @@ export const UI_CONFIG = {
     soldier: { base: 0, minPower: 1.2, perPower: 2.1, max: 4, duration: 160 },
     monster: { base: 0, minPower: 1.1, perPower: 2.5, max: 5, duration: 185 },
     spell: { base: 0, minPower: 8, perPower: .35, max: 8, duration: 190 },
-    weather: { base: 8, duration: 420 },
+    weather: { base: 5, duration: 245 },
   },
 
   // 兵士にダメージが入ったとき

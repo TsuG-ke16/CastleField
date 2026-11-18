@@ -23,7 +23,7 @@ export class BattleLayout {
     $('menu').querySelector('.menu-title').after(info);
     const resources = document.createElement('div');
     resources.className = 'hud-resources';
-    resources.append($('my-mp'), $('weather-chip'));
+    resources.append($('my-mp'), $('weather-chip'), $('weather-detail'));
     const actions = document.createElement('div');
     actions.className = 'hud-actions';
     actions.append($('chat-open'), $('menu-open'));

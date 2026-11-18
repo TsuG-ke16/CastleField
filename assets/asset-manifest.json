@@ -296,5 +296,13 @@
   "ui/natural/round-neutral.png": "exec-02fdc3cd-e1e2-4b77-9bce-577aad9a2045.png",
   "ui/natural/round-selected.png": "exec-02fdc3cd-e1e2-4b77-9bce-577aad9a2045.png",
   "ui/natural/primary-wide-full.png": "exec-3d21dc1d-316b-49bf-b7a1-6c383cbd3523.png",
-  "ui/natural/neutral-wide-full.png": "exec-3d21dc1d-316b-49bf-b7a1-6c383cbd3523.png"
+  "ui/natural/neutral-wide-full.png": "exec-3d21dc1d-316b-49bf-b7a1-6c383cbd3523.png",
+  "ui/weather-sunny.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
+  "ui/weather-rain.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
+  "ui/weather-heavy-rain.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
+  "ui/weather-fog.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
+  "ui/weather-storm.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
+  "ui/weather-sandstorm.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
+  "ui/weather-coin-rain.png": "exec-0d0424d1-028b-4281-b81d-d9d093775109.png",
+  "cards/card-weather-call.png": "exec-4e9db26b-44cc-4e61-97da-354f9b08b7cb.png"
 }

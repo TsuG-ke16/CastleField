@@ -32,6 +32,7 @@
   <link rel="stylesheet" href="css/card-base.css">
   <link rel="stylesheet" href="css/hologram.css">
   <link rel="stylesheet" href="css/battle.css">
+  <link rel="stylesheet" href="css/weather.css">
 </head>
 <body>
   <div id="app">
@@ -57,7 +58,16 @@
         <span class="chip coins" id="opp-coins" title="相手のコイン" hidden><span class="chip-icon" data-icon="coin"></span><b>0</b></span>
       </div>
       <div class="chip turn-info" id="turn-info"></div>
-      <button type="button" class="chip weather-chip" id="weather-chip" hidden aria-live="polite"></button>
+      <button type="button" class="chip weather-chip" id="weather-chip" hidden aria-live="polite" aria-expanded="false" aria-controls="weather-detail"></button>
+      <section id="weather-detail" aria-labelledby="weather-detail-name" hidden>
+        <div class="weather-detail-heading">
+          <span class="weather-detail-icon"></span>
+          <h2 id="weather-detail-name"></h2>
+          <button type="button" class="weather-detail-close round-btn" aria-label="天候の説明を閉じる">×</button>
+        </div>
+        <p id="weather-detail-remaining"></p>
+        <p id="weather-detail-description"></p>
+      </section>
       <div class="hud-right">
         <span class="chip mp" id="my-mp" title="あなたのMP：攻撃の魔法と精霊を使うと減ります。マナ回復のカードで増えます" hidden><span data-icon="mp"></span><b id="my-mp-value">0</b>/<span id="my-mp-max">0</span><span class="mp-track" role="meter" aria-label="あなたのMP" aria-valuemin="0"><span class="mp-fill"></span></span><span class="mp-shortage" role="status" aria-live="polite"></span></span>
         <span class="chip pile" id="deck-pile" title="山札"><span class="chip-icon" data-icon="card"></span>山<b id="deck-count">0</b></span>

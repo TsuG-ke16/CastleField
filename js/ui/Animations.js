@@ -5,8 +5,9 @@
 import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
-import { cardArt, icon, imageArt } from './art.js';
+import { cardArt, icon, imageArt, weatherIcon } from './art.js';
 import { frameAsset } from './cardFrame.js';
+import { playerName } from './text.js';
 import { mountMiniCard } from './cardView.js';
 import { attackOf, attackFrames, impactSvg } from './motion.js';
 import { ELEMENT_BEATS } from '../game/Game.js';
@@ -572,41 +573,96 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.round * 0.5);
   }
 
-  /**
-   * 天候が変わった：警報（サイレンの音・赤い縁のふちどり・大きな帯・画面の揺れ）。タップで飛ばせる。
-   * 天候がおさまったときは、小さな帯だけ。
-   */
-  async weatherChanged({ weather, name, icon: glyph, description, rounds, cause, previousName }, model) {
+  async weatherChanged({ weather, name, icon: glyph, description, rounds, cause, previous, previousName }, model) {
     model.weather = weather ? { type: weather, name, icon: glyph, description, roundsLeft: rounds } : null;
     this.renderer.setWeather(model.weather);
-    if (this.skipping) return;
-    const t = UI_CONFIG.timing;
+    if (this.skipping || UI_CONFIG.speed === 0) return;
+    const timing = UI_CONFIG.timing;
+
     if (!weather) {
-      this.banner(`${previousName ?? '天候'}がおさまった`, t.weatherEnd, 'small');
-      await this.delay(t.weatherEnd * 0.6);
+      await this.weatherNotice({
+        tone: 'neutral', type: previous, name: '通常の天候に戻った',
+        description: previousName ? `${previousName}の効果が終了しました` : '',
+        duration: timing.weatherEnd,
+      });
       return;
     }
+
     const tone = UI_CONFIG.weatherTone[weather] ?? 'alert';
-    sound.play(tone === 'alert' ? 'alarm' : 'weatherChime');
-    const alarm = this.fx(`fx-alarm ${tone}`);
-    this.animate(alarm, [{ opacity: 0 }, { opacity: 1, offset: 0.15 }, { opacity: 0.25, offset: 0.35 }, { opacity: 1, offset: 0.55 }, { opacity: 0.25, offset: 0.75 }, { opacity: 0 }],
-      { duration: t.weatherAlarm, fill: 'forwards' }).then(() => alarm.remove());
-    this.banner(`${tone === 'alert' ? '⚠ ' : ''}${glyph ?? ''} ${name}${cause === 'card' ? '（呪文）' : ''}`, t.weatherAlarm, `weather ${tone}`);
-    if (description) setTimeout(() => { if (!this.skipping) this.banner(description, t.weatherAlarm * 0.8, 'small weather-note'); }, t.weatherAlarm * 0.25 * UI_CONFIG.speed);
+    sound.play(tone === 'alert' ? 'weatherSiren' : tone === 'calm' ? 'weatherRain' : 'weatherChime');
+    const alarm = this.fx('weather-alarm');
+    alarm.dataset.tone = tone;
     this.screenShake('weather');
-    await this.delay(t.weatherAlarm * 0.8);
+    const animation = this.animate(alarm, [
+      { opacity: 0 }, { opacity: .9, offset: .13 }, { opacity: .64, offset: .7 }, { opacity: 0 },
+    ], { duration: timing.weatherAlarm, fill: 'forwards' });
+    try {
+      await Promise.all([animation, this.weatherNotice({
+        tone, type: weather, glyph, name, description, duration: timing.weatherAlarm,
+        caption: cause === 'card' ? '天候の呪文' : tone === 'alert' ? '天候警報' : '天候が変化',
+      })]);
+    } finally {
+      alarm.remove();
+    }
   }
 
-  /** 大雨の雷：白く光って、画面が大きく揺れる（このあと castleDamaged） */
+  async weatherNotice({ tone, type, name, glyph, caption, description, duration }) {
+    const notice = this.fx('weather-notice');
+    notice.dataset.tone = tone;
+    const heading = document.createElement('strong');
+    heading.className = 'weather-notice-title';
+    heading.textContent = name;
+    notice.append(weatherIcon(type, glyph));
+    if (caption) {
+      const source = document.createElement('span');
+      source.className = 'weather-notice-caption';
+      source.textContent = caption;
+      notice.append(source);
+    }
+    notice.append(heading);
+    if (description) {
+      const text = document.createElement('p');
+      text.className = 'weather-notice-description';
+      text.textContent = description;
+      notice.append(text);
+    }
+    try {
+      await Promise.all([
+        this.animate(notice, [
+          { translate: '0 -12px', opacity: 0 }, { translate: '0 0', opacity: 1, offset: .14 },
+          { translate: '0 0', opacity: 1, offset: .83 }, { translate: '0 -5px', opacity: 0 },
+        ], { duration, easing: UI_CONFIG.easing.enter, fill: 'forwards' }),
+        this.delay(duration),
+      ]);
+    } finally {
+      notice.remove();
+    }
+  }
+
+  /** 大雨の雷。落ちた城を示し、実際の被害は続く城ダメージのイベントで出す。 */
   async weatherLightning({ playerId }) {
-    if (this.skipping) return;
+    if (this.skipping || UI_CONFIG.speed === 0) return;
     sound.play('thunder');
-    this.screenFlash('#fffbe0', 360);
     this.screenShake('weather');
     const castle = this.renderer.castleEl(playerId);
-    if (castle) this.impact(this.centerOf(castle), 'star', { size: 120, color: '#fff7a8', duration: 300 });
-    this.banner('⚡ 雷！', UI_CONFIG.timing.lightning, 'small');
-    await this.delay(UI_CONFIG.timing.lightning * 0.5);
+    const duration = UI_CONFIG.timing.lightning;
+
+    if (castle && !UI_CONFIG.reducedMotion) {
+      const target = this.centerOf(castle.querySelector('.castle-pic') ?? castle);
+      const board = this.el.board;
+      const top = board.getBoundingClientRect().top - this.el.app.getBoundingClientRect().top;
+      const bolt = this.fx('fx-bolt');
+      bolt.style.left = `${target.x}px`;
+      bolt.style.top = `${top}px`;
+      bolt.style.height = `${Math.max(38, target.y - top)}px`;
+      this.animate(bolt, [
+        { opacity: 0 }, { opacity: 1, offset: .16 }, { opacity: 0 },
+      ], { duration, fill: 'forwards' }).then(() => bolt.remove());
+      this.impact(target, 'star', { size: 100, color: '#fff2ae', duration: duration * .65 });
+    }
+    await this.weatherNotice({
+      tone: 'alert', type: 'heavyRain', name: `${playerName(playerId)}の城に落雷`, duration,
+    });
   }
 
   /** 霧で攻撃が外れた：外した兵士・魔物の上に「ミス！」。魔法のときは帯 */
