@@ -435,3 +435,8 @@ OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力�
 - `cards/card-king-treasure.png` — 参照元 `cards/card-king-treasure.png`（差し替え前）・`style-reference.png`、生成原本 `exec-ff0d6af3-a906-417a-b14e-b925842134f9.png`。
 - `cards/card-god-shield.png` — 参照元 `cards/card-god-shield.png`（差し替え前）・`style-reference.png`、生成原本 `exec-47a56306-5578-4052-b434-d4811cf6a97a.png`。
 - `cards/card-wind-spirit.png` — 参照元 `cards/card-wind-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-945a91d5-a948-4b09-a011-56ae46ec88ed.png`。
+
+### マナ回復カード
+
+- `cards/card-mana-shard.png` — 参照元 `cards/card-mana-shard.png`（差し替え前）・`style-reference.png`、生成原本 `exec-2b7b0112-4b17-47a8-9968-48f2108d43d8.png`。
+- `cards/card-mana-drop.png` — 参照元 `cards/card-mana-drop.png`（差し替え前）・`style-reference.png`、生成原本 `exec-5982b20f-25cf-4b9e-93da-705027fe9136.png`。
