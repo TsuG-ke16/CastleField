@@ -167,3 +167,39 @@ test('data/weather.json は読めて、7種類の天候がある', () => {
   assert.deepEqual(Object.keys(w).sort(), ['coinRain', 'fog', 'heavyRain', 'rain', 'sandstorm', 'storm', 'sunny']);
   new Game({ cards: loadJson('cards.json'), rules: loadJson('rules.json'), rarities: loadJson('rarities.json'), weather: w, rng: seededRng(1) });
 });
+
+test('倒した魔物は、駒（兵士カード）としてとどめを刺した人の手札に入る', () => {
+  const cards = loadJson('cards.json');
+  const monsters = loadJson('monsters.json');
+  const rarities = loadJson('rarities.json');
+  const game = new Game({ cards, rules: { ...loadJson('rules.json'), monsterSpawnChance: 0 }, rng: seededRng(1), monsters, rarities });
+  game.start();
+  const log = recordEvents(game, EVENT_TYPES);
+  // 魔物を1体置いて倒す
+  const m = { monsterId: 'mX', type: 'bat', isDead: true, roadId: game.roads[0].roadId, def: monsters.bat };
+  game.monsters.push(m);
+  const before = game.players.p1.hand.length;
+  game.defeatMonsterIfDead(m, 'p1');
+  const defeated = log.find((e) => e.event === 'monsterDefeated');
+  assert.equal(defeated.pieceType, 'beast_bat');
+  assert.equal(game.players.p1.hand.length, before + 2); // ごほうびのカード＋駒
+  assert.equal(game.players.p1.hand.filter((c) => c.type === 'beast_bat').length, 1);
+  // 兵士カードとして出せる（魔物のHP・攻撃の兵士になる）
+  game.debugSetHand('p1', ['beast_bat']);
+  const id = game.getState('p1').players.p1.hand[0].cardId;
+  assert.equal(game.playCard(id, { playerId: 'p2', roadId: game.roads[0].roadId }).ok, true);
+  const s = game.getState(null).players.p1.soldiers[0];
+  assert.equal(s.hp, monsters.bat.hp);
+  assert.equal(s.attack, monsters.bat.attack);
+});
+
+test('魔物の駒は合成できず、排出（山札・ごほうび）では出ない', () => {
+  const cards = loadJson('cards.json');
+  const rarities = loadJson('rarities.json');
+  const game = new Game({ cards, rules: loadJson('rules.json'), rng: seededRng(1), monsters: loadJson('monsters.json'), rarities });
+  game.start();
+  game.debugSetHand('p1', ['beast_bat', 'beast_bat']);
+  const [a, b] = game.getState('p1').players.p1.hand;
+  assert.equal(game.canFuse(a.cardId, b.cardId).ok, false);
+  assert.equal(game.getDropRates().cards.beast_bat.rate, 0);
+});

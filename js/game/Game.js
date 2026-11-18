@@ -1132,7 +1132,14 @@ export class Game {
         lucky = true;
       }
     }
-    this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward: reward ?? 0, rewardRarity, baseRarity, lucky });
+    // 倒した魔物は駒（兵士カード）になって、とどめを刺した人の手札に入る（cards.json に monster: 種類 のカードがあるとき）
+    const pieceType = (monster.type && Object.keys(this.cardDefs).find((t) => this.cardDefs[t].monster === monster.type)) || null;
+    this.emit('monsterDefeated', { monsterId: monster.monsterId, playerId, reward: reward ?? 0, rewardRarity, baseRarity, lucky, pieceType });
+    if (pieceType) {
+      const piece = this.createCard(pieceType);
+      this.players[playerId].hand.push(piece);
+      this.emit('cardDrawn', { playerId, cardIds: [piece.cardId] });
+    }
     if (reward) this.changeCoins(this.players[playerId], reward, 'reward');
     // ごほうびのカード：そのレアリティのカードが1枚、手札に入る（カードがなければ何も起きない）
     if (rewardRarity) {
@@ -1308,7 +1315,7 @@ export class Game {
     // 適応は、どのカードとでも合成できる（相手のカードを2枚合成したのと同じ結果）
     const base = wildA ? b : a;
     if (!wildA && !wildB && a.type !== b.type) return fail('同じ種類のカードどうしでないと合成できません');
-    if (!base.def.fuseTo) return fail('レジェンドはこれ以上合成できません');
+    if (!base.def.fuseTo) return fail(base.def.monster ? '魔物の兵士は合成できません' : 'レジェンドはこれ以上合成できません');
     return { ok: true, player, a, b, base };
   }
 
