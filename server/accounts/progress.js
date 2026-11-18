@@ -15,6 +15,7 @@ export class Progress {
     this.cfg = progression;
     this.profileCfg = profile;
     this.now = now;
+    this.economy = null; // Economy（あれば、対戦報酬のコイン・装備中のアイコン/称号を使う）
     this.ranking = null; // Ranking（あれば、ホーム・プロフィールにランクを出す）
     this.levelStarts = [0]; // levelStarts[L-1] = レベル L に必要な累計の経験値
     for (let l = 1; l < this.cfg.maxLevel; l++) this.levelStarts.push(this.levelStarts[l - 1] + this.xpToNext(l));
@@ -63,6 +64,7 @@ export class Progress {
         const opponentsAreOthers = m.seats.some((o) => o.seat !== s.seat && !(o.userId && o.userId === s.userId));
         const counted = userId && perUser.get(userId) === 1 && opponentsAreOthers ? 1 : 0;
         const xp = counted ? this.matchXp(m, s) : 0;
+        const coins = xp > 0 ? this.matchCoins(m, s) : 0; // 経験値の対象になった試合だけ、コインも出る
         this.db.run('INSERT INTO match_players (match_id, seat, user_id, name, cpu, result, counted, left_early, xp_gained, deck_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           m.matchId, s.seat, userId && !seen.has(userId) ? userId : null,
           s.name, s.cpu ?? null, s.won ? 'win' : 'loss', counted, s.left ? 1 : 0, xp, s.deckName ?? null);
@@ -71,7 +73,8 @@ export class Progress {
           const before = this.levelInfo(this.getXp(userId)).level;
           this.db.run('INSERT INTO user_progress (user_id, xp) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET xp = xp + excluded.xp', userId, xp);
           const after = this.levelInfo(this.getXp(userId)).level;
-          results.set(userId, { matchId: m.matchId, won: !!s.won, xpGained: xp, levelBefore: before, levelAfter: after, leveledUp: after > before });
+          const coinsGained = coins > 0 && this.economy ? this.economy.awardMatch(userId, m.matchId, coins) : 0;
+          results.set(userId, { matchId: m.matchId, won: !!s.won, xpGained: xp, coinsGained, levelBefore: before, levelAfter: after, leveledUp: after > before });
         }
       }
       return results;
@@ -81,6 +84,15 @@ export class Progress {
   matchXp(m, s) {
     const c = this.cfg.match;
     if (s.left || m.turns < c.minTurns) return 0; // すぐ抜けた・すぐ終わった試合では増えない
+    const humans = m.seats.filter((o) => o.userId && o.seat !== s.seat).length;
+    const raw = c.base + (s.won ? c.win : 0);
+    return Math.max(0, Math.round(humans > 0 ? raw : raw * c.cpuMultiplier));
+  }
+
+  /** 対戦報酬のコイン（データは progression.json の matchCoins）。相手が人間でなければ少なくなる */
+  matchCoins(m, s) {
+    const c = this.cfg.matchCoins;
+    if (!c) return 0;
     const humans = m.seats.filter((o) => o.userId && o.seat !== s.seat).length;
     const raw = c.base + (s.won ? c.win : 0);
     return Math.max(0, Math.round(humans > 0 ? raw : raw * c.cpuMultiplier));
@@ -112,7 +124,8 @@ export class Progress {
     if (!r) return null;
     const after = this.levelInfo(this.getXp(userId));
     const beforeXp = Math.max(0, after.xp - r.xp_gained);
-    return { matchId: r.match_id, won: r.result === 'win', counted: !!r.counted, xpGained: r.xp_gained, levelBefore: this.levelInfo(beforeXp).level, ...after };
+    const coinsGained = this.db.get("SELECT delta FROM coin_ledger WHERE user_id = ? AND reason = 'match' AND ref = ?", userId, r.match_id)?.delta ?? 0;
+    return { matchId: r.match_id, won: r.result === 'win', counted: !!r.counted, xpGained: r.xp_gained, coinsGained, levelBefore: this.levelInfo(beforeXp).level, ...after };
   }
 
   // ---- プロフィール ----
@@ -126,15 +139,33 @@ export class Progress {
   }
 
   profileRow(userId) {
-    return this.db.get('SELECT icon, title FROM user_profiles WHERE user_id = ?', userId) ?? { icon: this.profileCfg.icons[0].id, title: null };
+    const row = this.db.get('SELECT icon, title FROM user_profiles WHERE user_id = ?', userId) ?? { icon: this.profileCfg.icons[0].id, title: null };
+    const eq = this.economy?.equippedOf(userId) ?? {};
+    return { icon: eq.icon ?? row.icon, title: eq.title ? this.economy.item(eq.title)?.text ?? row.title : row.title };
+  }
+
+  /** アイコンの id から画像（無料のアイコンと、ショップのアイコン） */
+  iconImage(id) {
+    return this.profileCfg.icons.find((i) => i.id === id)?.image ?? this.economy?.item(id)?.image ?? this.profileCfg.icons[0].image;
+  }
+
+  /** 選べるアイコン：無料のものと、持っているショップのアイコン */
+  iconChoices(userId) {
+    const own = (this.economy?.ownedIds(userId) ?? []).map((id) => this.economy.item(id)).filter((it) => it?.slot === 'icon').map((it) => ({ id: it.id, name: it.name, image: it.image }));
+    return [...this.profileCfg.icons, ...own];
   }
 
   /** 自分のプロフィール設定を変える（アイコン・プライバシー） */
   updateProfile(userId, { icon, privacy } = {}) {
     return this.db.tx(() => {
       const cur = this.profileRow(userId);
-      const nextIcon = icon === undefined ? cur.icon : icon;
-      if (!this.profileCfg.icons.some((i) => i.id === nextIcon)) throw new AccountError('そのアイコンは使えません');
+      const shopIcon = typeof icon === 'string' ? this.economy?.item(icon) : null;
+      const nextIcon = icon === undefined ? this.db.get('SELECT icon FROM user_profiles WHERE user_id = ?', userId)?.icon ?? this.profileCfg.icons[0].id : shopIcon ? this.db.get('SELECT icon FROM user_profiles WHERE user_id = ?', userId)?.icon ?? this.profileCfg.icons[0].id : icon;
+      if (shopIcon) {
+        if (shopIcon.slot !== 'icon') throw new AccountError('そのアイコンは使えません');
+        this.economy.equip(userId, 'icon', shopIcon.id); // 持っていなければここで失敗する
+      } else if (!this.profileCfg.icons.some((i) => i.id === nextIcon)) throw new AccountError('そのアイコンは使えません');
+      else if (icon !== undefined) this.economy?.equip(userId, 'icon', null); // 無料のアイコンを選んだら、ショップのアイコンの装備は外す
       const nextPrivacy = this.privacy(userId);
       if (privacy !== undefined) {
         if (!privacy || typeof privacy !== 'object' || Array.isArray(privacy)) throw new AccountError('公開設定が正しくありません');
@@ -161,7 +192,7 @@ export class Progress {
     const lv = this.levelInfo(this.getXp(userId));
     const prow = this.profileRow(userId);
     const out = {
-      userId, displayName: u.displayName, kind: u.kind, icon: prow.icon, title: prow.title ?? this.titleFor(lv.level),
+      userId, displayName: u.displayName, kind: u.kind, icon: prow.icon, iconImage: this.iconImage(prow.icon), title: prow.title ?? this.titleFor(lv.level),
       level: lv.level, rank: this.rankSummary(userId, u), bestRank: u.kind === 'member' ? this.ranking?.bestRank(userId) ?? null : null, createdAt: u.createdAt, self,
       equipped: null /* Phase 5：装備中スキン */,
     };
@@ -189,7 +220,7 @@ export class Progress {
       rank: this.rankSummary(userId, u), season: this.ranking ? this.ranking.seasonAt() : null,
       deck: d.slots[d.active] ? { slot: d.active, name: d.slots[d.active].name } : null,
       stats: this.stats(userId), rewardsAvailable: this.availableRewards(userId).length,
-      icons: this.profileCfg.icons,
+      icons: this.iconChoices(userId), iconImage: this.iconImage(prow.icon), points: this.economy?.balance(userId).points ?? 0,
     };
   }
 
@@ -210,7 +241,8 @@ export class Progress {
       if (this.db.get('SELECT 1 AS x FROM level_rewards WHERE user_id = ? AND level = ?', userId, level)) throw new AccountError('もう受け取っています', 409);
       const coins = this.rewardCoins(level);
       this.db.run('INSERT INTO level_rewards (user_id, level, coins, claimed_at) VALUES (?, ?, ?, ?)', userId, level, coins, this.now());
-      this.db.run('INSERT INTO wallets (user_id, free_coins) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET free_coins = free_coins + excluded.free_coins', userId, coins);
+      if (this.economy) this.economy.credit(userId, coins, 'levelReward', String(level));
+      else this.db.run('INSERT INTO wallets (user_id, free_coins) VALUES (?, ?) ON CONFLICT(user_id) DO UPDATE SET free_coins = free_coins + excluded.free_coins', userId, coins);
       return { level, coins, balance: this.getCoins(userId) };
     });
   }

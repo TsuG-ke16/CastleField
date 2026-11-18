@@ -1,0 +1,400 @@
+{
+  "_note": "ショップ・ガチャの景品の一覧（すべて見た目だけ。ランクマッチの勝敗には影響しない）。価格・レアリティは仮。スキンは色替え（CSSフィルタ）で、専用の絵は未作成。price が null のものはガチャか交換でだけ手に入る",
+  "world": "kingdom",
+  "slots": {
+    "unit": "兵士スキン",
+    "castle": "城の外観",
+    "cardBack": "カード裏面",
+    "attackFx": "攻撃エフェクト",
+    "winFx": "勝利演出",
+    "icon": "プロフィールアイコン",
+    "title": "称号"
+  },
+  "rarities": [
+    "common",
+    "uncommon",
+    "rare",
+    "epic",
+    "legendary"
+  ],
+  "items": {
+    "unit_crimson": {
+      "slot": "unit",
+      "name": "紅蓮の兵",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "兵士が燃えるような赤の単色に。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "unit_forest": {
+      "slot": "unit",
+      "name": "森の兵",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "兵士が深い緑の単色に。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "unit_frost": {
+      "slot": "unit",
+      "name": "氷の兵",
+      "rarity": "rare",
+      "price": 800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "兵士が澄んだ水色の単色に。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "unit_royal": {
+      "slot": "unit",
+      "name": "王家の兵",
+      "rarity": "rare",
+      "price": 800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "兵士が気高い紫の単色に。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "unit_gold": {
+      "slot": "unit",
+      "name": "黄金の兵",
+      "rarity": "epic",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "兵士が金色に輝く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "unit_shadow": {
+      "slot": "unit",
+      "name": "影の兵",
+      "rarity": "legendary",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "兵士が影のように黒く。",
+      "filters": {
+        "blue": "grayscale(1) contrast(1.3) brightness(.62) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) contrast(1.3) brightness(.62) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "castle_crimson": {
+      "slot": "castle",
+      "name": "紅蓮の城",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "城が赤く染まる。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95)"
+      }
+    },
+    "castle_forest": {
+      "slot": "castle",
+      "name": "森の城",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "城が緑に包まれる。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95)"
+      }
+    },
+    "castle_frost": {
+      "slot": "castle",
+      "name": "氷の城",
+      "rarity": "rare",
+      "price": 800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "城が氷のように澄む。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15)"
+      }
+    },
+    "castle_gold": {
+      "slot": "castle",
+      "name": "黄金の城",
+      "rarity": "epic",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "城が金色に輝く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05)",
+        "orange": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05)"
+      }
+    },
+    "castle_shadow": {
+      "slot": "castle",
+      "name": "影の城",
+      "rarity": "legendary",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "城が闇に沈む。",
+      "filters": {
+        "blue": "grayscale(1) contrast(1.3) brightness(.62)",
+        "orange": "grayscale(1) contrast(1.3) brightness(.62)"
+      }
+    },
+    "back_crimson": {
+      "slot": "cardBack",
+      "name": "紅のカード裏",
+      "rarity": "common",
+      "price": 100,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "カードの裏が赤に。",
+      "filter": "hue-rotate(150deg) saturate(1.2)"
+    },
+    "back_forest": {
+      "slot": "cardBack",
+      "name": "緑のカード裏",
+      "rarity": "common",
+      "price": 100,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "カードの裏が緑に。",
+      "filter": "hue-rotate(80deg)"
+    },
+    "back_royal": {
+      "slot": "cardBack",
+      "name": "紫のカード裏",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "カードの裏が紫に。",
+      "filter": "hue-rotate(220deg) saturate(1.1)"
+    },
+    "back_gold": {
+      "slot": "cardBack",
+      "name": "金のカード裏",
+      "rarity": "epic",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "カードの裏が金色に。",
+      "filter": "sepia(.9) saturate(2.2) brightness(1.15)"
+    },
+    "fx_emerald": {
+      "slot": "attackFx",
+      "name": "翠の魔力",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔法の光が緑に。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fx_violet": {
+      "slot": "attackFx",
+      "name": "紫電の魔力",
+      "rarity": "rare",
+      "price": 800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔法の光が紫に。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fx_azure": {
+      "slot": "attackFx",
+      "name": "蒼の魔力",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔法の光が青に。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fx_gold": {
+      "slot": "attackFx",
+      "name": "黄金の魔力",
+      "rarity": "epic",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "魔法の光が金色に。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "win_gold": {
+      "slot": "winFx",
+      "name": "黄金の紙ふぶき",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "勝利の紙ふぶきが金色に。",
+      "colors": [
+        "#ffd54f",
+        "#fff3b0",
+        "#f6ca69",
+        "#e0a82e"
+      ]
+    },
+    "win_sakura": {
+      "slot": "winFx",
+      "name": "桜吹雪",
+      "rarity": "rare",
+      "price": 800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "勝利の紙ふぶきが桜色に。",
+      "colors": [
+        "#ffc1d6",
+        "#ff8fb3",
+        "#fff0f5",
+        "#f7a8c4"
+      ]
+    },
+    "win_aurora": {
+      "slot": "winFx",
+      "name": "オーロラ",
+      "rarity": "epic",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "勝利の紙ふぶきが極光の色に。",
+      "colors": [
+        "#7af0c8",
+        "#6ab8ff",
+        "#b690ff",
+        "#fff"
+      ]
+    },
+    "icon_paladin": {
+      "slot": "icon",
+      "name": "アイコン：聖騎士",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "プロフィールのアイコン（聖騎士）。",
+      "image": "assets/units/paladin-blue.png"
+    },
+    "icon_giant": {
+      "slot": "icon",
+      "name": "アイコン：巨人",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "プロフィールのアイコン（巨人）。",
+      "image": "assets/units/giant-blue.png"
+    },
+    "icon_scout": {
+      "slot": "icon",
+      "name": "アイコン：斥候騎兵",
+      "rarity": "common",
+      "price": 100,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "プロフィールのアイコン（斥候騎兵）。",
+      "image": "assets/units/scout-blue.png"
+    },
+    "icon_sniper": {
+      "slot": "icon",
+      "name": "アイコン：狙撃手",
+      "rarity": "rare",
+      "price": 800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "プロフィールのアイコン（狙撃手）。",
+      "image": "assets/units/sniper-blue.png"
+    },
+    "icon_sage": {
+      "slot": "icon",
+      "name": "アイコン：賢者",
+      "rarity": "epic",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "プロフィールのアイコン（賢者）。",
+      "image": "assets/units/sage-blue.png"
+    },
+    "icon_dragon-knight": {
+      "slot": "icon",
+      "name": "アイコン：竜騎士",
+      "rarity": "legendary",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "プロフィールのアイコン（竜騎士）。",
+      "image": "assets/units/dragon-knight-blue.png"
+    },
+    "title_rookie": {
+      "slot": "title",
+      "name": "称号：駆け出しの城主",
+      "rarity": "common",
+      "price": 100,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "プロフィールに出る称号。",
+      "text": "駆け出しの城主"
+    },
+    "title_hunter": {
+      "slot": "title",
+      "name": "称号：魔物狩り",
+      "rarity": "uncommon",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "プロフィールに出る称号。",
+      "text": "魔物狩り"
+    },
+    "title_wall": {
+      "slot": "title",
+      "name": "称号：鉄壁の守り手",
+      "rarity": "rare",
+      "price": 800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "プロフィールに出る称号。",
+      "text": "鉄壁の守り手"
+    },
+    "title_lucky": {
+      "slot": "title",
+      "name": "称号：運命に愛された者",
+      "rarity": "epic",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "プロフィールに出る称号。",
+      "text": "運命に愛された者"
+    },
+    "title_legend": {
+      "slot": "title",
+      "name": "称号：伝説の城主",
+      "rarity": "legendary",
+      "price": null,
+      "gacha": true,
+      "world": "kingdom",
+      "desc": "プロフィールに出る称号。",
+      "text": "伝説の城主"
+    }
+  }
+}

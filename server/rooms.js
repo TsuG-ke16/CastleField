@@ -63,7 +63,9 @@ export class Room {
    * @param {() => () => number} makeRng 試合ごとに乱数を作る関数
    * @param {{ cpuDelayMs?: number }} [options] cpuDelayMs：CPU が1手ごとに待つ時間（0 ならすぐ動く。テスト用）
    */
-  constructor(roomId, data, makeRng, { cpuDelayMs = 700, onMatchEnd = null, ranked = null, onRankedVoid = null } = {}) {
+  constructor(roomId, data, makeRng, { cpuDelayMs = 700, onMatchEnd = null, ranked = null, onRankedVoid = null, cosmeticsOf = null } = {}) {
+    /** アカウントの装備中の見た目（スキン）を、席に結びつける。相手にも見える */
+    this.cosmeticsOf = cosmeticsOf;
     /** ランク戦の部屋なら { cfg, ... }。設定は固定（1対1・最初に城を落とした人の勝ち・コスト制）で、始める・設定を変える・もう1回はできない */
     this.ranked = ranked;
     this.onRankedVoid = onRankedVoid;
@@ -113,6 +115,7 @@ export class Room {
     if (this.game) return { ok: false, reason: 'この部屋は試合中です。終わって部屋に戻るまで待ってください' };
     if (this.seats.length >= this.capacity) return { ok: false, reason: 'この部屋はもう満員です' };
     const seat = this.addSeat({ name, token: randomBytes(16).toString('hex'), cpu: null });
+    seat.cosmetics = userId && this.cosmeticsOf ? this.cosmeticsOf(userId) : {};
     seat.userId = userId; // ログイン中のアカウント（なければ null）。戦績の記録に使う
     if (!this.host) this.host = seat;
     this.lastActive = Date.now();
@@ -761,6 +764,7 @@ export class Room {
         playerId: s.playerId,
         name: s.name,
         connected: s.cpu ? true : s.clients.size > 0,
+        cosmetics: s.cosmetics ?? {},
         left: s.left,
         cpu: s.cpu,
         castle: s.castle,

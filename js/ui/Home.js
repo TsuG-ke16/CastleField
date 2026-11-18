@@ -35,9 +35,9 @@ const MENU = [
   { id: 'deck', label: 'デッキ編成', icon: 'deck', go: 'deck' },
   { id: 'catalog', label: 'カード図鑑', icon: 'catalog', go: 'catalog' },
   { id: 'profile', label: 'プロフィール', icon: 'profile', go: 'profile' },
-  { id: 'shop', label: 'ショップ', icon: 'shop', soon: 'Phase 5' },
-  { id: 'gacha', label: 'ガチャ', icon: 'gacha', soon: 'Phase 5' },
-  { id: 'skin', label: 'スキン', icon: 'skin', soon: 'Phase 5' },
+  { id: 'shop', label: 'ショップ', icon: 'shop', go: 'shop' },
+  { id: 'gacha', label: 'ガチャ', icon: 'gacha', go: 'gacha' },
+  { id: 'skin', label: 'スキン', icon: 'skin', go: 'skin' },
   { id: 'mission', label: 'ミッション', icon: 'mission', soon: 'Phase 6' },
   { id: 'ranking', label: 'ランキング', icon: 'ranking', go: 'ranking' },
   { id: 'settings', label: '設定', icon: 'settings', go: 'settings' },
@@ -50,8 +50,8 @@ export class Home {
    * @param {() => void} o.onDeck  @param {() => void} o.onCatalog  @param {() => void} o.onSettings
    * @param {() => void} o.onProfile
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, toast = () => {} }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked, onRanking, onFriends, toast });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onSkin = () => {}, toast = () => {} }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onSkin, toast });
     this.data = null;
     this.mode = 'solo';
     try { const m = localStorage.getItem(MODE_KEY); if (m in MODES) this.mode = m; } catch { /* 保存できなくても動く */ }
@@ -129,10 +129,10 @@ export class Home {
     const bar = this.part('xpbar');
     bar.setAttribute('aria-valuenow', String(pct)); bar.setAttribute('aria-valuemin', '0'); bar.setAttribute('aria-valuemax', '100');
     bar.title = lv ? (lv.maxed ? '最大レベル' : `次のレベルまで ${lv.xpForNext - lv.xpIntoLevel} 経験値`) : '';
-    const icon = d?.icons?.find((i) => i.id === d.icon);
+    const iconSrc = d?.iconImage ?? d?.icons?.find((i) => i.id === d.icon)?.image;
     const av = this.part('avatar');
     av.replaceChildren();
-    if (icon) { const img = new Image(); img.src = icon.image; img.alt = ''; av.append(img); } else av.textContent = [...(u?.displayName ?? '?')][0];
+    if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); } else av.textContent = [...(u?.displayName ?? '?')][0];
     this.part('coins').querySelector('b').textContent = String(d?.coins ?? 0);
     this.part('dot').hidden = !(d?.rewardsAvailable > 0 || this.socialCount > 0);
     const sum = d?.rank;
@@ -202,6 +202,9 @@ export class Home {
     if (act === 'profile') return this.onProfile();
     if (act === 'rank') return this.onRanked();
     if (act === 'friend') return this.onFriends();
+    if (act === 'shop') return this.onShop();
+    if (act === 'gacha') return this.onGacha();
+    if (act === 'skin') return this.onSkin();
     if (act === 'ranking') return this.onRanking();
     if (act === 'notice') {
       const n = this.data?.rewardsAvailable ?? 0;

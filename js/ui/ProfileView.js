@@ -78,10 +78,10 @@ export class ProfileView {
     p('name').textContent = pf.displayName;
     p('title').textContent = pf.title;
     p('lv').textContent = `Lv.${pf.level}`;
-    const icon = (homeJson?.icons ?? this.icons ?? []).find((i) => i.id === pf.icon);
     if (homeJson?.icons) this.icons = homeJson.icons;
+    const iconSrc = pf.iconImage ?? (this.icons ?? []).find((i) => i.id === pf.icon)?.image;
     const av = p('avatar'); av.replaceChildren();
-    if (icon) { const img = new Image(); img.src = icon.image; img.alt = ''; av.append(img); }
+    if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); }
     const lv = homeJson?.level;
     p('xp').style.width = lv ? `${lv.maxed ? 100 : Math.round((lv.xpIntoLevel / Math.max(1, lv.xpForNext)) * 100)}%` : '0%';
     p('xptext').textContent = lv ? (lv.maxed ? '最大レベル' : `次のレベルまで ${lv.xpForNext - lv.xpIntoLevel} 経験値`) : '';

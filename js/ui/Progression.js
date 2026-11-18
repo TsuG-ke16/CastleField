@@ -21,6 +21,7 @@ export async function showMatchProgress(root, { reducedMotion = false, ranked = 
   const bar = document.createElement('span'); bar.className = 'home-xp';
   const fill = document.createElement('i'); bar.append(fill);
   card.append(gain, bar, lv);
+  if (last.coinsGained > 0) { const c = document.createElement('p'); c.className = 'mp-coins'; c.textContent = `+${last.coinsGained} コイン`; gain.after(c); }
   if (ranked) {
     try {
       const rc = (await account.api('GET', '/api/ranked/last')).json?.last;

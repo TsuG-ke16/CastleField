@@ -60,6 +60,7 @@ export class SocialView {
     this.box.hidden = false;
     this.box.querySelector('.social-close').focus({ preventScroll: true });
     if (!account.user || account.user.kind !== 'member') { this.renderGuest(); return; }
+    this.part('body').replaceChildren(this.el('p', 'social-empty', '読み込み中…')); // 古い表示を残さない
     await this.refresh();
     clearInterval(this.poll);
     this.poll = setInterval(() => (this.box.hidden ? clearInterval(this.poll) : this.refresh()), POLL_MS);

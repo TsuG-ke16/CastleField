@@ -33,6 +33,8 @@ import { Home } from './ui/Home.js';
 import { ProfileView } from './ui/ProfileView.js';
 import { RankedView, RankingView } from './ui/RankedView.js';
 import { SocialView } from './ui/SocialView.js';
+import { CollectionView } from './ui/CollectionView.js';
+import { Cosmetics } from './ui/Cosmetics.js';
 import { showMatchProgress } from './ui/Progression.js';
 import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
@@ -143,7 +145,9 @@ let cpu = null;            // { id, level, strategy, rng }（ひとりで遊ぶ�
 const SESSION_KEY = 'cf-online'; // つなぎ直し用に、部屋の鍵をこのタブに覚えておく（sessionStorage）
 let roomView;
 let home;
-let rankedView;                   // ホーム画面（アカウント機能があるサーバーのとき、タイトルの前に出る）
+let rankedView;
+let cosmetics = new Cosmetics(null); // スキン（見た目だけ）。boot() でカタログを読む
+let collectionView;                   // ホーム画面（アカウント機能があるサーバーのとき、タイトルの前に出る）
 let roomPassphrase = '';
 let room = null;           // サーバーから届いた部屋の状態
 let batches = [];          // 届いた「イベントの列 + 状態」。順番に見せる
@@ -214,6 +218,7 @@ async function boot() {
   }
 
   setLoading(0.05, 'データを読み込みました');
+  cosmetics = new Cosmetics(await loadOptionalJson('data/shop.json')); // スキンの一覧（なくても標準の見た目で遊べる）
   // 画像を先に読み込む（読み込み中に代わりの絵が見えないように）。進み具合は読み込み画面に出す
   await preloadAssets(8000, (done, total) => setLoading(0.05 + 0.9 * done / total, `タイトルを準備中… ${done} / ${total}`), {phase:'title'});
   setLoading(1, 'はじめます');
@@ -261,6 +266,7 @@ async function boot() {
     onPlay: playCard, onDiscard: discard, onNotice: toast,
   });
   anim = new Animations({ renderer, handView, cards, rules, monsters, upgrades, rarities });
+  renderer.cosmetics = cosmetics; anim.cosmetics = cosmetics;
   if (stamps?.length) chat = new ChatView({ stamps, button: $('chat-open'), root: el.app, maxLength: CHAT_MAX_LENGTH });
   targeting = new Targeting({ renderer, handView, onChoose: (cardId, target) => doPlay(cardId, target) });
   if (upgrades && Object.keys(upgrades).length) {
@@ -330,6 +336,9 @@ async function boot() {
     onRanked: () => rankedView.open(),
     onRanking: () => rankingView.open(),
     onFriends: () => socialView.open(),
+    onShop: () => collectionView.open('shop'),
+    onGacha: () => collectionView.open('gacha'),
+    onSkin: () => collectionView.open('collection'),
   });
   // ランクマッチ：相手が見つかったら、サーバーが作った部屋の鍵で入る（ページを読み直したときと同じつなぎ方）
   rankedView = new RankedView({
@@ -356,12 +365,24 @@ async function boot() {
       joinOnline();
     },
   });
+  // スキン・ショップ・ガチャ。装備は対戦の盤面に反映する
+  const loadMine = async () => {
+    if (!account.enabled || !account.user) return;
+    try { const r = (await account.api('GET', '/api/collection')).json; if (r?.ok) { cosmetics.setMine(r.equipped); cosmetics.refresh(el.app); } } catch { /* 標準の見た目 */ }
+  };
+  collectionView = new CollectionView({
+    toast,
+    reducedMotion: () => UI_CONFIG.reducedMotion,
+    onEquipChanged: (equipped) => { cosmetics.setMine(equipped); loadMine(); },
+    onBalance: () => home.refresh(),
+  });
   let socialStarted = false;
   let homeOpened = false;
   account.onChange(() => {
     $('title-account').hidden = !account.enabled;
     $('title-home').hidden = !home.available();
     if (!socialStarted && account.user?.kind === 'member') { socialStarted = true; socialView.refresh(); }
+    if (account.enabled && account.user && !cosmetics.loaded) { cosmetics.loaded = true; loadMine(); }
     // 起動してアカウントの準備ができたら、ホームを入口にする（タイトルの最初の画面にいるときだけ）
     if (!homeOpened && home.available() && !el.title.hidden && !el.titleMain.hidden && document.documentElement.classList.contains('at-title')) { homeOpened = true; el.title.hidden = true; home.open(); }
   });
@@ -758,6 +779,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
 
   // 開始前の状態を表示用に覚えてから start() する。p1 の turnStarted で最初の目隠しが出る
   viewerId = cpu ? cpu.humanId : null;
+  cosmetics.setLocal(cpu ? [cpu.humanId] : []); // 自分のスキン（CPU・同じ端末のほかの人は標準）
   stopChat();
   if (cpu) startLocalChat();
   matchStats.begin(game.getState(viewerId));
@@ -971,6 +993,7 @@ function leaveOnline() {
 
 function onRoom(r) {
   room = r;
+  cosmetics.setFromRoom(r.players, r.you ?? viewerId); cosmetics.refresh(el.app); // 部屋の席ごとのスキン（相手にも見える）
   if (r.you) { viewerId = r.you; session.playerId = r.you; saveOnlineSession(session); }
   setPlayerNames(Object.fromEntries(r.players.map((p) => [p.playerId, p.name])));
   if (!r.started) {
@@ -1667,9 +1690,9 @@ async function showResult(winner) {
   resultImage.alt = '';
   resultImage.src = `assets/ui/result-${won ? 'victory' : 'defeat'}.png`;
   el.resultPic.replaceChildren(resultImage);
-  const colors = winner === 'p1'
+  const colors = cosmetics.winColors(winner) ?? (winner === 'p1'
     ? ['#4da3e8', '#bfe3fb', '#ffd93b', '#ffffff']
-    : ['#f5923e', '#ffd9b0', '#ffd93b', '#ffffff'];
+    : ['#f5923e', '#ffd9b0', '#ffd93b', '#ffffff']);
   stopCelebration();
   if (won && !UI_CONFIG.reducedMotion) {
     el.result.classList.remove('celebration-done');

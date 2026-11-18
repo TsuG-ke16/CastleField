@@ -1,0 +1,37 @@
+{
+  "_note": "ガチャの設定（確率・価格・救済はすべて仮。サーバーだけが読む）。景品は shop.json の items のうち gacha を true にしたもの（price が null のもの）に加えて、価格のあるものも出る",
+  "banners": {
+    "standard": {
+      "name": "ふつうのガチャ",
+      "world": "kingdom",
+      "costSingle": 100,
+      "costTen": 900,
+      "rates": {
+        "common": 60,
+        "uncommon": 25,
+        "rare": 11,
+        "epic": 3.5,
+        "legendary": 0.5
+      },
+      "includePriced": true,
+      "pity": {
+        "epicAt": 40,
+        "tenGuaranteeRarity": "rare"
+      }
+    }
+  },
+  "duplicatePoints": {
+    "common": 3,
+    "uncommon": 8,
+    "rare": 20,
+    "epic": 60,
+    "legendary": 150
+  },
+  "exchangeCost": {
+    "common": 20,
+    "uncommon": 50,
+    "rare": 120,
+    "epic": 350,
+    "legendary": 800
+  }
+}

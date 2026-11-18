@@ -10,10 +10,11 @@ import { Progress } from './progress.js';
 import { Ranking } from './ranking.js';
 import { Matchmaker } from './matchmaking.js';
 import { Social } from './social.js';
+import { Economy } from './economy.js';
 import { checkCostDeck } from '../../js/game/Setup.js';
 import { randomInt } from 'node:crypto';
 
-export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/ranked/', '/api/ranking', '/api/social/', '/api/friends/', '/api/block', '/api/unblock', '/api/invites/', '/api/party/', '/api/level-rewards', '/healthz'];
+export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/ranked/', '/api/ranking', '/api/social/', '/api/friends/', '/api/block', '/api/unblock', '/api/invites/', '/api/party/', '/api/shop', '/api/collection', '/api/gacha/', '/api/wallet', '/api/level-rewards', '/healthz'];
 const isAccountPath = (p) => ACCOUNT_PREFIXES.some((x) => p === x || (x.endsWith('/') && p.startsWith(x)) || p.startsWith(`${x}/`));
 
 const AUTH_ERRORS = {
@@ -23,14 +24,16 @@ const AUTH_ERRORS = {
   linked: 'このアカウントは、別のキャッスルフィールドのアカウントに連携済みです',
 };
 
-export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, progression, profile, ranks, seasons, data = null, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
+export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, progression, profile, ranks, seasons, shop = null, gacha = null, data = null, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
   const acc = accounts ?? new Accounts(db, { cards, now });
   const publicUrl = (env.CF_PUBLIC_URL ?? '').replace(/\/+$/, '');
   const trustProxy = env.CF_TRUST_PROXY === '1';
   const forceSecure = env.CF_SECURE_COOKIES === '1' || publicUrl.startsWith('https://');
   const progress = new Progress(db, acc, { progression, profile, now });
   const ranking = new Ranking(db, { ranks, seasons, now });
+  const economy = shop && gacha ? new Economy({ db, catalog: shop, gacha, now, matchCoins: progression?.matchCoins }) : null;
   progress.ranking = ranking;
+  progress.economy = economy;
   /** @type {import('../rooms.js').Lobby|null} */
   let lobby = null;
   const social = new Social({ db, accounts: acc, progress, now, isBusy: (u) => !!lobby?.activeSeatOfUser(u) });
@@ -205,6 +208,10 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
         const out = await rankedRoutes(req, res, url, path, session, body);
         if (out) return true;
       }
+      if (/^\/api\/(shop|collection|gacha|wallet)(\/|$)/.test(path)) {
+        const out = economyRoutes(req, res, url, path, session.userId, body);
+        if (out) return true;
+      }
       if (/^\/api\/(social|friends|invites|party)\//.test(path) || path === '/api/block' || path === '/api/unblock') {
         const out = socialRoutes(req, res, path, session.userId, body);
         if (out) return true;
@@ -226,6 +233,28 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       log.error('accounts', err);
       if (!res.headersSent) fail(req, res, 500, 'サーバーでエラーが起きました');
       return true;
+    }
+  }
+
+  /** ショップ・ガチャ・所持品・装備・通貨（ゲストも使える。連携するとデータは引き継がれる） */
+  function economyRoutes(req, res, url, path, uid, body) {
+    const ok = (data = {}) => { send(req, res, 200, { ok: true, ...data }); return true; };
+    if (!economy) { fail(req, res, 503, 'ショップはこのサーバーでは使えません'); return true; }
+    if (req.method === 'GET') {
+      if (path === '/api/shop') return ok(economy.shop(uid));
+      if (path === '/api/wallet') return ok({ ...economy.balance(uid), ledger: economy.ledger(uid) });
+      if (path === '/api/collection') return ok({ owned: economy.ownedIds(uid), equipped: economy.equippedOf(uid), slots: economy.catalog.slots });
+      if (path === '/api/gacha/info') return ok(economy.gachaInfo(uid, url.searchParams.get('banner') ?? 'standard'));
+      if (path === '/api/gacha/history') return ok({ history: economy.history(uid, Number(url.searchParams.get('limit')) || 30) });
+      return false;
+    }
+    if (req.method !== 'POST') return false;
+    switch (path) {
+      case '/api/shop/buy': return ok(economy.buy(uid, body.itemId));
+      case '/api/collection/equip': return ok({ equipped: economy.equip(uid, body.slot, body.itemId ?? null) });
+      case '/api/gacha/pull': return ok(economy.pull(uid, body.banner ?? 'standard', body.count));
+      case '/api/gacha/exchange': return ok(economy.exchange(uid, body.itemId, body.banner ?? 'standard'));
+      default: return false;
     }
   }
 
@@ -328,5 +357,5 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     return r;
   });
 
-  return { handle, userIdOf, onMatchEnd, attachLobby, social, ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
+  return { handle, userIdOf, onMatchEnd, attachLobby, social, economy, cosmeticsOf: (u) => economy?.cosmeticsOf(u) ?? {}, ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
 }

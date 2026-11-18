@@ -214,6 +214,59 @@ export const MIGRATIONS = [
       CREATE INDEX social_log_user ON social_log(user_id, kind, at);
     `,
   },
+  {
+    id: 5,
+    name: 'economy-collection',
+    sql: `
+      ALTER TABLE wallets ADD COLUMN exchange_points INTEGER NOT NULL DEFAULT 0 CHECK (exchange_points >= 0);
+      -- 通貨の出入りの記録。(user, reason, ref) が1つしかないので、同じ報酬は二重に付かない
+      CREATE TABLE coin_ledger (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        currency      TEXT NOT NULL DEFAULT 'free_coins',
+        delta         INTEGER NOT NULL,
+        reason        TEXT NOT NULL,
+        ref           TEXT NOT NULL,
+        balance_after INTEGER NOT NULL,
+        at            INTEGER NOT NULL,
+        UNIQUE (user_id, currency, reason, ref)
+      );
+      CREATE INDEX coin_ledger_user ON coin_ledger(user_id, at);
+      CREATE TABLE inventory (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        item_id       TEXT NOT NULL,
+        source        TEXT NOT NULL,
+        acquired_at   INTEGER NOT NULL,
+        PRIMARY KEY (user_id, item_id)
+      );
+      CREATE TABLE equipped (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        world         TEXT NOT NULL DEFAULT 'kingdom',
+        slot          TEXT NOT NULL,
+        item_id       TEXT NOT NULL,
+        PRIMARY KEY (user_id, world, slot)
+      );
+      CREATE TABLE gacha_state (
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        banner_id     TEXT NOT NULL,
+        since_epic    INTEGER NOT NULL DEFAULT 0,
+        pulls_total   INTEGER NOT NULL DEFAULT 0,
+        PRIMARY KEY (user_id, banner_id)
+      );
+      CREATE TABLE gacha_pulls (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        banner_id     TEXT NOT NULL,
+        pull_group    TEXT NOT NULL,
+        item_id       TEXT NOT NULL,
+        rarity        TEXT NOT NULL,
+        duplicate     INTEGER NOT NULL DEFAULT 0,
+        points_gained INTEGER NOT NULL DEFAULT 0,
+        at            INTEGER NOT NULL
+      );
+      CREATE INDEX gacha_pulls_user ON gacha_pulls(user_id, id);
+    `,
+  },
 ];
 
 export class Db {

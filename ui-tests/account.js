@@ -28,9 +28,10 @@ try {
   // アカウントのあるサーバーでは、ホーム画面が入口
   await page.locator('#home:not([hidden])').waitFor({ timeout: 8000 });
   assert.equal(await page.locator('#home .home-tile').count(), 12);
-  assert.ok(await page.locator('#home .home-tile[data-id=shop]').isDisabled()); // 未実装は押せない（準備中）
+  assert.ok(await page.locator('#home .home-tile[data-id=mission]').isDisabled()); // 未実装は押せない（準備中）
   assert.ok(await page.locator('#home .home-tile[data-id=rank]').isEnabled()); // ランクマッチは使える（Phase 3）
   assert.ok(await page.locator('#home .home-tile[data-id=friend]').isEnabled()); // フレンドも（Phase 4）
+  for (const id of ['shop', 'gacha', 'skin']) assert.ok(await page.locator(`#home .home-tile[data-id=${id}]`).isEnabled()); // ショップ・ガチャ・スキン（Phase 5）
   assert.match(await page.locator('#home [data-part=name]').textContent(), /^ゲスト\d{4}$/);
   assert.match(await page.locator('#home [data-part=lv]').textContent(), /Lv\.1/);
   await page.screenshot({ path: resolve(artifacts, 'home.png') });

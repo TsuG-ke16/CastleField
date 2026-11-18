@@ -68,7 +68,7 @@ try {
   await B.click('#social .social-close');
   // A：フレンド一覧に B がオンラインで出る → 招待
   await A.click('#home .home-tile[data-id=friend]');
-  await A.locator('#social .social-row', { hasText: 'ボブ' }).waitFor({ timeout: 8000 });
+  await A.locator('#social .social-row .social-status', { hasText: 'ボブ' }).or(A.locator('#social .social-row', { hasText: 'ボブ' }).locator('.social-status')).waitFor({ timeout: 8000 });
   assert.match(await A.locator('#social .social-row', { hasText: 'ボブ' }).textContent(), /オンライン/);
   await A.waitForTimeout(600);
   await A.screenshot({ path: resolve(artifacts, 'social-friends.png') });
