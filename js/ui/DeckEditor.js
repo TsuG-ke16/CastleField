@@ -109,6 +109,8 @@ export class DeckEditor {
       this.q('.deck-manage-status').textContent = enabled ? '傾きで光が動きます' : 'カードをなぞると光が動きます';
     });
     this.q('.deck-name-input').addEventListener('input', event => { this.draft.name = event.target.value; });
+    // 保存済みのデッキは、名前を変えたらすぐ保存する（カードの編集中の変更は、保存ボタンまで保存しない）
+    this.q('.deck-name-input').addEventListener('change', () => this.saveName());
     this.q('.deck-preset').addEventListener('change', event => {
       if (!event.target.value) return;
       this.draft.list = { ...this.decks[event.target.value].cards };
@@ -342,6 +344,20 @@ export class DeckEditor {
     this.onChange?.({ slot: this.slot, list: { ...this.draft.list } });
   }
 
+  /** 保存済みのデッキの名前だけを、すぐ保存する（中身は、前に保存した内容のまま） */
+  saveName() {
+    const saved = loadDecks().slots[this.slot];
+    if (!saved) return;
+    const name = this.draft.name.trim().slice(0, 24) || `デッキ ${this.slot + 1}`;
+    this.draft.name = name;
+    this.q('.deck-name-input').value = name;
+    if (name === saved.name) return;
+    const ok = saveMyDeck(this.slot, name, saved.list);
+    this.refreshSlots();
+    this.q('.deck-manage-status').textContent = ok ? '名前を保存しました' : 'このページでだけ名前が変わりました';
+    this.onChange?.({ slot: this.slot, list: { ...saved.list } });
+  }
+
   duplicate() {
     const openSlot = loadDecks().slots.findIndex((deck, slot) => !deck && !this.drafts.has(slot));
     const check = this.check();
@@ -435,6 +451,7 @@ export class DeckEditor {
       const add = document.createElement('button');
       add.type = 'button';
       add.className = 'deck-add';
+      add.dataset.zoom = type; // 長押しで拡大（CardZoom.js）
       const gem = document.createElement('span');
       gem.className = 'deck-gem';
       gem.style.setProperty('--rarity', this.rarities[def.rarity]?.color ?? '#9aa3ad');

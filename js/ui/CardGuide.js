@@ -129,7 +129,7 @@ export class CardGuide {
       results.append(node('h3', 'guide-group-title', `${rarity.name} · ${members.length}種`));
       const grid = node('div', 'guide-grid');
       for (const [type, def] of members) {
-        const button = node('button', 'guide-card'); button.type = 'button'; button.dataset.type = type;
+        const button = node('button', 'guide-card'); button.type = 'button'; button.dataset.type = type; button.dataset.zoom = type; // 長押しで拡大（CardZoom.js）
         button.style.setProperty('--rarity', rarity.color);
         const art = node('div', 'guide-art'); mountMiniCard(art, type, def, this.rarities);
         const short = node('span', 'guide-short');

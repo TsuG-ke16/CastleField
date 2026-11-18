@@ -30,6 +30,7 @@ import { DeckEditor } from './ui/DeckEditor.js';
 import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
+import { initCardZoom } from './ui/CardZoom.js';
 import { checkCostDeck } from './game/Setup.js';
 import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
@@ -241,6 +242,7 @@ async function boot() {
     onEditDeck: openDeckEditor, savedDecks, presetDeck, previewDeck,
   });
   initHolograms(el.app);
+  initCardZoom({ root: el.app, cards, rarities, rules });
   $('back-to-room').addEventListener('click', async () => {
     const res = await session?.act('backToRoom');
     if (!res?.ok) toast(res?.reason ?? '部屋に戻れませんでした');

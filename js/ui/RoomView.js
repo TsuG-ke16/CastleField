@@ -55,6 +55,13 @@ export class RoomView {
 
   refreshDecks(saved) {
     if (this.el.hidden || !this.room || this.room.started) return;
+    // 部屋で選んだマイデッキの名前は、このタブに覚えてある。名前が変わったら、覚えている名前も直す
+    const kept = this.ownSelection();
+    const latest = kept && this.savedDecks()[kept.slot];
+    if (latest && latest.name !== kept.name) {
+      this.customSelection = { ...kept, name: latest.name };
+      try { sessionStorage.setItem(ROOM_DECK_KEY, JSON.stringify(this.customSelection)); } catch { /* ストレージなし */ }
+    }
     const me = this.room.players.find(player => player.playerId === this.room.you);
     if (me?.costDeck === 'custom' && saved?.list && this.ownSelection()?.slot === saved.slot) {
       void this.useMyDeck(saved.slot);

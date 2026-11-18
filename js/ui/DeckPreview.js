@@ -35,6 +35,7 @@ export function renderDeckStrip(root, list, cards, rarities, onRemove) {
     const name = Object.hasOwn(cards, type) ? cards[type].name : type;
     entry.className = 'deck-strip-entry';
     entry.dataset.type = type;
+    entry.dataset.zoom = type; // 長押しで拡大（CardZoom.js）
     entry.title = `${name} ×${count}`;
     if (onRemove) {
       entry.type = 'button';
