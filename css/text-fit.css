@@ -1,0 +1,45 @@
+/* 文字のはみ出し・重なりを直す（いちばん最後に読み込む。ほかの CSS は変えない） */
+
+/* 手札：「✦ 合成」の札が、カード下の攻撃・HP・速さの数字に重ならないよう、絵の右下に置く */
+#app #hand .card.can-fuse:not(.discard-pick)::after {
+  inset: auto 3px 35% auto;
+}
+
+/* タイトル下の4つのボタン：「デッキ編成」が枠からはみ出さないよう、文字を少し詰める */
+#app #title-main .title-links > button {
+  min-width: 0;
+  padding-inline: 2px;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+/* 4つ並べると枠の飾りの分だけ文字が入らない画面があるので、どの幅でも2列×2段にして、文字を1行で収める */
+#app #title-main .title-links:has(#title-deck-preview:not([hidden])) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+#app #title-main .title-links:has(#title-deck-preview:not([hidden])) > button { font-size: 13px; letter-spacing: 0; }
+
+/* 手札の下の数字（攻撃・HP・速さ）：3つ並ぶと右がはみ出すので、すき間とアイコンを詰める */
+#app #hand .card .card-short { gap: 1px; letter-spacing: -.03em; white-space: nowrap; justify-content: center; }
+#app #hand .card .card-short span { gap: 0; }
+#app #hand .card .card-short .ic,
+#app #hand .card .card-short .asset-art { width: 10px; height: 10px; }
+
+/* 遊び方を選ぶボタンの説明・遊び方の手順：最後の1文字だけが次の行に落ちないよう、行の長さをそろえる */
+#app .mode-choice small,
+#app .levels-title,
+#app .tutorial-text,
+#app #message { text-wrap: balance; }
+
+/* デッキの帯（タイトルの見本・編成画面）：小さいカードの名前は読めず、となりのカードにはみ出すので出さない（名前は長押し・タップの説明で見られる） */
+#app .deck-strip .mini-card-name,
+#app .deck-strip .card-name,
+#app .deck-strip-card .mini-card-name { display: none; }
+#app .deck-strip-entry { overflow: visible; }
+
+/* 遊び方の手順（1. カードを選ぶ など）：途中で折り返さず1行で読めるよう、手順ごとに1段ずつ並べる */
+#app .help-flow { grid-template-columns: 1fr; }
+#app .help-flow > span { white-space: nowrap; text-align: left; padding-inline: 10px; }
+@media (min-width: 520px) {
+  #app .help-flow { grid-template-columns: repeat(3, max-content); justify-content: center; }
+}
+
