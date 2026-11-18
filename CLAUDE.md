@@ -1087,7 +1087,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ### 天候（`new Game({ weather })`。`weather.json` を渡さなければ天候なし）
 - 周回の始め（`roundStarted` のすぐあと）に、天候が切り替わる。`rules.weatherFirstRound`（仮：2）周目から。ふつうの天気のときは、`rules.weatherChangeChance`（仮：0.6）の確率で新しい天候になる（`weight` の重みで選ぶ）。天候は `rounds: [最短, 最長]` 周続き、終わったらふつうの天気に戻る。`weatherChangeChance` が 0 なら乱数を使わず天候は出ない
-- **天候の呪文**（`weatherCall`・`effect: "changeWeather"`・スペシャル・メインを使う）：今と違う天候にランダムに変える（`weatherChanged` の `cause` は `"card"`）。出る割合はスペシャルの中で適応と 2:1（適応の排出率は約0.82% → 約0.55%）。`weather` を渡していないと出せない
+- **天候の呪文**（`weatherCall`・`effect: "changeWeather"`・スペシャル・メインを使う）：今と違う天候にランダムに変える（`weatherChanged` の `cause` は `"card"`）。出る割合はスペシャルの中で適応と 2:1（適応の排出率は約0.82% → 約0.55%）。`weather` を渡していないと出せない。ほかに変えられる天候がないとき（定義が今の天候1つだけ）も出せない。呪文で `weatherFirstRound` より前に始めた天候も、周回ごとに減って終わる
 - 天候の効果（`weather.json` のキー）
 
 | 天候 | キー | 効果 |
@@ -1109,7 +1109,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ### 倒した魔物は駒になる
 - 魔物のとどめを刺した人の手札に、その魔物の**兵士カード**（`cards.json` の `beast_<魔物の種類>`、`monster: "<種類>"`）が1枚入る（ごほうびのカードとは別。`monsterDefeated` に `pieceType`、このあと `cardDrawn`）。兵士カードと同じように、兵士の枠で出せる
-- 魔物の駒は HP・攻撃が魔物と同じ（`monsters.json` の値）、速さは1〜2。合成できない（`fuseTo` なし）。山札・ごほうび・入手券では出ない（`weight: 0`）。魔物は放置で強くなる（`monsterEvolve*`）が、駒は元の強さ
+- 魔物の駒は HP・攻撃が魔物と同じ（`monsters.json` の値）、速さは1〜2。合成できない（`fuseTo` なし）。山札・ごほうび・入手券では出ない（`weight: 0`）。**出しても捨てても使い切り置き場へ行き、山札に戻らない**（シャッフルで山札に混ざらないように）。魔物は放置で強くなる（`monsterEvolve*`）が、駒は元の強さ
 - 絵は魔物の絵を使う（`js/ui/art.js`）
 
 ### 画面の揺れ・体力ゲージ
