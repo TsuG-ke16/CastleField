@@ -6,6 +6,8 @@ export class Castle {
     this.hp = maxHp;
     /** 城壁の残り（Player.armor から読み書きする） */
     this.armor = 0;
+    /** 毒の量（毎ターン、持ち主のターンの始めに受けるダメージ。永続）。毒でなければ null */
+    this.poison = null;
   }
 
   /** ダメージを受ける。HPは0未満にしない */

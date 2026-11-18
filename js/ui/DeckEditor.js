@@ -12,8 +12,8 @@ const kinds = {
   weapon: '武器', spirit: '精霊', resource: 'コイン・MP', special: 'その他',
 };
 const effectKinds = {
-  damageEnemyCastle: 'attack', damageEnemySoldiers: 'attack', poisonEnemySoldiers: 'attack',
-  freezeEnemySoldiers: 'attack', healOwnCastle: 'heal', summonSpirit: 'spirit',
+  damageEnemyCastle: 'attack', damageEnemySoldiers: 'attack', poisonEnemySoldiers: 'attack', poisonEnemy: 'attack',
+  freezeEnemySoldiers: 'attack', healOwnCastle: 'heal', curePoison: 'heal', summonSpirit: 'spirit',
   gainCoins: 'resource', gainMp: 'resource',
 };
 const kindOf = def => effectKinds[def.effect] ?? (Object.hasOwn(kinds, def.kind) ? def.kind : 'special');

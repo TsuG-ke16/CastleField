@@ -77,7 +77,9 @@ export class Room {
     this.host = null;
     this.settings = {
       winCondition: Object.hasOwn(WIN_CONDITIONS, data.rules.winCondition) ? data.rules.winCondition : 'firstDestroy',
-      deckMode: Object.hasOwn(DECK_MODES, data.rules.deckMode) ? data.rules.deckMode : 'shared',
+      // 山札は、使える見本があればプレイヤーごと（コスト制）が最初の設定。部屋主が「共通」などに変えられる
+      deckMode: data.rarities && Object.values(data.decks ?? {}).some((d) => d.costDeck) ? 'cost'
+        : Object.hasOwn(DECK_MODES, data.rules.deckMode) ? data.rules.deckMode : 'shared',
       teams: 'off',
     };
     this.game = null;

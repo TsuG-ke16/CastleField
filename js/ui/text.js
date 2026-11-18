@@ -52,6 +52,8 @@ const EFFECT_TEXT = {
   damageEnemySoldiers: (c) => `相手の兵士全員に${c.amount}ダメージ`,
   healOwnCastle: (c) => `自分の城HP+${c.amount}（上限まで）`,
   poisonEnemySoldiers: (c) => `相手の兵士全員に毒（${c.amount}ダメージ×${c.turns}回・盾が効かない）`,
+  poisonEnemy: (c) => `相手の兵士全員と城を、永続の毒にする（毎ターン${c.amount}ダメージ。盾・城壁は効かない。解毒薬で治る）`,
+  curePoison: () => '自分の毒状態（兵士・城）をすべて治す。毒にかかっていないと出せない。何枚でも出せる',
   freezeEnemySoldiers: (c) => `相手の兵士全員を${c.turns}回休みにする`,
   shieldSoldier: (c) => `自分の兵士に盾${c.amount}（ダメージを先に受ける）`,
   summonSpirit: (c) => {
@@ -130,6 +132,8 @@ export function cardShort(def) {
     case 'damageEnemySoldiers': return [{ icon: 'sword', text: `兵士 -${def.amount}` }];
     case 'healOwnCastle': return [{ icon: 'heart', text: `城 +${def.amount}` }];
     case 'poisonEnemySoldiers': return [{ icon: 'skull', text: `毒 ${def.amount}×${def.turns}` }];
+    case 'poisonEnemy': return [{ icon: 'skull', text: `毒 ${def.amount}/ターン` }];
+    case 'curePoison': return [{ icon: 'heart', text: '毒を治す' }];
     case 'freezeEnemySoldiers': return [{ icon: 'snow', text: `${def.turns}回休み` }];
     case 'shieldSoldier': return [{ icon: 'shield', text: `盾 +${def.amount}` }];
     case 'armorCastle': return [{ icon: 'wall', text: `城壁 ${def.amount}` }];
@@ -168,7 +172,8 @@ export function soldierInfo(s, { cards, rules, viewerId }) {
   if (s.shield > 0) parts.push(`${ICON.shield}盾${s.shield}`);
   const poison = s.statuses?.poison;
   if (poison) {
-    parts.push(poison.amount != null ? `${STATUS_ICON.poison}毒${poison.amount}×あと${poison.turns}回`
+    parts.push(poison.turns === null ? `${STATUS_ICON.poison}毒${poison.amount ?? ''}（永続・毎ターン）`
+      : poison.amount != null ? `${STATUS_ICON.poison}毒${poison.amount}×あと${poison.turns}回`
       : `${STATUS_ICON.poison}毒（あと${poison.turns}回）`);
   }
   if (s.statuses?.frozen > 0) parts.push(`${STATUS_ICON.frozen}凍結（あと${s.statuses.frozen}回休み）`);

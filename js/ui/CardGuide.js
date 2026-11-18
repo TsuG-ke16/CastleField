@@ -162,7 +162,7 @@ export class CardGuide {
     const family=soldierFamilies(this.cards).find(f=>f.types.includes(type));
     if(family)info.append(node('p','guide-family-info',`${family.name}：${family.note}`));
     const cost = this.getContext().session?.getState(this.getContext().viewerId)?.mpCosts?.[type]
-      ?? (this.rules.maxMp > 0 && ['damageEnemyCastle','damageEnemySoldiers','poisonEnemySoldiers','freezeEnemySoldiers','summonSpirit'].includes(def.effect) ? def.mpCost ?? rarity?.mpCost ?? 0 : 0);
+      ?? (this.rules.maxMp > 0 && ['damageEnemyCastle','damageEnemySoldiers','poisonEnemySoldiers','poisonEnemy','freezeEnemySoldiers','summonSpirit'].includes(def.effect) ? def.mpCost ?? rarity?.mpCost ?? 0 : 0);
     info.append(node('p', 'guide-mp', `MPコスト：${cost}。${def.effect === 'gainMp' ? `MPを${def.amount}回復。上限${this.rules.maxMp}、超過分は失われます。` : 'MPは自然回復しません。'} `));
     this.content.append(hero, node('p', 'guide-effect', cardDescription(def, this.rules, { monsters: Boolean(this.monsters), debug: this.debug })));
     if(def.kind==='soldier')this.content.append(node('p','guide-movement',def.range?`射程${def.range}マス。出した次の自分の番から撃ち、${def.stay}回で帰還。撃てない・凍結の番も回数が減る。向かってくる兵士とは通常の戦いになる。`:`速さ${def.speed}マス。出した番は動かず、次の自分の番から進軍。城に届くと攻撃力×${this.rules.soldierCastleDamageMultiplier??1}のダメージ。`));

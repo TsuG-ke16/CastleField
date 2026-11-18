@@ -27,7 +27,7 @@ import { LocalSession } from './ui/Session.js';
 import { OnlineClient } from './ui/OnlineClient.js';
 import { ChatView } from './ui/ChatView.js';
 import { DeckEditor } from './ui/DeckEditor.js';
-import { deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
+import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
 import { checkCostDeck } from './game/Setup.js';
@@ -597,6 +597,15 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
   if(request!==startRequest)return;
   $('asset-loading').hidden=true;
   document.documentElement.classList.remove('at-title');
+  // 設定を選ばずに始めたときも、山札は全員共通ではなくプレイヤーごと（コスト制）にする。
+  // 編成したデッキが決まりに合っていれば自分の席に使い、CPU は見本のデッキ。
+  if (!options && rarities && Object.values(decks ?? {}).some((d) => d.costDeck)) {
+    const active = loadDecks().active;
+    const mine = loadMyDeck(active);
+    const usable = mine && checkCostDeck(mine, cards, rarities, rules).ok;
+    options = { playerCount: 2, winCondition: 'firstDestroy', castle: rules.defaultCastle ?? 'standard',
+      deckMode: 'cost', deck: usable ? deckChoice(active) : rules.defaultCostDeck, teams: 'off' };
+  }
   lastLocalOptions = options ? structuredClone(options) : null;
   leaveOnline();
   stopLocal();
@@ -682,6 +691,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     handView.setColor(colorOf(viewerId));
     for (const c of model.hand) knownCards.set(c.cardId, { ...c });
     renderer.renderAll(model);
+    handView.mpCosts = model.mpCosts ?? {};
     handView.render(model.hand);
     sound.play('turn');
     introBoard();
@@ -992,6 +1002,7 @@ async function showBatch(batch) {
     model = modelFromState(st);
     renderer.renderAll(model);
     renderer.setCurrentPlayer(st.currentPlayer);
+    handView.mpCosts = model.mpCosts ?? {};
     handView.render(model.hand);
     setBusy(true);
     if (st.turn <= 1 && st.phase !== 'gameOver') {
@@ -1020,6 +1031,7 @@ function modelFromState(st) {
       castleHp: p.castleHp,
       castleMaxHp: p.castleMaxHp,
       armor: p.armor ?? 0,
+      castlePoison: p.castlePoison ?? null,
       spirit: p.spirit ?? null,
       coins: p.coins ?? 0,
       mp: p.mp ?? 0,
@@ -1539,6 +1551,7 @@ function handover(playerId, turn) {
       model.hand = st.players[viewerId].hand.filter((c) => !willDraw.has(c.cardId));
       renderer.renderAll(model);
       renderer.setCurrentPlayer(playerId);
+      handView.mpCosts = model.mpCosts ?? {};
       handView.render(model.hand);
       handView.setPlayability(new Map());
       el.handover.hidden = true;
