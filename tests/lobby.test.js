@@ -59,7 +59,7 @@ test('部屋主：最初に入った人。モードは部屋主だけが選べ�
   assert.deepEqual(b.lastRoom().settings, { winCondition: 'lastStanding', deckMode: 'own', teams: 'off' });
   const ids = (list) => list.map((x) => x.id);
   assert.deepEqual(ids(b.lastRoom().choices.winConditions), ['firstDestroy', 'lastStanding']);
-  assert.deepEqual(ids(b.lastRoom().choices.deckModes), ['shared', 'own']);
+  assert.deepEqual(ids(b.lastRoom().choices.deckModes), ['shared', 'own', 'cost']);
   assert.ok(ids(b.lastRoom().choices.castles).includes('fortress'));
 });
 

@@ -8,6 +8,7 @@ import { randomBytes } from 'node:crypto';
 import { Game, EVENT_TYPES, TEAM_IDS, MAX_TEAM_SIZE } from '../js/game/Game.js';
 import { filterEventFor } from '../js/game/visibility.js';
 import { STRATEGIES } from '../js/game/strategies.js';
+import { checkCostDeck } from '../js/game/Setup.js';
 
 /** 試合中の操作（Game のメソッドに渡す） */
 const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense'];
@@ -35,6 +36,7 @@ export const WIN_CONDITIONS = {
 export const DECK_MODES = {
   shared: 'みんなで共通の山札',
   own: '1人1つのデッキ',
+  cost: 'デッキ編成（コスト制）',
 };
 /** 部屋で選べるチームの分け方 */
 export const TEAM_MODES = {
@@ -116,10 +118,25 @@ export class Room {
       // 各自で選ぶときのチーム（入った順に A・B・A・B …。選び直せる）
       team: TEAM_IDS[this.seats.length % 2],
       castle: this.data.castles ? this.defaultOf(this.data.castles, this.data.rules.defaultCastle) : null,
-      deck: this.data.decks ? this.defaultOf(this.data.decks, this.data.rules.defaultDeck) : null,
+      deck: this.data.decks ? this.defaultOf(this.plainDecks(), this.data.rules.defaultDeck) : null,
+      // デッキ編成（コスト制）：選んだ見本のデッキ（costDeck）と、自分で編成したデッキ（{ 種類: 枚数 }。なければ null）
+      costDeck: this.costDecks() ? this.defaultOf(this.costDecks(), this.data.rules.defaultCostDeck) : null,
+      deckList: null,
     };
     this.seats.push(seat);
     return seat;
+  }
+
+  /** decks.json のうち、「1人1つのデッキ」（own）で選べるもの（コスト制の見本は除く） */
+  plainDecks() {
+    return Object.fromEntries(Object.entries(this.data.decks ?? {}).filter(([, d]) => !d.costDeck));
+  }
+
+  /** コスト制（cost）の見本のデッキ（decks.json の costDeck: true）。使えなければ null */
+  costDecks() {
+    if (!this.data.decks || !this.data.rarities) return null;
+    const found = Object.fromEntries(Object.entries(this.data.decks).filter(([, d]) => d.costDeck));
+    return Object.keys(found).length > 0 ? found : null;
   }
 
   defaultOf(defs, id) {
@@ -164,6 +181,10 @@ export class Room {
     this.lastTeams = teams;
     if (this.data.castles) setup.castles = this.seats.map((s) => s.castle);
     if (this.data.decks && rules.deckMode === 'own') setup.decks = this.seats.map((s) => s.deck);
+    if (rules.deckMode === 'cost') {
+      setup.decks = this.seats.map((s) => s.costDeck);
+      setup.deckLists = this.seats.map((s) => s.deckList);
+    }
     this.game = new Game({ ...this.data, rules, setup, rng: this.makeRng() });
     this.cpuRng = this.makeRng();
     this.cpuActedTurn = null;
@@ -357,6 +378,7 @@ export class Room {
       } else if (key === 'deckMode') {
         if (!Object.hasOwn(DECK_MODES, value)) return { ok: false, reason: 'その山札の形はありません' };
         if (value === 'own' && !this.data.decks) return { ok: false, reason: 'デッキがないので、1人1つのデッキは選べません' };
+        if (value === 'cost' && !this.costDecks()) return { ok: false, reason: 'デッキ編成に必要なデータがないので、選べません' };
         next.deckMode = value;
       } else {
         return { ok: false, reason: `「${key}」は変えられません` };
@@ -381,7 +403,7 @@ export class Room {
       if (seat !== this.host) return { ok: false, reason: 'CPU の席は部屋主だけが変えられます' };
     }
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return { ok: false, reason: '設定の形が正しくありません' };
-    const next = { castle: target.castle, deck: target.deck, team: target.team };
+    const next = { castle: target.castle, deck: target.deck, team: target.team, costDeck: target.costDeck, deckList: target.deckList };
     for (const [key, value] of Object.entries(patch)) {
       if (key === 'castle') {
         if (!this.data.castles || typeof value !== 'string' || !Object.hasOwn(this.data.castles, value)) return { ok: false, reason: 'その城はありません' };
@@ -390,8 +412,23 @@ export class Room {
         if (!TEAM_IDS.includes(value)) return { ok: false, reason: 'そのチームはありません' };
         next.team = value;
       } else if (key === 'deck') {
-        if (!this.data.decks || typeof value !== 'string' || !Object.hasOwn(this.data.decks, value)) return { ok: false, reason: 'そのデッキはありません' };
+        if (!this.data.decks || typeof value !== 'string' || !Object.hasOwn(this.plainDecks(), value)) return { ok: false, reason: 'そのデッキはありません' };
         next.deck = value;
+      } else if (key === 'costDeck') {
+        // コスト制の見本のデッキを選ぶ（編成したデッキは使わなくなる）
+        if (!this.costDecks() || typeof value !== 'string' || !Object.hasOwn(this.costDecks(), value)) return { ok: false, reason: 'そのデッキはありません' };
+        next.costDeck = value;
+        next.deckList = null;
+      } else if (key === 'deckList') {
+        // 自分で編成したデッキ（{ カード種類: 枚数 }）。決まりに合わなければ理由を返す。null で見本に戻す
+        if (value === null) {
+          next.deckList = null;
+        } else {
+          if (!this.costDecks()) return { ok: false, reason: 'デッキ編成は使えません' };
+          const check = checkCostDeck(value, this.data.cards, this.data.rarities, this.data.rules);
+          if (!check.ok) return { ok: false, reason: `デッキが決まりに合いません：${check.reason}` };
+          next.deckList = Object.fromEntries(Object.entries(value).filter(([, n]) => n > 0));
+        }
       } else {
         return { ok: false, reason: `「${key}」は変えられません` };
       }
@@ -635,6 +672,8 @@ export class Room {
         cpu: s.cpu,
         castle: s.castle,
         deck: s.deck,
+        // コスト制：見本のデッキの id。自分で編成したデッキなら "custom"
+        costDeck: s.deckList ? 'custom' : s.costDeck,
         // 試合中・試合のあとは、その試合のチーム。始まる前は、各自で選ぶときのチーム
         team: this.game ? this.lastTeams?.[this.seats.indexOf(s)] ?? null : s.team,
       })),
@@ -646,10 +685,11 @@ export class Room {
       choices: {
         winConditions: Object.entries(WIN_CONDITIONS).map(([id, name]) => ({ id, name })),
         deckModes: Object.entries(DECK_MODES)
-          .filter(([id]) => id !== 'own' || this.data.decks)
+          .filter(([id]) => (id !== 'own' || this.data.decks) && (id !== 'cost' || this.costDecks()))
           .map(([id, name]) => ({ id, name })),
         castles: Object.entries(this.data.castles ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
-        decks: Object.entries(this.data.decks ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
+        decks: Object.entries(this.plainDecks()).map(([id, d]) => ({ id, name: d.name ?? id })),
+        costDecks: Object.entries(this.costDecks() ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),
         teamModes: Object.entries(TEAM_MODES).map(([id, name]) => ({ id, name })),
         teams: TEAM_IDS.map((id) => ({ id, name: TEAM_NAMES[id] })),

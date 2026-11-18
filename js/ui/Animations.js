@@ -341,7 +341,7 @@ export class Animations {
       case 'cardsFused': return this.cardsFused(p, model, ctx);
       case 'cardDrawn': return this.cardDrawn(p, model, ctx);
       case 'deckShuffled':
-        if (model.deckMode === 'own' && p.playerId !== ctx.viewerId) return;
+        if (model.deckMode !== 'shared' && p.playerId !== ctx.viewerId) return;
         // drawCardsはシャッフル前に引いた分も最後のcardDrawnにまとめる。
         model.preShuffleDraws = (model.preShuffleDraws ?? 0) + model.deckCount;
         model.deckCount = p.deckCount;
@@ -725,7 +725,7 @@ export class Animations {
       else if (pl.luck?.draws > 0) {
         pl.luck.draws -= 1;
         if (!pl.luck.draws) pl.luck = null;
-      } else if (model.deckMode === 'own' && playerId !== ctx.viewerId) { /* 相手の山札は自分の表示に反映しない */ }
+      } else if (model.deckMode !== 'shared' && playerId !== ctx.viewerId) { /* 相手の山札は自分の表示に反映しない */ }
       else if (model.preShuffleDraws > 0) model.preShuffleDraws -= 1;
       else model.deckCount = Math.max(0, model.deckCount - 1);
       this.renderer.setPiles(model.deckCount, model.discardCount, { bumpDeck: true });
@@ -783,12 +783,12 @@ export class Animations {
     const pl = model.players[playerId];
     const def = this.cards[type] ?? {};
     // 神頼みでタダで出したカード（free）は、山札の上から直接出る。手札は減らない
-    if (free && (model.deckMode !== 'own' || playerId === ctx.viewerId)) model.deckCount = Math.max(0, model.deckCount - 1);
+    if (free && (model.deckMode === 'shared' || playerId === ctx.viewerId)) model.deckCount = Math.max(0, model.deckCount - 1);
     if (!free) pl.handCount = Math.max(0, pl.handCount - 1);
     if (!free && def.kind === 'soldier') pl.soldiersPlayedThisTurn = (pl.soldiersPlayedThisTurn ?? 0) + 1;
     else if (!free && def.kind === 'spell' && !['summonSpirit', 'gainCoins', 'gainMp'].includes(def.effect)) pl.playedThisTurn = true;
     pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
-    if (!def.exhaust && (model.deckMode !== 'own' || playerId === ctx.viewerId)) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
+    if (!def.exhaust && (model.deckMode === 'shared' || playerId === ctx.viewerId)) model.discardCount += 1; // 使い切りのカードは捨て札に行かない
     model.hand = model.hand.filter((c) => c.cardId !== cardId);
     let clone;
     let from;
@@ -848,7 +848,7 @@ export class Animations {
   async cardDiscarded({ playerId, cardIds }, model, ctx) {
     const pl = model.players[playerId];
     pl.handCount = Math.max(0, pl.handCount - cardIds.length);
-    if (model.deckMode !== 'own' || playerId === ctx.viewerId) model.discardCount += cardIds.length;
+    if (model.deckMode === 'shared' || playerId === ctx.viewerId) model.discardCount += cardIds.length;
     model.phase = 'main';
     model.discardRequired = 0;
     model.hand = model.hand.filter((c) => !cardIds.includes(c.cardId));

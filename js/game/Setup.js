@@ -73,6 +73,11 @@ export function validateRarities(rarities) {
     if (!def || typeof def.name !== 'string' || def.name === '') throw new Error(`${where}: name を書いてください`);
     if (typeof def.dropRate !== 'number' || def.dropRate < 0) throw new Error(`${where}: dropRate は0以上の数（%）にしてください`);
     if (def.mpCost !== undefined && !(Number.isInteger(def.mpCost) && def.mpCost >= 0)) throw new Error(`${where}: mpCost は0以上の整数にしてください`);
+    // デッキ編成（deckMode "cost"）：コスト・同じカードの上限・そのレアリティの合計枚数の上限（null は無制限）。special は deckAs で別のレアリティと同じ扱いにできる
+    if (def.deckCost !== undefined && !(Number.isInteger(def.deckCost) && def.deckCost >= 0)) throw new Error(`${where}: deckCost は0以上の整数にしてください`);
+    if (def.maxCopies !== undefined && !(Number.isInteger(def.maxCopies) && def.maxCopies >= 1)) throw new Error(`${where}: maxCopies は1以上の整数にしてください`);
+    if (def.deckLimit !== undefined && def.deckLimit !== null && !(Number.isInteger(def.deckLimit) && def.deckLimit >= 0)) throw new Error(`${where}: deckLimit は0以上の整数か null（無制限）にしてください`);
+    if (def.deckAs !== undefined && !(typeof def.deckAs === 'string' && Object.hasOwn(rarities, def.deckAs) && !rarities[def.deckAs].deckAs)) throw new Error(`${where}: deckAs は、別のレアリティの名前にしてください`);
     if (def.special !== undefined && typeof def.special !== 'boolean') throw new Error(`${where}: special は true か false にしてください`);
     total += def.dropRate;
   }
@@ -147,4 +152,59 @@ export function rewardOdds(cards, rarities, base, chance = 0) {
     { rarity: base, rate: (1 - chance) * 100, lucky: false },
     { rarity: next, rate: chance * 100, lucky: true },
   ];
+}
+
+// ================= デッキ編成（deckMode "cost"） =================
+
+/** デッキ編成で、そのカードが数えられるレアリティ（スペシャルは deckAs のレアリティと同じ扱い） */
+export function deckRarityOf(def, rarities) {
+  const r = rarities[def.rarity];
+  return r?.deckAs ?? def.rarity;
+}
+
+/** そのカード1枚のコスト（デッキ編成） */
+export function deckCostOf(def, rarities) {
+  return rarities[deckRarityOf(def, rarities)]?.deckCost ?? 0;
+}
+
+/** デッキに入れられるカードか（魔物の駒は倒したごほうび専用なので入れられない） */
+export function isDeckable(def) {
+  return def.monster === undefined;
+}
+
+/**
+ * デッキの編成を確かめる（読むだけ）。list は { カード種類: 枚数 }。
+ * ルール：合計コストが [rules.deckCostMin, rules.deckCostMax]／同じカードは maxCopies 枚まで／レアリティごとの合計枚数は deckLimit まで
+ * @returns {{ ok: boolean, reason?: string, problems: string[], cost: number, total: number, counts: Record<string, number> }}
+ *   counts はレアリティ（deckAs を反映）ごとの枚数
+ */
+export function checkCostDeck(list, cards, rarities, rules) {
+  const problems = [];
+  const counts = {};
+  let cost = 0;
+  let total = 0;
+  if (!list || typeof list !== 'object' || Array.isArray(list)) {
+    return { ok: false, reason: 'デッキの形が正しくありません', problems: ['デッキの形が正しくありません'], cost, total, counts };
+  }
+  for (const [type, n] of Object.entries(list)) {
+    const def = Object.hasOwn(cards, type) ? cards[type] : null;
+    if (!def) { problems.push(`「${type}」というカードはありません`); continue; }
+    if (!Number.isInteger(n) || n < 0) { problems.push(`「${def.name}」の枚数は0以上の整数にしてください`); continue; }
+    if (n === 0) continue;
+    if (!isDeckable(def)) { problems.push(`「${def.name}」はデッキに入れられません`); continue; }
+    const rid = deckRarityOf(def, rarities);
+    const rdef = rarities[rid];
+    const maxCopies = rdef.maxCopies ?? Infinity;
+    if (n > maxCopies) problems.push(`「${def.name}」は${maxCopies}枚までです（${n}枚）`);
+    counts[rid] = (counts[rid] ?? 0) + n;
+    cost += n * (rdef.deckCost ?? 0);
+    total += n;
+  }
+  for (const [rid, n] of Object.entries(counts)) {
+    const limit = rarities[rid].deckLimit;
+    if (limit != null && n > limit) problems.push(`${rarities[rid].name}は合計${limit}枚までです（${n}枚）`);
+  }
+  if (cost > rules.deckCostMax) problems.push(`合計コストが${rules.deckCostMax}を超えています（${cost}）`);
+  if (cost < rules.deckCostMin) problems.push(`合計コストが${rules.deckCostMin}未満です（${cost}）`);
+  return { ok: problems.length === 0, reason: problems[0], problems, cost, total, counts };
 }

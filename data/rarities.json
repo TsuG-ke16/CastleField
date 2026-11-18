@@ -3,36 +3,52 @@
     "name": "コモン",
     "dropRate": 50,
     "color": "#9aa3ad",
-    "mpCost": 1
+    "mpCost": 1,
+    "deckCost": 1,
+    "maxCopies": 10,
+    "deckLimit": null
   },
   "uncommon": {
     "name": "アンコモン",
     "dropRate": 28,
     "color": "#4caf6a",
-    "mpCost": 2
+    "mpCost": 2,
+    "deckCost": 2,
+    "maxCopies": 10,
+    "deckLimit": null
   },
   "rare": {
     "name": "レア",
     "dropRate": 13.18,
     "color": "#3d7fe0",
-    "mpCost": 3
+    "mpCost": 3,
+    "deckCost": 3,
+    "maxCopies": 3,
+    "deckLimit": 20
   },
   "epic": {
     "name": "エピック",
     "dropRate": 6,
     "color": "#9b59d0",
-    "mpCost": 4
+    "mpCost": 4,
+    "deckCost": 4,
+    "maxCopies": 3,
+    "deckLimit": 10
   },
   "legendary": {
     "name": "レジェンド",
     "dropRate": 2,
     "color": "#f0a020",
-    "mpCost": 5
+    "mpCost": 5,
+    "deckCost": 5,
+    "maxCopies": 3,
+    "deckLimit": 5
   },
   "special": {
     "name": "スペシャル",
     "dropRate": 0.82,
     "color": "#c77dff",
-    "special": true
+    "special": true,
+    "deckAs": "rare"
   }
 }
