@@ -43,6 +43,14 @@ jobs:
             reports/card-window-cleanup.json
           if-no-files-found: error
 
+      - name: Archive all original PNGs for visual quality review
+        uses: actions/upload-artifact@v4
+        with:
+          name: game-png-assets
+          path: assets/**/*.png
+          if-no-files-found: error
+          compression-level: 6
+
       - name: Commit safe PNG repairs only to review branch
         run: |
           git config user.name "github-actions[bot]"
