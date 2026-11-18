@@ -1551,6 +1551,26 @@ function handover(playerId, turn) {
         .filter((ev) => ev.type === 'cardDrawn' && ev.payload.playerId === viewerId)
         .flatMap((ev) => ev.payload.cardIds));
       model.hand = st.players[viewerId].hand.filter((c) => !willDraw.has(c.cardId));
+      if (model.deckMode !== 'shared') {
+        // 1人1つの山札：見る人が替わると、山札・捨て札の数はその人のものになる。
+        // このあと流れる「引く」演出で減らす前の数（＝引き終わりの数＋これから引く枚数）から始める
+        // 魔物を倒したごほうび・駒と、運命の祈りで引く分は、山札から引かないので数えない
+        let fromDeck = 0, notFromDeck = 0, luck = model.players[viewerId]?.luck?.draws ?? 0;
+        for (const ev of queue) {
+          const p = ev.payload;
+          if (ev.type === 'monsterDefeated' && p.playerId === viewerId) notFromDeck += (p.rewardRarity ? 1 : 0) + (p.pieceType ? 1 : 0);
+          if (ev.type !== 'cardDrawn' || p.playerId !== viewerId) continue;
+          for (let i = 0; i < p.cardIds.length; i++) {
+            if (notFromDeck > 0) notFromDeck -= 1;
+            else if (luck > 0) luck -= 1;
+            else fromDeck += 1;
+          }
+        }
+        const shuffle = queue.find((ev) => ev.type === 'deckShuffled' && ev.payload.playerId === viewerId);
+        model.deckCount = shuffle ? Math.max(0, fromDeck - (shuffle.payload.deckCount - st.deckCount)) : st.deckCount + fromDeck;
+        model.discardCount = st.discardCount;
+        model.preShuffleDraws = 0;
+      }
       renderer.renderAll(model);
       renderer.setCurrentPlayer(playerId);
       handView.mpCosts = model.mpCosts ?? {};
