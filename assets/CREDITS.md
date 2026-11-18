@@ -440,3 +440,7 @@ OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力�
 
 - `cards/card-mana-shard.png` — 参照元 `cards/card-mana-shard.png`（差し替え前）・`style-reference.png`、生成原本 `exec-2b7b0112-4b17-47a8-9968-48f2108d43d8.png`。
 - `cards/card-mana-drop.png` — 参照元 `cards/card-mana-drop.png`（差し替え前）・`style-reference.png`、生成原本 `exec-5982b20f-25cf-4b9e-93da-705027fe9136.png`。
+
+### 天候の呪文
+
+- `cards/card-weather-call.png` — 参照元 `cards/card-weather-call.png`（差し替え前）・`style-reference.png`、生成原本 `exec-bdce4c6e-7903-41c6-8a93-c889925eb861.png`。
