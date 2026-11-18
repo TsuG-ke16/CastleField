@@ -292,6 +292,11 @@
 .deck-preview .deck-strip-entry { height: 46px; width: 36px; }
 .deck-preview .deck-strip-card { width: 27px; }
 #title-deck-preview { grid-column: 1 / -1; min-width: 0; }
+/* 「ひとりで遊ぶ」の設定：カード一覧は横に長いので、枠が一覧の幅に引きのばされないよう幅を固定する
+   （#title-levels は中央寄せの縦flexで、中身の最小幅まで広がってしまうため） */
+#title-levels .local-options { width: 100%; min-width: 0; box-sizing: border-box; }
+#title-levels .local-fields { min-width: 0; }
+#title-levels .local-fields .deck-preview { max-width: 100%; box-sizing: border-box; }
 #app #title-main .title-links:has(#title-deck-preview:not([hidden])) {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 5px;
