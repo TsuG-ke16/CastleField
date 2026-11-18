@@ -1,0 +1,361 @@
+{
+  "version": 1,
+  "generator": "assets/review/card-materials/build.py",
+  "channels": {
+    "mask.R": "metal (金・銀・鉄・紫の金属。鏡面ハイライト)",
+    "mask.G": "gem (宝石。キラキラ・屈折)",
+    "mask.B": "paper (羊皮紙・名前帯・メダルの中。ざらざら・マット)",
+    "mask.A": "holo (虹色の帯。frame-special だけ。ホログラム)",
+    "none": "R=G=B=A=0 は木・革・ツタ・輪郭線（マット）",
+    "height": "8bit グレー。0=枠の外。高いほど出っ張り。128段階に量子化",
+    "normal": "OpenGL 規約 (緑=+Y 上)。RGB=n*0.5+0.5、アルファ=枠のアルファ"
+  },
+  "materials": {
+    "metal": {
+      "metalness": 0.9,
+      "roughness": 0.3,
+      "specular": 1.0,
+      "envMapIntensity": 1.0
+    },
+    "gem": {
+      "metalness": 0.1,
+      "roughness": 0.08,
+      "sparkle": {
+        "intensity": 1.4,
+        "density": 0.6,
+        "speed": 1.0
+      },
+      "tintBoost": 1.2
+    },
+    "paper": {
+      "metalness": 0.0,
+      "roughness": 0.85,
+      "specular": 0.1,
+      "grain": 0.15
+    },
+    "wood": {
+      "metalness": 0.0,
+      "roughness": 0.7,
+      "specular": 0.2,
+      "note": "マスクのどのチャンネルも0の所（輪郭線・ツタ・革も同じ）"
+    },
+    "holo": {
+      "metalness": 0.6,
+      "roughness": 0.2,
+      "iridescence": 1.0,
+      "hueShiftByTilt": 360,
+      "note": "frame-special のみ"
+    }
+  },
+  "layers": [
+    {
+      "name": "windowBackground",
+      "desc": "parchment/cream fill behind art, CSS",
+      "depth": 0.0
+    },
+    {
+      "name": "art",
+      "desc": "assets/cards/card-<type>.png, transparent subject",
+      "depth": 0.6
+    },
+    {
+      "name": "frame",
+      "desc": "assets/cards/frame-<rarity>.png (+ review maps)",
+      "depth": 1.0
+    },
+    {
+      "name": "text/icons",
+      "desc": "HTML",
+      "depth": 1.1
+    }
+  ],
+  "layerOrder": [
+    "windowBackground (parchment/cream fill behind art, CSS)",
+    "art (assets/cards/card-<type>.png, transparent subject)",
+    "frame (assets/cards/frame-<rarity>.png)",
+    "text/icons (HTML)"
+  ],
+  "cssRects": {
+    "source": "css/rarity-assets.css (--win-l/t/w/h, --med-y/l/r, --name-y). The CSS is authoritative.",
+    "byRarity": {
+      "default": {
+        "winL": "16%",
+        "winT": "17%",
+        "winW": "71%",
+        "winH": "46%",
+        "medY": "14%",
+        "medL": "19%",
+        "medR": "84%",
+        "nameY": "74%"
+      },
+      "uncommon": {
+        "winL": "13%",
+        "winT": "20%",
+        "winW": "72%",
+        "winH": "45%",
+        "medY": "16%",
+        "medL": "16%",
+        "medR": "83%",
+        "nameY": "75%"
+      },
+      "rare": {
+        "winL": "15%",
+        "winT": "21%",
+        "winW": "72%",
+        "winH": "44%",
+        "medY": "18%",
+        "medL": "17%",
+        "medR": "84%",
+        "nameY": "76%"
+      },
+      "special": {
+        "winL": "15%",
+        "winT": "21%",
+        "winW": "72%",
+        "winH": "44%",
+        "medY": "18%",
+        "medL": "17%",
+        "medR": "84%",
+        "nameY": "76%"
+      },
+      "epic": {
+        "winL": "14%",
+        "winT": "24%",
+        "winW": "72%",
+        "winH": "42%",
+        "medY": "21%",
+        "medL": "15%",
+        "medR": "84%",
+        "nameY": "75%"
+      },
+      "legendary": {
+        "winL": "16%",
+        "winT": "26%",
+        "winW": "67%",
+        "winH": "40%",
+        "medY": "23%",
+        "medL": "17%",
+        "medR": "82%",
+        "nameY": "76%"
+      },
+      "beast": {
+        "winL": "12%",
+        "winT": "20%",
+        "winW": "76%",
+        "winH": "46%",
+        "note": "css/beast.css"
+      }
+    }
+  },
+  "frames": {
+    "common": {
+      "source": "assets/cards/frame-common.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "common/mask.png",
+        "height": "common/height.png",
+        "normal": "common/normal.png",
+        "preview": "common/preview.png"
+      },
+      "coverage": {
+        "metal": 0.0787,
+        "gem": 0.0,
+        "paper": 0.2509,
+        "holo": 0.0
+      }
+    },
+    "uncommon": {
+      "source": "assets/cards/frame-uncommon.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "uncommon/mask.png",
+        "height": "uncommon/height.png",
+        "normal": "uncommon/normal.png",
+        "preview": "uncommon/preview.png"
+      },
+      "coverage": {
+        "metal": 0.027,
+        "gem": 0.0158,
+        "paper": 0.2248,
+        "holo": 0.0
+      }
+    },
+    "rare": {
+      "source": "assets/cards/frame-rare.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "rare/mask.png",
+        "height": "rare/height.png",
+        "normal": "rare/normal.png",
+        "preview": "rare/preview.png"
+      },
+      "coverage": {
+        "metal": 0.1404,
+        "gem": 0.0256,
+        "paper": 0.235,
+        "holo": 0.0
+      }
+    },
+    "epic": {
+      "source": "assets/cards/frame-epic.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "epic/mask.png",
+        "height": "epic/height.png",
+        "normal": "epic/normal.png",
+        "preview": "epic/preview.png"
+      },
+      "coverage": {
+        "metal": 0.2699,
+        "gem": 0.0212,
+        "paper": 0.2278,
+        "holo": 0.0
+      }
+    },
+    "legendary": {
+      "source": "assets/cards/frame-legendary.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "legendary/mask.png",
+        "height": "legendary/height.png",
+        "normal": "legendary/normal.png",
+        "preview": "legendary/preview.png"
+      },
+      "coverage": {
+        "metal": 0.301,
+        "gem": 0.0143,
+        "paper": 0.1792,
+        "holo": 0.0
+      }
+    },
+    "special": {
+      "source": "assets/cards/frame-special.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "special/mask.png",
+        "height": "special/height.png",
+        "normal": "special/normal.png",
+        "preview": "special/preview.png"
+      },
+      "coverage": {
+        "metal": 0.1173,
+        "gem": 0.024,
+        "paper": 0.2824,
+        "holo": 0.2172
+      }
+    },
+    "beast": {
+      "source": "assets/cards/frame-beast.png",
+      "size": [
+        448,
+        672
+      ],
+      "files": {
+        "mask": "beast/mask.png",
+        "height": "beast/height.png",
+        "normal": "beast/normal.png",
+        "preview": "beast/preview.png"
+      },
+      "coverage": {
+        "metal": 0.0444,
+        "gem": 0.0092,
+        "paper": 0.5627,
+        "holo": 0.0
+      }
+    },
+    "soldier": {
+      "source": "assets/cards/frame-soldier.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "soldier/mask.png",
+        "height": "soldier/height.png",
+        "normal": "soldier/normal.png",
+        "preview": "soldier/preview.png"
+      },
+      "coverage": {
+        "metal": 0.0668,
+        "gem": 0.0091,
+        "paper": 0.14,
+        "holo": 0.0
+      }
+    },
+    "spell": {
+      "source": "assets/cards/frame-spell.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "spell/mask.png",
+        "height": "spell/height.png",
+        "normal": "spell/normal.png",
+        "preview": "spell/preview.png"
+      },
+      "coverage": {
+        "metal": 0.0437,
+        "gem": 0.0116,
+        "paper": 0.1252,
+        "holo": 0.0
+      }
+    },
+    "weapon": {
+      "source": "assets/cards/frame-weapon.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "weapon/mask.png",
+        "height": "weapon/height.png",
+        "normal": "weapon/normal.png",
+        "preview": "weapon/preview.png"
+      },
+      "coverage": {
+        "metal": 0.3851,
+        "gem": 0.0187,
+        "paper": 0.1281,
+        "holo": 0.0
+      }
+    },
+    "defense": {
+      "source": "assets/cards/frame-defense.png",
+      "size": [
+        512,
+        768
+      ],
+      "files": {
+        "mask": "defense/mask.png",
+        "height": "defense/height.png",
+        "normal": "defense/normal.png",
+        "preview": "defense/preview.png"
+      },
+      "coverage": {
+        "metal": 0.3297,
+        "gem": 0.0501,
+        "paper": 0.1248,
+        "holo": 0.0
+      }
+    }
+  }
+}
