@@ -20,7 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
+import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -131,6 +131,9 @@ const OPTIONAL_RULES = {
   // 魔物を放置すると、この周回ごとにレアリティが1つ上がって強くなる（0 なら強くならない）。強くなる倍率は monsterEvolveMultiplier
   monsterEvolveEvery: 0,
   monsterEvolveMultiplier: 1,
+  // デッキ編成（deckMode "cost"）：合計コストの範囲と、何も選ばなかった席が使う decks.json のデッキ
+  ...DECK_COST_DEFAULTS,
+  defaultCostDeck: null,
   // 天候（weather.json を渡したとき）：出はじめる周回と、天候が切り替わるときに新しい天候になる確率（0 ならずっと天候なし）
   weatherFirstRound: 2,
   weatherChangeChance: 0,
@@ -139,7 +142,8 @@ const OPTIONAL_RULES = {
 const CHOICE_RULES = {
   winCondition: ['firstDestroy', 'lastStanding'],
   castleSpellRange: ['any', 'neighbors'],
-  deckMode: ['shared', 'own'],
+  // "cost"：1人1つのデッキを、コスト（rarities.json の deckCost）で編成する（setup.deckLists か、decks.json の costDeck: true のデッキ）
+  deckMode: ['shared', 'own', 'cost'],
   // 3人以上の道の形："ring"（となりの席どうし）か "plaza"（真ん中の広場を通って、だれの城へも行ける）。2人ならどちらも同じ
   roadLayout: ['ring', 'plaza'],
   // チーム戦の手番："rotate"（チームを交互に、1回の手番はメンバー1人。A1 → B1 → A2 → B2 …）か
@@ -275,8 +279,30 @@ export class Game {
         this.players[id].deckId = deckIds[seat];
         this.piles.set(id, pile);
       });
+    } else if (this.rules.deckMode === 'cost') {
+      // デッキ編成：席ごとに、編成した deckLists[席]（{ 種類: 枚数 }）か、decks.json の costDeck のデッキ（setup.decks[席] / rules.defaultCostDeck）
+      if (!rarities) throw new Error('deckMode が "cost" のときは rarities（data/rarities.json）を渡してください');
+      const n = this.rules.playerCount;
+      const lists = setup.deckLists ?? [];
+      if (!Array.isArray(lists) || lists.length > n) throw new Error(`setup.deckLists は人数ぶん（${n}個）までの配列にしてください`);
+      this.playerOrder.forEach((id, seat) => {
+        let list = lists[seat];
+        let deckId = 'custom';
+        if (list === undefined || list === null) {
+          deckId = setup.decks?.[seat] ?? this.rules.defaultCostDeck;
+          if (!decks || !Object.hasOwn(decks, deckId) || !decks[deckId].costDeck) throw new Error(`席${seat + 1}のデッキがありません（setup.deckLists か、decks.json の costDeck のデッキを選んでください）`);
+          list = decks[deckId].cards;
+        }
+        const check = checkCostDeck(list, cards, rarities, this.rules);
+        if (!check.ok) throw new Error(`席${seat + 1}のデッキが決まりに合いません：${check.reason}`);
+        const pile = new Pile(id);
+        const types = Object.entries(list).flatMap(([t, k]) => Array(k).fill(t));
+        pile.deck = this.shuffle(types).map((type) => this.createCard(type));
+        this.players[id].deckId = deckId;
+        this.piles.set(id, pile);
+      });
     } else {
-      if (setup.decks !== undefined) throw new Error('setup.decks を使うときは、rules.json の deckMode を "own" にしてください');
+      if (setup.decks !== undefined || setup.deckLists !== undefined) throw new Error('setup.decks / setup.deckLists を使うときは、rules.json の deckMode を "own" か "cost" にしてください');
       const pile = new Pile(null);
       pile.deck = this.shuffle(this.buildDeckTypes()).map((type) => this.createCard(type));
       for (const id of this.playerOrder) this.piles.set(id, pile);
@@ -2298,7 +2324,7 @@ export class Game {
    */
   getState(viewerId) {
     const players = {};
-    const own = this.rules.deckMode === 'own';
+    const own = this.rules.deckMode !== 'shared'; // 1人1つの山札（own・cost）
     for (const id of this.playerOrder) {
       const p = this.players[id];
       const pile = this.pileOf(id);

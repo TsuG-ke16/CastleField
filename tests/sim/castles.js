@@ -27,7 +27,7 @@ for (const t of Object.keys(opts.castles)) {
 console.log('');
 console.log('| デッキ（own） | バランスに勝つ割合 | 平均手番 |');
 console.log('|---|---|---|');
-for (const d of Object.keys(opts.decks)) {
+for (const d of Object.keys(opts.decks).filter((id) => !opts.decks[id].costDeck)) { // コスト制の見本は deckMode "cost" 用（tests/sim/costdecks.js）
   const r = rate({ decks: [d, 'balanced'] }, { decks: ['balanced', d] }, { deckMode: 'own' });
   console.log(`| ${opts.decks[d].name}（${d}） | ${pct(r.win)} | ${r.turns.toFixed(0)} |`);
 }

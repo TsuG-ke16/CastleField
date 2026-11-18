@@ -115,6 +115,7 @@ js/
     Settings.js・Sound.js・Music.js … 設定・効果音・BGM
     MatchStats.js  … 結果のまとめと戦績
     ChatView.js    … チャットとスタンプ（💬ボタン・吹き出し）
+    DeckEditor.js・DeckStore.js … デッキ編成の画面と、マイデッキの保存（この端末の localStorage）
     art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
     precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
 data/
@@ -1121,6 +1122,22 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - スタンプは `data/stamps.json`（`{ id, icon, label }` の配列）。画面とサーバーが同じ一覧を読む
 - `POST /api/action` の `method` に `chat`（`args: [{ text }]` か `[{ stamp }]`）。文字は制御文字を空白にして前後を取り、1〜40文字。つづけて送れるのは0.6秒ごと。CPU の席・形の違う送り方は `{ ok: false, reason }`。試合の前・中・あとのいつでも送れる
 - 届くもの：`{ type: "chat", id, playerId, name, text | stamp, at }`。つないだとき（つなぎ直したときも）、直近30通が `{ type: "chatLog", messages }` で届く（つなぎ直すたびに全部届くので、画面は受けたら表示を作り直す）。もう部屋にいない人の発言は `playerId: null`・`left: true`（名前は残る）。文字は人が入れたものなので、画面は `textContent` で出す
+
+## デッキ編成（コスト制。`rules.deckMode: "cost"`。人間の指示。仮）
+
+今までの山札（`"shared"`：全員共通／`"own"`：`decks.json` の見本から選ぶ）は残し、**別モード**として足した。1人1つの山札を、コストの決まりに合うように編成する。
+
+- **コスト**（`rarities.json` の `deckCost`）：コモン1・アンコモン2・レア3・エピック4・レジェンド5。**スペシャルはレアと同じ扱い**（`deckAs: "rare"`。コスト3・同じカードの上限・レアの合計枚数に数える）
+- **決まり**（`checkCostDeck()` in `js/game/Setup.js`。画面もサーバーも同じものを使う）
+  - 合計コストは **90 以上 100 以下**（`rules.deckCostMin` / `deckCostMax`。少なくていいと、レジェンドだけの少ない枚数で山札がすぐ尽きて回せるので、下限をつけた）
+  - 同じカードは、コモン・アンコモンが10枚まで、レア以上は3枚まで（`maxCopies`）
+  - レアリティごとの合計枚数：コモン・アンコモンは無制限、レア20・エピック10・レジェンド5まで（`deckLimit`。`null` は無制限）
+  - 魔物の駒（`beast_*`）は入れられない。天候の呪文・適応はスペシャルなのでレアの枠で入れられる
+- **山札が尽きたら、捨て札を混ぜて山札に戻す**（今までと同じ）。1人1つの山札・捨て札・使い切り置き場を持つ（`own` と同じ。`getState()` の `deckMode` は `"cost"`）
+- **Game**：`new Game({ rarities, decks, setup: { deckLists, decks } })`。席ごとに、`setup.deckLists[席]`（`{ カード種類: 枚数 }`。決まりに合わなければ `new Game()` が例外）か、なければ `setup.decks[席]`／`rules.defaultCostDeck`（`decks.json` の `costDeck: true` の見本）。`rarities` が必須。`players.pX.deckId` は見本のID か `"custom"`
+- **見本のデッキ**（`decks.json` の `costDeck: true`）：`costBalance`（バランス・コスト92）・`costAssault`（突撃・91）・`costFortress`（籠城・96）。`own` の見本の一覧には出ない。確かめたこと（`node tests/sim/costdecks.js`、smart 同士）：勝率 45〜52%・全部決着
+- **オンライン**：部屋の `setRules` の `deckMode` に `"cost"`。`setSeat` に `{ costDeck: 見本のID }` か `{ deckList: { 種類: 枚数 } }`（`null` で見本に戻す。決まりに合わなければ `{ ok: false, reason }`）。`room` の `players[].costDeck`（見本のID か `"custom"`）、`choices.costDecks`。ほかの人のマイデッキは選べない（自分の席だけ）
+- **画面**：タイトルの「デッキ編成」（コストのメーター・レアリティごとの枚数・足せない理由を出す。決まりに合うときだけ保存できる）。マイデッキはこの端末に保存（`js/ui/DeckStore.js`）。「ひとりで遊ぶ／同じ端末」の詳細設定と、オンラインの部屋で「マイデッキ」を選べる
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

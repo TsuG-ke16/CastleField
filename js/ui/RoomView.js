@@ -2,8 +2,10 @@
 import { castleArt, colorOf } from './art.js';
 import { pillify } from './pills.js';
 export class RoomView {
-  constructor({ onAction, onLeave }) {
+  constructor({ onAction, onLeave, onEditDeck, getMyDeck }) {
     this.onAction = onAction;
+    this.onEditDeck = onEditDeck;   // デッキ編成の画面を開く
+    this.getMyDeck = getMyDeck;     // 覚えているマイデッキ（{ 種類: 枚数 } か null）
     this.onLeave = onLeave;
     this.el = document.createElement('section');
     this.el.id = 'room-screen';
@@ -14,6 +16,21 @@ export class RoomView {
     this.level = null;
   }
   hide() { this.el.hidden = true; }
+  /** 「マイデッキ」を使う：覚えているデッキをサーバーに送る（決まりに合わなければ、サーバーが理由を返す） */
+  useMyDeck() {
+    const list = this.getMyDeck?.();
+    if (!list) {
+      this.notice = 'マイデッキがありません。「デッキを編成する」で作ってください';
+      this.render(this.room, this.passphrase);
+      return;
+    }
+    this.act('setSeat', [{ deckList: list }]);
+  }
+  /** 編成画面で保存したとき：いまマイデッキを使っていれば、新しい中身を送り直す */
+  onMyDeckSaved(list) {
+    const me = this.room?.players.find((p) => p.playerId === this.room.you);
+    if (this.room && !this.room.started && me?.costDeck === 'custom') this.act('setSeat', [{ deckList: list }]);
+  }
   node(tag, text, cls) {
     const el = document.createElement(tag);
     if (text != null) el.textContent = text;
@@ -97,8 +114,16 @@ export class RoomView {
       const edit = p.playerId === room.you || (host && Boolean(p.cpu));
       const set = (patch) => this.act('setSeat', p.playerId === room.you ? [patch] : [patch, p.playerId]);
       this.select(seat, '城', choices.castles, p.castle, edit, v => set({castle:v}), `${p.playerId}:castle`);
-      this.select(seat, 'デッキ', choices.decks, p.deck, edit && room.settings.deckMode === 'own', v => set({deck:v}), `${p.playerId}:deck`);
-      if (room.settings.deckMode !== 'own') seat.append(this.node('small', '共通の山札を使います', 'room-note'));
+      if (room.settings.deckMode === 'cost') {
+        // デッキ編成（コスト制）：見本のデッキか、自分で編成したデッキ（自分の席だけ）
+        const mine = p.playerId === room.you;
+        const list = [...(choices.costDecks ?? []), ...(mine ? [{ id: 'custom', name: 'マイデッキ（編成）' }] : [])];
+        this.select(seat, 'デッキ', list, p.costDeck, edit, v => (v === 'custom' ? this.useMyDeck() : set({ costDeck: v })), `${p.playerId}:costDeck`);
+        if (mine && this.onEditDeck) this.button(seat, 'デッキを編成する', () => this.onEditDeck());
+      } else {
+        this.select(seat, 'デッキ', choices.decks, p.deck, edit && room.settings.deckMode === 'own', v => set({deck:v}), `${p.playerId}:deck`);
+        if (room.settings.deckMode !== 'own') seat.append(this.node('small', '共通の山札を使います', 'room-note'));
+      }
       if (room.settings.teams === 'choose') this.select(seat, 'チーム', choices.teams, p.team, edit, v => set({team:v}), `${p.playerId}:team`);
       else seat.append(this.node('small', room.settings.teams === 'auto' ? '開始時にチームを分けます' : '個人戦', 'room-note'));
       if (host && p.cpu) this.button(seat, 'CPUを外す', () => this.act('removeCpu', [p.playerId]));
