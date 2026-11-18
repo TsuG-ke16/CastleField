@@ -14,6 +14,7 @@ const EDGE_LAYERS = 6;     // カードの厚み（枠の形の薄い層を重�
 const WALL_LAYERS = 6;     // 絵の窓の内側の壁（枠から、奥にある絵まで）
 const FOIL = new Set(['rare', 'epic', 'legendary', 'special']);
 
+let degraded = false;      // この端末で一度遅かったら、次からは最初から軽い表示にする
 const reduced = () => document.documentElement.classList.contains('reduced-motion')
   || matchMedia('(prefers-reduced-motion: reduce)').matches;
 // 立体の表示の段階。full：WebGL で凹凸と材質の光／lite：CSS の層だけ（厚み・奥行き・浮かせた部品）
@@ -21,6 +22,7 @@ const reduced = () => document.documentElement.classList.contains('reduced-motio
 function reliefTier() {
   const q = new URLSearchParams(location.search).get('fx');
   if (q === 'lite' || q === 'full') return q;
+  if (degraded) return 'lite';
   if ((navigator.deviceMemory && navigator.deviceMemory <= 2) || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)) return 'lite';
   return 'full';
 }
@@ -57,7 +59,7 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
   let frame = 0;
   let held = false;       // 指（マウス）が乗っているか
   let rect = null;        // stage の位置（開いたとき・向きが変わったときに測る。動かすたびには測らない）
-  const measure = () => { rect = stage.getBoundingClientRect(); };
+  const measure = () => { rect = stage.getBoundingClientRect(); relief?.resize(); };
 
   const paint = () => {
     if (!card) return;
@@ -77,7 +79,7 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
       const gap = lastPaint ? t0 - lastPaint : 16;
       lastPaint = t0;
       slowFrames = spent > 12 || gap > 40 ? slowFrames + 1 : Math.max(0, slowFrames - 1);
-      if (slowFrames > 24 && !forcedFull) { dropRelief(); card?.classList.add('zoom-lite'); }
+      if (slowFrames > 24 && !forcedFull) { degraded = true; dropRelief(); card?.classList.add('zoom-lite'); }
     }
     const fx = `${(now.x * 100).toFixed(1)}%`;
     const fy = `${(now.y * 100).toFixed(1)}%`;
@@ -130,15 +132,16 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     orienting = true;
   };
   // iPhone などは、ボタンを押したときにだけセンサーの許可を聞ける（勝手には聞かない）
-  sensorBtn.addEventListener('click', async () => {
+  sensorBtn.addEventListener('click', async (event) => {
+    event.stopPropagation();   // 外のタップとして閉じない
     sensorBtn.hidden = true;
-    if (await enableFoilTilt()) { sensorAllowed = true; listenOrientation(); }
+    if (await enableFoilTilt()) { sensorAllowed = true; if (dialog.open) listenOrientation(); }
   });
 
   const close = () => { if (dialog.open) dialog.close(); };
   dialog.querySelector('.zoom-close').addEventListener('click', close);
   // カードの外（背景）のタップで閉じる。カードの上のタップ・ドラッグでは閉じない
-  dialog.addEventListener('click', (event) => { if (!event.target.closest('.zoom-stage, .zoom-text, .zoom-name')) close(); });
+  dialog.addEventListener('click', (event) => { if (!event.target.closest('.zoom-stage, .zoom-text, .zoom-name, .zoom-hint, .zoom-sensor')) close(); });
   const dropRelief = () => {
     relief?.destroy(); relief = null;
     card?.classList.remove('zoom-gl');
@@ -174,15 +177,19 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     const raised = paths ? span('zoom-raised') : null;   // CSS だけのとき：枠の絵を王冠・宝石の形で切り抜いて浮かせる
     if (raised) { const img = frameImg.cloneNode(); img.className = 'zoom-raised-img'; raised.append(img); }
     card.prepend(...layers, floor);
-    if (raised) card.append(raised);
+    // 浮かせた部品の真下（元の枠の絵の王冠）を少し暗くして、傾けたときに側面・影に見せる（WebGL のときは光の計算でする）
+    if (raised) card.append(span('zoom-raised-shade'), raised);
     if (!paths || tier === 'lite') { card.classList.add('zoom-lite'); return; }
     // WebGL の凹凸（読み込めたら、元の枠の絵と入れかえる）
     const id = openId;
-    createRelief({ frameSrc: src, preset: card.dataset.material }).then(r => {
-      if (id !== openId || !card) { r?.destroy(); return; }
+    const current = () => id === openId && Boolean(card);
+    const lost = () => { if (current()) { dropRelief(); card.classList.add('zoom-lite'); } };
+    createRelief({ frameSrc: src, preset: card.dataset.material, isCurrent: current, onLost: lost }).then(r => {
+      if (!current()) { r?.destroy(); return; }
       if (!r) { card.classList.add('zoom-lite'); return; }
       relief = r;
       frameImg.after(r.base); raised.after(r.raised);
+      relief.resize();
       if (relief.draw(0, 0)) { card.classList.add('zoom-gl'); paint(); } else dropRelief();
     }, () => card?.classList.add('zoom-lite'));
   };

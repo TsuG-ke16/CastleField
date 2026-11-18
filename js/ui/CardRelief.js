@@ -28,8 +28,8 @@ float env(vec3 r, float sharp) {
 }
 void main() {
   float h0 = texture2D(uRelief, vec2(vUv.x, vUv.y * .5)).b;
-  // 高い所ほど、見る向きにずれて見える（1回の視差）
-  vec2 uv = vUv - uV.xy / max(uV.z, .4) * (h0 - .3) * uPar;
+  // 高い所ほど、見る向きにずれて見える（1回の視差。手前に浮かせた層と同じ向き）
+  vec2 uv = vUv + uV.xy / max(uV.z, .4) * (h0 - .3) * uPar;
   vec4 c = texture2D(uFrame, uv);
   float raisedHere = texture2D(uRaised, uv).a;
   float a = c.a * mix(1., raisedHere, uLayer);
@@ -127,7 +127,9 @@ function context(slot) {
   for (const name of ['uFrame', 'uRelief', 'uRaised', 'uL', 'uV', 'uM', 'uFlat', 'uBump', 'uSpec', 'uEnv', 'uIri', 'uGem', 'uPar', 'uKd', 'uLayer', 'uShadow']) u[name] = gl.getUniformLocation(prog, name);
   gl.uniform1i(u.uFrame, 0); gl.uniform1i(u.uRelief, 1); gl.uniform1i(u.uRaised, 2);
   gl.disable(gl.DEPTH_TEST);
-  shared[slot] = { canvas, gl, u, textures: [] };
+  shared[slot] = { canvas, gl, u, textures: [], owner: null, onLost: null };
+  // GPU のリセットなどで WebGL が消えたら、持ち主に知らせて CSS だけの表示に戻してもらう
+  canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); shared[slot]?.onLost?.(); });
   return shared[slot];
 }
 
@@ -145,24 +147,33 @@ function texture(gl, unit, img, premultiply) {
   return tex;
 }
 
-// 返すもの：base / raised のキャンバス（呼ぶ側が置く）、draw(rx, ry)、destroy()
-export async function createRelief({ frameSrc, preset }) {
+// 返すもの：base / raised のキャンバス（呼ぶ側が置く）、resize()、draw(rx, ry)、destroy()
+// isCurrent：読み込みのあいだに閉じた・別のカードを開いたら false を返す関数。そのときは共有の WebGL に触らない
+// onLost：WebGL が消えたときに呼ぶ
+export async function createRelief({ frameSrc, preset, isCurrent = () => true, onLost = null }) {
   const paths = reliefPaths(frameSrc);
   if (!paths || !window.WebGLRenderingContext) return null;
+  let images;
+  try { images = await Promise.all([loadImage(frameSrc), loadImage(paths.relief), loadImage(paths.raised)]); } catch { return null; }
+  if (!isCurrent()) return null;
   let ctxs;
   try { ctxs = [context(0), context(1)]; } catch (error) { console.warn('凹凸の表示を使えません', error); return null; }
   if (!ctxs[0] || !ctxs[1]) return null;
-  let images;
-  try { images = await Promise.all([loadImage(frameSrc), loadImage(paths.relief), loadImage(paths.raised)]); } catch { return null; }
-  for (const { gl, textures } of ctxs) {
+  const token = {};
+  for (const ctx of ctxs) {
+    const { gl, textures } = ctx;
     for (const tex of textures) gl.deleteTexture(tex);
     textures.splice(0, textures.length, texture(gl, 0, images[0], true), texture(gl, 1, images[1], false), texture(gl, 2, images[2], false));
+    ctx.owner = token;
+    ctx.onLost = onLost;
   }
+  const mine = () => ctxs.every(c => c.owner === token);
   const p = PRESETS[preset] ?? PRESETS.other;
   const [base, raised] = ctxs.map(c => c.canvas);
   base.className = 'zoom-gl-base';
   raised.className = 'zoom-gl-raised';
   let size = [0, 0];
+  // 大きさは開いたとき・画面の大きさが変わったときだけ測る（毎フレーム測ると、レイアウトの計算が走って重い）
   const resize = () => {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const w = Math.max(1, Math.round(base.clientWidth * dpr)), h = Math.max(1, Math.round(base.clientHeight * dpr));
@@ -171,8 +182,8 @@ export async function createRelief({ frameSrc, preset }) {
     for (const el of [base, raised]) { el.width = w; el.height = h; }
   };
   const draw = (rxDeg, ryDeg) => {
-    if (ctxs.some(c => c.gl.isContextLost())) return false;
-    resize();
+    if (!mine() || ctxs.some(c => c.gl.isContextLost())) return false;
+    if (!size[0]) resize();
     // CSS の rotateX(rx) rotateY(ry) と同じ回転（y は下向き、z は手前）。カード→世界 M、世界→カードはその転置
     const cx = Math.cos(rxDeg * rad), sx = Math.sin(rxDeg * rad), cy = Math.cos(ryDeg * rad), sy = Math.sin(ryDeg * rad);
     const M = [[cy, 0, sy], [sx * sy, cx, -sx * cy], [-cx * sy, sx, cx * cy]];   // M[行][列] = Rx·Ry
@@ -194,9 +205,14 @@ export async function createRelief({ frameSrc, preset }) {
     return true;
   };
   return {
-    base, raised, draw,
+    base, raised, resize, draw,
+    // 自分が持ち主のときだけ片づける（あとから開いたカードの WebGL を消さない）
     destroy() {
-      for (const { gl, textures, canvas } of ctxs) { for (const tex of textures) gl.deleteTexture(tex); textures.length = 0; canvas.remove(); }
+      for (const ctx of ctxs) {
+        if (ctx.owner !== token) continue;
+        for (const tex of ctx.textures) ctx.gl.deleteTexture(tex);
+        ctx.textures.length = 0; ctx.owner = null; ctx.onLost = null; ctx.canvas.remove();
+      }
     },
   };
 }
