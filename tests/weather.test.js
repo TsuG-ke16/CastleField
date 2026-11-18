@@ -113,6 +113,29 @@ test('砂嵐：周回の始めに全員の城と兵士に1ダメージ', () => {
   assert.deepEqual(log.filter((e) => e.event === 'castleDamaged').map((e) => e.source), [{ kind: 'weather', weather: 'sandstorm' }, { kind: 'weather', weather: 'sandstorm' }]);
 });
 
+test('砂嵐：城は削りきれない（HP1で止まり、両方の城がHP1でも決着しない）', () => {
+  const base = loadFixture('cards-step2.json');
+  const r = { ...loadFixture('rules.json'), weatherFirstRound: 2, weatherChangeChance: 1 };
+  const game = new Game({ cards: base, rules: r, rng: seededRng(1), weather: { sandstorm: WEATHER.sandstorm } });
+  game.debugSetDeck(Array(40).fill('heal'));
+  const log = recordEvents(game, EVENT_TYPES);
+  game.start();
+  game.debugSetCastleHp('p1', 1);
+  game.debugSetCastleHp('p2', 2);
+  game.endTurn(); game.endTurn(); // 2周目：砂嵐が始まる
+  const s = game.getState(null);
+  assert.equal(s.weather.type, 'sandstorm');
+  assert.equal(s.players.p1.castleHp, 1);
+  assert.equal(s.players.p2.castleHp, 1);
+  assert.notEqual(s.phase, 'gameOver');
+  const sand = log.filter((e) => e.event === 'castleDamaged');
+  assert.deepEqual(sand.map((e) => [e.playerId, e.amount, e.hp]), [['p2', 1, 1]]); // HP1の城には出ない
+  game.endTurn(); game.endTurn(); // 3周目も砂嵐。どちらも1のまま
+  assert.equal(game.getState(null).players.p1.castleHp, 1);
+  assert.equal(game.getState(null).players.p2.castleHp, 1);
+  assert.notEqual(game.getState(null).phase, 'gameOver');
+});
+
 test('砂嵐：兵士も1ダメージ（cause は weather）', () => {
   const { game, log } = setup({ type: 'sandstorm', p1: ['infantry'], rules: { weatherFirstRound: 2 } });
   game.playCard(idOf(game, 'infantry'), { playerId: 'p2' });
