@@ -35,7 +35,12 @@ def kind(path):
 def stats(a):
     alpha = a[:, :, 3]
     edge = np.concatenate((alpha[0, :], alpha[-1, :], alpha[:, 0], alpha[:, -1]))
+    visible = alpha[alpha > 4]
+    percentiles = [float(x) for x in np.percentile(visible, [10, 25, 50, 75, 90])] if visible.size else [0] * 5
     return {
+        "nonclear_alpha_p10_p25_p50_p75_p90": [round(x) for x in percentiles],
+        "alpha_80plus_pct": round(float(np.mean(alpha >= 80) * 100), 2),
+        "alpha_160plus_pct": round(float(np.mean(alpha >= 160) * 100), 2),
         "transparent_pct": round(float(np.mean(alpha <= 2) * 100), 2),
         "translucent_pct": round(float(np.mean((alpha > 2) & (alpha < 253)) * 100), 2),
         "opaque_border_pct": round(float(np.mean(edge >= 253) * 100), 2),
