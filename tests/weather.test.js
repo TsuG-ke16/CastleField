@@ -170,6 +170,39 @@ test('天候の呪文：天候を変える（今と違う天候になる）', ()
   assert.equal(game.getState(null).weather.type, changed.weather);
 });
 
+test('天候の呪文で weatherFirstRound より前に始めた天候も、周回ごとに減って終わる', () => {
+  const card = { name: '天候の呪文', kind: 'spell', effect: 'changeWeather', count: 0 };
+  const rules = { ...loadFixture('rules.json'), weatherFirstRound: 10, weatherChangeChance: 1 };
+  const game = new Game({ cards: { ...loadFixture('cards-step2.json'), weatherCall: card }, rules, rng: seededRng(1), weather: { storm: WEATHER.storm } });
+  game.debugSetHand('p1', ['weatherCall']);
+  game.debugSetDeck(Array(40).fill('heal'));
+  game.start();
+  assert.equal(game.playCard(idOf(game, 'weatherCall')).ok, true);
+  assert.equal(game.getState(null).weather.roundsLeft, 2);
+  game.endTurn(); game.endTurn(); // 2周目
+  assert.equal(game.getState(null).weather.roundsLeft, 1);
+  game.endTurn(); game.endTurn(); // 3周目：終わる（weatherFirstRound の前なので、新しい天候も出ない）
+  assert.equal(game.getState(null).weather, null);
+});
+
+test('天候の呪文：ほかに変えられる天候がなければ出せない（今の天候を消すだけにならない）', () => {
+  const card = { name: '天候の呪文', kind: 'spell', effect: 'changeWeather', count: 0 };
+  const game = new Game({ cards: { ...loadFixture('cards-step2.json'), weatherCall: card }, rules: loadFixture('rules.json'), rng: seededRng(1), weather: { storm: WEATHER.storm } });
+  game.debugSetHand('p1', ['weatherCall', 'weatherCall']);
+  game.debugSetDeck(Array(40).fill('heal'));
+  game.start();
+  // 天候なし → 嵐にはできる
+  const [a] = game.getState('p1').players.p1.hand;
+  assert.equal(game.playCard(a.cardId).ok, true);
+  assert.equal(game.getState(null).weather.type, 'storm');
+  // 嵐のあいだは、ほかに変えられる天候がない
+  game.players.p1.playedThisTurn = false;
+  const [b] = game.getState('p1').players.p1.hand;
+  const r = game.canPlayCard(b.cardId);
+  assert.equal(r.ok, false);
+  assert.match(r.reason, /ほかに変えられる天候/);
+});
+
 test('天候なしのゲームでは、天候の呪文は出せない', () => {
   const card = { name: '天候の呪文', kind: 'spell', effect: 'changeWeather', count: 0 };
   const game = new Game({ cards: { ...loadFixture('cards-step2.json'), weatherCall: card }, rules: loadFixture('rules.json'), rng: seededRng(1) });
@@ -225,4 +258,28 @@ test('魔物の駒は合成できず、排出（山札・ごほうび）では�
   const [a, b] = game.getState('p1').players.p1.hand;
   assert.equal(game.canFuse(a.cardId, b.cardId).ok, false);
   assert.equal(game.getDropRates().cards.beast_bat.rate, 0);
+});
+
+test('魔物の駒は、出しても捨てても山札に戻らない（使い切り置き場へ）', () => {
+  const cards = loadJson('cards.json');
+  const rules = { ...loadJson('rules.json'), monsterSpawnChance: 0, weatherChangeChance: 0 };
+  const g = new Game({ cards, rules, rng: seededRng(1), monsters: loadJson('monsters.json'), rarities: loadJson('rarities.json') });
+  g.start();
+  const pile = g.pileOf('p1');
+  const ex = pile.exhausted.length;
+  const dis = pile.discard.length;
+  // 出す
+  g.debugSetHand('p1', ['beast_bat', 'beast_slime']);
+  const [a] = g.getState('p1').players.p1.hand;
+  assert.equal(g.playCard(a.cardId, { playerId: 'p2', roadId: g.roads[0].roadId }).ok, true);
+  assert.equal(pile.exhausted.length, ex + 1);
+  assert.equal(pile.discard.length, dis);
+  // 手札の上限で捨てる
+  g.players.p1.maxHand = 0;
+  g.endTurn();
+  assert.equal(g.getState(null).phase, 'discard');
+  const [b] = g.getState('p1').players.p1.hand;
+  assert.equal(g.discard([b.cardId]).ok, true);
+  assert.equal(pile.exhausted.length, ex + 2);
+  assert.ok(![...pile.deck, ...pile.discard].some((c) => c.def.monster));
 });

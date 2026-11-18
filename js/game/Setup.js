@@ -156,6 +156,9 @@ export function rewardOdds(cards, rarities, base, chance = 0) {
 
 // ================= デッキ編成（deckMode "cost"） =================
 
+/** デッキ編成の合計コストの範囲（rules.json に書かなかったときの値） */
+export const DECK_COST_DEFAULTS = { deckCostMin: 90, deckCostMax: 100 };
+
 /** デッキ編成で、そのカードが数えられるレアリティ（スペシャルは deckAs のレアリティと同じ扱い） */
 export function deckRarityOf(def, rarities) {
   const r = rarities[def.rarity];
@@ -204,7 +207,10 @@ export function checkCostDeck(list, cards, rarities, rules) {
     const limit = rarities[rid].deckLimit;
     if (limit != null && n > limit) problems.push(`${rarities[rid].name}は合計${limit}枚までです（${n}枚）`);
   }
-  if (cost > rules.deckCostMax) problems.push(`合計コストが${rules.deckCostMax}を超えています（${cost}）`);
-  if (cost < rules.deckCostMin) problems.push(`合計コストが${rules.deckCostMin}未満です（${cost}）`);
+  // rules に書いていなければ既定値（Game と同じ。部屋・画面が rules.json をそのまま渡しても同じ判定になるように）
+  const max = rules?.deckCostMax ?? DECK_COST_DEFAULTS.deckCostMax;
+  const min = rules?.deckCostMin ?? DECK_COST_DEFAULTS.deckCostMin;
+  if (cost > max) problems.push(`合計コストが${max}を超えています（${cost}）`);
+  if (cost < min) problems.push(`合計コストが${min}未満です（${cost}）`);
   return { ok: problems.length === 0, reason: problems[0], problems, cost, total, counts };
 }

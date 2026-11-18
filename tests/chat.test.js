@@ -81,13 +81,16 @@ test('チャット：あとからつないだ人に、履歴が届く（部屋�
   const lobby = newLobby();
   const a = enter(lobby, 'chat6', 'A');
   const b = enter(lobby, 'chat6', 'B');
+  a.room.action(a.seat, 'chat', [{ text: 'こんにちは' }]);
   b.room.action(b.seat, 'chat', [{ text: 'おはよう' }]);
   a.room.action(a.seat, 'leave', []); // A が出て、B が p1 に詰まる
   const late = { seen: [] };
   b.room.connect(b.seat, (m) => late.seen.push(m));
   const log = late.seen.find((m) => m.type === 'chatLog');
-  assert.equal(log.messages.length, 1);
-  assert.deepEqual([log.messages[0].playerId, log.messages[0].name, log.messages[0].text], ['p1', 'B', 'おはよう']);
+  assert.equal(log.messages.length, 2);
+  // 出た A の発言は playerId が null（いまの p1＝B の発言に見えない）。名前は残る
+  assert.deepEqual([log.messages[0].playerId, log.messages[0].name, log.messages[0].left], [null, 'A', true]);
+  assert.deepEqual([log.messages[1].playerId, log.messages[1].name, log.messages[1].text], ['p1', 'B', 'おはよう']);
 });
 
 test('data/stamps.json：id が重ならず、アイコンとラベルがある', () => {
