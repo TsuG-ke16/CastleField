@@ -4,6 +4,6 @@
   "heavyRain": {"name": "大雨", "icon": "⛈️", "weight": 2, "rounds": [2, 2], "elementBonus": { "water": 2 }, "lightning": 5, "description": "雨の効果＋周回の始めに雷が落ち、どちらかの城に5ダメージ"},
   "fog": {"name": "霧", "icon": "🌫️", "weight": 2, "rounds": [2, 3], "missChance": 0.3, "description": "命中率ダウン。兵士の戦い・射撃・攻撃魔法が30%の確率で外れる"},
   "storm": {"name": "嵐", "icon": "🌪️", "weight": 2, "rounds": [2, 2], "stopMarch": true, "description": "兵士が進まなくなる（弓兵・魔法使いは撃てる）"},
-  "sandstorm": {"name": "砂嵐", "icon": "🏜️", "weight": 1, "rounds": [2, 2], "sandDamage": 1, "description": "周回の始めに、全員の城と兵士に1ダメージ"},
+  "sandstorm": {"name": "砂嵐", "icon": "🏜️", "weight": 1, "rounds": [2, 2], "sandDamage": 1, "description": "周回の始めに、全員の城と兵士に1ダメージ（城は砂嵐では落ちない。HP1で止まる）"},
   "coinRain": {"name": "コインの雨", "icon": "🪙", "weight": 2, "rounds": [2, 3], "coinPerTurn": 2, "description": "自分のターンの始めに2コインもらえる"}
 }
