@@ -40,3 +40,11 @@
   #app #hand { padding-block: 4px 6px; }
   #app #hand .card.has-frame .card-name { font-size: 10px; }
 }
+
+/* 広場（3人以上）：拡大縮小のつまみが右上の城（席6など）と体力の札に重なっていた。城のない左下の角に置く */
+#app .plaza-zoom { top: auto; right: auto; bottom: 4px; left: 4px; }
+@media (max-width: 400px), (max-height: 700px) {
+  #app .plaza-zoom { gap: 2px; padding: 2px; }
+  #app .plaza-zoom > span { display: none; }
+  #app .plaza-zoom button { --button-h: 28px; --button-cap: 6px; min-width: 28px; min-height: 28px; width: 28px; height: 28px; padding: 0 !important; font-size: 13px; }
+}
