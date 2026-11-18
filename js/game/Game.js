@@ -173,6 +173,11 @@ const soldierNumber = (s) => Number(s.soldierId.slice(1));
 const ok = () => ({ ok: true });
 const fail = (reason) => ({ ok: false, reason });
 
+/** 忍者（見えない兵士）について、相手に隠すイベント。城・魔物へのダメージ（castleDamaged・monsterDamaged）は見せる */
+const STEALTH_EVENTS = new Set([
+  'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
+  'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
+]);
 export class Game {
   /**
    * @param {object} options
@@ -478,6 +483,10 @@ export class Game {
   }
 
   emit(type, payload) {
+    // 忍者（見えない兵士）に関わるイベントには、持ち主の陣地（stealth）を付ける。
+    // 相手には visibility.js（filterEventFor）がこのイベントを隠す（城・魔物へのダメージは見える）
+    const sid = payload?.soldierId ?? payload?.attacker?.soldierId;
+    if (sid && this.stealthSides?.has(sid) && STEALTH_EVENTS.has(type)) payload = { ...payload, stealth: this.stealthSides.get(sid) };
     for (const handler of [...this.listeners.get(type)]) {
       try {
         handler(payload);
@@ -793,15 +802,15 @@ export class Game {
           this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'frozen' });
         }
         // 凍った弓兵・魔法使いは撃てないが、ターンは過ぎる
-        if (soldier.role !== 'melee') this.tickRanged(player, soldier);
+        if (soldier.isRanged) this.tickRanged(player, soldier);
         continue;
       }
 
       // 嵐：進む兵士は動かない（弓兵・魔法使いは撃てる）
-      if (soldier.role === 'melee' && this.weatherDef()?.stopMarch) continue;
+      if (!soldier.isRanged && this.weatherDef()?.stopMarch) continue;
 
       // 弓兵・魔法使いは動かずに撃つ
-      if (soldier.role !== 'melee') {
+      if (soldier.isRanged) {
         if (this.shoot(player, soldier)) return;
         continue;
       }
@@ -943,11 +952,14 @@ export class Game {
     const { laneLength } = this.rules;
     const mine = this.side(owner.id);
     const found = [];
+    // 忍者は相手の兵士と戦わずにすり抜ける。相手の兵士も、見えない忍者とは戦わない（撃たない）
+    if (soldier.stealth) return found;
     for (const id of this.alivePlayerIds()) {
       const theirs = this.side(id);
       if (theirs === mine) continue;
       const other = this.players[id];
       for (const e of other.soldiers) {
+        if (e.stealth) continue;
         let q;
         if (!this.plaza) {
           if (theirs !== soldier.targetId || e.roadId !== soldier.roadId) continue;
@@ -1559,14 +1571,15 @@ export class Game {
       default:
         break;
     }
-    const hasSoldiers = (p) => p.soldiers.length > 0;
+    // 見えない忍者は妖術（魔法）の的にならない（いるかどうかも相手に分からないように、数えない）
+    const hasSoldiers = (p) => p.visibleSoldiers.length > 0;
     // 選んだ1レーンだけに効く魔法：自分の道ごとに、相手の兵士がいる（効き目が変わる兵士がいる）道が対象
     if (this.isLaneScoped(def) && LANE_SCOPE_EFFECTS.includes(def.effect)) {
       const changes = this.changesSoldier(def);
       // 道の向こうの陣地の人（チーム戦ならメンバーごと）×道。その道にその人の兵士がいるもの
       const me = this.side(player.id);
       const pairs = this.roads.filter((r) => r.has(me)).flatMap((r) =>
-        this.opponentsOf(player.id).filter((p) => this.side(p.id) === r.otherSide(me)).map((p) => ({ p, r, on: p.soldiers.filter((x) => x.roadId === r.roadId) })),
+        this.opponentsOf(player.id).filter((p) => this.side(p.id) === r.otherSide(me)).map((p) => ({ p, r, on: p.visibleSoldiers.filter((x) => x.roadId === r.roadId) })),
       );
       const withSoldiers = pairs.filter((x) => x.on.length > 0);
       const targets = withSoldiers.filter((x) => x.on.some(changes)).map((x) => ({ playerId: x.p.id, roadId: x.r.roadId }));
@@ -1596,7 +1609,7 @@ export class Game {
         const changes = this.changesSoldier(def);
         const withSoldiers = this.opponentsOf(player.id).filter(hasSoldiers);
         return {
-          targets: playerTargets(withSoldiers.filter((p) => p.soldiers.some(changes))),
+          targets: playerTargets(withSoldiers.filter((p) => p.visibleSoldiers.some(changes))),
           reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
         };
       }
@@ -1683,6 +1696,8 @@ export class Game {
       if (this.opponentsOf(player.id).some((p) => p.findInHand(cardId))) return fail('あなたの番ではありません');
       return fail('そのカードは手札にありません');
     }
+    // 適応は合成専用。枠の決まりより先に答える（「もうメインを出しました」だと、次のターンなら出せるように読めてしまう）
+    if (card.def.effect === 'wild') return fail('適応は合成に使うカードです（出せません）');
     // 兵士は1ターン soldiersPerTurn 枚、メイン（攻撃の魔法）は1枚。付加（武器）・防御・回復や精霊などは何枚でも
     if (card.slot === 'soldier' && player.soldiersPlayedThisTurn >= this.rules.soldiersPerTurn) {
       return fail(`このターンに出せる兵士は${this.rules.soldiersPerTurn}枚までです`);
@@ -1776,6 +1791,7 @@ export class Game {
       soldier.hp += player.armyHp;
       soldier.maxHp += player.armyHp;
       player.soldiers.push(soldier);
+      if (soldier.stealth) (this.stealthSides ??= new Map()).set(soldierId, this.side(player.id));
       this.emit('soldierDeployed', {
         playerId: player.id,
         soldierId,
@@ -1808,7 +1824,7 @@ export class Game {
     const { effect, amount } = card.def;
     // レーンを選んだ魔法は、その道の兵士だけに効く（spellCast にも roadId を入れる）
     const lane = roadId === undefined ? {} : { roadId };
-    const victims = () => enemy.soldiers.filter((x) => roadId === undefined || x.roadId === roadId);
+    const victims = () => enemy.visibleSoldiers.filter((x) => roadId === undefined || x.roadId === roadId);
 
     switch (effect) {
       case 'damageEnemyCastle':
@@ -1868,7 +1884,7 @@ export class Game {
       case 'poisonEnemy': {
         // 選んだ相手の兵士全員と城を、永続の毒にする（重ねがけは足し算：毒の量が増える）
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
-        for (const soldier of enemy.soldiers) {
+        for (const soldier of enemy.visibleSoldiers) {
           soldier.poison = { amount: amount + (soldier.poison?.amount ?? 0), turns: null };
           this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status: 'poison', turns: null, amount: soldier.poison.amount });
         }
@@ -2388,6 +2404,10 @@ export class Game {
       const p = this.players[id];
       const pile = this.pileOf(id);
       const base = p.toState(id === viewerId);
+      // 忍者（見えない兵士）は、味方（同じ陣地）にしか見せない
+      if (!viewerId || !this.players[viewerId] || this.side(viewerId) !== this.side(id)) {
+        base.soldiers = base.soldiers.filter((st) => !p.soldiers.find((x) => x.soldierId === st.soldierId)?.stealth);
+      }
       // 広場のとき、兵士がいる場所（どの城の道か・広場か）。となりの道のときは null
       for (const st of base.soldiers) {
         const soldier = p.soldiers.find((x) => x.soldierId === st.soldierId);

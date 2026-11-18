@@ -3,7 +3,9 @@
 
 export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense'];
 /** 兵士の役割：melee（進んで戦う）・archer（弓兵：動かず、射程の中の1体を撃つ）・mage（魔法使い：動かず、兵士がいなければ城を撃つ） */
-export const SOLDIER_ROLES = ['melee', 'archer', 'mage'];
+export const SOLDIER_ROLES = ['melee', 'archer', 'mage', 'ninja'];
+/** 進んで城を攻める役割（speed を書く）。ninja（忍者）は進むが、相手から見えず、相手の兵士とは戦わずにすり抜ける */
+export const MOVING_ROLES = ['melee', 'ninja'];
 export const ELEMENTS = ['fire', 'water', 'wind', 'earth'];
 /** 精霊の種類：fire=毎ターン敵の城を攻める／water=毎ターン城を回復／wind=兵士の速さの最低値／earth=受けるダメージを軽くする */
 export const SPIRIT_KINDS = ['fire', 'water', 'wind', 'earth'];
@@ -164,11 +166,12 @@ export class Card {
         // role：兵士の役割。省略すると "melee"（進んで城を攻める）。"archer"（弓兵）・"mage"（魔法使い）は動かずに撃つ
         const role = def.role ?? 'melee';
         if (!SOLDIER_ROLES.includes(role)) throw new Error(`${where}: role は ${SOLDIER_ROLES.join(' / ')} のどれかにしてください（書かなければ melee）`);
-        const keys = role === 'melee' ? ['hp', 'attack', 'speed'] : ['hp', 'attack', 'range', 'stay'];
+        const moving = MOVING_ROLES.includes(role);
+        const keys = moving ? ['hp', 'attack', 'speed'] : ['hp', 'attack', 'range', 'stay'];
         for (const key of keys) {
           if (!isPositive(def[key])) throw new Error(`${where}: ${key} は1以上の整数にしてください`);
         }
-        if (role !== 'melee' && def.speed !== undefined) throw new Error(`${where}: 弓兵・魔法使い（role: ${role}）は動かないので speed は書けません`);
+        if (!moving && def.speed !== undefined) throw new Error(`${where}: 弓兵・魔法使い（role: ${role}）は動かないので speed は書けません`);
       } else if (def.kind === 'weapon') {
         if (!isCount(def.attackBonus)) throw new Error(`${where}: attackBonus は0以上の整数にしてください`);
       } else {

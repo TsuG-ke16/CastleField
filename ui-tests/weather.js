@@ -22,7 +22,7 @@ async function verify(width, height, reducedMotion) {
   const url = new URL(root);
   url.search = new URLSearchParams({
     local: '1', cpu: 'hard', debug: '1', seed: '8',
-    rules: JSON.stringify({ weatherFirstRound: 99, monsterFirstRound: 99 }),
+    rules: JSON.stringify({ weatherFirstRound: 99, monsterFirstRound: 99, defenseReaction: false }),
   });
   await page.goto(url.href);
   await page.waitForFunction(() => Boolean(window.castlefield?.game())

@@ -111,6 +111,8 @@ export class DeckEditor {
     this.q('.deck-name-input').addEventListener('input', event => { this.draft.name = event.target.value; });
     // 保存済みのデッキは、名前を変えたらすぐ保存する（カードの編集中の変更は、保存ボタンまで保存しない）
     this.q('.deck-name-input').addEventListener('change', () => this.saveName());
+    // スマホでは、ボタンを押しても入力欄から外れず change が来ないことがあるので、閉じたときにも保存する
+    this.q('.deck-management').addEventListener('close', () => this.saveName());
     this.q('.deck-preset').addEventListener('change', event => {
       if (!event.target.value) return;
       this.draft.list = { ...this.decks[event.target.value].cards };
@@ -347,10 +349,24 @@ export class DeckEditor {
   /** 保存済みのデッキの名前だけを、すぐ保存する（中身は、前に保存した内容のまま） */
   saveName() {
     const saved = loadDecks().slots[this.slot];
-    if (!saved) return;
-    const name = this.draft.name.trim().slice(0, 24) || `デッキ ${this.slot + 1}`;
+    const fallback = `デッキ ${this.slot + 1}`;
+    const name = this.draft.name.trim().slice(0, 24) || fallback;
     this.draft.name = name;
     this.q('.deck-name-input').value = name;
+    if (!saved) {
+      // まだ保存していない枠（デッキ1は見本の中身が最初から入っている）：
+      // 名前を変えたら、決まりに合う中身ならそのまま保存する。合わなければ、保存のしかたを知らせる
+      if (name === fallback) return;
+      if (!this.check().ok) {
+        this.q('.deck-manage-status').textContent = 'カードをそろえて「保存」を押すと、名前も保存されます';
+        return;
+      }
+      const ok = saveMyDeck(this.slot, name, this.draft.list);
+      this.refreshSlots();
+      this.q('.deck-manage-status').textContent = ok ? '名前とデッキを保存しました' : 'このページでだけ名前が変わりました';
+      this.onChange?.({ slot: this.slot, list: { ...this.draft.list } });
+      return;
+    }
     if (name === saved.name) return;
     const ok = saveMyDeck(this.slot, name, saved.list);
     this.refreshSlots();

@@ -142,7 +142,33 @@ async function verify(width, height, reducedMotion) {
   console.log(`${width}×${height} デッキ編成・ローカル設定・オンライン選択 OK`);
 }
 
+// デッキ1は見本の中身が入った「まだ保存していない枠」。名前だけ変えても保存される
+// （スマホのように入力欄から外れずに管理の画面を閉じたときも）
+async function verifyFirstSlotName() {
+  const context = await browser.newContext({ viewport: { width: 390, height: 797 }, serviceWorkers: 'block' });
+  const page = await context.newPage();
+  page.setDefaultTimeout(8000);
+  page.on('pageerror', error => errors.push(error.message));
+  await page.goto(base);
+  await page.locator('#title-deck').press('Enter');
+  await page.locator('.deck-manage').press('Enter');
+  await page.locator('.deck-name-input').evaluate(input => {
+    input.value = '最初のデッキ';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.closest('dialog').close();
+  });
+  assert.match(await page.locator('.deck-slots option[value="0"]').innerText(), /最初のデッキ/);
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('cf-mydecks-v2')));
+  assert.equal(stored.slots[0].name, '最初のデッキ');
+  await page.locator('.deck-close').press('Enter');
+  assert.match(await page.locator('#title-deck-preview').innerText(), /最初のデッキ/);
+  assert.deepEqual(errors, []);
+  await context.close();
+  console.log('デッキ1の名前だけを変えて保存 OK');
+}
+
 try {
+  await verifyFirstSlotName();
   await verify(390, 844, 'no-preference');
   await verify(360, 640, 'reduce');
 } finally {

@@ -254,3 +254,16 @@ test('適応：どのカードとでも合成できて、相手のカードの1�
   assert.equal(after.includes(cards.infantry.fuseTo), true);
   assert.equal(after.filter((t) => t === 'adapt').length, 1);
 });
+
+test('適応：メインのカードを出したあとも、出せない理由は「合成に使うカード」のまま', () => {
+  const game = make();
+  game.debugSetHand('p1', ['adapt', 'fireball']);
+  game.start();
+  const hand = game.getState('p1').players.p1.hand;
+  const id = (t) => hand.find((c) => c.type === t).cardId;
+  assert.equal(game.playCard(id('fireball'), game.getTargets(id('fireball'))[0]).ok, true);
+  const res = game.canPlayCard(id('adapt'));
+  assert.equal(res.ok, false);
+  assert.match(res.reason, /合成に使うカード/);
+  assert.match(game.playCard(id('adapt')).reason, /合成に使うカード/);
+});

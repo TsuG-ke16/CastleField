@@ -6,8 +6,14 @@
  * @param {string} type イベントの名前
  * @param {object} payload Game が出したペイロード
  * @param {string|null} viewerId 受け取る人
+ * @param {string|null} [viewerSide] 受け取る人の陣地（チーム戦なら城の持ち主。省略すると viewerId）。
+ *   忍者（payload.stealth に持ち主の陣地）のイベントは、同じ陣地の人にしか送らない（null を返す＝送らない）
+ * @returns {object|null}
  */
-export function filterEventFor(type, payload, viewerId) {
+export function filterEventFor(type, payload, viewerId, viewerSide = viewerId) {
+  if (payload?.stealth !== undefined) {
+    if (payload.stealth !== viewerSide) return null;
+  }
   if (type === 'cardDrawn' && payload.playerId !== viewerId) {
     // 本人以外には、引いた枚数だけ
     return { playerId: payload.playerId, count: payload.cardIds.length };
