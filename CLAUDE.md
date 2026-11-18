@@ -1095,12 +1095,12 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | 大雨 `heavyRain` | 雨 ＋ `lightning: 5` | 周回の始めに雷が落ち、ランダムな1つの城に5ダメージ（城壁は受ける） |
 | 霧 `fog` | `missChance: 0.3` | 兵士の戦い・射撃（弓兵・魔法使い）・攻撃魔法（城・兵士・魔物へ）が30%で外れる（ダメージ0） |
 | 嵐 `storm` | `stopMarch: true` | 進む兵士（`melee`）が動かない。弓兵・魔法使いは撃てる |
-| 砂嵐 `sandstorm` | `sandDamage: 1` | 周回の始めに、全員の城（城壁は無視）と兵士に1ダメージ |
+| 砂嵐 `sandstorm` | `sandDamage: 1` | 周回の始めに、全員の城（城壁は無視）と兵士に1ダメージ。**城は砂嵐では落ちない**（HP1で止まる。全員の城が同時に落ちて勝者がいなくなるのを防ぐ。人間の指示）。兵士は倒れる |
 | コインの雨 `coinRain` | `coinPerTurn: 2` | 自分のターンの始めに2コイン（`coinsChanged` の `reason` は `"weather"`） |
 
 - `getState().weather`：`{ type, name, icon, description, roundsLeft }`（ふつうの天気なら `null`）。`weatherEnabled`：天候を使うルールか
 - イベント：`weatherChanged`（`{ weather, previous, rounds, cause: "natural" | "card", playerId, name, icon, description, previousName }`。`weather` が `null` なら天候が終わった）／`weatherLightning`（`{ playerId, amount }`。このあと `castleDamaged`（`source: { kind: "weather", weather }`））／`attackMissed`（`{ playerId, kind: "fight" | "shot" | "spell", soldierId? / monsterId? / type? }`。外した側）
-- 砂嵐の城ダメージは `castleDamaged`（`blocked: 0`・`source: { kind: "weather" }`）、兵士は `soldierDamaged`（`cause: "weather"`）
+- 砂嵐の城ダメージは `castleDamaged`（`amount` は実際に減った量。HP1の城には出ない。`blocked: 0`・`source: { kind: "weather" }`）、兵士は `soldierDamaged`（`cause: "weather"`）
 - 順番（周回の始め）：`turnStarted` → `roundStarted` → `weatherChanged` → 雷・砂嵐 → 魔物の城への攻撃 → …。天候で城が落ちたら、そこで `gameOver`
 - 画面：上のバッジ（天候名・あと何周）、背景の効果、変わった瞬間の**警報**（サイレン・赤いふち・帯。良い天候は金・雨は青。`js/ui/config.js` の `weatherTone`）。タップで飛ばせる
 - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士の平均43手番・p1 勝率50%（天候なしと同じ）

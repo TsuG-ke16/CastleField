@@ -1419,8 +1419,11 @@ export class Game {
     if (def.sandDamage) {
       for (const id of this.aliveSides()) {
         const owner = this.players[id];
-        owner.castle.takeDamage(def.sandDamage);
-        this.emit('castleDamaged', { playerId: id, amount: def.sandDamage, blocked: 0, hp: owner.castle.hp, source: { kind: 'weather', weather: this.weather.type } });
+        // 砂嵐では城を落とさない（HPは1で止まる。全員の城が同時に0になって勝者がいなくなるのを防ぐ）
+        const amount = Math.min(def.sandDamage, owner.castle.hp - 1);
+        if (amount <= 0) continue;
+        owner.castle.takeDamage(amount);
+        this.emit('castleDamaged', { playerId: id, amount, blocked: 0, hp: owner.castle.hp, source: { kind: 'weather', weather: this.weather.type } });
       }
       for (const id of this.alivePlayerIds()) {
         const owner = this.players[id];
