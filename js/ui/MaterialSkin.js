@@ -5,7 +5,7 @@ export function setupMaterialSkin(root = document.getElementById('app')) {
     if (!(node instanceof Element)) return;
     const elements = [node, ...node.querySelectorAll('button,.screen-box,.parchment,.panel,.title-choices,.room-seat,.room-settings,.local-options,.set-group')];
     for (const el of elements) {
-      if (el.matches('button') && !el.closest('#debug-panel, #deck-editor') && !['debug-toggle', 'weather-chip'].includes(el.id)) {
+      if (el.matches('button:not(.chat-stamp)') && !el.closest('#debug-panel, #deck-editor') && !['debug-toggle', 'weather-chip'].includes(el.id)) {
         const skin = el.matches('.guide-card,.upgrade-item,.fusion-pair,.pill-stack .pill') ? 'card'
           : el.matches('.round-btn') ? 'round' : el.matches('.mode-choice,.level') ? 'wide'
           : el.matches('.shop-tabs > button,.guide-tabs > button') ? 'tab' : el.matches('.pill') ? 'compact' : 'regular';

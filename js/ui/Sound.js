@@ -111,6 +111,7 @@ const SOUNDS = {
   adaptFusion: s => [523,659,784,988,1047].forEach((freq,i)=>s.tone({freq,endFreq:freq*1.12,dur:.24,at:i*.07,gain:.13,type:'sine'})),
   lucky: s => [784,988,1175,1568,1976].forEach((freq,i)=>s.tone({freq,dur:.3,at:i*.07,gain:.16,type:'triangle'})),
   collapse: s => {s.noise({dur:.7,gain:.4,freq:700,endFreq:70});s.tone({freq:90,endFreq:25,dur:.6,gain:.3,type:'sawtooth'});},
+  chatNotice: s => s.tone({ freq: 820, endFreq: 610, dur: .11, type: 'sine', gain: .085 }),
   beastRecruit: (s) => {
     s.tone({ freq: 164, endFreq: 329, dur: .32, gain: .13, type: 'triangle' });
     [523, 659, 784, 1047].forEach((freq, i) => s.tone({ freq, dur: .23, at: .1 + i * .065, gain: .08 }));

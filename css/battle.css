@@ -236,5 +236,3 @@
   #app #result #result-stats { grid-column: 2; grid-row: 2; }
 }
 
-#app .chat-panel { top: 62px; }
-#app #chat-bubbles { top: 66px; }

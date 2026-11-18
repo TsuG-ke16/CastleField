@@ -317,5 +317,17 @@
   "cards/card-beast-mimic.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
   "cards/card-beast-vampire.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
   "cards/card-beast-demon-king.png": "exec-034155ec-03c2-4393-84e6-10e1c6aea1a3.png",
-  "cards/frame-beast.png": "exec-c8cb0d1b-4d6c-46b3-b8ab-acd6a69ff240.png"
+  "cards/frame-beast.png": "exec-c8cb0d1b-4d6c-46b3-b8ab-acd6a69ff240.png",
+  "ui/stamps/hello.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/nice.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/yay.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/thanks.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/go.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/smug.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/think.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/ouch.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/scared.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/sorry.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/gg.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "ui/stamps/again.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png"
 }

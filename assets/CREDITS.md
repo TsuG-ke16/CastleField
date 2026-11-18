@@ -381,3 +381,15 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 | `cards/card-beast-vampire.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `cards/card-beast-demon-king.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `cards/frame-beast.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/hello.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/nice.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/yay.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/thanks.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/go.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/smug.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/think.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/ouch.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/scared.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/sorry.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/gg.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `ui/stamps/again.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
