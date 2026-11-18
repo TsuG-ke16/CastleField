@@ -75,6 +75,7 @@ export const GLOW = {
 /** 魔法の効果ごとの、魔法が当たったときの色（毒の霧・氷の息など） */
 export const SPELL_TINT = {
   poisonEnemySoldiers: 'rgba(132, 204, 22, 0.45)',
+  poisonEnemy: 'rgba(132, 204, 22, 0.45)',
   freezeEnemySoldiers: 'rgba(125, 211, 252, 0.5)',
 };
 

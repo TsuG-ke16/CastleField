@@ -361,7 +361,12 @@ function smartStep(game, pid, ctx) {
   for (const t of castleSpells) {
     if (enemy && ctx.cards[t].amount >= enemy.castleHp && playFirst(game, playable, [t])) return true;
   }
+  // 毒にかかっていれば、解毒薬で治す（毒は永続なので、放っておくと削られ続ける）
+  if (playFirst(game, playable, typesWithEffect(ctx, 'curePoison'))) return true;
   if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, typesWithEffect(ctx, 'healOwnCastle'))) return true;
+  // 永続の毒は早く入れるほど効く。強い毒から
+  const toxins = typesWithEffect(ctx, 'poisonEnemy').sort((a, b) => ctx.cards[b].amount - ctx.cards[a].amount);
+  if (enemy && playFirst(game, playable, toxins)) return true;
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;

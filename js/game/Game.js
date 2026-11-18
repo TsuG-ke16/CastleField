@@ -53,6 +53,8 @@ export const EVENT_TYPES = [
   'armorExpired',
   'statusApplied',
   'statusCleared',
+  'castlePoisoned',
+  'castleCured',
   'roundStarted',
   'monsterAppeared',
   'monsterAttackedCastle',
@@ -727,6 +729,13 @@ export class Game {
       this.emit('armorExpired', { playerId });
     }
 
+    // 毒の城：自分のターンの始めに毒のダメージ（城壁は効かない。城が落ちたら、そこで止める）
+    if (this.tickCastlePoison(player)) return;
+    if (player.eliminated) {
+      this.beginTurn(this.nextPlayerAfter(playerId), { continueRound: true });
+      return;
+    }
+
     // コイン：自分のターンの始めに coinPerTurn 枚もらえる
     if (this.rules.coinPerTurn > 0) this.changeCoins(player, this.rules.coinPerTurn, 'turn');
     // コインの雨：自分のターンの始めにコインがもらえる
@@ -766,12 +775,13 @@ export class Game {
         this.emit('soldierDamaged', {
           playerId: player.id, soldierId: soldier.soldierId, amount, hp: soldier.hp, cause: 'poison', blocked: 0,
         });
-        soldier.poison.turns -= 1;
+        // turns が null の毒は永続（解毒薬か、兵士が倒れるまで続く）
+        if (soldier.poison.turns !== null) soldier.poison.turns -= 1;
         if (soldier.isDead) {
           this.removeSoldier(player, soldier, 'killed');
           continue;
         }
-        if (soldier.poison.turns <= 0) {
+        if (soldier.poison.turns !== null && soldier.poison.turns <= 0) {
           soldier.poison = null;
           this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'poison' });
         }
@@ -875,6 +885,18 @@ export class Game {
     owner.armor -= blocked;
     owner.castle.takeDamage(amount - blocked);
     this.emit('castleDamaged', { playerId: owner.id, amount, blocked, hp: owner.castle.hp, source });
+  }
+
+  /**
+   * 毒の城：持ち主（チーム戦なら代表）のターンの始めに、毒の量ぶんダメージ（城壁も、土の精霊も効かない）。
+   * castleDamaged（source: { kind: "poison" }）を出す。城が落ちてゲームが終わったら true
+   */
+  tickCastlePoison(player) {
+    const poison = player.castle.poison;
+    if (!poison || this.side(player.id) !== player.id) return false;
+    player.castle.takeDamage(poison);
+    this.emit('castleDamaged', { playerId: player.id, amount: poison, blocked: 0, hp: player.castle.hp, source: { kind: 'poison' } });
+    return this.checkGameOver();
   }
 
   /** 兵士にダメージ（盾が先に受ける）。soldierDamaged を出し、HPが0なら消す。消えたら true */
@@ -1578,6 +1600,17 @@ export class Game {
           reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
         };
       }
+      case 'poisonEnemy': {
+        // 城か兵士のどれかが、今より弱い毒（毒なし含む）の相手だけ（全部もう同じかそれ以上の毒なら、出しても何も起きない）
+        const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
+        const changes = (p) => (p.castle.poison ?? 0) < def.amount || p.soldiers.some((x) => (x.poison?.amount ?? 0) < def.amount || x.poison?.turns !== null);
+        return { targets: playerTargets(foes.filter(changes)), reason: foes.length ? 'もう同じかそれ以上の毒にかかっています' : '相手がいません' };
+      }
+      case 'curePoison':
+        return {
+          targets: player.castle.poison || player.soldiers.some((x) => x.poison) ? [{ playerId: player.id }] : [],
+          reason: '毒にかかっているものがありません',
+        };
       case 'changeWeather': {
         // 今と違う天候に変える。変えられる天候がなければ出せない（出しても何も起きないので）
         if (!this.weatherDefs) return { targets: [], reason: 'このルールでは天候を使いません' };
@@ -1829,6 +1862,33 @@ export class Game {
             soldier.frozen = Math.max(card.def.turns, soldier.frozen);
             this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status, turns: soldier.frozen });
           }
+        }
+        break;
+      }
+
+      case 'poisonEnemy': {
+        // 選んだ相手の兵士全員と城を、永続の毒にする（重ねがけは強い方）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        for (const soldier of enemy.soldiers) {
+          soldier.poison = { amount: Math.max(amount, soldier.poison?.amount ?? 0), turns: null };
+          this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status: 'poison', turns: null, amount: soldier.poison.amount });
+        }
+        enemy.castle.poison = Math.max(amount, enemy.castle.poison ?? 0);
+        this.emit('castlePoisoned', { playerId: enemy.id, amount: enemy.castle.poison });
+        break;
+      }
+
+      case 'curePoison': {
+        // 自分の毒をすべて治す（兵士も城も）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        for (const soldier of player.soldiers) {
+          if (!soldier.poison) continue;
+          soldier.poison = null;
+          this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'poison' });
+        }
+        if (player.castle.poison) {
+          player.castle.poison = null;
+          this.emit('castleCured', { playerId: player.id });
         }
         break;
       }

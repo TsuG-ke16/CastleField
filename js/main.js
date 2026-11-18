@@ -1031,6 +1031,7 @@ function modelFromState(st) {
       castleHp: p.castleHp,
       castleMaxHp: p.castleMaxHp,
       armor: p.armor ?? 0,
+      castlePoison: p.castlePoison ?? null,
       spirit: p.spirit ?? null,
       coins: p.coins ?? 0,
       mp: p.mp ?? 0,

@@ -206,6 +206,11 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
   white-space: nowrap;
 }
 .castle-spirit { background: #ffeaa8; }
+/* 城の毒（永続）のバッジ */
+.castle-poison { display: inline-flex; align-items: center; gap: 3px; padding: 1px 7px; border: 2px solid var(--ink); border-radius: 999px; background: #d6f0a8; font-size: 12px; font-weight: 900; white-space: nowrap; }
+.castle-poison[hidden] { display: none; }
+.castle.poisoned .castle-pic { filter: hue-rotate(60deg) saturate(1.15); }
+.plaza-stage .castle-poison { font-size: 10px; }
 .castle-hp {
   justify-self: start;
   width: min(100%, 112px);

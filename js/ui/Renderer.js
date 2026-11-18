@@ -410,6 +410,7 @@ export class Renderer {
       const p = model.players[id];
       this.setCastleHp(id, p.castleHp, { instant: true, max: p.castleMaxHp });
       this.setArmor(id, p.armor);
+      this.setCastlePoison(id, p.castlePoison);
       this.setSpirit(id, p.spirit);
       this.setCoins(id, p.coins);
       this.setMp(id, p.mp, model.maxMp);
@@ -551,6 +552,29 @@ export class Renderer {
     badge.hidden = !on;
     badge.innerHTML = on ? `${icon('wall')}<b></b>` : '';
     if (on) badge.querySelector('b').textContent = `城壁 ${armor}`;
+  }
+
+  /** 城の毒（永続）の表示。城のそばに「毒 N」のバッジを出す（毒でなければ隠す） */
+  setCastlePoison(playerId, amount) {
+    const castle = this.castleEl(playerId);
+    if (!castle) return;
+    let badge = castle.querySelector('.castle-poison');
+    if (!badge) {
+      const armor = castle.querySelector('.castle-armor');
+      if (!armor) return;
+      badge = document.createElement('div');
+      badge.className = 'castle-poison';
+      badge.hidden = true;
+      armor.after(badge);
+    }
+    const on = Number(amount) > 0;
+    castle.classList.toggle('poisoned', on);
+    badge.hidden = !on;
+    badge.innerHTML = on ? `${icon('skull')}<b></b>` : '';
+    if (on) {
+      badge.querySelector('b').textContent = `毒 ${amount}`;
+      badge.title = `城が毒にかかっています。自分のターンの始めに${amount}ダメージ（解毒薬で治る）`;
+    }
   }
 
   /** 来ている精霊を、城のそばのバッジで見せる（なければ隠す） */

@@ -71,6 +71,7 @@ export class Player {
       eliminated: this.eliminated,
       cardsPlayedThisTurn: this.cardsPlayedThisTurn,
       armor: this.armor,
+      castlePoison: this.castle.poison,
       spirit: this.spirit ? { type: this.spirit.type, spirit: this.spirit.spirit, amount: this.spirit.amount, turns: this.spirit.turns, targetId: this.spirit.targetId } : null,
       coins: this.coins,
       mp: this.mp,

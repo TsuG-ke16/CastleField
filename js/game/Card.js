@@ -14,7 +14,9 @@ export const EFFECTS = {
     damageEnemyCastle: ['amount'],
     damageEnemySoldiers: ['amount'],
     healOwnCastle: ['amount'],
-    poisonEnemySoldiers: ['amount', 'turns'],
+    poisonEnemySoldiers: ['amount', 'turns'], // 毒（ターン数つき。兵士だけ。テスト・互換用）
+    poisonEnemy: ['amount'], // 毒：選んだ相手の兵士と城を、永続の毒状態にする（毎ターン amount ダメージ。盾・城壁は効かない）
+    curePoison: [], // 解毒薬：自分の毒状態（兵士・城）をすべて治す
     freezeEnemySoldiers: ['turns'],
     redrawHand: [], // 天の恵み：手札を全部引き直す
     randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
@@ -37,10 +39,10 @@ export const EFFECTS = {
 export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers'];
 
 /** 攻撃ではない魔法（精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
-export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp'];
+export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison'];
 
 /** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers', 'summonSpirit'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'summonSpirit'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、

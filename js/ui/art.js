@@ -199,6 +199,12 @@ const CARD_ART = {
     `<path d="M50 8 L50 92 M10 50 L90 50" fill="none" stroke="#fff" stroke-width="2.4" opacity=".7"/>` +
     `<path d="M26 34 L40 20" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".85"/>` +
     `<path d="M80 18 l2.5 6 6 2.5 -6 2.5 -2.5 6 -2.5 -6 -6 -2.5 6 -2.5 Z M18 70 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 Z" fill="#fff" ${S} stroke-width="1.6"/>`,
+  antidote: () => bg('#d8f5e4', '#f1fff6') +
+    `<path d="M40 14 H60 V28 L74 52 Q82 70 72 82 Q64 90 50 90 Q36 90 28 82 Q18 70 26 52 L40 28 Z" fill="#8fe3b0" ${S} stroke-width="4"/>` +
+    `<path d="M38 12 H62" stroke="#7a4a12" stroke-width="7" stroke-linecap="round"/>` +
+    `<path d="M30 60 Q50 52 70 60 Q74 72 66 80 Q50 88 34 80 Q26 72 30 60 Z" fill="#3fbf7a" opacity=".85"/>` +
+    `<path d="M50 62 v16 M42 70 h16" stroke="#fff" stroke-width="5" stroke-linecap="round"/>` +
+    `<circle cx="38" cy="44" r="3" fill="#fff" opacity=".8"/>`,
   infantry: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${infantryBody(c)}</g>`,
   knight: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${knightBody(c)}</g>`,
   fireball: () => bg('#ffd9a8', '#fff0cf') +

@@ -384,6 +384,8 @@ export class Animations {
       case 'cardStolen': return this.cardStolen(p, model, ctx);
       case 'castleArmored': return this.castleArmored(p, model);
       case 'armorExpired': return this.armorExpired(p, model);
+      case 'castlePoisoned': return this.castlePoisoned(p, model);
+      case 'castleCured': return this.castleCured(p, model);
       case 'statusApplied': return this.statusesApplied(ev, queue, model);
       case 'statusCleared': return this.statusCleared(p, model);
       case 'monsterAppeared': return this.monsterAppeared(p, model);
@@ -1146,7 +1148,7 @@ export class Animations {
         s.shield = Math.max(0, (s.shield ?? 0) - blocked);
         // 毒のダメージ1回で、毒の残りが1減る（0になれば statusCleared が来る）。量はここで分かる
         if (h.cause === 'poison' && s.statuses?.poison) {
-          s.statuses = { ...s.statuses, poison: { amount: h.amount, turns: s.statuses.poison.turns - 1 } };
+          s.statuses = { ...s.statuses, poison: { amount: h.amount, turns: s.statuses.poison.turns === null ? null : s.statuses.poison.turns - 1 } };
         }
       }
       this.renderer.updateSoldier(h.soldierId, { hp: h.hp, shield: s?.shield ?? 0, ...(s ? { statuses: s.statuses } : {}) });
@@ -1535,6 +1537,30 @@ export class Animations {
     }
   }
 
+  /** 城が毒にかかった：毒の色の数字と、城のバッジ */
+  async castlePoisoned({ playerId, amount }, model) {
+    this.patchCastle(model, playerId, { castlePoison: amount });
+    this.renderer.setCastlePoison(playerId, amount);
+    if (this.skipping) return;
+    const castle = this.renderer.castleEl(playerId);
+    const small = UI_CONFIG.smallNumber;
+    sound.play('poison');
+    this.number(castle, `${STATUS_ICON.poison}毒 ${amount}`, { size: small.size + 6, duration: small.duration, kind: 'poison' });
+    await this.delay(UI_CONFIG.timing.status);
+  }
+
+  /** 解毒薬：城の毒が治る */
+  async castleCured({ playerId }, model) {
+    this.patchCastle(model, playerId, { castlePoison: null });
+    this.renderer.setCastlePoison(playerId, null);
+    if (this.skipping) return;
+    const castle = this.renderer.castleEl(playerId);
+    const small = UI_CONFIG.smallNumber;
+    sound.play('heal');
+    this.number(castle, '解毒', { size: small.size + 6, duration: small.duration, kind: 'heal' });
+    await this.delay(UI_CONFIG.timing.statusCleared);
+  }
+
   async castleDamaged({ playerId, amount, hp, blocked = 0, source }, model) {
     const pl = model.players[playerId];
     // 城に着いた兵士は、なぐってからダメージが入る
@@ -1714,8 +1740,8 @@ export class Animations {
       const s = this.modelSoldier(model, a.playerId, a.soldierId);
       const statuses = { ...(s?.statuses ?? this.renderer.soldier(a.soldierId)?.statuses ?? { poison: null, frozen: 0 }) };
       if (a.status === 'poison') {
-        // statusApplied に毒の量はない。量は推測せず（null）、毒のダメージを受けたときか getState で分かる
-        statuses.poison = { amount: null, turns: a.turns };
+        // 毒の量は、永続の毒だけ statusApplied に入っている。ほかは推測せず（null）、毒のダメージを受けたときか getState で分かる
+        statuses.poison = { amount: a.amount ?? null, turns: a.turns };
       } else if (a.status === 'frozen') {
         statuses.frozen = a.turns;
       }
