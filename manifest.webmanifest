@@ -1,1 +1,36 @@
-{"id":"./","name":"キャッスルフィールド","short_name":"キャッスル","lang":"ja","start_url":"./","scope":"./","display":"standalone","background_color":"#f6f1dc","theme_color":"#5f3615","icons":[{"src":"assets/ui/app-icon-192.png","sizes":"192x192","type":"image/png","purpose":"any"},{"src":"assets/ui/app-icon-512.png","sizes":"512x512","type":"image/png","purpose":"any"}]}
+{
+  "id": "./",
+  "name": "キャッスルフィールド",
+  "short_name": "キャッスル",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f6f1dc",
+  "theme_color": "#5f3615",
+  "icons": [
+    {
+      "src": "assets/ui/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/ui/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/ui/app-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "description": "城攻めの対戦カードゲーム",
+  "orientation": "portrait",
+  "categories": [
+    "games"
+  ]
+}
