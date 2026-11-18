@@ -105,8 +105,9 @@
 /* 窓のふちの影（枠が手前にあるので、光の反対側＝右下に向かって絵に影が落ちる）とひかえめなつや */
 .zoom-recess, .zoom-sheen { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
 .zoom-recess { box-shadow: inset calc(var(--zw) * .03) calc(var(--zw) * .04) calc(var(--zw) * .05) calc(var(--zw) * -.01) rgba(45, 24, 6, .5), inset 0 0 calc(var(--zw) * .02) rgba(45, 24, 6, .3); }
-.zoom-sheen { background: radial-gradient(ellipse 70% 55% at var(--gloss-x, 30%) var(--gloss-y, 20%), rgba(255, 255, 255, .2), transparent 70%); }
-.zoom-card .mini-card-image > .zoom-foil { inset: 0; left: 0; top: 0; width: 100%; height: 100%; z-index: 2; }
+.zoom-sheen { background: radial-gradient(ellipse 70% 55% at var(--gloss-x, 30%) var(--gloss-y, 20%), rgba(255, 255, 255, .1), transparent 70%); }
+.zoom-card .mini-card-image > .zoom-foil { inset: 0; left: 0; top: 0; width: 100%; height: 100%; z-index: 2; opacity: .3; }
+.zoom-card[data-rarity="special"] .mini-card-image > .zoom-foil { opacity: .4; }
 .zoom-card.foil-visible:not(.foil-input) .mini-card-image > .zoom-foil { animation: card-foil-sweep 7s ease-in-out infinite; }
 .reduced-motion .zoom-card .mini-card-image > .zoom-foil { animation: none; }
 @media (prefers-reduced-motion: reduce) { .zoom-card .mini-card-image > .zoom-foil { animation: none; } }
