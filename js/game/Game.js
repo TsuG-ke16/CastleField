@@ -952,11 +952,13 @@ export class Game {
       } else if (soldier.role === 'mage') {
         const enemy = this.players[soldier.targetId];
         const miss = this.rollMiss();
-        this.emit('soldierShot', { ...shot, target: { kind: 'castle', playerId: enemy.id }, amount: miss ? 0 : soldier.attack });
+        // 城を撃つときも、天候の属性ボーナスは効く（兵士・魔物を撃つときと同じ）
+        const amount = soldier.attack + this.weatherElementBonus(soldier.element);
+        this.emit('soldierShot', { ...shot, target: { kind: 'castle', playerId: enemy.id }, amount: miss ? 0 : amount });
         if (miss) {
           this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
         } else {
-          this.damageCastle(enemy, soldier.attack, { kind: 'soldier', soldierId: soldier.soldierId });
+          this.damageCastle(enemy, amount, { kind: 'soldier', soldierId: soldier.soldierId });
           over = this.checkGameOver();
         }
       }
@@ -1196,7 +1198,8 @@ export class Game {
     const missM = this.rollMiss();
     const missS = this.rollMiss();
     if (missM) this.emitMiss(player.id, 'fight', { soldierId: soldier.soldierId });
-    if (missS) this.emitMiss(player.id, 'fight', { monsterId: monster.monsterId });
+    // 魔物の攻撃が外れたとき：外した側は魔物なので playerId は null
+    if (missS) this.emitMiss(null, 'fight', { monsterId: monster.monsterId });
     const toMonster = missM ? 0 : this.fightDamage(soldier, monster);
     const toSoldier = missS ? 0 : this.reduceDamage(player, this.fightDamage(monster, soldier));
     this.damageMonster(monster, toMonster, { playerId: player.id, soldierId: soldier.soldierId });
