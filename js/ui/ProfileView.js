@@ -5,7 +5,7 @@ import { rankEmblem } from './RankEmblem.js';
 
 const REASON = { castleDestroyed: '城を落とした', surrender: '降参', roundLimit: '周回の上限', lastStanding: '最後の1人' };
 const PRIVACY_LABEL = { stats: '戦績（勝率など）', history: '対戦履歴', decks: '使用デッキ', ranking: 'ランキングの名前' };
-const LEVELS = { public: 'みんなに公開', friends: 'フレンドだけ（準備中）', private: '非公開' };
+const LEVELS = { public: 'みんなに公開', friends: 'フレンドだけ', private: '非公開' };
 const ago = (t) => {
   const m = Math.max(0, Math.round((Date.now() - t) / 60000));
   if (m < 1) return 'たった今'; if (m < 60) return `${m}分前`;

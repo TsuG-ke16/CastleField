@@ -32,6 +32,7 @@ import { AccountPanel } from './ui/AccountPanel.js';
 import { Home } from './ui/Home.js';
 import { ProfileView } from './ui/ProfileView.js';
 import { RankedView, RankingView } from './ui/RankedView.js';
+import { SocialView } from './ui/SocialView.js';
 import { showMatchProgress } from './ui/Progression.js';
 import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
@@ -328,6 +329,7 @@ async function boot() {
     onProfile: () => profileView.open(),
     onRanked: () => rankedView.open(),
     onRanking: () => rankingView.open(),
+    onFriends: () => socialView.open(),
   });
   // ランクマッチ：相手が見つかったら、サーバーが作った部屋の鍵で入る（ページを読み直したときと同じつなぎ方）
   rankedView = new RankedView({
@@ -340,10 +342,26 @@ async function boot() {
     },
   });
   const rankingView = new RankingView();
+  // フレンド：招待・パーティーの対戦は、合言葉の部屋（今までのオンライン対戦）に入る
+  const socialView = new SocialView({
+    toast,
+    onNeedMember: () => accountPanel.open(),
+    onProfile: (id) => profileView.open(id),
+    onBadge: (n) => home.setSocialBadge(n),
+    onJoinRoom: (passphrase) => {
+      home.close();
+      el.title.hidden = false; el.titleMain.hidden = true; el.titleForm.hidden = false;
+      if (!el.titleName.value) el.titleName.value = account.user?.displayName ?? '';
+      el.titlePass.value = passphrase;
+      joinOnline();
+    },
+  });
+  let socialStarted = false;
   let homeOpened = false;
   account.onChange(() => {
     $('title-account').hidden = !account.enabled;
     $('title-home').hidden = !home.available();
+    if (!socialStarted && account.user?.kind === 'member') { socialStarted = true; socialView.refresh(); }
     // 起動してアカウントの準備ができたら、ホームを入口にする（タイトルの最初の画面にいるときだけ）
     if (!homeOpened && home.available() && !el.title.hidden && !el.titleMain.hidden && document.documentElement.classList.contains('at-title')) { homeOpened = true; el.title.hidden = true; home.open(); }
   });

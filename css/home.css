@@ -117,3 +117,39 @@
 .ranking-empty { text-align:center; font-size:13px; color:#7a6a48; }
 .home-rank-emblem { display:inline-block; line-height:0; vertical-align:middle; margin-right:6px; }
 .rank-change { margin:6px 0 0; font-weight:bold; font-size:15px; } .rank-change.up { color:#2e7d46; } .rank-change.down { color:#a3281d; }
+
+/* フレンド */
+.home-badge { position:absolute; top:-7px; left:-4px; font-style:normal; min-width:22px; text-align:center; font-size:12px; padding:1px 6px; border-radius:999px; background:#e2574c; color:#fff; border:2px solid #fff8e0; }
+.social-box { width:min(94vw,430px); height:min(calc(100dvh - 32px),680px); display:flex; flex-direction:column; text-align:left; padding-bottom:max(16px,env(safe-area-inset-bottom)); }
+.social-box h2 { text-align:center; margin:0 0 8px; }
+.social-tabs { display:grid; grid-template-columns:repeat(4,1fr); gap:5px; margin-bottom:8px; }
+.social-tab { position:relative; min-height:44px; border:2px solid #b9a679; border-radius:12px; background:#fffdf4; font:inherit; font-size:13px; font-weight:bold; color:#4a2f17; cursor:pointer; }
+.social-tab[aria-selected=true] { border-color:#3f2511; background:linear-gradient(#ffe9a8,#f6ca69); box-shadow:inset 0 0 0 2px #fff6d0; }
+.social-tab i { position:absolute; top:-6px; right:-3px; min-width:18px; font-style:normal; font-size:11px; background:#e2574c; color:#fff; border-radius:999px; padding:0 5px; border:2px solid #fff8e0; }
+.social-body { flex:1; overflow:auto; min-height:0; padding-right:2px; }
+.social-body h3 { margin:12px 0 6px; font-size:15px; border-bottom:1px dashed #b9a679; padding-bottom:3px; }
+.social-list { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
+.social-row { padding:6px 8px; border-radius:12px; background:#fffdf4; border:1px solid #e0cf9c; }
+.social-main { display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-height:48px; padding:0; border:0; background:none; font:inherit; color:inherit; text-align:left; cursor:pointer; }
+.social-who { display:flex; align-items:center; gap:10px; min-width:0; }
+.social-avatar { flex:0 0 40px; width:40px; height:40px; display:grid; place-items:center; border-radius:50%; background:radial-gradient(circle at 35% 30%,#d7efff,#7fc4ee); border:2px solid #3f2511; font-weight:bold; }
+.social-name { display:grid; min-width:0; } .social-name strong { font-size:15px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .social-name small { font-size:12px; color:#6b5a3a; }
+.social-status { flex:0 0 auto; font-size:12px; padding:2px 9px 2px 8px; border-radius:999px; background:#e8e0c8; } .social-status::before { content:"●"; margin-right:4px; color:#9a9582; }
+.social-status.on { background:#d6f0d6; } .social-status.on::before { color:#2fa24a; } .social-status.match { background:#d6e6fa; } .social-status.match::before { color:#3a78c9; }
+.social-actions { display:flex; flex-wrap:wrap; gap:6px; margin-top:6px; } .social-actions.inline { margin:0; justify-content:flex-end; }
+.social-actions .plank-btn { flex:1 1 140px; min-height:44px; } .social-actions .small-btn { min-height:40px; flex:1 1 auto; }
+.social-row:has(.social-actions.inline) { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.social-empty, .social-note { margin:8px 2px; font-size:13px; color:#6b5a3a; text-align:center; line-height:1.55; }
+.social-party { padding:8px 10px; border:2px solid #8a6a3f; border-radius:14px; background:#fff6dc; margin-bottom:8px; } .social-party h3 { margin-top:0; }
+.social-party-members { list-style:none; margin:0 0 6px; padding:0; display:grid; gap:4px; } .social-party-members li { display:flex; justify-content:space-between; align-items:center; font-size:14px; }
+.social-code { display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:8px 10px; border-radius:12px; background:#fff6dc; border:1px solid #d3a24a; } .social-code strong { font-size:20px; letter-spacing:.12em; font-family:monospace; }
+.social-search { display:flex; gap:6px; margin:10px 0; } .social-search input { flex:1; min-width:0; min-height:44px; font:inherit; font-size:16px; padding:0 10px; border-radius:10px; border:2px solid #b9a679; background:#fffdf4; } .social-search .plank-btn { min-width:90px; }
+.social-toggle { display:flex; align-items:center; justify-content:space-between; gap:10px; min-height:44px; font-size:14px; border-bottom:1px dashed #d4c08c; } .social-toggle input { width:24px; height:24px; }
+.social-msg { min-height:18px; margin:6px 2px 0; font-size:13px; } .social-msg.bad { color:#a3281d; font-weight:bold; }
+.social-close { display:block; margin:8px auto 0; min-width:160px; }
+#social-banner { position:absolute; top:max(8px,env(safe-area-inset-top)); left:50%; transform:translateX(-50%); z-index:120; width:min(94vw,410px); display:grid; gap:6px; }
+.social-banner-row { display:flex; align-items:center; gap:8px; padding:8px 10px; border:3px solid #3f2511; border-radius:14px; background:linear-gradient(#fff6dc,#f3dca0); box-shadow:0 4px 0 rgba(0,0,0,.3); font-size:13.5px; font-weight:bold; }
+.social-banner-row span { flex:1; min-width:0; } .social-banner-row .small-btn { min-height:40px; }
+html:not(.at-title) #social-banner { display:none; }
+.home-tile em.home-badge { right:auto; left:-4px; width:auto; background:#e2574c; color:#fff; border-color:#fff8e0; }
+.social-tab { white-space:nowrap; padding:0 2px; font-size:12.5px; }

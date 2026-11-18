@@ -31,7 +31,7 @@ const ICONS = {
 const MENU = [
   { id: 'rank', label: 'ランクマッチ', icon: 'rank', go: 'rank' },
   { id: 'casual', label: 'カジュアル', icon: 'casual', go: 'casual' },
-  { id: 'friend', label: 'フレンド対戦', icon: 'friend', soon: 'Phase 4' },
+  { id: 'friend', label: 'フレンド対戦', icon: 'friend', go: 'friend' },
   { id: 'deck', label: 'デッキ編成', icon: 'deck', go: 'deck' },
   { id: 'catalog', label: 'カード図鑑', icon: 'catalog', go: 'catalog' },
   { id: 'profile', label: 'プロフィール', icon: 'profile', go: 'profile' },
@@ -50,8 +50,8 @@ export class Home {
    * @param {() => void} o.onDeck  @param {() => void} o.onCatalog  @param {() => void} o.onSettings
    * @param {() => void} o.onProfile
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked = () => {}, onRanking = () => {}, toast = () => {} }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked, onRanking, toast });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, toast = () => {} }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked, onRanking, onFriends, toast });
     this.data = null;
     this.mode = 'solo';
     try { const m = localStorage.getItem(MODE_KEY); if (m in MODES) this.mode = m; } catch { /* 保存できなくても動く */ }
@@ -134,7 +134,7 @@ export class Home {
     av.replaceChildren();
     if (icon) { const img = new Image(); img.src = icon.image; img.alt = ''; av.append(img); } else av.textContent = [...(u?.displayName ?? '?')][0];
     this.part('coins').querySelector('b').textContent = String(d?.coins ?? 0);
-    this.part('dot').hidden = !(d?.rewardsAvailable > 0);
+    this.part('dot').hidden = !(d?.rewardsAvailable > 0 || this.socialCount > 0);
     const sum = d?.rank;
     const member = u?.kind === 'member';
     this.part('rankEmblem').innerHTML = member ? rankEmblem(sum?.rank ?? null, 26) : '';
@@ -143,6 +143,15 @@ export class Home {
     this.part('deck').textContent = d?.deck?.name ?? '未設定';
     this.part('stats').textContent = d?.stats?.matches ? `${d.stats.matches}戦 ${d.stats.wins}勝 ${d.stats.losses}敗（勝率 ${d.stats.winRate}%）` : 'まだ対戦がありません';
     this.renderFacts();
+  }
+
+  /** フレンドの申請・招待の数（フレンドのタイルとお知らせに印を出す） */
+  setSocialBadge(n) {
+    this.socialCount = n;
+    const tile = this.box.querySelector('.home-tile[data-id=friend]');
+    tile?.querySelector('.home-badge')?.remove();
+    if (n > 0 && tile) { const b = document.createElement('em'); b.className = 'home-badge'; b.textContent = String(n); tile.append(b); }
+    this.part('dot').hidden = !(n > 0 || this.data?.rewardsAvailable > 0);
   }
 
   renderFacts() { this.part('startLabel').textContent = MODES[this.mode].label; }
@@ -192,9 +201,11 @@ export class Home {
     if (act === 'settings') return this.onSettings();
     if (act === 'profile') return this.onProfile();
     if (act === 'rank') return this.onRanked();
+    if (act === 'friend') return this.onFriends();
     if (act === 'ranking') return this.onRanking();
     if (act === 'notice') {
       const n = this.data?.rewardsAvailable ?? 0;
+      if (this.socialCount > 0) return this.onFriends();
       if (n > 0) return this.onProfile();
       this.toast('新しいお知らせはありません', 'info');
     }

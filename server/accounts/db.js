@@ -170,6 +170,50 @@ export const MIGRATIONS = [
       CREATE INDEX rating_changes_pair ON rating_changes(user_id, opponent_id, at);
     `,
   },
+  {
+    id: 4,
+    name: 'social',
+    sql: `
+      CREATE TABLE user_codes (
+        user_id       TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        code          TEXT NOT NULL UNIQUE
+      );
+      CREATE TABLE social_settings (
+        user_id          TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        accept_requests  INTEGER NOT NULL DEFAULT 1,
+        accept_invites   INTEGER NOT NULL DEFAULT 1,
+        show_online      INTEGER NOT NULL DEFAULT 1,
+        searchable       INTEGER NOT NULL DEFAULT 1
+      );
+      -- 2人の組は user_a < user_b にそろえて1行で持つ
+      CREATE TABLE friendships (
+        user_a        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        user_b        TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        status        TEXT NOT NULL CHECK (status IN ('pending','accepted','declined')),
+        requested_by  TEXT NOT NULL,
+        created_at    INTEGER NOT NULL,
+        updated_at    INTEGER NOT NULL,
+        PRIMARY KEY (user_a, user_b),
+        CHECK (user_a < user_b)
+      );
+      CREATE INDEX friendships_b ON friendships(user_b);
+      CREATE TABLE blocks (
+        blocker_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        blocked_id    TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at    INTEGER NOT NULL,
+        PRIMARY KEY (blocker_id, blocked_id)
+      );
+      CREATE INDEX blocks_blocked ON blocks(blocked_id);
+      -- 回数の制限（スパム対策）に使う短い記録
+      CREATE TABLE social_log (
+        id            INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id       TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        kind          TEXT NOT NULL,
+        at            INTEGER NOT NULL
+      );
+      CREATE INDEX social_log_user ON social_log(user_id, kind, at);
+    `,
+  },
 ];
 
 export class Db {

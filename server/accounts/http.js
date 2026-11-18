@@ -9,10 +9,11 @@ import { RateLimiter } from './ratelimit.js';
 import { Progress } from './progress.js';
 import { Ranking } from './ranking.js';
 import { Matchmaker } from './matchmaking.js';
+import { Social } from './social.js';
 import { checkCostDeck } from '../../js/game/Setup.js';
 import { randomInt } from 'node:crypto';
 
-export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/ranked/', '/api/ranking', '/api/level-rewards', '/healthz'];
+export const ACCOUNT_PREFIXES = ['/api/me', '/api/auth/', '/api/account/', '/api/decks', '/api/profile/', '/api/home', '/api/history', '/api/ranked/', '/api/ranking', '/api/social/', '/api/friends/', '/api/block', '/api/unblock', '/api/invites/', '/api/party/', '/api/level-rewards', '/healthz'];
 const isAccountPath = (p) => ACCOUNT_PREFIXES.some((x) => p === x || (x.endsWith('/') && p.startsWith(x)) || p.startsWith(`${x}/`));
 
 const AUTH_ERRORS = {
@@ -32,6 +33,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
   progress.ranking = ranking;
   /** @type {import('../rooms.js').Lobby|null} */
   let lobby = null;
+  const social = new Social({ db, accounts: acc, progress, now, isBusy: (u) => !!lobby?.activeSeatOfUser(u) });
   let matchmaker = null;
   /** 部屋の管理（Lobby）とつなぐ：ランクマッチが成立したとき、サーバーが部屋を作る */
   function attachLobby(l) {
@@ -170,6 +172,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       }
       if (req.method === 'POST' && path === '/api/account/delete') {
         if (body.confirm !== 'delete') { fail(req, res, 400, '確認の文字が正しくありません'); return true; }
+        social.forget(session.userId);
         acc.deleteAccount(session.userId);
         send(req, res, 200, { ok: true }, { 'Set-Cookie': cookieHeader(req, '', 0) });
         return true;
@@ -183,7 +186,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       if (req.method === 'GET' && path === '/api/profile/me') { send(req, res, 200, { ok: true, profile: progress.profile(session.userId, session.userId) }); return true; }
       const other = /^\/api\/profile\/user\/(u_[0-9a-f]{24})$/.exec(path);
       if (req.method === 'GET' && other) {
-        const p = progress.profile(other[1], session.userId);
+        const p = social.blockedEither(session.userId, other[1]) ? null : progress.profile(other[1], session.userId, { isFriend: (a, b) => social.isFriend(a, b) });
         if (!p) fail(req, res, 404, 'プレイヤーが見つかりません'); else send(req, res, 200, { ok: true, profile: p });
         return true;
       }
@@ -200,6 +203,10 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       if (req.method === 'POST' && path === '/api/level-rewards/claim') { send(req, res, 200, { ok: true, ...progress.claimReward(session.userId, body.level) }); return true; }
       if (path.startsWith('/api/ranked/') || path === '/api/ranking') {
         const out = await rankedRoutes(req, res, url, path, session, body);
+        if (out) return true;
+      }
+      if (/^\/api\/(social|friends|invites|party)\//.test(path) || path === '/api/block' || path === '/api/unblock') {
+        const out = socialRoutes(req, res, path, session.userId, body);
         if (out) return true;
       }
       if (req.method === 'GET' && path === '/api/decks') { send(req, res, 200, { ok: true, ...acc.getDecks(session.userId) }); return true; }
@@ -219,6 +226,36 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       log.error('accounts', err);
       if (!res.headersSent) fail(req, res, 500, 'サーバーでエラーが起きました');
       return true;
+    }
+  }
+
+  /** フレンド・ブロック・招待・パーティー（正会員だけ。中でも requireMember で確かめる） */
+  function socialRoutes(req, res, path, uid, body) {
+    const ok = (data = {}) => { send(req, res, 200, { ok: true, ...data }); return true; };
+    if (req.method === 'GET' && path === '/api/social/state') return ok(social.state(uid));
+    if (req.method !== 'POST') return false;
+    const to = body.userId;
+    switch (path) {
+      case '/api/social/settings': social.requireMember(uid); return ok({ settings: social.updateSettings(uid, body.settings) });
+      case '/api/friends/search': return ok({ results: social.search(uid, body.q) });
+      case '/api/friends/request': {
+        let target = to;
+        if (!target && typeof body.code === 'string') target = db.get('SELECT user_id AS u FROM user_codes WHERE code = ?', body.code.trim().toUpperCase())?.u;
+        return ok(social.request(uid, target));
+      }
+      case '/api/friends/respond': return ok(social.respond(uid, to, body.accept === true));
+      case '/api/friends/cancel': return ok(social.cancel(uid, to));
+      case '/api/friends/remove': return ok(social.remove(uid, to));
+      case '/api/block': return ok(social.block(uid, to));
+      case '/api/unblock': return ok(social.unblock(uid, to));
+      case '/api/invites/send': return ok(social.inviteToRoom(uid, to));
+      case '/api/invites/respond': return ok(social.respondInvite(uid, body.id, body.accept === true));
+      case '/api/party/create': return ok({ party: social.createParty(uid) });
+      case '/api/party/invite': return ok(social.inviteToParty(uid, to));
+      case '/api/party/leave': return ok(social.leaveParty(uid));
+      case '/api/party/kick': return ok(social.kick(uid, to));
+      case '/api/party/start': return ok(social.startParty(uid));
+      default: return false;
     }
   }
 
@@ -291,5 +328,5 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     return r;
   });
 
-  return { handle, userIdOf, onMatchEnd, attachLobby, ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
+  return { handle, userIdOf, onMatchEnd, attachLobby, social, ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
 }
