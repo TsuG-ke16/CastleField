@@ -1,15 +1,5 @@
 /* Storybook battle theme. Layout and presentation only; game rules live elsewhere. */
 :root {
-  --ink: #263e3b;
-  --paper: #fffaf0;
-  --paper-d: #f0e6d2;
-  --gold: #f6ca69;
-  --gold-d: #dfab42;
-  --blue: #5caecb;
-  --orange: #e89b62;
-  --red: #d96359;
-  --green: #65ae80;
-  --head: 'Hiragino Maru Gothic ProN', 'Yu Gothic', Meiryo, sans-serif;
   --card-w: 110px;
   --card-h: 148px;
   --castle-h: clamp(76px, 11.5dvh, 106px);

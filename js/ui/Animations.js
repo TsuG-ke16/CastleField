@@ -132,7 +132,7 @@ export class Animations {
       frames.push({ transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)` });
     }
     frames[n] = { transform: 'translate(0, 0)' };
-    return this.animate(el, frames, { duration, easing: 'linear' });
+    return this.animate(el, frames, { duration, easing: UI_CONFIG.easing.linear });
   }
 
   /** 画面ぜんたい（盤面ごと）を揺らす。kind は config の screenShake のキー、power は強さ（ダメージや魔法の値） */
@@ -184,7 +184,7 @@ export class Animations {
       { transform: `${base} scale(1) rotate(${tilt}deg)`, opacity: 1, offset: 0.32 },
       { transform: `${base} translate(${drift * 0.3}px, -8px) scale(1) rotate(${tilt}deg)`, opacity: 1, offset: 0.7 },
       { transform: `${base} translate(${drift}px, -38px) scale(0.85) rotate(${tilt}deg)`, opacity: 0 },
-    ], { duration, easing: 'ease-out', fill: 'forwards' }).then(() => el.remove());
+    ], { duration, easing: UI_CONFIG.easing.enter, fill: 'forwards' }).then(() => el.remove());
   }
 
   flashClass(el, className, ms) {
@@ -227,7 +227,7 @@ export class Animations {
     if (this.skipping) return;
     const el = this.fx('fx-flash');
     el.style.background = color;
-    this.animate(el, [{ opacity: 0.85 }, { opacity: 0 }], { duration: ms, easing: 'ease-out', fill: 'forwards' }).then(() => el.remove());
+    this.animate(el, [{ opacity: 0.85 }, { opacity: 0 }], { duration: ms, easing: UI_CONFIG.easing.enter, fill: 'forwards' }).then(() => el.remove());
   }
 
   /** 土けむり（assets/fx/dust.png）をひとつ出す（待たない） */
@@ -240,7 +240,7 @@ export class Animations {
       { transform: 'translate(-50%, -50%) scale(.3)', opacity: 0 },
       { transform: 'translate(-50%, -50%) scale(.6)', opacity: .95, offset: .15 },
       { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1.1) rotate(30deg)`, opacity: 0 },
-    ], { duration, delay: delay * UI_CONFIG.speed, easing: 'ease-out', fill: 'both' }).then(() => el.remove());
+    ], { duration, delay: delay * UI_CONFIG.speed, easing: UI_CONFIG.easing.enter, fill: 'both' }).then(() => el.remove());
   }
 
   /** 当たった瞬間の印（斬撃・突き・爪・星）。angle は攻撃の向き（度） */
@@ -258,7 +258,7 @@ export class Animations {
           ? [{ transform: `${base} translateX(-35%) scale(.4, 1)`, opacity: 0 }, { transform: `${base} scale(1.1)`, opacity: 1, offset: .4 }, { transform: `${base} translateX(15%) scale(1.2, .8)`, opacity: 0 }]
           // 斬撃：三日月が弧にそって振り抜かれる
           : [{ transform: `${base} rotate(-55deg) scale(.55)`, opacity: 0 }, { transform: `${base} rotate(-8deg) scale(1.05)`, opacity: 1, offset: .38 }, { transform: `${base} rotate(40deg) scale(1.2)`, opacity: 0 }];
-    this.animate(el, frames, { duration, easing: 'ease-out', fill: 'both' }).then(() => el.remove());
+    this.animate(el, frames, { duration, easing: UI_CONFIG.easing.enter, fill: 'both' }).then(() => el.remove());
   }
 
   /** 広がる輪（衝撃波・魔法の命中） */
@@ -522,7 +522,7 @@ export class Animations {
     if (cause === 'poison') return this.shake(token, cfg.shake, cfg.shakeDuration);
     if (!dir) {
       return this.animate(token, [
-        { transform: 'scale(1.28, .68)', offset: 0.18, easing: 'ease-out' },
+        { transform: 'scale(1.28, .68)', offset: 0.18, easing: UI_CONFIG.easing.enter },
         { transform: 'scale(.92, 1.1)', offset: 0.55 },
         { transform: 'none' },
       ], { duration: cfg.shakeDuration * 1.5 });
@@ -533,7 +533,7 @@ export class Animations {
     const tilt = (dir.y < 0 ? -1 : 1) * 7 * power;
     return this.animate(token, [
       { transform: `translate(${kx.toFixed(1)}px, ${ky.toFixed(1)}px) rotate(${tilt.toFixed(1)}deg) scale(.9, 1.1)`, offset: 0.2, easing: 'cubic-bezier(.1, .8, .3, 1)' },
-      { transform: `translate(${(kx * 0.85).toFixed(1)}px, ${(ky * 0.85).toFixed(1)}px) rotate(${(tilt * 0.5).toFixed(1)}deg)`, offset: 0.5, easing: 'ease-in-out' },
+      { transform: `translate(${(kx * 0.85).toFixed(1)}px, ${(ky * 0.85).toFixed(1)}px) rotate(${(tilt * 0.5).toFixed(1)}deg)`, offset: 0.5, easing: UI_CONFIG.easing.inOut },
       { transform: 'none' },
     ], { duration: cfg.shakeDuration * (1.3 + power * 0.4) });
   }
@@ -769,7 +769,7 @@ export class Animations {
     const base = 'translate(-50%, -50%)';
     this.animate(clone, [
       { transform: `${base} translate(${dx}px, ${dy}px) scale(.18) rotate(-30deg)`, opacity: 0.7, easing: 'cubic-bezier(.3, .6, .3, 1)' },
-      { transform: `${base} translate(${dx * 0.2}px, ${Math.min(-30, dy * 0.12)}px) scale(1.15) rotate(6deg)`, opacity: 1, offset: 0.68, easing: 'ease-in' },
+      { transform: `${base} translate(${dx * 0.2}px, ${Math.min(-30, dy * 0.12)}px) scale(1.15) rotate(6deg)`, opacity: 1, offset: 0.68, easing: UI_CONFIG.easing.exit },
       { transform: `${base} translate(0, 4px) scale(1.03, .96)`, offset: 0.9 },
       { transform: `${base} scale(1)` },
     ], { duration: UI_CONFIG.timing.drawFly, fill: 'forwards' }).then(() => {
@@ -831,7 +831,7 @@ export class Animations {
       { transform: `${base} translate(0, 8px) scale(.94, .9)`, offset: 0.07, easing: 'cubic-bezier(.2, .7, .3, 1)' },
       { transform: `${base} translate(${dx}px, ${dy}px) scale(1.86) rotate(${lean}deg)`, offset: 0.33 },
       { transform: `${base} translate(${dx}px, ${dy}px) scale(1.66) rotate(0deg)`, offset: 0.42 },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75, easing: 'ease-in' },
+      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75, easing: UI_CONFIG.easing.exit },
       { transform: `${base} translate(${dx}px, ${dy - 30}px) scale(1.4)`, opacity: 0 },
     ], { duration: dur, fill: 'forwards' }).then(() => clone.remove());
     const rank = Math.max(0, Object.keys(this.rarities ?? {}).indexOf(def.rarity));
@@ -887,7 +887,7 @@ export class Animations {
       this.sparks(here, { count: 7, color: '#d9b8ff', spread: 34, size: 7 });
       await this.animate(token, [
         { transform: 'translateY(-10px) scale(.1, 1.6) rotate(-90deg)', opacity: 0 },
-        { transform: 'translateY(-8px) scale(1.15) rotate(8deg)', opacity: 1, offset: 0.6, easing: 'ease-out' },
+        { transform: 'translateY(-8px) scale(1.15) rotate(8deg)', opacity: 1, offset: 0.6, easing: UI_CONFIG.easing.enter },
         { transform: 'none' },
       ], { duration: dur });
       return;
@@ -904,7 +904,7 @@ export class Animations {
       { transform: `translate(${dx}px, ${dy}px) scale(.3)`, opacity: 0, easing: 'cubic-bezier(.2, .6, .4, 1)' },
       { transform: `translate(${dx * 0.75}px, ${dy * 0.75}px) scale(.6)`, opacity: 1, offset: 0.18 },
       { transform: `translate(${dx * 0.25}px, ${dy * 0.25 - 26}px) scale(1.06, 1.1)`, offset: 0.6, easing: 'cubic-bezier(.6, 0, 1, .7)' },
-      { transform: 'translate(0, 0) scale(1.22, .78)', offset: 0.8, easing: 'ease-out' },
+      { transform: 'translate(0, 0) scale(1.22, .78)', offset: 0.8, easing: UI_CONFIG.easing.enter },
       { transform: 'translate(0, 0) scale(.95, 1.06)', offset: 0.9 },
       { transform: 'none' },
     ], { duration: dur * (heavy ? 1.25 : 1) });
@@ -963,7 +963,7 @@ export class Animations {
     const heavy = motion === 'giant' || motion === 'heavy';
     const token = el.querySelector('.soldier-token');
     this.animate(token, [
-      { transform: `scale(${heavy ? 1.2 : 1.12}, ${heavy ? 0.8 : 0.88})`, offset: 0.3, easing: 'ease-out' },
+      { transform: `scale(${heavy ? 1.2 : 1.12}, ${heavy ? 0.8 : 0.88})`, offset: 0.3, easing: UI_CONFIG.easing.enter },
       { transform: 'scale(.97, 1.04)', offset: 0.65 },
       { transform: 'none' },
     ], { duration: heavy ? 260 : 190 });
@@ -1047,12 +1047,12 @@ export class Animations {
       // ねらう：弓兵は体を引いてしぼる。魔法使いは浮いて杖の先に光をためる
       this.animate(token, mage ? [
         { transform: 'none' },
-        { transform: 'translateY(-8px) scale(1.08)', offset: 0.6, easing: 'ease-out' },
+        { transform: 'translateY(-8px) scale(1.08)', offset: 0.6, easing: UI_CONFIG.easing.enter },
         { transform: `translate(${ux * 5}px, ${uy * 5}px) scale(.95, 1.05)`, offset: 0.7 },
         { transform: 'none' },
       ] : [
         { transform: 'none' },
-        { transform: `translate(${-ux * 8}px, ${-uy * 8}px) rotate(-7deg) scale(1.07, .94)`, offset: 0.6, easing: 'ease-out' },
+        { transform: `translate(${-ux * 8}px, ${-uy * 8}px) rotate(-7deg) scale(1.07, .94)`, offset: 0.6, easing: UI_CONFIG.easing.enter },
         { transform: `translate(${ux * 6}px, ${uy * 6}px) rotate(4deg)`, offset: 0.68 },
         { transform: 'none' },
       ], { duration: t.shotAim / 0.6 });
@@ -1062,7 +1062,7 @@ export class Animations {
         this.animate(orb, [
           { transform: 'translate(-50%, -50%) scale(.1)', opacity: 0.5 },
           { transform: `translate(-50%, -50%) scale(${1 + power})`, opacity: 1 },
-        ], { duration: t.shotAim, easing: 'ease-in', fill: 'forwards' }).then(() => orb.remove());
+        ], { duration: t.shotAim, easing: UI_CONFIG.easing.exit, fill: 'forwards' }).then(() => orb.remove());
       }
       await this.delay(t.shotAim);
       sound.play(mage ? 'magicShot' : 'bow', power);
@@ -1090,7 +1090,7 @@ export class Animations {
           { transform: at(0, 0, 0.6), opacity: 1 },
           { transform: at(dx * 0.5 - uy * bow, dy * 0.5 + ux * bow), opacity: 1, offset: 0.5 },
           { transform: at(dx, dy), opacity: 1 },
-        ], { duration: flight, easing: mage ? 'ease-in' : 'cubic-bezier(.3, 0, .7, .6)', fill: 'forwards' });
+        ], { duration: flight, easing: mage ? UI_CONFIG.easing.exit : 'cubic-bezier(.3, 0, .7, .6)', fill: 'forwards' });
         projectile.remove();
         if (!this.skipping) {
           if (mage) {
@@ -1149,7 +1149,7 @@ export class Animations {
         { transform: base, opacity: 1 },
         { transform: `${base} translateY(18%) scale(1.25, .3)`, opacity: 0.9, offset: 0.7 },
         { transform: `${base} translateY(24%) scale(1.4, .1)`, opacity: 0 },
-      ], { duration: dur, easing: 'ease-in', fill: 'forwards' });
+      ], { duration: dur, easing: UI_CONFIG.easing.exit, fill: 'forwards' });
       return;
     }
     const x = (ko?.x ?? 0) * UI_CONFIG.soldierHit.knockOut;
@@ -1159,7 +1159,7 @@ export class Animations {
     this.puff({ x: at.x + x * 0.9, y: at.y + y * 0.9 }, { size: 50, delay: dur * 0.55, dy: -14 });
     await this.animate(el, [
       { transform: base, opacity: 1, easing: 'cubic-bezier(.1, .7, .4, 1)' },
-      { transform: `${base} translate(${x * 0.8}px, ${y * 0.8 - 18}px) rotate(${spin * 0.6}deg) scale(.9)`, opacity: 1, offset: 0.6, easing: 'ease-in' },
+      { transform: `${base} translate(${x * 0.8}px, ${y * 0.8 - 18}px) rotate(${spin * 0.6}deg) scale(.9)`, opacity: 1, offset: 0.6, easing: UI_CONFIG.easing.exit },
       { transform: `${base} translate(${x}px, ${y}px) rotate(${spin}deg) scale(.4)`, opacity: 0 },
     ], { duration: dur, fill: 'forwards' });
   }
@@ -1296,7 +1296,7 @@ export class Animations {
     this.animate(mark, [
       { transform: 'translate(-50%, -50%) scale(.2)', opacity: 0 },
       { transform: `translate(-50%, -50%) scale(${0.8 + tier * 0.25})`, opacity: 0.75 },
-    ], { duration: dur, easing: 'ease-in', fill: 'forwards' }).then(() => mark.remove());
+    ], { duration: dur, easing: UI_CONFIG.easing.exit, fill: 'forwards' }).then(() => mark.remove());
     if (tier >= 3) {
       // 最上位：空が暗くなり、地面がふるえる
       const dark = this.fx('fx-flash');
@@ -1432,7 +1432,7 @@ export class Animations {
     const k = Math.min(1, amount / 20);
     if (!finish) {
       this.animate(pic, [
-        { transform: `translateY(${(k * 5).toFixed(1)}px) scale(${(1 + k * 0.1).toFixed(3)}, ${(1 - k * 0.14).toFixed(3)})`, offset: 0.18, easing: 'ease-out' },
+        { transform: `translateY(${(k * 5).toFixed(1)}px) scale(${(1 + k * 0.1).toFixed(3)}, ${(1 - k * 0.14).toFixed(3)})`, offset: 0.18, easing: UI_CONFIG.easing.enter },
         { transform: `scale(${(1 - k * 0.04).toFixed(3)}, ${(1 + k * 0.06).toFixed(3)})`, offset: 0.5 },
         { transform: 'none' },
       ], { duration: 280 + k * 160 });
@@ -1466,7 +1466,7 @@ export class Animations {
         { transform: 'translate(-50%, -50%) scale(.2)', opacity: 0 },
         { transform: 'translate(-50%, calc(-50% - 14px)) scale(1)', opacity: 1, offset: 0.25 },
         { transform: `translate(calc(-50% + ${(Math.random() - 0.5) * 16}px), calc(-50% - ${50 + Math.random() * 30}px)) scale(.6)`, opacity: 0 },
-      ], { duration: UI_CONFIG.timing.heal * 1.6, delay: i * 35 * UI_CONFIG.speed, easing: 'ease-out', fill: 'both' }).then(() => plus.remove());
+      ], { duration: UI_CONFIG.timing.heal * 1.6, delay: i * 35 * UI_CONFIG.speed, easing: UI_CONFIG.easing.enter, fill: 'both' }).then(() => plus.remove());
     }
     this.number(castle, `+${amount}`, { kind: 'heal', size: UI_CONFIG.healNumber.size, duration: UI_CONFIG.healNumber.duration });
     await this.delay(UI_CONFIG.timing.heal);
@@ -1581,12 +1581,12 @@ export class Animations {
       stamp.innerHTML = imageArt(`fx/${frozen ? 'ice' : 'poison'}.png`, '', 'art');
       this.animate(stamp, frozen ? [
         { transform: 'translate(-50%, -50%) scale(1.9)', opacity: 0 },
-        { transform: 'translate(-50%, -50%) scale(.9)', opacity: 1, offset: 0.3, easing: 'ease-out' },
+        { transform: 'translate(-50%, -50%) scale(.9)', opacity: 1, offset: 0.3, easing: UI_CONFIG.easing.enter },
         { transform: 'translate(-50%, -50%) scale(1)', opacity: 1, offset: 0.6 },
         { transform: 'translate(-50%, -50%) scale(1)', opacity: 0 },
       ] : [
         { transform: 'translate(-50%, -30%) scale(.4)', opacity: 0 },
-        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.95, offset: 0.4, easing: 'ease-out' },
+        { transform: 'translate(-50%, -50%) scale(1)', opacity: 0.95, offset: 0.4, easing: UI_CONFIG.easing.enter },
         { transform: 'translate(-50%, -75%) scale(1.15)', opacity: 0 },
       ], { duration: UI_CONFIG.timing.status * 1.6, fill: 'forwards' }).then(() => stamp.remove());
       if (frozen) this.debris(c, { count: 5, spread: 30, size: 6, colors: ['#e6f7ff', '#a9defa', '#7cc4ee'] });
@@ -1666,7 +1666,7 @@ export class Animations {
       this.animate(token, [
         { transform: `translate(${dx}px, ${dy}px) scale(1.3)` },
         { transform: 'translate(0, 0) scale(1)' },
-      ], { duration: UI_CONFIG.timing.monsterAttack, easing: 'ease-out' });
+      ], { duration: UI_CONFIG.timing.monsterAttack, easing: UI_CONFIG.easing.enter });
     }
     if (amount > 0) await this.castleHit(playerId, amount, hp);
     else this.renderer.setCastleHp(playerId, hp);
@@ -1714,8 +1714,8 @@ export class Animations {
     const base = 'translate(-50%, -50%)';
     await this.animate(el, [
       { opacity: 1, transform: `${base} scale(1)` },
-      { opacity: 1, transform: `${base} scale(.86, 1.12) rotate(-6deg)`, offset: 0.3, easing: 'ease-out' },
-      { opacity: 1, transform: `${base} scale(1.3) rotate(5deg)`, offset: 0.75, easing: 'ease-in' },
+      { opacity: 1, transform: `${base} scale(.86, 1.12) rotate(-6deg)`, offset: 0.3, easing: UI_CONFIG.easing.enter },
+      { opacity: 1, transform: `${base} scale(1.3) rotate(5deg)`, offset: 0.75, easing: UI_CONFIG.easing.exit },
       { opacity: 0, transform: `${base} scale(1.7, .3)` },
     ], { duration: UI_CONFIG.rewardFx.collapse * 2, fill: 'forwards' });
     if (!this.skipping) {

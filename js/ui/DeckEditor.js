@@ -32,11 +32,11 @@ export class DeckEditor {
     this.box.innerHTML =
       '<div class="screen-box parchment deck-box">' +
       '<h2 id="deck-editor-title">デッキ編成</h2>' +
-      '<div class="deck-meter" role="status" aria-live="polite"><div class="deck-meter-bar"><i class="deck-meter-fill"></i><i class="deck-meter-min"></i></div><p class="deck-summary"></p></div>' +
+      '<div class="deck-meter" role="status" aria-live="polite"><div class="deck-meter-bar meter"><i class="deck-meter-fill meter-fill"></i><i class="deck-meter-min"></i></div><p class="deck-summary"></p></div>' +
       '<p class="deck-limits"></p>' +
       '<div class="deck-tools"><label>見本から読み込む <select class="deck-preset"></select></label><button type="button" class="small-btn deck-clear">空にする</button></div>' +
       '<div class="deck-tabs" role="tablist" aria-label="レアリティ"></div>' +
-      '<ul class="deck-rows"></ul>' +
+      '<ul class="deck-rows inset-panel"></ul>' +
       '<ul class="deck-problems" role="alert"></ul>' +
       '<div class="deck-actions"><button type="button" class="plank-btn deck-save">保存</button><button type="button" class="small-btn deck-close">閉じる</button></div>' +
       '<p class="deck-status" role="status"></p></div>';

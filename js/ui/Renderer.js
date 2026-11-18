@@ -637,7 +637,7 @@ export class Renderer {
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="soldier-token"><div class="soldier-pic"></div>' +
       '<span class="soldier-weapon" hidden></span><span class="soldier-shield" hidden></span><span class="soldier-status" hidden></span></div>' +
-      `<div class="soldier-gauge" role="progressbar"><i class="soldier-gauge-lag"></i><i class="soldier-gauge-fill"></i></div><div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
+      `<div class="soldier-gauge meter" role="progressbar"><i class="soldier-gauge-lag meter-fill"></i><i class="soldier-gauge-fill meter-fill"></i></div><div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
     el.querySelector('.soldier-pic').innerHTML = unitArt(st.type, colorOf(playerId), def.name ?? st.type);
     const seat = document.createElement('span');seat.className='seat-mark';seat.textContent=String(this.playerOrder.indexOf(playerId)+1);seat.title=playerName(playerId);seat.setAttribute('aria-label',`席${seat.textContent}、${playerName(playerId)}`);el.append(seat);
     const turns = document.createElement('span'); turns.className = 'soldier-turns'; el.append(turns);

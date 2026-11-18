@@ -4,17 +4,6 @@
    演出の長さは js/ui/config.js から CSS 変数（--t-*）で入る。 */
 
 :root {
-  --ink: #4a2e1a;
-  --paper: #fbf0d2;
-  --paper-d: #ecd7a8;
-  --wood: #c99a5b;
-  --wood-d: #9a6a38;
-  --gold: #ffd35a;
-  --gold-d: #f0a82e;
-  --blue: #4da3e8;
-  --orange: #f5923e;
-  --red: #f2566e;
-  --green: #5fd35f;
   --cells: 3;
   --unit: clamp(44px, 7.4vh, 64px);
   --lanes: 1;
@@ -26,8 +15,6 @@
   --t-death: 260ms;
   --t-heal: 420ms;
   --t-equip: 300ms;
-  --font: "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
-  --head: "Hiragino Maru Gothic ProN", "Yu Gothic UI", sans-serif;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -234,7 +221,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 .hp-max { font-size: 11px; font-weight: 900; color: #fff3d6; }
 .hp-bar { position: relative; height: 10px; border: 2px solid var(--ink); border-radius: 6px; background: #5b3a22; overflow: hidden; }
 .hp-lag, .hp-fill { position: absolute; inset: 0 auto 0 0; width: 100%; }
-.hp-lag { background: #fff; transition: width .6s ease .25s; }
+.hp-lag { background: #fff; transition: width var(--motion-meter-lag) ease var(--motion-meter-lag-delay); }
 .hp-fill { background: var(--green); transition: width .25s ease; }
 .hp-fill.mid { background: #ffc83d; }
 .hp-fill.low { background: var(--red); }

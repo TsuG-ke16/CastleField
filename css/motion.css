@@ -376,8 +376,9 @@
 
 /* ===== UI の手応え ===== */
 /* ボタン：押すと沈み、離すとはね返る */
-.plank-btn:not(:disabled):active, .small-btn:not(:disabled):active, .round-btn:not(:disabled):active { transform: translateY(2px) scale(.95); transition-duration: .05s; }
-.round-btn, .small-btn, .plank-btn, .chip { transition: transform .22s cubic-bezier(.3, 1.8, .5, 1), box-shadow .18s ease, filter .18s ease, background .18s ease; }
+.plank-btn:not(:disabled):active, .small-btn:not(:disabled):active, .round-btn:not(:disabled):active { transform: translateY(2px) scale(.95); transition-duration: var(--motion-press); }
+.round-btn, .small-btn, .plank-btn, .chip { transition: transform var(--motion-button-release) var(--ease-button-release),
+  box-shadow var(--motion-feedback) ease, filter var(--motion-feedback) ease, background var(--motion-feedback) ease; }
 @media (hover: hover) {
   .plank-btn:not(:disabled):hover, .small-btn:not(:disabled):hover, .round-btn:not(:disabled):hover { transform: translateY(-2px); }
   /* カード：マウスをのせると少し浮いて、こちらへ傾く */
@@ -403,14 +404,14 @@
 }
 @keyframes card-glint { 0%, 70% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
 /* 数が変わったチップ（山札・コイン）：はずむ */
-.bump { animation: bump-pop .36s cubic-bezier(.3, 1.6, .5, 1); }
+.bump { animation: bump-pop var(--motion-badge) var(--ease-badge); }
 @keyframes bump-pop { 0% { transform: scale(1); } 30% { transform: scale(1.3) rotate(-4deg); } 60% { transform: scale(.94) rotate(2deg); } 100% { transform: scale(1); } }
 /* パネル（カードの説明・対象選び・捨てる）：下からはね上がる */
-.panel:not([hidden]) { animation: panel-pop .26s cubic-bezier(.3, 1.4, .5, 1) both; }
+.panel:not([hidden]) { animation: panel-pop var(--motion-panel) var(--ease-panel) both; }
 @keyframes panel-pop { from { transform: translateY(14px) scale(.96); opacity: 0; } }
 /* 画面の切り替え：かぶさる画面はふわっと、箱は少し遅れてはね上がる */
-.screen:not([hidden]):not(#handover) { animation: screen-in .28s ease-out both; }
-.screen:not([hidden]) > .screen-box { animation: box-in .42s cubic-bezier(.3, 1.4, .5, 1) .05s both; }
+.screen:not([hidden]):not(#handover) { animation: screen-in var(--motion-screen) var(--ease-enter) both; }
+.screen:not([hidden]) > .screen-box { animation: box-in var(--motion-dialog) var(--ease-panel) var(--motion-dialog-delay) both; }
 @keyframes screen-in { from { opacity: 0; } }
 @keyframes box-in { from { transform: translateY(26px) scale(.92); opacity: 0; } }
 #title:not([hidden]), #loading { animation: none; }

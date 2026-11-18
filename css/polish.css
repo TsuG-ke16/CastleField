@@ -11,9 +11,9 @@
   border-image-repeat: stretch;
   border-radius: 0;
   box-shadow: none;
-  min-height: 44px;
+  min-height: var(--touch-target);
   padding: 9px 22px;
-  color: #4a2f17;
+  color: var(--wood-ink);
   font-family: var(--head);
   font-weight: 900;
   letter-spacing: .04em;
@@ -362,7 +362,6 @@
      アクセント（約0.5割）… 金〜橙。いちばん押してほしいボタンだけに使う。赤は危険の合図だけ
    UIに青緑（ダークティール）や、橙・緑・青の同格ボタンを並べない（主役が分からなくなるため）。
    ===================================================================== */
-:root { --wood: #8f5a2a; --wood-dark: #3f2511; --wood-ink: #4a2f17; --parch: #fff8e0; --parch-deep: #f7e9c3; --accent: #f6a52e; }
 
 /* ---------- タイトル：用意してあった空と草原の絵を背景に。UIは木と羊皮紙、主役のボタンだけ橙 ---------- */
 #title { background: #7cc4f5 url('../assets/bg/title-compact.png') center bottom / cover no-repeat; }
@@ -419,7 +418,7 @@ body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%,
 /* 札（山・捨て・手札・コイン）：羊皮紙の小さな札に木の縁。数字は濃い茶で読みやすく */
 .chip {
   border: 2px solid var(--wood);
-  background: linear-gradient(#fffdf0, #f7e9c3);
+  background: linear-gradient(#fffdf0, var(--parch-deep));
   box-shadow: inset 0 1px 0 #fff, 0 1px 0 #3f251140;
   color: var(--wood-ink);
 }
@@ -540,9 +539,7 @@ body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%,
 .plaza-stage .castle-hp .hp-bar { height: 5px; border-color: var(--wood); background: #e6d3a2; }
 .plaza-zoom { background: linear-gradient(#fffdf0, #f7e9c3); border: 2px solid var(--wood); color: var(--wood-ink); }
 
-/* ---------- 9. 色の下地：theme.css が文字・縁の基本色 --ink を青緑がかった暗い色（#263e3b）にしていたので、木の濃い茶に戻す ----------
-   --ink は文字と細い縁のほぼ全部が使っている。ここを変えると、個別に直さなくても青緑の文字・縁がいっぺんに茶になる */
-:root { --ink: #3f2511; }
+/* ---------- 9. トーストとタイトルの仕上げ ---------- */
 #toast { background: #3f2511f5; border-color: #e0b06a; box-shadow: 0 8px 24px #2a180a55; }
 .title-logo { color: var(--wood-ink); }
 

@@ -1,7 +1,7 @@
 /* 説明・操作をどの画面でも読めるようにする。 */
-:focus-visible {outline:3px solid #163e54!important;outline-offset:3px;box-shadow:0 0 0 5px #fff7d6!important;}
-.screen {padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));}
-.screen-box {max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px);overflow:auto;max-width:100%;}
+:focus-visible {outline:3px solid var(--focus-outline)!important;outline-offset:3px;box-shadow:0 0 0 5px var(--focus-halo)!important;}
+.screen {padding:max(var(--space-3),env(safe-area-inset-top)) max(var(--space-3),env(safe-area-inset-right)) max(var(--space-3),env(safe-area-inset-bottom)) max(var(--space-3),env(safe-area-inset-left));}
+.screen-box {max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 2 * var(--space-3));overflow:auto;max-width:100%;}
 #hud {padding-left:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right));}
 #controls {padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);}
 #title-levels {max-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 32px);}

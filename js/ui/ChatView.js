@@ -38,7 +38,7 @@ export class ChatView {
     panel.setAttribute('aria-label', 'チャット');
     panel.innerHTML =
       '<div class="chat-head"><b>チャット</b><button type="button" class="chat-close round-btn" aria-label="閉じる">✕</button></div>' +
-      '<ol class="chat-log" aria-live="polite"></ol>' +
+      '<ol class="chat-log inset-panel" aria-live="polite"></ol>' +
       '<div class="chat-stamps" role="group" aria-label="スタンプ"></div>' +
       '<form class="chat-form" autocomplete="off"><input class="chat-input" type="text" enterkeyhint="send" aria-label="メッセージ" placeholder="ひとこと（短く）"><button type="submit" class="small-btn chat-send">送る</button></form>' +
       '<p class="chat-note" role="status"></p>';
