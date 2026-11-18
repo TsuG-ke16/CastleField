@@ -52,3 +52,6 @@
   #app #settings .set-row .pill { --button-cap: 9px; font-size: 11px; }
 }
 #app .handover-title { font-size: min(23px, 6.4vw); text-wrap: balance; }
+/* 遊び方の「案内つきで操作を練習する」：320幅で「る」だけが次の行に落ちていた */
+#app #help-tutorial { text-wrap: balance; }
+@media (max-width: 340px) { #app #help-tutorial { font-size: 12px; padding-inline: 4px; } }
