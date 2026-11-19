@@ -83,8 +83,7 @@ const PRESETS = {
   special:   { bump: 1.1, spec: .9,  env: .9,  iri: .9,  gem: 1,   kd: .65 },
   other:     { bump: 1,   spec: .6,  env: .7,  iri: 0,   gem: .8,  kd: .6 },
 };
-const LIGHT = (() => { const v = [-.42, -.62, .66]; const l = Math.hypot(...v); return v.map(x => x / l); })();
-const rad = Math.PI / 180;
+export const CARD_LIGHT = (() => { const v = [-.42, -.62, .66]; const l = Math.hypot(...v); return v.map(x => x / l); })();
 
 export const reliefPaths = (frameSrc) => {
   const m = /cards\/(frame-[a-z]+)\.png/.exec(frameSrc ?? '');
@@ -127,9 +126,10 @@ function context(slot) {
   for (const name of ['uFrame', 'uRelief', 'uRaised', 'uL', 'uV', 'uM', 'uFlat', 'uBump', 'uSpec', 'uEnv', 'uIri', 'uGem', 'uPar', 'uKd', 'uLayer', 'uShadow']) u[name] = gl.getUniformLocation(prog, name);
   gl.uniform1i(u.uFrame, 0); gl.uniform1i(u.uRelief, 1); gl.uniform1i(u.uRaised, 2);
   gl.disable(gl.DEPTH_TEST);
-  shared[slot] = { canvas, gl, u, textures: [], owner: null, onLost: null };
+  const entry = { canvas, gl, u, textures: [], owner: null, onLost: null };
+  shared[slot] = entry;
   // GPU のリセットなどで WebGL が消えたら、持ち主に知らせて CSS だけの表示に戻してもらう
-  canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); shared[slot]?.onLost?.(); });
+  canvas.addEventListener('webglcontextlost', (event) => { event.preventDefault(); entry.onLost?.(); });
   return shared[slot];
 }
 
@@ -147,7 +147,7 @@ function texture(gl, unit, img, premultiply) {
   return tex;
 }
 
-// 返すもの：base / raised のキャンバス（呼ぶ側が置く）、resize()、draw(rx, ry)、destroy()
+// 返すもの：base / raised のキャンバス（呼ぶ側が置く）、resize()、draw(axes)、destroy()
 // isCurrent：読み込みのあいだに閉じた・別のカードを開いたら false を返す関数。そのときは共有の WebGL に触らない
 // onLost：WebGL が消えたときに呼ぶ
 export async function createRelief({ frameSrc, preset, isCurrent = () => true, onLost = null }) {
@@ -158,7 +158,8 @@ export async function createRelief({ frameSrc, preset, isCurrent = () => true, o
   if (!isCurrent()) return null;
   let ctxs;
   try { ctxs = [context(0), context(1)]; } catch (error) { console.warn('凹凸の表示を使えません', error); return null; }
-  if (!ctxs[0] || !ctxs[1]) return null;
+  // 別の演出が使用中なら、そのカードのキャンバスを動かさず、この呼び出しは CSS に任せる。
+  if (ctxs.some(ctx => !ctx || ctx.owner)) return null;
   const token = {};
   for (const ctx of ctxs) {
     const { gl, textures } = ctx;
@@ -181,20 +182,18 @@ export async function createRelief({ frameSrc, preset, isCurrent = () => true, o
     size = [w, h];
     for (const el of [base, raised]) { el.width = w; el.height = h; }
   };
-  const draw = (rxDeg, ryDeg) => {
+  const draw = (axes) => {
     if (!mine() || ctxs.some(c => c.gl.isContextLost())) return false;
     if (!size[0]) resize();
-    // CSS の rotateX(rx) rotateY(ry) と同じ回転（y は下向き、z は手前）。カード→世界 M、世界→カードはその転置
-    const cx = Math.cos(rxDeg * rad), sx = Math.sin(rxDeg * rad), cy = Math.cos(ryDeg * rad), sy = Math.sin(ryDeg * rad);
-    const M = [[cy, 0, sy], [sx * sy, cx, -sx * cy], [-cx * sy, sx, cx * cy]];   // M[行][列] = Rx·Ry
-    const toCard = (v) => [0, 1, 2].map(j => M[0][j] * v[0] + M[1][j] * v[1] + M[2][j] * v[2]);
-    const L = toCard(LIGHT), V = toCard([0, 0, 1]);
-    const Mcol = [M[0][0], M[1][0], M[2][0], M[0][1], M[1][1], M[2][1], M[0][2], M[1][2], M[2][2]];
+    // カード→世界の列ベクトルから、世界に固定した光と視線をカードの座標に写す。
+    const L = axes.map(([x, y, z]) => x * CARD_LIGHT[0] + y * CARD_LIGHT[1] + z * CARD_LIGHT[2]);
+    const V = axes.map(axis => axis[2]);
+    const Mcol = axes.flat();
     ctxs.forEach(({ gl, u }, layer) => {
       gl.viewport(0, 0, size[0], size[1]);
       gl.uniform3fv(u.uL, L); gl.uniform3fv(u.uV, V);
       gl.uniformMatrix3fv(u.uM, false, Mcol);
-      gl.uniform1f(u.uFlat, LIGHT[2]);
+      gl.uniform1f(u.uFlat, CARD_LIGHT[2]);
       gl.uniform1f(u.uBump, p.bump); gl.uniform1f(u.uSpec, p.spec); gl.uniform1f(u.uEnv, p.env);
       gl.uniform1f(u.uIri, p.iri); gl.uniform1f(u.uGem, p.gem); gl.uniform1f(u.uKd, p.kd);
       gl.uniform1f(u.uPar, .018); gl.uniform1f(u.uShadow, .012);

@@ -1,5 +1,6 @@
 const selector = '.card[data-rarity], .mini-card[data-rarity]';
 const foilRarities = new Set(['rare', 'epic', 'legendary', 'special']);
+export const hasCardFoil = rarity => foilRarities.has(rarity);
 const visible = new Set();
 const watched = new WeakSet();
 let initialized = false;
@@ -25,6 +26,7 @@ function orient(event) {
   frame = requestAnimationFrame(() => {
     frame = 0;
     for (const card of visible) {
+      if (card.classList.contains('card-3d')) continue;
       card.classList.add('foil-input');
       shine(card, ...orientation);
     }
@@ -60,7 +62,7 @@ export function initHolograms(root) {
     }
   });
   const watch = card => {
-    if (watched.has(card) || !foilRarities.has(card.dataset.rarity)) return;
+    if (card.classList.contains('card-3d') || watched.has(card) || !hasCardFoil(card.dataset.rarity)) return;
     watched.add(card);
     card.classList.remove('foil-visible', 'foil-input');
     if (!card.querySelector(':scope > .foil-sheet')) {
@@ -90,7 +92,7 @@ export function initHolograms(root) {
   root.querySelectorAll(selector).forEach(watch);
   root.addEventListener('pointermove', event => {
     const card = event.target.closest(selector);
-    if (!card || !visible.has(card) || reduced()) return;
+    if (!card || card.classList.contains('card-3d') || !visible.has(card) || reduced()) return;
     const rect = card.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
     card.classList.add('foil-input');
@@ -98,7 +100,7 @@ export function initHolograms(root) {
   }, { passive: true });
   const reset = event => {
     const card = event.target.closest(selector);
-    if (!card || (event.relatedTarget instanceof Node && card.contains(event.relatedTarget))) return;
+    if (!card || card.classList.contains('card-3d') || (event.relatedTarget instanceof Node && card.contains(event.relatedTarget))) return;
     card.classList.remove('foil-input');
     card.style.removeProperty('--foil-x');
     card.style.removeProperty('--foil-y');

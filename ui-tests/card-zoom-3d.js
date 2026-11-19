@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { UI_CONFIG } from '../js/ui/config.js';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const base = process.env.UI_TEST_URL ?? 'http://127.0.0.1:8787/';
@@ -87,8 +88,23 @@ for (const rarity of ['common', 'uncommon', 'rare', 'epic', 'legendary', 'specia
       await longPress(page);
       await page.locator('.zoom-card.zoom-gl').waitFor({ timeout: 8000 });
       const card = page.locator('.zoom-card.zoom-3d');
-      assert.equal(await card.locator('.zoom-edge').count(), 6, 'zoom-edge count');
-      assert.equal(await card.locator('.zoom-wall').count(), 6, 'zoom-wall count');
+      assert.equal(await card.locator('.zoom-edge').count(), 4, '連続した側面が四辺にある');
+      const geometry = await card.evaluate(el => {
+        const edge = el.querySelector('.zoom-edge-right');
+        return {
+          depth: parseFloat(getComputedStyle(edge).width),
+          cardWidth: el.clientWidth,
+          backZ: new DOMMatrix(getComputedStyle(el.querySelector('.zoom-back')).transform).m43,
+          color: el.style.getPropertyValue('--card-edge-color'),
+          edgePaint: getComputedStyle(edge).backgroundImage,
+        };
+      });
+      const rarityData = await (await page.request.get(new URL('data/rarities.json', base).href)).json();
+      assert.equal(geometry.color, rarityData[rarity].color);
+      assert.ok(Math.abs(geometry.depth - geometry.cardWidth * UI_CONFIG.card3D.depth) < 0.1);
+      assert.ok(Math.abs(geometry.depth + geometry.backZ) < 0.1, '側面と裏面の深さがそろう');
+      if (rarity === 'special') assert.match(geometry.edgePaint, /rgb\(246, 139, 164\)/, '虹色の側面');
+      assert.equal(await card.locator('.zoom-wall').count(), UI_CONFIG.card3D.wallLayers, 'zoom-wall count');
       assert.equal(await card.locator('.zoom-floor').count(), 1, 'zoom-floor count');
       assert.equal(await card.locator('.zoom-raised').count(), 1, 'zoom-raised count');
       assert.equal(await page.locator('.zoom-card canvas.zoom-gl-base').count(), 1, 'canvas.zoom-gl-base');
@@ -148,6 +164,9 @@ await scenario('C legendary: reduced motion では傾かない', async () => {
     await page.mouse.move(stage.x + 2, stage.y + stage.height / 2);
     await page.waitForTimeout(500);
     const transform = await page.locator('.zoom-card').evaluate(el => el.style.transform);
+    assert.equal(await page.locator('.zoom-wall:visible').count(), UI_CONFIG.card3D.reducedWallLayers);
+    assert.equal(await page.locator('.zoom-edge').count(), 4);
+    assert.equal(await page.locator('canvas.zoom-gl-base').count(), 0);
     assert.ok(!transform.includes('rotate'), `transform should not rotate under reduced motion: "${transform}"`);
     await closeZoom(page);
   } finally {
@@ -165,11 +184,22 @@ for (const [width, height] of VIEWPORTS) {
       await selectRarity(page, 'legendary');
       await longPress(page);
       await page.locator('.zoom-card').waitFor();
-      const cardBox = await page.locator('.zoom-card').boundingBox();
-      const frameBox = await page.locator('.zoom-card .mini-card-frame').boundingBox();
-      const scrollHeight = await page.locator('dialog.card-zoom').evaluate(el => el.scrollHeight);
-      console.log(`  ${width}x${height}: card y=${cardBox.y.toFixed(1)} h=${cardBox.height.toFixed(1)}, frame y=${frameBox.y.toFixed(1)} bottom=${(frameBox.y + frameBox.height).toFixed(1)}, dialog scrollHeight=${scrollHeight}`);
-      assert.ok(frameBox.y + frameBox.height <= height + scrollHeight, `frame bottom ${frameBox.y + frameBox.height} exceeds viewport ${height} + scroll ${scrollHeight}`);
+      const assertFits = async () => {
+        const layout = await page.locator('dialog.card-zoom').evaluate(dialog => {
+          const card = dialog.querySelector('.zoom-card');
+          const visible = [...card.children].filter(el => !el.hidden && getComputedStyle(el).visibility === 'visible');
+          return {
+            fits: dialog.scrollHeight <= dialog.clientHeight && dialog.scrollWidth <= dialog.clientWidth,
+            boxes: visible.map(el => el.getBoundingClientRect().toJSON()),
+          };
+        });
+        assert.ok(layout.fits, 'ダイアログにスクロールが不要');
+        assert.ok(layout.boxes.every(({ top, left, bottom, right }) => top >= 0 && left >= 0 && bottom <= height && right <= width),
+          '描画領域がビューポート内に収まる');
+      };
+      await assertFits();
+      await dragOnStage(page, 65, 0);
+      await assertFits();
       const close = await page.locator('.zoom-close').boundingBox();
       assert.ok(close.x >= 0 && close.y >= 0 && close.x + close.width <= width && close.y + close.height <= height,
         `close button outside viewport: ${JSON.stringify(close)}`);
@@ -214,6 +244,11 @@ async function dragOnStage(page, dx, dy) {
 const zoomState = (page) => page.evaluate(() => {
   const card = document.querySelector('.zoom-card');
   return { flipped: card.classList.contains('zoom-flipped'), transform: card.style.transform, reset: !document.querySelector('.zoom-reset').hidden, open: document.querySelector('dialog.card-zoom').open,
+    foilX: card.style.getPropertyValue('--foil-x'),
+    shade: card.style.getPropertyValue('--face-shade'),
+    shadowScale: document.querySelector('.zoom-shadow').style.transform,
+    shadowOpacity: document.querySelector('.zoom-shadow').style.opacity,
+    edgeVisible: getComputedStyle(card.querySelector('.zoom-edge-left')).visibility,
     backVisible: getComputedStyle(card.querySelector('.zoom-back')).visibility, frameVisible: getComputedStyle(card.querySelector('.mini-card-frame') ?? card).visibility };
 });
 for (const [label, fx, reducedMotion] of [['full', 'full', 'no-preference'], ['lite', 'lite', 'no-preference'], ['reduced', 'full', 'reduce']]) {
@@ -226,18 +261,26 @@ for (const [label, fx, reducedMotion] of [['full', 'full', 'no-preference'], ['l
       await page.locator('.zoom-card .zoom-back').waitFor({ state: 'attached' });
       let s = await zoomState(page);
       assert.equal(s.flipped, false); assert.equal(s.reset, false);
+      const faceOn = s;
       await dragOnStage(page, 60, 0); // 少し右へ：表のまま右を向く
       s = await zoomState(page);
       assert.match(s.transform, /rotate3d\(0, 1, 0, [0-9.]+deg\)/, `右になぞると縦の軸で回る: ${s.transform}`);
       assert.equal(s.flipped, false); assert.equal(s.reset, true);
       assert.equal(s.open, true, 'なぞって外で離しても閉じない');
+      assert.notEqual(s.foilX, faceOn.foilX, 'クォータニオンで偏光が動く');
+      assert.notEqual(s.shadowScale, faceOn.shadowScale, '落ち影の形が変わる');
+      assert.notEqual(s.shadowOpacity, faceOn.shadowOpacity, '落ち影の濃さが変わる');
       await dragOnStage(page, 160, 0); // さらに右へ：裏返る
       s = await zoomState(page);
       assert.equal(s.flipped, true, `裏返る: ${s.transform}`);
       assert.equal(s.backVisible, 'visible'); assert.equal(s.frameVisible, 'hidden');
+      assert.equal(s.edgeVisible, 'visible');
+      const backOn = s;
       await page.locator('.zoom-stage').screenshot({ path: artifactPath(`card360-back-${label}.png`) });
       await dragOnStage(page, 0, 140); // 縦にも回る
       s = await zoomState(page);
+      assert.notEqual(s.shade, backOn.shade, '裏面の陰影が変わる');
+      assert.notEqual(s.foilX, backOn.foilX, '裏面の偏光が動く');
       assert.ok(!/rotate3d\(0, 1, 0,/.test(s.transform), `縦になぞると別の軸でも回る: ${s.transform}`);
       await page.locator('.zoom-reset').click();
       await page.waitForFunction(() => !/rotate3d/.test(document.querySelector('.zoom-card').style.transform), null, { timeout: 4000 });
