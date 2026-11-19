@@ -15,10 +15,11 @@
 }
 /* 説明と操作ボタンの高さを残す。 */
 .zoom-stage {
-  --zw: clamp(120px, min(56vw, 230px, calc((100dvh - 250px) / 1.86)), 230px);
+  --zw: clamp(120px, min(80vw, 340px, calc((100dvh - 230px) / 1.8)), 340px);  /* 大きく見せる。はみ出したぶんはスクロールできる */
   position: relative; display: grid; place-items: center; flex: none;
   padding: calc(var(--zw) * .26) calc(var(--zw) * .14) calc(var(--zw) * .1);  /* 上は王冠が箱の外にはみ出す分（レジェンドで約 0.22 × 幅）＋手前に浮かせた分 */
   perspective: calc(var(--zw) * 3.4); touch-action: none;
+  margin-bottom: calc(var(--zw) * -.08);
 }
 /* 影は、カードとは別の層に置く（動くカードに filter をかけると重くなってカクつくため）。傾きに合わせて Card3D.js が形を変える */
 .zoom-shadow {
