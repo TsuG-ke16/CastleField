@@ -1,6 +1,5 @@
 // サーバーが送る選択肢と席だけで部屋を描く。名前は必ず textContent。
 import { castleArt, colorOf } from './art.js';
-import { pillify } from './pills.js';
 import { deckChoice, deckSlot } from './DeckStore.js';
 
 const ROOM_DECK_KEY = 'cf-room-deck-v1';
@@ -90,7 +89,6 @@ export class RoomView {
     const row = this.node(editable ? 'div' : 'label', null, 'room-select');
     row.append(this.node('span', label));
     if (editable) {
-      row.classList.add('has-pills');
       const input = this.node('select');
       for (const choice of choices ?? []) {
         const opt = this.node('option', choice.name);
@@ -103,7 +101,7 @@ export class RoomView {
       input.addEventListener('change', () => change(input.value));
       row.append(input);
       input.dataset.slot = slot ?? label;
-      pillify(input, label);
+      input.setAttribute('aria-label', label);
     } else {
       row.append(this.node('b', choices?.find(c => c.id === value)?.name ?? '—'));
     }
@@ -141,20 +139,11 @@ export class RoomView {
   }
   render(room, passphrase) {
     this.room = room; this.passphrase = passphrase;
-    // 描き直すとフォーカスが消えるので、フォーカス中のピルを覚えて、描き直したあとに戻す
-    let refocus = null;
-    const active = document.activeElement;
-    if (active?.classList?.contains('pill') && this.el.contains(active)) {
-      const sel = active.parentElement.previousElementSibling;
-      refocus = { name: sel?.dataset.slot, value: active.dataset.value };
-    }
-    if (refocus) this.refocus = refocus; // 送信中は無効のピルにフォーカスできないので、送信が終わった描き直しまで持ち越す
     this.el.hidden = false; this.el.replaceChildren();
     const box = this.node('div', null, 'room-box'); this.el.append(box);
     const host = room.you === room.hostId;
     const choices = room.choices ?? {};
     box.append(this.node('h1', 'みんなの部屋'));
-    box.append(this.node('p', '合言葉を伝えて、仲間を招待しよう', 'room-note'));
     box.append(this.node('strong', passphrase || room.roomId, 'room-passphrase'));
     const head = this.node('div', null, 'room-heading');
     head.append(this.node('h2', `参加者 ${room.players.length} / ${room.capacity}`));
@@ -171,8 +160,7 @@ export class RoomView {
       // 選んだ城の絵を席に出す（城の種類を変えると絵も変わる）
       const pic = this.node('div', null, 'room-seat-pic'); pic.setAttribute('aria-hidden', 'true');
       pic.innerHTML = castleArt(colorOf(p.playerId), 0, p.castle ?? 'standard'); seat.append(pic);
-      const level = choices.cpuLevels?.find(c => c.id === p.cpu)?.name;
-      seat.append(this.node('p', `${p.cpu ? `CPU · ${level ?? p.cpu}` : 'プレイヤー'} · ${p.connected ? '接続中' : '再接続を待っています'}`, 'room-note'));
+      if (!p.connected) seat.append(this.node('p', '再接続を待っています', 'room-note'));
       const edit = p.playerId === room.you || (host && Boolean(p.cpu));
       const set = (patch) => this.act('setSeat', p.playerId === room.you ? [patch] : [patch, p.playerId]);
       this.select(seat, '城', choices.castles, p.castle, edit, v => set({castle:v}), `${p.playerId}:castle`);
@@ -194,37 +182,35 @@ export class RoomView {
           const slot = deckSlot(v);
           return slot === null ? set({ costDeck: v }) : this.useMyDeck(slot);
         }, `${p.playerId}:costDeck`);
-        const preview = this.node('div');
-        this.previewDeck(preview, selection ?? this.presetDeck(p.costDeck));
-        seat.append(preview);
+        if (mine) {
+          const preview = this.node('div');
+          this.previewDeck(preview, selection ?? this.presetDeck(p.costDeck));
+          seat.append(preview);
+        }
         const invalid = saved.find(deck => deck && !deck.valid);
         if (mine && this.onEditDeck) this.button(seat, invalid ? '保存したデッキを修正' : 'デッキを編成する', () => this.onEditDeck(invalid?.slot));
       } else {
         this.select(seat, 'デッキ', choices.decks, p.deck, edit && room.settings.deckMode === 'own', v => set({deck:v}), `${p.playerId}:deck`);
-        if (room.settings.deckMode === 'own') {
+        if (room.settings.deckMode === 'own' && p.playerId === room.you) {
           const preview = this.node('div');
           this.previewDeck(preview, this.presetDeck(p.deck));
           seat.append(preview);
         }
-        if (room.settings.deckMode !== 'own') seat.append(this.node('small', '共通の山札を使います', 'room-note'));
       }
       if (room.settings.teams === 'choose') this.select(seat, 'チーム', choices.teams, p.team, edit, v => set({team:v}), `${p.playerId}:team`);
-      else seat.append(this.node('small', room.settings.teams === 'auto' ? '開始時にチームを分けます' : '個人戦', 'room-note'));
       if (host && p.cpu) this.button(seat, 'CPUを外す', () => this.act('removeCpu', [p.playerId]));
       seats.append(seat);
     }
     const settings = this.node('section', null, 'room-settings'); box.append(settings);
     settings.append(this.node('h2', '対戦ルール'));
-    if (!host) settings.append(this.node('p', 'ルールとCPUは部屋主が選びます。自分の城・デッキは変更できます。', 'room-note'));
     for (const [key,label,list] of [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes']]) {
       this.select(settings, label, choices[list], room.settings[key], host, v => this.act('setRules', [{[key]:v}]), `rule:${key}`);
     }
     this.numberInput(settings, '城のHP', room.settings.castleHp, choices.castleHpRange, host, v => this.act('setRules', [{castleHp:v}]), 'rule:castleHp');
     if (host) {
       this.level ??= choices.cpuLevels?.[0]?.id;
-      this.select(settings, '追加するCPUの強さ', choices.cpuLevels, this.level, true, v => {this.level=v;}, 'cpuLevel');
+      this.select(settings, 'CPUの強さ', choices.cpuLevels, this.level, true, v => {this.level=v;}, 'cpuLevel');
       this.button(settings, 'CPUを追加', () => this.act('addCpu', [this.level]), room.players.length >= room.capacity);
-      if (room.players.length >= room.capacity) settings.append(this.node('p', '満員のためCPUを追加できません', 'room-note'));
     }
     let reason = '';
     if (room.players.length < room.minPlayers) reason = `開始には${room.minPlayers}人必要です。仲間を招待するかCPUを追加してください。`;
@@ -241,12 +227,5 @@ export class RoomView {
     }
     const status = this.node('p', this.pending ? '送信しています…' : this.notice ?? '', 'room-status');
     status.setAttribute('role', 'status'); launch.append(status);
-    if (this.refocus && !this.pending) {
-      const target = this.refocus; this.refocus = null;
-      for (const sel of this.el.querySelectorAll('select[data-slot]')) {
-        if (sel.dataset.slot !== target.name) continue;
-        [...sel.nextElementSibling.children].find(b => b.dataset.value === target.value)?.focus({ preventScroll: true });
-      }
-    }
   }
 }

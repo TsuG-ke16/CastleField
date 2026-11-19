@@ -128,10 +128,10 @@ async function verify(width, height, reducedMotion) {
   await page.locator('#title-pass').fill(`deck-${width}-${Date.now()}`);
   await press('#title-join');
   await page.locator('#room-screen').waitFor();
-  await press('#room-screen .pill[data-value="cost"]');
+  await page.locator('#room-screen select[data-slot="rule:deckMode"]').selectOption('cost');
   const pending = page.waitForRequest(request => request.url().endsWith('/api/action')
     && request.postDataJSON()?.method === 'setSeat');
-  await press('.room-self .pill[data-value="custom:0"]');
+  await page.locator('.room-self select[data-slot$=":costDeck"]').selectOption('custom:0');
   const request = await pending;
   assert.ok(Object.keys(request.postDataJSON().args[0].deckList).length > 0);
   const roomPreview = page.locator('.room-self .deck-preview').filter({ hasText: '確認用のデッキ' });
