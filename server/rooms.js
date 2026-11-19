@@ -30,6 +30,9 @@ export const MAX_SEATS = 8;
 const MIN_PLAYERS = 2;
 
 /** 部屋で選べる勝ち方 */
+/** 部屋で選べる城のHP（rules.castleMaxHp の初期値もここに足して並べる） */
+export const CASTLE_HP_CHOICES = [20, 30, 40, 50, 60, 80, 100];
+
 export const WIN_CONDITIONS = {
   firstDestroy: '最初に城を落とした人の勝ち',
   lastStanding: 'バトルロイヤル（最後の1人まで）',
@@ -93,6 +96,7 @@ export class Room {
       deckMode: data.rarities && Object.values(data.decks ?? {}).some((d) => d.costDeck) ? 'cost'
         : Object.hasOwn(DECK_MODES, data.rules.deckMode) ? data.rules.deckMode : 'shared',
       teams: 'off',
+      castleHp: data.rules.castleMaxHp,
     };
     this.game = null;
     /** 今の試合のチーム（席ごと。チームなしなら null） */
@@ -190,6 +194,7 @@ export class Room {
       playerCount: this.seats.length,
       winCondition: this.settings.winCondition,
       deckMode: this.settings.deckMode,
+      castleMaxHp: this.settings.castleHp ?? this.data.rules.castleMaxHp,
     };
     const setup = {};
     const teams = this.teamsForGame();
@@ -464,7 +469,12 @@ export class Room {
     return { ok: true };
   }
 
-  /** 部屋主がモードを選ぶ：{ winCondition?, deckMode?, teams? } */
+  /** 選べる城のHP（小さい順。rules.json の値も入れる） */
+  castleHpChoices() {
+    return [...new Set([...CASTLE_HP_CHOICES, this.data.rules.castleMaxHp])].sort((a, b) => a - b);
+  }
+
+  /** 部屋主がモードを選ぶ：{ winCondition?, deckMode?, teams?, castleHp? } */
   setRules(seat, patch) {
     const bad = this.lobbyCheck(seat);
     if (bad) return bad;
@@ -474,6 +484,10 @@ export class Room {
       if (key === 'winCondition') {
         if (!Object.hasOwn(WIN_CONDITIONS, value)) return { ok: false, reason: 'その勝ち方はありません' };
         next.winCondition = value;
+      } else if (key === 'castleHp') {
+        const hp = Number(value);
+        if (!this.castleHpChoices().includes(hp)) return { ok: false, reason: 'その城のHPは選べません' };
+        next.castleHp = hp;
       } else if (key === 'teams') {
         if (!Object.hasOwn(TEAM_MODES, value)) return { ok: false, reason: 'そのチームの分け方はありません' };
         next.teams = value;
@@ -785,7 +799,7 @@ export class Room {
       minPlayers: MIN_PLAYERS,
       started: this.started,
       ranked: !!this.ranked,
-      settings: { ...this.settings },
+      settings: { ...this.settings, castleHp: String(this.settings.castleHp) },
       choices: {
         winConditions: Object.entries(WIN_CONDITIONS).map(([id, name]) => ({ id, name })),
         deckModes: Object.entries(DECK_MODES)
@@ -795,6 +809,7 @@ export class Room {
         decks: Object.entries(this.plainDecks()).map(([id, d]) => ({ id, name: d.name ?? id })),
         costDecks: Object.entries(this.costDecks() ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),
+        castleHps: this.castleHpChoices().map((hp) => ({ id: String(hp), name: `${hp}` })),
         teamModes: Object.entries(TEAM_MODES).map(([id, name]) => ({ id, name })),
         teams: TEAM_IDS.map((id) => ({ id, name: TEAM_NAMES[id] })),
       },
@@ -867,7 +882,7 @@ export class Lobby {
    */
   createRankedRoom(users, ranked) {
     const room = new Room(`r${this.nextRoom++}`, this.data, this.makeRng, { ...this.options, ranked });
-    room.settings = { winCondition: 'firstDestroy', deckMode: 'cost', teams: 'off' };
+    room.settings = { winCondition: 'firstDestroy', deckMode: 'cost', teams: 'off', castleHp: this.data.rules.castleMaxHp };
     const seats = {};
     for (const u of users) {
       const r = room.join(u.name, u.userId);

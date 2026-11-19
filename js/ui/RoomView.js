@@ -192,7 +192,7 @@ export class RoomView {
     const settings = this.node('section', null, 'room-settings'); box.append(settings);
     settings.append(this.node('h2', '対戦ルール'));
     if (!host) settings.append(this.node('p', 'ルールとCPUは部屋主が選びます。自分の城・デッキは変更できます。', 'room-note'));
-    for (const [key,label,list] of [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes']]) {
+    for (const [key,label,list] of [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['castleHp','城のHP','castleHps'],['teams','チームの分け方','teamModes']]) {
       this.select(settings, label, choices[list], room.settings[key], host, v => this.act('setRules', [{[key]:v}]), `rule:${key}`);
     }
     if (host) {
