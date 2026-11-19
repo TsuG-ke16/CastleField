@@ -121,7 +121,9 @@ export class ChatView {
     this.panel.style.setProperty('--chat-top', `${top}px`);
     this.panel.style.setProperty('--chat-space', `${available}px`);
     // パネルを開いているあいだは、吹き出しをパネルの下に出す（重ならないように）
-    const below = this.panel.hidden ? top : Math.max(top, this.panel.getBoundingClientRect().bottom - root.top + 8);
+    // 画面の真ん中あたり（部屋なら席の城・デッキの欄のあたり）から、上へ登る
+    const base = Math.max(top, Math.round(root.height * 0.4));
+    const below = this.panel.hidden ? base : Math.max(base, this.panel.getBoundingClientRect().bottom - root.top + 8);
     this.bubbles.style.setProperty('--chat-bubbles-top', `${below}px`);
   }
 
