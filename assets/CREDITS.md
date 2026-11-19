@@ -488,3 +488,5 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style
 ## プロフィールの基本アイコン（2026-11-19）
 
 - `profiles/{infantry,spearman,knight,archer,mage,hero}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照し、生成原本 `exec-8e2458c1-3ca0-485e-93ba-17aa6f3f9b98.png` から切り出した透過PNG。
+
+- 2026-11-19：`cards/frame-beast.png` を、ルビー色の新しい枠（OpenAI画像生成。上記OpenAI規約・AI生成）に差しかえた。枠の中の小さな透明の穴（白のハイライトが抜けた所・約90か所）は白で埋めた（絵の窓だけ透明のまま）。`cards/relief/frame-beast-*.png` は `node js/ui/build-card-relief.js` で作り直した（3Dの拡大表示用）。
