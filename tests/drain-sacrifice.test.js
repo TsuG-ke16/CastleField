@@ -206,3 +206,61 @@ test('upgrades.json：costs の最初が cost と違うと例外', () => {
   upgrades.permLuck.costs = [4, 5];
   assert.throws(() => new Game({ cards, rules, rarities: loadJson('rarities.json'), upgrades }), /costs の最初は cost と同じ/);
 });
+
+// ---------- 魔物のカードを効果にする：ヴァンパイア（相手の城に10、自分の城を10回復） ----------
+
+test('ヴァンパイアのカードは魔法（駒ではない）。相手の城に10、自分の城を10回復。MP は使わない', () => {
+  const g = make({ initialMp: 10, maxMp: 20 });
+  g.debugSetHand('p1', ['beast_vampire']);
+  g.start();
+  g.players.p1.castle.hp = 20;
+  const hp2 = g.players.p2.castle.hp;
+  const log = recordEvents(g, ['spellCast', 'castleDamaged', 'castleHealed', 'mpChanged', 'soldierDeployed']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_vampire'), { playerId: 'p2' }).ok, true);
+  assert.deepEqual(log.map((e) => e.event), ['spellCast', 'castleDamaged', 'castleHealed']);
+  assert.equal(g.players.p2.castle.hp, hp2 - 10);
+  assert.equal(g.players.p1.castle.hp, 30);
+  assert.equal(g.players.p1.soldiers.length, 0);
+  assert.equal(g.pileOf('p1').exhausted.length, 1); // 魔物のカードは使い切り（山札に戻らない）
+});
+
+test('ヴァンパイアのカード：城壁に防がれても回復する。相手の城を落としたら回復せずに勝ち', () => {
+  const g = make({ initialMp: 10, maxMp: 20, armorMax: 40 });
+  g.debugSetHand('p1', ['beast_vampire', 'beast_vampire']);
+  g.start();
+  g.players.p1.castle.hp = 20;
+  g.players.p2.armor = 20;
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_vampire'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.players.p2.armor, 10);
+  assert.equal(g.players.p1.castle.hp, 30);
+  pass(g); pass(g);
+  g.debugSetCastleHp('p2', 5);
+  g.players.p2.armor = 0;
+  const log = recordEvents(g, ['castleHealed', 'gameOver']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_vampire'), { playerId: 'p2' }).ok, true);
+  assert.deepEqual(log.map((e) => e.event), ['gameOver']);
+});
+
+test('魔物のカードは合成できない', () => {
+  const g = make();
+  g.debugSetHand('p1', ['beast_vampire', 'beast_vampire']);
+  g.start();
+  const ids = g.getState('p1').players.p1.hand.map((c) => c.cardId);
+  assert.equal(g.canFuse(ids[0], ids[1]).reason, '魔物のカードは合成できません');
+});
+
+test('ヴァンパイアのカード：相手が防御を選ぶときは、返事のあとで当たって回復する', () => {
+  const g = make({ initialMp: 10, maxMp: 20, defenseReaction: true, armorMax: 40 });
+  g.debugSetHand('p1', ['beast_vampire']);
+  g.debugSetHand('p2', ['sandbag']);
+  g.start();
+  g.players.p1.castle.hp = 20;
+  const hp2 = g.players.p2.castle.hp;
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_vampire'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.phase, 'defend');
+  assert.equal(g.players.p1.castle.hp, 20); // まだ回復しない
+  assert.equal(g.passDefense().ok, true);
+  assert.equal(g.players.p2.castle.hp, hp2 - 10);
+  assert.equal(g.players.p1.castle.hp, 30);
+  assert.equal(g.phase, 'main');
+});

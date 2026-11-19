@@ -32,6 +32,7 @@ export const EFFECTS = {
     drainCastle: ['amount'], // 生命吸収：相手の城に amount ダメージ。城HPを実際に減らしたぶん自分の城を回復
     sacrificeAttack: ['amount', 'selfDamage'], // 捨て身：自分の城HPを selfDamage 払って、相手の城に amount ダメージ
     damageAllSoldiers: ['amount'], // 爆発：場にいる兵士全員（自分の兵士も）に amount ダメージ
+    damageCastleAndHeal: ['amount', 'heal'], // 吸血（ヴァンパイアのカード）：相手の城に amount ダメージ、自分の城を heal 回復
   },
   defense: {
     shieldSoldier: ['amount'],
@@ -164,8 +165,8 @@ export class Card {
         }
       }
 
-      if (def.monster !== undefined && (typeof def.monster !== 'string' || def.kind !== 'soldier')) {
-        throw new Error(`${where}: monster（魔物の種類）を書けるのは兵士カード（kind: "soldier"）だけです`);
+      if (def.monster !== undefined && (typeof def.monster !== 'string' || (def.kind !== 'soldier' && def.kind !== 'spell'))) {
+        throw new Error(`${where}: monster（魔物の種類）を書けるのは兵士か魔法のカード（kind: "soldier" / "spell"）だけです`);
       }
 
       if (def.kind === 'soldier') {

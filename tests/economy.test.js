@@ -250,7 +250,7 @@ test('キャラ・魔法のスキン：全キャラ（兵士20・魔物12）と�
   const chars = items.filter((i) => i.slot === 'charSkin'); const fx = items.filter((i) => i.slot === 'spellSkin');
   const soldiers = Object.keys(cards).filter((k) => cards[k].kind === 'soldier');
   assert.deepEqual(new Set(chars.map((i) => i.target)), new Set([...soldiers.filter((k) => !k.startsWith('beast_')), ...Object.keys(data.monsters).map((m) => `beast_${m}`)]));
-  assert.deepEqual(new Set(fx.map((i) => i.target)), new Set(Object.keys(cards).filter((k) => cards[k].kind === 'spell')));
+  assert.deepEqual(new Set(fx.map((i) => i.target)), new Set(Object.keys(cards).filter((k) => cards[k].kind === 'spell' && !cards[k].monster))) // 魔物のカード（効果）は、キャラのスキン（beast_*）を使う);
   const a = user();
   economy.grant(a, 'skin_dragonKnight', 'test'); economy.grant(a, 'fxskin_fireball', 'test');
   let eq = economy.equip(a, 'charSkin:dragonKnight', 'skin_dragonKnight');

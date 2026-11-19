@@ -1433,7 +1433,7 @@ export class Game {
     const base = wildA ? b : a;
     if (!wildA && !wildB && a.type !== b.type) return fail('同じ種類のカードどうしでないと合成できません');
     if (!base.def.fuseTo) {
-      if (base.def.monster) return fail('魔物の兵士は合成できません');
+      if (base.def.monster) return fail('魔物のカードは合成できません');
       // いちばん上のレアリティ（スペシャルを除く）だけ「これ以上」。ほかは合成しないカード（fuseTo: null・スペシャル）
       const order = Object.keys(this.rarityDefs ?? {}).filter((id) => !this.rarityDefs[id].special);
       return fail(base.def.rarity === order.at(-1) ? 'レジェンドはこれ以上合成できません' : 'このカードは合成できません');
@@ -1645,8 +1645,9 @@ export class Game {
           ],
           reason: '相手がいません',
         };
+      case 'damageCastleAndHeal':
       case 'drainCastle': {
-        // 生命吸収：城だけを狙う（魔物は狙えない）
+        // 生命吸収・吸血：城だけを狙う（魔物は狙えない）
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
         return { targets: playerTargets(foes), reason: '相手がいません' };
       }
@@ -1938,6 +1939,30 @@ export class Game {
           },
           () => this.checkGameOver(),
         );
+        break;
+      }
+
+      case 'damageCastleAndHeal': {
+        // 吸血（ヴァンパイアのカード）：相手の城に amount ダメージ（防御を聞く）、そのあと自分の城を heal 回復。
+        // 回復は、外れても・防がれても・反射されても起きる。相手の城が落ちたら回復せずに決着
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        const heal = () => {
+          if (this.checkGameOver()) return;
+          const healed = player.castle.heal(card.def.heal);
+          if (healed > 0) this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        };
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          heal();
+          break;
+        }
+        // requestDefense は、防御を待ったときだけ after を呼ぶ。待たなかったときは、ここで回復する
+        const waiting = this.requestDefense(
+          { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount, from: 'spell', spellType: card.type },
+          () => this.damageCastle(enemy, amount, { kind: 'spell', type: card.type }),
+          heal,
+        );
+        if (!waiting) heal();
         break;
       }
 
