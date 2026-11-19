@@ -4,7 +4,7 @@
   content: attr(data-unread);
   position: absolute;
   top: -2px;
-  right: -47px;
+  right: -18px;
   left: auto;
   inset-inline-start: auto;
   width: 26px;
