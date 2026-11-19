@@ -26,18 +26,18 @@ const OUT = join(root, 'assets/cards/relief');
 // paper：名前の帯・メダルの中（羊皮紙）。'name' と 'medals' は CSS の --name-y / --med-* と同じ位置。
 const KIND_GEMS = [[66, 556, 154, 652], [358, 556, 446, 652]];
 const SHARED_PARCHMENT = {
-  name: [.14, .86, .73],
-  stats: [.16, .84, .86, .97],
-  medals: [[.17, .13], [.83, .13]],
+  name: [.155, .845, .72],
+  stats: [.154, .846, .828, .917],
+  medals: [[.182, .139]],
 };
 const FRAMES = {
   common:    { base: { metal: 0, smooth: .22 }, silver: { metal: .8, smooth: .55 }, gemHue: null, raised: [[190, 4, 322, 77], [0, 0, 86, 96], [426, 0, 512, 96]], paper: SHARED_PARCHMENT },
-  uncommon:  { base: { metal: .05, smooth: .3 }, gold: { metal: .65, smooth: .6 }, organic: [70, 170], gemHue: [80, 170], raised: [[145, 0, 367, 111]], paper: SHARED_PARCHMENT },
-  rare:      { base: { metal: .8, smooth: .7 }, silver: { metal: .9, smooth: .82 }, gemHue: [180, 240], raised: [[145, 0, 367, 114]], paper: SHARED_PARCHMENT },
-  epic:      { base: { metal: .65, smooth: .78 }, silver: { metal: .9, smooth: .86 }, gold: { metal: .9, smooth: .86 }, gemHue: [255, 310], raised: [[140, 0, 372, 114]], paper: SHARED_PARCHMENT },
-  legendary: { base: { metal: .15, smooth: .35 }, gold: { metal: 1, smooth: .92 }, cloth: [330, 25], gemHue: [330, 25], raised: [[144, 0, 368, 114]], paper: SHARED_PARCHMENT },
-  special:   { base: { metal: .55, smooth: .9 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[145, 0, 367, 114]], paper: SHARED_PARCHMENT },
-  beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, organic: [70, 140], gemHue: [120, 170], gemMinSat: .5, raised: [[170, 0, 345, 134]], paper: { name: [.16, .84, .751], stats: [.13, .87, .85, .92], medals: [[.19, .126], [.834, .126]] } },
+  uncommon:  { base: { metal: .05, smooth: .3 }, gold: { metal: .65, smooth: .6 }, organic: [70, 170], gemHue: [80, 170], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  rare:      { base: { metal: .8, smooth: .7 }, silver: { metal: .9, smooth: .82 }, gemHue: [180, 240], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  epic:      { base: { metal: .65, smooth: .78 }, silver: { metal: .9, smooth: .86 }, gold: { metal: .9, smooth: .86 }, gemHue: [255, 310], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  legendary: { base: { metal: .15, smooth: .35 }, gold: { metal: 1, smooth: .92 }, cloth: [330, 25], gemHue: [330, 25], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  special:   { base: { metal: .55, smooth: .9 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, gemHue: [335, 15], gemMinSat: .5, raised: [[150, 0, 362, 130]], paper: { name: [.16, .84, .751], stats: [.13, .87, .85, .92], medals: [[.19, .126], [.834, .126]] } },
 };
 
 // ---------- PNG（8bit・インターレースなし） ----------

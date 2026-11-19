@@ -115,8 +115,8 @@
 .card.has-frame, .mini-card { --win-l: 16%; --win-t: 17%; --win-w: 71%; --win-h: 46%; --med-y: 14%; --med-l: 19%; --med-r: 84%; --name-y: 74%; }
 #app :is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) {
   --fy: 0%; --fh: 1; --fx: 50%; --bw: .6667;
-  --win-l: 13%; --win-t: 15%; --win-w: 74%; --win-h: 50%;
-  --med-l: 17%; --med-r: 83%; --med-y: 13%; --name-y: 73%;
+  --win-l: 14.84%; --win-t: 15.36%; --win-w: 70.1%; --win-h: 47.8%;
+  --med-l: 18.2%; --med-r: 83%; --med-y: 13.9%; --name-y: 72%;
 }
 :is(.card.has-frame, .mini-card)[data-rarity=common] { --card-window: url('../assets/cards/window-common.png'); }
 :is(.card.has-frame, .mini-card)[data-rarity=uncommon] { --card-window: url('../assets/cards/window-uncommon.png'); }
@@ -136,8 +136,8 @@
   height: 10.6667%;
 }
 #app .card.has-frame:is([data-rarity], [data-beast]) > .card-short {
-  inset: 86% 16% auto;
-  height: 11%;
+  inset: 82.8% 15.4% auto;
+  height: 8.9%;
   align-items: center;
   justify-content: center;
   padding: 0 2px;
@@ -216,3 +216,6 @@
 .icon-asset .asset-fallback > .ic { display: block; width: 100%; height: 100%; }
 .icon-asset .icon-text { display: grid; place-items: center; width: 100%; height: 100%; font-size: inherit; line-height: 1; }
 .card.has-frame .card-rarity, .mini-card-rarity { text-shadow: none; }
+
+/* 右上の丸をなくした新しい枠：レアリティの印は出さない（枠の色・飾りで分かる） */
+#app .card.has-frame .card-rarity, #app .mini-card .mini-card-rarity { display: none !important; }

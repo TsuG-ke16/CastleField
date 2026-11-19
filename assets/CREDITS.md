@@ -480,3 +480,7 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style
 ## プロフィールの基本アイコン（2026-11-19）
 
 - `profiles/{infantry,spearman,knight,archer,mage,hero}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照し、生成原本 `exec-8e2458c1-3ca0-485e-93ba-17aa6f3f9b98.png` から切り出した透過PNG。
+
+## カード枠の作り直し（2026-11-19）
+
+`cards/frame-{common,uncommon,rare,epic,legendary,special,beast}.png` を OpenAI画像生成（ChatGPT）で作り直した。右上の丸をなくし、窓・文字枠・左上の丸の位置を7枚で同じにそろえた（`css/rarity-assets.css` の共通の数値）。凹凸マップ（`cards/relief/`）も作り直した。
