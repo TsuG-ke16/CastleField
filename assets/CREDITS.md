@@ -402,3 +402,7 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`asset
 
 - `bg/home-castle.png` — `exec-e7fe433a-71f4-4f10-9cff-c8560bdfe4fd.png` を縮小・圧縮。城、空、森を含む背景。
 - `ui/home/{rank,casual,ranking,deck,catalog,skin,friend,profile,shop,gacha,mission,settings}.png` — `exec-a80be6be-5768-4b8b-846e-2f0575b9c42a.png` から個別に切り出した透過PNG。
+
+## 王国リーグのランク紋章（2026-11-19）
+
+- `ranks/rank-{iron,bronze,silver,gold,platinum,diamond,ascendant,immortal,radiant}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照、生成原本 `exec-94e3676c-e909-4979-8c5c-c776b8b38cf2.png` を切り出し。オリジナルの9図柄。

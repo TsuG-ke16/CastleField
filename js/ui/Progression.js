@@ -1,5 +1,6 @@
 // 試合のあとの「経験値とレベルアップ」の表示。値はサーバーが決めたものを読むだけ。
 import { account } from './Account.js';
+import { rankEmblem } from './RankEmblem.js';
 
 let shownMatch = null;
 
@@ -31,7 +32,19 @@ export async function showMatchProgress(root, { reducedMotion = false, ranked = 
         line.textContent = rc.placement
           ? (rc.rankAfter ? `認定戦が終わりました：${rc.rankAfter.divisionLabel}` : `認定戦（あと${rc.placementLeft}試合でランクが決まります）`)
           : `${rc.rpDelta >= 0 ? '+' : ''}${rc.rpDelta} RP　${rc.rankAfter.divisionLabel}${rc.promoted ? '　昇格！' : rc.demoted ? '　降格…' : ''}${rc.scaled ? '（同じ相手と続けて対戦したため、増え方を減らしました）' : ''}`;
+        if (rc.rankAfter) line.insertAdjacentHTML('afterbegin', rankEmblem(rc.rankAfter, 32));
         card.append(line);
+        const highlight = rc.placement && rc.rankAfter ? '認定戦完了' : rc.promoted ? '昇格！' : rc.demoted ? 'ランク降格' : '';
+        if (highlight && !reducedMotion && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          const burst = document.createElement('button');
+          burst.type = 'button';
+          burst.className = `rank-result-burst${rc.demoted ? ' down' : ''}`;
+          burst.textContent = highlight;
+          burst.setAttribute('aria-label', `${highlight}の演出を閉じる`);
+          burst.addEventListener('click', () => burst.remove(), { once: true });
+          card.append(burst);
+          setTimeout(() => burst.remove(), 1500);
+        }
       }
     } catch { /* ランクの表示だけ出せない */ }
   }
