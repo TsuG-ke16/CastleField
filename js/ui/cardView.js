@@ -1,12 +1,12 @@
 import { cardArt, icon } from './art.js';
 import { KIND_LABEL } from './text.js';
-import { frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
+import { cardSkinNow, frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
 import { rankSkinFront } from './skinArt.js';
 
-/** skin：ランク報酬のカードスキン（ランクの id）。枠が変わるだけで、レアリティの色・光は出さない（common と同じ扱い） */
-export function mountMiniCard(root, type, def, rarities, { showName = true, skin = null } = {}) {
+/** skin：ランク報酬のカードスキン（ランクの id。省略すると装備中のランクカード）。枠が変わるだけで、レアリティの色・光は出さない（common と同じ扱い） */
+export function mountMiniCard(root, type, def, rarities, { showName = true, skin = cardSkinNow() } = {}) {
   const skinPath = skin && !def?.monster ? rankSkinFront(skin) : null;
-  const path = skinPath ?? frameAsset(def, rarities);
+  const path = skinPath ?? frameAsset(def, rarities, null);
   if (!path) {
     root.innerHTML = cardArt(type, 'blue', def?.name ?? '');
     return root;

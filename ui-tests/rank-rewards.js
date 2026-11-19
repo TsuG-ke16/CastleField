@@ -75,6 +75,18 @@ await page.screenshot({ path: new URL('rank-rewards-back.png', output).pathname 
 await page.keyboard.press('Escape');
 await dialog.waitFor({ state: 'hidden' });
 
+// ランクカードを装備すると（裏表一体）、手札の表の枠もそのランクになる
+const game = await context.newPage();
+game.on('pageerror', (error) => errors.push(error.message));
+await game.goto(`${root}?local=1&cpu=easy&seed=3&debug=1`);
+await game.waitForFunction(() => Boolean(window.castlefield?.game()) && document.querySelectorAll('#hand .card').length > 0);
+await game.evaluate(async () => { (await import('./js/ui/cardFrame.js')).setCardSkin('champion'); });
+await game.waitForFunction(() => [...document.querySelectorAll('#hand .card')].every((c) => c.dataset.skin === 'champion'));
+const frames = await game.evaluate(() => [...document.querySelectorAll('#hand .card .card-frame')].map((f) => f.getAttribute('src')));
+assert.ok(frames.length && frames.every((src) => src.endsWith('frame-skin-champion.png')), '手札の表がランクの枠になる');
+await game.evaluate(async () => { (await import('./js/ui/cardFrame.js')).setCardSkin(null); });
+await game.waitForFunction(() => [...document.querySelectorAll('#hand .card')].every((c) => !c.dataset.skin));
+
 assert.deepEqual(errors, [], 'コンソールにエラーが出た');
 await browser.close();
-console.log('ランク報酬の画面：8ランクの見本・表と裏の3D拡大を確認');
+console.log('ランク報酬の画面：8ランクの見本・表と裏の3D拡大・装備すると手札の表もランクの枠になることを確認');

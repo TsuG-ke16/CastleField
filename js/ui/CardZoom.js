@@ -213,7 +213,7 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     if (!def) return;
     card = document.createElement('div');
     card.className = 'zoom-card';
-    mountMiniCard(card, type, def, rarities, { skin: opts.skin ?? null });
+    mountMiniCard(card, type, def, rarities, { skin: opts.skin || undefined });
     const fx = new URLSearchParams(location.search).get('fx');
     card3D = createCard3D(card, {
       rarityColor: opts.skin ? opts.color : rarities?.[def.rarity]?.color,
