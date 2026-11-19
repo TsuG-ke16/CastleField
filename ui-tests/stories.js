@@ -20,6 +20,8 @@ const errors = [];
 try {
   for (const [width, height] of [[390, 797], [320, 568]]) {
     const page = await browser.newPage({ viewport: { width, height } });
+    // タイトル画面を確かめるので、アカウント機能を切る（アカウントがあるとホーム画面が入口になる。ホームは account.js で確かめる）
+    await page.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(base);
     await page.locator('#title-catalog').click();

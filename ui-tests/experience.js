@@ -12,6 +12,8 @@ const browser = await chromium.launch({
 const errors = [];
 async function makePage(viewport, reducedMotion = 'no-preference') {
   const context = await browser.newContext({ viewport, reducedMotion, serviceWorkers: 'block' });
+  // タイトル画面を確かめるので、アカウント機能を切る（アカウントがあるとホーム画面が入口になる。ホームは account.js で確かめる）
+  await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
   page.setDefaultTimeout(12000);
   page.on('pageerror', error => errors.push(error.message));
