@@ -313,7 +313,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `monsterClashed` | `{ attacker: { playerId, soldierId }, monsterId, roadId, square }` … 兵士が魔物と戦う。`square` は兵士が止まったマス |
 | `monsterDamaged` | `{ monsterId, amount, hp, by }` … `by` は `{ playerId, soldierId }`（兵士）か `{ playerId, type }`（魔法） |
 | `monsterDefeated` | `{ monsterId, playerId, reward }` … `playerId` はとどめを刺した人 |
-| `coinsChanged` | `{ playerId, delta, coins, reason }` … `reason` は `"reward"` か `"upgrade"` |
+| `coinsChanged` | `{ playerId, delta, coins, reason }` … `reason` は `"reward"` / `"upgrade"` / `"turn"` / `"card"` / `"weather"` / `"stolen"`（ミミックに奪われた）/ `"steal"`（奪った） |
 | `upgradeBought` | `{ playerId, upgradeId, cost }` … このあと効果のイベント（`castleHealed` / `cardDrawn` / `soldierBuffed`） |
 | `soldierBuffed` | `{ playerId, soldierId, attack }` … とぎ石で攻撃力が上がった |
 | `playerEliminated` | `{ playerId, by }` … 城が落ちて抜けた（`lastStanding`）。`by` は落とした人 |
@@ -1111,7 +1111,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士の平均43手番・p1 勝率50%（天候なしと同じ）
 
 ### 倒した魔物は駒になる
-- （のちに変更：魔物のカードは効果のカードに置きかえていく。下の「魔物のカードを「効果」にする」。今はヴァンパイアだけ）
+- （のちに変更：魔物のカードの多くは効果のカードにした。下の「魔物のカードを「効果」にする」。駒のままなのはゴブリン・スケルトン（弓兵）・ゴーレム）
 - 魔物のとどめを刺した人の手札に、その魔物の**兵士カード**（`cards.json` の `beast_<魔物の種類>`、`monster: "<種類>"`）が1枚入る（ごほうびのカードとは別。`monsterDefeated` に `pieceType`、このあと `cardDrawn`）。兵士カードと同じように、兵士の枠で出せる
 - 魔物の駒は HP・攻撃が魔物と同じ（`monsters.json` の値）、速さは1〜2。合成できない（`fuseTo` なし）。山札・ごほうび・入手券では出ない（`weight: 0`）。**出しても捨てても使い切り置き場へ行き、山札に戻らない**（シャッフルで山札に混ざらないように）。魔物は放置で強くなる（`monsterEvolve*`）が、駒は元の強さ
 - 絵は魔物の絵を使う（`js/ui/art.js`）
@@ -1222,14 +1222,27 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ## 魔物のカードを「効果」にする（人間の指示。仮）
 
-**これからは、倒した魔物のカード（`beast_<魔物>`）は兵士（駒）ではなく、効果のカード（魔法）として作る**（人間の指示）。魔物ごとに効果を決めて、1体ずつ置きかえる。効果が決まっていない魔物は、今は駒（兵士）のまま。
+**これからは、倒した魔物のカード（`beast_<魔物>`）は兵士（駒）ではなく、効果のカード（魔法）として作る**（人間の指示）。魔物ごとに効果を決めて、1体ずつ置きかえる。効果を決めていない魔物（ゴブリン・ゴーレム）と、駒のままにすると決めた魔物（スケルトンは弓兵の駒）は、駒（兵士）のまま。
 
 - 書き方：`cards.json` の魔物のカードを `kind: "spell"`・`monster: "<魔物>"`・`effect` にする（`monster` は兵士か魔法に書ける）。手に入れ方（とどめを刺した人の手札に入る）・使い切り（使っても捨てても山札に戻らない）・合成できない（「魔物のカードは合成できません」）・排出では出ない（`weight: 0`）は、駒のときと同じ。MP は使わない（`MP_EFFECTS` に入れていない効果）
 - 魔物のカードには魔法スキン（`fxskin_*`）を作らない（キャラのスキン `charSkin:beast_<魔物>` を使う。`tests/economy.test.js` を合わせた）
 
-| 魔物 | カードの効果（`effect`） |
-|---|---|
-| ヴァンパイア（`beast_vampire`） | 相手の城に10ダメージ、自分の城を10回復（`damageCastleAndHeal`：`amount`・`heal`） |
+| 魔物 | カード | 効果（`effect`） |
+|---|---|---|
+| コウモリ（`beast_bat`） | 効果 | 超音波：相手の兵士全員を1ターン止める（`freezeEnemySoldiers`、`turns: 1`） |
+| スライム（`beast_slime`） | 効果 | 自分の城HPか MP のどちらかをランダムに5回復（`healCastleOrMp`。満タンの方は選ばない。両方満タンなら出せない） |
+| ゴブリン（`beast_goblin`） | 駒（兵士） | 今までどおり（HP7・攻撃3・速さ2） |
+| スケルトン（`beast_skeleton`） | 駒（弓兵） | HP6・攻撃3・射程2・2ターンで帰る（`role: "archer"`） |
+| ゴースト（`beast_ghost`） | 効果 | 相手の手札を2枚ランダムに奪う（`stealCard`、`amount: 2`。`stealCard` に `amount` を書けるようにした。省略すると1枚） |
+| トレント（`beast_treant`） | 効果 | 自分の城HPを10回復し、城壁を5置く（`healAndArmor`：`amount`・`armor`。城壁の決まりは城壁のカードと同じ） |
+| ゴーレム（`beast_golem`） | 駒（兵士） | 今までどおり（HP14・攻撃2・速さ1。効果は未定） |
+| デーモン（`beast_demon`） | 効果 | 相手の城と兵士を毒3にする（`poisonEnemy`、`amount: 3`） |
+| ミミック（`beast_mimic`） | 効果 | 相手のコインを5枚奪う（持っている分だけ。`stealCoins`。相手が0枚なら出せない。`coinsChanged` の `reason` は `"stolen"`（奪われた）／`"steal"`（奪った）） |
+| ドラゴン（`beast_dragon`） | 効果 | 相手の城に15ダメージ（`damageEnemyCastle`。防御を聞く・魔物も狙える） |
+| ヴァンパイア（`beast_vampire`） | 効果 | 相手の城に10ダメージ、自分の城を10回復（`damageCastleAndHeal`：`amount`・`heal`） |
+| 魔王（`beast_demonKing`） | 効果 | 相手の城と、相手の兵士全員に15ダメージ（`damageEnemyAll`。兵士が先、城は防御を聞く。忍者には当たらない） |
+
+- **魔物のカードは MP を使わない**（`mpCostOf` が `monster` のカードを0にする。ドラゴン・デーモン・コウモリ・魔王のように、ふつうなら MP を使う効果でも）
 
 - ヴァンパイアのカード：メイン（1ターン1枚）。城への攻撃は防御（城壁・土嚢・反射）を聞く。魔法の塔の `castleSpellBonus` は乗せない（10ちょうど）。**回復は、外れても・防がれても・反射されても起きる**。相手の城が落ちたら回復せずに決着。イベント：`spellCast` →（防御）→ `castleDamaged` → `castleHealed`
 - 確かめたこと：`node --test` 全部通る（`tests/drain-sacrifice.test.js` に4件）

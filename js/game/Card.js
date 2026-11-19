@@ -33,6 +33,10 @@ export const EFFECTS = {
     sacrificeAttack: ['amount', 'selfDamage'], // 捨て身：自分の城HPを selfDamage 払って、相手の城に amount ダメージ
     damageAllSoldiers: ['amount'], // 爆発：場にいる兵士全員（自分の兵士も）に amount ダメージ
     damageCastleAndHeal: ['amount', 'heal'], // 吸血（ヴァンパイアのカード）：相手の城に amount ダメージ、自分の城を heal 回復
+    healCastleOrMp: ['amount'], // スライムのカード：城HPか MP のどちらかをランダムに amount 回復
+    healAndArmor: ['amount', 'armor'], // トレントのカード：自分の城HPを amount 回復し、城壁を armor 置く
+    stealCoins: ['amount'], // ミミックのカード：相手のコインを amount 枚まで奪う
+    damageEnemyAll: ['amount'], // 魔王のカード：相手の城と、相手の兵士全員に amount ダメージ
   },
   defense: {
     shieldSoldier: ['amount'],

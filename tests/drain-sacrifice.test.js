@@ -264,3 +264,132 @@ test('ヴァンパイアのカード：相手が防御を選ぶときは、返�
   assert.equal(g.players.p1.castle.hp, 30);
   assert.equal(g.phase, 'main');
 });
+
+// ---------- 魔物のカード（効果）：コウモリ・スライム・スケルトン・ゴースト・トレント・デーモン・ミミック・ドラゴン・魔王 ----------
+
+/** p1 と p2 に兵士を1体ずつ出して、p1 の番に戻す */
+function withSoldiers(g) {
+  g.debugSetHand('p1', ['heavy']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'heavy'), g.getTargets(idOf(g, 'p1', 'heavy'))[0]).ok, true);
+  pass(g);
+  g.debugSetHand('p2', ['heavy', 'heavy']);
+  for (let i = 0; i < 2; i++) assert.equal(g.playCard(idOf(g, 'p2', 'heavy'), g.getTargets(idOf(g, 'p2', 'heavy'))[i]).ok, true);
+  pass(g);
+}
+
+test('魔物のカード：どれも MP を使わない。ゴブリン・ゴーレムは駒のまま、スケルトンは弓兵の駒', () => {
+  const g = make({ initialMp: 10, maxMp: 20 });
+  const costs = g.getState('p1').mpCosts;
+  for (const t of ['beast_bat', 'beast_dragon', 'beast_demon', 'beast_demonKing']) assert.equal(costs[t], undefined, t);
+  const c = loadJson('cards.json');
+  assert.equal(c.beast_goblin.kind, 'soldier');
+  assert.equal(c.beast_golem.kind, 'soldier');
+  assert.equal(c.beast_skeleton.kind, 'soldier');
+  assert.equal(c.beast_skeleton.role, 'archer');
+});
+
+test('コウモリ：相手の兵士全員を1ターン止める', () => {
+  const g = make({ initialMp: 10, maxMp: 20 });
+  g.start();
+  withSoldiers(g);
+  g.debugSetHand('p1', ['beast_bat']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_bat'), { playerId: 'p2' }).ok, true);
+  assert.ok(g.players.p2.soldiers.length > 0);
+  for (const s of g.players.p2.soldiers) assert.equal(s.frozen, 1);
+});
+
+test('スライム：城HPか MP のどちらかを5回復。満タンの方は選ばない', () => {
+  const g = make({ initialMp: 10, maxMp: 20 });
+  g.debugSetHand('p1', ['beast_slime', 'beast_slime']);
+  g.start();
+  g.players.p1.castle.hp = 30; // MP は満タンにしておく → 城HPが増える
+  g.players.p1.mp = 20;
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_slime')).ok, true);
+  assert.equal(g.players.p1.castle.hp, 35);
+  pass(g); pass(g);
+  g.players.p1.castle.hp = g.players.p1.castle.maxHp; // 城が満タン → MP が増える
+  g.players.p1.mp = 3;
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_slime')).ok, true);
+  assert.equal(g.players.p1.mp, 8);
+});
+
+test('スライム：城HPも MP も満タンなら出せない', () => {
+  const g = make({ initialMp: 10, maxMp: 20 });
+  g.debugSetHand('p1', ['beast_slime']);
+  g.start();
+  g.players.p1.mp = 20;
+  assert.equal(g.canPlayCard(idOf(g, 'p1', 'beast_slime')).reason, '城のHPもMPも満タンです');
+});
+
+test('ゴースト：相手の手札を2枚奪う（1枚しかなければ1枚）', () => {
+  const g = make();
+  g.debugSetHand('p1', ['beast_ghost', 'beast_ghost']);
+  g.debugSetHand('p2', ['infantry', 'heal', 'shield']);
+  g.start();
+  const log = recordEvents(g, ['cardStolen']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_ghost'), { playerId: 'p2' }).ok, true);
+  assert.equal(log.length, 2);
+  assert.equal(g.players.p2.hand.length, 1);
+  pass(g); pass(g);
+  g.debugSetHand('p2', ['infantry']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_ghost'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.players.p2.hand.length, 0);
+});
+
+test('トレント：城HPを10回復し、城壁を5置く', () => {
+  const g = make({ armorMax: 40 });
+  g.debugSetHand('p1', ['beast_treant']);
+  g.start();
+  g.players.p1.castle.hp = 20;
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_treant')).ok, true);
+  assert.equal(g.players.p1.castle.hp, 30);
+  assert.equal(g.players.p1.armor, 5);
+});
+
+test('デーモン：相手の城と兵士を毒3にする', () => {
+  const g = make({ initialMp: 10, maxMp: 20 });
+  g.start();
+  withSoldiers(g);
+  g.debugSetHand('p1', ['beast_demon']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_demon'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.players.p2.castle.poison, 3);
+  for (const s of g.players.p2.soldiers) assert.equal(s.poison.amount, 3);
+});
+
+test('ミミック：相手のコインを5枚奪う（持っている分だけ）。相手が0枚なら出せない', () => {
+  const g = make();
+  g.debugSetHand('p1', ['beast_mimic', 'beast_mimic']);
+  g.start();
+  g.players.p2.coins = 0;
+  assert.equal(g.canPlayCard(idOf(g, 'p1', 'beast_mimic')).reason, '相手のコインがありません');
+  g.players.p2.coins = 3;
+  const before = g.players.p1.coins;
+  const log = recordEvents(g, ['coinsChanged']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_mimic'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.players.p2.coins, 0);
+  assert.equal(g.players.p1.coins, before + 3);
+  assert.deepEqual(log.map((e) => [e.playerId, e.delta, e.reason]), [['p2', -3, 'stolen'], ['p1', 3, 'steal']]);
+});
+
+test('ドラゴン：相手の城に15ダメージ', () => {
+  const g = make();
+  g.debugSetHand('p1', ['beast_dragon']);
+  g.start();
+  const hp2 = g.players.p2.castle.hp;
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_dragon'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.players.p2.castle.hp, hp2 - 15);
+});
+
+test('魔王：相手の城と、相手の兵士全員に15ダメージ', () => {
+  const g = make();
+  g.start();
+  withSoldiers(g);
+  g.debugSetHand('p1', ['beast_demonKing']);
+  const hp2 = g.players.p2.castle.hp;
+  const mine = g.players.p1.soldiers.length;
+  assert.ok(g.players.p2.soldiers.length > 0);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_demonKing'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.players.p2.castle.hp, hp2 - 15);
+  assert.equal(g.players.p2.soldiers.length, 0); // 重装兵（HP15以下）は倒れる
+  assert.equal(g.players.p1.soldiers.length, mine); // 自分の兵士には当たらない
+});

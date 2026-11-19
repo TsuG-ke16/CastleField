@@ -1262,6 +1262,7 @@ export class Game {
   mpCostOf(card) {
     if (this.rules.maxMp <= 0) return 0;
     const def = card.def;
+    if (def.monster !== undefined) return 0; // 魔物のカード（倒したごほうび）は MP を使わない
     if (def.kind !== 'spell' || !MP_EFFECTS.includes(def.effect)) return 0;
     return def.mpCost ?? this.rarityDefs?.[def.rarity]?.mpCost ?? 0;
   }
@@ -1645,6 +1646,7 @@ export class Game {
           ],
           reason: '相手がいません',
         };
+      case 'damageEnemyAll':
       case 'damageCastleAndHeal':
       case 'drainCastle': {
         // 生命吸収・吸血：城だけを狙う（魔物は狙えない）
@@ -1657,6 +1659,21 @@ export class Game {
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
         return { targets: playerTargets(foes), reason: '相手がいません' };
       }
+      case 'healCastleOrMp':
+        // スライム：城HPと MP のどちらかがまだ増えるなら出せる（どちらになるかはランダム）
+        return {
+          targets: !player.castle.isFull || (this.rules.maxMp > 0 && player.mp < this.rules.maxMp) ? [{ playerId: player.id }] : [],
+          reason: '城のHPもMPも満タンです',
+        };
+      case 'healAndArmor':
+        // トレント：城の回復か城壁のどちらかが効くなら出せる
+        return {
+          targets: !player.castle.isFull || !this.armorFull(player, { amount: def.armor }) ? [{ playerId: player.id }] : [],
+          reason: '城のHPが満タンで、城壁も上限です',
+        };
+      case 'stealCoins':
+        // ミミック：コインを持っている相手だけ
+        return { targets: playerTargets(this.opponentsOf(player.id).filter((p) => p.coins > 0)), reason: '相手のコインがありません' };
       case 'drainMp':
         // MPドレイン：MP を持っている相手だけ
         if (this.rules.maxMp <= 0) return { targets: [], reason: 'このルールではMPを使いません' };
@@ -2128,11 +2145,66 @@ export class Game {
       }
 
       case 'stealCard': {
+        // amount 枚まで（省略すると1枚）。1枚ずつランダムに奪う（ゴーストのカードは2枚）
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
-        const stolen = enemy.hand[enemy.hand.length === 1 ? 0 : Math.floor(this.rng() * enemy.hand.length)];
-        enemy.takeFromHand(stolen.cardId);
-        player.hand.push(stolen);
-        this.emit('cardStolen', { playerId: player.id, victimId: enemy.id, cardId: stolen.cardId });
+        for (let i = 0; i < (card.def.amount ?? 1) && enemy.hand.length > 0; i++) {
+          const stolen = enemy.hand[enemy.hand.length === 1 ? 0 : Math.floor(this.rng() * enemy.hand.length)];
+          enemy.takeFromHand(stolen.cardId);
+          player.hand.push(stolen);
+          this.emit('cardStolen', { playerId: player.id, victimId: enemy.id, cardId: stolen.cardId });
+        }
+        break;
+      }
+
+      case 'healCastleOrMp': {
+        // スライム：城HPか MP のどちらかをランダムに回復（満タンの方は選ばない）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        const options = [];
+        if (!player.castle.isFull) options.push('hp');
+        if (this.rules.maxMp > 0 && player.mp < this.rules.maxMp) options.push('mp');
+        const pick = options.length === 1 ? options[0] : options[Math.floor(this.rng() * options.length)];
+        if (pick === 'hp') {
+          const healed = player.castle.heal(amount);
+          this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        } else {
+          this.changeMp(player, amount, 'card');
+        }
+        break;
+      }
+
+      case 'healAndArmor': {
+        // トレント：城HPを回復し、城壁を置く（城壁の決まりは城壁のカードと同じ）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        const healed = player.castle.heal(amount);
+        if (healed > 0) this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        if (!this.armorFull(player, { amount: card.def.armor })) this.playSupport(player, { def: { kind: 'defense', effect: 'armorCastle', amount: card.def.armor } }, { playerId: player.id });
+        break;
+      }
+
+      case 'stealCoins': {
+        // ミミック：相手のコインを amount 枚まで奪う（持っている分だけ）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        const taken = Math.min(amount, enemy.coins);
+        this.changeCoins(enemy, -taken, 'stolen');
+        this.changeCoins(player, taken, 'steal');
+        break;
+      }
+
+      case 'damageEnemyAll': {
+        // 魔王：相手の兵士全員（忍者を除く）に amount、そのあと相手の城に amount（城は防御を聞く）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          break;
+        }
+        for (const soldier of [...enemy.visibleSoldiers]) {
+          if (enemy.soldiers.includes(soldier)) this.damageSoldier(enemy, soldier, amount, 'spell');
+        }
+        this.requestDefense(
+          { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount, from: 'spell', spellType: card.type },
+          () => this.damageCastle(enemy, amount, { kind: 'spell', type: card.type }),
+          () => this.checkGameOver(),
+        );
         break;
       }
 
