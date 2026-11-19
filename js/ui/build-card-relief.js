@@ -37,10 +37,6 @@ const FRAMES = {
   epic:      { base: { metal: .65, smooth: .78 }, silver: { metal: .9, smooth: .86 }, gold: { metal: .9, smooth: .86 }, gemHue: [255, 310], raised: [[140, 0, 372, 114]], paper: SHARED_PARCHMENT },
   legendary: { base: { metal: .15, smooth: .35 }, gold: { metal: 1, smooth: .92 }, cloth: [330, 25], gemHue: [330, 25], raised: [[144, 0, 368, 114]], paper: SHARED_PARCHMENT },
   special:   { base: { metal: .55, smooth: .9 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[145, 0, 367, 114]], paper: SHARED_PARCHMENT },
-  soldier:   { base: { metal: 0, smooth: .25 }, silver: { metal: .85, smooth: .75 }, gold: { metal: .9, smooth: .8 }, gemHue: [195, 250], raised: [[180, 0, 372, 186], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
-  spell:     { base: { metal: .1, smooth: .45 }, gold: { metal: .9, smooth: .8 }, gemHue: [255, 300], raised: [[192, 12, 352, 194], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
-  weapon:    { base: { metal: .55, smooth: .6 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .9, smooth: .85 }, gemHue: [340, 15], raised: [[164, 28, 362, 204], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
-  defense:   { base: { metal: .75, smooth: .72 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .85, smooth: .8 }, gemHue: [195, 250], raised: [[184, 24, 334, 206], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
   beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, organic: [70, 140], gemHue: [120, 170], gemMinSat: .5, raised: [[159, 0, 353, 114]], paper: SHARED_PARCHMENT },
 };
 

@@ -93,10 +93,6 @@ OpenAIの画像生成ツールで、このプロジェクト用に新規生成�
 | `fx/ice.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `fx/dust.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `fx/fireball.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
-| `cards/frame-soldier.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
-| `cards/frame-spell.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
-| `cards/frame-weapon.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
-| `cards/frame-defense.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `ui/button-end-turn.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `ui/sign-hp.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `ui/banner-win.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |

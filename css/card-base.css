@@ -10,11 +10,6 @@
 .card.has-frame[data-rarity=epic], .mini-card[data-rarity=epic] { --bw: .747; --fy: 8.464%; --fh: .8711; --fx: 49.80%; }
 .card.has-frame[data-rarity=legendary], .mini-card[data-rarity=legendary] { --bw: .808; --fy: 16.927%; --fh: .7799; --fx: 49.22%; }
 .card.has-frame[data-rarity=special], .mini-card[data-rarity=special] { --bw: .733; --fy: 7.161%; --fh: .8815; --fx: 50%; }
-/* レアリティのないときの種類別の枠 */
-.card.has-frame:has(> .card-frame[src$="frame-soldier.png"]), .mini-card:has(> .mini-card-frame[src$="frame-soldier.png"]) { --fy: 14.063%; --fh: .8086; --fx: 49.71%; }
-.card.has-frame:has(> .card-frame[src$="frame-spell.png"]), .mini-card:has(> .mini-card-frame[src$="frame-spell.png"]) { --fy: 13.672%; --fh: .8138; --fx: 50.88%; }
-.card.has-frame:has(> .card-frame[src$="frame-weapon.png"]), .mini-card:has(> .mini-card-frame[src$="frame-weapon.png"]) { --fy: 13.281%; --fh: .8151; --fx: 51.17%; }
-.card.has-frame:has(> .card-frame[src$="frame-defense.png"]), .mini-card:has(> .mini-card-frame[src$="frame-defense.png"]) { --fy: 12.760%; --fh: .8164; --fx: 51.27%; }
 
 #app .card.has-frame, #app .mini-card { overflow: visible; }
 #app .card.has-frame .card-frame, #app .mini-card-frame {

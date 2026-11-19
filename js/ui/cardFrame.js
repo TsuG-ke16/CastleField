@@ -13,7 +13,7 @@ export function frameAsset(def, rarities) {
   if (def?.rarity && RARITY_IDS.includes(def.rarity) && rarities?.[def.rarity]) {
     return `cards/frame-${def.rarity}.png`;
   }
-  return KINDS.has(def?.kind) ? `cards/frame-${def.kind}.png` : null;
+  return null;
 }
 export function kindIcon(def) {
   // Preserve the old identifier-only API; card UI passes the full definition for wild cards.

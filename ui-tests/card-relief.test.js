@@ -8,7 +8,7 @@ const CARDS = new URL('../assets/cards/', import.meta.url);
 // 元の枠は、どの枠も最大のアルファが約253（完全な255はない）。「不透明」は 200 より大きいところとする
 const OPAQUE = 200;
 const RELIEF = new URL('../assets/cards/relief/', import.meta.url);
-const NAMES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'special', 'soldier', 'spell', 'weapon', 'defense', 'beast'];
+const NAMES = ['common', 'uncommon', 'rare', 'epic', 'legendary', 'special', 'beast'];
 
 const load = (dir, file) => decodePng(readFileSync(new URL(file, dir)));
 

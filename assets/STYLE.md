@@ -88,7 +88,7 @@ simple soft background vignette, no text, no frame.
 | `card-thunder.png` | a dark cloud shooting a bright yellow lightning bolt |
 | `card-heal.png` | a glowing pink heart surrounded by green sparkles |
 
-### カードの枠（`cards/frame-soldier.png`、`cards/frame-spell.png`、2:3）
+### カードの枠（`cards/frame-<レアリティ>.png`、2:3）
 
 ```
 Empty card frame for a fantasy card game, 2:3 portrait. [種類].
