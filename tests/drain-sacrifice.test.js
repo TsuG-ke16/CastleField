@@ -1,4 +1,4 @@
-// 追加カード（仕様書4章）：MPドレイン・生命吸収・捨て身・爆発のテスト。
+// 追加カード（仕様書4章。スペシャル）：魔力強奪・命の簒奪・決死の砲撃・火薬庫のテスト。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/Game.js';
@@ -17,29 +17,22 @@ function pass(g) {
   }
 }
 
-test('cards.json：4系統がコモン〜レジェンドで合成につながり、数値が仕様どおり', () => {
+test('cards.json：4枚はスペシャル（合成しない）。数値と MP のコスト', () => {
   const c = loadJson('cards.json');
-  const chains = {
-    drainMp: [['manaSip', 1], ['manaDrain', 2], ['manaRaid', 4], ['manaUsurp', 7], ['voidVortex', 12]],
-    drainCastle: [['lifeFang', 3], ['lifeDrain', 5], ['lifeSteal', 8], ['soulEater', 12], ['deathEmbrace', 18]],
-    sacrificeAttack: [['recklessStrike', 8], ['bloodPact', 13], ['desperateShot', 20], ['lifeFlame', 28], ['finalGlory', 38]],
-    damageAllSoldiers: [['bomb', 3], ['bigBomb', 5], ['powderKeg', 8], ['greatExplosion', 12], ['cataclysm', 18]],
-  };
-  const rarities = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
-  for (const [effect, chain] of Object.entries(chains)) {
-    chain.forEach(([type, amount], i) => {
-      assert.equal(c[type].effect, effect, type);
-      assert.equal(c[type].amount, amount, type);
-      assert.equal(c[type].rarity, rarities[i], type);
-      assert.equal(c[type].fuseTo, chain[i + 1]?.[0], type);
-    });
+  const expect = { manaRaid: ['drainMp', 4, undefined], lifeSteal: ['drainCastle', 8, 3], desperateShot: ['sacrificeAttack', 20, 3], powderKeg: ['damageAllSoldiers', 8, 3] };
+  for (const [type, [effect, amount, mpCost]] of Object.entries(expect)) {
+    assert.equal(c[type].effect, effect, type);
+    assert.equal(c[type].amount, amount, type);
+    assert.equal(c[type].rarity, 'special', type);
+    assert.equal(c[type].fuseTo, undefined, type);
+    assert.equal(c[type].mpCost, mpCost, type);
   }
-  assert.deepEqual(['recklessStrike', 'bloodPact', 'desperateShot', 'lifeFlame', 'finalGlory'].map((t) => c[t].selfDamage), [2, 4, 6, 8, 10]);
+  assert.equal(c.desperateShot.selfDamage, 6);
 });
 
 test('MPドレイン：相手の MP を奪って自分の MP にする。MP は使わない。相手の MP が0なら出せない', () => {
   const g = make({ initialMp: 10, maxMp: 20 });
-  g.debugSetHand('p1', ['manaRaid', 'manaSip']);
+  g.debugSetHand('p1', ['manaRaid', 'manaRaid']);
   g.start();
   g.players.p1.mp = 5;
   g.players.p2.mp = 3;
@@ -52,19 +45,19 @@ test('MPドレイン：相手の MP を奪って自分の MP にする。MP は�
   ]);
   pass(g);
   pass(g);
-  const res = g.canPlayCard(idOf(g, 'p1', 'manaSip'));
+  const res = g.canPlayCard(idOf(g, 'p1', 'manaRaid'));
   assert.equal(res.ok, false);
   assert.equal(res.reason, '相手のMPがありません');
 });
 
 test('MPドレイン：自分の上限を超えたぶんは捨てる', () => {
   const g = make({ initialMp: 10, maxMp: 20 });
-  g.debugSetHand('p1', ['voidVortex']);
+  g.debugSetHand('p1', ['manaRaid']);
   g.start();
-  g.players.p1.mp = 15;
+  g.players.p1.mp = 18;
   g.players.p2.mp = 20;
-  assert.equal(g.playCard(idOf(g, 'p1', 'voidVortex'), { playerId: 'p2' }).ok, true);
-  assert.equal(g.players.p2.mp, 8);
+  assert.equal(g.playCard(idOf(g, 'p1', 'manaRaid'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.players.p2.mp, 16);
   assert.equal(g.players.p1.mp, 20);
 });
 
@@ -80,16 +73,16 @@ test('生命吸収：相手の城に与えたぶん自分の城を回復。城�
   assert.equal(g.players.p2.castle.hp, hp2 - 5);
   assert.equal(g.players.p1.castle.hp, 35);
   assert.deepEqual(log.map((e) => e.event), ['mpChanged', 'castleDamaged', 'castleHealed']);
-  assert.equal(log[0].delta, -3); // レア
+  assert.equal(log[0].delta, -3); // mpCost 3
   assert.equal(log[2].amount, 5);
 });
 
 test('生命吸収：自分の城が満タンなら回復は出ない（城HPの上限で止まる）', () => {
   const g = make({ initialMp: 10, maxMp: 20 });
-  g.debugSetHand('p1', ['lifeFang']);
+  g.debugSetHand('p1', ['lifeSteal']);
   g.start();
   const log = recordEvents(g, ['castleHealed']);
-  assert.equal(g.playCard(idOf(g, 'p1', 'lifeFang'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.playCard(idOf(g, 'p1', 'lifeSteal'), { playerId: 'p2' }).ok, true);
   assert.equal(log.length, 0);
 });
 
@@ -111,46 +104,47 @@ test('捨て身：自分の城HPを払って、相手の城に大ダメージ。
 
 test('捨て身：払うと自分の城が落ちるなら出せない', () => {
   const g = make({ initialMp: 10, maxMp: 20 });
-  g.debugSetHand('p1', ['finalGlory']);
+  g.debugSetHand('p1', ['desperateShot']);
   g.start();
-  g.players.p1.castle.hp = 10;
-  const res = g.canPlayCard(idOf(g, 'p1', 'finalGlory'));
+  g.players.p1.castle.hp = 6;
+  const res = g.canPlayCard(idOf(g, 'p1', 'desperateShot'));
   assert.equal(res.ok, false);
-  assert.equal(res.reason, '城のHPが足りません（10より多く必要です）');
-  g.players.p1.castle.hp = 11;
-  assert.equal(g.canPlayCard(idOf(g, 'p1', 'finalGlory')).ok, true);
+  assert.equal(res.reason, '城のHPが足りません（6より多く必要です）');
+  g.players.p1.castle.hp = 7;
+  assert.equal(g.canPlayCard(idOf(g, 'p1', 'desperateShot')).ok, true);
 });
 
 test('捨て身：相手の城を落とせば勝ち', () => {
   const g = make({ initialMp: 10, maxMp: 20 });
-  g.debugSetHand('p1', ['recklessStrike']);
-  g.debugSetCastleHp('p2', 8);
+  g.debugSetHand('p1', ['desperateShot']);
+  g.debugSetCastleHp('p2', 20);
   g.start();
-  assert.equal(g.playCard(idOf(g, 'p1', 'recklessStrike'), { playerId: 'p2' }).ok, true);
+  assert.equal(g.playCard(idOf(g, 'p1', 'desperateShot'), { playerId: 'p2' }).ok, true);
   assert.equal(g.phase, 'gameOver');
   assert.equal(g.getState('p1').winner, 'p1');
 });
 
 test('爆発：自分の兵士も相手の兵士も、場の兵士全員にダメージ。場に兵士がいなければ出せない', () => {
   const g = make({ initialMp: 10, maxMp: 20 });
-  g.debugSetHand('p1', ['bomb', 'infantry']);
+  g.debugSetHand('p1', ['powderKeg', 'infantry']);
   g.start();
-  assert.equal(g.canPlayCard(idOf(g, 'p1', 'bomb')).reason, '場に兵士がいません');
+  assert.equal(g.canPlayCard(idOf(g, 'p1', 'powderKeg')).reason, '場に兵士がいません');
   const targets = g.getTargets(idOf(g, 'p1', 'infantry'));
   assert.equal(g.playCard(idOf(g, 'p1', 'infantry'), targets[0]).ok, true);
   pass(g);
   g.debugSetHand('p2', ['infantry']);
   assert.equal(g.playCard(idOf(g, 'p2', 'infantry'), g.getTargets(idOf(g, 'p2', 'infantry'))[0]).ok, true);
   pass(g);
-  g.debugSetHand('p1', ['bomb']);
+  g.debugSetHand('p1', ['powderKeg']);
   const mine = g.players.p1.soldiers[0];
   const theirs = g.players.p2.soldiers[0];
   const [hpMine, hpTheirs] = [mine.hp, theirs.hp];
   const log = recordEvents(g, ['soldierDamaged']);
-  assert.equal(g.playCard(idOf(g, 'p1', 'bomb')).ok, true); // 対象は選ばない
-  assert.deepEqual(log.map((e) => [e.playerId, e.amount, e.cause]), [['p1', 3, 'spell'], ['p2', 3, 'spell']]);
-  assert.equal(mine.hp, hpMine - 3);
-  assert.equal(theirs.hp, hpTheirs - 3);
+  assert.equal(g.playCard(idOf(g, 'p1', 'powderKeg')).ok, true); // 対象は選ばない
+  assert.deepEqual(log.map((e) => [e.playerId, e.amount, e.cause]), [['p1', 8, 'spell'], ['p2', 8, 'spell']]);
+  // 歩兵（HP5）は両方とも倒れる
+  assert.equal(g.players.p1.soldiers.includes(mine), hpMine > 8);
+  assert.equal(g.players.p2.soldiers.includes(theirs), hpTheirs > 8);
 });
 
 // ---------- 合成・高レアリティの機会を増やす調整（適応の排出率・排出率アップの強化の値段） ----------
