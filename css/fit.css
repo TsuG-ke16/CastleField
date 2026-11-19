@@ -164,3 +164,6 @@
   #app .plaza-zoom > span { display: none; }
   #app .plaza-zoom button { --button-h: 28px; --button-cap: 6px; min-width: 28px; min-height: 28px; width: 28px; height: 28px; padding: 0 !important; font-size: 13px; }
 }
+
+/* タイトル：飾りの朝日（.title-sunrise）が右に数pxはみ出し、430幅などで画面全体が横に3pxずれて動いていた。横は切る */
+#app #title { overflow-x: clip; }
