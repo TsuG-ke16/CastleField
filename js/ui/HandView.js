@@ -10,7 +10,7 @@ import { groupStarts, sortHand } from './handOrder.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
-import { frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
+import { cardSkinNow, frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -34,6 +34,8 @@ export class HandView {
     this.hand = [];          // [{ cardId, type }]
     this.selectedId = null;
     this.locked = true;      // 演出中・交代画面中は操作しない
+    // ランクカードの装備が変わったら、手札を同じ並びのまま描き直す（枠が変わる）
+    document.addEventListener('cardskinchange', () => { if (this.hand?.length) this.render(this.hand); });
     this.blocked = new Map(); // 出せないカード：cardId → 理由（見た目を暗くするだけ。押せば理由が出る）
     this.discardCount = 0;   // 0 以外なら「捨てるカードを選ぶ」モード
     this.discardPicks = new Set();
@@ -180,8 +182,11 @@ export class HandView {
     const mpCost = this.mpCosts?.[card.type] ?? 0;
     el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
       '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
+    // ランクカード（表の枠）を装備しているときは、レアリティの色・光を出さない（common と同じ扱い）
+    const skin = def.monster ? null : cardSkinNow();
+    if (skin) el.dataset.skin = skin;
     if (def.rarity && this.rarities?.[def.rarity]) {
-      el.dataset.rarity = def.rarity;
+      el.dataset.rarity = skin ? 'common' : def.rarity;
       el.style.setProperty('--rarity', this.rarities[def.rarity].color);
       const badge = document.createElement('span');
       badge.className = 'card-rarity';

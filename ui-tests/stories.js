@@ -24,7 +24,7 @@ try {
     await page.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
     page.on('pageerror', (e) => errors.push(e.message));
     await page.goto(base);
-    await page.locator('#home .home-tile[data-id="catalog"]').click();
+    await page.click('#home .home-tab[data-tab=deck]'); await page.locator('#home .home-tile[data-id="catalog"]').click();
     await page.locator('#guide-content [data-type="hero"]').click();
     const story = page.locator('.guide-story');
     await story.waitFor();

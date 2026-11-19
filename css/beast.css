@@ -2,6 +2,12 @@
 :is(.card.has-frame, .mini-card)[data-beast] {
   --card-window: url('../assets/cards/window-beast.png');
 }
+/* 魔物の枠は、ほかの枠と窓・文字枠の位置が違う（絵を引き伸ばさずに使うため、位置をこちらで合わせる。512×768 の絵に対する%） */
+#app :is(.card.has-frame, .mini-card)[data-beast] {
+  --win-l: 15.53%; --win-t: 18.42%; --win-w: 68.85%; --win-h: 45.12%;
+  --med-l: 19.2%; --med-y: 14.1%; --name-y: 75.2%;
+}
+#app .card.has-frame[data-beast] > .card-short { inset: 85.3% 13.5% auto; height: 6.4%; }
 #app [data-beast] :is(.card-art, .mini-card-image) .asset-image { padding: 0; }
 #app .mini-card[data-beast] .mini-card-name:not(:empty) { font-size: clamp(7px, 1.35vw, 10px); }
 .soldier[data-beast] .soldier-pic { filter: drop-shadow(0 2px 3px #5a101a80); }

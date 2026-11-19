@@ -33,7 +33,7 @@ try {
   };
   const A = await open('A'); const B = await open('B');
   // ゲストはランクマッチに参加できない
-  await A.click('#home .home-tile[data-id=rank]');
+  await A.click('#home .home-tab[data-tab=battle]'); await A.click('#home .home-tile[data-id=rank]');
   await A.locator('#ranked:not([hidden]) .ranked-action').waitFor();
   assert.match(await A.locator('#ranked .ranked-note').textContent(), /アカウントを作成/);
   await A.screenshot({ path: resolve(artifacts, 'ranked-guest.png') });
@@ -47,13 +47,13 @@ try {
     await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   }
   db.close();
-  await A.click('#home .home-tile[data-id=rank]');
+  await A.click('#home .home-tab[data-tab=battle]'); await A.click('#home .home-tile[data-id=rank]');
   await A.locator('#ranked .ranked-find').waitFor();
   await A.screenshot({ path: resolve(artifacts, 'ranked-idle.png') });
   await A.click('#ranked .ranked-find');
   await A.locator('#ranked .ranked-wait').waitFor();
   await A.screenshot({ path: resolve(artifacts, 'ranked-searching.png') });
-  await B.click('#home .home-tile[data-id=rank]');
+  await B.click('#home .home-tab[data-tab=battle]'); await B.click('#home .home-tile[data-id=rank]');
   await B.click('#ranked .ranked-find');
   // 成立 → 自動で試合に入る（ホームもランク画面も閉じる）
   for (const page of [A, B]) await page.waitForFunction(() => document.querySelector('#ranked')?.hidden && document.querySelector('#home')?.hidden && document.querySelector('#hand'), null, { timeout: 15000 });
@@ -77,7 +77,7 @@ try {
   assert.match(await A.locator('#ranked .ranked-pips').textContent(), /あと4試合/);
   // ランキング（認定戦中の人はまだ載らない）
   await A.click('#ranked .ranked-close');
-  await A.click('#home .home-tile[data-id=ranking]');
+  await A.click('#home .home-tab[data-tab=battle]'); await A.click('#home .home-tile[data-id=ranking]');
   await A.locator('#ranking:not([hidden]) [data-part=me]').waitFor();
   assert.match(await A.locator('#ranking [data-part=me]').textContent(), /認定戦中/);
   await A.screenshot({ path: resolve(artifacts, 'ranking.png') });

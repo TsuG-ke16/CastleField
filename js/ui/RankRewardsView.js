@@ -1,6 +1,6 @@
 // ランク報酬を見る画面：ランクごとの、エンブレム・アイコンフレーム・カードスキン（表と裏）の見本。
 // 見本を長押しすると、カードは3Dで大きく見られる（CardZoom.js。裏は「裏から見る」）。ランクの色・名前は data/ranks.json。
-// 表示だけで、サーバーや装備には関わらない（もらえるのは、シーズンのランクに応じたアイコンフレームとカード裏面）。
+// 表示だけで、サーバーや装備には関わらない。ランクのカード裏（back_rank_*）を装備すると、表の枠も同じランクになる（cardFrame.js の setCardSkin）。
 import { RANK_IDS, rankSkinBack } from './skinArt.js';
 import { mountMiniCard } from './cardView.js';
 
@@ -20,9 +20,8 @@ export class RankRewardsView {
     box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'rank-rewards-title');
     box.innerHTML = `<div class="screen-box parchment rank-rewards-box">
       <h2 id="rank-rewards-title">ランク報酬</h2>
-      <p class="rank-rewards-note">シーズンで到達したランクに合わせて、アイコンフレームとカード裏面がもらえます。見本を長押しすると、カードを3Dで大きく見られます。</p>
+      <p class="rank-rewards-note">シーズンで到達したランクに合わせて、アイコンフレームとランクカードがもらえます。ランクカードは表と裏が一体で、所持品で装備すると、カードの表も裏もそのランクの見た目になります。見本を長押しすると、3Dで大きく見られます。</p>
       <ul class="rank-rewards-list" data-part="list"></ul>
-      <p class="rank-rewards-note small">カードの表のスキンは見本です（まだ手に入りません）。</p>
       <button type="button" class="plank-btn rank-rewards-close">閉じる</button>
     </div>`;
     document.getElementById('app').append(box);
@@ -55,7 +54,7 @@ export class RankRewardsView {
       const frontCard = el('div', 'rank-reward-card'); frontCard.dataset.zoom = SAMPLE_CARD;
       Object.assign(frontCard.dataset, { zoomSkin: id, zoomColor: color, zoomTitle: `${label}のカード（表）`, zoomText: 'ランク報酬のカードスキン。なぞって回すと裏も見られます' });
       if (this.cards?.[SAMPLE_CARD]) mountMiniCard(frontCard, SAMPLE_CARD, this.cards[SAMPLE_CARD], this.rarities, { skin: id });
-      front.append(frontCard, el('figcaption', null, 'カード表（見本）'));
+      front.append(frontCard, el('figcaption', null, 'カード表'));
 
       const back = el('figure', 'rank-reward-item');
       const backCard = el('div', 'rank-reward-card back'); backCard.dataset.zoom = SAMPLE_CARD;

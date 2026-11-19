@@ -15,3 +15,15 @@ test('kind and rarity identifiers resolve to symbols', () => {
  assert.equal(kindIcon('defense'),'shield');
  assert.equal(rarityMark('legendary'),'♛');
 });
+
+test('ランクカードを装備すると、表の枠もそのランクになる（魔物の駒は魔物の枠のまま）', async () => {
+  const { setCardSkin } = await import('../js/ui/cardFrame.js');
+  setCardSkin('gold');
+  try {
+    assert.equal(frameAsset({ kind: 'soldier', rarity: 'legendary' }, rarities), 'cards/frame-skin-gold.png');
+    assert.equal(frameAsset({ kind: 'soldier', monster: 'slime', rarity: 'rare' }, rarities), 'cards/frame-beast.png');
+    assert.equal(frameAsset({ kind: 'soldier', rarity: 'legendary' }, rarities, null), 'cards/frame-legendary.png');
+    setCardSkin('radiant');
+    assert.equal(frameAsset({ kind: 'soldier', rarity: 'rare' }, rarities), 'cards/frame-rare.png');
+  } finally { setCardSkin(null); }
+});

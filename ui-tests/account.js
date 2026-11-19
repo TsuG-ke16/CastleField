@@ -36,7 +36,7 @@ try {
   assert.match(await page.locator('#home [data-part=lv]').textContent(), /Lv\.1/);
   await page.screenshot({ path: resolve(artifacts, 'home.png') });
   // プロフィール：アイコン変更と公開設定が保存される
-  await page.click('#home .home-tile[data-id=profile]');
+  await page.click('#home .home-tab[data-tab=account]'); await page.click('#home .home-tile[data-id=profile]');
   await page.locator('#profile:not([hidden]) [data-part=body]:not([hidden])').waitFor();
   await page.click('#profile .profile-icon:nth-child(3)');
   await page.waitForFunction(() => document.querySelector('#profile .profile-icon:nth-child(3)')?.getAttribute('aria-checked') === 'true');
@@ -45,17 +45,17 @@ try {
   await page.screenshot({ path: resolve(artifacts, 'profile.png') });
   await page.click('#profile .profile-close');
   // 「ひとりで遊ぶ」で遊べる画面（既存のタイトル）に進める
-  await page.click('#home [data-act=start]');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.click('#home [data-act=start]');
   await page.locator('#title-levels:not([hidden])').waitFor();
   await page.click('#levels-back');
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
-  await page.click('#home [data-act=settings]');
+  await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]');
   await page.locator('#settings:not([hidden])').waitFor();
   await page.click('#settings .settings-close');
   await page.reload();
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   await page.screenshot({ path: resolve(artifacts, 'account-title.png') });
-  await page.click('#home [data-act=settings]');
+  await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]');
   await page.click('.set-account-btn');
   await page.locator('#account:not([hidden])').waitFor();
   assert.match(await page.locator('#account [data-part=name]').textContent(), /^ゲスト\d{4}$/);
@@ -69,7 +69,7 @@ try {
   await page.locator('#account [data-part=msg]', { hasText: '名前を変えました' }).waitFor();
   await page.reload();
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
-  await page.click('#home [data-act=settings]');
+  await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]');
   await page.click('.set-account-btn');
   assert.equal(await page.locator('#account [data-part=name]').textContent(), 'テストさん');
   // 端末に保存したデッキが、クラウドに上がっている
@@ -85,12 +85,12 @@ try {
   await page.waitForFunction(() => JSON.parse(localStorage.getItem('cf-mydecks-v2') ?? 'null')?.slots?.[0]?.name === '画面テスト', null, { timeout: 8000 });
   // メールアドレスとパスワードを登録すると会員になり、別の端末（別のブラウザ）でログインすると同じアカウント
   // 設定画面にも入口がある（ゲストには「アカウントを作成」）
-  await page.click('#home [data-act=settings]');
+  await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]');
   await page.locator('#settings .set-account-btn', { hasText: 'アカウントを作成' }).click();
   await page.locator('#account:not([hidden])').waitFor();
   assert.ok(await page.locator('#settings').isHidden());
   await page.click('#account [data-act=close]');
-  const openAccount = async (pg) => { await pg.click('#home [data-act=settings]'); await pg.click('.set-account-btn'); await pg.locator('#account:not([hidden])').waitFor(); };
+  const openAccount = async (pg) => { await pg.click('#home .home-tab[data-tab=settings]'); await pg.click('#home .home-tile[data-id=settings]'); await pg.click('.set-account-btn'); await pg.locator('#account:not([hidden])').waitFor(); };
   await openAccount(page);
   assert.equal(await page.locator('#account .account-provider[data-provider=apple]').count(), 0); // Apple はなくした
   await page.fill('#account [data-part=emailInput]', 'ui-test@example.com');
@@ -122,7 +122,7 @@ try {
   await page.reload();
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   // 削除は2回押す
-  await page.click('#home [data-act=settings]');
+  await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]');
   await page.click('.set-account-btn');
   await page.click('#account [data-act=delete]');
   assert.match(await page.locator('#account [data-act=delete]').textContent(), /もう一度/);

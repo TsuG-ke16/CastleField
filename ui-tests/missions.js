@@ -41,8 +41,8 @@ try {
   db.prepare("INSERT INTO mission_progress (user_id, mission_id, period_key, progress, completed_at) VALUES (?, 'w_play', ?, 5, 1)").run(info.id, info.weekly);
   db.close();
   await page.reload();
-  await page.locator('#home .home-tile[data-id=mission] .home-badge').waitFor({ timeout: 8000 });
-  await page.click('#home .home-tile[data-id=mission]');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home .home-tile[data-id=mission] .home-badge').waitFor({ timeout: 8000 });
+  await page.click('#home .home-tab[data-tab=battle]'); await page.click('#home .home-tile[data-id=mission]');
   await page.locator('#missions:not([hidden]) .mission-row').first().waitFor();
   assert.equal(await page.locator('#missions .mission-row').count(), 3); // デイリーは3つ
   await page.screenshot({ path: resolve(artifacts, 'missions-daily.png') });
@@ -56,8 +56,8 @@ try {
   await page.click('#missions .collection-close');
   assert.match(await page.locator('#home [data-part=coins] b').textContent(), /120/); // 週のミッション 120 コイン
   // データの書き出し
-  await page.click('#home [data-act=start]'); await page.click('#levels-back');
-  await page.click('#home [data-act=settings]'); await page.click('.set-account-btn');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.click('#home [data-act=start]'); await page.click('#levels-back');
+  await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]'); await page.click('.set-account-btn');
   const [download] = await Promise.all([page.waitForEvent('download'), page.click('#account [data-act=export]')]);
   assert.equal(download.suggestedFilename(), 'castlefield-my-data.json');
   assert.deepEqual(errors, []);

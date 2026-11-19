@@ -1,0 +1,46 @@
+/* ホームの画面下のタブ（js/ui/Home.js）。左から アカウント・デッキ・バトル・ガチャ・設定 */
+#home { padding-bottom: calc(76px + max(8px, env(safe-area-inset-bottom))); }
+.home-page { display: grid; gap: 12px; min-width: 0; }
+#home .home-page[hidden] { display: none; }
+.home-tabbar {
+  position: fixed; z-index: 20; left: 0; right: 0; bottom: 0;
+  display: grid; grid-template-columns: repeat(5, 1fr); align-items: end;
+  width: min(100%, 520px); margin: 0 auto;
+  padding: 6px max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
+  background: linear-gradient(#173c32, #0f2a23); border-top: 2px solid #b8965a; border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 14px #0a1c1780;
+}
+.home-tab {
+  position: relative; display: grid; justify-items: center; gap: 2px; min-height: 56px; padding: 4px 2px;
+  border: 0; border-radius: 12px; background: transparent; color: #d9cfb4; font: 750 11px/1.2 var(--font, sans-serif); cursor: pointer;
+}
+.home-tab img { width: 30px; height: 30px; object-fit: contain; opacity: .75; transition: transform .15s, opacity .15s; }
+.home-tab[aria-selected=true] { color: #ffe9a8; background: #ffffff14; }
+.home-tab[aria-selected=true] img { opacity: 1; transform: translateY(-2px) scale(1.12); }
+/* 真ん中のバトルは大きく、少し上に飛び出す */
+.home-tab-main img { width: 44px; height: 44px; margin-top: -22px; padding: 6px; border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #ffd76a, #c98a1c); border: 2px solid #fff1c4; box-shadow: 0 3px 10px #00000066; opacity: 1; }
+.home-tab-main[aria-selected=true] img { transform: translateY(-3px) scale(1.08); }
+.home-tab-dot { position: absolute; top: 4px; right: calc(50% - 20px); width: 10px; height: 10px; border-radius: 50%; background: #e45b43; border: 1px solid #fff6d5; }
+.home-summary { display: grid; gap: 6px; padding: 10px 12px; border-radius: 12px; background: var(--home-paper); border: 1px solid #b8a477; color: var(--home-ink); }
+.home-summary div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+.home-summary span { color: #6b5233; }
+.home-summary b { text-align: right; overflow-wrap: anywhere; }
+/* ページのタイルは大きめに */
+.home-page:not([data-page=battle]) .home-menu-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+.home-page:not([data-page=battle]) .home-tile { min-height: 92px; }
+.home-page:not([data-page=battle]) .home-tile-icon img { width: 46px; height: 46px; }
+.home-page:not([data-page=battle]) .home-tile-label { font-size: 13px; }
+@media (min-width: 740px) {
+  .home-wrap { grid-template-columns: minmax(0, 1fr); width: min(100%, 520px); }
+  .home-page[data-page=battle] .home-menu { grid-column: auto; grid-row: auto; }
+}
+@media (prefers-reduced-motion: reduce) { .home-tab img { transition: none; } }
+/* 高さが低い画面（横向き・小さい端末）では、タブを細くする */
+@media (max-height: 600px) {
+  #home { padding-bottom: calc(52px + max(4px, env(safe-area-inset-bottom))); }
+  .home-tabbar { padding-top: 3px; padding-bottom: max(3px, env(safe-area-inset-bottom)); }
+  .home-tab { min-height: 44px; grid-auto-flow: column; align-items: center; gap: 4px; }
+  .home-tab img { width: 24px; height: 24px; }
+  .home-tab-main img { width: 32px; height: 32px; margin-top: -10px; padding: 4px; }
+}

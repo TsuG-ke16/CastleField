@@ -37,7 +37,7 @@ const FRAMES = {
   epic:      { base: { metal: .65, smooth: .78 }, silver: { metal: .9, smooth: .86 }, gold: { metal: .9, smooth: .86 }, gemHue: [255, 310], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
   legendary: { base: { metal: .15, smooth: .35 }, gold: { metal: 1, smooth: .92 }, cloth: [330, 25], gemHue: [330, 25], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
   special:   { base: { metal: .55, smooth: .9 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
-  beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, gemHue: [335, 15], gemMinSat: .5, raised: [[150, 0, 362, 130]], paper: { name: [.16, .84, .751], stats: [.13, .87, .85, .92], medals: [[.19, .126], [.834, .126]] } },
+  beast:     { base: { metal: .45, smooth: .75 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .8, smooth: .7 }, gemHue: [335, 15], gemMinSat: .45, raised: [[150, 0, 362, 150]], paper: { name: [.15, .85, .752], stats: [.12, .88, .852, .917], medals: [[.192, .141]] } },
 };
 
 // ランク報酬のカードスキン（assets/cards/frame-skin-<ランク>.png）。窓・文字枠・メダルの位置は、レアリティの枠と同じ共通の位置
@@ -48,8 +48,8 @@ const SKINS = {
   silver:   { base: { metal: .85, smooth: .75 }, gold: { metal: .9, smooth: .8 }, gemHue: [180, 240], raised: [[150, 0, 362, 130]] },
   gold:     { base: { metal: .9, smooth: .82 }, gold: { metal: .95, smooth: .88 }, gemHue: [0, 40], raised: [[150, 0, 362, 130]] },
   platinum: { base: { metal: .75, smooth: .85 }, silver: { metal: .85, smooth: .85 }, gold: { metal: .9, smooth: .8 }, gemHue: [170, 220], raised: [[150, 0, 362, 130]] },
-  diamond:  { base: { metal: .35, smooth: .9 }, silver: { metal: .7, smooth: .9 }, gold: { metal: .9, smooth: .8 }, gemHue: [190, 270], gemMinSat: .25, raised: [[150, 0, 362, 130]] },
-  master:   { base: { metal: .4, smooth: .8 }, gold: { metal: .95, smooth: .88 }, gemHue: [270, 330], raised: [[150, 0, 362, 140]] },
+  diamond:  { base: { metal: .8, smooth: .92 }, silver: { metal: .7, smooth: .9 }, gold: { metal: .9, smooth: .8 }, gemHue: [190, 270], gemMinSat: .25, raised: [[150, 0, 362, 130]] },
+  master:   { base: { metal: .75, smooth: .88 }, gold: { metal: .95, smooth: .88 }, gemHue: [270, 330], raised: [[150, 0, 362, 140]] },
   champion: { base: { metal: .7, smooth: .88 }, gold: { metal: 1, smooth: .92 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[150, 0, 362, 140], [0, 120, 150, 470], [362, 120, 512, 470]] },
 };
 for (const [rank, cfg] of Object.entries(SKINS)) FRAMES[`skin-${rank}`] = { ...cfg, paper: SKIN_PAPER };
