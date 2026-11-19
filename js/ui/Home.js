@@ -1,5 +1,5 @@
 import { profileArt } from './profileArt.js';
-// ホーム画面：プレイヤー情報・選んだモード・デッキ・大きな対戦開始ボタン・メニュー。
+// ホーム画面：上にプレイヤー情報、下にタブ（アカウント・デッキ・バトル・ガチャ・設定）。バトルのページに、選んだモード・デッキ・大きな対戦開始ボタン。
 // いつも入口になる。サーバーのアカウント機能がないとき（python の簡易サーバー・オフライン）は、
 // ひとりで遊ぶ・同じ端末・デッキ編成・図鑑・設定だけを使え、サーバーが要るメニューは押すと理由を出す。表示名などは textContent で入れる。
 import { account } from './Account.js';
@@ -17,12 +17,24 @@ const MODES = {
 const NEEDS_SERVER = new Set(['rank', 'ranking', 'friend', 'profile', 'shop', 'gacha', 'skin', 'mission']);
 const SERVER_REASON = 'この機能は、オンライン対戦のサーバー（node server/server.js）で開くと使えます';
 const menuIcon = (id) => `<img src="assets/ui/home/${id}.png" alt="" width="36" height="36">`;
-const GROUPS = [
-  ['対戦', ['rank', 'casual', 'ranking']],
-  ['コレクション', ['deck', 'catalog', 'skin']],
-  ['ソーシャル', ['friend', 'profile']],
-  ['その他', ['mission', 'shop', 'gacha', 'help', 'settings']],
+// 画面下のタブ（一般的なアプリと同じ）。左から アカウント・デッキ・バトル（真ん中）・ガチャ・設定。
+// タブごとのページに、そのタブのメニュー（タイル）を並べる
+const TABS = [
+  { id: 'account', label: 'アカウント', icon: 'profile' },
+  { id: 'deck', label: 'デッキ', icon: 'deck' },
+  { id: 'battle', label: 'バトル', icon: 'rank' },
+  { id: 'shop', label: 'ガチャ', icon: 'gacha' },
+  { id: 'settings', label: '設定', icon: 'settings' },
 ];
+const GROUPS = {
+  account: [['アカウント', ['profile', 'friend']]],
+  deck: [['カード', ['deck', 'catalog', 'skin']]],
+  battle: [['対戦', ['rank', 'casual', 'ranking', 'mission']]],
+  shop: [['ガチャ・ショップ', ['gacha', 'shop']]],
+  settings: [['設定', ['settings', 'help']]],
+};
+/** タイルがどのタブにあるか */
+export const TAB_OF = Object.fromEntries(Object.entries(GROUPS).flatMap(([tab, groups]) => groups.flatMap(([, ids]) => ids.map((id) => [id, tab]))));
 const MENU = {
   rank: 'ランクマッチ',
   casual: 'カジュアル',
@@ -66,9 +78,23 @@ export class Home {
         <div class="home-side">
           <span class="home-coins" title="ゲーム内通貨（無料）" data-part="coins"><img src="assets/ui/icon-coin.png" alt="" width="22" height="22"><b>0</b></span>
           <button type="button" class="home-icon-btn raw-btn" data-act="notice" aria-label="お知らせ">🔔<i class="home-dot" data-part="dot" hidden></i></button>
-          <button type="button" class="home-icon-btn raw-btn" data-act="settings" aria-label="設定">${menuIcon("settings")}</button>
         </div>
       </header>
+      <div class="home-page" data-page="account" role="tabpanel" aria-label="アカウント" hidden>
+        <section class="home-summary" aria-label="戦績">
+          <div><span>ランク</span><b data-part="accRank">—</b></div>
+          <div><span>戦績</span><b data-part="accStats">—</b></div>
+        </section>
+        <aside class="home-link" data-part="guest" hidden><span>アカウントを作成すると、別の端末でもデータを引き継げます。</span><button type="button" class="home-retry raw-btn" data-act="account">アカウント作成</button></aside>
+        <nav class="home-menu" aria-label="アカウント" data-menu="account"></nav>
+      </div>
+      <div class="home-page" data-page="deck" role="tabpanel" aria-label="デッキ" hidden>
+        <section class="home-summary" aria-label="使うデッキ"><div><span>使うデッキ</span><b data-part="deck2">—</b></div></section>
+        <nav class="home-menu" aria-label="カード" data-menu="deck"></nav>
+      </div>
+      <div class="home-page" data-page="shop" role="tabpanel" aria-label="ガチャ" hidden><nav class="home-menu" aria-label="ガチャ・ショップ" data-menu="shop"></nav></div>
+      <div class="home-page" data-page="settings" role="tabpanel" aria-label="設定" hidden><nav class="home-menu" aria-label="設定" data-menu="settings"></nav></div>
+      <div class="home-page" data-page="battle" role="tabpanel" aria-label="バトル">
       <section class="home-hero" aria-label="対戦">
         <div class="home-worlds" role="tablist" aria-label="世界" data-part="worlds"></div>
         <div class="home-landscape"><span data-part="season" class="home-season"></span></div>
@@ -82,12 +108,15 @@ export class Home {
         <p class="home-note" data-part="note" role="status"></p>
         <button type="button" class="home-retry raw-btn" data-act="retry" hidden>再読み込み</button></div>
       </section>
-      <aside class="home-link" data-part="guest" hidden><span>アカウントを作成すると、別の端末でもデータを引き継げます。</span><button type="button" class="home-retry raw-btn" data-act="account">作成する</button></aside>
-      <nav class="home-menu" aria-label="メニュー" data-part="menu"></nav>
+      <nav class="home-menu" aria-label="対戦" data-menu="battle"></nav>
+      </div>
+      <nav class="home-tabbar" role="tablist" aria-label="メニュー" data-part="tabbar"></nav>
     </div>`;
     document.getElementById('app').append(box);
     this.part = (n) => box.querySelector(`[data-part="${n}"]`);
+    this.tab = 'battle';
     this.renderMenu();
+    this.renderTabs();
     this.renderModes();
     box.addEventListener('click', (e) => this.onClick(e));
     account.onChange(() => { if (!box.hidden) this.refresh(); });
@@ -102,7 +131,8 @@ export class Home {
   open() {
     this.box.hidden = false;
     this.refresh();
-    this.box.querySelector('.home-start').focus({ preventScroll: true });
+    const focusEl = this.tab === 'battle' ? this.box.querySelector('.home-start') : this.part('tabbar').querySelector('[aria-selected=true]');
+    focusEl?.focus({ preventScroll: true });
   }
 
   close() { this.box.hidden = true; }
@@ -159,6 +189,9 @@ export class Home {
       tile.append(badge);
     }
     this.part('dot').hidden = !(this.data?.rewardsAvailable > 0 || this.socialCount > 0 || this.data?.claimable > 0);
+    // タブにも印（そのタブの中に、受け取れるもの・通知がある）
+    const tabHas = { account: this.data?.rewardsAvailable > 0 || this.socialCount > 0, battle: this.data?.claimable > 0 };
+    for (const b of this.part('tabbar').children) b.querySelector('.home-tab-dot').hidden = !tabHas[b.dataset.tab];
   }
 
   render() {
@@ -205,6 +238,7 @@ export class Home {
       : sum?.rank ? `${sum.rank.divisionLabel}（${sum.rank.rp} RP）` : sum ? `認定戦 ${sum.placementTotal - sum.placementLeft}/${sum.placementTotal}` : '—';
     this.part('deck').textContent = d?.deck?.name ?? '未設定';
     this.part('stats').textContent = d?.stats?.matches ? `${d.stats.matches}戦 ${d.stats.wins}勝 ${d.stats.losses}敗（勝率 ${d.stats.winRate}%）` : 'まだ対戦がありません';
+    this.syncSummary();
     this.renderFacts();
   }
 
@@ -227,9 +261,17 @@ export class Home {
     try { const state = loadDecks(); deck = state.slots?.[state.active]; } catch { /* 読めなくても動く */ }
     this.part('deck').textContent = deck?.name ?? '見本のデッキ';
     this.part('stats').textContent = this.getRecord() || 'まだ対戦がありません';
+    this.syncSummary();
     for (const tile of this.box.querySelectorAll('.home-tile')) tile.querySelector('.home-badge')?.remove();
     this.part('dot').hidden = true;
     this.renderFacts();
+  }
+
+  /** アカウント・デッキのページの見出し（バトルのページと同じ値） */
+  syncSummary() {
+    this.part('accRank').textContent = this.part('rankText').textContent;
+    this.part('accStats').textContent = this.part('stats').textContent;
+    this.part('deck2').textContent = this.part('deck').textContent;
   }
 
   /** フレンドの申請・招待の数（フレンドのタイルとお知らせに印を出す） */
@@ -254,30 +296,65 @@ export class Home {
   }
 
   renderMenu() {
-    const nav = this.part('menu');
-    for (const [name, ids] of GROUPS) {
-      const group = document.createElement('section');
-      group.className = 'home-menu-group';
-      const heading = document.createElement('h2');
-      heading.textContent = name;
-      const grid = document.createElement('div');
-      grid.className = 'home-menu-grid';
-      for (const id of ids) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'home-tile raw-btn';
-        button.dataset.id = id;
-        // 遊び方だけは専用の絵がまだないので、「？」の文字で出す（絵ができたら assets/ui/home/help.png を足して、ここを消す）
-        button.innerHTML = `<span class="home-tile-icon">${id === 'help' ? '<b class="home-tile-glyph" aria-hidden="true">？</b>' : menuIcon(id)}</span><span class="home-tile-label"></span>`;
-        button.querySelector('.home-tile-label').textContent = MENU[id];
-        grid.append(button);
+    for (const [tab, groups] of Object.entries(GROUPS)) {
+      const nav = this.box.querySelector(`[data-menu="${tab}"]`);
+      for (const [name, ids] of groups) {
+        const group = document.createElement('section');
+        group.className = 'home-menu-group';
+        const heading = document.createElement('h2');
+        heading.textContent = name;
+        const grid = document.createElement('div');
+        grid.className = 'home-menu-grid';
+        for (const id of ids) {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'home-tile raw-btn';
+          button.dataset.id = id;
+          // 遊び方だけは専用の絵がまだないので、「？」の文字で出す（絵ができたら assets/ui/home/help.png を足して、ここを消す）
+          button.innerHTML = `<span class="home-tile-icon">${id === 'help' ? '<b class="home-tile-glyph" aria-hidden="true">？</b>' : menuIcon(id)}</span><span class="home-tile-label"></span>`;
+          button.querySelector('.home-tile-label').textContent = MENU[id];
+          grid.append(button);
+        }
+        group.append(heading, grid);
+        nav.append(group);
       }
-      group.append(heading, grid);
-      nav.append(group);
     }
   }
 
+  /** 画面下のタブ */
+  renderTabs() {
+    const bar = this.part('tabbar');
+    bar.replaceChildren();
+    for (const t of TABS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = `home-tab raw-btn${t.id === 'battle' ? ' home-tab-main' : ''}`;
+      b.dataset.tab = t.id;
+      b.setAttribute('role', 'tab');
+      b.innerHTML = `${menuIcon(t.icon)}<span></span><i class="home-tab-dot" hidden></i>`;
+      b.querySelector('span').textContent = t.label;
+      bar.append(b);
+    }
+    this.showTab(this.tab, { focus: false });
+  }
+
+  /** タブを切りかえる（id はタブか、タイルの id。タイルなら、そのタイルのあるタブ） */
+  showTab(id, { focus = false } = {}) {
+    const tab = GROUPS[id] ? id : TAB_OF[id] ?? 'battle';
+    this.tab = tab;
+    for (const page of this.box.querySelectorAll('.home-page')) page.hidden = page.dataset.page !== tab;
+    for (const b of this.part('tabbar').children) {
+      const on = b.dataset.tab === tab;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+      if (on && focus) b.focus({ preventScroll: true });
+    }
+    this.box.scrollTop = 0;
+  }
+
   onClick(e) {
+    const tabBtn = e.target.closest('.home-tab');
+    if (tabBtn) { sound.play('tap'); this.showTab(tabBtn.dataset.tab); return; }
     const modeBtn = e.target.closest('.home-mode');
     if (modeBtn) {
       this.mode = modeBtn.dataset.mode;
