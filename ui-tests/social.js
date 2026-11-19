@@ -28,7 +28,7 @@ try {
     page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
     page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(`${name}: ${m.text()}`); });
     await page.goto(base);
-    await page.locator('#home:not([hidden])').waitFor({ timeout: 8000 });
+    await page.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
     return page;
   };
   const A = await open('A'); const B = await open('B');
@@ -43,7 +43,7 @@ try {
     const id = await page.evaluate(async () => (await (await fetch('/api/me', { credentials: 'same-origin' })).json()).user.id);
     db.prepare("UPDATE users SET kind = 'member', display_name = ? WHERE id = ?").run(name, id);
     await page.reload();
-    await page.locator('#home:not([hidden])').waitFor();
+    await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   }
   db.close();
   // A が B を検索して申請
@@ -57,7 +57,7 @@ try {
   await A.click('#social .social-close');
   // B：知らせの印が出て、申請を承認
   await B.waitForTimeout(300);
-  await B.reload(); await B.locator('#home:not([hidden])').waitFor();
+  await B.reload(); await B.locator('#home:not([hidden]):not(.home-local)').waitFor();
   await B.locator('#home .home-tile[data-id=friend] .home-badge').waitFor({ timeout: 8000 });
   await B.click('#home .home-tile[data-id=friend]');
   await B.locator('#social .social-tab[data-tab=requests]').click();

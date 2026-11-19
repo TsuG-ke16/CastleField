@@ -21,7 +21,7 @@ const results = [];
 
 async function newPage({ viewport = { width: 390, height: 797 }, reducedMotion = 'no-preference', label }) {
   const context = await browser.newContext({ viewport, reducedMotion, serviceWorkers: 'block' });
-  // タイトル画面を確かめるので、アカウント機能を切る（アカウントがあるとホーム画面が入口になる。ホームは account.js で確かめる）
+  // アカウント機能を切る（クラウドとのデッキの同期などで、テストの状態が変わらないように。アカウントは account.js で確かめる）
   await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
@@ -35,7 +35,7 @@ async function newPage({ viewport = { width: 390, height: 797 }, reducedMotion =
 // デッキ編成を開く。rarity を指定すると、そのレアリティで絞り込む
 async function openDeck(page, fx) {
   await page.goto(new URL(`?fx=${fx}`, base).href);
-  await page.locator('#title-deck').click();
+  await page.locator('#home .home-tile[data-id="deck"]').click();
   await page.locator('.deck-summary').waitFor();
 }
 

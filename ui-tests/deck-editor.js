@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
+import { toTitle } from './lib/title.js';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const base = process.env.UI_TEST_URL ?? 'http://127.0.0.1:8787/';
@@ -15,7 +16,7 @@ const errors = [];
 
 async function verify(width, height, reducedMotion) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion, serviceWorkers: 'block' });
-  // タイトル画面を確かめるので、アカウント機能を切る（アカウントがあるとホーム画面が入口になる。ホームは account.js で確かめる）
+  // アカウント機能を切る（クラウドとのデッキの同期などで、テストの状態が変わらないように。アカウントは account.js で確かめる）
   await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
@@ -25,7 +26,7 @@ async function verify(width, height, reducedMotion) {
   const save = () => press('.deck-save');
   const close = () => press('.deck-close');
   await page.goto(base);
-  await page.locator('#title-deck').waitFor();
+  await page.locator('#home:not([hidden])').waitFor();
   // 旧版の保存データに廃止カードが残っていても、既存デッキを直せる。
   await page.evaluate(async () => {
     const presets = await fetch('data/decks.json').then(response => response.json());
@@ -36,7 +37,7 @@ async function verify(width, height, reducedMotion) {
   await page.evaluate(async () => { (await import('./js/ui/config.js')).UI_CONFIG.speed = .03; });
   await press('#menu-open');
   await press('#menu-title-btn');
-  await press('#title-deck');
+  await press('#home .home-tile[data-id="deck"]');
   const summary = page.locator('.deck-summary');
   assert.match(await summary.innerText(), /92/);
   assert.match(await page.locator('.deck-status').innerText(), /oldCard/);
@@ -110,6 +111,7 @@ async function verify(width, height, reducedMotion) {
   await page.screenshot({ path: fileURLToPath(new URL(`deck-editor-${width}x${height}.png`, artifacts)) });
   await close();
 
+  await toTitle(page);
   assert.match(await page.locator('#title-deck-preview').innerText(), /確認用のデッキ/);
   await press('#title-local');
   await press('.local-options summary');
@@ -120,7 +122,7 @@ async function verify(width, height, reducedMotion) {
   await press('#local-start');
   await page.waitForFunction(() => window.castlefield?.game()?.getState(null).players.p1.deckId === 'custom');
   await page.goto(base);
-  await page.locator('#title-deck').waitFor();
+  await toTitle(page);
   await press('#title-online');
   await page.locator('#title-name').fill('編成テスト');
   await page.locator('#title-pass').fill(`deck-${width}-${Date.now()}`);
@@ -155,13 +157,15 @@ async function verifyFirstSlotName() {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
   await page.locator('#title-deck-preview').waitFor({ state: 'attached' }); // デッキ編成の画面ができてから押す
-  await page.locator('#title-deck').press('Enter');
+  await page.locator('#home .home-tile[data-id="deck"]').press('Enter');
   await page.locator('.deck-manage').press('Enter');
   await page.locator('.deck-name-input').evaluate(input => {
     input.value = '最初のデッキ';
     input.dispatchEvent(new Event('input', { bubbles: true }));
     input.closest('dialog').close();
   });
+  // ダイアログの close イベント（ここで名前を保存する）は少しあとに届くので、反映を待ってから確かめる
+  await page.waitForFunction(() => /最初のデッキ/.test(document.querySelector('.deck-slots option[value="0"]')?.textContent ?? ''));
   assert.match(await page.locator('.deck-slots option[value="0"]').innerText(), /最初のデッキ/);
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('cf-mydecks-v2')));
   assert.equal(stored.slots[0].name, '最初のデッキ');

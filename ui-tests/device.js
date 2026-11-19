@@ -25,7 +25,7 @@ async function offline() {
   const page = await context.newPage();
   watch(page, 'offline');
   await page.goto(base.href);
-  await page.locator('#title-solo').waitFor();
+  await page.locator('#home:not([hidden])').waitFor();
   const manifest = await page.evaluate(async () => {
     const link = document.querySelector('link[rel=manifest]');
     return (await fetch(link.href)).json();
@@ -47,7 +47,9 @@ async function offline() {
   assert.ok(await page.evaluate(() => Boolean(navigator.serviceWorker.controller)), 'サービスワーカーがページを受け持つ');
   await context.setOffline(true);
   await page.reload();
-  await page.locator('#title-solo').click();
+  // ホーム（入口）の「ひとりで」→「対戦開始」→ 強さ
+  await page.locator('#home .home-mode[data-mode="solo"]').click();
+  await page.locator('#home [data-act="start"]').click();
   await page.locator('#title-levels .level[data-level="normal"]').click();
   await page.waitForFunction(() => !document.querySelector('#board').hidden && !document.querySelector('#app').classList.contains('busy'), {}, { timeout: 60000 });
   const broken = await page.evaluate(() => [...document.querySelectorAll('img')]
@@ -65,10 +67,8 @@ async function zoom(device) {
   const page = await context.newPage();
   watch(page, device);
   await page.goto(base.href);
-  // アカウントのあるサーバーでは、最初にホーム画面が出てタイトルを覆う（Phase 2）。そのときはホームの「デッキ編成」から開く
-  // ホームはアカウントの読み込み（/api/me）のあとに出るので、少し待ってから決める
-  const onHome = await page.locator('#home:not([hidden])').waitFor({ timeout: 5000 }).then(() => true, () => false);
-  await page.locator(onHome ? '#home .home-tile[data-id=deck]' : '#title-deck').click();
+  // ホーム（入口）の「デッキ編成」から開く
+  await page.locator('#home .home-tile[data-id=deck]').click();
   await page.locator('.deck-grid-item').first().waitFor();
   const before = await page.locator('.deck-summary').innerText();
   const box = await page.locator('.deck-grid [data-zoom]').first().boundingBox();

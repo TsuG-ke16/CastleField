@@ -32,14 +32,14 @@ try {
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   await page.goto(base);
-  await page.locator('#home:not([hidden])').waitFor({ timeout: 8000 });
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
   const id = await page.evaluate(async () => (await (await fetch('/api/me', { credentials: 'same-origin' })).json()).user.id);
   // コインを入れる（本物の入手は対戦の報酬。テストではデータベースに直接）
   const db = new DatabaseSync(dbFile);
   db.prepare('INSERT INTO wallets (user_id, free_coins) VALUES (?, 2500)').run(id);
   db.close();
   await page.reload();
-  await page.locator('#home:not([hidden])').waitFor();
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   assert.match(await page.locator('#home [data-part=coins] b').textContent(), /2500/);
   // ショップ：買う
   await page.click('#home .home-tile[data-id=shop]');

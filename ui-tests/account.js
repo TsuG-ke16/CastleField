@@ -26,7 +26,7 @@ try {
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   await page.goto(base);
   // アカウントのあるサーバーでは、ホーム画面が入口
-  await page.locator('#home:not([hidden])').waitFor({ timeout: 8000 });
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
   assert.equal(await page.locator('#home .home-tile').count(), 12);
   assert.equal(await page.locator('#home .home-tile:disabled').count(), 0); // どのメニューも使える（Phase 6 で最後の「準備中」がなくなった）
   assert.ok(await page.locator('#home .home-tile[data-id=rank]').isEnabled()); // ランクマッチは使える（Phase 3）
@@ -49,12 +49,12 @@ try {
   await page.locator('#title-levels:not([hidden])').waitFor();
   await page.click('#levels-back');
   await page.click('#title-home');
-  await page.locator('#home:not([hidden])').waitFor();
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   await page.click('#home [data-act=settings]');
   await page.locator('#settings:not([hidden])').waitFor();
   await page.click('#settings .settings-close');
   await page.reload();
-  await page.locator('#home:not([hidden])').waitFor();
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   await page.screenshot({ path: resolve(artifacts, 'account-title.png') });
   await page.click('#home [data-act=start]');
   await page.click('#levels-back');
@@ -69,7 +69,7 @@ try {
   await page.click('#account [data-act=rename]');
   await page.locator('#account [data-part=msg]', { hasText: '名前を変えました' }).waitFor();
   await page.reload();
-  await page.locator('#home:not([hidden])').waitFor();
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   await page.click('#home [data-act=start]');
   await page.click('#levels-back');
   await page.click('#title-account');
@@ -78,7 +78,7 @@ try {
   await page.evaluate(() => localStorage.setItem('cf-mydecks-v2', JSON.stringify({ active: 0, slots: [{ name: '画面テスト', list: { infantry: 10, spearman: 5 } }, null, null, null] })));
   await page.evaluate(() => localStorage.removeItem('cf-deck-sync-v1'));
   await page.reload();
-  await page.locator('#home:not([hidden])').waitFor();
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   await page.waitForFunction(async () => (await (await fetch('/api/decks', { credentials: 'same-origin' })).json()).slots?.[0]?.name === '画面テスト', null, { timeout: 8000 });
   // 端末のデータを消しても（ゲストの Cookie が残っていれば）クラウドから戻る
   await page.evaluate(() => localStorage.removeItem('cf-mydecks-v2'));

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
 import { createRequire } from 'node:module';
+import { toTitle } from './lib/title.js';
 
 const { chromium } = createRequire(import.meta.url)('playwright');
 const base = new URL(process.env.UI_TEST_URL ?? 'http://127.0.0.1:8787/');
@@ -12,7 +13,7 @@ const browser = await chromium.launch({
 const errors = [];
 async function makePage(viewport, reducedMotion = 'no-preference') {
   const context = await browser.newContext({ viewport, reducedMotion, serviceWorkers: 'block' });
-  // タイトル画面を確かめるので、アカウント機能を切る（アカウントがあるとホーム画面が入口になる。ホームは account.js で確かめる）
+  // アカウント機能を切る（サーバーにつながっていないときのホームとタイトルを確かめる。アカウントは account.js で確かめる）
   await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
   page.setDefaultTimeout(12000);
@@ -36,15 +37,12 @@ async function expectFocus(page, selector) {
 async function walkThrough() {
   const page = await makePage({ width: 390, height: 844 });
   await page.goto(base.href);
-  await page.locator('#title.title-arrival').waitFor();
-  await page.waitForFunction(() => {
-    const light = document.querySelector('.title-sunrise');
-    const animation = light?.getAnimations()[0];
-    return animation?.effect?.getComputedTiming().progress > .3;
-  });
-  await picture(page, 'arrival');
-  await page.locator('.title-logo').click();
-  assert.equal(await page.locator('#title.title-arrival').count(), 0);
+  // 入口はホーム。サーバーが要るメニューは押すと理由が出る
+  await page.locator('#home.home-local:not([hidden])').waitFor();
+  await picture(page, 'home');
+  await page.locator('#home .home-tile[data-id="shop"]').click();
+  await page.getByText('オンライン対戦のサーバー（node server/server.js）で開くと使えます').first().waitFor();
+  await toTitle(page);
   await picture(page, 'title');
 
   await page.locator('#title-local').press('Enter');
@@ -63,7 +61,7 @@ async function walkThrough() {
   await page.keyboard.press('Escape');
   await expectFocus(page, '#title-settings');
   await page.reload();
-  await page.locator('#title-solo').waitFor();
+  await toTitle(page);
   assert.equal(await page.locator('#title.title-arrival').count(), 0, 'スキップ設定で登場演出を表示しない');
   assert.equal(await page.locator('html').getAttribute('data-text-size'), 'large');
   await page.locator('#title-settings').click();
@@ -127,7 +125,7 @@ async function walkThrough() {
 async function roomAndCompact() {
   const page = await makePage({ width: 360, height: 640 }, 'reduce');
   await page.goto(base.href);
-  await page.locator('#title-solo').waitFor();
+  await toTitle(page);
   assert.equal(await page.locator('#title.title-arrival').count(), 0, '省モーションで登場演出を表示しない');
   await picture(page, 'title');
   await page.locator('#title-online').click();

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
+import { toTitle } from './lib/title.js';
 const { chromium } = createRequire(import.meta.url)('playwright');
 const base='http://127.0.0.1:8000';
 let server,browser;
@@ -58,7 +59,7 @@ try {
   }
   const local=await browser.newPage({viewport:{width:390,height:844},reducedMotion:'reduce'});
   local.on('pageerror',e=>errors.push(e.message));
-  await local.goto(base); await local.locator('#title-solo').click();
+  await local.goto(base); await toTitle(local); await local.locator('#title-solo').click();
   await local.locator('.local-options summary').click();
   await local.locator('select[name="playerCount"] + .pill-group [data-value="4"]').click();
   await local.locator('.level[data-level="easy"]').click();

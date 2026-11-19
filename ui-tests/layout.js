@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
+import { toTitle } from './lib/title.js';
 const {chromium}=createRequire(import.meta.url)('playwright');
 const base=process.env.UI_TEST_URL??'http://127.0.0.1:8000/';
 let browser,server;
@@ -100,7 +101,7 @@ try {
   await page.locator('#menu-open').click();await page.locator('#match-info summary').click();
   assert.equal(await page.locator('.match-seats li').count(),2);assert.ok(await page.locator('#deck-pile').isVisible());
   await page.screenshot({path:new URL(`./artifacts/layout-menu-${width}.png`,import.meta.url).pathname});
-  await page.locator('#menu-title-btn').click();await page.locator('#title').waitFor({state:'visible'});
+  await page.locator('#menu-title-btn').click();await toTitle(page); // メニューの「タイトルへ」はホーム（入口）に戻る
   assert.ok(await page.locator('#title-solo').isVisible());assert.ok(await page.locator('#title-online').isVisible());
   assert.equal(await page.locator('#record-clear').isVisible(),false,'destructive record reset is folded');
   await page.screenshot({path:new URL(`./artifacts/layout-title-${width}.png`,import.meta.url).pathname});
