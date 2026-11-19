@@ -815,16 +815,21 @@ export class Game {
           this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'frozen' });
         }
         // 凍った弓兵・魔法使いは撃てないが、ターンは過ぎる
-        if (soldier.isRanged) this.tickRanged(player, soldier);
+        if (soldier.isStationary) this.tickRanged(player, soldier);
         continue;
       }
 
       // 嵐：進む兵士は動かない（弓兵・魔法使いは撃てる）
-      if (!soldier.isRanged && this.weatherDef()?.stopMarch) continue;
+      if (!soldier.isStationary && this.weatherDef()?.stopMarch) continue;
 
       // 弓兵・魔法使いは動かずに撃つ
       if (soldier.isRanged) {
         if (this.shoot(player, soldier)) return;
+        continue;
+      }
+      // 護衛（ゴーレム）は動かずに守る。自分から戦いには行かず、ターンが過ぎるだけ
+      if (soldier.isGuard) {
+        this.tickRanged(player, soldier);
         continue;
       }
 
@@ -994,7 +999,8 @@ export class Game {
         if (e.stealth) continue;
         let q;
         if (!this.plaza) {
-          if (theirs !== soldier.targetId || e.roadId !== soldier.roadId) continue;
+          // 護衛（ゴーレム）は、自分の道と左右のとなりの道（同じ2人の間で lane が1つ違う道）の城の前を守る
+          if (theirs !== soldier.targetId || (e.roadId !== soldier.roadId && !this.guardCovers(e, soldier.roadId))) continue;
           q = laneLength - 1 - e.position; // 相手の兵士の位置を、soldier から数えた位置に直す
         } else {
           if (e.targetId !== mine && soldier.targetId !== theirs) continue;
@@ -1061,7 +1067,16 @@ export class Game {
     return false;
   }
 
-  /** 弓兵・魔法使いの残りターンを1減らし、0なら帰る */
+  /** 護衛の兵士 guard が、道 roadId の城の前も守っているか（同じ2人の間の道で、lane が1つ違う） */
+  guardCovers(guard, roadId) {
+    if (!guard.isGuard) return false;
+    const a = this.findRoad(guard.roadId);
+    const b = this.findRoad(roadId);
+    if (!a || !b || a.players.join() !== b.players.join()) return false;
+    return Math.abs((a.lane ?? 0) - (b.lane ?? 0)) <= 1;
+  }
+
+  /** 弓兵・魔法使い・護衛の残りターンを1減らし、0なら帰る */
   tickRanged(player, soldier) {
     if (!player.soldiers.includes(soldier)) return;
     soldier.turnsLeft -= 1;

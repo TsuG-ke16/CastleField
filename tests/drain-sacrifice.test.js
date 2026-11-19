@@ -393,3 +393,56 @@ test('魔王：相手の城と、相手の兵士全員に15ダメージ', () => 
   assert.equal(g.players.p2.soldiers.length, 0); // 重装兵（HP15以下）は倒れる
   assert.equal(g.players.p1.soldiers.length, mine); // 自分の兵士には当たらない
 });
+
+// ---------- ゴーレム：城の護衛（動かず、左右のとなりの道も守る。4ターンで帰る） ----------
+
+function golemGame() {
+  const g = make({ laneCount: 3, laneLength: 5, monsterSpawnChance: 0, weatherChangeChance: 0 });
+  g.start();
+  return g;
+}
+const roadOf = (g, i) => g.roads.filter((r) => r.players.join() === 'p1,p2').sort((a, b) => a.lane - b.lane)[i].roadId;
+
+test('ゴーレム：真ん中の道に出すと、左の道を進んできた相手の兵士を止めて戦う', () => {
+  const g = golemGame();
+  g.debugSetHand('p1', ['beast_golem']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_golem'), { playerId: 'p2', roadId: roadOf(g, 1) }).ok, true);
+  pass(g);
+  g.debugSetHand('p2', ['knight']);
+  assert.equal(g.playCard(idOf(g, 'p2', 'knight'), { playerId: 'p1', roadId: roadOf(g, 0) }).ok, true);
+  const hp1 = g.players.p1.castle.hp;
+  const golem = g.players.p1.soldiers.find((s) => s.type === 'beast_golem');
+  const log = recordEvents(g, ['soldiersClashed', 'castleDamaged']);
+  pass(g); pass(g); // 次の p2 の番：騎士（速さ5）が左の道を進む → ゴーレムの手前で止まって戦う
+  const clash = log.find((e) => e.event === 'soldiersClashed');
+  assert.ok(clash, '戦った');
+  assert.equal(clash.defender.soldierId, golem.soldierId);
+  assert.equal(clash.roadId, roadOf(g, 0));
+  assert.equal(log.filter((e) => e.event === 'castleDamaged').length, 0, '城には届かない');
+  assert.equal(g.players.p1.castle.hp, hp1);
+  assert.equal(golem.position, 0); // 動かない
+  assert.equal(golem.hp, 14 - 7); // 騎士の攻撃7を受けた（倒されるまで止め続ける）
+});
+
+test('ゴーレム：端の道に出すと、反対の端の道は守らない', () => {
+  const g = golemGame();
+  g.debugSetHand('p1', ['beast_golem']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_golem'), { playerId: 'p2', roadId: roadOf(g, 0) }).ok, true);
+  assert.equal(g.guardCovers(g.players.p1.soldiers[0], roadOf(g, 1)), true);
+  assert.equal(g.guardCovers(g.players.p1.soldiers[0], roadOf(g, 2)), false);
+});
+
+test('ゴーレム：動かず、4ターンで帰る（turnsLeft が見える）', () => {
+  const g = golemGame();
+  g.debugSetHand('p1', ['beast_golem']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'beast_golem'), { playerId: 'p2', roadId: roadOf(g, 1) }).ok, true);
+  assert.equal(g.getState('p1').players.p1.soldiers[0].turnsLeft, 4);
+  const log = recordEvents(g, ['soldierMoved', 'soldierDestroyed']);
+  for (let i = 0; i < 3; i++) { pass(g); pass(g); }
+  assert.equal(g.players.p1.soldiers.length, 1);
+  assert.equal(g.players.p1.soldiers[0].turnsLeft, 1);
+  pass(g); pass(g);
+  assert.equal(g.players.p1.soldiers.length, 0);
+  assert.equal(log.filter((e) => e.event === 'soldierMoved').length, 0);
+  assert.deepEqual(log.filter((e) => e.event === 'soldierDestroyed').map((e) => e.reason), ['returned']);
+});
