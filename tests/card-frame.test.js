@@ -7,10 +7,9 @@ test('rarity frames replace type frames for every kind', () => {
   assert.equal(frameAsset({kind,rarity},rarities),`cards/frame-${rarity}.png`);
  }
 });
-test('cards without a known rarity retain type-frame fallback', () => {
- for(const kind of ['soldier','spell','weapon','defense']) assert.equal(frameAsset({kind},rarities),`cards/frame-${kind}.png`);
- assert.equal(frameAsset({kind:'special'},rarities),null);
- assert.equal(frameAsset({kind:'soldier',rarity:'future'},rarities),'cards/frame-soldier.png');
+test('cards without a known rarity have no frame', () => {
+ for(const kind of ['soldier','spell','weapon','defense']) assert.equal(frameAsset({kind},rarities),null);
+ assert.equal(frameAsset({kind:'soldier',rarity:'future'},rarities),null);
 });
 test('kind and rarity identifiers resolve to symbols', () => {
  assert.equal(kindIcon('defense'),'shield');

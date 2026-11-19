@@ -172,10 +172,10 @@
   transform: translateZ(calc(var(--depth) * -1)) rotateY(180deg);
 }
 .zoom-back-img { width: 100%; height: 100%; object-fit: fill; display: block; scale: 1.055; filter: var(--back-filter, none); }
-#app[data-painted-back] .zoom-back-img { content: var(--back-art); object-fit: fill; scale: 1; }
+#app[data-painted-back] .zoom-back-img, .card-3d[data-painted-back] .zoom-back-img { content: var(--back-art); object-fit: fill; scale: 1; }
 /* 絵のある裏は、絵の形がそのままカードの形（裏の地の色を敷かない） */
 /* 前と同じ大きさ（カードの箱いっぱい）。標準の裏のように側面の内側に収めず、絵がはみ出してよい */
-#app[data-painted-back] .card-3d > .zoom-back { background: transparent; inset: 0; border-radius: 0; overflow: visible; }
+#app[data-painted-back] .card-3d > .zoom-back, .card-3d[data-painted-back] > .zoom-back { background: transparent; inset: 0; border-radius: 0; overflow: visible; }
 .zoom-back-shade { background: rgb(12 16 24 / var(--face-shade, 0)); }
 .card-3d .zoom-back > .zoom-foil {
   --foil: linear-gradient(122deg, transparent 32%, #a6d6ee52 45%, #fcebc688 50%, #d6bbf35c 55%, transparent 68%);
@@ -183,7 +183,7 @@
 }
 /* 裏面の飾りを浮かせる層（裏のスキンに -raised 地図があるときだけ）。裏と同じ枠・同じ絵を、飾りの形で切り抜いて手前へ */
 .card-3d > .zoom-back-raised { display: none; }
-#app[data-painted-back][data-back-raised] .card-3d > .zoom-back-raised {
+#app[data-painted-back][data-back-raised] .card-3d > .zoom-back-raised, .card-3d[data-painted-back][data-back-raised] > .zoom-back-raised {
   position: absolute; inset: 0; display: block; pointer-events: none;
   backface-visibility: hidden; visibility: hidden;
   background: var(--back-art) 0 0 / 100% 100% no-repeat;

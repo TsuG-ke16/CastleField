@@ -8,8 +8,8 @@ const pad = (n) => String(n).padStart(2, '0');
 const daysLeft = (endsAt) => Math.max(0, Math.ceil((endsAt - Date.now()) / 86400000));
 
 export class RankedView {
-  constructor({ toast = () => {}, onMatched = () => {}, onNeedMember = () => {} } = {}) {
-    Object.assign(this, { toast, onMatched, onNeedMember });
+  constructor({ toast = () => {}, onMatched = () => {}, onNeedMember = () => {}, onRewards = () => {} } = {}) {
+    Object.assign(this, { toast, onMatched, onNeedMember, onRewards });
     this.state = 'idle';
     this.pending = false;
     const box = this.box = document.createElement('div');
@@ -27,6 +27,7 @@ export class RankedView {
       <p class="ranked-season" data-part="season"></p>
       <div class="ranked-action" data-part="action"></div>
       <p class="ranked-msg" data-part="msg" role="status"></p>
+      <button type="button" class="small-btn ranked-rewards-btn">ランク報酬を見る</button>
       <ul class="ranked-rules">
         <li>1対1。勝つとランクポイントが増え、負けると減ります</li>
         <li>切断・途中で抜ける・長く手を打たないのは負けになります</li>
@@ -38,6 +39,7 @@ export class RankedView {
     document.getElementById('app').append(box);
     this.part = (n) => box.querySelector(`[data-part="${n}"]`);
     box.querySelector('.ranked-close').addEventListener('click', () => this.close());
+    box.querySelector('.ranked-rewards-btn').addEventListener('click', () => this.onRewards());
     box.addEventListener('keydown', (e) => { if (e.key === 'Escape' && this.state !== 'queued') this.close(); });
     box.addEventListener('click', (e) => { if (e.target === box && this.state !== 'queued') this.close(); });
   }

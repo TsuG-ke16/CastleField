@@ -93,10 +93,6 @@ OpenAIの画像生成ツールで、このプロジェクト用に新規生成�
 | `fx/ice.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `fx/dust.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `fx/fireball.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
-| `cards/frame-soldier.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
-| `cards/frame-spell.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
-| `cards/frame-weapon.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
-| `cards/frame-defense.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `ui/button-end-turn.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `ui/sign-hp.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
 | `ui/banner-win.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-16 |
@@ -382,7 +378,7 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 | `cards/card-beast-mimic.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `cards/card-beast-vampire.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `cards/card-beast-demon-king.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
-| `cards/frame-beast.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/frame-beast.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-19（作り直し。窓・帯・メダルの位置は css/beast.css で合わせた） |
 | `ui/stamps/hello.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `ui/stamps/nice.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `ui/stamps/yay.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
@@ -445,10 +441,6 @@ OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力�
 
 - `cards/card-weather-call.png` — 参照元 `cards/card-weather-call.png`（差し替え前）・`style-reference.png`、生成原本 `exec-bdce4c6e-7903-41c6-8a93-c889925eb861.png`。
 
-### 魔物の枠（レビュー候補）
-
-- `review/visual-art-v2/frame-beast-candidate.png` — 参照元 `cards/frame-beast.png`・`cards/frame-rare.png`・`style-reference.png`、生成原本 `exec-b00e3120-e842-4ecd-8bbe-10227b0c1586.png`。レア枠の窓・帯・メダル位置を基準に形状を調整し、512×768の透過パレットPNGに書き出しました。
-
 ## レアリティ枠と窓背景 v2（2026-11-19）
 
 OpenAI ImageGen を使用。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。各生成に `style-reference.png`、`review/frame-v2/layout-guide.png` と同名の差し替え前の枠を参照しました。枠は描画の輪郭と材質を切り出し、共通座標に透過窓・丸・帯・台を組み込みました。描画部分は等比で処理し、枠は512×768のRGBA PNG、背景は512×512の不透明PNGです。
@@ -489,8 +481,26 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style
 
 - `profiles/{infantry,spearman,knight,archer,mage,hero}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照し、生成原本 `exec-8e2458c1-3ca0-485e-93ba-17aa6f3f9b98.png` から切り出した透過PNG。
 
+## カード枠の作り直し（2026-11-19）
+
+`cards/frame-{common,uncommon,rare,epic,legendary,special,beast}.png` を OpenAI画像生成（ChatGPT）で作り直した。右上の丸をなくし、窓・文字枠・左上の丸の位置を7枚で同じにそろえた（`css/rarity-assets.css` の共通の数値）。凹凸マップ（`cards/relief/`）も作り直した。
+
+## ランク報酬スキンの素材（2026-11-19）
+
+`review/rank-skins/` の `card/card-{front,back}-<ランク>.png`・`icon/rank-{frame,emblem}-<ランク>.png`（8ランク×4種）。OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。ゲームにはまだ入れていない（置き場）。
+
 - 2026-11-19：`cards/frame-beast.png` を、ルビー色の新しい枠（OpenAI画像生成。上記OpenAI規約・AI生成）に差しかえた。枠の中の小さな透明の穴（白のハイライトが抜けた所・約90か所）は白で埋めた（絵の窓だけ透明のまま）。`cards/relief/frame-beast-*.png` は `node js/ui/build-card-relief.js` で作り直した（3Dの拡大表示用）。
 
 - 2026-11-19：`cards/frame-beast.png` を、ルビー色の枠（OpenAI画像生成。上記OpenAI規約・AI生成。1024×1536の原本の外側の背景と絵の窓を透明にして 512×768 に縮小）に差しかえた。`cards/relief/frame-beast-*.png` は `node js/ui/build-card-relief.js` で作り直した（3Dの拡大表示用。`js/ui/build-card-relief.js` の beast を赤い宝石の色に直した）。
 
 - 2026-11-19：`skins/back-{crimson,forest,royal,gold}.png` を、512×768 の新しいカード裏（OpenAI画像生成。上記OpenAI規約・AI生成。1024×1536の原本を縮小し、256色のパレットPNGにして軽くした）に差しかえた。`skins/back-*-raised.png` は、その絵から金の飾り・紋章の形だけを切り抜いたマスク（プログラムで作った派生。拡大表示で裏面の飾りを手前に浮かせるために使う）。
+
+## ランク報酬の見た目をゲームに入れた（2026-11-19）
+
+OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。元の絵は `review/rank-skins/`（256色に減らして 512×768・256×256 に縮小して使用）。
+
+- `cards/frame-skin-<ランク>.png`・`cards/relief/frame-skin-<ランク>-{relief,raised}.png` — カードスキンの表（8ランク）。凹凸の地図は `node js/ui/build-card-relief.js` で作成
+- `skins/back-rank-<ランク>.png`・`skins/back-rank-<ランク>-raised.png` — カードスキンの裏（ショップの `back_rank_*`）。浮かせる地図は同じスクリプトで作成
+- `ranks/rank-<ランク>.png` — ランクのエンブレム（8枚を差しかえ）
+- `frames/rank-frame-<ランク>.png` — アイコンフレーム（`css/rank-frames.css` で使用）
+- `cards/card-antidote.png` — 解毒薬のカードの絵（OpenAI画像生成（ChatGPT）。上記OpenAI規約・AI生成。512×512・256色に縮小。2026-11-19）

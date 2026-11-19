@@ -26,23 +26,49 @@ const OUT = join(root, 'assets/cards/relief');
 // paper：名前の帯・メダルの中（羊皮紙）。'name' と 'medals' は CSS の --name-y / --med-* と同じ位置。
 const KIND_GEMS = [[66, 556, 154, 652], [358, 556, 446, 652]];
 const SHARED_PARCHMENT = {
-  name: [.14, .86, .73],
-  stats: [.16, .84, .86, .97],
-  medals: [[.17, .13], [.83, .13]],
+  name: [.155, .845, .72],
+  stats: [.154, .846, .828, .917],
+  medals: [[.182, .139]],
 };
 const FRAMES = {
   common:    { base: { metal: 0, smooth: .22 }, silver: { metal: .8, smooth: .55 }, gemHue: null, raised: [[190, 4, 322, 77], [0, 0, 86, 96], [426, 0, 512, 96]], paper: SHARED_PARCHMENT },
-  uncommon:  { base: { metal: .05, smooth: .3 }, gold: { metal: .65, smooth: .6 }, organic: [70, 170], gemHue: [80, 170], raised: [[145, 0, 367, 111]], paper: SHARED_PARCHMENT },
-  rare:      { base: { metal: .8, smooth: .7 }, silver: { metal: .9, smooth: .82 }, gemHue: [180, 240], raised: [[145, 0, 367, 114]], paper: SHARED_PARCHMENT },
-  epic:      { base: { metal: .65, smooth: .78 }, silver: { metal: .9, smooth: .86 }, gold: { metal: .9, smooth: .86 }, gemHue: [255, 310], raised: [[140, 0, 372, 114]], paper: SHARED_PARCHMENT },
-  legendary: { base: { metal: .15, smooth: .35 }, gold: { metal: 1, smooth: .92 }, cloth: [330, 25], gemHue: [330, 25], raised: [[144, 0, 368, 114]], paper: SHARED_PARCHMENT },
-  special:   { base: { metal: .55, smooth: .9 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[145, 0, 367, 114]], paper: SHARED_PARCHMENT },
-  soldier:   { base: { metal: 0, smooth: .25 }, silver: { metal: .85, smooth: .75 }, gold: { metal: .9, smooth: .8 }, gemHue: [195, 250], raised: [[180, 0, 372, 186], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
-  spell:     { base: { metal: .1, smooth: .45 }, gold: { metal: .9, smooth: .8 }, gemHue: [255, 300], raised: [[192, 12, 352, 194], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
-  weapon:    { base: { metal: .55, smooth: .6 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .9, smooth: .85 }, gemHue: [340, 15], raised: [[164, 28, 362, 204], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
-  defense:   { base: { metal: .75, smooth: .72 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .85, smooth: .8 }, gemHue: [195, 250], raised: [[184, 24, 334, 206], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
-  beast:     { base: { metal: .1, smooth: .6 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .8, smooth: .7 }, gemHue: [335, 20], gemMinSat: .45, raised: [[170, 0, 342, 110], [0, 10, 60, 120], [452, 10, 512, 120]], paper: SHARED_PARCHMENT },
+  uncommon:  { base: { metal: .05, smooth: .3 }, gold: { metal: .65, smooth: .6 }, organic: [70, 170], gemHue: [80, 170], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  rare:      { base: { metal: .8, smooth: .7 }, silver: { metal: .9, smooth: .82 }, gemHue: [180, 240], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  epic:      { base: { metal: .65, smooth: .78 }, silver: { metal: .9, smooth: .86 }, gold: { metal: .9, smooth: .86 }, gemHue: [255, 310], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  legendary: { base: { metal: .15, smooth: .35 }, gold: { metal: 1, smooth: .92 }, cloth: [330, 25], gemHue: [330, 25], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  special:   { base: { metal: .55, smooth: .9 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
+  beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, gemHue: [335, 15], gemMinSat: .5, raised: [[150, 0, 362, 130]], paper: { name: [.16, .84, .751], stats: [.13, .87, .85, .92], medals: [[.19, .126], [.834, .126]] } },
 };
+
+// ランク報酬のカードスキン（assets/cards/frame-skin-<ランク>.png）。窓・文字枠・メダルの位置は、レアリティの枠と同じ共通の位置
+const SKIN_PAPER = SHARED_PARCHMENT;
+const SKINS = {
+  iron:     { base: { metal: .55, smooth: .45 }, silver: { metal: .8, smooth: .6 }, gold: { metal: .9, smooth: .8 }, gemHue: null, raised: [[150, 0, 362, 130]] },
+  bronze:   { base: { metal: .6, smooth: .6 }, gold: { metal: .9, smooth: .8 }, gemHue: [10, 40], raised: [[150, 0, 362, 130]] },
+  silver:   { base: { metal: .85, smooth: .75 }, gold: { metal: .9, smooth: .8 }, gemHue: [180, 240], raised: [[150, 0, 362, 130]] },
+  gold:     { base: { metal: .9, smooth: .82 }, gold: { metal: .95, smooth: .88 }, gemHue: [0, 40], raised: [[150, 0, 362, 130]] },
+  platinum: { base: { metal: .75, smooth: .85 }, silver: { metal: .85, smooth: .85 }, gold: { metal: .9, smooth: .8 }, gemHue: [170, 220], raised: [[150, 0, 362, 130]] },
+  diamond:  { base: { metal: .35, smooth: .9 }, silver: { metal: .7, smooth: .9 }, gold: { metal: .9, smooth: .8 }, gemHue: [190, 270], gemMinSat: .25, raised: [[150, 0, 362, 130]] },
+  master:   { base: { metal: .4, smooth: .8 }, gold: { metal: .95, smooth: .88 }, gemHue: [270, 330], raised: [[150, 0, 362, 140]] },
+  champion: { base: { metal: .7, smooth: .88 }, gold: { metal: 1, smooth: .92 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[150, 0, 362, 140], [0, 120, 150, 470], [362, 120, 512, 470]] },
+};
+for (const [rank, cfg] of Object.entries(SKINS)) FRAMES[`skin-${rank}`] = { ...cfg, paper: SKIN_PAPER };
+
+// ランク報酬のカード裏（assets/skins/back-rank-<ランク>.png）。拡大表示で手前に浮かせる部分（上下の飾り・左右の宝石・真ん中の紋章）の地図
+const BACK_RAISED = { top: [.18, 0, .82, .2], bottom: [.18, .8, .82, 1], sides: [[0, .4, .2, .56], [.8, .4, 1, .56]], emblem: [.5, .49, .36, .3] };
+function buildBackRaised(png) {
+  const { width: W, height: H, data } = png;
+  const out = Buffer.alloc(W * H * 2);
+  const inBox = (u, v, [x0, y0, x1, y1]) => u >= x0 && u <= x1 && v >= y0 && v <= y1;
+  const [ex, ey, rx, ry] = BACK_RAISED.emblem;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const u = x / W, v = y / H, i = y * W + x;
+    const inside = inBox(u, v, BACK_RAISED.top) || inBox(u, v, BACK_RAISED.bottom) || BACK_RAISED.sides.some((b) => inBox(u, v, b))
+      || ((u - ex) / rx) ** 2 + ((v - ey) / ry) ** 2 <= 1;
+    out[i * 2] = 255; out[i * 2 + 1] = inside ? data[i * 4 + 3] : 0;
+  }
+  return out;
+}
 
 // ---------- PNG（8bit・インターレースなし） ----------
 const crcTable = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
@@ -332,5 +358,11 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     writeFileSync(join(OUT, `frame-${name}-raised.png`), b);
     if (debugDir) writeDebug(debugDir, name, r);
     console.log(`${name}: relief ${(a.length / 1024).toFixed(0)}KB, raised ${(b.length / 1024).toFixed(0)}KB`);
+  }
+  for (const rank of Object.keys(SKINS)) {
+    const back = decodePng(readFileSync(join(root, `assets/skins/back-rank-${rank}.png`)));
+    const out = encodePng(back.width, back.height, 2, buildBackRaised(back));
+    writeFileSync(join(root, `assets/skins/back-rank-${rank}-raised.png`), out);
+    console.log(`back-rank-${rank}: raised ${(out.length / 1024).toFixed(0)}KB`);
   }
 }

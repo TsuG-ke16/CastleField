@@ -2,9 +2,6 @@
 :is(.card.has-frame, .mini-card)[data-beast] {
   --card-window: url('../assets/cards/window-beast.png');
 }
-/* 共通のメダル台に、種類と取得元のレアリティを表示する。 */
-#app .card.has-frame[data-beast][data-rarity] > :is(.card-kind, .card-rarity) { display: flex; }
-#app .mini-card[data-beast][data-rarity] > :is(.mini-card-kind, .mini-card-rarity) { display: grid; }
 #app [data-beast] :is(.card-art, .mini-card-image) .asset-image { padding: 0; }
 #app .mini-card[data-beast] .mini-card-name:not(:empty) { font-size: clamp(7px, 1.35vw, 10px); }
 .soldier[data-beast] .soldier-pic { filter: drop-shadow(0 2px 3px #5a101a80); }

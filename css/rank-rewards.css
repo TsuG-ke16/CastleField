@@ -1,0 +1,15 @@
+/* ランク報酬を見る画面（js/ui/RankRewardsView.js） */
+#rank-rewards .rank-rewards-box { max-width: 460px; max-height: 92vh; overflow-y: auto; }
+.rank-rewards-note { margin: 4px 0 10px; font-size: 13px; line-height: 1.5; color: #5a3a14; }
+.rank-rewards-note.small { margin-top: 10px; font-size: 12px; opacity: .8; }
+.rank-rewards-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.rank-reward-row { padding: 8px 10px 10px; border: 1px solid #c9ab74; border-radius: 12px; background: #fff7df; }
+.rank-reward-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.rank-reward-emblem { width: 48px; height: 48px; object-fit: contain; }
+.rank-reward-name { font-size: 17px; color: #4b2e12; }
+.rank-reward-items { display: flex; justify-content: space-around; align-items: flex-end; gap: 6px; }
+.rank-reward-item { margin: 0; display: grid; justify-items: center; gap: 4px; }
+.rank-reward-item figcaption { font-size: 11px; color: #6a4a22; }
+.rank-reward-avatar { display: grid; place-items: center; width: 52px; height: 52px; margin: 10px; font-size: 24px; }
+.rank-reward-card { position: relative; flex: none; width: 76px; height: 114px; touch-action: manipulation; }
+.rank-reward-card.back img { display: block; width: 100%; height: 100%; object-fit: fill; -webkit-user-drag: none; }
