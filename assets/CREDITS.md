@@ -503,3 +503,4 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 - `skins/back-rank-<ランク>.png`・`skins/back-rank-<ランク>-raised.png` — カードスキンの裏（ショップの `back_rank_*`）。浮かせる地図は同じスクリプトで作成
 - `ranks/rank-<ランク>.png` — ランクのエンブレム（8枚を差しかえ）
 - `frames/rank-frame-<ランク>.png` — アイコンフレーム（`css/rank-frames.css` で使用）
+- `cards/card-antidote.png` — 解毒薬のカードの絵（OpenAI画像生成（ChatGPT）。上記OpenAI規約・AI生成。512×512・256色に縮小。2026-11-19）
