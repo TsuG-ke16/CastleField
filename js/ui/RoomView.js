@@ -1,5 +1,7 @@
 // サーバーが送る選択肢と席だけで部屋を描く。名前は必ず textContent。
 import { castleArt, colorOf } from './art.js';
+import { profileArt } from './profileArt.js';
+import { rankEmblem } from './RankEmblem.js';
 import { deckChoice, deckSlot } from './DeckStore.js';
 
 const ROOM_DECK_KEY = 'cf-room-deck-v1';
@@ -186,9 +188,26 @@ export class RoomView {
       seat.classList.toggle('room-self', p.playerId === room.you);
       seat.dataset.team = room.settings.teams === 'choose' ? (p.team ?? '') : '';
       const title = this.node('h3', p.name);
-      if (p.playerId === room.you) title.append(this.node('small', 'あなた'));
-      if (p.playerId === room.hostId) title.append(this.node('small', '部屋主'));
-      seat.append(title);
+      // 名前の横に、アイコンとランク（小さいランクのアイコンは名前の横、ランク名はその下）
+      const head = this.node('div', null, 'room-seat-head');
+      const avatar = this.node('span', null, 'room-avatar'); avatar.setAttribute('aria-hidden', 'true');
+      const src = p.profile ? profileArt(p.profile.icon, p.profile.iconImage) : null;
+      if (src) { const img = new Image(); img.src = src; img.alt = ''; avatar.append(img); }
+      else avatar.textContent = p.cpu ? 'C' : ([...String(p.name ?? '?')][0] ?? '?');
+      const meta = this.node('div', null, 'room-seat-meta');
+      const line = this.node('div', null, 'room-seat-nameline'); line.append(title);
+      if (p.profile?.rank) {
+        const emblem = this.node('span', null, 'room-rank-icon'); emblem.innerHTML = rankEmblem(p.profile.rank, 20);
+        line.append(emblem);
+      }
+      const tags = this.node('span', null, 'room-seat-tags');
+      if (p.playerId === room.you) tags.append(this.node('small', 'あなた'));
+      if (p.playerId === room.hostId) tags.append(this.node('small', '部屋主'));
+      if (tags.children.length) line.append(tags);
+      meta.append(line);
+      if (p.profile?.rank) meta.append(this.node('small', p.profile.rank.divisionLabel ?? p.profile.rank.name, 'room-rank-name'));
+      head.append(avatar, meta);
+      seat.append(head);
       // 選んだ城の絵を席に出す（城の種類を変えると絵も変わる）
       const pic = this.node('div', null, 'room-seat-pic'); pic.setAttribute('aria-hidden', 'true');
       pic.innerHTML = castleArt(colorOf(p.playerId), 0, p.castle ?? 'standard'); seat.append(pic);

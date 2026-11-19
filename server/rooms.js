@@ -791,6 +791,14 @@ export class Room {
     return { state, playable, upgrades };
   }
 
+  /** 席のアイコンとランク（アカウントのある人だけ。ランクは試合のあとに変わるので、短く覚えて取り直す） */
+  profileFor(seat) {
+    if (!seat.userId || !this.profileOf) return null;
+    const now = Date.now();
+    if (!seat.profileAt || now - seat.profileAt > 5000) { seat.profileCache = this.profileOf(seat.userId); seat.profileAt = now; }
+    return seat.profileCache ?? null;
+  }
+
   roomInfo() {
     return {
       roomId: this.roomId,
@@ -799,6 +807,7 @@ export class Room {
         name: s.name,
         connected: s.cpu ? true : s.clients.size > 0,
         cosmetics: s.cosmetics ?? {},
+        profile: this.profileFor(s),
         left: s.left,
         cpu: s.cpu,
         castle: s.castle,
