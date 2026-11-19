@@ -146,7 +146,7 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 **数値はすべて仮**（`data/ranks.json`・`data/seasons.json`。サーバーを再起動すれば反映）。
 
 ## ランク
-- 9階級（低い順）：Iron・Bronze・Silver・Gold・Platinum・Diamond・Ascendant・Immortal・Radiant。Iron〜Ascendant は I〜III のディビジョン。Immortal・Radiant は **RP が 2400 以上で、シーズン順位で決まる**（Immortal は上位500位、Radiant は上位100位。足りなければ Ascendant III）
+- 8階級（低い順）：Iron・Bronze・Silver・Gold・Platinum・Diamond・Master・Champion。Iron〜Diamond は I〜III のディビジョン。Master・Champion は **RP が 1800 以上で、シーズン順位で決まる**（Master は上位500位、Champion は上位100位。足りなければ Diamond III）
 - **MMR（内部レーティング）**：Elo（K=32。認定戦中は 64）。ユーザーには数値を返さない。初期値 1000
 - **RP（ランクポイント）**：勝つと増え、負けると減る（相手との MMR の差で増減が変わる。勝ち 10〜40、負け 8〜30）。RP は 0 未満にならない。表示ランクは RP から決まるので、昇格・降格は RP がまたいだときに起きる（降格の保護はまだない）
 - **認定戦**：最初の5試合（`placementMatches`）は RP が動かず、ランクは「認定戦中」。終わると MMR から RP とランクが決まる（Gold III までが上限）

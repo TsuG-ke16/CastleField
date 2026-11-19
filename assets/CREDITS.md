@@ -474,7 +474,7 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`asset
 
 ## 王国リーグのランク紋章（2026-11-19）
 
-- `ranks/rank-{iron,bronze,silver,gold,platinum,diamond,ascendant,immortal,radiant}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照、生成原本 `exec-94e3676c-e909-4979-8c5c-c776b8b38cf2.png` を切り出し。オリジナルの9図柄。
+- `ranks/rank-{iron,bronze,silver,gold,platinum,diamond,master,champion}.png（master は旧 immortal、champion は旧 radiant の絵。旧 ascendant は廃止）` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照、生成原本 `exec-94e3676c-e909-4979-8c5c-c776b8b38cf2.png` を切り出し。オリジナルの図柄。
 
 ## ショップ景品の専用イラスト（2026-11-19）
 

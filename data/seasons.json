@@ -14,8 +14,7 @@
     "gold": 600,
     "platinum": 900,
     "diamond": 1300,
-    "ascendant": 1800,
-    "immortal": 2500,
-    "radiant": 3500
+    "master": 2500,
+    "champion": 3500
   }
 }
