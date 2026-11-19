@@ -232,7 +232,7 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
     if (relief || loading || !canUseRelief() || cardMotionReduced()) return;
     loading = true;
     const current = () => active && card.isConnected && !cardMotionReduced();
-    const result = await createRelief({ frameSrc: source, preset: rarity, isCurrent: current,
+    const result = await createRelief({ frameSrc: source, preset: card.dataset.skin ? `skin-${card.dataset.skin}` : rarity, isCurrent: current,
       pixelRatioLimit: quality === 'full' ? 2 : config.reliefPixelRatio,
       onLost: () => { if (active) dropRelief(); } }).catch(() => null);
     loading = false;

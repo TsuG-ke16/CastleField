@@ -48,8 +48,8 @@ const SKINS = {
   silver:   { base: { metal: .85, smooth: .75 }, gold: { metal: .9, smooth: .8 }, gemHue: [180, 240], raised: [[150, 0, 362, 130]] },
   gold:     { base: { metal: .9, smooth: .82 }, gold: { metal: .95, smooth: .88 }, gemHue: [0, 40], raised: [[150, 0, 362, 130]] },
   platinum: { base: { metal: .75, smooth: .85 }, silver: { metal: .85, smooth: .85 }, gold: { metal: .9, smooth: .8 }, gemHue: [170, 220], raised: [[150, 0, 362, 130]] },
-  diamond:  { base: { metal: .35, smooth: .9 }, silver: { metal: .7, smooth: .9 }, gold: { metal: .9, smooth: .8 }, gemHue: [190, 270], gemMinSat: .25, raised: [[150, 0, 362, 130]] },
-  master:   { base: { metal: .4, smooth: .8 }, gold: { metal: .95, smooth: .88 }, gemHue: [270, 330], raised: [[150, 0, 362, 140]] },
+  diamond:  { base: { metal: .8, smooth: .92 }, silver: { metal: .7, smooth: .9 }, gold: { metal: .9, smooth: .8 }, gemHue: [190, 270], gemMinSat: .25, raised: [[150, 0, 362, 130]] },
+  master:   { base: { metal: .75, smooth: .88 }, gold: { metal: .95, smooth: .88 }, gemHue: [270, 330], raised: [[150, 0, 362, 140]] },
   champion: { base: { metal: .7, smooth: .88 }, gold: { metal: 1, smooth: .92 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[150, 0, 362, 140], [0, 120, 150, 470], [362, 120, 512, 470]] },
 };
 for (const [rank, cfg] of Object.entries(SKINS)) FRAMES[`skin-${rank}`] = { ...cfg, paper: SKIN_PAPER };
