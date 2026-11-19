@@ -18,15 +18,15 @@ function fixDie(g, ...faces) {
   g.rng = () => (queue.length ? queue.shift() : orig());
 }
 
-test('cards.json：サイコロ7枚はレア・合成しない。倍率は 3.5 / 3 / 2 / 2 / 3 / 1', () => {
+test('cards.json：サイコロ7枚はスペシャル（合成しない）。倍率は 3.5 / 3 / 2 / 2 / 3 / 1', () => {
   const c = loadJson('cards.json');
   const want = { attackDice: ['attack', 3.5], healDice: ['heal', 3], manaDice: ['mana', 2], coinDice: ['coin', 2], shieldDice: ['shield', 3], buffDice: ['buff', 1], randomDice: ['random', undefined] };
   for (const [t, [dice, per]] of Object.entries(want)) {
     assert.equal(c[t].effect, 'dice', t);
     assert.equal(c[t].dice, dice, t);
     assert.equal(c[t].per, per, t);
-    assert.equal(c[t].rarity, 'rare', t);
-    assert.equal(c[t].fuseTo, null, t);
+    assert.equal(c[t].rarity, 'special', t);
+    assert.equal(c[t].fuseTo, undefined, t);
   }
 });
 

@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "コモン",
-    "dropRate": 47.82,
+    "dropRate": 45.519,
     "color": "#9aa3ad",
     "mpCost": 1,
     "deckCost": 1,
@@ -46,7 +46,7 @@
   },
   "special": {
     "name": "スペシャル",
-    "dropRate": 3,
+    "dropRate": 5.301,
     "color": "#c77dff",
     "special": true,
     "deckAs": "rare"
