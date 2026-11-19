@@ -80,7 +80,6 @@ const el = {
   menuSound: $('menu-sound'),
   help: $('help'),
   title: $('title'),
-  titleMain: $('title-main'),
   titleForm: $('title-form'),
   titleName: $('title-name'),
   titlePass: $('title-pass'),
@@ -97,7 +96,7 @@ setupMaterialSkin();
 const matchStats = new MatchStats();
 const tutorial = new Tutorial();
 let replayTutorial = false;
-let titleArrivalPlayed = false;
+let openPlaySetup; // ホームの「対戦開始」から開く設定画面（setupTitle で作る）
 let settings;
 let localSetup;
 let lastLocalOptions = null;
@@ -295,12 +294,8 @@ async function boot() {
   }, true);
 
   if (rarities && Object.values(decks ?? {}).some((d) => d.costDeck)) {
-    const preview = document.createElement('div');
-    preview.id = 'title-deck-preview';
-    $('title-help').after(preview);
     const refresh = (saved) => {
-      const active = savedDecks()[loadDecks().active];
-      previewDeck(preview, active ?? presetDeck(rules.defaultCostDeck));
+      home?.refresh(); // ホームに出すデッキ名を描き直す
       localSetup?.refreshDecks();
       if (saved) roomView.refreshDecks(saved);
     };
@@ -309,10 +304,7 @@ async function boot() {
       animate: (element, frames, options) => anim.animate(element, frames, options),
       onChange: refresh,
     });
-    $('title-deck').addEventListener('click', () => { sound.play('tap'); openDeckEditor(); });
     refresh();
-  } else {
-    $('title-deck').hidden = true;
   }
   cardGuide = new CardGuide({ cards, rarities, rules, monsters, getContext: uiContext, debug: DEBUG });
   progressPanel = new ProgressPanel({ cards, rarities, rules, monsters,
@@ -330,9 +322,11 @@ async function boot() {
   const profileView = new ProfileView({ toast, onChanged: () => home.refresh() });
   home = new Home({
     toast,
-    onPlay: (mode, titleButton) => { if (mode === 'online' && !el.titleName.value && account.user) el.titleName.value = account.user.displayName; home.close(); el.title.hidden = false; el.titleMain.hidden = false; $(titleButton).click(); },
+    onPlay: (mode) => openPlaySetup(mode),
     onDeck: () => deckEditor?.open(),
-    onCatalog: () => $('title-catalog').click(),
+    onCatalog: () => { sound.play('tap'); cardGuide.open('cards'); },
+    onHelp: () => openHelp(),
+    getRecord: () => matchStats.recordText(),
     onSettings: () => settings.open(),
     onProfile: () => profileView.open(),
     onAccount: () => accountPanel.open(),
@@ -363,7 +357,7 @@ async function boot() {
     onBadge: (n) => home.setSocialBadge(n),
     onJoinRoom: (passphrase) => {
       home.close();
-      el.title.hidden = false; el.titleMain.hidden = true; el.titleForm.hidden = false;
+      el.title.hidden = false; el.titleLevels.hidden = true; el.titleForm.hidden = false;
       if (!el.titleName.value) el.titleName.value = account.user?.displayName ?? '';
       el.titlePass.value = passphrase;
       joinOnline();
@@ -390,14 +384,10 @@ async function boot() {
   };
   account.onChange(() => {
     syncSettingsAccount();
-    $('title-account').hidden = !account.enabled;
     if (!socialStarted && account.user?.kind === 'member') { socialStarted = true; socialView.refresh(); }
     if (account.enabled && account.user && !cosmetics.loaded) { cosmetics.loaded = true; loadMine(); }
     // ホームは起動したときから入口（showTitle）。アカウントの準備ができたら、開いているホームが自分で描き直す
   });
-  $('title-home').hidden = false; // タイトルからホームへ戻るボタン（ホームはいつも使える）
-  $('title-home').addEventListener('click', () => { el.title.hidden = true; home.open(); });
-  $('title-account').addEventListener('click', () => accountPanel.open());
   account.init().then(() => accountPanel.handleReturn());
   setupMenu();
   setupTitle({ savedDecks, presetDeck, previewDeck, openDeckEditor });
@@ -468,54 +458,40 @@ async function setupOffline() {
 // ---------- タイトル・メニュー ----------
 
 function setupTitle(deckOptions) {
-  document.querySelector('#title .title-pic').innerHTML =
-    `<div class="title-castle left">${imageArt('ui/title-castle-blue.png', '', 'art castle-art')}</div><div class="title-unit left">${imageArt('ui/title-knight-blue.png', '', 'art unit-art')}</div>` +
-    `<div class="title-unit right">${imageArt('ui/title-infantry-orange.png', '', 'art unit-art')}</div><div class="title-castle right">${imageArt('ui/title-castle-orange.png', '', 'art castle-art')}</div>`;
   localSetup = new LocalSetup({castles,decks,rules,...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
-  let modeOpener;
-  const openLocalOptions = (mode, opener) => {
+  // ホームの「対戦開始」から開く設定画面（CPUの強さ・同じ端末・合言葉）。「もどる」はホームへ戻る
+  openPlaySetup = (mode) => {
     sound.play('tap');
-    modeOpener = opener;
+    home.close();
+    el.title.hidden = false;
+    el.titleLevels.hidden = true;
+    el.titleForm.hidden = true;
+    if (mode === 'online') {
+      if (!el.titleName.value && account.user) el.titleName.value = account.user.displayName;
+      el.titleForm.hidden = false;
+      setTitleWaiting(false);
+      el.titleStatus.textContent = '同じ合言葉を入れた人と対戦します';
+      (el.titleName.value ? el.titlePass : el.titleName).focus({ preventScroll: true });
+      return;
+    }
     localSetup.open(mode);
-    el.titleMain.hidden = true;
     el.titleLevels.hidden = false;
     const first = mode === 'local' ? $('local-start') : el.titleLevels.querySelector('.level');
     first.focus({ preventScroll: true });
   };
-  $('title-local').addEventListener('click', event => openLocalOptions('local', event.currentTarget));
-  $('title-solo').addEventListener('click', event => openLocalOptions('solo', event.currentTarget));
-  $('levels-back').addEventListener('click', () => {
-    el.titleLevels.hidden = true;
-    el.titleMain.hidden = false;
-    modeOpener?.focus({ preventScroll: true });
-  });
+  $('levels-back').addEventListener('click', () => { el.titleLevels.hidden = true; el.title.hidden = true; home.open(); });
   for (const btn of el.titleLevels.querySelectorAll('.level')) {
     btn.addEventListener('click', () => { sound.play('tap'); startLocal(undefined, btn.dataset.level, localSetup.read()); });
   }
-  $('title-online').addEventListener('click', () => {
-    sound.play('tap');
-    el.titleMain.hidden = true;
-    el.titleForm.hidden = false;
-    setTitleWaiting(false);
-    el.titleStatus.textContent = '同じ合言葉を入れた人と対戦します';
-    (el.titleName.value ? el.titlePass : el.titleName).focus({ preventScroll: true });
-  });
-  matchStats.drawRecord();
-  $('record-clear').addEventListener('click', () => matchStats.clear());
+  settings.setRecord(matchStats.recordText(), () => matchStats.clear());
+  matchStats.onRecord = (text) => { settings.setRecord(text); home.refresh(); };
   $('help-tutorial').addEventListener('click', () => { el.help.hidden = true; replayTutorial = true; startLocal(undefined, 'normal'); });
-  for (const id of ['title-settings','menu-settings']) $(id).addEventListener('click', () => settings.open());
-  $('title-help').addEventListener('click', () => openHelp());
+  $('menu-settings').addEventListener('click', () => settings.open());
   $('title-back').addEventListener('click', () => {
     leaveOnline();
     el.titleForm.hidden = true;
-    el.titleMain.hidden = false;
-    $('title-online').focus({ preventScroll: true });
-  });
-  const endArrival = () => el.title.classList.remove('title-arrival');
-  el.title.addEventListener('pointerdown', endArrival);
-  el.title.addEventListener('keydown', endArrival);
-  el.title.addEventListener('animationend', event => {
-    if (event.animationName === 'title-arrival-light') endArrival();
+    el.title.hidden = true;
+    home.open();
   });
   el.titleForm.addEventListener('submit', (e) => { e.preventDefault(); joinOnline(); });
   try {
@@ -563,13 +539,8 @@ function showTitle() {
   setBusy(true);
   el.titleForm.hidden = true;
   el.titleLevels.hidden = true;
-  el.titleMain.hidden = false;
-  el.title.hidden = false;
-  if (home?.available()) { el.title.hidden = true; home.open(); return; }
-  if (!titleArrivalPlayed && !UI_CONFIG.reducedMotion && UI_CONFIG.speed > 0) {
-    el.title.classList.add('title-arrival');
-  }
-  titleArrivalPlayed = true;
+  el.title.hidden = true;
+  home.open(); // 入口はホームだけ
 }
 
 function setTitleWaiting(waiting) {
@@ -927,7 +898,7 @@ function resumeOnline() {
   connected = true;
   viewerId = saved.playerId;
   roomPassphrase = saved.passphrase ?? '';
-  el.titleMain.hidden = true;
+  el.titleLevels.hidden = true;
   el.titleForm.hidden = false;
   setTitleWaiting(true);
   el.titleStatus.textContent = '前の部屋につなぎ直しています…';

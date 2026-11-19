@@ -40,13 +40,6 @@ export class BattleLayout {
     extra.innerHTML = '<summary>合成先・排出率</summary>';
     $('card-detail').querySelector('.detail-meta').before(extra);
     extra.append($('card-detail').querySelector('.detail-meta'));
-    // Destructive record reset no longer sits beside the play modes.
-    const records = document.createElement('details'); records.className = 'title-records';
-    records.innerHTML = '<summary>戦績</summary>';
-    $('title-record').before(records); records.append($('title-record'), $('record-clear'));
-    const links = document.createElement('nav'); links.className = 'title-links'; links.setAttribute('aria-label', 'ゲームの案内');
-    $('title-main').append(links); links.append($('title-deck'), $('title-catalog'), $('title-settings'), $('title-help'));
-    $('record-clear').textContent = '戦績をリセット';
   }
   update(state, viewerId) {
     const me = state.players[viewerId];

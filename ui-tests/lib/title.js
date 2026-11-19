@@ -1,10 +1,16 @@
-// ホームがいつも入口なので、タイトル画面（ひとりで遊ぶ・同じ端末・合言葉・遊び方など）を確かめるテストは、
-// ホームの「対戦開始」（ひとりで）→ 強さを選ぶ画面の「戻る」でタイトルへ進む（人が触るのと同じ道すじ）。
-export async function toTitle(page) {
+// 入口はホームだけ（タイトルのメニューはなくした）。ホームから各画面へ進む、人が触るのと同じ道すじの部品。
+export async function toTitle(page) { // 名前は昔のまま：ホームが出るのを待つ
   await page.locator('#home:not([hidden])').waitFor();
-  await page.locator('#home .home-mode[data-mode="solo"]').click();
+}
+/** ホームでモード（solo / local / online）を選んで「対戦開始」を押す（強さの画面・同じ端末の設定・合言葉の入力が出る） */
+export async function openMode(page, mode) {
+  await toTitle(page);
+  await page.locator(`#home .home-mode[data-mode="${mode}"]`).click();
   await page.locator('#home [data-act="start"]').click();
-  await page.locator('#title-levels:not([hidden])').waitFor();
-  await page.locator('#levels-back').click();
-  await page.locator('#title-solo').waitFor({ state: 'visible' });
+}
+/** ホームの設定 → アカウント */
+export async function openAccountFromHome(page) {
+  await toTitle(page);
+  await page.locator('#home [data-act="settings"]').click();
+  await page.locator('.set-account-btn').click();
 }

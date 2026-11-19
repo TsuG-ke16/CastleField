@@ -112,8 +112,9 @@ async function verify(width, height, reducedMotion) {
   await close();
 
   await toTitle(page);
-  assert.match(await page.locator('#title-deck-preview').innerText(), /確認用のデッキ/);
-  await press('#title-local');
+  assert.match(await page.locator('#home [data-part="deck"]').innerText(), /確認用のデッキ/);
+  await press('#home .home-mode[data-mode="local"]');
+  await press('#home [data-act="start"]');
   await press('.local-options summary');
   await press('.local-options .pill[data-value="cost"]');
   await press('.local-options .pill[data-value="custom:0"]');
@@ -123,7 +124,8 @@ async function verify(width, height, reducedMotion) {
   await page.waitForFunction(() => window.castlefield?.game()?.getState(null).players.p1.deckId === 'custom');
   await page.goto(base);
   await toTitle(page);
-  await press('#title-online');
+  await press('#home .home-mode[data-mode="online"]');
+  await press('#home [data-act="start"]');
   await page.locator('#title-name').fill('編成テスト');
   await page.locator('#title-pass').fill(`deck-${width}-${Date.now()}`);
   await press('#title-join');
@@ -158,7 +160,7 @@ async function verifyFirstSlotName() {
   page.setDefaultTimeout(8000);
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
-  await page.locator('#title-deck-preview').waitFor({ state: 'attached' }); // デッキ編成の画面ができてから押す
+  await page.locator('#home:not([hidden])').waitFor();
   await page.locator('#home .home-tile[data-id="deck"]').press('Enter');
   await page.locator('.deck-manage').press('Enter');
   await page.locator('.deck-name-input').evaluate(input => {
@@ -172,7 +174,7 @@ async function verifyFirstSlotName() {
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('cf-mydecks-v2')));
   assert.equal(stored.slots[0].name, '最初のデッキ');
   await page.locator('.deck-close').press('Enter');
-  assert.match(await page.locator('#title-deck-preview').innerText(), /最初のデッキ/);
+  assert.match(await page.locator('#home [data-part="deck"]').innerText(), /最初のデッキ/);
   assert.deepEqual(errors, []);
   await context.close();
   console.log('デッキ1の名前だけを変えて保存 OK');

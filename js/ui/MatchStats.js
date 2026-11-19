@@ -24,7 +24,8 @@ export class MatchStats {
     if(['castleDamaged','castleHealed','monsterAttackedCastle'].includes(type)&&Number.isFinite(p.hp))this.hp[owner]=p.hp;
   }
   finish(won,competitive){if(this.recorded)return;this.recorded=true;if(!competitive||this.partial)return;this.record[won?'wins':'losses']++;this.record.streak=won?this.record.streak+1:0;try{localStorage.setItem(KEY,JSON.stringify(this.record));}catch{}this.drawRecord();}
-  drawRecord(){const el=document.getElementById('title-record');if(el)el.textContent=`${this.record.wins}勝 ${this.record.losses}敗 · ${this.record.streak}連勝`;}
+  recordText(){return `${this.record.wins}勝 ${this.record.losses}敗 · ${this.record.streak}連勝`;}
+  drawRecord(){this.onRecord?.(this.recordText());}
   clear(){this.record={wins:0,losses:0,streak:0};try{localStorage.removeItem(KEY);}catch{}this.drawRecord();}
   render(viewerId,competitive){
     const ids=competitive?[viewerId]:Object.keys(this.counts);

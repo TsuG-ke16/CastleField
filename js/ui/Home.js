@@ -9,9 +9,9 @@ import { rankEmblem } from './RankEmblem.js';
 
 const MODE_KEY = 'cf-home-mode';
 const MODES = {
-  solo: { label: 'ひとりで遊ぶ', chip: 'ひとりで', note: 'CPUと対戦', titleButton: 'title-solo' },
-  online: { label: 'カジュアル対戦', chip: 'カジュアル', note: '合言葉で友だちと', titleButton: 'title-online' },
-  local: { label: '同じ端末で遊ぶ', chip: '同じ端末', note: '2〜8人で交代', titleButton: 'title-local' },
+  solo: { label: 'ひとりで遊ぶ', chip: 'ひとりで', note: 'CPUと対戦' },
+  online: { label: 'カジュアル対戦', chip: 'カジュアル', note: '合言葉で友だちと' },
+  local: { label: '同じ端末で遊ぶ', chip: '同じ端末', note: '2〜8人で交代' },
 };
 // サーバーのアカウント機能がないと使えないメニュー
 const NEEDS_SERVER = new Set(['rank', 'ranking', 'friend', 'profile', 'shop', 'gacha', 'skin', 'mission']);
@@ -21,7 +21,7 @@ const GROUPS = [
   ['対戦', ['rank', 'casual', 'ranking']],
   ['コレクション', ['deck', 'catalog', 'skin']],
   ['ソーシャル', ['friend', 'profile']],
-  ['その他', ['mission', 'shop', 'gacha', 'settings']],
+  ['その他', ['mission', 'shop', 'gacha', 'help', 'settings']],
 ];
 const MENU = {
   rank: 'ランクマッチ',
@@ -35,18 +35,19 @@ const MENU = {
   skin: 'スキン',
   mission: 'ミッション',
   ranking: 'ランキング',
+  help: '遊び方',
   settings: '設定',
 };
 
 export class Home {
   /**
    * @param {object} o
-   * @param {(mode: string, titleButtonId: string) => void} o.onPlay 遊ぶ画面（今のタイトルの各モード）へ進む
+   * @param {(mode: string) => void} o.onPlay 選んだモードの設定画面（CPUの強さ・同じ端末・合言葉）へ進む
    * @param {() => void} o.onDeck  @param {() => void} o.onCatalog  @param {() => void} o.onSettings
    * @param {() => void} o.onProfile
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, toast = () => {} }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onSkin, onMission, onAccount, toast });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, toast = () => {} }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onSkin, onMission, onAccount, toast });
     this.data = null;
     this.mode = 'solo';
     try { const m = localStorage.getItem(MODE_KEY); if (m in MODES) this.mode = m; } catch { /* 保存できなくても動く */ }
@@ -224,7 +225,7 @@ export class Home {
     let deck = null;
     try { const state = loadDecks(); deck = state.slots?.[state.active]; } catch { /* 読めなくても動く */ }
     this.part('deck').textContent = deck?.name ?? '見本のデッキ';
-    this.part('stats').textContent = 'サーバーで遊ぶと記録されます';
+    this.part('stats').textContent = this.getRecord() || 'まだ対戦がありません';
     for (const tile of this.box.querySelectorAll('.home-tile')) tile.querySelector('.home-badge')?.remove();
     this.part('dot').hidden = true;
     this.renderFacts();
@@ -265,7 +266,8 @@ export class Home {
         button.type = 'button';
         button.className = 'home-tile raw-btn';
         button.dataset.id = id;
-        button.innerHTML = `<span class="home-tile-icon">${menuIcon(id)}</span><span class="home-tile-label"></span>`;
+        // 遊び方だけは専用の絵がまだないので、「？」の文字で出す（絵ができたら assets/ui/home/help.png を足して、ここを消す）
+        button.innerHTML = `<span class="home-tile-icon">${id === 'help' ? '<b class="home-tile-glyph" aria-hidden="true">？</b>' : menuIcon(id)}</span><span class="home-tile-label"></span>`;
         button.querySelector('.home-tile-label').textContent = MENU[id];
         grid.append(button);
       }
@@ -291,11 +293,12 @@ export class Home {
     if (act === 'account') return this.onAccount();
     if (act === 'retry') return this.refresh();
     if (!this.online() && (NEEDS_SERVER.has(act) || act === 'notice')) return this.toast(act === 'notice' ? '新しいお知らせはありません' : SERVER_REASON, 'info');
-    if (act === 'start') return this.onPlay(this.mode, MODES[this.mode].titleButton);
-    if (act === 'casual') return this.onPlay('online', MODES.online.titleButton);
+    if (act === 'start') return this.onPlay(this.mode);
+    if (act === 'casual') return this.onPlay('online');
     if (act === 'deck') return this.onDeck();
     if (act === 'catalog') return this.onCatalog();
     if (act === 'settings') return this.onSettings();
+    if (act === 'help') return this.onHelp();
     if (act === 'profile') return this.onProfile();
     if (act === 'rank') return this.onRanked();
     if (act === 'friend') return this.onFriends();

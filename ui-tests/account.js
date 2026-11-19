@@ -27,7 +27,7 @@ try {
   await page.goto(base);
   // アカウントのあるサーバーでは、ホーム画面が入口
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
-  assert.equal(await page.locator('#home .home-tile').count(), 12);
+  assert.equal(await page.locator('#home .home-tile').count(), 13);
   assert.equal(await page.locator('#home .home-tile:disabled').count(), 0); // どのメニューも使える（Phase 6 で最後の「準備中」がなくなった）
   assert.ok(await page.locator('#home .home-tile[data-id=rank]').isEnabled()); // ランクマッチは使える（Phase 3）
   assert.ok(await page.locator('#home .home-tile[data-id=friend]').isEnabled()); // フレンドも（Phase 4）
@@ -48,7 +48,6 @@ try {
   await page.click('#home [data-act=start]');
   await page.locator('#title-levels:not([hidden])').waitFor();
   await page.click('#levels-back');
-  await page.click('#title-home');
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   await page.click('#home [data-act=settings]');
   await page.locator('#settings:not([hidden])').waitFor();
@@ -56,9 +55,8 @@ try {
   await page.reload();
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   await page.screenshot({ path: resolve(artifacts, 'account-title.png') });
-  await page.click('#home [data-act=start]');
-  await page.click('#levels-back');
-  await page.click('#title-account');
+  await page.click('#home [data-act=settings]');
+  await page.click('.set-account-btn');
   await page.locator('#account:not([hidden])').waitFor();
   assert.match(await page.locator('#account [data-part=name]').textContent(), /^ゲスト\d{4}$/);
   assert.match(await page.locator('#account [data-part=kind]').textContent(), /ゲスト/);
@@ -71,9 +69,8 @@ try {
   await page.locator('#account [data-part=msg]', { hasText: '名前を変えました' }).waitFor();
   await page.reload();
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
-  await page.click('#home [data-act=start]');
-  await page.click('#levels-back');
-  await page.click('#title-account');
+  await page.click('#home [data-act=settings]');
+  await page.click('.set-account-btn');
   assert.equal(await page.locator('#account [data-part=name]').textContent(), 'テストさん');
   // 端末に保存したデッキが、クラウドに上がっている
   await page.evaluate(() => localStorage.setItem('cf-mydecks-v2', JSON.stringify({ active: 0, slots: [{ name: '画面テスト', list: { infantry: 10, spearman: 5 } }, null, null, null] })));
@@ -93,7 +90,7 @@ try {
   await page.locator('#account:not([hidden])').waitFor();
   assert.ok(await page.locator('#settings').isHidden());
   await page.click('#account [data-act=close]');
-  const openAccount = async (pg) => { await pg.click('#home [data-act=start]'); await pg.click('#levels-back'); await pg.click('#title-account'); await pg.locator('#account:not([hidden])').waitFor(); };
+  const openAccount = async (pg) => { await pg.click('#home [data-act=settings]'); await pg.click('.set-account-btn'); await pg.locator('#account:not([hidden])').waitFor(); };
   await openAccount(page);
   assert.equal(await page.locator('#account .account-provider[data-provider=apple]').count(), 0); // Apple はなくした
   await page.fill('#account [data-part=emailInput]', 'ui-test@example.com');
@@ -125,9 +122,8 @@ try {
   await page.reload();
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   // 削除は2回押す
-  await page.click('#home [data-act=start]');
-  await page.click('#levels-back');
-  await page.click('#title-account');
+  await page.click('#home [data-act=settings]');
+  await page.click('.set-account-btn');
   await page.click('#account [data-act=delete]');
   assert.match(await page.locator('#account [data-act=delete]').textContent(), /もう一度/);
   await page.screenshot({ path: resolve(artifacts, 'account-delete-confirm.png') });

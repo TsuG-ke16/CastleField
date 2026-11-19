@@ -47,7 +47,7 @@ export class CardGuide {
       if (e.shiftKey && document.activeElement === items[0]) { e.preventDefault(); items.at(-1)?.focus(); }
       else if (!e.shiftKey && document.activeElement === items.at(-1)) { e.preventDefault(); items[0]?.focus(); }
     };
-    for (const id of ['title-catalog', 'menu-catalog']) document.getElementById(id).onclick = () => {
+    for (const id of ['menu-catalog']) document.getElementById(id).onclick = () => {
       document.getElementById('menu').hidden = true; this.open('cards');
     };
   }

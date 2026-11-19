@@ -102,10 +102,9 @@ try {
   assert.equal(await page.locator('.match-seats li').count(),2);assert.ok(await page.locator('#deck-pile').isVisible());
   await page.screenshot({path:new URL(`./artifacts/layout-menu-${width}.png`,import.meta.url).pathname});
   await page.locator('#menu-title-btn').click();await toTitle(page); // メニューの「タイトルへ」はホーム（入口）に戻る
-  assert.ok(await page.locator('#title-solo').isVisible());assert.ok(await page.locator('#title-online').isVisible());
-  assert.equal(await page.locator('#record-clear').isVisible(),false,'destructive record reset is folded');
+  assert.ok(await page.locator('#home [data-act="start"]').isVisible());assert.equal(await page.locator('#title').isVisible(),false,'タイトルのメニューはない（入口はホームだけ）');
   await page.screenshot({path:new URL(`./artifacts/layout-title-${width}.png`,import.meta.url).pathname});
-  await page.locator('#title-solo').click();assert.equal(await page.locator('#local-recommended').count(),0,'one start choice per action');
+  await page.locator('#home .home-mode[data-mode="solo"]').click();await page.locator('#home [data-act="start"]').click();assert.equal(await page.locator('#local-recommended').count(),0,'one start choice per action');
   await page.close();
  }
  assert.deepEqual(errors,[]);console.log('PASS: 4 viewports, primary action row, touch targets, board space, 12-card hand, folded references, match information, title hierarchy');

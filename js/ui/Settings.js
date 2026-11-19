@@ -40,6 +40,10 @@ export class Settings {
       <section class="set-group"><h3>なまえ</h3>
         <label class="set-row"><span class="set-name">あなたの名前</span><input name="name" maxlength="16" autocomplete="nickname" placeholder="なまえ"></label>
       </section>
+      <section class="set-group"><h3>戦績</h3>
+        <p class="set-note set-record" aria-live="polite"></p>
+        <button type="button" class="small-btn set-record-clear">戦績をリセット</button>
+      </section>
       </div>
       <select name="speed" hidden><option value="normal"></option><option value="fast"></option><option value="skip"></option></select>
       <input name="reduced" type="checkbox" hidden>
@@ -61,6 +65,7 @@ export class Settings {
       catch {this.box.querySelector('.settings-status').textContent='この端末では保存できません。この画面では設定が有効です。';}
     });
     this.box.querySelector('.settings-close').onclick=()=>this.close();
+    this.box.querySelector('.set-record-clear').onclick=()=>{ this.onClearRecord?.(); this.setRecord(this.recordText); };
     this.box.querySelector('.set-account-btn').onclick=()=>{ const open=this.onAccount; this.close(); open?.(); };
     this.box.addEventListener('click',e=>{if(e.target===this.box)this.close();});
     this.box.addEventListener('keydown',e=>{
@@ -87,6 +92,12 @@ export class Settings {
    * アカウントの欄（サーバーのアカウント機能があるときだけ出す）。info は { label, note, onOpen } か null
    * ゲストには「アカウントを作成」、作成済みなら「アカウント」を出し、押すとアカウントの画面を開く
    */
+  /** 戦績（タイトルにあった「戦績を消す」を、設定に移した）。text は「3勝 2敗 · 1連勝」など */
+  setRecord(text, onClear) {
+    this.recordText = text; if (onClear) this.onClearRecord = onClear;
+    this.box.querySelector('.set-record').textContent = text ?? '';
+  }
+
   setAccount(info) {
     const sec=this.box.querySelector('.set-account');
     sec.hidden=!info;
