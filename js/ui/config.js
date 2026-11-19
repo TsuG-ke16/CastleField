@@ -8,6 +8,16 @@ export const UI_CONFIG = {
     {root:'apprenticeArcher',name:'弓兵',note:'動かずに近い相手の兵士や魔物を撃つ。射撃の反撃は受けない。'},
     {root:'apprenticeMage',name:'魔法使い',note:'動かずに撃つ。兵士も魔物もいなければ狙った城を撃つ。'},
   ],
+  card3D: {
+    depth: .055,          // カード幅に対する表裏の間隔
+    recess: .05, nameDepth: .012, medalDepth: .02, raisedDepth: .034,
+    wallLayers: 6, liteWallLayers: 3, reducedWallLayers: 2,
+    reliefPixelRatio: 1.5,
+    fallbackColor: '#9aa3ad',
+    lightTravel: 36, faceShade: .28, recessShadow: .045, edgeShade: .22,
+    shadow: { minScale: .25, heightRange: .55, shift: 14, opacity: .9, softOpacity: .26, floorSlope: .75, baseAlpha: .62 },
+    drawBudget: 12, frameGap: 40, slowLimit: 6,
+  },
   maxAnimation: 2000,
   cpuThink: 450,
   cpuLevels: {
