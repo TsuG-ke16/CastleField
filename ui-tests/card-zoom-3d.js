@@ -200,6 +200,61 @@ await scenario('E 読み込み中に閉じて、epic を開く', async () => {
   }
 });
 
+// F. 押してなぞると、どの向きにも360度回る。裏返すと裏の絵が出る。「正面に戻す」・ダブルタップで正面へ
+async function dragOnStage(page, dx, dy) {
+  const stage = await page.locator('.zoom-stage').boundingBox();
+  const cx = stage.x + stage.width / 2, cy = stage.y + stage.height / 2;
+  await page.mouse.move(cx, cy);
+  await page.mouse.down();
+  for (let i = 1; i <= 10; i++) await page.mouse.move(cx + dx * i / 10, cy + dy * i / 10);
+  await page.waitForTimeout(150); // 止まってから離す（勢いをつけない）
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+}
+const zoomState = (page) => page.evaluate(() => {
+  const card = document.querySelector('.zoom-card');
+  return { flipped: card.classList.contains('zoom-flipped'), transform: card.style.transform, reset: !document.querySelector('.zoom-reset').hidden, open: document.querySelector('dialog.card-zoom').open,
+    backVisible: getComputedStyle(card.querySelector('.zoom-back')).visibility, frameVisible: getComputedStyle(card.querySelector('.mini-card-frame') ?? card).visibility };
+});
+for (const [label, fx, reducedMotion] of [['full', 'full', 'no-preference'], ['lite', 'lite', 'no-preference'], ['reduced', 'full', 'reduce']]) {
+  await scenario(`F legendary ${label}: なぞって360度回し、裏を見て、正面に戻す`, async () => {
+    const { context, page } = await newPage({ reducedMotion, label: `F-${label}` });
+    try {
+      await openDeck(page, fx);
+      await selectRarity(page, 'legendary');
+      await longPress(page);
+      await page.locator('.zoom-card .zoom-back').waitFor({ state: 'attached' });
+      let s = await zoomState(page);
+      assert.equal(s.flipped, false); assert.equal(s.reset, false);
+      await dragOnStage(page, 60, 0); // 少し右へ：表のまま右を向く
+      s = await zoomState(page);
+      assert.match(s.transform, /rotate3d\(0, 1, 0, [0-9.]+deg\)/, `右になぞると縦の軸で回る: ${s.transform}`);
+      assert.equal(s.flipped, false); assert.equal(s.reset, true);
+      assert.equal(s.open, true, 'なぞって外で離しても閉じない');
+      await dragOnStage(page, 160, 0); // さらに右へ：裏返る
+      s = await zoomState(page);
+      assert.equal(s.flipped, true, `裏返る: ${s.transform}`);
+      assert.equal(s.backVisible, 'visible'); assert.equal(s.frameVisible, 'hidden');
+      await page.locator('.zoom-stage').screenshot({ path: artifactPath(`card360-back-${label}.png`) });
+      await dragOnStage(page, 0, 140); // 縦にも回る
+      s = await zoomState(page);
+      assert.ok(!/rotate3d\(0, 1, 0,/.test(s.transform), `縦になぞると別の軸でも回る: ${s.transform}`);
+      await page.locator('.zoom-reset').click();
+      await page.waitForFunction(() => !/rotate3d/.test(document.querySelector('.zoom-card').style.transform), null, { timeout: 4000 });
+      s = await zoomState(page);
+      assert.equal(s.flipped, false); assert.equal(s.reset, false);
+      // ダブルタップでも正面へ
+      await dragOnStage(page, -200, 0);
+      assert.equal((await zoomState(page)).flipped, true);
+      await page.locator('.zoom-stage').dblclick();
+      await page.waitForFunction(() => !document.querySelector('.zoom-card').classList.contains('zoom-flipped') && !/rotate3d/.test(document.querySelector('.zoom-card').style.transform), null, { timeout: 4000 });
+      await closeZoom(page);
+    } finally {
+      await context.close();
+    }
+  });
+}
+
 await browser.close();
 
 console.log('\n--- summary ---');
