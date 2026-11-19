@@ -1074,7 +1074,7 @@ export class Game {
   // ================= サイコロ =================
 
   /** サイコロの種類 kind を今使える対象（per は目に掛ける数。城壁が上限かどうかを見るのに使う） */
-  diceTargets(player, kind, per) {
+  diceTargets(player, kind, per, randomCost = null) {
     const self = [{ playerId: player.id }];
     switch (kind) {
       case 'attack': {
@@ -1096,7 +1096,8 @@ export class Game {
         return { targets: player.soldiers.map((x) => ({ soldierId: x.soldierId })), reason: '道の上に自分の兵士がいません' };
       case 'random': {
         const usable = this.randomDiceKinds(player);
-        return { targets: usable.length > 0 ? self : [], reason: '今使えるサイコロがありません' };
+        if (usable.length === 0) return { targets: [], reason: '今使えるサイコロがありません' };
+        return { targets: this.payableCosts(player, randomCost).length > 0 ? self : [], reason: '払えるコストがありません' };
       }
       default:
         return { targets: [], reason: 'このカードは出せません' };
@@ -1114,6 +1115,19 @@ export class Game {
     return out;
   }
 
+  /**
+   * ランダムサイコロのコスト（randomCost）のうち、今払えるもの。{ kind: "hp" | "coins" | "mp", amount } の配列。
+   * 城HPは払っても城が落ちないとき（HP が amount より多い）だけ。コストがなければ [{ kind: null }]（タダ）
+   */
+  payableCosts(player, randomCost) {
+    if (!randomCost) return [{ kind: null, amount: 0 }];
+    const out = [];
+    if (randomCost.hp && player.castle.hp > randomCost.hp) out.push({ kind: 'hp', amount: randomCost.hp });
+    if (randomCost.coins && player.coins >= randomCost.coins) out.push({ kind: 'coins', amount: randomCost.coins });
+    if (randomCost.mp && this.rules.maxMp > 0 && player.mp >= randomCost.mp) out.push({ kind: 'mp', amount: randomCost.mp });
+    return out;
+  }
+
   /** 1〜6 の目 */
   rollDie() {
     return 1 + Math.floor(this.rng() * 6);
@@ -1128,7 +1142,21 @@ export class Game {
     let per = card.def.per;
     let value;
     let rolls;
+    let cost = null;
     if (kind === 'random') {
+      // 先にコストを払う（払えるものから1つランダム）。城HPは城壁を通さない
+      const options = this.payableCosts(player, card.def.randomCost);
+      cost = options[options.length === 1 ? 0 : Math.floor(this.rng() * options.length)];
+      if (cost.kind === 'hp') {
+        player.castle.takeDamage(cost.amount);
+        this.emit('castleDamaged', { playerId: player.id, amount: cost.amount, blocked: 0, hp: player.castle.hp, source: { kind: 'sacrifice', type: card.type } });
+      } else if (cost.kind === 'coins') {
+        this.changeCoins(player, -cost.amount, 'cost');
+      } else if (cost.kind === 'mp') {
+        this.changeMp(player, -cost.amount, 'cast');
+      } else {
+        cost = null;
+      }
       const usable = this.randomDiceKinds(player);
       const first = this.rollDie();
       ({ kind, per } = usable[(first - 1) % usable.length]);
@@ -1141,7 +1169,7 @@ export class Game {
       rolls = [value];
     }
     const amount = Math.ceil(value * per);
-    this.emit('diceRolled', { playerId: player.id, type: card.type, dice: kind, value, amount, rolls });
+    this.emit('diceRolled', { playerId: player.id, type: card.type, dice: kind, value, amount, rolls, ...(cost ? { cost } : {}) });
 
     switch (kind) {
       case 'attack': {
@@ -1792,7 +1820,7 @@ export class Game {
         return { targets: playerTargets(foes), reason: '相手がいません' };
       }
       case 'dice':
-        return this.diceTargets(player, def.dice, def.per);
+        return this.diceTargets(player, def.dice, def.per, def.randomCost);
       case 'healCastleOrMp':
         // スライム：城HPと MP のどちらかがまだ増えるなら出せる（どちらになるかはランダム）
         return {

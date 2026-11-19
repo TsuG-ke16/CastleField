@@ -111,5 +111,5 @@
   "coinDice": {"name": "コインサイコロ", "kind": "spell", "effect": "dice", "dice": "coin", "per": 2, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×2（2〜12）枚のコインをもらう。コインのカードと同じく1ターンに1枚まで"},
   "shieldDice": {"name": "シールドサイコロ", "kind": "spell", "effect": "dice", "dice": "shield", "per": 3, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×3（3〜18）の城壁を置く。メインを使わず何枚でも出せる"},
   "buffDice": {"name": "バフサイコロ", "kind": "spell", "effect": "dice", "dice": "buff", "per": 1, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×1（1〜6）だけ、選んだ自分の兵士1体の攻撃力を上げる。メインを使わず何枚でも出せる"},
-  "randomDice": {"name": "ランダムサイコロ", "kind": "spell", "effect": "dice", "dice": "random", "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを2回振る。1回目で、ほかのサイコロ（攻撃・ヒール・マナ・コイン・シールド・バフ）のどれになるかを決め、2回目の目は必ず4以上になる（対象はランダム。今使えないサイコロにはならない）"}
+  "randomDice": {"name": "ランダムサイコロ", "kind": "spell", "effect": "dice", "dice": "random", "randomCost": {"hp": 4, "coins": 3, "mp": 3}, "count": 0, "rarity": "rare", "fuseTo": null, "description": "振る前に、城HP4・コイン3・MP3のうち払えるものを1つランダムに払う（城HPは払っても城が落ちないときだけ。どれも払えなければ出せない）。サイコロを2回振る。1回目で、ほかのサイコロ（攻撃・ヒール・マナ・コイン・シールド・バフ）のどれになるかを決め、2回目の目は必ず4以上になる（対象はランダム。今使えないサイコロにはならない）"}
 }

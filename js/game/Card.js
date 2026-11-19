@@ -172,6 +172,14 @@ export class Card {
         if (!DICE_KINDS.includes(def.dice)) throw new Error(`${where}: dice は ${DICE_KINDS.join(' / ')} のどれかにしてください`);
         if (def.dice === 'random') {
           if (def.per !== undefined) throw new Error(`${where}: ランダムサイコロ（dice: "random"）に per は書けません`);
+          // randomCost：振る前に、このうち払えるものを1つランダムに払う（{ hp?, coins?, mp? }。省略するとコストなし）
+          if (def.randomCost !== undefined) {
+            const keys = Object.keys(def.randomCost ?? {});
+            if (!def.randomCost || typeof def.randomCost !== 'object' || keys.length === 0
+              || !keys.every((k) => ['hp', 'coins', 'mp'].includes(k) && Number.isInteger(def.randomCost[k]) && def.randomCost[k] > 0)) {
+              throw new Error(`${where}: randomCost は { hp, coins, mp } のうち1つ以上を、1以上の整数で書いてください`);
+            }
+          }
         } else if (!(typeof def.per === 'number' && def.per > 0)) {
           throw new Error(`${where}: per（出た目に掛ける数）は 0 より大きい数にしてください`);
         }

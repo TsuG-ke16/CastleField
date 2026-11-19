@@ -316,7 +316,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `coinsChanged` | `{ playerId, delta, coins, reason }` … `reason` は `"reward"` / `"upgrade"` / `"turn"` / `"card"` / `"weather"` / `"stolen"`（ミミックに奪われた）/ `"steal"`（奪った） |
 | `upgradeBought` | `{ playerId, upgradeId, cost }` … このあと効果のイベント（`castleHealed` / `cardDrawn` / `soldierBuffed`） |
 | `soldierBuffed` | `{ playerId, soldierId, attack }` … とぎ石・訓練・バフサイコロで攻撃力が上がった |
-| `diceRolled` | `{ playerId, type, dice, value, amount, rolls }` … サイコロのカードを振った（「サイコロのカード」の節） |
+| `diceRolled` | `{ playerId, type, dice, value, amount, rolls, cost? }` … サイコロのカードを振った（「サイコロのカード」の節） |
 | `playerEliminated` | `{ playerId, by }` … 城が落ちて抜けた（`lastStanding`）。`by` は落とした人 |
 | `defenseRequested` | `{ defenderId, attackerId, kind, amount, soldierIds? }` … 攻撃が当たる前に、受ける人に防御を聞く。`kind` は `"castle"`（城に当たる）か `"soldiers"`（兵士に当たる。`soldierIds` が当たる兵士）。このあと `defend()` / `passDefense()` が来るまで止まる |
 | `defenseEnded` | `{ defenderId }` … 防御が終わった。このあと攻撃が当たる（`castleDamaged` / `soldierDamaged` …） |
@@ -1261,9 +1261,10 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | コインサイコロ `coinDice` | `coin` | 目×2（2〜12）コイン | 何枚でも（ただしコインのカードと合わせて1ターン `coinCardsPerTurn` 枚まで） | なし |
 | シールドサイコロ `shieldDice` | `shield` | 目×3（3〜18）の城壁（城壁のカードと同じ決まり。上限なら出せない） | 何枚でも | なし |
 | バフサイコロ `buffDice` | `buff` | 選んだ自分の兵士1体の攻撃力 +目×1（1〜6。ずっと） | 何枚でも | なし |
-| ランダムサイコロ `randomDice` | `random` | 2回振る：1回目の目で、上の6つのうち今使えるサイコロのどれかを選ぶ（使えるものが6つなら 1=攻撃・2=ヒール・3=マナ・4=コイン・5=シールド・6=バフ）。2回目の目は必ず4〜6。対象はランダム | メイン | なし |
+| ランダムサイコロ `randomDice` | `random` | **振る前にコストを払う**：城HP4・コイン3・MP3 のうち払えるものを1つランダムに払う（`randomCost`。城HPは払っても城が落ちないとき＝HP5以上のときだけ。どれも払えなければ出せない：「払えるコストがありません」）。そのあと2回振る：1回目の目で、上の6つのうち今使えるサイコロのどれかを選ぶ（使えるものが6つなら 1=攻撃・2=ヒール・3=マナ・4=コイン・5=シールド・6=バフ）。2回目の目は必ず4〜6。対象はランダム | メイン | なし（コストは左） |
 
-- イベント `diceRolled`：`{ playerId, type, dice, value, amount, rolls }`（`dice` は実際に起きた種類、`value` は効果に使った目、`amount` は効果の量、`rolls` は振った目の並び。ランダムサイコロは2つ）。カードを出した `cardPlayed` のあと、効果のイベント（`spellCast` → `castleDamaged`、`castleHealed`、`mpChanged`、`coinsChanged`、`castleArmored`、`soldierBuffed`）の前に出る。画面はこれでサイコロを振る演出を出す（UI担当）
+- ランダムサイコロのコスト（「何も払わないと強い」ので人間の指示で足した）：城HPは城壁を通さず `castleDamaged`（`source: { kind: "sacrifice", type }`）、コインは `coinsChanged`（`reason: "cost"`）、MP は `mpChanged`（`reason: "cast"`）。`diceRolled` に `cost: { kind: "hp" | "coins" | "mp", amount }` が付く
+- イベント `diceRolled`：`{ playerId, type, dice, value, amount, rolls, cost? }`（`dice` は実際に起きた種類、`value` は効果に使った目、`amount` は効果の量、`rolls` は振った目の並び。ランダムサイコロは2つ）。カードを出した `cardPlayed` のあと、効果のイベント（`spellCast` → `castleDamaged`、`castleHealed`、`mpChanged`、`coinsChanged`、`castleArmored`、`soldierBuffed`）の前に出る。画面はこれでサイコロを振る演出を出す（UI担当）
 - `Card.slot`：マナ・コイン・シールド・バフのサイコロは `support`（`SUPPORT_DICE`）、ほかはメイン
 - 確かめたこと：`node --test` 全部通る（`tests/dice.test.js`）
 

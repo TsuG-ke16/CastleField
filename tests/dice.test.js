@@ -97,6 +97,8 @@ test('ランダムサイコロ：1回目で種類（1=攻撃…）、2回目は4
   const g = make();
   g.debugSetHand('p1', ['randomDice']);
   g.start();
+  g.players.p1.coins = 0; // コストは城HPしか払えない（乱数を使わない）
+  g.players.p1.mp = 0;
   const hp2 = g.players.p2.castle.hp;
   const log = recordEvents(g, ['diceRolled']);
   // 1回目：1 → 攻撃。2回目：4〜6 のうち 6（rng 0.99）
@@ -108,14 +110,17 @@ test('ランダムサイコロ：1回目で種類（1=攻撃…）、2回目は4
   assert.equal(log[0].value, 6);
   assert.deepEqual(log[0].rolls, [1, 6]);
   assert.equal(g.players.p2.castle.hp, hp2 - 21);
+  assert.deepEqual(log[0].cost, { kind: 'hp', amount: 4 });
 });
 
 test('ランダムサイコロ：今使えない種類にはならない（城が満タン・兵士なし・MP 満タンなど）。目はいつも4以上', () => {
   for (let seed = 1; seed <= 40; seed++) {
-    const { cards, rules } = buildData({ rules: { drawUntilHand: 0, defenseReaction: false, initialMp: 20, maxMp: 20, monsterSpawnChance: 0, weatherChangeChance: 0 } });
+    // コストはコインだけにする（城HP・MP を払うと、ヒール・マナが使えるようになるので）。MP なしのルール
+    const { cards, rules } = buildData({ rules: { drawUntilHand: 0, defenseReaction: false, initialMp: 0, maxMp: 0, monsterSpawnChance: 0, weatherChangeChance: 0 }, cards: { randomDice: { randomCost: { coins: 3 } } } });
     const g = new Game({ cards, rules, rng: seededRng(seed), rarities: loadJson('rarities.json') });
     g.debugSetHand('p1', ['randomDice']);
     g.start();
+    g.players.p1.coins = 10;
     const log = recordEvents(g, ['diceRolled']);
     assert.equal(g.playCard(idOf(g, 'p1', 'randomDice')).ok, true);
     assert.ok(!['heal', 'mana', 'buff'].includes(log[0].dice), `seed ${seed}: ${log[0].dice}`);
@@ -127,4 +132,38 @@ test('ランダムサイコロは MP を使わない（攻撃になっても）'
   const g = make();
   assert.equal(g.getState('p1').mpCosts.randomDice, undefined);
   assert.equal(g.getState('p1').mpCosts.attackDice, 3);
+});
+
+test('ランダムサイコロのコスト：城HP4・コイン3・MP3 のうち払えるものを1つ払う。どれも払えなければ出せない', () => {
+  const g = make();
+  g.debugSetHand('p1', ['randomDice', 'randomDice']);
+  g.start();
+  // 城HP4以下・コイン2・MP2 → どれも払えない
+  g.players.p1.castle.hp = 4;
+  g.players.p1.coins = 2;
+  g.players.p1.mp = 2;
+  assert.equal(g.canPlayCard(idOf(g, 'p1', 'randomDice')).reason, '払えるコストがありません');
+  // コインだけ払える → コインを3払う
+  g.players.p1.coins = 5;
+  const log = recordEvents(g, ['coinsChanged', 'diceRolled']);
+  assert.equal(g.playCard(idOf(g, 'p1', 'randomDice')).ok, true);
+  assert.deepEqual(log[0], { event: 'coinsChanged', playerId: 'p1', delta: -3, coins: 2, reason: 'cost' });
+  assert.equal(log[1].event, 'diceRolled');
+  assert.deepEqual(log[1].cost, { kind: 'coins', amount: 3 });
+  assert.equal(g.players.p1.castle.hp, 4); // 城HPは払っていない
+});
+
+test('ランダムサイコロのコスト：払うものはランダム（城HP・コイン・MP がどれも出る）', () => {
+  const seen = new Set();
+  for (let seed = 1; seed <= 30; seed++) {
+    const { cards, rules } = buildData({ rules: { drawUntilHand: 0, defenseReaction: false, initialMp: 10, maxMp: 20, monsterSpawnChance: 0, weatherChangeChance: 0 } });
+    const g = new Game({ cards, rules, rng: seededRng(seed), rarities: loadJson('rarities.json') });
+    g.debugSetHand('p1', ['randomDice']);
+    g.start();
+    g.players.p1.coins = 10;
+    const log = recordEvents(g, ['diceRolled']);
+    assert.equal(g.playCard(idOf(g, 'p1', 'randomDice')).ok, true);
+    seen.add(log[0].cost.kind);
+  }
+  assert.deepEqual([...seen].sort(), ['coins', 'hp', 'mp']);
 });
