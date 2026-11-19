@@ -93,7 +93,10 @@ export class SocialView {
     b.replaceChildren();
     const row = (text, buttons) => {
       const p = document.createElement('div'); p.className = 'social-banner-row';
-      const t = document.createElement('span'); t.textContent = text; p.append(t);
+      const ornament = new Image(32, 32);
+      ornament.alt = '';
+      ornament.src = 'assets/ui/home/friend.png';
+      const t = document.createElement('span'); t.textContent = text; p.append(ornament, t);
       for (const [label, attrs] of buttons) { const x = document.createElement('button'); x.type = 'button'; x.className = 'small-btn'; x.textContent = label; Object.assign(x.dataset, attrs); p.append(x); }
       b.append(p);
     };
@@ -202,13 +205,20 @@ export class SocialView {
     const ul = this.el('ul', 'social-party-members');
     for (const m of p.members) {
       const li = this.el('li');
-      li.append(this.el('span', null, `${m.leader ? '👑 ' : ''}${m.name}`));
+      const name = this.el('strong', null, m.name);
+      li.append(name);
+      if (m.leader) li.append(this.el('small', 'party-leader', 'リーダー'));
       if (p.isLeader && m.userId !== account.user.id) li.append(this.btn('外す', { act: 'party-kick', id: m.userId }));
       ul.append(li);
     }
+    sec.classList.add('active');
     sec.append(ul);
     const acts = this.el('div', 'social-actions');
-    if (p.isLeader) acts.append(this.btn(p.members.length < 2 ? '2人以上で始められます' : 'パーティーで対戦する', { act: 'party-start' }, 'plank-btn'));
+    if (p.isLeader) {
+      const start = this.btn(p.members.length < 2 ? '2人以上で始められます' : 'パーティーで対戦する', { act: 'party-start' }, 'plank-btn');
+      start.disabled = p.members.length < 2;
+      acts.append(start);
+    }
     else if (p.room) acts.append(this.btn('部屋に参加する', { act: 'party-join' }, 'plank-btn'));
     else acts.append(this.el('small', null, 'リーダーが始めるのを待っています'));
     acts.append(this.btn('パーティーを抜ける', { act: 'party-leave' }));

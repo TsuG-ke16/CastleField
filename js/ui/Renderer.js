@@ -651,6 +651,7 @@ export class Renderer {
     const el = document.createElement('div');
     el.className = `soldier ${this.sideOf(playerId)} no-anim`;
     el.dataset.id = st.soldierId;
+    el.dataset.unitType = st.type;
     if (def.monster) el.dataset.beast = def.monster;
     el.tabIndex=0;el.setAttribute('role','button');
     el.dataset.role = st.role ?? def.role ?? 'melee';

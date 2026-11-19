@@ -36,7 +36,7 @@ export class MissionView {
     this.part('body').replaceChildren(el('p', 'collection-empty', '読み込み中…'));
     await this.load();
   }
-  close() { this.box.hidden = true; }
+  close() { this.box.hidden = true; clearTimeout(this.receiptTimer); this.part('msg').classList.remove('mission-received'); }
   say(t, bad = false) { const m = this.part('msg'); m.textContent = t; m.classList.toggle('bad', bad); }
 
   async load() {
@@ -66,7 +66,7 @@ export class MissionView {
     for (const m of p.missions) {
       const li = el('li', `mission-row${m.completed ? ' done' : ''}`);
       li.append(el('strong', 'mission-name', m.name));
-      const bar = el('span', 'mission-bar'); const fill = el('i'); fill.style.width = `${Math.round((m.progress / m.target) * 100)}%`; bar.append(fill); bar.setAttribute('role', 'progressbar'); bar.setAttribute('aria-valuenow', String(m.progress)); bar.setAttribute('aria-valuemax', String(m.target));
+      const bar = el('span', 'mission-bar'); const fill = el('i'); fill.style.width = `${Math.round((m.progress / m.target) * 100)}%`; bar.append(fill); bar.setAttribute('role', 'progressbar'); bar.setAttribute('aria-label', m.name); bar.setAttribute('aria-valuenow', String(m.progress)); bar.setAttribute('aria-valuemax', String(m.target));
       const count = el('small', null, `${m.progress}/${m.target}`);
       const reward = el('span', 'mission-reward', `🪙 ${m.coins}`);
       const act = el('button', 'small-btn mission-claim', m.claimed ? '受け取り済み' : m.completed ? '受け取る' : '未達成');
@@ -101,7 +101,22 @@ export class MissionView {
     b.disabled = true;
     const path = b.dataset.act === 'claim' ? '/api/missions/claim' : '/api/season/claim';
     const body = b.dataset.act === 'claim' ? { missionId: b.dataset.id } : { season: Number(b.dataset.id) };
-    const r = await account.api('POST', path, body);
-    if (r.json?.ok) { this.toast(`コイン ${r.json.coins} を受け取りました`, 'info'); this.onChanged(); await this.load(); } else { this.say(r.json?.reason ?? 'サーバーにつながりません', true); b.disabled = false; }
+    const r = await account.api('POST', path, body).catch(() => ({}));
+    if (!r.json?.ok) {
+      this.say(r.json?.reason ?? 'サーバーにつながりません', true);
+      b.disabled = false;
+      return;
+    }
+    if (!this.box.hidden) {
+      const balance = Number.isFinite(r.json.balance) ? `（残高 ${r.json.balance}）` : '';
+      this.say(`+${r.json.coins} コインを受け取りました${balance}`);
+      const receipt = this.part('msg');
+      receipt.classList.remove('mission-received');
+      requestAnimationFrame(() => { if (!this.box.hidden) receipt.classList.add('mission-received'); });
+      clearTimeout(this.receiptTimer);
+      this.receiptTimer = setTimeout(() => receipt.classList.remove('mission-received'), 1600);
+      await this.load();
+    }
+    this.onChanged();
   }
 }

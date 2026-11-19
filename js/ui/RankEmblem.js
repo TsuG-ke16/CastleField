@@ -22,14 +22,23 @@ const CENTER = [
   (c) => `<g stroke="${c}" stroke-width="4" stroke-linecap="round">${Array.from({ length: 12 }, (_, i) => { const a = (Math.PI * 2 * i) / 12; return `<line x1="${(50 + 17 * Math.cos(a)).toFixed(1)}" y1="${(52 + 17 * Math.sin(a)).toFixed(1)}" x2="${(50 + 26 * Math.cos(a)).toFixed(1)}" y2="${(52 + 26 * Math.sin(a)).toFixed(1)}"/>`; }).join('')}</g><circle cx="50" cy="52" r="14" fill="${c}" stroke="#3b2a1a" stroke-width="3"/><circle cx="50" cy="52" r="6" fill="#fff" opacity=".7"/>`,
 ];
 
+const tierArt = ['iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ascendant', 'immortal', 'radiant'];
+const divisions = ['', 'I', 'II', 'III'];
+const escapeAttribute = (value) => String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
 /** @param {{ tierIndex: number, division: number|null, color: string, name: string, divisionLabel?: string }|null} rank 認定中は null（「？」の盾） */
 export function rankEmblem(rank, size = 64) {
   const color = rank && OK_COLOR.test(rank.color) ? rank.color : '#b9b19a';
   const idx = rank ? Math.max(0, Math.min(CENTER.length - 1, rank.tierIndex)) : -1;
-  const label = rank ? (rank.divisionLabel ?? rank.name) : 'ランク未確定';
+  const label = rank ? escapeAttribute(rank.divisionLabel ?? rank.name) : 'ランク未確定';
+  const file = tierArt[rank?.tierIndex];
+  if (file) {
+    const division = divisions[rank.division] ?? '';
+    return `<span class="rank-emblem rank-emblem-painted" style="--rank-emblem-size:${size}px" role="img" aria-label="${label}"><img src="assets/ranks/rank-${file}.png" width="${size}" height="${size}" alt="" decoding="async">${division ? `<b aria-hidden="true">${division}</b>` : ''}</span>`;
+  }
   const pips = rank?.division ? Array.from({ length: rank.division }, (_, i) => `<circle cx="${50 + (i - (rank.division - 1) / 2) * 12}" cy="95" r="4" fill="#fff8e0" stroke="#3b2a1a" stroke-width="1.5"/>`).join('') : '';
   const upper = rank && !rank.division ? `<path d="M26 14 L50 6 L74 14" fill="none" stroke="#fff8e0" stroke-width="3" stroke-linecap="round"/>` : '';
-  const body = rank ? CENTER[idx](color) : `<text x="50" y="68" text-anchor="middle" font-size="44" font-weight="bold" fill="#8a7e62" font-family="sans-serif">?</text>`;
+  const body = rank && CENTER[idx] ? CENTER[idx](color) : `<text x="50" y="68" text-anchor="middle" font-size="44" font-weight="bold" fill="#8a7e62" font-family="sans-serif">?</text>`;
   return `<svg class="rank-emblem" viewBox="0 0 100 120" width="${size}" height="${Math.round(size * 1.2)}" role="img" aria-label="${label}">
     <defs><linearGradient id="rg${idx}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffaf0"/><stop offset="1" stop-color="#e5d6ae"/></linearGradient></defs>
     <path d="M50 4 L90 16 V58 C90 86 68 106 50 116 C32 106 10 86 10 58 V16 Z" fill="${color}" stroke="#3b2a1a" stroke-width="4" stroke-linejoin="round"/>
