@@ -120,6 +120,13 @@ const OPTIONAL_RULES = {
   drawPerPlayed: false,
   // 1ターンに出せる兵士の枚数（攻撃の魔法は別に1枚。精霊・コイン・武器・防御は何枚でも）
   soldiersPerTurn: 1,
+  // 城壁：0 は従来どおり（重ならず、次の自分のターンの始めに消える）。1以上なら永続で、足し算、この値が上限
+  armorMax: 0,
+  // 毒（永続の毒の魔法）：毒が続くターン数（0 は永続）と、毒の量の上限（0 は上限なし）
+  poisonTurns: 0,
+  poisonMax: 0,
+  // コインを増やすカードを1ターンに出せる枚数（0 は無制限）
+  coinCardsPerTurn: 0,
   // 試合の最初に持っているコインと、自分のターンの始めにもらえるコイン
   initialCoins: 0,
   coinPerTurn: 0,
@@ -441,6 +448,11 @@ export class Game {
     if (rules.soldiersPerTurn !== undefined && !(Number.isInteger(rules.soldiersPerTurn) && rules.soldiersPerTurn >= 1)) {
       throw new Error('rules.json の soldiersPerTurn は1以上の整数にしてください（書かなければ 1）');
     }
+    for (const key of ['armorMax', 'poisonTurns', 'poisonMax', 'coinCardsPerTurn']) {
+      if (rules[key] !== undefined && !(Number.isInteger(rules[key]) && rules[key] >= 0)) {
+        throw new Error(`rules.json の ${key} は0以上の整数にしてください（書かなければ 0）`);
+      }
+    }
     if (rules.drawPerPlayed !== undefined && typeof rules.drawPerPlayed !== 'boolean') {
       throw new Error('rules.json の drawPerPlayed は true か false にしてください（書かなければ false）');
     }
@@ -709,6 +721,7 @@ export class Game {
     this.phase = 'main';
     player.playedThisTurn = false;
     player.soldiersPlayedThisTurn = 0;
+    player.coinCardsPlayedThisTurn = 0;
     const playedLastTurn = player.cardsPlayedThisTurn;
     player.cardsPlayedThisTurn = 0;
     this.emit('turnStarted', { playerId, turn: this.turn });
@@ -732,8 +745,8 @@ export class Game {
       this.spawnMonsters();
     }
 
-    // 城壁は、自分の次のターンの始めに消える
-    if (player.armor > 0) {
+    // 城壁は、自分の次のターンの始めに消える（armorMax があるときは永続）
+    if (player.armor > 0 && !this.rules.armorMax) {
       player.armor = 0;
       this.emit('armorExpired', { playerId });
     }
@@ -887,6 +900,16 @@ export class Game {
     }
   }
 
+  /** 毒の量を上限（poisonMax。0 は上限なし）でおさえる */
+  capPoison(amount) {
+    return this.rules.poisonMax ? Math.min(this.rules.poisonMax, amount) : amount;
+  }
+
+  /** その城壁を今置いても、何も増えないか */
+  armorFull(player, def) {
+    return this.rules.armorMax ? player.armor >= this.rules.armorMax : player.armor >= def.amount;
+  }
+
   /** 城にダメージ。城壁が先に受ける。castleDamaged を出す */
   damageCastle(owner, amount, source) {
     amount = this.reduceDamage(owner, amount);
@@ -905,6 +928,15 @@ export class Game {
     if (!poison || this.side(player.id) !== player.id) return false;
     player.castle.takeDamage(poison);
     this.emit('castleDamaged', { playerId: player.id, amount: poison, blocked: 0, hp: player.castle.hp, source: { kind: 'poison' } });
+    // 毒に期限があるときは、ダメージのたびに1減って、0で治る
+    if (player.castle.poisonTurns != null) {
+      player.castle.poisonTurns -= 1;
+      if (player.castle.poisonTurns <= 0 && player.castle.hp > 0) {
+        player.castle.poison = null;
+        player.castle.poisonTurns = null;
+        this.emit('castleCured', { playerId: player.id });
+      }
+    }
     return this.checkGameOver();
   }
 
@@ -1668,8 +1700,8 @@ export class Game {
         return { targets: ownSoldiers(), reason: '道の上に自分の兵士がいません' };
       case 'armorCastle':
         return {
-          targets: player.armor >= def.amount ? [] : [{ playerId: player.id }],
-          reason: '同じか、より強い城壁がもう置いてあります',
+          targets: this.armorFull(player, def) ? [] : [{ playerId: player.id }],
+          reason: this.rules.armorMax ? `城壁がもう上限（${this.rules.armorMax}）まで積んであります` : '同じか、より強い城壁がもう置いてあります',
         };
       default:
         return { targets: [], reason: 'このカードは出せません' };
@@ -1703,6 +1735,9 @@ export class Game {
       return fail(`このターンに出せる兵士は${this.rules.soldiersPerTurn}枚までです`);
     }
     if (card.slot === 'main' && player.playedThisTurn) return fail('このターンはもうメインのカードを出しました');
+    if (card.def.effect === 'gainCoins' && this.rules.coinCardsPerTurn && player.coinCardsPlayedThisTurn >= this.rules.coinCardsPerTurn) {
+      return fail(`コインのカードは1ターンに${this.rules.coinCardsPerTurn}枚までです`);
+    }
     const cost = this.mpCostOf(card);
     if (cost > player.mp) return fail(`MPが足りません（${cost}必要・あと${cost - player.mp}）`);
     return { ok: true, player, card };
@@ -1767,6 +1802,7 @@ export class Game {
     const mpCost = this.mpCostOf(card);
     if (mpCost > 0) this.changeMp(player, -mpCost, 'cast');
     if (card.slot === 'main') player.playedThisTurn = true;
+    if (card.def.effect === 'gainCoins') player.coinCardsPlayedThisTurn += 1;
     if (card.slot === 'soldier') player.soldiersPlayedThisTurn += 1;
     player.cardsPlayedThisTurn += 1;
     // 使ったカードは（兵士も）すぐ捨て札へ。使い切りのカードは、二度と山札に戻らない置き場へ
@@ -1885,10 +1921,13 @@ export class Game {
         // 選んだ相手の兵士全員と城を、永続の毒にする（重ねがけは足し算：毒の量が増える）
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
         for (const soldier of enemy.visibleSoldiers) {
-          soldier.poison = { amount: amount + (soldier.poison?.amount ?? 0), turns: null };
-          this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status: 'poison', turns: null, amount: soldier.poison.amount });
+          const total = this.capPoison(amount + (soldier.poison?.amount ?? 0));
+          const turns = this.rules.poisonTurns || null; // 重ねがけで残りターンも延びる（0 は永続）
+          soldier.poison = { amount: total, turns };
+          this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status: 'poison', turns, amount: soldier.poison.amount });
         }
-        enemy.castle.poison = amount + (enemy.castle.poison ?? 0);
+        enemy.castle.poison = this.capPoison(amount + (enemy.castle.poison ?? 0));
+        enemy.castle.poisonTurns = this.rules.poisonTurns || null;
         this.emit('castlePoisoned', { playerId: enemy.id, amount: enemy.castle.poison });
         break;
       }
@@ -1903,6 +1942,7 @@ export class Game {
         }
         if (player.castle.poison) {
           player.castle.poison = null;
+          player.castle.poisonTurns = null;
           this.emit('castleCured', { playerId: player.id });
         }
         break;
@@ -2086,7 +2126,8 @@ export class Game {
       return;
     }
     if (def.effect === 'armorCastle') {
-      player.armor = def.amount; // 重ならない（今より多いときだけ出せる）
+      // armorMax があれば永続で足し算（上限まで）。なければ重ならない（今より多いときだけ出せる）
+      player.armor = this.rules.armorMax ? Math.min(this.rules.armorMax, player.armor + def.amount) : def.amount;
       this.emit('castleArmored', { playerId: player.id, armor: player.armor });
       return;
     }
@@ -2158,7 +2199,7 @@ export class Game {
           : { targets: [], reason: '身代わりは城に着いた兵士にしか使えません' };
       }
       if (def.effect !== 'armorCastle') return { targets: [], reason: '城が攻められています。城を守るカードを出してください' };
-      if (defender.armor >= def.amount) return { targets: [], reason: '同じか、より強い城壁がもう置いてあります' };
+      if (this.armorFull(defender, def)) return { targets: [], reason: this.rules.armorMax ? `城壁がもう上限（${this.rules.armorMax}）まで積んであります` : '同じか、より強い城壁がもう置いてあります' };
       return { targets: [{ playerId: defender.id }], reason: '' };
     }
     if (def.effect !== 'shieldSoldier') return { targets: [], reason: '兵士が攻められています。盾のカードを出してください' };
@@ -2270,6 +2311,7 @@ export class Game {
     const player = this.players[this.currentPlayer];
     player.playedThisTurn = false;
     player.soldiersPlayedThisTurn = 0;
+    player.coinCardsPlayedThisTurn = 0;
     this.tickSpirit(player);
     this.beginTurn(this.nextPlayerAfter(this.currentPlayer));
   }

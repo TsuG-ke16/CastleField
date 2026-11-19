@@ -105,7 +105,7 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
   // data/ が間違っていたら、起動したときに分かるようにする（試合が始まってから落ちないように）
   new Game({ ...data, rng: makeRng() });
   // 試合の結果の記録（アカウント機能があるときだけ）。サーバーが決めた勝敗だけを使う
-  const lobby = new Lobby(data, makeRng, { cpuDelayMs, onMatchEnd: account ? (m) => account.onMatchEnd(m) : null, cosmeticsOf: account ? (u) => account.cosmeticsOf(u) : null });
+  const lobby = new Lobby(data, makeRng, { cpuDelayMs, onMatchEnd: account ? (m) => account.onMatchEnd(m) : null, cosmeticsOf: account ? (u) => account.cosmeticsOf(u) : null, profileOf: account ? (u) => account.profileOf(u) : null });
   account?.attachLobby(lobby);
   metrics.gauge('rooms', () => lobby.rooms.size);
   metrics.gauge('ranked_queue', () => account?.matchmaker?.queue.size ?? 0);

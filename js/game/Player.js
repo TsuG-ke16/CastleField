@@ -16,6 +16,7 @@ export class Player {
     this.soldiers = [];
     this.playedThisTurn = false;
     this.soldiersPlayedThisTurn = 0;
+    this.coinCardsPlayedThisTurn = 0;
     /** 負けて抜けたか（3人以上のとき） */
     this.eliminated = false;
     /** このターンに出したカードの枚数（メイン・付加・防御すべて） */
@@ -77,6 +78,7 @@ export class Player {
       cardsPlayedThisTurn: this.cardsPlayedThisTurn,
       armor: this.armor,
       castlePoison: this.castle.poison,
+      castlePoisonTurns: this.castle.poisonTurns,
       spirit: this.spirit ? { type: this.spirit.type, spirit: this.spirit.spirit, amount: this.spirit.amount, turns: this.spirit.turns, targetId: this.spirit.targetId } : null,
       coins: this.coins,
       mp: this.mp,

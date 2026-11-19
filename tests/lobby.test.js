@@ -56,7 +56,7 @@ test('部屋主：最初に入った人。モードは部屋主だけが選べ�
   assert.equal(a.room.action(a.seat, 'setRules', [{ winCondition: 'nope' }]).ok, false);
   assert.equal(a.room.action(a.seat, 'setRules', [{ castleMaxHp: 1 }]).ok, false);
   assert.equal(a.room.action(a.seat, 'setRules', [{ winCondition: 'lastStanding', deckMode: 'own' }]).ok, true);
-  assert.deepEqual(b.lastRoom().settings, { winCondition: 'lastStanding', deckMode: 'own', teams: 'off' });
+  assert.deepEqual(b.lastRoom().settings, { winCondition: 'lastStanding', deckMode: 'own', teams: 'off', castleHp: loadData().rules.castleMaxHp });
   const ids = (list) => list.map((x) => x.id);
   assert.deepEqual(ids(b.lastRoom().choices.winConditions), ['firstDestroy', 'lastStanding']);
   assert.deepEqual(ids(b.lastRoom().choices.deckModes), ['shared', 'own', 'cost']);
@@ -232,4 +232,50 @@ test('チーム：各自で選ぶ。CPU は部屋主が選び、1チームしか
   assert.equal(a.room.action(a.seat, 'start', []).ok, true);
   assert.deepEqual(Object.keys(a.room.game.getState(null).teams), ['t1', 't3', 't4']);
   playOut(a.room);
+});
+
+test('城のHP：部屋主が選べて、試合の城HPに反映される（選べない値は断る）', () => {
+  const lobby = newLobby();
+  const a = enter(lobby, 'hp', 'A');
+  const b = enter(lobby, 'hp', 'B');
+  assert.deepEqual(a.lastRoom().choices.castleHpRange, { min: 10, max: 200 });
+  assert.equal(b.room.action(b.seat, 'setRules', [{ castleHp: 30 }]).ok, false); // 部屋主だけ
+  assert.equal(a.room.action(a.seat, 'setRules', [{ castleHp: 7 }]).ok, false);
+  assert.equal(a.room.action(a.seat, 'setRules', [{ castleHp: 30.5 }]).ok, false);
+  assert.equal(a.room.action(a.seat, 'setRules', [{ castleHp: 201 }]).ok, false);
+  assert.equal(a.room.action(a.seat, 'setRules', [{ castleHp: 30 }]).ok, true);
+  assert.equal(a.lastRoom().settings.castleHp, 30);
+  assert.equal(a.room.action(a.seat, 'start', []).ok, true);
+  const st = a.room.game.getState(null);
+  assert.equal(st.players.p1.castleMaxHp, 30);
+  assert.equal(st.players.p2.castleMaxHp, 30);
+});
+
+test('部屋主を譲る：部屋主だけが、部屋にいる人（CPU 以外）に譲れる。譲ると前の部屋主はルールを変えられない', () => {
+  const lobby = newLobby();
+  const a = enter(lobby, 'tr', 'A');
+  const b = enter(lobby, 'tr', 'B');
+  const cpu = a.room.action(a.seat, 'addCpu', ['easy']);
+  assert.equal(b.room.action(b.seat, 'transferHost', ['p1']).ok, false); // 部屋主だけ
+  assert.equal(a.room.action(a.seat, 'transferHost', ['p1']).ok, false); // 自分には譲れない
+  assert.equal(a.room.action(a.seat, 'transferHost', [cpu.playerId]).ok, false); // CPU には譲れない
+  assert.equal(a.room.action(a.seat, 'transferHost', ['p2']).ok, true);
+  assert.equal(b.lastRoom().hostId, 'p2');
+  assert.equal(a.room.action(a.seat, 'setRules', [{ castleHp: 30 }]).ok, false);
+  assert.equal(b.room.action(b.seat, 'setRules', [{ castleHp: 30 }]).ok, true);
+});
+
+test('チャット：アカウントがある人の発言には、アイコンとランク（profile）が付く。ない人には付かない', () => {
+  const profile = { icon: 'infantry', iconImage: 'assets/units/infantry-blue.png', rank: { tierIndex: 2, division: 1, color: '#c90', name: 'ゴールド', divisionLabel: 'ゴールド I' } };
+  const lobby = newLobby({ cpuDelayMs: 0, profileOf: (u) => (u === 'u1' ? profile : null) });
+  const r1 = lobby.join('pf', 'A', 'u1');
+  const r2 = lobby.join('pf', 'B');
+  const a = lobby.findSeat(r1.token); const b = lobby.findSeat(r2.token);
+  const seen = [];
+  b.room.connect(b.seat, (m) => seen.push(m));
+  assert.equal(a.room.action(a.seat, 'chat', [{ text: 'やあ' }]).ok, true);
+  const msg = seen.find((m) => m.type === 'chat');
+  assert.deepEqual(msg.profile, profile);
+  assert.equal(b.room.action(b.seat, 'chat', [{ text: 'どうも' }]).ok, true);
+  assert.equal(seen.filter((m) => m.type === 'chat').at(-1).profile, undefined);
 });

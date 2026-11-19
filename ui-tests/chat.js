@@ -45,8 +45,9 @@ async function local() {
   await page.keyboard.press('Escape');
   assert.equal(await open.getAttribute('aria-expanded'), 'false');
   assert.equal(await page.evaluate(() => document.activeElement.id), 'chat-open');
-  await page.locator('.chat-bubble.stamp img:not([hidden])').waitFor();
-  assert.equal(await open.getAttribute('data-unread'), '1');
+  // 自分の発言も吹き出しに出る。CPU の返事（未読1）を待つ
+  await page.locator('.chat-bubble.stamp img:not([hidden])').first().waitFor();
+  await page.waitForFunction(() => document.getElementById('chat-open').dataset.unread === '1');
   await snapshot(page, 'bubble-390x844');
   await open.click();
   assert.equal(await open.getAttribute('data-unread'), '');

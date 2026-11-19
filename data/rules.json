@@ -41,5 +41,9 @@
   "weatherChangeChance": 0.6,
   "deckCostMin": 90,
   "deckCostMax": 100,
-  "defaultCostDeck": "costBalance"
+  "defaultCostDeck": "costBalance",
+  "armorMax": 40,
+  "poisonTurns": 5,
+  "poisonMax": 10,
+  "coinCardsPerTurn": 1
 }

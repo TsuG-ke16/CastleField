@@ -52,7 +52,11 @@ const EFFECT_TEXT = {
   damageEnemySoldiers: (c) => `相手の兵士全員に${c.amount}ダメージ`,
   healOwnCastle: (c) => `自分の城HP+${c.amount}（上限まで）`,
   poisonEnemySoldiers: (c) => `相手の兵士全員に毒（${c.amount}ダメージ×${c.turns}回・盾が効かない）`,
-  poisonEnemy: (c) => `相手の兵士全員と城を、永続の毒にする（毎ターン${c.amount}ダメージ。重ねがけは足し算。盾・城壁は効かない。解毒薬で治る）`,
+  poisonEnemy: (c, rules) => {
+    const term = rules?.poisonTurns ? `${rules.poisonTurns}ターン続く毒` : '永続の毒';
+    const cap = rules?.poisonMax ? `（量は${rules.poisonMax}まで）` : '';
+    return `相手の兵士全員と城を、${term}にする（毎ターン${c.amount}ダメージ。重ねがけは足し算${cap}。盾・城壁は効かない。解毒薬で治る）`;
+  },
   curePoison: () => '自分の毒状態（兵士・城）をすべて治す。毒にかかっていないと出せない。何枚でも出せる',
   freezeEnemySoldiers: (c) => `相手の兵士全員を${c.turns}回休みにする`,
   shieldSoldier: (c) => `自分の兵士に盾${c.amount}（ダメージを先に受ける）`,
@@ -66,7 +70,9 @@ const EFFECT_TEXT = {
     }[c.spirit];
     return `${text}。1人1体まで（呼ぶと入れ替わる）`;
   },
-  armorCastle: (c) => `自分の城を${c.amount}守る（次の自分のターンまで）`,
+  armorCastle: (c, rules) => rules?.armorMax
+    ? `自分の城を${c.amount}守る（消えずに残る。重ねられて、合計${rules.armorMax}まで）`
+    : `自分の城を${c.amount}守る（次の自分のターンまで）`,
 };
 
 /**

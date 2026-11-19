@@ -574,7 +574,7 @@ export class Renderer {
     badge.innerHTML = on ? `${icon('skull')}<b></b>` : '';
     if (on) {
       badge.querySelector('b').textContent = `毒 ${amount}`;
-      badge.title = `城が毒にかかっています。自分のターンの始めに${amount}ダメージ（解毒薬で治る）`;
+      badge.title = `城が毒にかかっています。自分のターンの始めに${amount}ダメージ（解毒薬か、時間で治る）`;
     }
   }
 

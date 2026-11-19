@@ -14,8 +14,8 @@ import { checkCostDeck } from '../js/game/Setup.js';
 /** 試合中の操作（Game のメソッドに渡す） */
 const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense'];
 /** 部屋の操作（いつでも送れる。だめなときは理由を返す） */
-const RANKED_BLOCKED = ['start', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'rematch'];
-const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
+const RANKED_BLOCKED = ['start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'rematch'];
+const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
 const ACTIONS = [...GAME_ACTIONS, ...ROOM_ACTIONS];
 /** 攻撃を受けた人（自分の番でなくても）が送れる操作 */
 const DEFENSE_ACTIONS = ['defend', 'passDefense'];
@@ -30,6 +30,10 @@ export const MAX_SEATS = 8;
 const MIN_PLAYERS = 2;
 
 /** 部屋で選べる勝ち方 */
+/** 部屋で入力できる城のHPの範囲（整数） */
+export const CASTLE_HP_MIN = 10;
+export const CASTLE_HP_MAX = 200;
+
 export const WIN_CONDITIONS = {
   firstDestroy: '最初に城を落とした人の勝ち',
   lastStanding: 'バトルロイヤル（最後の1人まで）',
@@ -63,7 +67,9 @@ export class Room {
    * @param {() => () => number} makeRng 試合ごとに乱数を作る関数
    * @param {{ cpuDelayMs?: number }} [options] cpuDelayMs：CPU が1手ごとに待つ時間（0 ならすぐ動く。テスト用）
    */
-  constructor(roomId, data, makeRng, { cpuDelayMs = 700, onMatchEnd = null, ranked = null, onRankedVoid = null, cosmeticsOf = null } = {}) {
+  constructor(roomId, data, makeRng, { cpuDelayMs = 700, onMatchEnd = null, ranked = null, onRankedVoid = null, cosmeticsOf = null, profileOf = null } = {}) {
+    /** チャットに添える、アイコンとランク（アカウントがあるときだけ） */
+    this.profileOf = profileOf;
     /** アカウントの装備中の見た目（スキン）を、席に結びつける。相手にも見える */
     this.cosmeticsOf = cosmeticsOf;
     /** ランク戦の部屋なら { cfg, ... }。設定は固定（1対1・最初に城を落とした人の勝ち・コスト制）で、始める・設定を変える・もう1回はできない */
@@ -93,6 +99,7 @@ export class Room {
       deckMode: data.rarities && Object.values(data.decks ?? {}).some((d) => d.costDeck) ? 'cost'
         : Object.hasOwn(DECK_MODES, data.rules.deckMode) ? data.rules.deckMode : 'shared',
       teams: 'off',
+      castleHp: data.rules.castleMaxHp,
     };
     this.game = null;
     /** 今の試合のチーム（席ごと。チームなしなら null） */
@@ -190,6 +197,7 @@ export class Room {
       playerCount: this.seats.length,
       winCondition: this.settings.winCondition,
       deckMode: this.settings.deckMode,
+      castleMaxHp: this.settings.castleHp ?? this.data.rules.castleMaxHp,
     };
     const setup = {};
     const teams = this.teamsForGame();
@@ -281,6 +289,7 @@ export class Room {
         return this.leave(seat);
       case 'surrender': return this.surrender(seat);
       case 'start': return this.start(seat);
+      case 'transferHost': return this.transferHost(seat, args[0]);
       case 'setRules': return this.setRules(seat, args[0]);
       case 'setSeat': return this.setSeat(seat, args[0], args[1]);
       case 'addCpu': return this.addCpu(seat, args[0]);
@@ -388,7 +397,8 @@ export class Room {
     const now = Date.now();
     if (seat.lastChatAt !== undefined && now - seat.lastChatAt < CHAT_INTERVAL_MS) return { ok: false, reason: '少し待ってから送ってください' };
     seat.lastChatAt = now;
-    const entry = { id: ++this.chatCount, seat, at: now, ...body };
+    const profile = seat.userId && this.profileOf ? this.profileOf(seat.userId) : null;
+    const entry = { id: ++this.chatCount, seat, at: now, ...(profile ? { profile } : {}), ...body };
     this.chatLog.push(entry);
     if (this.chatLog.length > CHAT_HISTORY) this.chatLog.shift();
     const msg = { type: 'chat', ...this.chatMessage(entry) };
@@ -402,9 +412,9 @@ export class Room {
    * （席が詰まって、同じ番号の別の人の発言に見えないように）
    */
   chatMessage(entry) {
-    const { seat, id, at, text, stamp } = entry;
+    const { seat, id, at, text, stamp, profile } = entry;
     const here = this.seats.includes(seat);
-    return { id, playerId: here ? seat.playerId : null, name: seat.name, at, ...(here ? {} : { left: true }), ...(text !== undefined ? { text } : { stamp }) };
+    return { id, playerId: here ? seat.playerId : null, name: seat.name, at, ...(profile ? { profile } : {}), ...(here ? {} : { left: true }), ...(text !== undefined ? { text } : { stamp }) };
   }
 
   // ---------- 部屋（試合の前） ----------
@@ -464,7 +474,7 @@ export class Room {
     return { ok: true };
   }
 
-  /** 部屋主がモードを選ぶ：{ winCondition?, deckMode?, teams? } */
+  /** 部屋主がモードを選ぶ：{ winCondition?, deckMode?, teams?, castleHp? } */
   setRules(seat, patch) {
     const bad = this.lobbyCheck(seat);
     if (bad) return bad;
@@ -474,6 +484,12 @@ export class Room {
       if (key === 'winCondition') {
         if (!Object.hasOwn(WIN_CONDITIONS, value)) return { ok: false, reason: 'その勝ち方はありません' };
         next.winCondition = value;
+      } else if (key === 'castleHp') {
+        const hp = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+        if (!Number.isInteger(hp) || hp < CASTLE_HP_MIN || hp > CASTLE_HP_MAX) {
+          return { ok: false, reason: `城のHPは${CASTLE_HP_MIN}〜${CASTLE_HP_MAX}の整数で入力してください` };
+        }
+        next.castleHp = hp;
       } else if (key === 'teams') {
         if (!Object.hasOwn(TEAM_MODES, value)) return { ok: false, reason: 'そのチームの分け方はありません' };
         next.teams = value;
@@ -550,6 +566,18 @@ export class Room {
     const cpuSeat = this.addSeat({ name: `CPU${n}（${CPU_LEVELS[level].name}）`, token: null, cpu: level });
     this.broadcastRoom();
     return { ok: true, playerId: cpuSeat.playerId };
+  }
+
+  /** 部屋主が、ほかの人（CPU 以外・部屋にいる人）に部屋主を譲る */
+  transferHost(seat, playerId) {
+    const bad = this.lobbyCheck(seat);
+    if (bad) return bad;
+    const target = this.seatOf(playerId);
+    if (!target || target.cpu || target.left) return { ok: false, reason: 'その人には譲れません' };
+    if (target === seat) return { ok: false, reason: 'もう部屋主です' };
+    this.host = target;
+    this.broadcastRoom();
+    return { ok: true };
   }
 
   /** 部屋主が CPU を外す */
@@ -763,6 +791,14 @@ export class Room {
     return { state, playable, upgrades };
   }
 
+  /** 席のアイコンとランク（アカウントのある人だけ。ランクは試合のあとに変わるので、短く覚えて取り直す） */
+  profileFor(seat) {
+    if (!seat.userId || !this.profileOf) return null;
+    const now = Date.now();
+    if (!seat.profileAt || now - seat.profileAt > 5000) { seat.profileCache = this.profileOf(seat.userId); seat.profileAt = now; }
+    return seat.profileCache ?? null;
+  }
+
   roomInfo() {
     return {
       roomId: this.roomId,
@@ -771,6 +807,7 @@ export class Room {
         name: s.name,
         connected: s.cpu ? true : s.clients.size > 0,
         cosmetics: s.cosmetics ?? {},
+        profile: this.profileFor(s),
         left: s.left,
         cpu: s.cpu,
         castle: s.castle,
@@ -795,6 +832,7 @@ export class Room {
         decks: Object.entries(this.plainDecks()).map(([id, d]) => ({ id, name: d.name ?? id })),
         costDecks: Object.entries(this.costDecks() ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),
+        castleHpRange: { min: CASTLE_HP_MIN, max: CASTLE_HP_MAX },
         teamModes: Object.entries(TEAM_MODES).map(([id, name]) => ({ id, name })),
         teams: TEAM_IDS.map((id) => ({ id, name: TEAM_NAMES[id] })),
       },
@@ -867,7 +905,7 @@ export class Lobby {
    */
   createRankedRoom(users, ranked) {
     const room = new Room(`r${this.nextRoom++}`, this.data, this.makeRng, { ...this.options, ranked });
-    room.settings = { winCondition: 'firstDestroy', deckMode: 'cost', teams: 'off' };
+    room.settings = { winCondition: 'firstDestroy', deckMode: 'cost', teams: 'off', castleHp: this.data.rules.castleMaxHp };
     const seats = {};
     for (const u of users) {
       const r = room.join(u.name, u.userId);

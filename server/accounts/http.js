@@ -403,5 +403,19 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     return r;
   });
 
-  return { handle, userIdOf, onMatchEnd, attachLobby, social, economy, missions, modes, modeIds, cosmeticsOf: (u) => economy?.cosmeticsOf(u) ?? {}, ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
+  return { handle, userIdOf, onMatchEnd, attachLobby, social, economy, missions, modes, modeIds, cosmeticsOf: (u) => economy?.cosmeticsOf(u) ?? {},
+    /** チャットに添える、その人のアイコンとランク（相手にも見える公開の情報だけ）。ゲストはランクなし */
+    profileOf: (u) => {
+      try {
+        const user = acc.publicUser(u);
+        if (!user) return null;
+        const prow = progress.profileRow(u);
+        const rank = progress.rankSummary(u, user)?.rank ?? null;
+        return {
+          icon: prow.icon, iconImage: progress.iconImage(prow.icon),
+          rank: rank ? { tierIndex: rank.tierIndex, division: rank.division, color: rank.color, name: rank.name, divisionLabel: rank.divisionLabel } : null,
+        };
+      } catch { return null; }
+    },
+    ranking, get matchmaker() { return matchmaker; }, progress, accounts: acc, authErrors: AUTH_ERRORS, close: () => { clearInterval(purger); matchmaker?.close(); } };
 }

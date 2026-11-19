@@ -1,18 +1,28 @@
 /* チャットの履歴とスタンプはスクロール領域、入力欄は常に下に置く。 */
 #chat-open { position: relative; }
-#chat-open[data-unread]:not([data-unread=""])::after {
+#chat-open[data-unread]:not([data-unread=""])::after, .room-chat-btn[data-unread]:not([data-unread=""])::after {
   content: attr(data-unread);
   position: absolute;
-  inset: -5px -5px auto auto;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 3px;
-  border-radius: var(--radius-pill);
-  border: 1px solid #fff0c9;
-  background: #a22d24;
+  top: -2px;
+  right: -18px;
+  left: auto;
+  inset-inline-start: auto;
+  width: 26px;
+  height: 26px;
+  min-width: 0;
+  padding: 0;
+  box-sizing: border-box;
+  border-radius: 50%;
+  border: 2px solid #fff0c9;
+  background: #d9453a;
   color: #fff;
+  display: grid;
+  place-items: center;
   text-align: center;
-  font: 900 10px/16px var(--font);
+  font: 900 13px/1 var(--font);
+  letter-spacing: 0;
+  pointer-events: none;
+  z-index: 2;
 }
 #app #chat-panel {
   position: absolute;
@@ -118,32 +128,52 @@
 .chat-note:empty { display: none; }
 #app #chat-bubbles {
   position: absolute;
-  z-index: 60;
+  z-index: 75; /* パネル（70）を開いたままでも、自分の吹き出しが見えるように */
   top: var(--chat-bubbles-top, 68px);
   left: 8px;
   display: flex;
   align-items: flex-start;
   flex-direction: column;
   gap: 4px;
-  max-width: min(210px, 58%);
+  max-width: min(260px, 70%);
   pointer-events: none;
 }
 .chat-bubble {
   display: grid;
-  gap: 2px;
-  padding: 5px 8px;
-  border: 1px solid #ad874c;
-  border-radius: 10px 10px 10px 3px;
-  background: #fff4d9;
-  color: #4c331e;
-  box-shadow: 0 2px 6px #251c173d;
-  overflow-wrap: anywhere;
-  font-size: 12px;
-  animation: chat-pop 190ms var(--ease-enter);
+  grid-template-columns: 34px auto;
+  column-gap: 6px;
+  row-gap: 1px;
+  align-items: center;
+  color: #fff;
+  /* 枠なし。どんな背景でも読めるように、濃いふちどりの影をつける */
+  text-shadow: 0 1px 2px #000c, 0 0 3px #000c, 1px 1px 0 #0009, -1px -1px 0 #0009;
+  font-size: 13px;
+  font-weight: 800;
+  animation: chat-float var(--chat-ms, 7s) ease-out forwards, chat-sway 1.9s ease-in-out infinite alternate;
 }
-.chat-bubble.mine { border-radius: 10px 10px 3px 10px; background: #e0eee0; }
-.chat-bubble small { color: #705137; font-size: 10px; }
-.chat-bubble.stamp { --stamp-size: 46px; min-width: 65px; }
+.chat-avatar { grid-row: 1 / span 2; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #3b2a1acc; box-shadow: 0 0 0 2px #fff8, 0 1px 4px #0008; text-shadow: none; font-size: 15px; }
+.chat-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.chat-meta { display: grid; grid-template-columns: auto; gap: 0; min-width: 0; }
+.chat-head-line { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.chat-name { color: var(--chat-name-color, #fff); font-size: 13px; overflow-wrap: anywhere; }
+.chat-rank-icon { display: inline-flex; line-height: 0; filter: drop-shadow(0 1px 2px #000a); }
+.chat-rank-name { font-size: 10px; color: #fff; opacity: .9; }
+.chat-float-body { grid-column: 2; overflow-wrap: anywhere; line-height: 1.3; }
+.chat-bubble.stamp { --stamp-size: 46px; }
+.chat-bubble.stamp .chat-float-body { text-shadow: none; filter: drop-shadow(0 1px 3px #000a); }
+/* ゆらゆら（横にゆれて、少し傾く）。translate / rotate は transform とは別に重ねられる */
+@keyframes chat-sway { from { translate: -9px 0; rotate: -2.5deg; } to { translate: 9px 0; rotate: 2.5deg; } }
+/* 出たあと少しとどまり、上へ登りながら消える */
+@keyframes chat-float {
+  0% { transform: translateY(10px); opacity: 0; }
+  4% { transform: none; opacity: 1; }
+  62% { transform: translateY(-6px); opacity: 1; }
+  100% { transform: translateY(-130px); opacity: 0; }
+}
 @keyframes chat-pop { from { transform: translateY(5px) scale(.86); opacity: 0; } }
-.reduced-motion .chat-bubble { animation: none; }
-@media (prefers-reduced-motion: reduce) { .chat-bubble { animation: none; } }
+.reduced-motion .chat-bubble { animation: chat-fade var(--chat-ms, 7s) forwards; }
+@media (prefers-reduced-motion: reduce) { .chat-bubble { animation: chat-fade var(--chat-ms, 7s) forwards; } }
+@keyframes chat-fade { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+
+.room-heading-btns { display: flex; gap: 6px; }
+.room-chat-btn { position: relative; }
