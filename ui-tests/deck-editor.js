@@ -150,13 +150,19 @@ async function verifyFirstSlotName() {
   page.setDefaultTimeout(8000);
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
+  // #title-deck は index.html にあるので、main.js がボタンをつなぐ前に押すと何も起きない。つないだ印（プレビュー）を待つ
+  await page.locator('#title-deck-preview').waitFor({ state: 'attached' });
   await page.locator('#title-deck').press('Enter');
+  await page.locator('#deck-editor[open]').waitFor();
   await page.locator('.deck-manage').press('Enter');
-  await page.locator('.deck-name-input').evaluate(input => {
+  await page.locator('.deck-name-input').evaluate(input => new Promise(resolve => {
     input.value = '最初のデッキ';
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    input.closest('dialog').close();
-  });
+    // dialog の close イベントは close() のあとに遅れて届く。画面の保存（先につないだ close の処理）が終わるまで待つ
+    const dialog = input.closest('dialog');
+    dialog.addEventListener('close', () => resolve(), { once: true });
+    dialog.close();
+  }));
   assert.match(await page.locator('.deck-slots option[value="0"]').innerText(), /最初のデッキ/);
   const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('cf-mydecks-v2')));
   assert.equal(stored.slots[0].name, '最初のデッキ');

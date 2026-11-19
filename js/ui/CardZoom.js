@@ -111,7 +111,10 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     aim((event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height);
   };
   const orient = (event) => {
-    if (event.gamma == null || event.beta == null || !dialog.open || held) return;
+    if (event.gamma == null || event.beta == null || !dialog.open) return;
+    // センサーの値が届いた＝もう使える（Chrome にも requestPermission があるが、聞かなくても届く）。ボタンはいらない
+    if (!sensorAllowed) { sensorAllowed = true; sensorBtn.hidden = true; }
+    if (held) return;
     aim(0.5 + event.gamma / 60, 0.5 + (event.beta - 40) / 60);
   };
   const release = () => { held = false; aim(0.5, 0.5); };
@@ -215,8 +218,9 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     target.x = target.y = now.x = now.y = 0.5;
     if (!dialog.open) dialog.showModal();
     measure();
+    // いつも聞いておく（許可がいる端末では、許可されるまで何も届かないだけ）。許可を聞ける端末には、まだ値が届いていなければボタンも出す
+    listenOrientation();
     if (canRequestFoilTilt() && !sensorAllowed) sensorBtn.hidden = reduced();
-    else listenOrientation();
   };
 
   // ---------- 長押しの検出（まとめて受ける） ----------
