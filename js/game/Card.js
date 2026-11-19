@@ -28,6 +28,10 @@ export const EFFECTS = {
     changeWeather: [], // 天候の呪文：天候をランダムに変える
     wild: [], // 適応：どのカードとでも合成できる（出せない。合成専用）
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
+    drainMp: ['amount'], // MPドレイン：相手の MP を amount 奪って自分の MP にする（MP は使わない）
+    drainCastle: ['amount'], // 生命吸収：相手の城に amount ダメージ。城HPを実際に減らしたぶん自分の城を回復
+    sacrificeAttack: ['amount', 'selfDamage'], // 捨て身：自分の城HPを selfDamage 払って、相手の城に amount ダメージ
+    damageAllSoldiers: ['amount'], // 爆発：場にいる兵士全員（自分の兵士も）に amount ダメージ
   },
   defense: {
     shieldSoldier: ['amount'],
@@ -44,7 +48,7 @@ export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers',
 export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison'];
 
 /** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'summonSpirit'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、

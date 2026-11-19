@@ -327,7 +327,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
 | `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
-| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）か `"card"`（マナ回復）。上限や0で止まったぶんは `delta` に含まない |
+| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
 
@@ -1180,6 +1180,27 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **王の財宝（レジェンドのコイン）はデッキ編成で1枚まで**：`cards.json` のカードに `maxCopies`（1以上の整数）を書くと、レアリティの `maxCopies` より厳しい上限になる（`checkCostDeck`）
 - 画面：`js/ui/text.js` の城壁・毒の説明文を `armorMax` / `poisonTurns` / `poisonMax` に合わせた。城の毒の残りターンのバッジ表示は未対応
 - 確かめたこと：`node --test` は全部通る。`node tests/sim/run.js --games 300`：全組み合わせが決着。smart 同士は平均38.7手番・p1 勝率49%、smart vs random 85%
+
+## 吸収・捨て身・爆発のカード（仕様書4章。人間に確認して決めた。数値は仮）
+
+仕様書（`docs/system-spec-4-8.md`）の4章から、カード4系統（各コモン〜レジェンドの5枚、合成でつながる）を足した。**SP は今の MP と同じもの**（呼び名は MP のまま）。数値は人間が案を承認した（シミュレーションでの調整はしない、と人間の指示）。
+
+| 系統（`effect`） | 効果 | コモン→アンコモン→レア→エピック→レジェンド | MP | 長所／短所 |
+|---|---|---|---|---|
+| MPドレイン（`drainMp`）：魔力吸い・魔力奪取・魔力強奪・魔力簒奪・虚無の渦 | 相手の MP を `amount` 奪って自分の MP にする（自分の上限を超えたぶんは捨てる） | 1 / 2 / 4 / 7 / 12 | 使わない | MP 回復のカードがなくても魔法を撃てる／相手の MP が0なら出せない（「相手のMPがありません」） |
+| 生命吸収（`drainCastle`）：吸血の牙・生命吸収・命の簒奪・魂喰らい・冥王の抱擁 | 相手の城に `amount` ダメージ。城HPを実際に減らしたぶん、自分の城を回復（城壁が受けたぶんは回復しない） | 3 / 5 / 8 / 12 / 18 | 使う | 攻めと回復を一度に／ファイアボールの系統より弱い。魔物は狙えない |
+| 捨て身（`sacrificeAttack`、`selfDamage`）：捨て身の一撃・血の契約・決死の砲撃・命の炎・玉砕の極み | 自分の城HPを `selfDamage` 払って、相手の城に `amount` ダメージ | 払う2で8 / 4で13 / 6で20 / 8で28 / 10で38 | 使う | 同じレアリティでいちばんの威力／自分の城が削れる。城HPが `selfDamage` 以下なら出せない（「城のHPが足りません（○より多く必要です）」） |
+| 爆発（`damageAllSoldiers`）：爆弾・大爆弾・火薬庫・大爆発・天地崩壊 | 場にいる兵士全員（**自分の兵士も**、全レーン）に `amount` ダメージ | 3 / 5 / 8 / 12 / 18 | 使う | まとめて倒せる／味方も巻き込む。場に兵士がいなければ出せない |
+
+- どれもメイン（1ターン1枚）。生命吸収・捨て身は城への魔法と同じく、魔法の塔の `castleSpellBonus` が乗り、攻撃を受けたときの防御（城壁・土嚢・反射）を聞く。反射されたときは回復しない
+- 捨て身の支払いは、城壁・土の精霊を通さず、霧で外れても払う。`castleDamaged`（`source: { kind: "sacrifice", type }`、`blocked: 0`）
+- 生命吸収の回復は `castleDamaged` → `castleHealed`。相手の城が落ちたときは回復せずに決着
+- 爆発は対象を選ばない（`{ playerId: 自分 }`）。席順に、各プレイヤーの兵士へ `soldierDamaged`（`cause: "spell"`）。忍者には当たらない。防御は聞かない。霧で外れることがある
+- MPドレインのイベント：`spellCast` → `mpChanged`（相手、`reason: "drained"`）→ `mpChanged`（自分、`reason: "drain"`）
+- CPU：`random` は出せるカードとして使う。`smart` などの戦い方は、まだ新しいカードを選んで使わない
+- 画面（UI担当にお願いしたいこと）：カードの絵（今は仮の絵）、`js/ui/text.js` の効果アイコン、`js/ui/DeckEditor.js` の分類、`js/ui/CardGuide.js` の MP を使う effect の一覧、`js/ui/Animations.js` の演出（爆発・吸収・捨て身）。説明文は `cards.json` の `description` に書いてある
+- 魔法スキン（`data/shop.json` の `fxskin_*`）を20枚ぶん足した（全魔法に1つずつ、のテストに合わせた）
+- 確かめたこと：`node --test` 全部通る（`tests/drain-sacrifice.test.js` を追加）、`node ui-tests/stories.js`・`node ui-tests/smoke.js` も通る
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

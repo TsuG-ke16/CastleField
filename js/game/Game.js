@@ -1630,6 +1630,27 @@ export class Game {
           ],
           reason: '相手がいません',
         };
+      case 'drainCastle': {
+        // 生命吸収：城だけを狙う（魔物は狙えない）
+        const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
+        return { targets: playerTargets(foes), reason: '相手がいません' };
+      }
+      case 'sacrificeAttack': {
+        // 捨て身：払うと自分の城が落ちるなら出せない
+        if (player.castle.hp <= def.selfDamage) return { targets: [], reason: `城のHPが足りません（${def.selfDamage}より多く必要です）` };
+        const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
+        return { targets: playerTargets(foes), reason: '相手がいません' };
+      }
+      case 'drainMp':
+        // MPドレイン：MP を持っている相手だけ
+        if (this.rules.maxMp <= 0) return { targets: [], reason: 'このルールではMPを使いません' };
+        return { targets: playerTargets(this.opponentsOf(player.id).filter((p) => p.mp > 0)), reason: '相手のMPがありません' };
+      case 'damageAllSoldiers':
+        // 爆発：場に（見える）兵士がだれかいれば出せる。対象は自分（全員に効く）
+        return {
+          targets: this.alivePlayerIds().some((id) => this.players[id].visibleSoldiers.length > 0) ? [{ playerId: player.id }] : [],
+          reason: '場に兵士がいません',
+        };
       case 'damageEnemySoldiers':
         return {
           targets: playerTargets(this.opponentsOf(player.id).filter(hasSoldiers)),
@@ -1879,6 +1900,76 @@ export class Game {
           );
         }
         break;
+
+      case 'drainCastle': {
+        // 生命吸収：城にダメージ（城壁が先に受ける）。城HPを実際に減らしたぶん、自分の城を回復
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        const damage = amount + (player.castleDef.castleSpellBonus ?? 0);
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          break;
+        }
+        this.requestDefense(
+          { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage, from: 'spell', spellType: card.type },
+          () => {
+            const before = enemy.castle.hp;
+            this.damageCastle(enemy, damage, { kind: 'spell', type: card.type });
+            const taken = Math.max(0, before - Math.max(0, enemy.castle.hp));
+            // 相手の城が落ちたら、回復せずに決着（gameOver）へ
+            if (taken > 0 && !enemy.castle.isDestroyed) {
+              const healed = player.castle.heal(taken);
+              if (healed > 0) this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+            }
+          },
+          () => this.checkGameOver(),
+        );
+        break;
+      }
+
+      case 'sacrificeAttack': {
+        // 捨て身：先に自分の城HPを払う（城壁・土の精霊は通さない。外れても払う）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        player.castle.takeDamage(card.def.selfDamage);
+        this.emit('castleDamaged', {
+          playerId: player.id, amount: card.def.selfDamage, blocked: 0, hp: player.castle.hp, source: { kind: 'sacrifice', type: card.type },
+        });
+        const damage = amount + (player.castleDef.castleSpellBonus ?? 0);
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          break;
+        }
+        this.requestDefense(
+          { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage, from: 'spell', spellType: card.type },
+          () => this.damageCastle(enemy, damage, { kind: 'spell', type: card.type }),
+          () => this.checkGameOver(),
+        );
+        break;
+      }
+
+      case 'drainMp': {
+        // MPドレイン：相手の MP を奪って自分の MP にする（自分の上限を超えたぶんは捨てる）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        const taken = -this.changeMp(enemy, -amount, 'drained');
+        this.changeMp(player, taken, 'drain');
+        break;
+      }
+
+      case 'damageAllSoldiers': {
+        // 爆発：場にいる兵士全員（席順。自分の兵士も）にダメージ。忍者には当たらない。防御は聞かない
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          break;
+        }
+        for (const id of this.alivePlayerIds()) {
+          const owner = this.players[id];
+          for (const soldier of [...owner.visibleSoldiers]) {
+            if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+          }
+        }
+        this.checkGameOver();
+        break;
+      }
 
       case 'damageEnemySoldiers':
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player', ...lane });
