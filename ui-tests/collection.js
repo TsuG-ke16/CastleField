@@ -42,7 +42,7 @@ try {
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   assert.match(await page.locator('#home [data-part=coins] b').textContent(), /2500/);
   // ショップ：買う
-  await page.click('#home .home-tile[data-id=shop]');
+  await page.click('#home .home-tab[data-tab=shop]'); await page.click('#home .home-tile[data-id=shop]');
   await page.locator('#collection:not([hidden]) .item-card').first().waitFor();
   await page.waitForTimeout(500);
   await page.screenshot({ path: resolve(artifacts, 'shop.png') });
@@ -81,7 +81,7 @@ try {
   assert.deepEqual(errors, []);
   // 装備したスキンが、ひとりで遊ぶ盤面に出る（自分の城だけ。CPU の城は標準）
   await page.click('#collection .collection-close');
-  await page.click('#home [data-act=start]');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.click('#home [data-act=start]');
   await page.locator('#title-levels:not([hidden]) .level').first().click();
   await page.locator('.castle[data-player-id]').first().waitFor({ timeout: 15000 });
   await page.waitForFunction(() => document.querySelectorAll('.castle[data-player-id]').length >= 2);

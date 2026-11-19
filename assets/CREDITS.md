@@ -505,6 +505,8 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 - `frames/rank-frame-<ランク>.png` — アイコンフレーム（`css/rank-frames.css` で使用）
 - `cards/card-antidote.png` — 解毒薬のカードの絵（OpenAI画像生成（ChatGPT）。上記OpenAI規約・AI生成。512×512・256色に縮小。2026-11-19）
 
+- 2026-11-19：`cards/frame-beast.png` を、作り直した元の絵のまま（引き伸ばさずに）入れ直した。窓・文字枠の位置は `css/beast.css` で合わせる
+
 ## 仕様書4章のカードの絵（2026-11-19）
 
 - `cards/card-mana-raid.png`（魔力強奪）・`cards/card-life-steal.png`（命の簒奪）・`cards/card-desperate-shot.png`（決死の砲撃）・`cards/card-powder-keg.png`（火薬庫） — OpenAI画像生成（ChatGPT）。上記OpenAI規約・AI生成。外部の配布素材は使用していません。1254×1254 の原本（背景透明）を 512×512 に縮小（決死の砲撃・火薬庫は256色にして軽くした）。参考画像はリポジトリの `cards/card-fireball.png`・`cards/card-mana-crystal.png` ほか

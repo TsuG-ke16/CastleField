@@ -37,7 +37,7 @@ async function verify(width, height, reducedMotion) {
   await page.evaluate(async () => { (await import('./js/ui/config.js')).UI_CONFIG.speed = .03; });
   await press('#menu-open');
   await press('#menu-title-btn');
-  await press('#home .home-tile[data-id="deck"]');
+  await page.click('#home .home-tab[data-tab=deck]'); await press('#home .home-tile[data-id="deck"]');
   const summary = page.locator('.deck-summary');
   assert.match(await summary.innerText(), /92/);
   assert.match(await page.locator('.deck-status').innerText(), /oldCard/);
@@ -113,8 +113,8 @@ async function verify(width, height, reducedMotion) {
 
   await toTitle(page);
   assert.match(await page.locator('#home [data-part="deck"]').innerText(), /確認用のデッキ/);
-  await press('#home .home-mode[data-mode="local"]');
-  await press('#home [data-act="start"]');
+  await page.click('#home .home-tab[data-tab=battle]'); await press('#home .home-mode[data-mode="local"]');
+  await page.click('#home .home-tab[data-tab=battle]'); await press('#home [data-act="start"]');
   await press('.local-options summary');
   await press('.local-options .pill[data-value="cost"]');
   await press('.local-options .pill[data-value="custom:0"]');
@@ -124,8 +124,8 @@ async function verify(width, height, reducedMotion) {
   await page.waitForFunction(() => window.castlefield?.game()?.getState(null).players.p1.deckId === 'custom');
   await page.goto(base);
   await toTitle(page);
-  await press('#home .home-mode[data-mode="online"]');
-  await press('#home [data-act="start"]');
+  await page.click('#home .home-tab[data-tab=battle]'); await press('#home .home-mode[data-mode="online"]');
+  await page.click('#home .home-tab[data-tab=battle]'); await press('#home [data-act="start"]');
   await page.locator('#title-name').fill('編成テスト');
   await page.locator('#title-pass').fill(`deck-${width}-${Date.now()}`);
   await press('#title-join');
@@ -161,7 +161,7 @@ async function verifyFirstSlotName() {
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
   await page.locator('#home:not([hidden])').waitFor();
-  await page.locator('#home .home-tile[data-id="deck"]').press('Enter');
+  await page.click('#home .home-tab[data-tab=deck]'); await page.locator('#home .home-tile[data-id="deck"]').press('Enter');
   await page.locator('.deck-manage').press('Enter');
   await page.locator('.deck-name-input').evaluate(input => {
     input.value = '最初のデッキ';

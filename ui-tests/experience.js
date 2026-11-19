@@ -40,35 +40,35 @@ async function walkThrough() {
   // 入口はホーム。サーバーが要るメニューは押すと理由が出る
   await page.locator('#home.home-local:not([hidden])').waitFor();
   await picture(page, 'home');
-  await page.locator('#home .home-tile[data-id="shop"]').click();
+  await page.click('#home .home-tab[data-tab=shop]'); await page.locator('#home .home-tile[data-id="shop"]').click();
   await page.getByText('オンライン対戦のサーバー（node server/server.js）で開くと使えます').first().waitFor();
   await toTitle(page);
   await picture(page, 'title');
 
-  await page.locator('#home .home-mode[data-mode="local"]').click();
-  await page.locator('#home [data-act="start"]').press('Enter');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home .home-mode[data-mode="local"]').click();
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="start"]').press('Enter');
   await expectFocus(page, '#local-start');
   await page.locator('.local-options summary').click();
   await page.locator('[aria-labelledby="local-cap-playerCount"] [data-value="4"]').click();
   await page.locator('#levels-back').click();
   await expectFocus(page, '#home [data-act="start"]');
 
-  await page.locator('#home [data-act="settings"]').click();
+  await page.click('#home .home-tab[data-tab=settings]'); await page.locator('#home .home-tile[data-id="settings"]').click();
   await page.locator('[data-for="text"] [data-value="large"]').click();
   const preview = page.locator('.settings-reading-preview');
   assert.equal(await preview.evaluate(el => getComputedStyle(el).fontSize), '18px');
   await picture(page, 'settings');
   await page.locator('[data-for="speed"] [data-value="skip"]').click();
   await page.keyboard.press('Escape');
-  await expectFocus(page, '#home [data-act="settings"]');
+  await expectFocus(page, '#home .home-tile[data-id="settings"]');
   await page.reload();
   await toTitle(page);
   assert.equal(await page.locator('html').getAttribute('data-text-size'), 'large');
-  await page.locator('#home [data-act="settings"]').click();
+  await page.click('#home .home-tab[data-tab=settings]'); await page.locator('#home .home-tile[data-id="settings"]').click();
   await page.locator('[data-for="text"] [data-value="normal"]').click();
   await page.locator('.settings-close').click();
 
-  await page.locator('#home .home-tile[data-id="catalog"]').click();
+  await page.click('#home .home-tab[data-tab=deck]'); await page.locator('#home .home-tile[data-id="catalog"]').click();
   const search = page.getByRole('searchbox', { name: 'カード名で探す' });
   await search.fill('どらごん');
   await page.getByLabel('種類', { exact: true }).selectOption('beast');
@@ -95,7 +95,7 @@ async function walkThrough() {
   await picture(page, 'rates');
   await page.keyboard.press('Escape');
 
-  await page.locator('#home .home-tile[data-id="help"]').click();
+  await page.click('#home .home-tab[data-tab=settings]'); await page.locator('#home .home-tile[data-id="help"]').click();
   await page.locator('.help-more summary').filter({ hasText: '魔物の駒' }).click();
   assert.match(await page.locator('.help-more[open]').innerText(), /手札に入ります/);
   await picture(page, 'help');
@@ -127,8 +127,8 @@ async function roomAndCompact() {
   await page.goto(base.href);
   await toTitle(page);
   await picture(page, 'title');
-  await page.locator('#home .home-mode[data-mode="online"]').click();
-  await page.locator('#home [data-act="start"]').click();
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home .home-mode[data-mode="online"]').click();
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="start"]').click();
   await expectFocus(page, '#title-name');
   await page.locator('#title-name').fill('案内を確認');
   await page.locator('#title-pass').fill(`ui-room-${Date.now()}`);

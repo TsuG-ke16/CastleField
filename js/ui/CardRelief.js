@@ -17,7 +17,7 @@ varying vec2 vUv;
 uniform sampler2D uFrame, uRelief, uRaised;
 uniform vec3 uL, uV;
 uniform mat3 uM;
-uniform float uFlat, uBump, uSpec, uEnv, uIri, uGem, uPar, uKd, uLayer, uShadow;
+uniform float uFlat, uBump, uSpec, uEnv, uIri, uGem, uPar, uKd, uLayer, uShadow, uGlit;
 vec3 hsv2rgb(vec3 c) { vec3 p = abs(fract(c.xxx + vec3(1., 2. / 3., 1. / 3.)) * 6. - 3.); return c.z * mix(vec3(1.), clamp(p - 1., 0., 1.), c.y); }
 // 部屋の明かり（世界に固定）：上の細長い照明と、右のうすい照明。なめらかな面ほど縁がはっきり映る
 float env(vec3 r, float sharp) {
@@ -61,6 +61,19 @@ void main() {
     float hue = fract(dot(R.xy, vec2(.55, .8)) + vUv.y * .7 + vUv.x * .35);
     col += hsv2rgb(vec3(hue, .55, 1.)) * uIri * metal * (.12 + .7 * e + key);
   }
+  // キラキラ：金属・宝石の上の細かい粒。粒ごとに向きが違うので、傾けると別の粒が光る（虹色の強いスキンは粒も色づく）
+  if (uGlit > 0.) {
+    vec2 cell = floor(uv * vec2(96., 144.));
+    float r1 = fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453);
+    float r2 = fract(sin(dot(cell, vec2(39.3468, 11.135))) * 24634.6345);
+    float r3 = fract(r1 * 7.13 + r2 * 3.71);
+    vec3 gn = normalize(vec3(r1 * 2. - 1., r2 * 2. - 1., 1.6));
+    float sp = pow(max(dot(reflect(-uL, gn), V), 0.), 90.) * step(.55, r3);
+    vec2 f = fract(uv * vec2(96., 144.)) - .5;
+    float dotMask = smoothstep(.5, .1, length(f));
+    vec3 sc = mix(vec3(1., .97, .9), hsv2rgb(vec3(r3, .55, 1.)), min(uIri * 1.3, 1.));
+    col += sc * sp * dotMask * uGlit * 3. * clamp(metal * .9 + gem + .25 * smooth, 0., 1.);
+  }
   if (uLayer < .5) {
     // 浮かせた部品の真下（ずれたときに見える所）は側面として暗く、光の反対側には影を落とす
     col *= 1. - .3 * raisedHere;
@@ -82,6 +95,15 @@ const PRESETS = {
   legendary: { bump: 1.35, spec: 1,  env: 1.25, iri: 0,  gem: 1.25, kd: .75 },
   special:   { bump: 1.1, spec: .9,  env: .9,  iri: .9,  gem: 1,   kd: .65 },
   other:     { bump: 1,   spec: .6,  env: .7,  iri: 0,   gem: .8,  kd: .6 },
+  // ランク報酬のカードスキン：上のランクほど光り・キラキラ（glit）が強い
+  'skin-iron':     { bump: 1.1,  spec: .7,  env: .8,  iri: 0,   gem: .6,  kd: .65, glit: .25 },
+  'skin-bronze':   { bump: 1.1,  spec: .8,  env: .9,  iri: 0,   gem: .9,  kd: .65, glit: .35 },
+  'skin-silver':   { bump: 1.15, spec: .9,  env: 1,   iri: 0,   gem: 1,   kd: .7,  glit: .45 },
+  'skin-gold':     { bump: 1.2,  spec: 1,   env: 1.15, iri: 0,  gem: 1.1, kd: .72, glit: .55 },
+  'skin-platinum': { bump: 1.2,  spec: 1,   env: 1.15, iri: .25, gem: 1.15, kd: .72, glit: .7 },
+  'skin-diamond':  { bump: 1.25, spec: 1.1, env: 1.2, iri: .45, gem: 1.3, kd: .75, glit: .95 },
+  'skin-master':   { bump: 1.3,  spec: 1.1, env: 1.2, iri: .35, gem: 1.3, kd: .75, glit: .9 },
+  'skin-champion': { bump: 1.35, spec: 1.15, env: 1.3, iri: .6, gem: 1.35, kd: .78, glit: 1.1 },
 };
 export const CARD_LIGHT = (() => { const v = [-.42, -.62, .66]; const l = Math.hypot(...v); return v.map(x => x / l); })();
 
@@ -123,7 +145,7 @@ function context(slot) {
   gl.enableVertexAttribArray(loc);
   gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
   const u = {};
-  for (const name of ['uFrame', 'uRelief', 'uRaised', 'uL', 'uV', 'uM', 'uFlat', 'uBump', 'uSpec', 'uEnv', 'uIri', 'uGem', 'uPar', 'uKd', 'uLayer', 'uShadow']) u[name] = gl.getUniformLocation(prog, name);
+  for (const name of ['uFrame', 'uRelief', 'uRaised', 'uL', 'uV', 'uM', 'uFlat', 'uBump', 'uSpec', 'uEnv', 'uIri', 'uGem', 'uPar', 'uKd', 'uLayer', 'uShadow', 'uGlit']) u[name] = gl.getUniformLocation(prog, name);
   gl.uniform1i(u.uFrame, 0); gl.uniform1i(u.uRelief, 1); gl.uniform1i(u.uRaised, 2);
   gl.disable(gl.DEPTH_TEST);
   const entry = { canvas, gl, u, textures: [], owner: null, onLost: null };
@@ -195,7 +217,7 @@ export async function createRelief({ frameSrc, preset, pixelRatioLimit = 2, isCu
       gl.uniformMatrix3fv(u.uM, false, Mcol);
       gl.uniform1f(u.uFlat, CARD_LIGHT[2]);
       gl.uniform1f(u.uBump, p.bump); gl.uniform1f(u.uSpec, p.spec); gl.uniform1f(u.uEnv, p.env);
-      gl.uniform1f(u.uIri, p.iri); gl.uniform1f(u.uGem, p.gem); gl.uniform1f(u.uKd, p.kd);
+      gl.uniform1f(u.uIri, p.iri); gl.uniform1f(u.uGem, p.gem); gl.uniform1f(u.uKd, p.kd); gl.uniform1f(u.uGlit, p.glit ?? 0);
       gl.uniform1f(u.uPar, .018); gl.uniform1f(u.uShadow, .012);
       gl.uniform1f(u.uLayer, layer);
       gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT);

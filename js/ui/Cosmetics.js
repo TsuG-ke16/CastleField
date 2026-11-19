@@ -3,6 +3,7 @@
 // - 対戦中は、部屋の席ごとの装備（サーバーが決めた、その人が持っているものだけ）を使う。ひとりで遊ぶ・同じ端末では、自分の装備を使う
 // - 見た目だけで、ゲームの強さ・ルールには関わらない
 import { skinArt, skinRaised } from './skinArt.js';
+import { setCardSkin } from './cardFrame.js';
 
 function setArt(el, property, path) {
   if (path) el.style.setProperty(property, `url("${new URL(path, document.baseURI)}")`);
@@ -107,6 +108,8 @@ export class Cosmetics {
     const id = this.map(this.viewerId)?.cardBack ?? (this.localIds || !this.viewerId ? this.mine.cardBack : null);
     const it = this.spec(id);
     const art = skinArt(id);
+    // ランクのカード裏（back_rank_<ランク>）は、表の枠も同じランクにする（ランクカードは裏表一体）
+    setCardSkin(typeof id === 'string' && id.startsWith('back_rank_') ? id.slice('back_rank_'.length) : null);
     setArt(app, '--back-art', art);
     setArt(app, '--back-raised', skinRaised(id));
     app.toggleAttribute('data-back-raised', Boolean(art && skinRaised(id)));
