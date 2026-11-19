@@ -221,7 +221,7 @@ html:not(.at-title) #social-banner { display:none; }
 .collection-msg { min-height:18px; margin:6px 2px 0; font-size:13px; } .collection-msg.bad { color:#a3281d; font-weight:bold; }
 .collection-close { display:block; margin:8px auto 0; min-width:160px; }
 .gacha-head { display:grid; gap:3px; padding:8px 10px; border-radius:12px; background:#fff6dc; border:1px solid #d3a24a; font-size:13px; }
-.gacha-pull { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:10px 0; } .gacha-pull .plank-btn { min-height:60px; font-size:15px; }
+.gacha-pull { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:8px; margin:10px 0; } .gacha-pull .plank-btn { min-height:60px; font-size:15px; }
 .gacha-rates, .gacha-exchange, .gacha-history { margin:8px 0; border:1px solid #e0cf9c; border-radius:12px; background:#fffdf4; padding:4px 10px; } .gacha-rates summary, .gacha-exchange summary, .gacha-history summary { min-height:44px; display:flex; align-items:center; font-weight:bold; font-size:14px; cursor:pointer; }
 .gacha-rate-row { display:flex; justify-content:space-between; align-items:center; margin-top:8px; } .gacha-rate-item { display:flex; justify-content:space-between; font-size:12.5px; padding:1px 8px; } .gacha-rate-item small { color:#7a6a48; }
 .gacha-history-list { margin:0 0 8px; padding-left:20px; font-size:12.5px; line-height:1.7; }

@@ -123,7 +123,7 @@ export class CollectionView {
     body.append(head);
     const row = el('div', 'gacha-pull');
     for (const [count, cost, label] of [[1, g.banner.costSingle, '1回'], [10, g.banner.costTen, '10連']]) {
-      const b = el('button', 'plank-btn', `${label}　${cost} コイン`); b.type = 'button'; b.dataset.act = 'pull'; b.dataset.count = String(count); b.disabled = this.shop.coins < cost; row.append(b);
+      const b = el('button', 'plank-btn'); b.append(el('b', null, label), el('small', null, `${cost} コイン`)); b.type = 'button'; b.dataset.act = 'pull'; b.dataset.count = String(count); b.disabled = this.shop.coins < cost; row.append(b);
     }
     body.append(row);
     if (this.shop.coins < g.banner.costTen) {

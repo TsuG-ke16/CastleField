@@ -177,3 +177,23 @@
   }
   .card-zoom .zoom-stage { --zw: min(34vw, 184px, calc((100dvh - 56px) / 2.1)); }
 }
+
+/* カードの説明：説明文が長いと「使う／理由を確認」のボタン（sticky）が警告の文に重なっていた（360×640・320×568）。
+   説明文だけをスクロールさせ、ボタンはその下に置く */
+#app #card-detail:not([hidden]) { display: flex; flex-direction: column; overflow: hidden; }
+#app #card-detail .detail-text { flex: 1 1 auto; min-height: 0; overflow: auto; }
+#app #card-detail .detail-use { flex: none; position: static; align-self: flex-end; }
+
+/* 対戦画面・横向き：手札が2段に折り返し、2段目のカードが半分だけ見えていた。縦画面と同じく1段で横にスワイプする */
+@media (orientation: landscape) and (max-height: 500px) {
+  #app #hand { flex-wrap: nowrap; justify-content: flex-start; align-items: center; overflow-x: auto; overflow-y: hidden; }
+  #app #hand .card:first-child { margin-left: auto; }
+  #app #hand .card:last-child { margin-right: auto; }
+}
+
+/* ガチャ：360幅で「10連　900 コイン」のボタンが右にはみ出していた。2つのボタンを幅に収め、字は折り返す */
+#app .gacha-pull .plank-btn, .gacha-pull .plank-btn { min-width: 0; white-space: normal; text-wrap: balance; padding-inline: 10px; }
+.gacha-pull .plank-btn { display: grid; place-content: center; gap: 0; line-height: 1.2; }
+.gacha-pull .plank-btn small { font-size: .8em; }
+/* 320幅で見出しの「ガチャ」が「ガチ／ャ」と折り返していた */
+.collection-head h2 { white-space: nowrap; flex: none; }
