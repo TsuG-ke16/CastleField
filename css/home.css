@@ -340,3 +340,65 @@ html:not(.at-title) #social-banner { display:none; }
 }
 @keyframes win-skin { from { scale: .65; opacity: 0; } to { scale: 1; opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .win-skin-art { animation: none; } }
+
+/* フレンド、プロフィール、ミッションの共通パネル */
+#social .social-box, #profile .profile-box, #missions .collection-box {
+  max-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - env(safe-area-inset-bottom));
+  border: 2px solid #b99862; border-radius: 16px; color: #3c2b1f;
+}
+:is(#social, #profile, #missions) h2 { color: #214638; }
+:is(#social, #profile, #missions) button { min-height: 44px; min-width: 44px; }
+#social .social-actions > button { white-space: normal; }
+#social .social-row { background: #fff9e9; border-color: #d7c298; }
+#social .social-row.open { border-color: #b29455; box-shadow: inset 0 0 0 1px #efddac; }
+#social .social-status { font-weight: 750; padding: 4px 7px; }
+#social .social-status.on { color: #194c34; background: #dcefd9; }
+#social .social-status.match { color: #254b65; background: #d6ebf4; }
+#social .social-party { background: #204639; border: 1px solid #b99d63; color: #fff4d9; }
+#social .social-party h3 { color: inherit; border-bottom-color: #beab75; }
+#social .social-party .social-note { color: #f9ebcb; }
+#social .social-party-members li { gap: 6px; padding: 4px; border-bottom: 1px solid #a8ad8e66; }
+#social .social-party-members strong { min-width: 0; overflow-wrap: anywhere; }
+#social .party-leader { margin-left: auto; padding: 3px 6px; border-radius: 6px; background: #f4d699; color: #472d1f; }
+#social-banner .social-banner-row {
+  display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto;
+  border: 1px solid #e5c482; background: #1e483b; color: #fff7dd; border-radius: 12px; font-size: 12px;
+}
+#social-banner .social-banner-row > img { width: 30px; height: 30px; object-fit: contain; }
+#social-banner button { min-width: 44px; min-height: 44px; padding-inline: 6px; }
+#profile .profile-head { background: #21483b; color: #fff6dd; border: 1px solid #ba9a61; box-shadow: inset 0 0 0 2px #345b4a; }
+#profile .profile-avatar { background: #315b51; border: 1px solid #c6a86a; }
+#profile .profile-who small { color: #ffe2a5; }
+#profile .profile-icons { grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); gap: 4px; }
+#profile .profile-stats { gap: 4px; }
+#profile .profile-stats > div { padding: 6px 2px; background: #fff8e5; border: 1px solid #decda3; border-radius: 8px; }
+.profile-private-stat { grid-column: 1 / -1; }
+#profile .profile-private-stat dd { font-size: 13px; }
+#profile .profile-privacy select { min-height: 44px; }
+#missions .mission-tabs { grid-template-columns: repeat(4,minmax(0,1fr)); }
+#missions .mission-tabs button { font-size: 11px; white-space: normal; overflow-wrap: anywhere; line-height: 1.15; }
+#missions .mission-row { background: #fff9e9; border-color: #d7c298; gap: 6px 8px; }
+#missions .mission-row.done { background: #e8f2df; border-color: #84ac80; }
+#missions .mission-row.season { grid-template-columns: auto minmax(0,1fr) auto; }
+#missions .mission-row.season .mission-name { overflow-wrap: anywhere; }
+#missions .mission-bar { background: #e4d5b2; }
+#missions .mission-claim { min-height: 44px; }
+#missions .mission-received {
+  background: #f7dfa3; border: 1px solid #c09843; border-radius: 8px; padding: 7px;
+  text-align: center; font-weight: 850; animation: rank-arrival .28s ease-out both;
+}
+.match-progress .match-earnings { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 2px 12px; }
+.match-progress .mp-coins { color: #78501b; }
+.match-progress .mp-level { color: #35594a; }
+.match-progress .rank-change { border-top: 1px solid #d9c79b; padding-top: 6px; font-size: 13px; }
+.levelup { min-height: 44px; max-width: min(88vw, 370px); }
+.reduced-motion #missions .mission-received { animation: none; }
+@media (max-width: 370px) {
+  #profile .profile-icons { grid-template-columns: repeat(3,minmax(44px,1fr)); }
+  #profile .profile-icon { width: 46px; justify-self: center; }
+  #profile .profile-stats { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  #missions .mission-tabs { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #missions .mission-received, .levelup { animation: none; }
+}

@@ -1,4 +1,4 @@
-import { skinArt } from './skinArt.js';
+import { profileArt } from './profileArt.js';
 // ホーム画面：プレイヤー情報・選んだモード・デッキ・大きな対戦開始ボタン・メニュー。
 // サーバーのアカウント機能があるときだけ出る（なければ今までのタイトルがそのまま入口）。
 // まだ作っていない機能（ランクマッチ・フレンド・ショップなど）は「準備中」と表示して押せない。表示名などは textContent で入れる。
@@ -164,7 +164,7 @@ export class Home {
     const bar = this.part('xpbar');
     bar.setAttribute('aria-valuenow', String(pct)); bar.setAttribute('aria-valuemin', '0'); bar.setAttribute('aria-valuemax', '100');
     bar.title = lv ? (lv.maxed ? '最大レベル' : `次のレベルまで ${lv.xpForNext - lv.xpIntoLevel} 経験値`) : '';
-    const iconSrc = skinArt(d?.icon) ?? d?.iconImage ?? d?.icons?.find((i) => i.id === d.icon)?.image;
+    const iconSrc = profileArt(d?.icon, d?.iconImage ?? d?.icons?.find((i) => i.id === d.icon)?.image);
     const av = this.part('avatar');
     av.replaceChildren();
     if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); } else av.textContent = [...(u?.displayName ?? '?')][0];

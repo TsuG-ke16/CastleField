@@ -415,3 +415,7 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style
 - `skins/castle-{crimson,forest,frost,gold,shadow}.png` — `exec-3349807c-8033-4b8f-8f15-0c37d6e7968b.png`
 - `skins/icon-{paladin,giant,scout,sniper,sage,dragon-knight}.png` — `exec-9e898060-b01b-4dee-bfba-368947370196.png`
 - `skins/back-{crimson,forest,royal,gold}.png`、`skins/fx-{emerald,violet,azure,gold}.png`、`skins/win-{gold,sakura,aurora}.png`、`skins/title-{rookie,hunter,wall,lucky,legend}.png` — `exec-d9504ee8-43f0-4d05-91e1-b08c1c00f73d.png`
+
+## プロフィールの基本アイコン（2026-11-19）
+
+- `profiles/{infantry,spearman,knight,archer,mage,hero}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照し、生成原本 `exec-8e2458c1-3ca0-485e-93ba-17aa6f3f9b98.png` から切り出した透過PNG。

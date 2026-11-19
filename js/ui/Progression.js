@@ -20,9 +20,14 @@ export async function showMatchProgress(root, { reducedMotion = false, ranked = 
   lv.className = 'mp-level';
   lv.textContent = `Lv.${last.level}${last.maxed ? '（最大）' : `　次まで ${last.xpForNext - last.xpIntoLevel}`}`;
   const bar = document.createElement('span'); bar.className = 'home-xp';
+  bar.setAttribute('role', 'progressbar');
+  bar.setAttribute('aria-label', '次のレベルまで');
   const fill = document.createElement('i'); bar.append(fill);
-  card.append(gain, bar, lv);
-  if (last.coinsGained > 0) { const c = document.createElement('p'); c.className = 'mp-coins'; c.textContent = `+${last.coinsGained} コイン`; gain.after(c); }
+  const earnings = document.createElement('div');
+  earnings.className = 'match-earnings';
+  earnings.append(gain);
+  card.append(earnings, lv, bar);
+  if (last.coinsGained > 0) { const c = document.createElement('p'); c.className = 'mp-coins'; c.textContent = `+${last.coinsGained} コイン`; earnings.append(c); }
   if (ranked) {
     try {
       const rc = (await account.api('GET', '/api/ranked/last')).json?.last;
@@ -51,19 +56,21 @@ export async function showMatchProgress(root, { reducedMotion = false, ranked = 
   const anchor = root.querySelector('.result-actions') ?? root.lastElementChild;
   anchor.before(card);
   const pct = last.maxed ? 100 : Math.round((last.xpIntoLevel / Math.max(1, last.xpForNext)) * 100);
+  bar.setAttribute('aria-valuenow', String(pct));
   requestAnimationFrame(() => { fill.style.width = `${pct}%`; });
   if (last.level > last.levelBefore) levelUp(card, last.level, reducedMotion);
 }
 
 function levelUp(card, level, reduced) {
-  const burst = document.createElement('div');
+  const burst = document.createElement('button');
+  burst.type = 'button';
   burst.className = `levelup${reduced ? ' still' : ''}`;
-  burst.setAttribute('role', 'alert');
+  burst.setAttribute('aria-label', `レベル${level}にアップ。タップで閉じる`);
   const t = document.createElement('strong'); t.textContent = 'レベルアップ！';
   const n = document.createElement('span'); n.textContent = `Lv.${level}`;
   const hint = document.createElement('small'); hint.textContent = 'プロフィールでレベル報酬を受け取れます';
   burst.append(t, n, hint);
   burst.addEventListener('click', () => burst.remove()); // タップで消せる
   card.append(burst);
-  setTimeout(() => burst.remove(), 4500);
+  setTimeout(() => burst.remove(), 1800);
 }
