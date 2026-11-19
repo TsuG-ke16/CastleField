@@ -10,9 +10,10 @@ const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const halfLight = [CARD_LIGHT[0], CARD_LIGHT[1], CARD_LIGHT[2] + 1];
 const halfLength = Math.hypot(...halfLight);
 
+let reducedMotionQuery;
 export function cardMotionReduced() {
   return document.documentElement.classList.contains('reduced-motion')
-    || matchMedia('(prefers-reduced-motion: reduce)').matches;
+    || (reducedMotionQuery ??= matchMedia('(prefers-reduced-motion: reduce)')).matches;
 }
 
 function layer(className) {

@@ -49,11 +49,15 @@
    親の perspective の中で、表・側面・裏を同じ 3D 空間に置く。 */
 .card-3d {
   --depth: calc(var(--card-unit) * var(--card-depth));
-  --edge-inset: 1.4%;
+  --edge-inset-x: 2.4%;
+  --edge-inset-top: 2%;
+  --edge-inset-bottom: 2%;
   --edge-radius: calc(var(--card-unit) * .045);
   isolation: auto;
   transform-style: preserve-3d;
 }
+/* 装飾が張り出す枠は、側面と裏面をカード本体の上端にそろえる。 */
+.card-3d:is([data-rarity]:not([data-rarity="common"]), [data-beast]) { --edge-inset-top: 5.9%; }
 .card-3d > .foil-sheet { display: none; }
 .card-3d > .zoom-edge {
   position: absolute; pointer-events: none; backface-visibility: hidden;
@@ -69,27 +73,27 @@
     #f68ba4, #ffdb8f, #a4efac, #80dfff, #ae9cff, #f3a0e5);
 }
 .zoom-edge-left, .zoom-edge-right {
-  top: var(--edge-inset); bottom: var(--edge-inset); width: var(--depth);
+  top: var(--edge-inset-top); bottom: var(--edge-inset-bottom); width: var(--depth);
   --edge-direction: 90deg; --edge-rainbow: calc(180deg + var(--edge-hue-angle));
 }
 .zoom-edge-top, .zoom-edge-bottom {
-  left: var(--edge-inset); right: var(--edge-inset); height: var(--depth);
+  left: var(--edge-inset-x); right: var(--edge-inset-x); height: var(--depth);
   --edge-direction: 0deg; --edge-rainbow: calc(90deg + var(--edge-hue-angle));
 }
 .zoom-edge-left {
-  right: calc(100% - var(--edge-inset)); transform-origin: right; transform: rotateY(-90deg);
+  right: calc(100% - var(--edge-inset-x)); transform-origin: right; transform: rotateY(-90deg);
   --edge-darkness: calc(var(--edge-shade-base) + var(--edge-light-x));
 }
 .zoom-edge-right {
-  left: calc(100% - var(--edge-inset)); transform-origin: left; transform: rotateY(90deg);
+  left: calc(100% - var(--edge-inset-x)); transform-origin: left; transform: rotateY(90deg);
   --edge-darkness: calc(var(--edge-shade-base) - var(--edge-light-x));
 }
 .zoom-edge-top {
-  bottom: calc(100% - var(--edge-inset)); transform-origin: bottom; transform: rotateX(90deg);
+  bottom: calc(100% - var(--edge-inset-top)); transform-origin: bottom; transform: rotateX(90deg);
   --edge-darkness: calc(var(--edge-shade-base) + var(--edge-light-y));
 }
 .zoom-edge-bottom {
-  top: calc(100% - var(--edge-inset)); transform-origin: top; transform: rotateX(-90deg);
+  top: calc(100% - var(--edge-inset-bottom)); transform-origin: top; transform: rotateX(-90deg);
   --edge-darkness: calc(var(--edge-shade-base) - var(--edge-light-y));
 }
 .card-3d.zoom-3d {
@@ -160,7 +164,7 @@
 
 /* 裏は側面と同じ深さ。角の透けは縁と同じ材質で受ける。 */
 .card-3d > .zoom-back {
-  position: absolute; inset: var(--edge-inset); display: block; pointer-events: none;
+  position: absolute; inset: var(--edge-inset-top) var(--edge-inset-x) var(--edge-inset-bottom); display: block; pointer-events: none;
   border-radius: var(--edge-radius); overflow: hidden; visibility: hidden;
   background: #39313a;
   background: color-mix(in srgb, var(--card-edge-color), #201822 65%);
