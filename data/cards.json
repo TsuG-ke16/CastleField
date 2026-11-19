@@ -104,5 +104,12 @@
   "manaRaid": {"name": "魔力強奪", "kind": "spell", "effect": "drainMp", "amount": 4, "description": "相手のMPを4奪って、自分のMPにする（自分の上限を超えたぶんは捨てる）。MPは使わない。相手のMPが0なら出せない", "count": 0, "rarity": "rare", "fuseTo": null},
   "lifeSteal": {"name": "命の簒奪", "kind": "spell", "effect": "drainCastle", "amount": 8, "description": "相手の城に8ダメージ。城HPを実際に減らしたぶん、自分の城を回復する（城壁が受けたぶんは回復しない）", "count": 0, "rarity": "rare", "fuseTo": null},
   "desperateShot": {"name": "決死の砲撃", "kind": "spell", "effect": "sacrificeAttack", "amount": 20, "selfDamage": 6, "description": "自分の城HPを6払って、相手の城に20ダメージ（払うのは城壁を通さない。外れても払う）。城HPが6以下なら出せない", "count": 0, "rarity": "rare", "fuseTo": null},
-  "powderKeg": {"name": "火薬庫", "kind": "spell", "effect": "damageAllSoldiers", "amount": 8, "description": "場にいる兵士全員に8ダメージ。自分の兵士も巻き込む（忍者には当たらない）", "count": 0, "rarity": "rare", "fuseTo": null}
+  "powderKeg": {"name": "火薬庫", "kind": "spell", "effect": "damageAllSoldiers", "amount": 8, "description": "場にいる兵士全員に8ダメージ。自分の兵士も巻き込む（忍者には当たらない）", "count": 0, "rarity": "rare", "fuseTo": null},
+  "attackDice": {"name": "攻撃サイコロ", "kind": "spell", "effect": "dice", "dice": "attack", "per": 3.5, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×3.5（端数切り上げ：4〜21）のダメージを相手の城に与える。MPを使う"},
+  "healDice": {"name": "ヒールサイコロ", "kind": "spell", "effect": "dice", "dice": "heal", "per": 3, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×3（3〜18）だけ自分の城を回復する"},
+  "manaDice": {"name": "マナサイコロ", "kind": "spell", "effect": "dice", "dice": "mana", "per": 2, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×2（2〜12）だけMPを回復する。メインを使わず何枚でも出せる"},
+  "coinDice": {"name": "コインサイコロ", "kind": "spell", "effect": "dice", "dice": "coin", "per": 2, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×2（2〜12）枚のコインをもらう。コインのカードと同じく1ターンに1枚まで"},
+  "shieldDice": {"name": "シールドサイコロ", "kind": "spell", "effect": "dice", "dice": "shield", "per": 3, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×3（3〜18）の城壁を置く。メインを使わず何枚でも出せる"},
+  "buffDice": {"name": "バフサイコロ", "kind": "spell", "effect": "dice", "dice": "buff", "per": 1, "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを振り、出た目×1（1〜6）だけ、選んだ自分の兵士1体の攻撃力を上げる。メインを使わず何枚でも出せる"},
+  "randomDice": {"name": "ランダムサイコロ", "kind": "spell", "effect": "dice", "dice": "random", "count": 0, "rarity": "rare", "fuseTo": null, "description": "サイコロを2回振る。1回目で、ほかのサイコロ（攻撃・ヒール・マナ・コイン・シールド・バフ）のどれになるかを決め、2回目の目は必ず4以上になる（対象はランダム。今使えないサイコロにはならない）"}
 }

@@ -18,7 +18,7 @@
 //                超えていなければ（または捨て終わったら）次の人のターンが始まる
 //   城HPが0以下になった瞬間に phase "gameOver"
 
-import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS } from './Card.js';
+import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, DICE_KINDS } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
 import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
@@ -66,6 +66,7 @@ export const EVENT_TYPES = [
   'monsterEvolved',
   'upgradeBought',
   'soldierBuffed',
+  'diceRolled',
   'playerEliminated',
   'roadClosed',
   'roadOpened',
@@ -181,6 +182,9 @@ const ok = () => ({ ok: true });
 const fail = (reason) => ({ ok: false, reason });
 
 /** 忍者（見えない兵士）について、相手に隠すイベント。城・魔物へのダメージ（castleDamaged・monsterDamaged）は見せる */
+/** コインのカード（1ターンに coinCardsPerTurn 枚まで）：コインを増やすカードとコインサイコロ */
+const isCoinCard = (def) => def.effect === 'gainCoins' || (def.effect === 'dice' && def.dice === 'coin');
+
 const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
   'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
@@ -1067,6 +1071,118 @@ export class Game {
     return false;
   }
 
+  // ================= サイコロ =================
+
+  /** サイコロの種類 kind を今使える対象（per は目に掛ける数。城壁が上限かどうかを見るのに使う） */
+  diceTargets(player, kind, per) {
+    const self = [{ playerId: player.id }];
+    switch (kind) {
+      case 'attack': {
+        const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
+        return { targets: foes.map((p) => ({ playerId: p.id })), reason: '相手がいません' };
+      }
+      case 'heal':
+        return { targets: player.castle.isFull ? [] : self, reason: '城のHPが満タンです' };
+      case 'mana':
+        return { targets: this.rules.maxMp > 0 && player.mp < this.rules.maxMp ? self : [], reason: this.rules.maxMp > 0 ? 'MPが満タンです' : 'このルールではMPを使いません' };
+      case 'coin':
+        return { targets: self, reason: '' };
+      case 'shield':
+        return {
+          targets: this.armorFull(player, { amount: Math.ceil(6 * per) }) ? [] : self,
+          reason: this.rules.armorMax ? `城壁がもう上限（${this.rules.armorMax}）まで積んであります` : '同じか、より強い城壁がもう置いてあります',
+        };
+      case 'buff':
+        return { targets: player.soldiers.map((x) => ({ soldierId: x.soldierId })), reason: '道の上に自分の兵士がいません' };
+      case 'random': {
+        const usable = this.randomDiceKinds(player);
+        return { targets: usable.length > 0 ? self : [], reason: '今使えるサイコロがありません' };
+      }
+      default:
+        return { targets: [], reason: 'このカードは出せません' };
+    }
+  }
+
+  /** ランダムサイコロが選べる種類：cards.json にあるサイコロ（random 以外）のうち、今使えるもの。{ kind, per } の配列 */
+  randomDiceKinds(player) {
+    const out = [];
+    for (const kind of DICE_KINDS) {
+      if (kind === 'random') continue;
+      const def = Object.values(this.cardDefs).find((d) => d.effect === 'dice' && d.dice === kind);
+      if (def && this.diceTargets(player, kind, def.per).targets.length > 0) out.push({ kind, per: def.per });
+    }
+    return out;
+  }
+
+  /** 1〜6 の目 */
+  rollDie() {
+    return 1 + Math.floor(this.rng() * 6);
+  }
+
+  /**
+   * サイコロを振る。diceRolled（{ playerId, type, dice, value, amount, rolls }）を出してから効果を起こす。
+   * ランダムサイコロは、1回目の目で種類を選び（使えない種類は除く）、2回目の目は4〜6になる。対象はランダム
+   */
+  rollDice(player, card, target) {
+    let kind = card.def.dice;
+    let per = card.def.per;
+    let value;
+    let rolls;
+    if (kind === 'random') {
+      const usable = this.randomDiceKinds(player);
+      const first = this.rollDie();
+      ({ kind, per } = usable[(first - 1) % usable.length]);
+      value = 4 + Math.floor(this.rng() * 3);
+      rolls = [first, value];
+      const targets = this.diceTargets(player, kind, per).targets;
+      target = targets[targets.length === 1 ? 0 : Math.floor(this.rng() * targets.length)];
+    } else {
+      value = this.rollDie();
+      rolls = [value];
+    }
+    const amount = Math.ceil(value * per);
+    this.emit('diceRolled', { playerId: player.id, type: card.type, dice: kind, value, amount, rolls });
+
+    switch (kind) {
+      case 'attack': {
+        const enemy = this.players[target.playerId];
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          break;
+        }
+        this.requestDefense(
+          { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount, from: 'spell', spellType: card.type },
+          () => this.damageCastle(enemy, amount, { kind: 'spell', type: card.type }),
+          () => this.checkGameOver(),
+        );
+        break;
+      }
+      case 'heal': {
+        const healed = player.castle.heal(amount);
+        this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        break;
+      }
+      case 'mana':
+        this.changeMp(player, amount, 'card');
+        break;
+      case 'coin':
+        this.changeCoins(player, amount, 'card');
+        break;
+      case 'shield':
+        this.playSupport(player, { def: { kind: 'defense', effect: 'armorCastle', amount } }, { playerId: player.id });
+        break;
+      case 'buff': {
+        const soldier = player.soldiers.find((x) => x.soldierId === target.soldierId);
+        soldier.baseAttack += amount;
+        this.emit('soldierBuffed', { playerId: player.id, soldierId: soldier.soldierId, attack: soldier.attack });
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
   /** 護衛の兵士 guard が、道 roadId の城の前も守っているか（同じ2人の間の道で、lane が1つ違う） */
   guardCovers(guard, roadId) {
     if (!guard.isGuard) return false;
@@ -1278,7 +1394,8 @@ export class Game {
     if (this.rules.maxMp <= 0) return 0;
     const def = card.def;
     if (def.monster !== undefined) return 0; // 魔物のカード（倒したごほうび）は MP を使わない
-    if (def.kind !== 'spell' || !MP_EFFECTS.includes(def.effect)) return 0;
+    const attackDice = def.effect === 'dice' && def.dice === 'attack'; // 攻撃サイコロは攻撃の魔法と同じく MP を使う
+    if (def.kind !== 'spell' || (!MP_EFFECTS.includes(def.effect) && !attackDice)) return 0;
     return def.mpCost ?? this.rarityDefs?.[def.rarity]?.mpCost ?? 0;
   }
 
@@ -1674,6 +1791,8 @@ export class Game {
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
         return { targets: playerTargets(foes), reason: '相手がいません' };
       }
+      case 'dice':
+        return this.diceTargets(player, def.dice, def.per);
       case 'healCastleOrMp':
         // スライム：城HPと MP のどちらかがまだ増えるなら出せる（どちらになるかはランダム）
         return {
@@ -1804,7 +1923,7 @@ export class Game {
       return fail(`このターンに出せる兵士は${this.rules.soldiersPerTurn}枚までです`);
     }
     if (card.slot === 'main' && player.playedThisTurn) return fail('このターンはもうメインのカードを出しました');
-    if (card.def.effect === 'gainCoins' && this.rules.coinCardsPerTurn && player.coinCardsPlayedThisTurn >= this.rules.coinCardsPerTurn) {
+    if (isCoinCard(card.def) && this.rules.coinCardsPerTurn && player.coinCardsPlayedThisTurn >= this.rules.coinCardsPerTurn) {
       return fail(`コインのカードは1ターンに${this.rules.coinCardsPerTurn}枚までです`);
     }
     const cost = this.mpCostOf(card);
@@ -1871,7 +1990,7 @@ export class Game {
     const mpCost = this.mpCostOf(card);
     if (mpCost > 0) this.changeMp(player, -mpCost, 'cast');
     if (card.slot === 'main') player.playedThisTurn = true;
-    if (card.def.effect === 'gainCoins') player.coinCardsPlayedThisTurn += 1;
+    if (isCoinCard(card.def)) player.coinCardsPlayedThisTurn += 1;
     if (card.slot === 'soldier') player.soldiersPlayedThisTurn += 1;
     player.cardsPlayedThisTurn += 1;
     // 使ったカードは（兵士も）すぐ捨て札へ。使い切りのカードは、二度と山札に戻らない置き場へ
@@ -1886,6 +2005,10 @@ export class Game {
 
   /** 出したカードの効果を起こす（神頼みでタダで出すときにも使う） */
   applyCard(player, card, target) {
+    if (card.def.effect === 'dice') {
+      this.rollDice(player, card, target);
+      return;
+    }
     if (card.isSoldier) {
       const targetId = target.playerId;
       const road = target.roadId ? this.findRoad(target.roadId) : this.roadBetween(player.id, targetId);

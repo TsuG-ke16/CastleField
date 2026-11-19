@@ -1694,6 +1694,90 @@
       "world": "kingdom",
       "desc": "火薬庫を使うときの光が「紫電」の色に。この魔法だけに効く。",
       "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_attackDice": {
+      "slot": "spellSkin",
+      "target": "attackDice",
+      "targetName": "攻撃サイコロ",
+      "name": "攻撃サイコロ・翠",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "攻撃サイコロを使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_healDice": {
+      "slot": "spellSkin",
+      "target": "healDice",
+      "targetName": "ヒールサイコロ",
+      "name": "ヒールサイコロ・紫電",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ヒールサイコロを使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_manaDice": {
+      "slot": "spellSkin",
+      "target": "manaDice",
+      "targetName": "マナサイコロ",
+      "name": "マナサイコロ・蒼",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "マナサイコロを使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_coinDice": {
+      "slot": "spellSkin",
+      "target": "coinDice",
+      "targetName": "コインサイコロ",
+      "name": "コインサイコロ・黄金",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "コインサイコロを使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_shieldDice": {
+      "slot": "spellSkin",
+      "target": "shieldDice",
+      "targetName": "シールドサイコロ",
+      "name": "シールドサイコロ・翠",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "シールドサイコロを使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_buffDice": {
+      "slot": "spellSkin",
+      "target": "buffDice",
+      "targetName": "バフサイコロ",
+      "name": "バフサイコロ・紫電",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "バフサイコロを使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_randomDice": {
+      "slot": "spellSkin",
+      "target": "randomDice",
+      "targetName": "ランダムサイコロ",
+      "name": "ランダムサイコロ・蒼",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ランダムサイコロを使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
     }
   }
 }

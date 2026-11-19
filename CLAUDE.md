@@ -315,7 +315,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `monsterDefeated` | `{ monsterId, playerId, reward }` … `playerId` はとどめを刺した人 |
 | `coinsChanged` | `{ playerId, delta, coins, reason }` … `reason` は `"reward"` / `"upgrade"` / `"turn"` / `"card"` / `"weather"` / `"stolen"`（ミミックに奪われた）/ `"steal"`（奪った） |
 | `upgradeBought` | `{ playerId, upgradeId, cost }` … このあと効果のイベント（`castleHealed` / `cardDrawn` / `soldierBuffed`） |
-| `soldierBuffed` | `{ playerId, soldierId, attack }` … とぎ石で攻撃力が上がった |
+| `soldierBuffed` | `{ playerId, soldierId, attack }` … とぎ石・訓練・バフサイコロで攻撃力が上がった |
+| `diceRolled` | `{ playerId, type, dice, value, amount, rolls }` … サイコロのカードを振った（「サイコロのカード」の節） |
 | `playerEliminated` | `{ playerId, by }` … 城が落ちて抜けた（`lastStanding`）。`by` は落とした人 |
 | `defenseRequested` | `{ defenderId, attackerId, kind, amount, soldierIds? }` … 攻撃が当たる前に、受ける人に防御を聞く。`kind` は `"castle"`（城に当たる）か `"soldiers"`（兵士に当たる。`soldierIds` が当たる兵士）。このあと `defend()` / `passDefense()` が来るまで止まる |
 | `defenseEnded` | `{ defenderId }` … 防御が終わった。このあと攻撃が当たる（`castleDamaged` / `soldierDamaged` …） |
@@ -1247,6 +1248,24 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 - ヴァンパイアのカード：メイン（1ターン1枚）。城への攻撃は防御（城壁・土嚢・反射）を聞く。魔法の塔の `castleSpellBonus` は乗せない（10ちょうど）。**回復は、外れても・防がれても・反射されても起きる**。相手の城が落ちたら回復せずに決着。イベント：`spellCast` →（防御）→ `castleDamaged` → `castleHealed`
 - 確かめたこと：`node --test` 全部通る（`tests/drain-sacrifice.test.js` に4件）
+
+## サイコロのカード（仕様書7章。人間の指示。数値は仮）
+
+サイコロデッキを組めるように、サイコロのカードを7枚足した（どれもレア・合成しない `fuseTo: null`）。`effect: "dice"`、`dice` に種類、`per` に目に掛ける数を書く。効果の量は **出た目（1〜6）× `per`（端数は切り上げ）**。
+
+| カード | `dice` | 効果 | 出し方 | MP |
+|---|---|---|---|---|
+| 攻撃サイコロ `attackDice` | `attack` | 相手の城に 目×3.5（4〜21）。防御を聞く。魔法の塔のボーナスは乗せない | メイン | 3（レア） |
+| ヒールサイコロ `healDice` | `heal` | 自分の城を 目×3（3〜18）回復。満タンなら出せない | メイン | なし |
+| マナサイコロ `manaDice` | `mana` | MP を 目×2（2〜12）回復。満タンなら出せない | 何枚でも | なし |
+| コインサイコロ `coinDice` | `coin` | 目×2（2〜12）コイン | 何枚でも（ただしコインのカードと合わせて1ターン `coinCardsPerTurn` 枚まで） | なし |
+| シールドサイコロ `shieldDice` | `shield` | 目×3（3〜18）の城壁（城壁のカードと同じ決まり。上限なら出せない） | 何枚でも | なし |
+| バフサイコロ `buffDice` | `buff` | 選んだ自分の兵士1体の攻撃力 +目×1（1〜6。ずっと） | 何枚でも | なし |
+| ランダムサイコロ `randomDice` | `random` | 2回振る：1回目の目で、上の6つのうち今使えるサイコロのどれかを選ぶ（使えるものが6つなら 1=攻撃・2=ヒール・3=マナ・4=コイン・5=シールド・6=バフ）。2回目の目は必ず4〜6。対象はランダム | メイン | なし |
+
+- イベント `diceRolled`：`{ playerId, type, dice, value, amount, rolls }`（`dice` は実際に起きた種類、`value` は効果に使った目、`amount` は効果の量、`rolls` は振った目の並び。ランダムサイコロは2つ）。カードを出した `cardPlayed` のあと、効果のイベント（`spellCast` → `castleDamaged`、`castleHealed`、`mpChanged`、`coinsChanged`、`castleArmored`、`soldierBuffed`）の前に出る。画面はこれでサイコロを振る演出を出す（UI担当）
+- `Card.slot`：マナ・コイン・シールド・バフのサイコロは `support`（`SUPPORT_DICE`）、ほかはメイン
+- 確かめたこと：`node --test` 全部通る（`tests/dice.test.js`）
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
