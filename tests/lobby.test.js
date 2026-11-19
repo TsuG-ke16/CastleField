@@ -250,3 +250,17 @@ test('城のHP：部屋主が選べて、試合の城HPに反映される（選�
   assert.equal(st.players.p1.castleMaxHp, 30);
   assert.equal(st.players.p2.castleMaxHp, 30);
 });
+
+test('部屋主を譲る：部屋主だけが、部屋にいる人（CPU 以外）に譲れる。譲ると前の部屋主はルールを変えられない', () => {
+  const lobby = newLobby();
+  const a = enter(lobby, 'tr', 'A');
+  const b = enter(lobby, 'tr', 'B');
+  const cpu = a.room.action(a.seat, 'addCpu', ['easy']);
+  assert.equal(b.room.action(b.seat, 'transferHost', ['p1']).ok, false); // 部屋主だけ
+  assert.equal(a.room.action(a.seat, 'transferHost', ['p1']).ok, false); // 自分には譲れない
+  assert.equal(a.room.action(a.seat, 'transferHost', [cpu.playerId]).ok, false); // CPU には譲れない
+  assert.equal(a.room.action(a.seat, 'transferHost', ['p2']).ok, true);
+  assert.equal(b.lastRoom().hostId, 'p2');
+  assert.equal(a.room.action(a.seat, 'setRules', [{ castleHp: 30 }]).ok, false);
+  assert.equal(b.room.action(b.seat, 'setRules', [{ castleHp: 30 }]).ok, true);
+});

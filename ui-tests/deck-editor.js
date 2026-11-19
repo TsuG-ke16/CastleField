@@ -128,7 +128,9 @@ async function verify(width, height, reducedMotion) {
   await page.locator('#title-pass').fill(`deck-${width}-${Date.now()}`);
   await press('#title-join');
   await page.locator('#room-screen').waitFor();
-  await page.locator('#room-screen select[data-slot="rule:deckMode"]').selectOption('cost');
+  await page.getByRole('button', { name: 'ルールを変更' }).click();
+  await page.locator('.room-modal select[data-slot="rule:deckMode"]').selectOption('cost');
+  await page.getByRole('button', { name: '閉じる' }).click();
   const pending = page.waitForRequest(request => request.url().endsWith('/api/action')
     && request.postDataJSON()?.method === 'setSeat');
   await page.locator('.room-self select[data-slot$=":costDeck"]').selectOption('custom:0');

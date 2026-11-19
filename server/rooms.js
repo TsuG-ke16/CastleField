@@ -14,8 +14,8 @@ import { checkCostDeck } from '../js/game/Setup.js';
 /** 試合中の操作（Game のメソッドに渡す） */
 const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense'];
 /** 部屋の操作（いつでも送れる。だめなときは理由を返す） */
-const RANKED_BLOCKED = ['start', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'rematch'];
-const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
+const RANKED_BLOCKED = ['start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'rematch'];
+const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
 const ACTIONS = [...GAME_ACTIONS, ...ROOM_ACTIONS];
 /** 攻撃を受けた人（自分の番でなくても）が送れる操作 */
 const DEFENSE_ACTIONS = ['defend', 'passDefense'];
@@ -287,6 +287,7 @@ export class Room {
         return this.leave(seat);
       case 'surrender': return this.surrender(seat);
       case 'start': return this.start(seat);
+      case 'transferHost': return this.transferHost(seat, args[0]);
       case 'setRules': return this.setRules(seat, args[0]);
       case 'setSeat': return this.setSeat(seat, args[0], args[1]);
       case 'addCpu': return this.addCpu(seat, args[0]);
@@ -562,6 +563,18 @@ export class Room {
     const cpuSeat = this.addSeat({ name: `CPU${n}（${CPU_LEVELS[level].name}）`, token: null, cpu: level });
     this.broadcastRoom();
     return { ok: true, playerId: cpuSeat.playerId };
+  }
+
+  /** 部屋主が、ほかの人（CPU 以外・部屋にいる人）に部屋主を譲る */
+  transferHost(seat, playerId) {
+    const bad = this.lobbyCheck(seat);
+    if (bad) return bad;
+    const target = this.seatOf(playerId);
+    if (!target || target.cpu || target.left) return { ok: false, reason: 'その人には譲れません' };
+    if (target === seat) return { ok: false, reason: 'もう部屋主です' };
+    this.host = target;
+    this.broadcastRoom();
+    return { ok: true };
   }
 
   /** 部屋主が CPU を外す */

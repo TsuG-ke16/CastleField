@@ -3,6 +3,8 @@ import { castleArt, colorOf } from './art.js';
 import { deckChoice, deckSlot } from './DeckStore.js';
 
 const ROOM_DECK_KEY = 'cf-room-deck-v1';
+const RULE_ROWS = [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes']];
+
 export class RoomView {
   constructor({ onAction, onLeave, onEditDeck, savedDecks, presetDeck, previewDeck }) {
     this.onAction = onAction;
@@ -137,6 +139,27 @@ export class RoomView {
     btn.addEventListener('click', action); parent.append(btn);
     return btn;
   }
+  /** ルールを変更する画面（部屋主だけ）。ルールの選択・城のHP・CPUの追加 */
+  rulesDialog(room, choices) {
+    const close = () => { this.rulesOpen = false; this.render(this.room, this.passphrase); };
+    const back = this.node('div', null, 'room-modal');
+    back.addEventListener('click', (e) => { if (e.target === back) close(); });
+    back.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    const panel = this.node('section', null, 'room-modal-panel');
+    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-label', 'ルールを変更');
+    panel.append(this.node('h2', 'ルールを変更'));
+    for (const [key,label,list] of RULE_ROWS) {
+      this.select(panel, label, choices[list], room.settings[key], true, v => this.act('setRules', [{[key]:v}]), `rule:${key}`);
+    }
+    this.numberInput(panel, '城のHP', room.settings.castleHp, choices.castleHpRange, true, v => this.act('setRules', [{castleHp:v}]), 'rule:castleHp');
+    this.level ??= choices.cpuLevels?.[0]?.id;
+    this.select(panel, 'CPUの強さ', choices.cpuLevels, this.level, true, v => {this.level=v;}, 'cpuLevel');
+    this.button(panel, 'CPUを追加', () => this.act('addCpu', [this.level]), room.players.length >= room.capacity);
+    this.button(panel, '閉じる', close, false, 'plank-btn');
+    back.append(panel);
+    queueMicrotask(() => panel.querySelector('select, input, button')?.focus({ preventScroll: true }));
+    return back;
+  }
   render(room, passphrase) {
     this.room = room; this.passphrase = passphrase;
     this.el.hidden = false; this.el.replaceChildren();
@@ -164,6 +187,7 @@ export class RoomView {
       const edit = p.playerId === room.you || (host && Boolean(p.cpu));
       const set = (patch) => this.act('setSeat', p.playerId === room.you ? [patch] : [patch, p.playerId]);
       this.select(seat, '城', choices.castles, p.castle, edit, v => set({castle:v}), `${p.playerId}:castle`);
+      const acts = this.node('div', null, 'room-seat-actions'); // 席のボタン（デッキ編成・ルール変更・部屋主を譲る・CPUを外す）
       if (room.settings.deckMode === 'cost') {
         // デッキ編成（コスト制）：見本のデッキか、自分で編成したデッキ（自分の席だけ）
         const mine = p.playerId === room.you;
@@ -188,7 +212,7 @@ export class RoomView {
           seat.append(preview);
         }
         const invalid = saved.find(deck => deck && !deck.valid);
-        if (mine && this.onEditDeck) this.button(seat, invalid ? '保存したデッキを修正' : 'デッキを編成する', () => this.onEditDeck(invalid?.slot));
+        if (mine && this.onEditDeck) this.button(acts, invalid ? '保存したデッキを修正' : 'デッキを編成する', () => this.onEditDeck(invalid?.slot));
       } else {
         this.select(seat, 'デッキ', choices.decks, p.deck, edit && room.settings.deckMode === 'own', v => set({deck:v}), `${p.playerId}:deck`);
         if (room.settings.deckMode === 'own' && p.playerId === room.you) {
@@ -198,20 +222,21 @@ export class RoomView {
         }
       }
       if (room.settings.teams === 'choose') this.select(seat, 'チーム', choices.teams, p.team, edit, v => set({team:v}), `${p.playerId}:team`);
-      if (host && p.cpu) this.button(seat, 'CPUを外す', () => this.act('removeCpu', [p.playerId]));
+      if (host && p.playerId === room.you) this.button(acts, 'ルールを変更', () => { this.rulesOpen = true; this.render(this.room, this.passphrase); });
+      if (host && !p.cpu && p.playerId !== room.you && !p.left) this.button(acts, '部屋主を譲る', () => this.act('transferHost', [p.playerId]));
+      if (host && p.cpu) this.button(acts, 'CPUを外す', () => this.act('removeCpu', [p.playerId]));
+      if (acts.children.length) seat.append(acts);
       seats.append(seat);
     }
+    // 対戦ルール：部屋主も含めて、ここでは見るだけ。変えるのは部屋主の席の「ルールを変更」から
     const settings = this.node('section', null, 'room-settings'); box.append(settings);
     settings.append(this.node('h2', '対戦ルール'));
-    for (const [key,label,list] of [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes']]) {
-      this.select(settings, label, choices[list], room.settings[key], host, v => this.act('setRules', [{[key]:v}]), `rule:${key}`);
+    for (const [key,label,list] of RULE_ROWS) {
+      this.select(settings, label, choices[list], room.settings[key], false);
     }
-    this.numberInput(settings, '城のHP', room.settings.castleHp, choices.castleHpRange, host, v => this.act('setRules', [{castleHp:v}]), 'rule:castleHp');
-    if (host) {
-      this.level ??= choices.cpuLevels?.[0]?.id;
-      this.select(settings, 'CPUの強さ', choices.cpuLevels, this.level, true, v => {this.level=v;}, 'cpuLevel');
-      this.button(settings, 'CPUを追加', () => this.act('addCpu', [this.level]), room.players.length >= room.capacity);
-    }
+    this.numberInput(settings, '城のHP', room.settings.castleHp, choices.castleHpRange, false);
+    if (!host) this.rulesOpen = false;
+    if (this.rulesOpen) box.append(this.rulesDialog(room, choices));
     let reason = '';
     if (room.players.length < room.minPlayers) reason = `開始には${room.minPlayers}人必要です。仲間を招待するかCPUを追加してください。`;
     else if (room.settings.teams === 'choose' && new Set(room.players.map(p => p.team)).size < 2) reason = '2つ以上のチームに分かれてください。';
