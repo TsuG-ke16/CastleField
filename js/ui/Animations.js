@@ -1325,7 +1325,7 @@ export class Animations {
   }
 
   async spellCast({ playerId, type, target, targetKind, roadId }) {
-    this.cosmetics?.styleFx(this.el.fx, playerId); // 撃った人の攻撃エフェクトの色
+    this.cosmetics?.styleFx(this.el.fx, playerId, type); // 撃った人の攻撃エフェクトの色（魔法ごとのスキンが先）
     const def = this.cards[type] ?? {};
     // 魔法を使うと、画面が揺れる（強い魔法ほど大きく）
     this.screenShake('spell', def.amount ?? 4);

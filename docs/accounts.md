@@ -146,7 +146,7 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 **数値はすべて仮**（`data/ranks.json`・`data/seasons.json`。サーバーを再起動すれば反映）。
 
 ## ランク
-- 9階級（低い順）：Iron・Bronze・Silver・Gold・Platinum・Diamond・Ascendant・Immortal・Radiant。Iron〜Ascendant は I〜III のディビジョン。Immortal・Radiant は **RP が 2400 以上で、シーズン順位で決まる**（Immortal は上位500位、Radiant は上位100位。足りなければ Ascendant III）
+- 8階級（低い順）：Iron・Bronze・Silver・Gold・Platinum・Diamond・Master・Champion。Iron〜Diamond は I〜III のディビジョン。Master・Champion は **RP が 1800 以上で、シーズン順位で決まる**（Master は上位500位、Champion は上位100位。足りなければ Diamond III）
 - **MMR（内部レーティング）**：Elo（K=32。認定戦中は 64）。ユーザーには数値を返さない。初期値 1000
 - **RP（ランクポイント）**：勝つと増え、負けると減る（相手との MMR の差で増減が変わる。勝ち 10〜40、負け 8〜30）。RP は 0 未満にならない。表示ランクは RP から決まるので、昇格・降格は RP がまたいだときに起きる（降格の保護はまだない）
 - **認定戦**：最初の5試合（`placementMatches`）は RP が動かず、ランクは「認定戦中」。終わると MMR から RP とランクが決まる（Gold III までが上限）
@@ -155,7 +155,8 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 ## シーズン（`data/seasons.json`）
 - 起点（`epoch`）から `lengthDays`（56日）ごとに自動で番号が進む。`season_stats` にシーズン・モードごとの成績（MMR・RP・最高RP・試合数）が残る（`mode_id` は `kingdom`。将来の別モードは別の行＝独立ランクにできる）
 - 新しいシーズンの最初の参加で、MMR を初期値に近づけ（差を半分）、短い認定戦（2試合）からやり直す。**前のシーズンの記録（最高到達ランク）は残る**
-- シーズン報酬（到達ランクに応じた報酬の受け取り）は **Phase 6**
+- シーズン報酬は **Phase 6**。終わったシーズンの最高到達ランクの階級に応じて、**「アイコンフレーム（`frame_<階級>`）＋カード裏面（`back_rank_<階級>`）」を1組**もらう（コインはなし。人間の指示）。対象は認定戦を終えて `minMatchesForReward` 試合以上。景品は `data/shop.json`（`rankReward` つき。ショップ・ガチャでは手に入らない）、階級との対応は `data/seasons.json` の `rewards`。アイコンフレームは新しい装備の枠 `iconFrame`（ホーム・プロフィールのアイコンの周りに出る）。専用の絵ができるまでは、フレームは `css/rank-frames.css`、カード裏面は色替えの仮の見た目
+- 見た目は階級が上がるほど豪華にする（Iron は素朴な金属 → Champion は王冠・多色の光）。絵の指示文は `assets/STYLE.md` の「ランクの絵」
 
 ## マッチメイキング（`server/accounts/matchmaking.js`）
 - **正会員（Google 連携かメールアドレスの登録）だけ**参加できる。ゲストは 403（`needsMember`）。CPU・ゲスト・カジュアル（合言葉）の対戦ではレートは動かない
@@ -321,3 +322,9 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 - Google の本物との通信、実機・本番での確認
 - 日本モードの中身（カード・ルール・城・背景）。モードごとの `cards` の切り替えは未実装（`Room` は今は王国の `data` だけを使う）
 - ミッションの追加・期間限定（データの追加だけで増やせる）
+
+## キャラ・魔法のスキン（人間の指示）
+- 全キャラ（兵士20体・魔物12種）と全魔法カード（53種）に、専用スキンが1つずつ（`data/shop.json`。`slot: "charSkin"` / `"spellSkin"`、`target` は `cards.json` のカード種類。魔物は `beast_<魔物の種類>`）。城は今までの「城の外観」の枠を使う
+- 装備は対象ごとに1つ：`POST /api/collection/equip` の `slot` を `charSkin:<対象>`・`spellSkin:<対象>` にする（別の対象のスキンは付けられない）。対戦中は相手にも見える（`cosmeticsOf`）
+- 優先：そのキャラだけのスキン ＞ 兵士全体のスキン（`unit`）。魔法も、その魔法のスキン ＞ 攻撃エフェクト（`attackFx`）
+- 価格はレアリティ順（300 / 600 / 1200 / 2400 / 4800 コイン）。ガチャの「価格つきも出る」設定のため、ガチャの景品の数が増えて、1つあたりの当たりやすさは下がる（調整するなら `data/gacha.json`）。見た目は色替えの仮

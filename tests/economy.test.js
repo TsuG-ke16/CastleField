@@ -243,3 +243,22 @@ test('スキンは部屋の席に結びつき、相手にも見える。持っ�
   assert.deepEqual(info.players[1].cosmetics, {}); // 持っていない人は標準
   server.close();
 });
+
+test('キャラ・魔法のスキン：全キャラ（兵士20・魔物12）と全魔法（53）に1つずつ。対象ごとに1つ装備でき、別の対象には付けられない', async () => {
+  const { economy, user, data } = setup();
+  const cards = data.cards; const items = Object.values(data.shop.items);
+  const chars = items.filter((i) => i.slot === 'charSkin'); const fx = items.filter((i) => i.slot === 'spellSkin');
+  const soldiers = Object.keys(cards).filter((k) => cards[k].kind === 'soldier');
+  assert.deepEqual(new Set(chars.map((i) => i.target)), new Set([...soldiers.filter((k) => !k.startsWith('beast_')), ...Object.keys(data.monsters).map((m) => `beast_${m}`)]));
+  assert.deepEqual(new Set(fx.map((i) => i.target)), new Set(Object.keys(cards).filter((k) => cards[k].kind === 'spell')));
+  const a = user();
+  economy.grant(a, 'skin_dragonKnight', 'test'); economy.grant(a, 'fxskin_fireball', 'test');
+  let eq = economy.equip(a, 'charSkin:dragonKnight', 'skin_dragonKnight');
+  assert.equal(eq['charSkin:dragonKnight'], 'skin_dragonKnight');
+  eq = economy.equip(a, 'spellSkin:fireball', 'fxskin_fireball');
+  assert.equal(eq['spellSkin:fireball'], 'fxskin_fireball');
+  fails(() => economy.equip(a, 'charSkin:knight', 'skin_dragonKnight'), /装備できません/); // 別のキャラには付けられない
+  fails(() => economy.equip(a, 'charSkin', 'skin_dragonKnight'), /装備できません/);
+  assert.equal(economy.equip(a, 'charSkin:dragonKnight', null)['charSkin:dragonKnight'], undefined);
+  assert.equal(economy.cosmeticsOf(a)['spellSkin:fireball'], 'fxskin_fireball'); // 対戦の相手にも見える
+});

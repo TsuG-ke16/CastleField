@@ -41,7 +41,7 @@ const FRAMES = {
   spell:     { base: { metal: .1, smooth: .45 }, gold: { metal: .9, smooth: .8 }, gemHue: [255, 300], raised: [[192, 12, 352, 194], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
   weapon:    { base: { metal: .55, smooth: .6 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .9, smooth: .85 }, gemHue: [340, 15], raised: [[164, 28, 362, 204], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
   defense:   { base: { metal: .75, smooth: .72 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .85, smooth: .8 }, gemHue: [195, 250], raised: [[184, 24, 334, 206], ...KIND_GEMS], paper: { name: [.14, .86, .78], medals: [] } },
-  beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, organic: [70, 140], gemHue: [120, 170], gemMinSat: .5, raised: [[159, 0, 353, 114]], paper: SHARED_PARCHMENT },
+  beast:     { base: { metal: .1, smooth: .6 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .8, smooth: .7 }, gemHue: [335, 20], gemMinSat: .45, raised: [[170, 0, 342, 110], [0, 10, 60, 120], [452, 10, 512, 120]], paper: SHARED_PARCHMENT },
 };
 
 // ---------- PNG（8bit・インターレースなし） ----------

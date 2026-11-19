@@ -474,7 +474,7 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`asset
 
 ## 王国リーグのランク紋章（2026-11-19）
 
-- `ranks/rank-{iron,bronze,silver,gold,platinum,diamond,ascendant,immortal,radiant}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照、生成原本 `exec-94e3676c-e909-4979-8c5c-c776b8b38cf2.png` を切り出し。オリジナルの9図柄。
+- `ranks/rank-{iron,bronze,silver,gold,platinum,diamond,master,champion}.png（master は旧 immortal、champion は旧 radiant の絵。旧 ascendant は廃止）` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照、生成原本 `exec-94e3676c-e909-4979-8c5c-c776b8b38cf2.png` を切り出し。オリジナルの図柄。
 
 ## ショップ景品の専用イラスト（2026-11-19）
 
@@ -488,3 +488,9 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style
 ## プロフィールの基本アイコン（2026-11-19）
 
 - `profiles/{infantry,spearman,knight,archer,mage,hero}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照し、生成原本 `exec-8e2458c1-3ca0-485e-93ba-17aa6f3f9b98.png` から切り出した透過PNG。
+
+- 2026-11-19：`cards/frame-beast.png` を、ルビー色の新しい枠（OpenAI画像生成。上記OpenAI規約・AI生成）に差しかえた。枠の中の小さな透明の穴（白のハイライトが抜けた所・約90か所）は白で埋めた（絵の窓だけ透明のまま）。`cards/relief/frame-beast-*.png` は `node js/ui/build-card-relief.js` で作り直した（3Dの拡大表示用）。
+
+- 2026-11-19：`cards/frame-beast.png` を、ルビー色の枠（OpenAI画像生成。上記OpenAI規約・AI生成。1024×1536の原本の外側の背景と絵の窓を透明にして 512×768 に縮小）に差しかえた。`cards/relief/frame-beast-*.png` は `node js/ui/build-card-relief.js` で作り直した（3Dの拡大表示用。`js/ui/build-card-relief.js` の beast を赤い宝石の色に直した）。
+
+- 2026-11-19：`skins/back-{crimson,forest,royal,gold}.png` を、512×768 の新しいカード裏（OpenAI画像生成。上記OpenAI規約・AI生成。1024×1536の原本を縮小し、256色のパレットPNGにして軽くした）に差しかえた。`skins/back-*-raised.png` は、その絵から金の飾り・紋章の形だけを切り抜いたマスク（プログラムで作った派生。拡大表示で裏面の飾りを手前に浮かせるために使う）。

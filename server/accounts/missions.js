@@ -126,19 +126,26 @@ export class Missions {
     return this.db.all('SELECT season, peak_rp, matches, placement_left FROM season_stats WHERE user_id = ? AND mode_id = ? AND season < ? ORDER BY season DESC', userId, modeId, cur).map((r) => {
       const eligible = r.placement_left === 0 && r.matches >= min;
       const tier = this.ranking.displayRank(r.peak_rp);
-      return { season: r.season, peak: eligible ? tier : null, coins: eligible ? this.seasons.rewards?.[tier.tierId] ?? 0 : 0, eligible, claimed: claimed.has(r.season), matches: r.matches, minMatches: min };
+      const items = eligible ? this.rewardItems(tier.tierId) : [];
+      return { season: r.season, peak: eligible ? tier : null, items, eligible, claimed: claimed.has(r.season), matches: r.matches, minMatches: min };
     });
+  }
+
+  /** 階級の報酬（アイコンフレーム・カード裏面）。景品の一覧にあるものだけ */
+  rewardItems(tierId) {
+    const rw = this.seasons.rewards?.[tierId] ?? {};
+    return [rw.iconFrame, rw.cardBack].filter((id) => id && this.economy.item(id)).map((id) => this.economy.item(id));
   }
 
   claimSeason(userId, season, modeId = 'kingdom') {
     return this.db.tx(() => {
       const r = this.seasonRewards(userId, modeId).find((x) => x.season === season);
       if (!r) throw new AccountError('そのシーズンの報酬はありません', 404);
-      if (!r.eligible || r.coins <= 0) throw new AccountError(`報酬には、認定戦を終えて${r.minMatches}試合以上のランク戦が必要です`, 409);
+      if (!r.eligible || !r.items.length) throw new AccountError(`報酬には、認定戦を終えて${r.minMatches}試合以上のランク戦が必要です`, 409);
       if (r.claimed) throw new AccountError('もう受け取っています', 409);
-      this.db.run('INSERT INTO season_rewards (user_id, season, mode_id, tier_id, coins, claimed_at) VALUES (?, ?, ?, ?, ?, ?)', userId, season, modeId, r.peak.tierId, r.coins, this.now());
-      const balance = this.economy.credit(userId, r.coins, 'seasonReward', `${modeId}:${season}`);
-      return { season, coins: r.coins, tier: r.peak.divisionLabel, balance };
+      this.db.run('INSERT INTO season_rewards (user_id, season, mode_id, tier_id, coins, claimed_at) VALUES (?, ?, ?, ?, ?, ?)', userId, season, modeId, r.peak.tierId, 0, this.now());
+      for (const it of r.items) this.economy.grant(userId, it.id, 'season');
+      return { season, items: r.items.map((it) => it.id), tier: r.peak.divisionLabel };
     });
   }
 
