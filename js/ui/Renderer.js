@@ -302,6 +302,7 @@ export class Renderer {
       castle.setAttribute('role','button');
       castle.tabIndex = 0;
       castle.dataset.color = colorOf(id);
+      this.cosmetics?.styleCastle(castle, id);
       castle.style.setProperty('--team-color', palette[team] ?? palette[this.owners.indexOf(id) % palette.length]);
       const kind=this.players[id]?.castleType;
       const kindName=this.castleDefs[kind]?.name??'';
@@ -659,11 +660,13 @@ export class Renderer {
     el.dataset.team = team ?? '';
     el.style.setProperty('--team-color', UI_CONFIG.teamColors[team] ?? UI_CONFIG.teamColors[this.playerOrder.indexOf(playerId)]);
     el.dataset.color = colorOf(playerId);
+    el.dataset.owner = playerId;
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="soldier-token"><div class="soldier-pic"></div>' +
       '<span class="soldier-weapon" hidden></span><span class="soldier-shield" hidden></span><span class="soldier-status" hidden></span></div>' +
       `<div class="soldier-gauge meter health-meter" role="meter"><i class="meter-fill health-lag"></i><i class="meter-fill health-fill"></i></div><div class="soldier-stats"><span class="st atk">${icon('sword')}<b></b></span><span class="st hp">${icon('heart')}<b></b></span></div>`;
     el.querySelector('.soldier-pic').innerHTML = unitArt(st.type, colorOf(playerId), def.name ?? st.type);
+    this.cosmetics?.styleSoldier(el, playerId); // 持っているスキン（見た目だけ）
     if (def.monster) {
       const insignia = document.createElement('span');
       insignia.className = 'beast-insignia';

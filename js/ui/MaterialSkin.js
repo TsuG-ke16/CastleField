@@ -1,13 +1,13 @@
 // All controls share one generated kit. Texture density, corners and button heights are fixed.
 export function setupMaterialSkin(root = document.getElementById('app')) {
-  const primary = '#end-turn,.detail-use,#menu-close,#rematch,.room-start,.settings-close,#help-close,#local-start,#title-join,#title-solo,.discard-ok';
+  const primary = '#end-turn,.detail-use,#menu-close,#rematch,.room-start,.settings-close,#help-close,#local-start,#title-join,#title-solo,.discard-ok,.home-start';
   function decorate(node) {
     if (!(node instanceof Element)) return;
     const elements = [node, ...node.querySelectorAll('button,.screen-box,.parchment,.panel,.title-choices,.room-seat,.room-settings,.local-options,.set-group')];
     for (const el of elements) {
-      if (el.matches('button:not(.chat-stamp)') && !el.closest('#debug-panel, #deck-editor') && !['debug-toggle', 'weather-chip'].includes(el.id)) {
+      if (el.matches('button:not(.chat-stamp):not(.raw-btn)') && !el.closest('#debug-panel, #deck-editor') && !['debug-toggle', 'weather-chip'].includes(el.id)) {
         const skin = el.matches('.guide-card,.upgrade-item,.fusion-pair,.pill-stack .pill') ? 'card'
-          : el.matches('.round-btn') ? 'round' : el.matches('.mode-choice,.level') ? 'wide'
+          : el.matches('.round-btn') ? 'round' : el.matches('.mode-choice,.level,.home-start') ? 'wide'
           : el.matches('.shop-tabs > button,.guide-tabs > button') ? 'tab' : el.matches('.pill') ? 'compact' : 'regular';
         el.dataset.uiSkin = skin;
         el.dataset.uiTone = el.matches(primary) ? 'primary' : el.matches('.danger') ? 'danger' : 'neutral';

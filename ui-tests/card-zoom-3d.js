@@ -21,6 +21,8 @@ const results = [];
 
 async function newPage({ viewport = { width: 390, height: 797 }, reducedMotion = 'no-preference', label }) {
   const context = await browser.newContext({ viewport, reducedMotion, serviceWorkers: 'block' });
+  // タイトル画面を確かめるので、アカウント機能を切る（アカウントがあるとホーム画面が入口になる。ホームは account.js で確かめる）
+  await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
   page.on('pageerror', error => errors.push(`[${label}] ${error.message}`));

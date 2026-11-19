@@ -15,6 +15,8 @@ const errors = [];
 
 async function verify(width, height, reducedMotion) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion, serviceWorkers: 'block' });
+  // タイトル画面を確かめるので、アカウント機能を切る（アカウントがあるとホーム画面が入口になる。ホームは account.js で確かめる）
+  await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
   page.on('pageerror', error => errors.push(error.message));
@@ -146,10 +148,13 @@ async function verify(width, height, reducedMotion) {
 // （スマホのように入力欄から外れずに管理の画面を閉じたときも）
 async function verifyFirstSlotName() {
   const context = await browser.newContext({ viewport: { width: 390, height: 797 }, serviceWorkers: 'block' });
+  // アカウント機能を切る（クラウドとのデッキの同期が、ここで作る枠を上書きしないように。ホームは account.js で確かめる）
+  await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
   page.setDefaultTimeout(8000);
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(base);
+  await page.locator('#title-deck-preview').waitFor({ state: 'attached' }); // デッキ編成の画面ができてから押す
   await page.locator('#title-deck').press('Enter');
   await page.locator('.deck-manage').press('Enter');
   await page.locator('.deck-name-input').evaluate(input => {

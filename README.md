@@ -12,12 +12,13 @@ node server/server.js           # → http://localhost:8787（オンライン対
 - タイトルの「ひとりで遊ぶ」で CPU と対戦（`?local=1&cpu=hard` ですぐ始まる）
 - オンラインは同じ合言葉を入れた人が同じ部屋に入る（最大8人。CPU も追加できる）
 - デバッグ：URL に `?debug=1`（城HP・手札・山札を変えられる）
-- 外部パッケージなし。Node.js 22.7 以上が必要
+- 外部パッケージなし。Node.js 22.7 以上が必要（アカウント・保存機能は `node:sqlite` を使うため 22.13 以上。設定は `docs/accounts.md`）
 
 ## 確かめる
 
 ```sh
-node --test                     # ロジックの自動テスト
+node --test                     # ロジックの自動テスト（アカウント・認証のテストを含む）
+node ui-tests/account.js        # アカウント画面のテスト（Playwright が必要）
 node ui-tests/smoke.js          # 画面のスモークテスト（Playwright が必要）
 node tests/sim/run.js           # バランスのシミュレーション
 node js/ui/build-precache.js    # 配るファイルを変えたとき（オフライン用の一覧を作り直す）
@@ -30,6 +31,7 @@ node js/ui/build-precache.js    # 配るファイルを変えたとき（オフ�
 | `CLAUDE.md` | 仕様の正。ルール、カード、ロジックと画面の約束、チーム開発のルール |
 | `assets/STYLE.md` | 絵柄の決まりと、画像生成AIに使う共通の指示文 |
 | `assets/CREDITS.md` | 素材の出どころとライセンス |
+| `docs/accounts.md` | アカウント・データベース・認証の仕様と設定（環境変数・API・バックアップ） |
 | `docs/` | 設計メモ（`archive/` は終わった依頼） |
 
 ## 作り方

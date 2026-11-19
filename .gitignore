@@ -5,3 +5,10 @@ node_modules/
 
 # Python のキャッシュ
 __pycache__/
+
+# アカウントのデータベースとバックアップ（絶対にコミットしない）
+data-store/
+*.db
+*.db-wal
+*.db-shm
+.env

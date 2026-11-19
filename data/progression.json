@@ -1,0 +1,65 @@
+{
+  "maxLevel": 100,
+  "xpToNext": {
+    "base": 60,
+    "growth": 20
+  },
+  "match": {
+    "base": 20,
+    "win": 15,
+    "minTurns": 4,
+    "cpuMultiplier": 0.5
+  },
+  "levelReward": {
+    "coins": 20,
+    "milestones": {
+      "5": 100,
+      "10": 200,
+      "20": 400,
+      "30": 600,
+      "50": 1000,
+      "75": 1500,
+      "100": 3000
+    }
+  },
+  "titles": [
+    {
+      "level": 1,
+      "name": "見習い兵"
+    },
+    {
+      "level": 5,
+      "name": "城の番人"
+    },
+    {
+      "level": 10,
+      "name": "一人前の騎士"
+    },
+    {
+      "level": 20,
+      "name": "戦場の名手"
+    },
+    {
+      "level": 35,
+      "name": "城攻めの達人"
+    },
+    {
+      "level": 50,
+      "name": "軍師"
+    },
+    {
+      "level": 75,
+      "name": "王国の英雄"
+    },
+    {
+      "level": 100,
+      "name": "伝説の城主"
+    }
+  ],
+  "matchCoins": {
+    "base": 10,
+    "win": 10,
+    "cpuMultiplier": 0.5,
+    "dailyCap": 300
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "_note": "ゲームモード（世界）の一覧。今は王国だけ。日本の戦国・和風ファンタジーのモードは、専用のカード・ルール・城・背景ができてから available を true にする（別工程）。アカウント・プレイヤーレベル・通貨・所持品はモードをこえて共通。デッキ・戦績・ランク・シーズンの成績はモードごとに別",
+  "default": "kingdom",
+  "modes": {
+    "kingdom": {
+      "name": "王国",
+      "available": true,
+      "world": "kingdom",
+      "cardSet": "data/cards.json",
+      "rank": {
+        "enabled": true,
+        "independent": true
+      },
+      "background": "assets/bg/kingdom-meadow.png"
+    },
+    "japan": {
+      "name": "戦国（準備中）",
+      "available": false,
+      "world": "japan",
+      "cardSet": null,
+      "rank": {
+        "enabled": true,
+        "independent": true
+      },
+      "background": null
+    }
+  }
+}

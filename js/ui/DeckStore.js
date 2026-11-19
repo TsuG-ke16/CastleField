@@ -3,6 +3,21 @@ const KEY = 'cf-mydecks-v2';
 const LEGACY_KEY = 'cf-mydeck-v1';
 export const DECK_SLOTS = 4;
 let memory;
+const listeners = new Set();
+const notify = () => { for (const fn of listeners) { try { fn(); } catch { /* 通知の失敗で保存を止めない */ } } };
+/** デッキが変わったとき（編成・削除・選びなおし）に呼ばれる。クラウドへの保存（Account.js）が使う */
+export function onDecksChanged(fn) { listeners.add(fn); return () => listeners.delete(fn); }
+
+/** クラウドから受け取った内容で、この端末のデッキを置きかえる（通知はしない） */
+export function replaceDecks(state) {
+  memory = { active: 0, slots: Array(DECK_SLOTS).fill(null) };
+  memory.slots = memory.slots.map((_, i) => {
+    const d = state?.slots?.[i];
+    return validList(d?.list) && typeof d.name === 'string' ? { name: d.name.slice(0, 24), list: { ...d.list } } : null;
+  });
+  memory.active = Number.isInteger(state?.active) && memory.slots[state.active] ? state.active : Math.max(0, memory.slots.findIndex(Boolean));
+  return persist();
+}
 
 function validList(list) {
   return list && typeof list === 'object' && !Array.isArray(list)
@@ -58,18 +73,23 @@ export function selectMyDeck(slot) {
   if (!state.slots[slot] || state.active === slot) return;
   state.active = slot;
   persist();
+  notify();
 }
 
 export function saveMyDeck(slot, name, list) {
   const state = read();
   state.slots[slot] = { name, list: { ...list } };
   state.active = slot;
-  return persist();
+  const ok = persist();
+  notify();
+  return ok;
 }
 
 export function deleteMyDeck(slot) {
   const state = read();
   state.slots[slot] = null;
   if (state.active === slot) state.active = Math.max(0, state.slots.findIndex(Boolean));
-  return persist();
+  const ok = persist();
+  notify();
+  return ok;
 }

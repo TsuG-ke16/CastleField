@@ -1190,6 +1190,7 @@ export class Animations {
 
   /** 弓兵・魔法使いが撃つ：ねらう（ため）→ 放つ（反動）→ 飛ぶ → 当たる */
   async soldierShot({ playerId, soldierId, role, target, amount }, model) {
+    this.cosmetics?.styleFx(this.el.fx, playerId);
     const from = this.renderer.soldierEl(soldierId);
     const to = target.kind === 'soldier' ? this.renderer.soldierEl(target.soldierId)
       : target.kind === 'monster' ? this.renderer.monsterEl(target.monsterId) : this.renderer.castleEl(target.playerId)?.querySelector('.castle-pic');
@@ -1324,6 +1325,7 @@ export class Animations {
   }
 
   async spellCast({ playerId, type, target, targetKind, roadId }) {
+    this.cosmetics?.styleFx(this.el.fx, playerId); // 撃った人の攻撃エフェクトの色
     const def = this.cards[type] ?? {};
     // 魔法を使うと、画面が揺れる（強い魔法ほど大きく）
     this.screenShake('spell', def.amount ?? 4);

@@ -16,7 +16,8 @@ const browser = await chromium.launch({
 const errors = [];
 const watch = (page, label) => {
   page.on('pageerror', error => errors.push(`${label}: ${error.message}`));
-  page.on('console', message => { if (message.type() === 'error') errors.push(`${label}: ${message.text()}`); });
+  // オフラインでは、アカウントの通信（/api/...）が届かないのは想定内（ゲームはそのまま遊べる）
+  page.on('console', message => { if (message.type() === 'error' && !message.location().url?.includes('/api/')) errors.push(`${label}: ${message.text()} ${message.location().url ?? ''}`.trim()); });
 };
 
 async function offline() {
@@ -59,11 +60,15 @@ async function offline() {
 }
 
 async function zoom(device) {
-  const context = await browser.newContext({ ...devices[device], serviceWorkers: 'block' });
+  // 傾きセンサー（実機では「傾きセンサーを使う」で許可を聞く）。テストでは許可しておく
+  const context = await browser.newContext({ ...devices[device], serviceWorkers: 'block', permissions: ['accelerometer', 'gyroscope', 'magnetometer'] });
   const page = await context.newPage();
   watch(page, device);
   await page.goto(base.href);
-  await page.locator('#title-deck').click();
+  // アカウントのあるサーバーでは、最初にホーム画面が出てタイトルを覆う（Phase 2）。そのときはホームの「デッキ編成」から開く
+  // ホームはアカウントの読み込み（/api/me）のあとに出るので、少し待ってから決める
+  const onHome = await page.locator('#home:not([hidden])').waitFor({ timeout: 5000 }).then(() => true, () => false);
+  await page.locator(onHome ? '#home .home-tile[data-id=deck]' : '#title-deck').click();
   await page.locator('.deck-grid-item').first().waitFor();
   const before = await page.locator('.deck-summary').innerText();
   const box = await page.locator('.deck-grid [data-zoom]').first().boundingBox();
@@ -76,6 +81,12 @@ async function zoom(device) {
   await card.waitFor();
   await page.waitForTimeout(300);
   assert.equal(await page.locator('.deck-summary').innerText(), before, '長押しのあと指を離しても、カードは足されない');
+  // iPhone のように許可を聞ける端末では、「傾きセンサーを使う」を押してから傾きが効く（勝手には聞かない）
+  const sensor = page.locator('.zoom-sensor');
+  if (await sensor.isVisible()) {
+    await sensor.click();
+    await sensor.waitFor({ state: 'hidden' });
+  }
   const tilt = async (gamma, beta) => {
     await page.evaluate(([g, b]) => window.dispatchEvent(new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta: b, gamma: g })), [gamma, beta]);
     await page.waitForTimeout(500);

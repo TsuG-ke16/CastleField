@@ -111,14 +111,41 @@
   filter: brightness(.88);
 }
 
-/* ---- 枠ごとに、絵の窓・左右の丸・名前の帯の位置を合わせる（枠の絵ごとに少しずつ違うため） ---- */
+/* 7種類の画像は同じ512×768の座標を使う。種類別の旧枠には従来の配置を残す。 */
 .card.has-frame, .mini-card { --win-l: 16%; --win-t: 17%; --win-w: 71%; --win-h: 46%; --med-y: 14%; --med-l: 19%; --med-r: 84%; --name-y: 74%; }
-.card.has-frame[data-rarity=uncommon], .mini-card[data-rarity=uncommon] { --win-l: 13%; --win-t: 20%; --win-w: 72%; --win-h: 45%; --med-y: 16%; --med-l: 16%; --med-r: 83%; --name-y: 75%; }
-.card.has-frame[data-rarity=rare], .mini-card[data-rarity=rare] { --win-l: 15%; --win-t: 21%; --win-w: 72%; --win-h: 44%; --med-y: 18%; --med-l: 17%; --med-r: 84%; --name-y: 76%; }
-/* 専用スペシャル枠：レアと同じ窓・丸・帯の配置。 */
-.card.has-frame[data-rarity=special], .mini-card[data-rarity=special] { --win-l: 15%; --win-t: 21%; --win-w: 72%; --win-h: 44%; --med-y: 18%; --med-l: 17%; --med-r: 84%; --name-y: 76%; }
-.card.has-frame[data-rarity=epic], .mini-card[data-rarity=epic] { --win-l: 14%; --win-t: 24%; --win-w: 72%; --win-h: 42%; --med-y: 21%; --med-l: 15%; --med-r: 84%; --name-y: 75%; }
-.card.has-frame[data-rarity=legendary], .mini-card[data-rarity=legendary] { --win-l: 16%; --win-t: 26%; --win-w: 67%; --win-h: 40%; --med-y: 23%; --med-l: 17%; --med-r: 82%; --name-y: 76%; }
+#app :is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) {
+  --fy: 0%; --fh: 1; --fx: 50%; --bw: .6667;
+  --win-l: 13%; --win-t: 15%; --win-w: 74%; --win-h: 50%;
+  --med-l: 17%; --med-r: 83%; --med-y: 13%; --name-y: 73%;
+}
+:is(.card.has-frame, .mini-card)[data-rarity=common] { --card-window: url('../assets/cards/window-common.png'); }
+:is(.card.has-frame, .mini-card)[data-rarity=uncommon] { --card-window: url('../assets/cards/window-uncommon.png'); }
+:is(.card.has-frame, .mini-card)[data-rarity=rare] { --card-window: url('../assets/cards/window-rare.png'); }
+:is(.card.has-frame, .mini-card)[data-rarity=epic] { --card-window: url('../assets/cards/window-epic.png'); }
+:is(.card.has-frame, .mini-card)[data-rarity=legendary] { --card-window: url('../assets/cards/window-legendary.png'); }
+:is(.card.has-frame, .mini-card)[data-rarity=special] { --card-window: url('../assets/cards/window-special.png'); }
+
+#app :is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) > :is(.card-art, .mini-card-image) {
+  left: var(--win-l); top: var(--win-t);
+  width: var(--win-w); height: var(--win-h);
+  border-radius: 0;
+  background: var(--card-window, none) center / cover no-repeat #fff1d3;
+}
+#app :is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) > :is(.card-kind, .card-rarity, .mini-card-kind, .mini-card-rarity) {
+  top: calc(var(--med-y) - 5.3333%);
+  height: 10.6667%;
+}
+#app .card.has-frame:is([data-rarity], [data-beast]) > .card-short {
+  inset: 86% 16% auto;
+  height: 11%;
+  align-items: center;
+  justify-content: center;
+  padding: 0 2px;
+  background: transparent;
+  box-shadow: none;
+  color: #513820;
+}
+
 .card.has-frame .card-art, .card.has-frame.spell .card-art, .card.has-frame.weapon .card-art, .card.has-frame.defense .card-art, .mini-card-image {
   left: calc(var(--win-l) - 1%); top: calc(var(--win-t) - 1%); width: calc(var(--win-w) + 2%); height: calc(var(--win-h) + 2%); inset: auto;
   left: calc(var(--win-l) - 1%); top: calc(var(--win-t) - 1%);
@@ -130,6 +157,37 @@
 .card.has-frame .card-kind, .mini-card-kind { left: calc(var(--med-l) - 8%); }
 .card.has-frame .card-rarity, .mini-card-rarity { right: auto; left: calc(var(--med-r) - 8%); }
 .card.has-frame .card-name, .card.has-frame .card-name.long, .mini-card-name { top: calc(var(--name-y) - 6%); height: 12%; left: 14%; right: 14%; }
+@media (max-width: 420px) {
+  #app #hand .card.has-frame:is([data-rarity], [data-beast]) .card-name.long {
+    font-size: 7px;
+    line-height: 1;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  #app #hand .card.has-frame:is([data-rarity], [data-beast]) .card-short {
+    font-size: 8px;
+    padding-inline: 1px;
+  }
+
+  #app #hand .card.has-frame:is([data-rarity], [data-beast]) .card-short :is(.ic, .asset-art) {
+    width: 8px;
+    height: 8px;
+  }
+
+  #app #hand .card.has-frame:is([data-rarity], [data-beast]) .card-short .card-mp {
+    font-size: inherit;
+    margin-left: 1px;
+  }
+}
+
+@media (max-width: 420px) and (max-height: 700px) {
+  #app #hand .card.has-frame:is([data-rarity], [data-beast]) .card-short :is(.ic, .asset-art) {
+    width: 7px;
+    height: 7px;
+  }
+}
+
 /* 数値（攻撃・HPなど）は、枠の下の飾りに埋もれないよう、小さな札にのせる */
 .card.has-frame .card-short { bottom: 1%; left: 16%; right: 16%; padding: 1px 2px; border-radius: 7px; background: #fff7e4ee; box-shadow: 0 1px 2px #4a2e1a44; justify-content: center; }
 /* 出せないカードも、レアリティの色が分かる程度に暗くする（真っ灰色にしない） */
