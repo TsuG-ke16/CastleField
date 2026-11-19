@@ -167,3 +167,13 @@
 
 /* タイトル：飾りの朝日（.title-sunrise）が右に数pxはみ出し、430幅などで画面全体が横に3pxずれて動いていた。横は切る */
 #app #title { overflow-x: clip; }
+
+/* 横持ちの拡大表示は、カードと説明を横に並べる。 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .card-zoom[open] {
+    display: grid; grid-template-columns: auto minmax(0, 1fr);
+    align-content: safe center; justify-content: center;
+    column-gap: 16px; padding-inline: max(50px, env(safe-area-inset-left), env(safe-area-inset-right));
+  }
+  .card-zoom .zoom-stage { --zw: min(34vw, 184px, calc((100dvh - 56px) / 2.1)); }
+}

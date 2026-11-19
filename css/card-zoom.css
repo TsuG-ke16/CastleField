@@ -13,35 +13,31 @@
   position: fixed; top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); z-index: 3; width: 44px; height: 44px;
   border-radius: 50%; border: 2px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 24px; line-height: 1;
 }
-/* 画面の高さに合わせて、カードの大きさを決める（文字の分として約 230px を残す） */
+/* 説明と操作ボタンの高さを残す。 */
 .zoom-stage {
-  --zw: clamp(120px, min(56vw, 230px, calc((100dvh - 250px) * .667)), 230px);
+  --zw: clamp(120px, min(56vw, 230px, calc((100dvh - 250px) / 1.86)), 230px);
   position: relative; display: grid; place-items: center; flex: none;
   padding: calc(var(--zw) * .26) calc(var(--zw) * .14) calc(var(--zw) * .1);  /* 上は王冠が箱の外にはみ出す分（レジェンドで約 0.22 × 幅）＋手前に浮かせた分 */
   perspective: calc(var(--zw) * 3.4); touch-action: none;
 }
-/* 影は、カードとは別の層に置く（動くカードに filter をかけると重くなってカクつくため）。傾きに合わせて CardZoom.js がずらす */
+/* 影は、カードとは別の層に置く（動くカードに filter をかけると重くなってカクつくため）。傾きに合わせて Card3D.js が形を変える */
 .zoom-shadow {
   position: absolute; left: 14%; right: 14%; bottom: 3%; height: 7%; border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, .55), transparent 70%); pointer-events: none;
-  will-change: transform;
+  background: radial-gradient(ellipse at center, rgb(0 0 0 / var(--shadow-alpha, 0)), transparent 70%); pointer-events: none;
+  will-change: transform, opacity;
 }
-.zoom-card.mini-card {
+.zoom-card {
   position: relative; width: var(--zw); height: auto; aspect-ratio: 2 / 3;
-  transform: translate3d(0, 0, 0); will-change: transform; backface-visibility: hidden;
+  transform: translate3d(0, 0, 0); will-change: transform;
 }
 /* 拡大したぶん、文字・マークも大きく */
 .zoom-card .mini-card-name { font-size: calc(var(--zw) * .092); }
 .zoom-card .mini-card-kind .ic, .zoom-card .mini-card-rarity .ic { width: 96%; height: 96%; max-width: none; max-height: none; }
 .zoom-card .mini-card-kind, .zoom-card .mini-card-rarity { font-size: calc(var(--zw) * .115); }
 .zoom-card .mini-card-rarity .icon-text, .zoom-card .mini-card-rarity .asset-fallback { font-size: calc(var(--zw) * .115); }
-/* 偏光：どのレアリティでも、指の位置にツヤの光を重ねる。絵の窓の中だけ（枠の下） */
-.zoom-card::after {
-  content: ""; position: absolute; z-index: 1; pointer-events: none; mix-blend-mode: soft-light; opacity: .75;
-  left: calc(50% + (var(--win-l) - 1% - var(--fx)) / var(--fh)); top: calc((var(--win-t) - 1% - var(--fy)) / var(--fh));
-  width: calc((var(--win-w) + 2%) / var(--fh)); height: calc((var(--win-h) + 2%) / var(--fh));
-  background: radial-gradient(circle at var(--gloss-x, 40%) var(--gloss-y, 28%), #ffffffd9 0, #ffffff55 22%, transparent 55%);
-}
+.zoom-details { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.zoom-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.zoom-actions:not(:has(> button:not([hidden]))) { display: none; }
 .zoom-name { margin: 4px 0 0; font-weight: 900; font-size: 20px; text-align: center; }
 .zoom-text { margin: 0; max-width: min(92vw, 420px); font-size: 14px; line-height: 1.6; text-align: center; color: #f3e6c8; }
 .zoom-hint { margin: 2px 0 0; font-size: 11px; color: #cdbd9a; text-align: center; }
@@ -49,101 +45,140 @@
 
 .zoom-sensor { margin: 2px 0 0; padding: 6px 14px; border-radius: 999px; border: 1px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 13px; }
 
-/* ---------- 立体のカード（CardZoom.js の build3d） ----------
-   奥行き（手前が＋）：王冠・宝石 > メダルの印 > 名前 > 枠 > 窓の内側の壁 > 奥の絵。枠の下に、枠の形の薄い層を重ねて厚みにする。
-   preserve-3d を切らないように、カードには isolation・filter・mix-blend-mode を付けない（付けると平らになる）。 */
-.zoom-card.zoom-3d {
-  --z-step: calc(var(--zw) * .006);           /* 厚みの層の間隔（6層で約 0.036 × 幅） */
-  --z-illu: calc(var(--zw) * .05);            /* 絵の窓の深さ */
-  --z-name: calc(var(--zw) * .012);
-  --z-medal: calc(var(--zw) * .02);
-  --z-raised: calc(var(--zw) * .034);
-  --edge-hi: #b88a45; --edge-lo: #4a2c14;
-  isolation: auto; transform-style: preserve-3d;
+/* ---------- Card3D.js ----------
+   親の perspective の中で、表・側面・裏を同じ 3D 空間に置く。 */
+.card-3d {
+  --depth: calc(var(--card-unit) * var(--card-depth));
+  --edge-inset-x: 2.4%;
+  --edge-inset-top: 2%;
+  --edge-inset-bottom: 2%;
+  --edge-radius: calc(var(--card-unit) * .045);
+  isolation: auto;
+  transform-style: preserve-3d;
 }
-.zoom-card.zoom-3d::after, .zoom-card.zoom-3d > .foil-sheet { display: none; }
-.zoom-card.zoom-3d > :is(.zoom-edge, .zoom-wall, .zoom-raised, .zoom-raised-shade, .zoom-gl-base, .zoom-gl-raised) {
+/* 装飾が張り出す枠は、側面と裏面をカード本体の上端にそろえる。 */
+.card-3d:is([data-rarity]:not([data-rarity="common"]), [data-beast]) { --edge-inset-top: 5.9%; }
+.card-3d > .foil-sheet { display: none; }
+.card-3d > .zoom-edge {
+  position: absolute; pointer-events: none; backface-visibility: hidden;
+  --edge-ink: linear-gradient(var(--edge-direction),
+    color-mix(in srgb, var(--card-edge-color), black 32%),
+    var(--card-edge-color) 27%, var(--card-edge-color) 72%,
+    color-mix(in srgb, var(--card-edge-color), black 38%));
+  background-color: var(--card-edge-color);
+  background-image: linear-gradient(rgb(0 0 0 / var(--edge-darkness)), rgb(0 0 0 / var(--edge-darkness))), var(--edge-ink);
+}
+.card-3d[data-rarity="special"] > .zoom-edge {
+  --edge-ink: linear-gradient(var(--edge-rainbow),
+    #f68ba4, #ffdb8f, #a4efac, #80dfff, #ae9cff, #f3a0e5);
+}
+.zoom-edge-left, .zoom-edge-right {
+  top: var(--edge-inset-top); bottom: var(--edge-inset-bottom); width: var(--depth);
+  --edge-direction: 90deg; --edge-rainbow: calc(180deg + var(--edge-hue-angle));
+}
+.zoom-edge-top, .zoom-edge-bottom {
+  left: var(--edge-inset-x); right: var(--edge-inset-x); height: var(--depth);
+  --edge-direction: 0deg; --edge-rainbow: calc(90deg + var(--edge-hue-angle));
+}
+.zoom-edge-left {
+  right: calc(100% - var(--edge-inset-x)); transform-origin: right; transform: rotateY(-90deg);
+  --edge-darkness: calc(var(--edge-shade-base) + var(--edge-light-x));
+}
+.zoom-edge-right {
+  left: calc(100% - var(--edge-inset-x)); transform-origin: left; transform: rotateY(90deg);
+  --edge-darkness: calc(var(--edge-shade-base) - var(--edge-light-x));
+}
+.zoom-edge-top {
+  bottom: calc(100% - var(--edge-inset-top)); transform-origin: bottom; transform: rotateX(90deg);
+  --edge-darkness: calc(var(--edge-shade-base) + var(--edge-light-y));
+}
+.zoom-edge-bottom {
+  top: calc(100% - var(--edge-inset-bottom)); transform-origin: top; transform: rotateX(-90deg);
+  --edge-darkness: calc(var(--edge-shade-base) - var(--edge-light-y));
+}
+.card-3d.zoom-3d {
+  --z-illu: calc(var(--card-unit) * var(--card-recess));
+  --z-name: calc(var(--card-unit) * var(--card-name-depth));
+  --z-medal: calc(var(--card-unit) * var(--card-medal-depth));
+  --z-raised: calc(var(--card-unit) * var(--card-raised-depth));
+}
+.zoom-3d > :is(.zoom-wall, .zoom-raised, .zoom-raised-shade, .zoom-gl-base, .zoom-gl-raised) {
   position: absolute; pointer-events: none; display: block;
   width: calc(100% / var(--fh)); height: calc(100% / var(--fh));
   left: calc(50% - var(--fx) / var(--fh)); top: calc(0% - var(--fy) / var(--fh));
 }
-.zoom-card.zoom-3d > .mini-card-frame { transform: translateZ(0); }
-/* 厚み：枠の形で切り抜いた層。光は左上から当たるので、左上が明るく、右下が暗い */
-.zoom-card.zoom-3d > :is(.zoom-edge, .zoom-wall) {
-  background: linear-gradient(135deg, var(--edge-hi), var(--edge-lo));
-  -webkit-mask: var(--frame-url) 0 0 / 100% 100% no-repeat; mask: var(--frame-url) 0 0 / 100% 100% no-repeat;
-}
-.zoom-card.zoom-3d > .zoom-edge { transform: translateZ(calc(var(--z-step) * var(--i) * -1)); filter: brightness(calc(1 - var(--i) * .07)); }
-/* 窓の内側の壁：枠の厚みより奥（絵の深さまで）は、窓のまわりだけに出す（外側まで厚くしない） */
-.zoom-card.zoom-3d > .zoom-wall {
-  transform: translateZ(calc(var(--z-illu) * var(--i) / -7));   /* いちばん奥の壁も絵より手前（同じ奥行きだとちらつく） */
+.zoom-3d > .zoom-wall[hidden] { display: none; }
+.card-3d.zoom-3d > .mini-card-frame { transform: translateZ(0); }
+/* 窓の周りの壁は絵の深さまで。 */
+.zoom-3d > .zoom-wall {
+  transform: translateZ(calc(var(--card-unit) * var(--wall-depth) * -1));
   background: linear-gradient(160deg, #2a1708, #6b4521 60%, #8a6230);
+  -webkit-mask: var(--frame-url) 0 0 / 100% 100% no-repeat; mask: var(--frame-url) 0 0 / 100% 100% no-repeat;
   clip-path: inset(calc(var(--win-t) - 4%) calc(96% - var(--win-l) - var(--win-w)) calc(96% - var(--win-t) - var(--win-h)) calc(var(--win-l) - 4%));
 }
 /* 奥の絵。窓より少し大きい床を同じ奥行きに敷いて、傾けたときに絵の端のすき間が見えないようにする */
-.zoom-card.zoom-3d > .zoom-floor {
+.card-3d.zoom-3d > .zoom-floor {
   position: absolute; pointer-events: none; display: block; background: #fff4dc;
   left: calc(50% + (var(--win-l) - 6% - var(--fx)) / var(--fh)); top: calc((var(--win-t) - 6% - var(--fy)) / var(--fh));
   width: calc((var(--win-w) + 12%) / var(--fh)); height: calc((var(--win-h) + 12%) / var(--fh));
   transform: translateZ(calc(var(--z-illu) * -1 - .4px));
 }
-.zoom-card.zoom-3d > .mini-card-image { transform: translateZ(calc(var(--z-illu) * -1)); }
-.zoom-card.zoom-3d > .mini-card-name { transform: translateZ(var(--z-name)); }
-.zoom-card.zoom-3d > :is(.mini-card-kind, .mini-card-rarity) { transform: translateZ(var(--z-medal)); }
+.card-3d.zoom-3d > .mini-card-image { transform: translateZ(calc(var(--z-illu) * -1)); }
+.card-3d.zoom-3d > .mini-card-name { transform: translateZ(var(--z-name)); }
+.card-3d.zoom-3d > :is(.mini-card-kind, .mini-card-rarity) { transform: translateZ(var(--z-medal)); }
 /* 王冠・宝石：枠の絵を、その部品の形だけ切り抜いて手前に浮かせる（WebGL のときは光を計算した絵に入れかえる） */
-.zoom-card.zoom-3d > .zoom-raised {
+.card-3d.zoom-3d > .zoom-raised {
   transform: translateZ(var(--z-raised));
   -webkit-mask: var(--raised-url) 0 0 / 100% 100% no-repeat; mask: var(--raised-url) 0 0 / 100% 100% no-repeat;
 }
 .zoom-raised-img { display: block; width: 100%; height: 100%; }
-.zoom-card.zoom-3d > .zoom-raised-shade {
+.card-3d.zoom-3d > .zoom-raised-shade {
   transform: translateZ(.3px); background: rgba(50, 26, 6, .32);
   -webkit-mask: var(--raised-url) 0 0 / 100% 100% no-repeat; mask: var(--raised-url) 0 0 / 100% 100% no-repeat;
 }
-.zoom-card.zoom-3d > .zoom-gl-raised { transform: translateZ(var(--z-raised)); }
-.zoom-card.zoom-3d > :is(.zoom-gl-base, .zoom-gl-raised) { visibility: hidden; }
-.zoom-card.zoom-3d.zoom-gl > :is(.zoom-gl-base, .zoom-gl-raised) { visibility: visible; }
-.zoom-card.zoom-3d.zoom-gl > :is(.mini-card-frame, .zoom-raised, .zoom-raised-shade) { visibility: hidden; }
-.zoom-card.zoom-3d > .zoom-gl-base { transform: translateZ(0); }
+.card-3d.zoom-3d > .zoom-gl-raised { transform: translateZ(var(--z-raised)); }
+.card-3d.zoom-3d > :is(.zoom-gl-base, .zoom-gl-raised) { visibility: hidden; }
+.card-3d.zoom-3d.zoom-gl > :is(.zoom-gl-base, .zoom-gl-raised) { visibility: visible; }
+.card-3d.zoom-3d.zoom-gl > :is(.mini-card-frame, .zoom-raised, .zoom-raised-shade) { visibility: hidden; }
+.card-3d.zoom-3d > .zoom-gl-base { transform: translateZ(0); }
 
-/* 窓のふちの影（枠が手前にあるので、光の反対側＝右下に向かって絵に影が落ちる）とひかえめなつや */
-.zoom-recess, .zoom-sheen { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
-.zoom-recess { box-shadow: inset calc(var(--zw) * .03) calc(var(--zw) * .04) calc(var(--zw) * .05) calc(var(--zw) * -.01) rgba(45, 24, 6, .5), inset 0 0 calc(var(--zw) * .02) rgba(45, 24, 6, .3); }
-.zoom-sheen { background: radial-gradient(ellipse 70% 55% at var(--gloss-x, 30%) var(--gloss-y, 20%), rgba(255, 255, 255, .1), transparent 70%); }
-.zoom-card .mini-card-image > .zoom-foil { inset: 0; left: 0; top: 0; width: 100%; height: 100%; z-index: 2; opacity: .3; }
-.zoom-card[data-rarity="special"] .mini-card-image > .zoom-foil { opacity: .4; }
-.zoom-card.foil-visible:not(.foil-input) .mini-card-image > .zoom-foil { animation: card-foil-sweep 7s ease-in-out infinite; }
-.reduced-motion .zoom-card .mini-card-image > .zoom-foil { animation: none; }
-@media (prefers-reduced-motion: reduce) { .zoom-card .mini-card-image > .zoom-foil { animation: none; } }
-
-/* 魔物の駒の枠は、絵が羊皮紙の上にのる（窓がない）。絵は枠の少し手前、壁はなし */
-.zoom-card.zoom-3d[data-beast] > .mini-card-image { transform: translateZ(calc(var(--z-name) * .5)); }
-.zoom-card.zoom-3d[data-beast] > .zoom-floor { display: none; }
-.zoom-card.zoom-3d[data-beast] .zoom-recess { display: none; }
-
-/* 側面の色（材質ごと）：木・青い鋼・紫の金属・金・真珠 */
-.zoom-card.zoom-3d[data-material="common"] { --edge-hi: #a0703f; --edge-lo: #3d2410; }
-.zoom-card.zoom-3d[data-material="uncommon"] { --edge-hi: #9c7a3e; --edge-lo: #3b2a12; }
-.zoom-card.zoom-3d[data-material="rare"] { --edge-hi: #9fb4c8; --edge-lo: #2d3a4f; }
-.zoom-card.zoom-3d[data-material="epic"] { --edge-hi: #b394d8; --edge-lo: #3a2152; }
-.zoom-card.zoom-3d[data-material="legendary"] { --edge-hi: #f0c45a; --edge-lo: #6b3d0c; }
-.zoom-card.zoom-3d[data-material="special"] { --edge-hi: #f4e8ff; --edge-lo: #8a79a8; }
-
-/* 軽い表示（WebGL なし）と、動きを減らす設定：層の厚みは同じで、光の計算だけしない */
-.reduced-motion .zoom-shadow { will-change: auto; }
-
-/* ---------- 360度回す（CardZoom.js）：裏の面 ----------
-   表が向こうを向いたら（.zoom-flipped）表の層を全部隠して、裏の絵だけ見せる（JS が向きから決める）。
-   裏の絵は、装備中のカードの裏スキン（#app の --back-art・--back-filter）。なければ標準の絵 */
-.zoom-card > .zoom-back {
-  position: absolute; inset: 0; display: block; pointer-events: none; visibility: hidden;
-  transform: translateZ(calc(var(--z-step, .5px) * -7)) rotateY(180deg);
+/* 面の中だけに、光と反対向きの影・つや・偏光を重ねる。 */
+.zoom-recess, .zoom-sheen, .zoom-back-shade { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+.zoom-recess {
+  box-shadow: inset calc(var(--card-unit) * var(--recess-x)) calc(var(--card-unit) * var(--recess-y))
+    calc(var(--card-unit) * .05) calc(var(--card-unit) * -.01) rgb(45 24 6 / .5),
+    inset 0 0 calc(var(--card-unit) * .02) rgb(45 24 6 / .3);
 }
-.zoom-back-img { width: 100%; height: 100%; object-fit: contain; display: block; filter: var(--back-filter, none); }
-#app[data-painted-back] .zoom-back-img { content: var(--back-art); }
-.zoom-card.zoom-flipped > .zoom-back { visibility: visible !important; }
-.zoom-card.zoom-flipped > :not(.zoom-back) { visibility: hidden !important; }
-.zoom-card.zoom-flipped::after { display: none; }
+.zoom-sheen {
+  background: radial-gradient(ellipse 70% 55% at var(--gloss-x, 50%) var(--gloss-y, 50%), rgb(255 255 255 / .2), transparent 70%);
+}
+.card-3d :is(.mini-card-image, .zoom-back) > .zoom-foil {
+  inset: 0; width: 100%; height: 100%; z-index: 2; opacity: .3;
+}
+.card-3d[data-rarity="special"] .mini-card-image > .zoom-foil { opacity: .4; }
+
+/* 魔物の駒の絵は羊皮紙の上にのる。 */
+.zoom-3d[data-beast] > .mini-card-image { transform: translateZ(calc(var(--z-name) * .5)); }
+.reduced-motion .zoom-shadow { will-change: auto; }
+@media (prefers-reduced-motion: reduce) { .zoom-shadow { will-change: auto; } }
+
+/* 裏は側面と同じ深さ。角の透けは縁と同じ材質で受ける。 */
+.card-3d > .zoom-back {
+  position: absolute; inset: var(--edge-inset-top) var(--edge-inset-x) var(--edge-inset-bottom); display: block; pointer-events: none;
+  border-radius: var(--edge-radius); overflow: hidden; visibility: hidden;
+  background: #39313a;
+  background: color-mix(in srgb, var(--card-edge-color), #201822 65%);
+  transform: translateZ(calc(var(--depth) * -1)) rotateY(180deg);
+}
+.zoom-back-img { width: 100%; height: 100%; object-fit: fill; display: block; scale: 1.055; filter: var(--back-filter, none); }
+#app[data-painted-back] .zoom-back-img { content: var(--back-art); object-fit: contain; scale: 1; }
+.zoom-back-shade { background: rgb(12 16 24 / var(--face-shade, 0)); }
+.card-3d .zoom-back > .zoom-foil {
+  --foil: linear-gradient(122deg, transparent 32%, #a6d6ee52 45%, #fcebc688 50%, #d6bbf35c 55%, transparent 68%);
+  opacity: .24;
+}
+.card-3d.zoom-flipped > .zoom-back { visibility: visible; }
+.card-3d.zoom-flipped > :not(.zoom-back, .zoom-edge) { visibility: hidden !important; }
 /* なぞって回すとき、文字・画像の範囲選択が始まらないように（選択された画像は青くかぶって見える） */
 .zoom-stage, .zoom-stage * { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .zoom-reset { margin: 2px 0 0; padding: 6px 14px; border-radius: 999px; border: 1px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 13px; }
