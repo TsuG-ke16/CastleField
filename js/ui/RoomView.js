@@ -6,8 +6,10 @@ const ROOM_DECK_KEY = 'cf-room-deck-v1';
 const RULE_ROWS = [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes']];
 
 export class RoomView {
-  constructor({ onAction, onLeave, onEditDeck, savedDecks, presetDeck, previewDeck }) {
+  constructor({ onAction, onLeave, onChat, getUnread, onEditDeck, savedDecks, presetDeck, previewDeck }) {
     this.onAction = onAction;
+    this.onChat = onChat;           // チャットを開く・閉じる（部屋の画面からも話せる）
+    this.getUnread = getUnread;
     this.onEditDeck = onEditDeck;   // デッキ編成の画面を開く
     Object.assign(this, { savedDecks, presetDeck, previewDeck });
     this.onLeave = onLeave;
@@ -17,6 +19,10 @@ export class RoomView {
     this.el.hidden = true;
     document.getElementById('app').append(this.el);
     this.pending = false;
+    document.getElementById('app').addEventListener('chat-unread', (e) => {
+      const b = this.el.querySelector('.room-chat-btn'); const n = e.detail ?? 0;
+      if (b) b.dataset.unread = n > 0 ? (n > 9 ? '9+' : String(n)) : '';
+    });
     this.level = null;
     try {
       const cached = JSON.parse(sessionStorage.getItem(ROOM_DECK_KEY));
@@ -167,7 +173,13 @@ export class RoomView {
     box.append(this.node('strong', passphrase || room.roomId, 'room-passphrase'));
     const head = this.node('div', null, 'room-heading');
     head.append(this.node('h2', `参加者 ${room.players.length} / ${room.capacity}`));
-    this.button(head, '部屋を出る', this.onLeave); box.append(head);
+    const headBtns = this.node('div', null, 'room-heading-btns'); head.append(headBtns);
+    if (this.onChat) {
+      const chatBtn = this.button(headBtns, '💬 チャット', () => this.onChat()); chatBtn.classList.add('room-chat-btn');
+      const unread = this.getUnread?.() ?? 0;
+      chatBtn.dataset.unread = unread > 0 ? (unread > 9 ? '9+' : String(unread)) : '';
+    }
+    this.button(headBtns, '部屋を出る', this.onLeave); box.append(head);
     const seats = this.node('div', null, 'room-seats'); box.append(seats);
     for (const p of room.players) {
       const seat = this.node('article', null, 'room-seat');

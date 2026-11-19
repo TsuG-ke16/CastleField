@@ -67,7 +67,9 @@ export class Room {
    * @param {() => () => number} makeRng 試合ごとに乱数を作る関数
    * @param {{ cpuDelayMs?: number }} [options] cpuDelayMs：CPU が1手ごとに待つ時間（0 ならすぐ動く。テスト用）
    */
-  constructor(roomId, data, makeRng, { cpuDelayMs = 700, onMatchEnd = null, ranked = null, onRankedVoid = null, cosmeticsOf = null } = {}) {
+  constructor(roomId, data, makeRng, { cpuDelayMs = 700, onMatchEnd = null, ranked = null, onRankedVoid = null, cosmeticsOf = null, profileOf = null } = {}) {
+    /** チャットに添える、アイコンとランク（アカウントがあるときだけ） */
+    this.profileOf = profileOf;
     /** アカウントの装備中の見た目（スキン）を、席に結びつける。相手にも見える */
     this.cosmeticsOf = cosmeticsOf;
     /** ランク戦の部屋なら { cfg, ... }。設定は固定（1対1・最初に城を落とした人の勝ち・コスト制）で、始める・設定を変える・もう1回はできない */
@@ -395,7 +397,8 @@ export class Room {
     const now = Date.now();
     if (seat.lastChatAt !== undefined && now - seat.lastChatAt < CHAT_INTERVAL_MS) return { ok: false, reason: '少し待ってから送ってください' };
     seat.lastChatAt = now;
-    const entry = { id: ++this.chatCount, seat, at: now, ...body };
+    const profile = seat.userId && this.profileOf ? this.profileOf(seat.userId) : null;
+    const entry = { id: ++this.chatCount, seat, at: now, ...(profile ? { profile } : {}), ...body };
     this.chatLog.push(entry);
     if (this.chatLog.length > CHAT_HISTORY) this.chatLog.shift();
     const msg = { type: 'chat', ...this.chatMessage(entry) };
@@ -409,9 +412,9 @@ export class Room {
    * （席が詰まって、同じ番号の別の人の発言に見えないように）
    */
   chatMessage(entry) {
-    const { seat, id, at, text, stamp } = entry;
+    const { seat, id, at, text, stamp, profile } = entry;
     const here = this.seats.includes(seat);
-    return { id, playerId: here ? seat.playerId : null, name: seat.name, at, ...(here ? {} : { left: true }), ...(text !== undefined ? { text } : { stamp }) };
+    return { id, playerId: here ? seat.playerId : null, name: seat.name, at, ...(profile ? { profile } : {}), ...(here ? {} : { left: true }), ...(text !== undefined ? { text } : { stamp }) };
   }
 
   // ---------- 部屋（試合の前） ----------

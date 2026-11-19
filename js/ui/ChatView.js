@@ -5,6 +5,11 @@
 
 import { sound } from './Sound.js';
 
+import { profileArt } from './profileArt.js';
+import { rankEmblem } from './RankEmblem.js';
+
+// 名前の色（席ごと。ふち取りの文字なので、明るい色）
+const NAME_COLORS = ['#7fd0ff', '#ffb066', '#9be88f', '#ff8fb0', '#d9a8ff', '#ffe46b', '#74ecd9', '#d8d8d8'];
 const BUBBLE_MS = 7000;       // 吹き出しが出ている時間（最低）
 const BUBBLE_MS_PER_CHAR = 150; // 長い文字は、1文字ごとに足す
 const BUBBLE_MS_MAX = 12000;
@@ -115,7 +120,9 @@ export class ChatView {
     const available = Math.max(0, Math.min(viewportEnd, root.bottom) - root.top - top - 8);
     this.panel.style.setProperty('--chat-top', `${top}px`);
     this.panel.style.setProperty('--chat-space', `${available}px`);
-    this.bubbles.style.setProperty('--chat-bubbles-top', `${top}px`);
+    // パネルを開いているあいだは、吹き出しをパネルの下に出す（重ならないように）
+    const below = this.panel.hidden ? top : Math.max(top, this.panel.getBoundingClientRect().bottom - root.top + 8);
+    this.bubbles.style.setProperty('--chat-bubbles-top', `${below}px`);
   }
 
   open() {
@@ -133,6 +140,7 @@ export class ChatView {
 
   close(returnFocus = false) {
     this.panel.hidden = true;
+    this.fitPanel();
     this.button.setAttribute('aria-expanded', 'false');
     if (returnFocus && !this.button.hidden) this.button.focus({ preventScroll: true });
   }
@@ -236,21 +244,44 @@ export class ChatView {
   }
 
   bubble(msg, stamp, mine) {
+    // 枠なし：アイコン ｜ 名前（色つき）＋小さいランクのアイコン／ランク名 ／ 文字かスタンプ。上へ登りながら消える
     const box = document.createElement('div');
     box.className = `chat-bubble${mine ? ' mine' : ''}${stamp ? ' stamp' : ''}`;
-    const who = document.createElement('small'); who.textContent = msg.name ?? '';
+    const seat = Number(String(msg.playerId ?? '').replace(/\D/g, '')) - 1;
+    box.style.setProperty('--chat-name-color', NAME_COLORS[(seat >= 0 ? seat : 0) % NAME_COLORS.length]);
+    const profile = msg.profile ?? null;
+    const avatar = document.createElement('span'); avatar.className = 'chat-avatar'; avatar.setAttribute('aria-hidden', 'true');
+    const src = profile ? profileArt(profile.icon, profile.iconImage) : null;
+    if (src) { const img = new Image(); img.src = src; img.alt = ''; avatar.append(img); }
+    else avatar.textContent = [...String(msg.name ?? '?')][0] ?? '?';
+    const head = document.createElement('span'); head.className = 'chat-head-line';
+    const name = document.createElement('b'); name.className = 'chat-name'; name.textContent = msg.name ?? '';
+    head.append(name);
+    if (profile?.rank) {
+      const emblem = document.createElement('span'); emblem.className = 'chat-rank-icon';
+      emblem.innerHTML = rankEmblem(profile.rank, 16);
+      head.append(emblem);
+    }
+    const rankName = document.createElement('small'); rankName.className = 'chat-rank-name';
+    rankName.textContent = profile?.rank ? (profile.rank.divisionLabel ?? profile.rank.name) : '';
+    const meta = document.createElement('span'); meta.className = 'chat-meta';
+    meta.append(head);
+    if (rankName.textContent) meta.append(rankName);
     const body = stamp ? this.stampArt(stamp) : document.createElement('span');
+    body.classList.add('chat-float-body');
     if (!stamp) body.textContent = msg.text;
     this.fitPanel();
     if (stamp) box.title = stamp.label;
-    box.append(who, body);
-    this.bubbles.appendChild(box);
-    while (this.bubbles.children.length > 3) this.bubbles.firstElementChild.remove();
+    box.append(avatar, meta, body);
     const ms = Math.min(BUBBLE_MS_MAX, BUBBLE_MS + (stamp ? 0 : String(msg.text ?? '').length * BUBBLE_MS_PER_CHAR));
+    box.style.setProperty('--chat-ms', `${ms}ms`);
+    this.bubbles.appendChild(box);
+    while (this.bubbles.children.length > 4) this.bubbles.firstElementChild.remove();
     setTimeout(() => box.remove(), ms);
   }
 
   renderBadge() {
+    this.root.dispatchEvent(new CustomEvent('chat-unread', { detail: this.unread }));
     this.button.dataset.unread = this.unread > 0 ? (this.unread > 9 ? '9+' : String(this.unread)) : '';
     this.button.setAttribute('aria-label', this.unread > 0 ? `チャット（未読${this.unread}）` : 'チャット');
   }

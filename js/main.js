@@ -254,6 +254,7 @@ async function boot() {
   const openDeckEditor = slot => deckEditor?.open(slot);
   roomView = new RoomView({
     onAction: (method, args) => session.act(method, args), onLeave: () => showTitle(),
+    onChat: () => chat?.toggle(), getUnread: () => chat?.unread ?? 0,
     onEditDeck: openDeckEditor, savedDecks, presetDeck, previewDeck,
   });
   initHolograms(el.app);

@@ -264,3 +264,18 @@ test('部屋主を譲る：部屋主だけが、部屋にいる人（CPU 以外�
   assert.equal(a.room.action(a.seat, 'setRules', [{ castleHp: 30 }]).ok, false);
   assert.equal(b.room.action(b.seat, 'setRules', [{ castleHp: 30 }]).ok, true);
 });
+
+test('チャット：アカウントがある人の発言には、アイコンとランク（profile）が付く。ない人には付かない', () => {
+  const profile = { icon: 'infantry', iconImage: 'assets/units/infantry-blue.png', rank: { tierIndex: 2, division: 1, color: '#c90', name: 'ゴールド', divisionLabel: 'ゴールド I' } };
+  const lobby = newLobby({ cpuDelayMs: 0, profileOf: (u) => (u === 'u1' ? profile : null) });
+  const r1 = lobby.join('pf', 'A', 'u1');
+  const r2 = lobby.join('pf', 'B');
+  const a = lobby.findSeat(r1.token); const b = lobby.findSeat(r2.token);
+  const seen = [];
+  b.room.connect(b.seat, (m) => seen.push(m));
+  assert.equal(a.room.action(a.seat, 'chat', [{ text: 'やあ' }]).ok, true);
+  const msg = seen.find((m) => m.type === 'chat');
+  assert.deepEqual(msg.profile, profile);
+  assert.equal(b.room.action(b.seat, 'chat', [{ text: 'どうも' }]).ok, true);
+  assert.equal(seen.filter((m) => m.type === 'chat').at(-1).profile, undefined);
+});
