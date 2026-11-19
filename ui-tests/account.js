@@ -1,5 +1,5 @@
 // アカウント画面のテスト：node ui-tests/account.js（Playwright は環境にあるものを使う）
-// アカウント付きのサーバーを一時のデータベースで起動し、ゲスト作成・デッキ保存・再読み込み・連携ボタンの表示を確かめる。
+// アカウント付きのサーバーを一時のデータベースで起動し、ゲスト作成・デッキ保存・再読み込み・連携ボタンの表示・メールアドレスでの登録とログインを確かめる。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -85,6 +85,37 @@ try {
   await page.evaluate(() => localStorage.removeItem('cf-deck-sync-v1'));
   await page.reload();
   await page.waitForFunction(() => JSON.parse(localStorage.getItem('cf-mydecks-v2') ?? 'null')?.slots?.[0]?.name === '画面テスト', null, { timeout: 8000 });
+  // メールアドレスとパスワードを登録すると会員になり、別の端末（別のブラウザ）でログインすると同じアカウント
+  const openAccount = async (pg) => { await pg.click('#home [data-act=start]'); await pg.click('#levels-back'); await pg.click('#title-account'); await pg.locator('#account:not([hidden])').waitFor(); };
+  await openAccount(page);
+  assert.equal(await page.locator('#account .account-provider[data-provider=apple]').count(), 0); // Apple はなくした
+  await page.fill('#account [data-part=emailInput]', 'ui-test@example.com');
+  await page.fill('#account [data-part=passInput]', 'short');
+  await page.click('#account [data-act=emailRegister]');
+  await page.locator('#account [data-part=msg].bad', { hasText: '8文字以上' }).waitFor();
+  await page.fill('#account [data-part=passInput]', 'ui-test-pass-1');
+  await page.click('#account [data-act=emailRegister]');
+  await page.locator('#account [data-part=msg]', { hasText: 'メールアドレスを登録しました' }).waitFor();
+  assert.match(await page.locator('#account [data-part=kind]').textContent(), /連携済み：メールアドレス/);
+  assert.ok(await page.locator('#account [data-part=passForm]').isVisible());
+  await page.screenshot({ path: resolve(artifacts, 'account-email.png') });
+  await page.click('#account [data-act=close]');
+  const other = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();
+  other.on('pageerror', (e) => errors.push(e.message));
+  await other.goto(base);
+  await other.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
+  await openAccount(other);
+  await other.fill('#account [data-part=emailInput]', 'UI-Test@example.com');
+  await other.fill('#account [data-part=passInput]', 'wrong-password');
+  await other.click('#account [data-act=emailLogin]');
+  await other.locator('#account [data-part=msg].bad', { hasText: 'メールアドレスかパスワードが違います' }).waitFor();
+  await other.fill('#account [data-part=passInput]', 'ui-test-pass-1');
+  await other.click('#account [data-act=emailLogin]');
+  await other.locator('#account [data-part=name]', { hasText: 'テストさん' }).waitFor({ timeout: 8000 });
+  await other.waitForFunction(() => JSON.parse(localStorage.getItem('cf-mydecks-v2') ?? 'null')?.slots?.some((d) => d?.name === '画面テスト'), null, { timeout: 8000 });
+  await other.context().close();
+  await page.reload();
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   // 削除は2回押す
   await page.click('#home [data-act=start]');
   await page.click('#levels-back');

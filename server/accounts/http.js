@@ -3,7 +3,7 @@
 // - ログイン状態は HttpOnly の Cookie（SameSite=Lax。HTTPS なら Secure と __Host- 付き）。JS からは読めない
 // - 書き込みは CSRF 対策：セッションごとの値を X-CF-CSRF ヘッダーで送り、Origin も確かめる。CORS は許さない
 // - 回数の制限（IP ごと）、本文の大きさ制限
-import { Accounts, AccountError, safeEqual } from './accounts.js';
+import { Accounts, AccountError, safeEqual, emailKey, normalizeEmail } from './accounts.js';
 import { Oidc, providersFromEnv } from './oidc.js';
 import { RateLimiter } from './ratelimit.js';
 import { Progress } from './progress.js';
@@ -70,6 +70,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
   const purger = setInterval(() => { try { acc.purge(); } catch (e) { log.error('purge', { err: e }); } }, 10 * 60 * 1000);
   purger.unref();
 
+  const emailKeyOrNull = (email) => { try { return emailKey(normalizeEmail(email)); } catch { return null; } };
   const isSecure = (req) => forceSecure || !!req.socket.encrypted || (trustProxy && req.headers['x-forwarded-proto'] === 'https');
   const cookieName = (req) => (isSecure(req) ? '__Host-cf_sid' : 'cf_sid');
   const ipOf = (req) => (trustProxy && String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim()) || req.socket.remoteAddress || '?';
@@ -125,7 +126,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       const mutating = req.method !== 'GET' && req.method !== 'HEAD';
 
       // OAuth の戻り先（外部サイトから来るので CSRF の値は使えない。state で守る）
-      const cb = /^\/api\/auth\/oauth\/callback\/(google|apple)$/.exec(path);
+      const cb = /^\/api\/auth\/oauth\/callback\/(google)$/.exec(path);
       if (cb && req.method === 'GET') { await oauthCallback(req, res, url, cb[1]); return true; }
 
       if (mutating) {
@@ -159,11 +160,25 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       }
       if (req.method === 'POST' && path === '/api/auth/oauth/start') {
         const provider = body.provider;
-        if (provider !== 'google' && provider !== 'apple') { fail(req, res, 400, '連携先が正しくありません'); return true; }
+        if (provider !== 'google') { fail(req, res, 400, '連携先が正しくありません'); return true; }
         const b = idp.begin(provider);
-        if (!b) { fail(req, res, 501, publicUrl ? `${provider === 'google' ? 'Google' : 'Apple'}ログインはこのサーバーでは設定されていません` : 'サーバーの公開URL（CF_PUBLIC_URL）が設定されていません', { code: 'notConfigured' }); return true; }
+        if (!b) { fail(req, res, 501, publicUrl ? 'Googleログインはこのサーバーでは設定されていません' : 'サーバーの公開URL（CF_PUBLIC_URL）が設定されていません', { code: 'notConfigured' }); return true; }
         acc.saveOAuthState({ state: b.state, provider, nonce: b.nonce, verifier: b.verifier, userId: session.userId });
         send(req, res, 200, { ok: true, url: b.url });
+        return true;
+      }
+      // メールアドレスとパスワード（確認メールなし）。1つのアドレスへの試行は15分に10回まで（総当たり対策）
+      if (req.method === 'POST' && /^\/api\/auth\/email\/(register|login|password)$/.test(path)) {
+        const action = path.slice('/api/auth/email/'.length);
+        if (action !== 'password') {
+          const k = emailKeyOrNull(body.email);
+          if (k && !limiter.check(`email:${k}`, 10, 15 * 60_000).ok) { fail(req, res, 429, 'このメールアドレスでの操作が多すぎます。15分ほど待ってください'); return true; }
+        }
+        const out = action === 'register' ? await acc.registerEmail(session.userId, body.email, body.password)
+          : action === 'login' ? await acc.loginEmail(session.userId, body.email, body.password)
+            : await acc.changePassword(session.userId, body.current, body.next);
+        if (out.result === 'conflict') { send(req, res, 200, { ok: true, result: 'conflict', conflictId: out.conflictId }); return true; }
+        send(req, res, 200, { ok: true, result: out.result ?? 'changed' }, { 'Set-Cookie': cookieHeader(req, out.session.token, out.session.maxAgeSec) });
         return true;
       }
       if (req.method === 'POST' && path === '/api/auth/link/resolve') {
@@ -334,7 +349,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     if (!matchmaker) { fail(req, res, 503, 'ランクマッチはこのサーバーでは使えません'); return true; }
     if (req.method === 'GET' && path === '/api/ranked/status') { send(req, res, 200, { ok: true, ...matchmaker.status(uid) }); return true; }
     if (req.method === 'POST' && path === '/api/ranked/queue') {
-      if (user.kind !== 'member') { fail(req, res, 403, 'ランクマッチは、GoogleかAppleに連携したアカウントで遊べます（ゲストでは遊べません）', { code: 'needsMember' }); return true; }
+      if (user.kind !== 'member') { fail(req, res, 403, 'ランクマッチは、Googleかメールアドレスで登録したアカウントで遊べます（ゲストでは遊べません）', { code: 'needsMember' }); return true; }
       if (lobby.activeSeatOfUser(uid)) { fail(req, res, 409, 'ほかの試合の途中です。終わってから探してください', { code: 'busy' }); return true; }
       const mode = body.mode ?? modes.default;
       if (!modeIds.includes(mode)) { fail(req, res, 400, 'そのモードは、まだ遊べません（準備中です）', { code: 'modeUnavailable' }); return true; }

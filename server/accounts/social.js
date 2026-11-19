@@ -31,7 +31,7 @@ export class Social {
   // ---- 基本 ----
   isMember(userId) { return this.db.get('SELECT kind FROM users WHERE id = ?', userId)?.kind === 'member'; }
   requireMember(userId) {
-    if (!this.isMember(userId)) throw new AccountError('フレンド機能は、GoogleかAppleに連携したアカウントで使えます', 403, { code: 'needsMember' });
+    if (!this.isMember(userId)) throw new AccountError('フレンド機能は、Googleかメールアドレスで登録したアカウントで使えます', 403, { code: 'needsMember' });
   }
   settings(userId) {
     const r = this.db.get('SELECT * FROM social_settings WHERE user_id = ?', userId);

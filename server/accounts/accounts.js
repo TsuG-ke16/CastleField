@@ -1,7 +1,8 @@
 // アカウントの中身（HTTP を知らない）。サーバーが唯一の正しい情報源。
-// - ゲスト・Google・Apple のアカウント、セッション、連携、削除
+// - ゲスト・Google・メールアドレス（パスワード）のアカウント、セッション、連携、削除
 // - デッキのクラウド保存（端末のデッキの取り込みを含む）
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
+import { promisify } from 'node:util';
 
 export const DECK_SLOTS = 4;
 export const MAX_NAME = 16;
@@ -9,6 +10,46 @@ export const MAX_DECK_NAME = 24;
 const DAY = 24 * 60 * 60 * 1000;
 
 const sha256 = (s) => createHash('sha256').update(s).digest('hex');
+const scryptAsync = promisify(scrypt);
+
+// ---- メールアドレスとパスワード ----
+export const PASSWORD_MIN = 8;
+export const PASSWORD_MAX = 128;
+const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 32 };
+const SCRYPT_MAXMEM = 64 * 1024 * 1024;
+
+/** 比べるための形にする（前後の空白を取り、全角を半角に、大文字を小文字に）。形が違えば例外 */
+export function normalizeEmail(email) {
+  const e = String(email ?? '').normalize('NFKC').trim().toLowerCase();
+  if (e.length < 3 || e.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)) throw new AccountError('メールアドレスの形が正しくありません');
+  return e;
+}
+/** メールアドレスはそのまま持たず、見つけるためのハッシュだけ持つ */
+export const emailKey = (normalized) => sha256(`cf-email:${normalized}`);
+
+function checkPassword(password) {
+  if (typeof password !== 'string' || [...password].length < PASSWORD_MIN) throw new AccountError(`パスワードは${PASSWORD_MIN}文字以上にしてください`);
+  if ([...password].length > PASSWORD_MAX) throw new AccountError(`パスワードは${PASSWORD_MAX}文字までにしてください`);
+  return password;
+}
+
+/** scrypt（塩つき）でハッシュにする。形式は scrypt$N$r$p$塩$ハッシュ */
+export async function hashPassword(password) {
+  const salt = randomBytes(16);
+  const { N, r, p, keylen } = SCRYPT;
+  const key = await scryptAsync(password.normalize('NFKC'), salt, keylen, { N, r, p, maxmem: SCRYPT_MAXMEM });
+  return `scrypt$${N}$${r}$${p}$${salt.toString('base64url')}$${key.toString('base64url')}`;
+}
+
+export async function verifyPassword(password, stored) {
+  const [alg, N, r, p, salt, hash] = String(stored ?? '').split('$');
+  if (alg !== 'scrypt' || !salt || !hash) return false;
+  const want = Buffer.from(hash, 'base64url');
+  const got = await scryptAsync(String(password).normalize('NFKC'), Buffer.from(salt, 'base64url'), want.length, { N: Number(N), r: Number(r), p: Number(p), maxmem: SCRYPT_MAXMEM });
+  return got.length === want.length && timingSafeEqual(got, want);
+}
+// アドレスが見つからないときも同じくらい時間をかける（登録されているかを、かかった時間で知られないように）
+let dummyHash = null;
 const rand = (n = 32) => randomBytes(n).toString('base64url');
 export const safeEqual = (a, b) => {
   const x = Buffer.from(String(a)); const y = Buffer.from(String(b));
@@ -54,6 +95,7 @@ export class Accounts {
     const u = this.db.get('SELECT id, kind, display_name, created_at FROM users WHERE id = ?', userId);
     if (!u) return null;
     const providers = this.db.all('SELECT provider FROM identities WHERE user_id = ? ORDER BY provider', userId).map((r) => r.provider);
+    if (this.db.get('SELECT 1 AS x FROM email_logins WHERE user_id = ?', userId)) providers.push('email');
     return { id: u.id, kind: u.kind, displayName: u.display_name, createdAt: u.created_at, providers };
   }
 
@@ -161,26 +203,80 @@ export class Accounts {
         this.audit('member_created', userId, provider);
         return { result: 'created', userId, session: this.createSession(userId) };
       }
-      if (!intent || intent.id === owner) {
-        this.audit('login', owner, provider);
-        return { result: 'logged-in', userId: owner, session: this.rotateSession(owner, intent?.id === owner) };
-      }
-      // すでに別のアカウントに結びついている
-      if (intent.kind !== 'guest') {
-        throw new AccountError('このGoogle/Appleアカウントは、別のキャッスルフィールドのアカウントに連携済みです', 409);
-      }
-      const guestHasData = this.db.get('SELECT COUNT(*) AS n FROM user_decks WHERE user_id = ?', intent.id).n > 0;
-      if (!guestHasData) {
-        // ゲストに引き継ぐものがなければ、確認なしでそのアカウントに切りかえる
-        this.deleteUserRows(intent.id);
-        this.audit('login_replaced_empty_guest', owner, provider);
-        return { result: 'logged-in', userId: owner, session: this.createSession(owner) };
-      }
-      const id = rand(18);
+      return this.loginExisting(owner, intent, provider, 'このGoogleアカウントは、別のキャッスルフィールドのアカウントに連携済みです');
+    });
+  }
+
+  /**
+   * すでにあるアカウント（owner）にログインする（Google・メールで共通。tx の中で呼ぶ）。
+   * intent：いまログイン中のユーザー（ゲストなど）。ゲストにデータがあれば、引き継ぐかを確かめる（conflict）
+   */
+  loginExisting(owner, intent, via, takenMessage) {
+    if (!intent || intent.id === owner) {
+      this.audit('login', owner, via);
+      return { result: 'logged-in', userId: owner, session: this.rotateSession(owner) };
+    }
+    // すでに別のアカウントに結びついている
+    if (intent.kind !== 'guest') throw new AccountError(takenMessage, 409);
+    const guestHasData = this.db.get('SELECT COUNT(*) AS n FROM user_decks WHERE user_id = ?', intent.id).n > 0;
+    if (!guestHasData) {
+      // ゲストに引き継ぐものがなければ、確認なしでそのアカウントに切りかえる
+      this.deleteUserRows(intent.id);
+      this.audit('login_replaced_empty_guest', owner, via);
+      return { result: 'logged-in', userId: owner, session: this.createSession(owner) };
+    }
+    const id = rand(18);
+    const t = this.now();
+    this.db.run('DELETE FROM link_conflicts WHERE guest_user_id = ?', intent.id);
+    this.db.run('INSERT INTO link_conflicts (id, guest_user_id, target_user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?)', id, intent.id, owner, t, t + 10 * 60 * 1000);
+    return { result: 'conflict', conflictId: id };
+  }
+
+  // ---- メールアドレスとパスワード（確認メール・パスワードの再設定はない） ----
+  /** いまのアカウント（ゲストでも会員でも）に、メールアドレスとパスワードでログインできるようにする。ゲストは会員になる */
+  async registerEmail(userId, email, password) {
+    const key = emailKey(normalizeEmail(email));
+    const hash = await hashPassword(checkPassword(password));
+    return this.db.tx(() => {
+      if (!this.db.get('SELECT 1 AS x FROM users WHERE id = ?', userId)) throw new AccountError('ログインしていません', 401);
+      if (this.db.get('SELECT 1 AS x FROM email_logins WHERE user_id = ?', userId)) throw new AccountError('このアカウントには、もうメールアドレスが登録されています', 409);
+      if (this.db.get('SELECT 1 AS x FROM email_logins WHERE email_hash = ?', key)) throw new AccountError('このメールアドレスはもう使われています。「ログイン」を使ってください', 409);
       const t = this.now();
-      this.db.run('DELETE FROM link_conflicts WHERE guest_user_id = ?', intent.id);
-      this.db.run('INSERT INTO link_conflicts (id, guest_user_id, target_user_id, created_at, expires_at) VALUES (?, ?, ?, ?, ?)', id, intent.id, owner, t, t + 10 * 60 * 1000);
-      return { result: 'conflict', conflictId: id };
+      this.db.run('INSERT INTO email_logins (user_id, email_hash, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)', userId, key, hash, t, t);
+      this.db.run("UPDATE users SET kind = 'member' WHERE id = ?", userId);
+      this.audit('email_registered', userId);
+      return { result: 'linked', userId, session: this.rotateSession(userId) };
+    });
+  }
+
+  /** メールアドレスとパスワードでログインする。intentUserId はいまのユーザー（ゲストのデータを引き継ぐかの確認に使う） */
+  async loginEmail(intentUserId, email, password) {
+    const key = emailKey(normalizeEmail(email));
+    const row = this.db.get('SELECT user_id, password_hash FROM email_logins WHERE email_hash = ?', key);
+    dummyHash ??= await hashPassword('dummy-password');
+    const ok = await verifyPassword(String(password ?? ''), row?.password_hash ?? dummyHash);
+    if (!row || !ok) {
+      this.audit('email_login_failed', row?.user_id ?? null);
+      throw new AccountError('メールアドレスかパスワードが違います', 401);
+    }
+    return this.db.tx(() => {
+      const owner = this.db.get('SELECT user_id FROM email_logins WHERE email_hash = ?', key)?.user_id;
+      if (!owner) throw new AccountError('メールアドレスかパスワードが違います', 401);
+      const intent = intentUserId ? this.db.get('SELECT id, kind FROM users WHERE id = ?', intentUserId) : null;
+      return this.loginExisting(owner, intent, 'email', 'ほかのアカウントでログイン中です。先にログアウトしてください');
+    });
+  }
+
+  /** パスワードを変える（今のパスワードが要る）。ほかの端末のログインは切れる */
+  async changePassword(userId, current, next) {
+    const row = this.db.get('SELECT password_hash FROM email_logins WHERE user_id = ?', userId);
+    if (!row) throw new AccountError('メールアドレスが登録されていません', 404);
+    if (!(await verifyPassword(String(current ?? ''), row.password_hash))) throw new AccountError('今のパスワードが違います', 401);
+    const hash = await hashPassword(checkPassword(next));
+    return this.db.tx(() => {
+      this.db.run('UPDATE email_logins SET password_hash = ?, updated_at = ? WHERE user_id = ?', hash, this.now(), userId);
+      this.audit('password_changed', userId);
+      return { session: this.rotateSession(userId) };
     });
   }
 

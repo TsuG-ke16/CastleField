@@ -29,8 +29,8 @@ const fails = (fn, re) => assert.throws(fn, (e) => (re ? re.test(e.reason ?? e.m
 test('フレンド機能は会員だけ（ゲストは使えない）', () => {
   const { social, accounts, member } = setup();
   const guest = accounts.startGuest().userId; const m = member();
-  fails(() => social.state(guest), /連携/);
-  fails(() => social.request(guest, m), /連携/);
+  fails(() => social.state(guest), /Googleかメールアドレス/);
+  fails(() => social.request(guest, m), /Googleかメールアドレス/);
   fails(() => social.request(m, guest), /送れません/); // ゲストには送れない
 });
 

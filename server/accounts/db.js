@@ -312,6 +312,21 @@ export const MIGRATIONS = [
       INSERT INTO user_deck_settings (user_id, mode_id, active_deck, deck_revision) SELECT user_id, 'kingdom', active_deck, deck_revision FROM user_settings;
     `,
   },
+  {
+    id: 7,
+    name: 'email-password-login',
+    // メールアドレスとパスワードのログイン。メールは送らないので、アドレスそのものは持たず、ハッシュだけ持つ（見つけるため）。
+    // パスワードは scrypt（塩つき）のハッシュだけ。1つのアカウントに1つまで
+    sql: `
+      CREATE TABLE email_logins (
+        user_id       TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        email_hash    TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        created_at    INTEGER NOT NULL,
+        updated_at    INTEGER NOT NULL
+      );
+    `,
+  },
 ];
 
 export class Db {

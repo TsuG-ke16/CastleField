@@ -12,14 +12,13 @@
 | `CF_TRUST_PROXY=1` | リバースプロキシの後ろのとき。`X-Forwarded-For`（IP）と `X-Forwarded-Proto`（https 判定）を信じる |
 | `CF_SECURE_COOKIES=1` | `CF_PUBLIC_URL` が https でなくても、クッキーを Secure にする |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | Google ログイン |
-| `APPLE_CLIENT_ID`（Services ID）/ `APPLE_TEAM_ID` / `APPLE_KEY_ID` / `APPLE_PRIVATE_KEY`（PEM。改行は `\n` 可）または `APPLE_PRIVATE_KEY_PATH` | Apple ログイン |
 
 **秘密鍵・クライアントシークレットはリポジトリに入れない**（環境変数か、ホスティングの秘密管理で渡す）。
 
 ### 外部での設定が必要なもの（このリポジトリの外）
 - Google Cloud Console：OAuth クライアント（ウェブ）を作り、承認済みのリダイレクト URI に `{CF_PUBLIC_URL}/api/auth/oauth/callback/google` を登録
-- Apple Developer：Sign in with Apple の Services ID を作り、Return URL に `{CF_PUBLIC_URL}/api/auth/oauth/callback/apple` を登録。Sign in with Apple の鍵（.p8）を発行
-- どちらも HTTPS の公開URLが必要。未設定のサーバーでは、画面の連携ボタンは「このサーバーでは未設定」と出て押せない
+- Apple ログインはなくした（Apple Developer Program が有料のため。人間の指示）。代わりにメールアドレスとパスワードで登録できる（外部の設定は要らない）
+- Google は HTTPS の公開URLが必要。未設定のサーバーでは、画面の連携ボタンは「このサーバーでは未設定」と出て押せない
 
 ## データベース
 
@@ -40,7 +39,14 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 定期実行は cron などで `backup` を呼ぶ（運用側の設定。毎日・世代管理は運用で決める）。
 
 ## 認証とセッション
-- 初回はゲスト（`POST /api/auth/guest`）。Google/Apple を連携すると、**同じユーザーのまま** member になる（データ消失・重複登録なし）
+- 初回はゲスト（`POST /api/auth/guest`）。Google を連携するか、メールアドレスとパスワードを登録すると、**同じユーザーのまま** member になる（データ消失・重複登録なし）
+- **メールアドレスとパスワード**（人間に確認して決めた。小規模なので**確認メール・パスワードの再設定はない**）
+  - 登録：いまのアカウント（ゲストでも Google の会員でも）に1つだけ。同じアドレスは2つのアカウントに登録できない（大文字・全角・前後の空白は同じとみなす）
+  - 保存：アドレスはそのまま持たず、見つけるためのハッシュ（SHA-256）だけ（`email_logins.email_hash`）。パスワードは scrypt（N=16384・r=8・p=1、16バイトの塩）のハッシュだけ。8〜128文字
+  - ログイン：パスワード違いも知らないアドレスも、同じ理由「メールアドレスかパスワードが違います」・同じくらいの時間で断る（登録されているかを知られないように）。1つのアドレスへの登録・ログインは15分に10回まで（IP ごとの制限とは別）
+  - ログインした先のアカウントと、いまのゲストのデータの扱いは Google と同じ（下の確認の画面）。会員でログイン中に、別のアカウントのメールでログインはできない（先にログアウト）
+  - パスワードの変更は今のパスワードが要る。変えると、ほかの端末のログインは切れる
+  - **パスワードを忘れたら戻せない**（画面にも書いてある）。必要になったら、確認メール・再設定を足す（メールの送信サービスが要る）
 - すでに連携済みのアカウントにゲスト（データあり）がログインしようとしたら、確認の画面（`link/resolve`）。「切りかえる」でゲストのデッキは空き枠に移り、相手のデータは消えない。ゲストにデータがなければ確認なしで切りかわる
 - OAuth は認可コードフロー。`state`（1回きり・10分）・`nonce`・PKCE（Google）。ID トークンは **サーバーで** 署名（RS256・公開鍵は JWKS）・`iss`・`aud`・`exp`・`nonce` を検証（`alg: none` や別の鍵は拒否）
 - セッションの値は256ビットの乱数で、DB にはハッシュだけを保存。Cookie は `HttpOnly; SameSite=Lax`（HTTPS では `Secure` と `__Host-` 付き）。有効期限は、使わなければ30日・最長90日。連携・切りかえのときは作り直し、古いものは失効
@@ -50,10 +56,13 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 ## API（すべて同じオリジンから）
 | メソッド・URL | 内容 |
 |---|---|
-| `GET /api/me` | `{ user, csrf, providers: { google, apple }, oauthReady }`。ログインしていなければ `user: null` |
+| `GET /api/me` | `{ user, csrf, providers: { google }, oauthReady }`。`user.providers` は `"google"` / `"email"` の配列。ログインしていなければ `user: null` |
 | `POST /api/auth/guest` | ゲストを作る（すでにログイン済みならそのまま返す） |
 | `POST /api/auth/oauth/start` `{ provider }` | 認証画面の URL（`{ url }`）。ログイン中のユーザーに連携する |
-| `GET /api/auth/oauth/callback/{google,apple}` | 戻り先。`/?auth=linked|logged-in|created|conflict|error` へ 303 |
+| `GET /api/auth/oauth/callback/google` | 戻り先。`/?auth=linked|logged-in|created|conflict|error` へ 303 |
+| `POST /api/auth/email/register` `{ email, password }` | いまのアカウントにメールアドレスとパスワードを登録（`{ result: "linked" }`。セッションは作り直す） |
+| `POST /api/auth/email/login` `{ email, password }` | ログイン（`{ result: "logged-in" }`、ゲストのデータがあれば `{ result: "conflict", conflictId }` → `link/resolve`） |
+| `POST /api/auth/email/password` `{ current, next }` | パスワードの変更（ほかのセッションは失効） |
 | `POST /api/auth/link/resolve` `{ id, action: "switch"|"cancel" }` | 連携の衝突の解決 |
 | `POST /api/auth/logout` `{ confirmGuestLoss? }` | ゲストは確認が要る（409 `needsConfirm`） |
 | `POST /api/account/delete` `{ confirm: "delete" }` | アカウントと関連データをすべて削除 |
@@ -69,9 +78,8 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 - 起動のたびにクラウドと合わせる。ほかの端末が先に変えていたら（409）、端末の内容はとっておいて、クラウドを採用し、その旨を表示する
 
 ## まだやっていないこと（Phase 1 の範囲外）
-- 本物の Google / Apple での通信の確認（認証情報がないため。テストは、同じ手順・同じ署名の検証をする**テスト用の認証サーバー**で行っている）
-- Apple の `form_post`（名前・メールを要求するとき）への対応。いまは `openid` だけを要求し、戻りは GET
-- データ引き継ぎのコード（OAuth 連携だけで引き継ぐ）、メールアドレス・パスワードのログイン
+- 本物の Google での通信の確認（認証情報がないため。テストは、同じ手順・同じ署名の検証をする**テスト用の認証サーバー**で行っている）
+- データ引き継ぎのコード（Google かメールアドレスで引き継ぐ）、確認メール・パスワードの再設定
 - 古い（使われていない）ゲストの掃除、ログの外部送信、複数台構成
 
 ---
@@ -130,7 +138,7 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 - シーズン報酬（到達ランクに応じた報酬の受け取り）は **Phase 6**
 
 ## マッチメイキング（`server/accounts/matchmaking.js`）
-- **正会員（Google/Apple 連携）だけ**参加できる。ゲストは 403（`needsMember`）。CPU・ゲスト・カジュアル（合言葉）の対戦ではレートは動かない
+- **正会員（Google 連携かメールアドレスの登録）だけ**参加できる。ゲストは 403（`needsMember`）。CPU・ゲスト・カジュアル（合言葉）の対戦ではレートは動かない
 - 待ち行列は**メモリだけ**（サーバーを再起動すると空。成立済みの試合は部屋ごと消える）。同じユーザーは1つの行列・1つの試合にしか入れない。進行中の別の試合がある間も並べない
 - MMR が近い人を選ぶ。待つほど範囲が広がる（100 → 10秒ごとに +50 → 最大800）。90秒で見つからなければタイムアウト（案内を1回返す）
 - 成立すると、サーバーが部屋（合言葉では入れない）・対戦 ID・席の鍵を決め、すぐ試合が始まる。先攻・後攻はランダム。デッキはクラウドの使用中のデッキ（コスト制の決まりに合えば）か見本のデッキ。鍵は本人に `GET /api/ranked/status` でだけ返す（**切断しても、ここから戻れる**）
@@ -157,7 +165,7 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 ## まだやっていないこと
 - 降格の保護・ディビジョンごとの昇格戦、シーズン報酬の受け取り（Phase 6）
 - 待ち行列を再起動をまたいで保つこと、複数台構成
-- 本物の Google/Apple 連携で会員になった人どうしの確認（テストでは会員フラグをデータベースで直接立てている）
+- 本物の Google 連携で会員になった人どうしの確認（テストでは会員フラグをデータベースで直接立てている）
 - 人数が少ないときの調整（待つほど範囲が広がる）は仮の数値。**実際の人数でチューニングが必要**
 
 ---
@@ -167,7 +175,7 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 フレンド情報（フレンド関係・ブロック・設定・フレンドコード）は**サーバーのデータベース**に保存する。招待・パーティー・オンライン状態は、短い間だけ意味があるのでサーバーの**メモリ**（再起動で消える）。
 
 ## 使える人
-- **正会員（Google/Apple 連携）だけ**。ゲストは使えない（403 `needsMember`）。ゲストには送れない・検索にも出ない（アカウントが消えるとフレンドの意味がなくなるため）
+- **正会員（Google 連携かメールアドレスの登録）だけ**。ゲストは使えない（403 `needsMember`）。ゲストには送れない・検索にも出ない（アカウントが消えるとフレンドの意味がなくなるため）
 
 ## できること
 - **プレイヤー検索**：名前の前方一致（2〜16文字）か、**フレンドコード**（8文字。自分のコードは「さがす」に出る）。自分・ブロックの関係にある人・「検索されない」設定の人は出ない（コードなら見つかる）。1分に20回まで
@@ -203,7 +211,7 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 - 招待・パーティーの状態はメモリのため、サーバーを再起動すると消える
 - 通報・運営への連絡、チャットの文のフィルタ
 - パーティーでのランクマッチ（ランクは1人ずつ）
-- 本物の Google/Apple 連携で会員になった人どうしでの確認（テストでは会員の印をデータベースで直接つけている）
+- 本物の Google 連携で会員になった人どうしでの確認（テストでは会員の印をデータベースで直接つけている）
 
 ---
 
@@ -290,6 +298,6 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 ## まだやっていないこと・限界
 - 試合中の部屋の永続化（再起動で試合は中断される）。複数台・負荷分散
 - 通報・運営用の管理画面。ログの外部送信・アラート
-- Google/Apple の本物との通信、実機・本番での確認
+- Google の本物との通信、実機・本番での確認
 - 日本モードの中身（カード・ルール・城・背景）。モードごとの `cards` の切り替えは未実装（`Room` は今は王国の `data` だけを使う）
 - ミッションの追加・期間限定（データの追加だけで増やせる）
