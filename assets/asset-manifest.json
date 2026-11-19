@@ -2,7 +2,6 @@
   "cards/card-reflect.png": "exec-2df1a4a6-d05f-40f1-b0be-33808604d083.png",
   "cards/card-decoy.png": "exec-2df1a4a6-d05f-40f1-b0be-33808604d083.png",
   "cards/card-blessing.png": "exec-2df1a4a6-d05f-40f1-b0be-33808604d083.png",
-  "cards/card-prayer.png": "exec-2df1a4a6-d05f-40f1-b0be-33808604d083.png",
   "cards/card-thief.png": "exec-2df1a4a6-d05f-40f1-b0be-33808604d083.png",
   "cards/card-bolt.png": "exec-2df1a4a6-d05f-40f1-b0be-33808604d083.png",
   "cards/card-fire-spirit.png": "exec-2df1a4a6-d05f-40f1-b0be-33808604d083.png",
@@ -109,8 +108,6 @@
   "cards/card-water-king.png": "exec-667fd6a8-7f7e-4184-90b3-0a44934a999b.png",
   "cards/card-wind-king.png": "exec-667fd6a8-7f7e-4184-90b3-0a44934a999b.png",
   "cards/card-earth-king.png": "exec-667fd6a8-7f7e-4184-90b3-0a44934a999b.png",
-  "cards/card-coin-pouch.png": "exec-667fd6a8-7f7e-4184-90b3-0a44934a999b.png",
-  "cards/card-gold-coin.png": "exec-667fd6a8-7f7e-4184-90b3-0a44934a999b.png",
   "cards/card-treasure.png": "exec-667fd6a8-7f7e-4184-90b3-0a44934a999b.png",
   "cards/card-gold-vein.png": "exec-667fd6a8-7f7e-4184-90b3-0a44934a999b.png",
   "cards/card-king-treasure.png": "exec-667fd6a8-7f7e-4184-90b3-0a44934a999b.png",
@@ -325,5 +322,9 @@
   "ui/stamps/scared.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
   "ui/stamps/sorry.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
   "ui/stamps/gg.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
-  "ui/stamps/again.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png"
+  "ui/stamps/again.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "cards/card-mana-raid.png": "chatgpt-2026-11-19-spec4.png",
+  "cards/card-life-steal.png": "chatgpt-2026-11-19-spec4.png",
+  "cards/card-desperate-shot.png": "chatgpt-2026-11-19-spec4.png",
+  "cards/card-powder-keg.png": "chatgpt-2026-11-19-spec4.png"
 }
