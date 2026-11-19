@@ -197,7 +197,7 @@ export function checkCostDeck(list, cards, rarities, rules) {
     if (!isDeckable(def)) { problems.push(`「${def.name}」はデッキに入れられません`); continue; }
     const rid = deckRarityOf(def, rarities);
     const rdef = rarities[rid];
-    const maxCopies = rdef.maxCopies ?? Infinity;
+    const maxCopies = Math.min(rdef.maxCopies ?? Infinity, def.maxCopies ?? Infinity); // カード個別の上限（王の財宝など）
     if (n > maxCopies) problems.push(`「${def.name}」は${maxCopies}枚までです（${n}枚）`);
     counts[rid] = (counts[rid] ?? 0) + n;
     cost += n * (rdef.deckCost ?? 0);

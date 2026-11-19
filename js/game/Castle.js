@@ -8,6 +8,8 @@ export class Castle {
     this.armor = 0;
     /** 毒の量（毎ターン、持ち主のターンの始めに受けるダメージ。永続）。毒でなければ null */
     this.poison = null;
+    /** 毒の残りターン（null は永続）。rules.poisonTurns があるときだけ数える */
+    this.poisonTurns = null;
   }
 
   /** ダメージを受ける。HPは0未満にしない */
