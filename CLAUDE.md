@@ -1172,7 +1172,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **城への魔法を弱くした**（`cards.json`）：ファイアボール 8→5・業火 11→9・隕石 14→14（変えない）・星降り 22→19・終末の炎 36→25（人間の指示で数値を直した）
 - **城壁は永続で、上限40**（`rules.armorMax`、仮：40）：次の自分のターンで消えなくなった。置くと**足し算**で、上限まで積める（上限に達していたら出せない）。ダメージは先に城壁が受ける（毒は無視）。0 または省略なら従来どおり（重ならず、次のターンの始めに消える）。`armorExpired` は `armorMax` があると出ない
 - **毒は5ターンで治り、量は10まで**（`rules.poisonTurns`、仮：5／`rules.poisonMax`、仮：10）：兵士は進軍のたび、城は持ち主のターンの始めに、ダメージを受けるごとに残りが1減って 0 で治る。重ねがけは足し算（上限 `poisonMax`）で、残りターンは5に戻る。城の毒が期限で治るときは `castleCured`、兵士は `statusCleared`。`getState().players.pX.castlePoisonTurns`（城の毒の残り。永続なら `null`）。0 または省略なら従来どおり（永続・上限なし）
-- **カジュアル対戦（合言葉の部屋）で城のHPを選べる**（人間の指示）：部屋主が `setRules` の `castleHp`（20・30・40・50・60・80・100と、`rules.json` の `castleMaxHp`）で選ぶ。試合の `rules.castleMaxHp` を上書きする（初期値は `rules.json` のまま）。`room.settings.castleHp` は文字列、`choices.castleHps`（`[{ id, name }]`）。ランクマッチは変えられない（`rules.json` のまま）。画面は部屋の「対戦ルール」に「城のHP」を足した（`js/ui/RoomView.js`）
+- **カジュアル対戦（合言葉の部屋）で城のHPを入力できる**（人間の指示）：部屋主が `setRules` の `castleHp`（10〜200の整数。選ぶのではなく自分で入力）で決める。試合の `rules.castleMaxHp` を上書きする（初期値は `rules.json` のまま）。`room.settings.castleHp` は数、`choices.castleHpRange`（`{ min, max }`）。ランクマッチは変えられない。画面は部屋の「対戦ルール」に数の入力欄を足した（`js/ui/RoomView.js`）
 - **コインのカードは1ターン1枚まで**（`rules.coinCardsPerTurn`、仮：1）：`gainCoins` が対象。出せないときの理由は「コインのカードは1ターンに1枚までです」。0 または省略なら無制限
 - **王の財宝（レジェンドのコイン）はデッキ編成で1枚まで**：`cards.json` のカードに `maxCopies`（1以上の整数）を書くと、レアリティの `maxCopies` より厳しい上限になる（`checkCostDeck`）
 - 画面：`js/ui/text.js` の城壁・毒の説明文を `armorMax` / `poisonTurns` / `poisonMax` に合わせた。城の毒の残りターンのバッジ表示は未対応

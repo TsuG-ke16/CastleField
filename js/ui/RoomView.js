@@ -109,6 +109,30 @@ export class RoomView {
     }
     parent.append(row);
   }
+  /** 数を自分で入力する行（部屋主だけ。入力を終えたとき・Enter で送る。範囲外は直して送り直す） */
+  numberInput(parent, label, value, range, editable, change, slot) {
+    const row = this.node(editable ? 'div' : 'label', null, 'room-select');
+    row.append(this.node('span', label));
+    if (editable) {
+      const input = this.node('input');
+      input.type = 'number'; input.inputMode = 'numeric'; input.step = '1';
+      if (range) { input.min = range.min; input.max = range.max; }
+      input.value = value ?? '';
+      input.disabled = this.pending;
+      input.dataset.slot = slot ?? label;
+      input.addEventListener('change', () => {
+        let n = Math.round(Number(input.value));
+        if (!Number.isFinite(n)) n = Number(value);
+        if (range) n = Math.min(range.max, Math.max(range.min, n));
+        input.value = n;
+        if (n !== Number(value)) change(n);
+      });
+      row.append(input);
+    } else {
+      row.append(this.node('b', value ?? '—'));
+    }
+    parent.append(row);
+  }
   button(parent, text, action, disabled = false, cls = 'small-btn') {
     const btn = this.node('button', text, cls);
     btn.type = 'button'; btn.disabled = disabled || this.pending;
@@ -192,9 +216,10 @@ export class RoomView {
     const settings = this.node('section', null, 'room-settings'); box.append(settings);
     settings.append(this.node('h2', '対戦ルール'));
     if (!host) settings.append(this.node('p', 'ルールとCPUは部屋主が選びます。自分の城・デッキは変更できます。', 'room-note'));
-    for (const [key,label,list] of [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['castleHp','城のHP','castleHps'],['teams','チームの分け方','teamModes']]) {
+    for (const [key,label,list] of [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes']]) {
       this.select(settings, label, choices[list], room.settings[key], host, v => this.act('setRules', [{[key]:v}]), `rule:${key}`);
     }
+    this.numberInput(settings, '城のHP', room.settings.castleHp, choices.castleHpRange, host, v => this.act('setRules', [{castleHp:v}]), 'rule:castleHp');
     if (host) {
       this.level ??= choices.cpuLevels?.[0]?.id;
       this.select(settings, '追加するCPUの強さ', choices.cpuLevels, this.level, true, v => {this.level=v;}, 'cpuLevel');

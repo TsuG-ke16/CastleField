@@ -30,8 +30,9 @@ export const MAX_SEATS = 8;
 const MIN_PLAYERS = 2;
 
 /** 部屋で選べる勝ち方 */
-/** 部屋で選べる城のHP（rules.castleMaxHp の初期値もここに足して並べる） */
-export const CASTLE_HP_CHOICES = [20, 30, 40, 50, 60, 80, 100];
+/** 部屋で入力できる城のHPの範囲（整数） */
+export const CASTLE_HP_MIN = 10;
+export const CASTLE_HP_MAX = 200;
 
 export const WIN_CONDITIONS = {
   firstDestroy: '最初に城を落とした人の勝ち',
@@ -469,11 +470,6 @@ export class Room {
     return { ok: true };
   }
 
-  /** 選べる城のHP（小さい順。rules.json の値も入れる） */
-  castleHpChoices() {
-    return [...new Set([...CASTLE_HP_CHOICES, this.data.rules.castleMaxHp])].sort((a, b) => a - b);
-  }
-
   /** 部屋主がモードを選ぶ：{ winCondition?, deckMode?, teams?, castleHp? } */
   setRules(seat, patch) {
     const bad = this.lobbyCheck(seat);
@@ -485,8 +481,10 @@ export class Room {
         if (!Object.hasOwn(WIN_CONDITIONS, value)) return { ok: false, reason: 'その勝ち方はありません' };
         next.winCondition = value;
       } else if (key === 'castleHp') {
-        const hp = Number(value);
-        if (!this.castleHpChoices().includes(hp)) return { ok: false, reason: 'その城のHPは選べません' };
+        const hp = typeof value === 'string' && value.trim() !== '' ? Number(value) : value;
+        if (!Number.isInteger(hp) || hp < CASTLE_HP_MIN || hp > CASTLE_HP_MAX) {
+          return { ok: false, reason: `城のHPは${CASTLE_HP_MIN}〜${CASTLE_HP_MAX}の整数で入力してください` };
+        }
         next.castleHp = hp;
       } else if (key === 'teams') {
         if (!Object.hasOwn(TEAM_MODES, value)) return { ok: false, reason: 'そのチームの分け方はありません' };
@@ -799,7 +797,7 @@ export class Room {
       minPlayers: MIN_PLAYERS,
       started: this.started,
       ranked: !!this.ranked,
-      settings: { ...this.settings, castleHp: String(this.settings.castleHp) },
+      settings: { ...this.settings },
       choices: {
         winConditions: Object.entries(WIN_CONDITIONS).map(([id, name]) => ({ id, name })),
         deckModes: Object.entries(DECK_MODES)
@@ -809,7 +807,7 @@ export class Room {
         decks: Object.entries(this.plainDecks()).map(([id, d]) => ({ id, name: d.name ?? id })),
         costDecks: Object.entries(this.costDecks() ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),
-        castleHps: this.castleHpChoices().map((hp) => ({ id: String(hp), name: `${hp}` })),
+        castleHpRange: { min: CASTLE_HP_MIN, max: CASTLE_HP_MAX },
         teamModes: Object.entries(TEAM_MODES).map(([id, name]) => ({ id, name })),
         teams: TEAM_IDS.map((id) => ({ id, name: TEAM_NAMES[id] })),
       },
