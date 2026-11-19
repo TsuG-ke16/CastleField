@@ -1,5 +1,5 @@
 // アカウントの画面側。サーバー（server/accounts/）が唯一の正しい情報源で、ここはその窓口。
-// - 初回はゲストとして自動で始まる。Google / Apple を連携すると、ゲストのデータを持ったまま引き継げる
+// - 初回はゲストとして自動で始まる。Google かメールアドレスを登録すると、ゲストのデータを持ったまま引き継げる
 // - サーバーがない環境（python の簡易サーバー・オフライン）では、何も起きずにこれまでどおり遊べる
 // - デッキは端末にも残す（オフラインで遊べるように）。変えたらクラウドへ送り、起動時にクラウドと合わせる
 import { loadDecks, onDecksChanged, replaceDecks } from './DeckStore.js';
@@ -10,7 +10,7 @@ const AUTH_MESSAGES = {
   denied: '認証がキャンセルされました',
   state: '認証の有効期限が切れました。もう一度試してください',
   failed: '認証に失敗しました。もう一度試してください',
-  linked: 'このGoogle/Appleアカウントは、別のキャッスルフィールドのアカウントに連携済みです',
+  linked: 'このGoogleアカウントは、別のキャッスルフィールドのアカウントに連携済みです',
 };
 
 const readMeta = () => { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) ?? {}; } catch { return {}; } };
@@ -32,7 +32,7 @@ export class Account {
     this.enabled = false; // サーバーのアカウント機能が使えるか
     this.user = null;
     this.csrf = null;
-    this.providers = { google: false, apple: false };
+    this.providers = { google: false };
     this.sync = 'idle'; // idle | syncing | saved | offline | conflict
     this.listeners = new Set();
     this.timer = null;
@@ -141,6 +141,24 @@ export class Account {
     if (!r.json?.ok) return { ok: false, reason: r.json?.reason ?? 'サーバーにつながりません' };
     location.href = r.json.url;
     return { ok: true };
+  }
+
+  /**
+   * メールアドレスとパスワード。action は register（いまのアカウントに登録）/ login（登録済みのアカウントに入る）。
+   * 成功したらセッションが新しくなるので、状態を読み直す。ゲストのデータがあるアカウントへのログインは { result: 'conflict', conflictId }
+   */
+  async emailAuth(action, email, password) {
+    const r = await this.api('POST', `/api/auth/email/${action === 'register' ? 'register' : 'login'}`, { email, password });
+    if (!r.json?.ok) return { ok: false, reason: r.json?.reason ?? 'サーバーにつながりません' };
+    if (r.json.result !== 'conflict') await this.init(); // ログインで別のアカウントになったら、この端末のデッキはそちらの空き枠に取り込む（Google と同じ）
+    return r.json;
+  }
+
+  async changePassword(current, next) {
+    const r = await this.api('POST', '/api/auth/email/password', { current, next });
+    if (!r.json?.ok) return { ok: false, reason: r.json?.reason ?? 'サーバーにつながりません' };
+    await this.init(); // セッションが新しくなる
+    return r.json;
   }
 
   async logout(confirmGuestLoss = false) {

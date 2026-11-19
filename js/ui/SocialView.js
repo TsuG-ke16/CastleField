@@ -132,7 +132,7 @@ export class SocialView {
     this.part('tabs').replaceChildren();
     const body = this.part('body'); body.replaceChildren();
     const p = document.createElement('p'); p.className = 'social-note';
-    p.textContent = 'フレンド機能は、GoogleかAppleに連携したアカウントで使えます。ゲストのままでは使えません。';
+    p.textContent = 'フレンド機能は、Googleかメールアドレスで登録したアカウントで使えます。ゲストのままでは使えません。';
     const b = document.createElement('button'); b.type = 'button'; b.className = 'plank-btn'; b.textContent = 'アカウントを連携する';
     b.addEventListener('click', () => { this.close(); this.onNeedMember(); });
     body.append(p, b);

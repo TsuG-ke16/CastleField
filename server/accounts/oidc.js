@@ -1,8 +1,7 @@
-// Google / Apple の OAuth 2.0 認可コードフロー（OpenID Connect）。独自の認証方式は作らない。
+// Google の OAuth 2.0 認可コードフロー（OpenID Connect）。メールアドレス・パスワードのログインは accounts.js。
 // - state・nonce・PKCE（Google）を使い、ID トークンの署名・発行元・宛先・期限・nonce をサーバーで検証する
 // - 設定は環境変数（秘密鍵はリポジトリに入れない）。足りない会社は「未設定」として、使えないと伝える
-import { createHash, createPublicKey, createPrivateKey, randomBytes, sign as cryptoSign, verify as cryptoVerify } from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { createHash, createPublicKey, randomBytes, verify as cryptoVerify } from 'node:crypto';
 
 const b64url = (buf) => Buffer.from(buf).toString('base64url');
 const rand = (n = 24) => randomBytes(n).toString('base64url');
@@ -16,14 +15,6 @@ export const PROVIDER_DEFAULTS = {
     scope: 'openid',
     pkce: true,
   },
-  apple: {
-    authEndpoint: 'https://appleid.apple.com/auth/authorize',
-    tokenEndpoint: 'https://appleid.apple.com/auth/token',
-    jwksUri: 'https://appleid.apple.com/auth/keys',
-    issuers: ['https://appleid.apple.com'],
-    scope: 'openid', // メールや名前は要求しない（個人情報を預からない）
-    pkce: false,
-  },
 };
 
 /** 環境変数から読む。足りないものは入れない */
@@ -32,29 +23,12 @@ export function providersFromEnv(env = process.env) {
   if (env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET) {
     out.google = { ...PROVIDER_DEFAULTS.google, clientId: env.GOOGLE_CLIENT_ID, clientSecret: () => env.GOOGLE_CLIENT_SECRET };
   }
-  if (env.APPLE_CLIENT_ID && env.APPLE_TEAM_ID && env.APPLE_KEY_ID && (env.APPLE_PRIVATE_KEY || env.APPLE_PRIVATE_KEY_PATH)) {
-    const pem = env.APPLE_PRIVATE_KEY ? env.APPLE_PRIVATE_KEY.replace(/\\n/g, '\n') : readFileSync(env.APPLE_PRIVATE_KEY_PATH, 'utf8');
-    out.apple = {
-      ...PROVIDER_DEFAULTS.apple,
-      clientId: env.APPLE_CLIENT_ID,
-      clientSecret: () => appleClientSecret({ teamId: env.APPLE_TEAM_ID, keyId: env.APPLE_KEY_ID, clientId: env.APPLE_CLIENT_ID, pem }),
-    };
-  }
   return out;
-}
-
-/** Apple は client_secret を ES256 の JWT で作る（短い有効期限で毎回作る） */
-export function appleClientSecret({ teamId, keyId, clientId, pem, now = Date.now() }) {
-  const iat = Math.floor(now / 1000);
-  const head = b64url(JSON.stringify({ alg: 'ES256', kid: keyId, typ: 'JWT' }));
-  const body = b64url(JSON.stringify({ iss: teamId, iat, exp: iat + 300, aud: 'https://appleid.apple.com', sub: clientId }));
-  const sig = cryptoSign('sha256', Buffer.from(`${head}.${body}`), { key: createPrivateKey(pem), dsaEncoding: 'ieee-p1363' });
-  return `${head}.${body}.${b64url(sig)}`;
 }
 
 export class Oidc {
   /**
-   * @param {object} providers { google?: {...}, apple?: {...} }
+   * @param {object} providers { google?: {...} }
    * @param {object} o
    * @param {string} o.redirectBase 例 https://game.example.com（末尾の / なし）
    */
@@ -66,7 +40,7 @@ export class Oidc {
     this.jwks = new Map(); // provider → { keys, at }
   }
 
-  available() { return { google: !!this.providers.google, apple: !!this.providers.apple }; }
+  available() { return { google: !!this.providers.google }; }
   redirectUri(provider) { return `${this.redirectBase}/api/auth/oauth/callback/${provider}`; }
 
   /** 認証画面の URL と、サーバーに残す値を作る */

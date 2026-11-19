@@ -25,3 +25,11 @@
 .account-close { display:block; margin:14px auto 0; min-width:160px; }
 #title-account { grid-column:1 / -1; }
 .account-danger .small-btn { white-space:nowrap; }
+
+/* メールアドレスとパスワード */
+.account-email form { display:grid; gap:8px; }
+.account-email .account-note.small { font-size:13px; margin:0; }
+.account-email-actions { display:grid; gap:8px; }
+.account-email-actions .plank-btn { min-height:48px; width:100%; }
+.account-email-actions .small-btn { min-height:44px; margin-top:0; }
+.account-email form[hidden], .account-email [hidden] { display:none; }

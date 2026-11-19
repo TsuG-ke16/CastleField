@@ -1,4 +1,4 @@
-// アカウント・認証・デッキ保存のテスト。Google/Apple は、テスト用の認証サーバー（本物と同じ手順・署名）で確かめる。
+// アカウント・認証・デッキ保存のテスト。Google は、テスト用の認証サーバー（本物と同じ手順・署名）で確かめる。メールアドレスとパスワードのログインも。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -9,7 +9,6 @@ import { join } from 'node:path';
 import { createGameServer, loadData } from '../server/server.js';
 import { Db, MIGRATIONS } from '../server/accounts/db.js';
 import { Accounts } from '../server/accounts/accounts.js';
-import { appleClientSecret } from '../server/accounts/oidc.js';
 
 const b64 = (o) => Buffer.from(typeof o === 'string' ? o : JSON.stringify(o)).toString('base64url');
 
@@ -350,17 +349,145 @@ test('OAuth：未設定のとき・公開URLがないときは、理由つきで
   server.close();
 });
 
-test('Apple の client_secret：ES256 の JWT が作れる', () => {
-  const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'P-256' });
-  const pem = privateKey.export({ type: 'pkcs8', format: 'pem' });
-  const jwt = appleClientSecret({ teamId: 'TEAM', keyId: 'KEY', clientId: 'com.example', pem, now: 1_700_000_000_000 });
-  const [h, p, s] = jwt.split('.');
-  assert.deepEqual(JSON.parse(Buffer.from(h, 'base64url')), { alg: 'ES256', kid: 'KEY', typ: 'JWT' });
-  const claims = JSON.parse(Buffer.from(p, 'base64url'));
-  assert.equal(claims.iss, 'TEAM'); assert.equal(claims.sub, 'com.example'); assert.equal(claims.aud, 'https://appleid.apple.com');
-  assert.ok(claims.exp - claims.iat <= 300);
-  assert.equal(Buffer.from(s, 'base64url').length, 64);
-  assert.ok(publicKey);
+test('Apple はなくした：連携先に選べない・/api/me にも出ない', async () => {
+  const { server, base } = await setup();
+  const c = client(base);
+  await c.guest();
+  assert.equal((await c.req('POST', '/api/auth/oauth/start', { provider: 'apple' })).status, 400);
+  assert.deepEqual(Object.keys((await c.me()).providers), ['google']);
+  server.close();
+});
+
+const EMAIL = 'Player@Example.com';
+const PASS = 'castle-pass-1';
+const register = (c, email = EMAIL, password = PASS) => c.req('POST', '/api/auth/email/register', { email, password });
+const login = (c, email = EMAIL, password = PASS) => c.req('POST', '/api/auth/email/login', { email, password });
+
+test('メール：ゲストが登録すると、同じユーザー・同じデッキのまま member になる。セッションは作り直す', async () => {
+  const { server, base } = await setup();
+  const c = client(base);
+  await c.guest();
+  const id = (await c.me()).user.id;
+  await c.req('PUT', '/api/decks', slots(deck(7)));
+  const oldCookie = c.cookie;
+  const r = await register(c);
+  assert.equal(r.status, 200, JSON.stringify(r.json));
+  assert.equal(r.json.result, 'linked');
+  assert.notEqual(c.cookie, oldCookie); // 権限が変わったのでセッションを作り直す
+  const me = await c.me();
+  assert.equal(me.user.id, id);
+  assert.equal(me.user.kind, 'member');
+  assert.deepEqual(me.user.providers, ['email']);
+  assert.equal((await c.req('GET', '/api/decks')).json.slots[0].list.infantry, 7);
+  const old = client(base); old.cookie = oldCookie;
+  assert.equal((await old.me()).user, null); // 古いセッションは使えない
+  server.close();
+});
+
+test('メール：形・長さを確かめる。同じアドレスは2つのアカウントに登録できない。1つのアカウントに1つまで', async () => {
+  const { server, base } = await setup();
+  const a = client(base); await a.guest();
+  assert.equal((await register(a, 'not-an-email')).status, 400);
+  assert.equal((await register(a, EMAIL, 'short')).status, 400);
+  assert.equal((await register(a, EMAIL, 'x'.repeat(129))).status, 400);
+  assert.equal((await register(a)).status, 200);
+  await a.me();
+  const again = await register(a, 'other@example.com');
+  assert.equal(again.status, 409);
+  const b = client(base); await b.guest();
+  const dup = await register(b, '  PLAYER@example.COM ', 'another-pass'); // 大文字・空白が違っても同じアドレス
+  assert.equal(dup.status, 409);
+  assert.match(dup.json.reason, /もう使われています/);
+  server.close();
+});
+
+test('メール：別の端末でログインすると同じアカウント。パスワード違い・知らないアドレスは同じ理由で断る', async () => {
+  const { server, base } = await setup();
+  const phone = client(base); await phone.guest();
+  const id = (await phone.me()).user.id;
+  await phone.req('PUT', '/api/decks', slots(deck(5)));
+  await register(phone);
+  const pc = client(base); await pc.guest();
+  const wrong = await login(pc, EMAIL, 'wrong-password');
+  const unknown = await login(pc, 'nobody@example.com', PASS);
+  assert.equal(wrong.status, 401); assert.equal(unknown.status, 401);
+  assert.equal(wrong.json.reason, unknown.json.reason); // 登録されているかどうかが分からないように
+  const ok = await login(pc, 'player@example.com');
+  assert.equal(ok.status, 200, JSON.stringify(ok.json));
+  assert.equal(ok.json.result, 'logged-in');
+  const me = await pc.me();
+  assert.equal(me.user.id, id);
+  assert.equal((await pc.req('GET', '/api/decks')).json.slots[0].list.infantry, 5);
+  server.close();
+});
+
+test('メール：データのあるゲストがログインすると確認が出て、切りかえるとデッキが空き枠に移る', async () => {
+  const { server, base } = await setup();
+  const a = client(base); await a.guest();
+  await a.req('PUT', '/api/decks', slots(deck(4)));
+  await register(a);
+  const ownerId = (await a.me()).user.id;
+  const b = client(base); await b.guest();
+  await b.req('PUT', '/api/decks', slots(deck(8)));
+  const r = await login(b);
+  assert.equal(r.status, 200);
+  assert.equal(r.json.result, 'conflict');
+  const sw = await b.req('POST', '/api/auth/link/resolve', { id: r.json.conflictId, action: 'switch' });
+  assert.equal(sw.json.result, 'switched');
+  const me = await b.me();
+  assert.equal(me.user.id, ownerId);
+  const decks = (await b.req('GET', '/api/decks')).json.slots.filter(Boolean).map((d) => d.list.infantry).sort();
+  assert.deepEqual(decks, [4, 8]);
+  // 会員でログイン中に、別のアカウントのメールでログインはできない
+  const c = client(base); await c.guest(); await register(c, 'c@example.com');
+  await c.me();
+  assert.equal((await login(c)).status, 409);
+  server.close();
+});
+
+test('メール：パスワードの変更は今のパスワードが要る。変えるとほかの端末のログインは切れる', async () => {
+  const { server, base } = await setup();
+  const a = client(base); await a.guest(); await register(a); await a.me();
+  const b = client(base); await b.guest(); await login(b); await b.me();
+  assert.ok((await b.me()).user);
+  assert.equal((await a.req('POST', '/api/auth/email/password', { current: 'wrong-password', next: 'new-pass-123' })).status, 401);
+  assert.equal((await a.req('POST', '/api/auth/email/password', { current: PASS, next: 'short' })).status, 400);
+  const ok = await a.req('POST', '/api/auth/email/password', { current: PASS, next: 'new-pass-123' });
+  assert.equal(ok.status, 200, JSON.stringify(ok.json));
+  assert.ok((await a.me()).user); // 変えた本人はそのまま
+  assert.equal((await b.me()).user, null); // ほかの端末は切れる
+  const c = client(base); await c.guest();
+  assert.equal((await login(c)).status, 401);
+  assert.equal((await login(c, EMAIL, 'new-pass-123')).status, 200);
+  server.close();
+});
+
+test('メール：アドレスもパスワードもそのまま保存しない（ハッシュだけ）。アカウントを消すと同じアドレスで登録し直せる', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cf-db-'));
+  try {
+    const file = join(dir, 'x.db');
+    const { server, base } = await setup({ dbPath: file });
+    const a = client(base); await a.guest(); await register(a); await a.me();
+    const db = new Db(file);
+    const row = db.get('SELECT * FROM email_logins');
+    const all = JSON.stringify(row).toLowerCase();
+    assert.ok(!all.includes('player@example.com') && !all.includes(PASS));
+    assert.match(row.password_hash, /^scrypt\$16384\$8\$1\$/);
+    db.close();
+    assert.equal((await a.req('POST', '/api/account/delete', { confirm: 'delete' })).status, 200);
+    const b = client(base); await b.guest();
+    assert.equal((await register(b)).status, 200);
+    server.close();
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
+test('メール：1つのアドレスへのログインは15分に10回まで（総当たり対策）', async () => {
+  const { server, base } = await setup();
+  const a = client(base); await a.guest(); await register(a);
+  const b = client(base); await b.guest();
+  for (let i = 0; i < 9; i += 1) assert.equal((await login(b, EMAIL, `wrong-${i}-pass`)).status, 401);
+  assert.equal((await login(b, EMAIL, 'wrong-last-pass')).status, 429);
+  server.close();
 });
 
 test('アカウント削除：確認が要り、個人データ・セッションが全部消える。ほかの人は無事', async () => {

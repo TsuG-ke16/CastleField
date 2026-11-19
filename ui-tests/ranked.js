@@ -35,10 +35,10 @@ try {
   // ゲストはランクマッチに参加できない
   await A.click('#home .home-tile[data-id=rank]');
   await A.locator('#ranked:not([hidden]) .ranked-action').waitFor();
-  assert.match(await A.locator('#ranked .ranked-note').textContent(), /連携/);
+  assert.match(await A.locator('#ranked .ranked-note').textContent(), /Googleかメールアドレス/);
   await A.screenshot({ path: resolve(artifacts, 'ranked-guest.png') });
   await A.click('#ranked .ranked-close');
-  // 会員にする（本物の Google/Apple 連携の代わりに、データベースを直接更新）
+  // 会員にする（本物の Google 連携・メールの登録の代わりに、データベースを直接更新）
   const db = new DatabaseSync(dbFile);
   for (const page of [A, B]) {
     const id = await page.evaluate(async () => (await (await fetch('/api/me', { credentials: 'same-origin' })).json()).user.id);

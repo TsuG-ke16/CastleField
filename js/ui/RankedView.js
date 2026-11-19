@@ -140,7 +140,7 @@ export class RankedView {
     if (!this.data) return;
     if (!this.data.member) {
       const p = document.createElement('p'); p.className = 'ranked-note';
-      p.textContent = 'ランクマッチは、GoogleかAppleに連携したアカウントで遊べます。ゲストのままでは遊べません。';
+      p.textContent = 'ランクマッチは、Googleかメールアドレスで登録したアカウントで遊べます。ゲストのままでは遊べません。';
       box.append(p);
       mk('アカウントを連携する', 'plank-btn', () => { this.close(); this.onNeedMember(); });
       return;
