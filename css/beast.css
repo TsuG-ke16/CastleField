@@ -2,6 +2,12 @@
 :is(.card.has-frame, .mini-card)[data-beast] {
   --card-window: url('../assets/cards/window-beast.png');
 }
+/* 魔物の枠は作り直した絵（窓・文字枠・メダルの位置が共通の型と違う）。512×768の絵に対する% */
+#app :is(.card.has-frame, .mini-card)[data-beast] {
+  --win-l: 15.4%; --win-t: 18.4%; --win-w: 69.2%; --win-h: 45.2%;
+  --med-l: 19%; --med-r: 83.4%; --med-y: 12.7%; --name-y: 75.1%;
+}
+#app .card.has-frame[data-beast] > .card-short { inset: 85.2% 13.5% auto; height: 6.6%; }
 /* 共通のメダル台に、種類と取得元のレアリティを表示する。 */
 #app .card.has-frame[data-beast][data-rarity] > :is(.card-kind, .card-rarity) { display: flex; }
 #app .mini-card[data-beast][data-rarity] > :is(.mini-card-kind, .mini-card-rarity) { display: grid; }

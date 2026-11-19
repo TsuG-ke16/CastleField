@@ -378,7 +378,7 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 | `cards/card-beast-mimic.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `cards/card-beast-vampire.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `cards/card-beast-demon-king.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
-| `cards/frame-beast.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/frame-beast.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-19（作り直し。窓・帯・メダルの位置は css/beast.css で合わせた） |
 | `ui/stamps/hello.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `ui/stamps/nice.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `ui/stamps/yay.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |

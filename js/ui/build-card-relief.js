@@ -37,7 +37,7 @@ const FRAMES = {
   epic:      { base: { metal: .65, smooth: .78 }, silver: { metal: .9, smooth: .86 }, gold: { metal: .9, smooth: .86 }, gemHue: [255, 310], raised: [[140, 0, 372, 114]], paper: SHARED_PARCHMENT },
   legendary: { base: { metal: .15, smooth: .35 }, gold: { metal: 1, smooth: .92 }, cloth: [330, 25], gemHue: [330, 25], raised: [[144, 0, 368, 114]], paper: SHARED_PARCHMENT },
   special:   { base: { metal: .55, smooth: .9 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[145, 0, 367, 114]], paper: SHARED_PARCHMENT },
-  beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, organic: [70, 140], gemHue: [120, 170], gemMinSat: .5, raised: [[159, 0, 353, 114]], paper: SHARED_PARCHMENT },
+  beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, organic: [70, 140], gemHue: [120, 170], gemMinSat: .5, raised: [[170, 0, 345, 134]], paper: { name: [.16, .84, .751], stats: [.13, .87, .85, .92], medals: [[.19, .126], [.834, .126]] } },
 };
 
 // ---------- PNG（8bit・インターレースなし） ----------
