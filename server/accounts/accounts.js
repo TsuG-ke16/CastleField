@@ -203,7 +203,7 @@ export class Accounts {
         this.audit('member_created', userId, provider);
         return { result: 'created', userId, session: this.createSession(userId) };
       }
-      return this.loginExisting(owner, intent, provider, 'このGoogleアカウントは、別のキャッスルフィールドのアカウントに連携済みです');
+      return this.loginExisting(owner, intent, provider, 'このGoogleアカウントは、別のキャッスルフィールドのアカウントで使われています');
     });
   }
 

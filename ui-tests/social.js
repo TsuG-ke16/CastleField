@@ -35,7 +35,7 @@ try {
   // ゲストはフレンド機能を使えない
   await A.click('#home .home-tile[data-id=friend]');
   await A.locator('#social:not([hidden]) .social-note').waitFor();
-  assert.match(await A.locator('#social .social-note').textContent(), /Googleかメールアドレス/);
+  assert.match(await A.locator('#social .social-note').textContent(), /アカウントを作成/);
   await A.click('#social .social-close');
   // 会員にして、名前をつける
   const db = new DatabaseSync(dbFile);

@@ -33,6 +33,10 @@ export class Settings {
         ${pills('text','文字の大きさ',[['small','小'],['normal','中'],['large','大']])}
         <p class="settings-reading-preview">兵士は次の自分の番から進軍します。</p>
       </section>
+      <section class="set-group set-account" hidden><h3>アカウント</h3>
+        <p class="set-note set-account-note"></p>
+        <button type="button" class="plank-btn set-account-btn"></button>
+      </section>
       <section class="set-group"><h3>なまえ</h3>
         <label class="set-row"><span class="set-name">あなたの名前</span><input name="name" maxlength="16" autocomplete="nickname" placeholder="なまえ"></label>
       </section>
@@ -57,6 +61,7 @@ export class Settings {
       catch {this.box.querySelector('.settings-status').textContent='この端末では保存できません。この画面では設定が有効です。';}
     });
     this.box.querySelector('.settings-close').onclick=()=>this.close();
+    this.box.querySelector('.set-account-btn').onclick=()=>{ const open=this.onAccount; this.close(); open?.(); };
     this.box.addEventListener('click',e=>{if(e.target===this.box)this.close();});
     this.box.addEventListener('keydown',e=>{
       if(e.key==='Escape'){e.stopPropagation();this.close();}
@@ -78,5 +83,18 @@ export class Settings {
     this.onChange(v);
   }
   open(){this.opener=document.activeElement;this.box.hidden=false;this.box.querySelector('input').focus();}
+  /**
+   * アカウントの欄（サーバーのアカウント機能があるときだけ出す）。info は { label, note, onOpen } か null
+   * ゲストには「アカウントを作成」、作成済みなら「アカウント」を出し、押すとアカウントの画面を開く
+   */
+  setAccount(info) {
+    const sec=this.box.querySelector('.set-account');
+    sec.hidden=!info;
+    if(!info)return;
+    sec.querySelector('.set-account-note').textContent=info.note;
+    sec.querySelector('.set-account-btn').textContent=info.label;
+    this.onAccount=info.onOpen;
+  }
+
   close(){this.box.hidden=true;this.opener?.focus();}
 }

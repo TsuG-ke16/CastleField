@@ -22,33 +22,33 @@ export class AccountPanel {
         <div class="account-who"><strong data-part="name"></strong><small data-part="kind"></small></div>
       </div>
       <p class="account-sync" data-part="sync" role="status"></p>
-      <section class="account-section" data-part="link">
+      <section class="account-section account-email" data-part="link">
         <h3 data-part="linkTitle"></h3>
         <p class="account-note" data-part="linkNote"></p>
-        <div class="account-oauth">
-          <button type="button" class="plank-btn account-provider" data-provider="google">Googleで連携</button>
-        </div>
-      </section>
-      <section class="account-section account-email" data-part="email">
-        <h3>メールアドレスとパスワード</h3>
         <form data-part="emailForm" novalidate>
           <label>メールアドレス<input type="email" data-part="emailInput" maxlength="254" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false"></label>
           <label>パスワード（8文字以上）<input type="password" data-part="passInput" maxlength="128" autocomplete="current-password"></label>
           <p class="account-note small">確認メールは送りません。<strong>パスワードを忘れると、戻すことはできません。</strong>メモしておいてください。</p>
           <div class="account-email-actions">
-            <button type="button" class="plank-btn" data-act="emailRegister">このアカウントに登録</button>
-            <button type="button" class="small-btn" data-act="emailLogin">登録済みのアカウントにログイン</button>
+            <button type="button" class="plank-btn" data-act="emailRegister">アカウントを作成</button>
+            <button type="button" class="small-btn" data-act="emailLogin">ログイン（アカウントを作成済みの人）</button>
           </div>
         </form>
-        <form data-part="passForm" hidden novalidate>
-          <p class="account-note">メールアドレスでログインできます。</p>
+        <div class="account-oauth" data-part="oauth">
+          <p class="account-or" data-part="or">または</p>
+          <button type="button" class="plank-btn alt account-provider" data-provider="google">Googleで作成・ログイン</button>
+        </div>
+      </section>
+      <section class="account-section account-email" data-part="passSection" hidden>
+        <h3>パスワードの変更</h3>
+        <form data-part="passForm" novalidate>
           <label>今のパスワード<input type="password" data-part="curPass" maxlength="128" autocomplete="current-password"></label>
           <label>新しいパスワード（8文字以上）<input type="password" data-part="newPass" maxlength="128" autocomplete="new-password"></label>
           <button type="button" class="small-btn" data-act="changePass">パスワードを変える</button>
         </form>
       </section>
       <section class="account-section account-conflict" data-part="conflict" hidden>
-        <h3>すでに使っているアカウントです</h3>
+        <h3>すでに作成済みのアカウントです</h3>
         <p class="account-note">このアカウントには、すでにデータがあります。そちらに切りかえますか？この端末のデッキは、空いている枠に移します（もとのデータは消えません）。</p>
         <button type="button" class="plank-btn" data-act="switch">切りかえる</button>
         <button type="button" class="small-btn" data-act="cancel">やめる</button>
@@ -73,13 +73,13 @@ export class AccountPanel {
     account.onChange(() => { if (!box.hidden) this.render(); });
   }
 
-  /** 起動時に、連携の戻り先を処理する */
+  /** 起動時に、Google の認証の戻り先を処理する */
   handleReturn() {
     const r = readAuthResult();
     if (!r) return;
     if (r.kind === 'conflict' && r.conflictId) { this.conflictId = r.conflictId; this.open(); return; }
     if (r.kind === 'error') { this.open(); this.say(r.message, true); return; }
-    this.toast(r.kind === 'linked' ? 'アカウントを連携しました。データは引き継がれます' : 'ログインしました');
+    this.toast(r.kind === 'linked' ? 'Googleでログインできるようになりました。データは引き継がれます' : r.kind === 'created' ? 'アカウントを作成しました' : 'ログインしました');
     account.init();
   }
 
@@ -90,7 +90,8 @@ export class AccountPanel {
   render() {
     const p = this.part;
     const on = account.enabled && account.user;
-    for (const n of ['card', 'sync', 'link', 'email', 'rename']) p(n).hidden = !on;
+    for (const n of ['card', 'sync', 'link', 'rename']) p(n).hidden = !on;
+    p('passSection').hidden = true;
     this.box.querySelector('.account-danger').hidden = !on;
     p('conflict').hidden = !this.conflictId;
     if (!on) {
@@ -100,26 +101,29 @@ export class AccountPanel {
     const u = account.user;
     const member = u.kind === 'member';
     p('name').textContent = u.displayName;
-    p('kind').textContent = member ? `連携済み：${u.providers.map((x) => (x === 'google' ? 'Google' : 'メールアドレス')).join('・')}` : 'ゲスト（まだ連携していません）';
+    const methods = u.providers.map((x) => (x === 'google' ? 'Google' : 'メールアドレス')).join('・');
+    p('kind').textContent = member ? `アカウント作成済み（ログイン：${methods || '—'}）` : 'ゲスト（アカウント未作成）';
     p('avatar').textContent = [...u.displayName][0] ?? '?';
     p('sync').textContent = SYNC_TEXT[account.sync] ?? '';
-    p('linkTitle').textContent = member ? '連携を追加' : 'データを引き継げるようにする';
-    p('linkNote').textContent = member
-      ? '別の端末では、同じアカウントでログインするとデッキを引き継げます。'
-      : 'Googleかメールアドレスを登録すると、いまのデッキを持ったまま、別の端末でも遊べます。登録しないと、ブラウザのデータを消したときに戻れません。';
     const hasEmail = u.providers.includes('email');
+    const hasGoogle = u.providers.includes('google');
+    const googleReady = !!account.providers.google && account.oauthReady;
+    // ゲスト：アカウントを作る（またはログイン）。作成済み：まだないログイン方法を足せる
+    p('linkTitle').textContent = member ? 'ログイン方法を追加' : 'アカウントを作成';
+    p('linkNote').textContent = member
+      ? '別の端末では、同じ方法でログインするとデータを引き継げます。'
+      : 'アカウントを作ると、いまのデッキや名前を持ったまま、別の端末でも遊べます。ランクマッチとフレンドも使えます。作らないと、ブラウザのデータを消したときに戻れません。';
     p('emailForm').hidden = hasEmail;
-    p('passForm').hidden = !hasEmail;
-    // 会員（Google など）のときは、メールは「このアカウントに追加」だけ（別のアカウントへのログインは、ログアウトしてから）
-    this.box.querySelector('[data-act="emailRegister"]').textContent = member ? 'このアカウントにメールを追加' : 'このアカウントに登録';
+    p('passSection').hidden = !hasEmail;
+    // 作成済み（Google）のときは、メールは「このアカウントに追加」だけ（別のアカウントへのログインは、ログアウトしてから）
+    this.box.querySelector('[data-act="emailRegister"]').textContent = member ? 'メールアドレスでもログインできるようにする' : 'アカウントを作成';
     this.box.querySelector('[data-act="emailLogin"]').hidden = member;
-    for (const b of this.box.querySelectorAll('.account-provider')) {
-      const prov = b.dataset.provider;
-      const name = 'Google';
-      const ready = account.providers[prov] && account.oauthReady;
-      b.disabled = !ready || u.providers.includes(prov);
-      b.textContent = u.providers.includes(prov) ? `${name}：連携済み` : ready ? `${name}で${member ? '連携' : '連携・ログイン'}` : `${name}（このサーバーでは未設定）`;
-    }
+    // Google は、サーバーで設定されているときだけ出す（遊ぶ人に「未設定」は見せない）
+    const showGoogle = googleReady && !hasGoogle;
+    p('oauth').hidden = !showGoogle;
+    p('or').hidden = hasEmail;
+    this.box.querySelector('.account-provider[data-provider="google"]').textContent = member ? 'Googleでもログインできるようにする' : 'Googleで作成・ログイン';
+    p('link').hidden = hasEmail && !showGoogle; // 足せるものがなければ、この欄ごと隠す
     p('nameInput').value = u.displayName;
     const del = this.box.querySelector('[data-act="delete"]');
     del.textContent = this.confirmingDelete ? 'もう一度押すと削除' : 'アカウント削除';
@@ -141,12 +145,13 @@ export class AccountPanel {
       const email = this.part('emailInput').value;
       const pass = this.part('passInput').value;
       if (!email.trim() || !pass) return this.say('メールアドレスとパスワードを入れてください', true);
-      this.say(act === 'emailRegister' ? '登録しています…' : 'ログインしています…');
+      const wasGuest = account.user?.kind === 'guest';
+      this.say(act === 'emailRegister' ? (wasGuest ? 'アカウントを作成しています…' : '登録しています…') : 'ログインしています…');
       const r = await account.emailAuth(act === 'emailRegister' ? 'register' : 'login', email, pass);
       if (!r.ok) return this.say(r.reason, true);
       this.part('passInput').value = '';
       if (r.result === 'conflict') { this.conflictId = r.conflictId; this.say(''); return this.render(); }
-      this.say(r.result === 'linked' ? 'メールアドレスを登録しました。別の端末でもこのアドレスでログインできます' : 'ログインしました');
+      this.say(r.result !== 'linked' ? 'ログインしました' : wasGuest ? 'アカウントを作成しました。別の端末でも、このメールアドレスでログインできます' : 'メールアドレスでもログインできるようになりました');
       return this.render();
     }
     if (act === 'changePass') {

@@ -381,7 +381,14 @@ async function boot() {
   });
   const missionView = new MissionView({ toast, onChanged: () => home.refresh() });
   let socialStarted = false;
+  const syncSettingsAccount = () => {
+    const u = account.enabled ? account.user : null;
+    settings.setAccount(u ? (u.kind === 'guest'
+      ? { label: 'アカウントを作成', note: 'アカウントを作ると、別の端末でも同じデータで遊べます。ランクマッチとフレンドも使えます。', onOpen: () => accountPanel.open() }
+      : { label: 'アカウント', note: `${u.displayName} でログイン中`, onOpen: () => accountPanel.open() }) : null);
+  };
   account.onChange(() => {
+    syncSettingsAccount();
     $('title-account').hidden = !account.enabled;
     if (!socialStarted && account.user?.kind === 'member') { socialStarted = true; socialView.refresh(); }
     if (account.enabled && account.user && !cosmetics.loaded) { cosmetics.loaded = true; loadMine(); }
@@ -435,9 +442,26 @@ function prepareBattleAssets() {
   return battleAssetsPromise ??= preloadAssets(8000, (done,total) => { $('asset-loading-text').textContent=`対戦の絵を準備中… ${done} / ${total}`; });
 }
 // オフライン（PWA）の準備は裏で静かに行う。ゲーム内に PWA の説明は出さない（人間の指示）
+// 新しい版が届いたら：ホーム・タイトルにいるときはすぐ切りかえて読み直す。試合中なら、ホームに戻ったときに切りかえる
+let waitingWorker = null;
+function applyWaitingWorker() {
+  if (!waitingWorker || !document.documentElement.classList.contains('at-title')) return;
+  waitingWorker.postMessage('skipWaiting');
+  waitingWorker = null;
+}
 async function setupOffline() {
   if (!('serviceWorker' in navigator) || !['http:','https:'].includes(location.protocol)) return;
-  try { await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'}); } catch { /* 使えない端末では、オンラインのまま遊ぶ */ }
+  try {
+    const reg = await navigator.serviceWorker.register('./sw.js',{updateViaCache:'none'});
+    let reloading = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (!reloading) { reloading = true; location.reload(); } });
+    const offer = (worker) => { if (worker && navigator.serviceWorker.controller) { waitingWorker = worker; applyWaitingWorker(); } };
+    offer(reg.waiting);
+    reg.addEventListener('updatefound', () => {
+      const worker = reg.installing;
+      worker?.addEventListener('statechange', () => { if (worker.state === 'installed') offer(worker); });
+    });
+  } catch { /* 使えない端末では、オンラインのまま遊ぶ */ }
 }
 
 // ---------- タイトル・メニュー ----------
@@ -518,6 +542,7 @@ function showTitle() {
   startRequest++;
   renderer.setWeather(null);
   document.documentElement.classList.add('at-title');
+  setTimeout(applyWaitingWorker, 0); // 試合のあいだに新しい版が届いていたら、ここで切りかえる
   $('asset-loading').hidden=true;
   sound.setScene('title');
   tutorial.close();

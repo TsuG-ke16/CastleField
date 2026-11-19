@@ -81,7 +81,7 @@ export class Home {
         <p class="home-note" data-part="note" role="status"></p>
         <button type="button" class="home-retry raw-btn" data-act="retry" hidden>再読み込み</button></div>
       </section>
-      <aside class="home-link" data-part="guest" hidden><span>アカウントを連携すると、別の端末でもデータを引き継げます。</span><button type="button" class="home-retry raw-btn" data-act="account">連携する</button></aside>
+      <aside class="home-link" data-part="guest" hidden><span>アカウントを作成すると、別の端末でもデータを引き継げます。</span><button type="button" class="home-retry raw-btn" data-act="account">作成する</button></aside>
       <nav class="home-menu" aria-label="メニュー" data-part="menu"></nav>
     </div>`;
     document.getElementById('app').append(box);
@@ -199,7 +199,7 @@ export class Home {
     const sum = d?.rank;
     const member = u?.kind === 'member';
     this.part('rankEmblem').innerHTML = member ? rankEmblem(sum?.rank ?? null, 26) : '';
-    this.part('rankText').textContent = !member ? '連携すると参加できます'
+    this.part('rankText').textContent = !member ? 'アカウントを作ると参加できます'
       : sum?.rank ? `${sum.rank.divisionLabel}（${sum.rank.rp} RP）` : sum ? `認定戦 ${sum.placementTotal - sum.placementLeft}/${sum.placementTotal}` : '—';
     this.part('deck').textContent = d?.deck?.name ?? '未設定';
     this.part('stats').textContent = d?.stats?.matches ? `${d.stats.matches}戦 ${d.stats.wins}勝 ${d.stats.losses}敗（勝率 ${d.stats.winRate}%）` : 'まだ対戦がありません';
