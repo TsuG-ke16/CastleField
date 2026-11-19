@@ -139,7 +139,7 @@ export class RoomView {
     btn.addEventListener('click', action); parent.append(btn);
     return btn;
   }
-  /** ルールを変更する画面（部屋主だけ）。ルールの選択・城のHP・CPUの追加 */
+  /** ルールを変更する画面（部屋主だけ）。ルールの選択・城のHP */
   rulesDialog(room, choices) {
     const close = () => { this.rulesOpen = false; this.render(this.room, this.passphrase); };
     const back = this.node('div', null, 'room-modal');
@@ -152,9 +152,6 @@ export class RoomView {
       this.select(panel, label, choices[list], room.settings[key], true, v => this.act('setRules', [{[key]:v}]), `rule:${key}`);
     }
     this.numberInput(panel, '城のHP', room.settings.castleHp, choices.castleHpRange, true, v => this.act('setRules', [{castleHp:v}]), 'rule:castleHp');
-    this.level ??= choices.cpuLevels?.[0]?.id;
-    this.select(panel, 'CPUの強さ', choices.cpuLevels, this.level, true, v => {this.level=v;}, 'cpuLevel');
-    this.button(panel, 'CPUを追加', () => this.act('addCpu', [this.level]), room.players.length >= room.capacity);
     this.button(panel, '閉じる', close, false, 'plank-btn');
     back.append(panel);
     queueMicrotask(() => panel.querySelector('select, input, button')?.focus({ preventScroll: true }));
@@ -227,6 +224,13 @@ export class RoomView {
       if (host && p.cpu) this.button(acts, 'CPUを外す', () => this.act('removeCpu', [p.playerId]));
       if (acts.children.length) seat.append(acts);
       seats.append(seat);
+    }
+    if (host) {
+      // CPUを足す（ルールではないので、変更画面とは別に、席の下に置く）
+      const add = this.node('div', null, 'room-add-cpu'); box.append(add);
+      this.level ??= choices.cpuLevels?.[0]?.id;
+      this.select(add, 'CPUの強さ', choices.cpuLevels, this.level, true, v => {this.level=v;}, 'cpuLevel');
+      this.button(add, 'CPUを追加', () => this.act('addCpu', [this.level]), room.players.length >= room.capacity);
     }
     // 対戦ルール：部屋主も含めて、ここでは見るだけ。変えるのは部屋主の席の「ルールを変更」から
     const settings = this.node('section', null, 'room-settings'); box.append(settings);
