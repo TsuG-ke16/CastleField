@@ -18,7 +18,7 @@
 //                超えていなければ（または捨て終わったら）次の人のターンが始まる
 //   城HPが0以下になった瞬間に phase "gameOver"
 
-import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, DICE_KINDS } from './Card.js';
+import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
 import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
@@ -1094,6 +1094,10 @@ export class Game {
         };
       case 'buff':
         return { targets: player.soldiers.map((x) => ({ soldierId: x.soldierId })), reason: '道の上に自分の兵士がいません' };
+      case 'god': {
+        // ゴッドサイコロ：攻撃の相手を選ぶ（ほかの効果は自分）。相手がいれば出せる
+        return this.diceTargets(player, 'attack', 0);
+      }
       case 'random': {
         const usable = this.randomDiceKinds(player);
         if (usable.length === 0) return { targets: [], reason: '今使えるサイコロがありません' };
@@ -1107,8 +1111,7 @@ export class Game {
   /** ランダムサイコロが選べる種類：cards.json にあるサイコロ（random 以外）のうち、今使えるもの。{ kind, per } の配列 */
   randomDiceKinds(player) {
     const out = [];
-    for (const kind of DICE_KINDS) {
-      if (kind === 'random') continue;
+    for (const kind of BASIC_DICE) {
       const def = Object.values(this.cardDefs).find((d) => d.effect === 'dice' && d.dice === kind);
       if (def && this.diceTargets(player, kind, def.per).targets.length > 0) out.push({ kind, per: def.per });
     }
@@ -1138,6 +1141,10 @@ export class Game {
    * ランダムサイコロは、1回目の目で種類を選び（使えない種類は除く）、2回目の目は4〜6になる。対象はランダム
    */
   rollDice(player, card, target) {
+    if (card.def.dice === 'god') {
+      this.rollGodDice(player, card, target);
+      return;
+    }
     let kind = card.def.dice;
     let per = card.def.per;
     let value;
@@ -1170,7 +1177,30 @@ export class Game {
     }
     const amount = Math.ceil(value * per);
     this.emit('diceRolled', { playerId: player.id, type: card.type, dice: kind, value, amount, rolls, ...(cost ? { cost } : {}) });
+    this.applyDice(player, card, kind, amount, target);
+  }
 
+  /**
+   * ゴッドサイコロ：1回振って、その目で6つのサイコロの効果を全部起こす（倍率はそれぞれのサイコロのカードの per）。
+   * diceRolled は1回（dice: "god"、amount は種類ごとの量 { attack, heal, ... }）。今使えない効果は飛ばす。
+   * 攻撃は相手が防御を選ぶと止まるので、いちばん最後。バフは自分の兵士全員
+   */
+  rollGodDice(player, card, target) {
+    const value = this.rollDie();
+    const pers = Object.fromEntries(BASIC_DICE.map((k) => [k, Object.values(this.cardDefs).find((d) => d.effect === 'dice' && d.dice === k)?.per ?? 0]));
+    const amounts = Object.fromEntries(BASIC_DICE.map((k) => [k, Math.ceil(value * pers[k])]));
+    this.emit('diceRolled', { playerId: player.id, type: card.type, dice: 'god', value, amount: amounts, rolls: [value] });
+    for (const kind of ['heal', 'mana', 'coin', 'shield']) {
+      if (amounts[kind] > 0 && this.diceTargets(player, kind, pers[kind]).targets.length > 0) this.applyDice(player, card, kind, amounts[kind], { playerId: player.id });
+    }
+    if (amounts.buff > 0) {
+      for (const s of player.soldiers) this.applyDice(player, card, 'buff', amounts.buff, { soldierId: s.soldierId });
+    }
+    if (amounts.attack > 0) this.applyDice(player, card, 'attack', amounts.attack, target);
+  }
+
+  /** サイコロ1つぶんの効果を起こす（kind の種類、量 amount） */
+  applyDice(player, card, kind, amount, target) {
     switch (kind) {
       case 'attack': {
         const enemy = this.players[target.playerId];

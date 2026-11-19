@@ -59,8 +59,11 @@ export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePois
  * サイコロの種類（cards.json の dice）。効果は「出た目 × per」（端数は切り上げ）。random は per を書かない
  *   attack：相手の城にダメージ（MP を使う。メイン）／heal：自分の城を回復（メイン）／mana：MP 回復／coin：コイン
  *   shield：城壁／buff：選んだ自分の兵士1体の攻撃力を上げる／random：ほかのサイコロのどれか（目は4〜6）（メイン）
+ *   god：1回振って、その目で6つのサイコロの効果が全部起きる（バフは兵士全員）（メイン）
  */
-export const DICE_KINDS = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff', 'random'];
+export const DICE_KINDS = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff', 'random', 'god'];
+/** 効果が1つのサイコロ（ランダム・ゴッドが使う種類） */
+export const BASIC_DICE = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff'];
 /** メインを使わず何枚でも出せるサイコロ（ほかはメイン） */
 export const SUPPORT_DICE = ['mana', 'coin', 'shield', 'buff'];
 
@@ -157,6 +160,9 @@ export class Card {
           if (cards[def.fuseTo].rarity !== next) throw new Error(`${where}: fuseTo は1つ上のレアリティ（${next}）のカードにしてください`);
         }
       }
+      if (def.deckAs !== undefined && (typeof def.deckAs !== 'string' || (rarities && (!Object.hasOwn(rarities, def.deckAs) || rarities[def.deckAs].special)))) {
+        throw new Error(`${where}: deckAs（デッキ編成で数えるレアリティ）は、スペシャル以外のレアリティにしてください`);
+      }
       if (def.mpCost !== undefined && !isCount(def.mpCost)) throw new Error(`${where}: mpCost は0以上の整数にしてください（書かなければレアリティで決まる）`);
       if (def.exhaust !== undefined && typeof def.exhaust !== 'boolean') {
         throw new Error(`${where}: exhaust は true か false にしてください（書かなければ false）`);
@@ -170,8 +176,8 @@ export class Card {
 
       if (def.effect === 'dice') {
         if (!DICE_KINDS.includes(def.dice)) throw new Error(`${where}: dice は ${DICE_KINDS.join(' / ')} のどれかにしてください`);
-        if (def.dice === 'random') {
-          if (def.per !== undefined) throw new Error(`${where}: ランダムサイコロ（dice: "random"）に per は書けません`);
+        if (def.dice === 'random' || def.dice === 'god') {
+          if (def.per !== undefined) throw new Error(`${where}: ランダム・ゴッドのサイコロに per は書けません`);
           // randomCost：振る前に、このうち払えるものを1つランダムに払う（{ hp?, coins?, mp? }。省略するとコストなし）
           if (def.randomCost !== undefined) {
             const keys = Object.keys(def.randomCost ?? {});

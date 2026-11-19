@@ -1778,6 +1778,18 @@
       "world": "kingdom",
       "desc": "ランダムサイコロを使うときの光が「蒼」の色に。この魔法だけに効く。",
       "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_godDice": {
+      "slot": "spellSkin",
+      "target": "godDice",
+      "targetName": "ゴッドサイコロ",
+      "name": "ゴッドサイコロ・黄金",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ゴッドサイコロを使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
     }
   }
 }

@@ -167,3 +167,52 @@ test('ランダムサイコロのコスト：払うものはランダム（城HP
   }
   assert.deepEqual([...seen].sort(), ['coins', 'hp', 'mp']);
 });
+
+// ---------- ゴッドサイコロ：1回振って、6つのサイコロの効果が全部起きる。コストなし。デッキではレジェンド枠 ----------
+
+test('ゴッドサイコロ：目4 → 相手の城に14・城+12・MP+8・コイン+8・城壁12・兵士全員の攻撃+4。攻撃はいちばん最後', async () => {
+  const g = make();
+  g.debugSetHand('p1', ['infantry', 'infantry', 'godDice']);
+  g.start();
+  for (let i = 0; i < 2; i++) assert.equal(g.playCard(idOf(g, 'p1', 'infantry'), g.getTargets(idOf(g, 'p1', 'infantry'))[i]).ok, true);
+  const atk = g.players.p1.soldiers.map((s) => s.attack);
+  g.players.p1.castle.hp = 20;
+  g.players.p1.mp = 0;
+  const coins = g.players.p1.coins;
+  const hp2 = g.players.p2.castle.hp;
+  const log = recordEvents(g, ['diceRolled', 'castleHealed', 'mpChanged', 'coinsChanged', 'castleArmored', 'soldierBuffed', 'castleDamaged']);
+  fixDie(g, 4);
+  assert.equal(g.playCard(idOf(g, 'p1', 'godDice'), { playerId: 'p2' }).ok, true);
+  assert.deepEqual(log[0], { event: 'diceRolled', playerId: 'p1', type: 'godDice', dice: 'god', value: 4, amount: { attack: 14, heal: 12, mana: 8, coin: 8, shield: 12, buff: 4 }, rolls: [4] });
+  assert.deepEqual(log.map((e) => e.event), ['diceRolled', 'castleHealed', 'mpChanged', 'coinsChanged', 'castleArmored', 'soldierBuffed', 'soldierBuffed', 'castleDamaged']);
+  assert.equal(g.players.p1.castle.hp, 32);
+  assert.equal(g.players.p1.mp, 8); // MP は使わない
+  assert.equal(g.players.p1.coins, coins + 8);
+  assert.equal(g.players.p1.armor, 12);
+  assert.deepEqual(g.players.p1.soldiers.map((s) => s.attack), atk.map((a) => a + 4));
+  assert.equal(g.players.p2.castle.hp, hp2 - 14);
+});
+
+test('ゴッドサイコロ：使えない効果は飛ばす（城・MP 満タン、兵士なし）', () => {
+  const g = make();
+  g.debugSetHand('p1', ['godDice']);
+  g.start();
+  g.players.p1.mp = 20;
+  const log = recordEvents(g, ['castleHealed', 'mpChanged', 'soldierBuffed', 'coinsChanged', 'castleDamaged']);
+  fixDie(g, 1);
+  assert.equal(g.playCard(idOf(g, 'p1', 'godDice'), { playerId: 'p2' }).ok, true);
+  assert.deepEqual(log.map((e) => e.event), ['coinsChanged', 'castleDamaged']);
+});
+
+test('ゴッドサイコロ：スペシャルだがデッキ編成ではレジェンド（コスト5・レジェンドの枚数に数える）。排出率はレジェンド1枚と同じくらい', async () => {
+  const { deckRarityOf, deckCostOf, dropRates } = await import('../js/game/Setup.js');
+  const c = loadJson('cards.json');
+  const r = loadJson('rarities.json');
+  assert.equal(c.godDice.rarity, 'special');
+  assert.equal(deckRarityOf(c.godDice, r), 'legendary');
+  assert.equal(deckCostOf(c.godDice, r), 5);
+  assert.equal(deckRarityOf(c.attackDice, r), 'rare');
+  const all = dropRates(c, r); const rates = all.cards ?? all;
+  assert.ok(Math.abs(rates.godDice - rates.godSword) < 0.01, `${rates.godDice} / ${rates.godSword}`); // 神剣（レジェンド・weight 1）と同じくらい
+  assert.equal(make().getState('p1').mpCosts.godDice, undefined);
+});
