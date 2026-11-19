@@ -182,20 +182,24 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
     if (req.method === 'GET' && url.pathname === '/api/stream') {
       const found = lobby.findSeat(url.searchParams.get('token'));
       if (!found) return sendJson(res, 403, { ok: false, reason: '部屋に入っていません（合言葉から入り直してください）' });
+      // 中継（nginx・Cloudflare など）が溜め込まずにすぐ流すように：no-transform（圧縮・変換しない）・X-Accel-Buffering: no（nginx）。
+      // 最初に2KBの空のコメントを送り、小さな溜め込み（数KBまで送らない中継）をすぐ押し流す
       res.writeHead(200, {
         'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
         Connection: 'keep-alive',
         'Access-Control-Allow-Origin': '*',
       });
-      res.write(': connected\n\n');
+      req.socket.setNoDelay(true);
+      res.write(`: connected${' '.repeat(2048)}\n\n`);
       const client = (msg) => {
         // 読まないクライアントのぶんがたまり続けないように、たまりすぎたら閉じる（EventSource はつなぎ直す）
         if (res.writableLength > 1024 * 1024) return res.destroy();
         res.write(`data: ${JSON.stringify(msg)}\n\n`);
       };
       const disconnect = found.room.connect(found.seat, client);
-      const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+      const ping = setInterval(() => res.write(': ping\n\n'), 15000); // 何も送らない時間が長いと、中継が接続を切ることがある
       req.on('close', () => {
         clearInterval(ping);
         disconnect();

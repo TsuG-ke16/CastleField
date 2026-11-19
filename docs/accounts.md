@@ -20,6 +20,26 @@
 - Apple ログインはなくした（Apple Developer Program が有料のため。人間の指示）。代わりにメールアドレスとパスワードで登録できる（外部の設定は要らない）
 - Google は HTTPS の公開URLが必要。未設定のサーバーでは、画面の連携ボタンは「このサーバーでは未設定」と出て押せない
 
+### HTTPS の中継（リバースプロキシ）の後ろで動かすとき
+オンライン対戦（部屋・ランクマッチ）の知らせは、サーバーから送り続ける通信（Server-Sent Events、`GET /api/stream`）で届く。中継がこれを溜め込むと、**「同じ合言葉なのに相手が見えない」「ランクマッチで相手が見つかったのに対戦に移らない」**になる。
+- サーバーは `Cache-Control: no-cache, no-transform` と `X-Accel-Buffering: no` を付け、最初に2KBの空のコメントを送り、15秒ごとに ping を送る（中継が溜め込まない・切らないように）
+- **nginx**：`/api/stream` で溜め込みを切る。`proxy_set_header Host $host;` も要る（書き込みの送り元の確認のため）
+  ```
+  location / {
+    proxy_pass http://127.0.0.1:8787;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-For $remote_addr;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header Connection '';
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 1h;
+  }
+  ```
+- **Caddy**：`reverse_proxy 127.0.0.1:8787` だけでよい（SSE はすぐ流す）。圧縮（`encode`）を付けるなら `text/event-stream` を除く
+- **Cloudflare（Tunnel・プロキシ）**：ふつうはそのまま流れる。届かないときは、キャッシュのルールで `/api/*` をキャッシュしない（Bypass）にする
+
 ## データベース
 
 SQLite（Node.js 標準の `node:sqlite`。**Node.js 22.13 以上**。外部パッケージなし）。ファイル1つで、今の規模（デッキ・アカウント）にはこれで足りる。
