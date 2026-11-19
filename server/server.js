@@ -1,6 +1,7 @@
 // オンライン対戦のサーバー（Node.js だけ。外部パッケージなし）。
 //   node server/server.js        … PORT（省略すると 8787）で起動
 // 通信の約束は CLAUDE.md の「STEP 4：オンライン対戦」。
+import { loadEnv } from './env.js';
 import { createServer } from 'node:http';
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -216,9 +217,13 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
   return server;
 }
 
-// 直接起動されたときだけ listen する
+// 直接起動されたときだけ listen する（.env も、このときだけ読む）
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+  const envFile = loadEnv();
   const port = Number(process.env.PORT || 8787);
   const dbPath = process.env.CF_DB_PATH || join(ROOT, 'data-store', 'castlefield.db');
+  if (envFile) console.log(`設定ファイル：${envFile}`);
+  console.log(`アカウントのデータ：${dbPath}`);
+  if (!process.env.CF_DB_PATH) console.warn('注意：CF_DB_PATH が未設定なので、データはゲームのフォルダの中（data-store/）に保存されます。フォルダを上書きすると消えます。.env.example を見てください');
   createGameServer({ accounts: { dbPath } }).listen(port, () => console.log(`キャッスルフィールドのサーバー：http://localhost:${port}`));
 }

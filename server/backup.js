@@ -5,6 +5,9 @@ import { copyFileSync, existsSync, renameSync, rmSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Db } from './accounts/db.js';
+import { loadEnv } from './env.js';
+
+loadEnv();
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const dbPath = process.env.CF_DB_PATH || join(ROOT, 'data-store', 'castlefield.db');
