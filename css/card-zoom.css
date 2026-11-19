@@ -158,8 +158,6 @@
 }
 .card-3d[data-rarity="special"] .mini-card-image > .zoom-foil { opacity: .4; }
 
-/* 魔物の駒の絵は羊皮紙の上にのる。 */
-.zoom-3d[data-beast] > .mini-card-image { transform: translateZ(calc(var(--z-name) * .5)); }
 .reduced-motion .zoom-shadow { will-change: auto; }
 @media (prefers-reduced-motion: reduce) { .zoom-shadow { will-change: auto; } }
 

@@ -37,7 +37,7 @@ const FRAMES = {
   epic:      { base: { metal: .65, smooth: .78 }, silver: { metal: .9, smooth: .86 }, gold: { metal: .9, smooth: .86 }, gemHue: [255, 310], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
   legendary: { base: { metal: .15, smooth: .35 }, gold: { metal: 1, smooth: .92 }, cloth: [330, 25], gemHue: [330, 25], raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
   special:   { base: { metal: .55, smooth: .9 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[150, 0, 362, 130]], paper: SHARED_PARCHMENT },
-  beast:     { base: { metal: 0, smooth: .25 }, gold: { metal: .85, smooth: .78 }, silver: { metal: .8, smooth: .7 }, gemHue: [335, 15], gemMinSat: .5, raised: [[150, 0, 362, 130]], paper: { name: [.16, .84, .751], stats: [.13, .87, .85, .92], medals: [[.19, .126], [.834, .126]] } },
+  beast:     { base: { metal: .45, smooth: .75 }, gold: { metal: .9, smooth: .82 }, silver: { metal: .8, smooth: .7 }, gemHue: [335, 15], gemMinSat: .45, raised: [[150, 0, 362, 150]], paper: { name: [.15, .85, .752], stats: [.12, .88, .852, .917], medals: [[.192, .141]] } },
 };
 
 // ランク報酬のカードスキン（assets/cards/frame-skin-<ランク>.png）。窓・文字枠・メダルの位置は、レアリティの枠と同じ共通の位置

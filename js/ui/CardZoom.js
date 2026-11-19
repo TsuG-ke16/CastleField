@@ -216,7 +216,7 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     mountMiniCard(card, type, def, rarities, { skin: opts.skin || undefined });
     const fx = new URLSearchParams(location.search).get('fx');
     card3D = createCard3D(card, {
-      rarityColor: opts.skin ? opts.color : rarities?.[def.rarity]?.color,
+      rarityColor: opts.skin ? opts.color : def.monster ? '#a51d34' : rarities?.[def.rarity]?.color,
       shadow,
       quality: fx === 'full' || fx === 'lite' ? fx : 'auto',
     });

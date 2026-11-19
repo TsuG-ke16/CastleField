@@ -78,7 +78,6 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
   const source = frame?.getAttribute('src');
   const paths = reliefPaths(source);
   const rarity = card.dataset.rarity;
-  const beast = card.hasAttribute('data-beast');
   const added = [];
   const initialStyles = new Map();
   const initialTransform = card.style.transform;
@@ -128,11 +127,10 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
     setStyle('--card-name-depth', config.nameDepth);
     setStyle('--card-medal-depth', config.medalDepth);
     setStyle('--card-raised-depth', config.raisedDepth);
-    if (!beast) {
-      add(card, 'zoom-floor');
-      for (let i = 0; i < config.wallLayers; i++) walls.push(add(card, 'zoom-wall'));
-      add(image, 'zoom-recess');
-    }
+    // 絵は枠の窓の奥に沈める（魔物の駒も同じ）
+    add(card, 'zoom-floor');
+    for (let i = 0; i < config.wallLayers; i++) walls.push(add(card, 'zoom-wall'));
+    add(image, 'zoom-recess');
     add(image, 'zoom-sheen');
     if (hasCardFoil(rarity)) add(image, 'foil-sheet zoom-foil');
     if (paths) {
