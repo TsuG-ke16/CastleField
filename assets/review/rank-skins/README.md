@@ -1,4 +1,6 @@
-# ランク報酬スキン（置き場。まだゲームには入れていない）
+# ランク報酬スキン（元の絵の置き場）
+
+ゲームには、ここから縮小したものを `assets/cards/frame-skin-*`・`assets/skins/back-rank-*`・`assets/ranks/`・`assets/frames/` に入れた（ランク報酬を見る画面。`js/ui/RankRewardsView.js`）。
 
 ChatGPT で作った、ランク報酬の素材。ランクは 8つ：アイアン・ブロンズ・シルバー・ゴールド・プラチナ・ダイヤモンド・マスター・チャンピオン。
 `assets/review/` の下なので、オフライン用の一覧（`precache.js`）には入らない。ゲームの `assets/ranks/` などとは混ぜていない。

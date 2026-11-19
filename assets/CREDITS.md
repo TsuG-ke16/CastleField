@@ -494,3 +494,12 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style
 - 2026-11-19：`cards/frame-beast.png` を、ルビー色の枠（OpenAI画像生成。上記OpenAI規約・AI生成。1024×1536の原本の外側の背景と絵の窓を透明にして 512×768 に縮小）に差しかえた。`cards/relief/frame-beast-*.png` は `node js/ui/build-card-relief.js` で作り直した（3Dの拡大表示用。`js/ui/build-card-relief.js` の beast を赤い宝石の色に直した）。
 
 - 2026-11-19：`skins/back-{crimson,forest,royal,gold}.png` を、512×768 の新しいカード裏（OpenAI画像生成。上記OpenAI規約・AI生成。1024×1536の原本を縮小し、256色のパレットPNGにして軽くした）に差しかえた。`skins/back-*-raised.png` は、その絵から金の飾り・紋章の形だけを切り抜いたマスク（プログラムで作った派生。拡大表示で裏面の飾りを手前に浮かせるために使う）。
+
+## ランク報酬の見た目をゲームに入れた（2026-11-19）
+
+OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。元の絵は `review/rank-skins/`（256色に減らして 512×768・256×256 に縮小して使用）。
+
+- `cards/frame-skin-<ランク>.png`・`cards/relief/frame-skin-<ランク>-{relief,raised}.png` — カードスキンの表（8ランク）。凹凸の地図は `node js/ui/build-card-relief.js` で作成
+- `skins/back-rank-<ランク>.png`・`skins/back-rank-<ランク>-raised.png` — カードスキンの裏（ショップの `back_rank_*`）。浮かせる地図は同じスクリプトで作成
+- `ranks/rank-<ランク>.png` — ランクのエンブレム（8枚を差しかえ）
+- `frames/rank-frame-<ランク>.png` — アイコンフレーム（`css/rank-frames.css` で使用）
