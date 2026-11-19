@@ -89,7 +89,10 @@ async function zoom(device) {
   }
   const tilt = async (gamma, beta) => {
     await page.evaluate(([g, b]) => window.dispatchEvent(new DeviceOrientationEvent('deviceorientation', { alpha: 0, beta: b, gamma: g })), [gamma, beta]);
-    await page.waitForTimeout(500);
+    await page.waitForFunction(dir => {
+      const x = parseFloat(document.querySelector('.zoom-card').style.getPropertyValue('--foil-x'));
+      return dir < 0 ? x < 40 : x > 60;
+    }, gamma);
     return card.evaluate(el => [parseFloat(el.style.getPropertyValue('--foil-x')), getComputedStyle(el).transform]);
   };
   const [leftX, leftTransform] = await tilt(-20, 30);
@@ -100,6 +103,8 @@ async function zoom(device) {
   const view = page.viewportSize();
   assert.ok(rect.x >= 0 && rect.y >= 0 && rect.x + rect.width <= view.width && rect.y + rect.height <= view.height, '拡大したカードが画面に収まる');
   await page.screenshot({ path: fileURLToPath(new URL(`device-zoom-${device.replace(/\s/g, '')}.png`, output)) });
+  await page.touchscreen.tap(8, view.height / 2);
+  await page.locator('dialog.card-zoom').waitFor({ state: 'hidden' });
   await context.close();
   console.log(`${device}：長押しで拡大・傾きで光と角度が動く OK`);
 }

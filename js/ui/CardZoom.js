@@ -70,7 +70,8 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
   const rotated = () => Math.abs(q[0]) < 0.9995;
   const paint = () => {
     card3D?.render({ quaternion: q, tiltX: (0.5 - now.y) * 2 * MAX_TILT, tiltY: (now.x - 0.5) * 2 * MAX_TILT });
-    resetBtn.hidden = !rotated();
+    const showReset = rotated();
+    if (resetBtn.hidden === showReset) resetBtn.hidden = !showReset;
   };
   const step = (time) => {
     frame = 0;
@@ -172,7 +173,9 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
   resetBtn.addEventListener('click', (event) => { event.stopPropagation(); goHome(); });
   const refresh = () => { if (dialog.open) { measure(); paint(); } };
   window.addEventListener('resize', refresh);
-  matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', refresh);
+  const motionPreference = matchMedia('(prefers-reduced-motion: reduce)');
+  if (motionPreference.addEventListener) motionPreference.addEventListener('change', refresh);
+  else motionPreference.addListener(refresh);
   new MutationObserver(refresh).observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
   let orienting = false;
   let sensorAllowed = false;
@@ -230,9 +233,10 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
 
   // ---------- 長押しの検出（まとめて受ける） ----------
   let hold = null;
-  let swallow = 0;
+  let swallowReleaseClick = false;
   const cancel = () => { if (hold) { clearTimeout(hold.timer); hold = null; } };
   document.addEventListener('pointerdown', (event) => {
+    swallowReleaseClick = false; // 次に押した操作は、新しいタップとして扱う
     if (dialog.open || event.button > 0) return;
     const source = event.target.closest?.('[data-zoom]');
     if (!source) return;
@@ -242,7 +246,7 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
       x0, y0,
       timer: setTimeout(() => {
         hold = null;
-        swallow = Date.now() + 900;            // 指を離したときのクリック（カードを足すなど）を止める
+        swallowReleaseClick = true;
         open(source.dataset.zoom);
       }, HOLD_MS),
     };
@@ -252,7 +256,11 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
   }, { passive: true, capture: true });
   for (const type of ['pointerup', 'pointercancel', 'dragstart']) document.addEventListener(type, cancel, true);
   document.addEventListener('click', (event) => {
-    if (Date.now() < swallow && !dialog.contains(event.target)) { event.stopPropagation(); event.preventDefault(); swallow = 0; }
+    // 長押しを離すと、端末によっては元のカードや開いたダイアログに click が届く。
+    if (!swallowReleaseClick || !event.detail) return;
+    swallowReleaseClick = false;
+    event.stopPropagation();
+    event.preventDefault();
   }, true);
   // 長押しで出るメニュー（コピー・画像を保存）を出さない
   document.addEventListener('contextmenu', (event) => { if (event.target.closest?.('[data-zoom]') || dialog.open) event.preventDefault(); }, true);
