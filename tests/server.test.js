@@ -318,3 +318,22 @@ test('PWA：/sw.js と /manifest.webmanifest を配る（manifest は専用の�
     server.close();
   }
 });
+
+test('SSE：中継（nginx・Cloudflare など）が溜め込まない送り方をする', async () => {
+  const { server, base } = await startServer();
+  try {
+    const a = await post(base, '/api/join', { passphrase: 'sse-room', name: 'A' });
+    const ctrl = new AbortController();
+    const res = await fetch(`${base}/api/stream?token=${a.token}`, { signal: ctrl.signal });
+    assert.equal(res.headers.get('content-type'), 'text/event-stream; charset=utf-8');
+    assert.match(res.headers.get('cache-control'), /no-cache/);
+    assert.match(res.headers.get('cache-control'), /no-transform/); // 圧縮・変換させない
+    assert.equal(res.headers.get('x-accel-buffering'), 'no'); // nginx に溜め込ませない
+    const reader = res.body.getReader();
+    const { value } = await reader.read();
+    assert.ok(value.length >= 2048, '最初に2KB以上送って、小さな溜め込みを押し流す');
+    ctrl.abort();
+  } finally {
+    server.close();
+  }
+});
