@@ -1,7 +1,14 @@
 // 見た目のスキン（兵士・城・攻撃エフェクト・勝利演出・カード裏面）を、プレイヤーごとに盤面へ反映する。
-// - 景品の中身は data/shop.json（サーバーと同じ一覧）。スキンは色替え（CSSフィルタ）で、持っていない人は標準の見た目
+// - 景品の中身は data/shop.json（サーバーと同じ一覧）。専用画像がない部位は既存の色替えを使う。
 // - 対戦中は、部屋の席ごとの装備（サーバーが決めた、その人が持っているものだけ）を使う。ひとりで遊ぶ・同じ端末では、自分の装備を使う
 // - 見た目だけで、ゲームの強さ・ルールには関わらない
+import { skinArt } from './skinArt.js';
+
+function setArt(el, property, path) {
+  if (path) el.style.setProperty(property, `url("${new URL(path, document.baseURI)}")`);
+  else el.style.removeProperty(property);
+}
+
 export class Cosmetics {
   constructor(catalog) {
     this.items = catalog?.items ?? {};
@@ -46,28 +53,45 @@ export class Cosmetics {
     const f = this.filterFor(pid, 'unit', el.dataset.color);
     el.dataset.owner = pid;
     const pic = el.querySelector('.soldier-pic');
-    if (pic) { if (f) pic.style.setProperty('--skin-filter', f); else pic.style.removeProperty('--skin-filter'); }
+    if (!pic) return;
+    const art = el.dataset.unitType === 'infantry' ? skinArt(this.map(pid)?.unit) : null;
+    setArt(pic, '--unit-art', art);
+    pic.toggleAttribute('data-painted', Boolean(art));
+    if (f && !art) pic.style.setProperty('--skin-filter', f);
+    else pic.style.removeProperty('--skin-filter');
   }
 
   styleCastle(el, pid) {
     const f = this.filterFor(pid, 'castle', el.dataset.color);
-    if (f) el.style.setProperty('--castle-skin-filter', f); else el.style.removeProperty('--castle-skin-filter');
+    const art = skinArt(this.map(pid)?.castle);
+    setArt(el, '--castle-art', art);
+    el.toggleAttribute('data-painted', Boolean(art));
+    if (f) el.style.setProperty('--castle-skin-filter', f);
+    else el.style.removeProperty('--castle-skin-filter');
   }
 
   /** 魔法・射撃の演出（誰が撃ったかで色が変わる） */
   styleFx(container, pid) {
     if (!container) return;
     const it = this.equipped(pid, 'attackFx');
+    const art = skinArt(this.map(pid)?.attackFx);
+    setArt(container, '--attack-art', art);
+    container.toggleAttribute('data-painted-fx', Boolean(art));
     if (it?.filter) container.style.setProperty('--fx-filter', it.filter); else container.style.removeProperty('--fx-filter');
   }
 
   /** 勝った人の紙ふぶきの色（なければ null＝標準） */
+  winArt(pid) { return skinArt(this.map(pid)?.winFx); }
   winColors(pid) { return this.equipped(pid, 'winFx')?.colors ?? null; }
 
   /** カードの裏（画面を見ている人の装備） */
   applyBack(app) {
-    const it = this.spec(this.map(this.viewerId)?.cardBack ?? (this.localIds || !this.viewerId ? this.mine.cardBack : null));
-    if (it?.filter) app.style.setProperty('--back-filter', it.filter); else app.style.removeProperty('--back-filter');
+    const id = this.map(this.viewerId)?.cardBack ?? (this.localIds || !this.viewerId ? this.mine.cardBack : null);
+    const it = this.spec(id);
+    const art = skinArt(id);
+    setArt(app, '--back-art', art);
+    app.toggleAttribute('data-painted-back', Boolean(art));
+    if (it?.filter && !art) app.style.setProperty('--back-filter', it.filter); else app.style.removeProperty('--back-filter');
   }
 
   /** いま画面にある兵士・城に、装備を反映しなおす（装備や席の情報が変わったとき） */
@@ -83,7 +107,15 @@ export function itemPreview(it) {
   const box = document.createElement('span');
   box.className = `item-preview slot-${it.slot}`;
   const img = (src, filter) => { const i = new Image(); i.src = src; i.alt = ''; i.loading = 'lazy'; if (filter) i.style.filter = filter; box.append(i); };
-  if (it.slot === 'unit') img('assets/units/knight-blue.png', it.filters?.blue);
+  const art = skinArt(it.id);
+  if (art) {
+    img(art);
+    if (it.slot === 'title') {
+      const title = document.createElement('b');
+      title.textContent = it.text ?? it.name;
+      box.append(title);
+    }
+  } else if (it.slot === 'unit') img('assets/units/knight-blue.png', it.filters?.blue);
   else if (it.slot === 'castle') img('assets/castles/castle-blue.png', it.filters?.blue);
   else if (it.slot === 'cardBack') img('assets/ui/card-back.png', it.filter);
   else if (it.slot === 'attackFx') img('assets/fx/fireball.png', it.filter);

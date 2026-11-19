@@ -18,6 +18,11 @@ const port = 9000 + Math.floor(Math.random() * 90);
 const base = `http://127.0.0.1:${port}/`;
 const server = spawn('node', ['server/server.js'], { cwd: root, env: { ...process.env, PORT: String(port), CF_DB_PATH: dbFile }, stdio: 'ignore' });
 let browser;
+async function expectPaint(castle) {
+  await castle.locator('.castle-pic .asset-image').first().evaluate((image) => image.decode());
+  const content = await castle.locator('.castle-pic .asset-image').first().evaluate((image) => getComputedStyle(image).content);
+  assert.match(content, /castle-crimson[.]png/);
+}
 try {
   for (let n = 0; n < 50; n++) { try { if ((await fetch(base)).ok) break; } catch { /* 起動待ち */ } await new Promise((r) => setTimeout(r, 100)); }
   browser = await chromium.launch();
@@ -60,16 +65,18 @@ try {
   await page.click('#collection .social-tab[data-tab=gacha]');
   await page.locator('#collection .gacha-pull').waitFor();
   await page.locator('#collection .gacha-pull [data-count="1"]').click();
+  await page.locator('#collection .gacha-open').click();
   await page.locator('#collection .gacha-reveal .gacha-card').first().waitFor();
   assert.equal(await page.locator('#collection .gacha-reveal .gacha-card').count(), 1);
-  await page.click('#collection .gacha-reveal .plank-btn');
+  await page.click('#collection .gacha-reveal .gacha-close');
   await page.locator('#collection .gacha-pull [data-count="10"]').click();
+  await page.locator('#collection .gacha-open').click();
   await page.locator('#collection .gacha-reveal .gacha-card').nth(9).waitFor();
   await page.click('#collection .gacha-reveal'); // タップで全部見る
   await page.waitForTimeout(400);
   await page.screenshot({ path: resolve(artifacts, 'gacha-result.png') });
   assert.equal(await page.locator('#collection .gacha-reveal .gacha-card').count(), 10);
-  await page.click('#collection .gacha-reveal .plank-btn');
+  await page.click('#collection .gacha-reveal .gacha-close');
   assert.equal(Number(await page.locator('#collection [data-part=wallet] b').first().textContent()), 900); // 2500 - 600（買い物）- 1000（ガチャ）
   assert.deepEqual(errors, []);
   // 装備したスキンが、ひとりで遊ぶ盤面に出る（自分の城だけ。CPU の城は標準）
@@ -78,8 +85,10 @@ try {
   await page.locator('#title-levels:not([hidden]) .level').first().click();
   await page.locator('.castle[data-player-id]').first().waitFor({ timeout: 15000 });
   await page.waitForFunction(() => document.querySelectorAll('.castle[data-player-id]').length >= 2);
-  const skinned = await page.evaluate(() => [...document.querySelectorAll('.castle[data-player-id]')].filter((c) => c.style.getPropertyValue('--castle-skin-filter')).length);
+  const skinned = await page.evaluate(() => [...document.querySelectorAll('.castle[data-player-id]')].filter((c) => c.dataset.painted !== undefined && c.style.getPropertyValue('--castle-art')).length);
   assert.equal(skinned, 1);
+  const castle = page.locator('.castle[data-painted]');
+  await expectPaint(castle);
   await page.waitForTimeout(1200);
   await page.screenshot({ path: resolve(artifacts, 'skin-in-game.png') });
   assert.deepEqual(errors, []);

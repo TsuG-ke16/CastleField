@@ -2,6 +2,7 @@
 // 景品はすべて見た目だけで、ランクマッチの勝敗には影響しない。名前などは textContent で入れる。
 import { account } from './Account.js';
 import { itemPreview } from './Cosmetics.js';
+import { skinArt } from './skinArt.js';
 
 const RARITY_NAME = { common: 'コモン', uncommon: 'アンコモン', rare: 'レア', epic: 'エピック', legendary: 'レジェンド' };
 const SLOT_ORDER = ['unit', 'castle', 'cardBack', 'attackFx', 'winFx', 'icon', 'title'];
@@ -42,7 +43,7 @@ export class CollectionView {
   say(t, bad = false) { const m = this.part('msg'); m.textContent = t; m.classList.toggle('bad', bad); }
 
   async call(method, path, body) {
-    const r = await account.api(method, path, body);
+    const r = await account.api(method, path, body).catch(() => ({}));
     if (!r.json?.ok) { this.say(r.json?.reason ?? 'サーバーにつながりません', true); return null; }
     return r.json;
   }
@@ -80,7 +81,8 @@ export class CollectionView {
 
   card(it, { action, label, disabled, note }) {
     const c = el('div', `item-card r-${it.rarity}${it.owned ? ' owned' : ''}`);
-    c.append(itemPreview(it), this.rarityBadge(it.rarity), el('strong', 'item-name', it.name), el('small', 'item-desc', it.desc ?? ''));
+    c.append(itemPreview(it), this.rarityBadge(it.rarity), el('strong', 'item-name', it.name));
+    if (it.desc && (!skinArt(it.id) || !['unit', 'castle'].includes(it.slot))) c.append(el('small', 'item-desc', it.desc));
     if (note) c.append(el('small', 'item-note', note));
     if (action) { const b = el('button', 'small-btn item-act', label); b.type = 'button'; b.dataset.act = action; b.dataset.id = it.id; b.disabled = !!disabled; c.append(b); }
     return c;
@@ -118,7 +120,12 @@ export class CollectionView {
       const b = el('button', 'plank-btn', `${label}　${cost} コイン`); b.type = 'button'; b.dataset.act = 'pull'; b.dataset.count = String(count); b.disabled = this.shop.coins < cost; row.append(b);
     }
     body.append(row);
-    if (this.shop.coins < g.banner.costSingle) body.append(el('p', 'collection-note', `コインが足りません（あと ${g.banner.costSingle - this.shop.coins}）。対戦で増やせます`));
+    if (this.shop.coins < g.banner.costTen) {
+      const shortfall = this.shop.coins < g.banner.costSingle
+        ? `1回まであと ${g.banner.costSingle - this.shop.coins} コイン。10連まであと ${g.banner.costTen - this.shop.coins} コイン。`
+        : `10連まであと ${g.banner.costTen - this.shop.coins} コイン。`;
+      body.append(el('p', 'collection-note', shortfall));
+    }
     // 排出率
     const rates = el('details', 'gacha-rates'); rates.open = false;
     rates.append(el('summary', null, '排出率・景品の一覧'));
@@ -202,12 +209,31 @@ export class CollectionView {
       c.append(itemPreview(r.item), this.rarityBadge(r.rarity), el('strong', null, r.item.name), el('small', null, r.duplicate ? `重複 → +${r.pointsGained} ポイント` : 'NEW'));
       grid.append(c);
     });
-    const skip = el('button', 'plank-btn', 'とじる'); skip.type = 'button';
+    grid.hidden = true;
+    const capsule = new Image(104, 104);
+    capsule.className = 'gacha-capsule';
+    capsule.src = 'assets/ui/home/gacha.png';
+    capsule.alt = '';
+    const launch = el('button', 'plank-btn gacha-open', '景品を開く');
+    launch.type = 'button';
+    const hint = el('small', 'gacha-hint', 'タップで全部見る');
+    hint.hidden = true;
+    const skip = el('button', 'plank-btn gacha-close', 'とじる');
+    skip.hidden = true;
+    launch.addEventListener('click', (event) => {
+      event.stopPropagation();
+      launch.hidden = true;
+      capsule.hidden = true;
+      grid.hidden = false;
+      hint.hidden = false;
+      skip.hidden = false;
+      if (this.reducedMotion() || matchMedia('(prefers-reduced-motion: reduce)').matches) wrap.classList.add('all');
+      skip.focus({ preventScroll: true });
+    }, { once: true }); skip.type = 'button';
     skip.addEventListener('click', (e) => { e.stopPropagation(); wrap.remove(); });
     wrap.addEventListener('click', () => wrap.classList.add('all'));
-    if (this.reducedMotion()) wrap.classList.add('all');
-    wrap.append(grid, el('small', 'gacha-hint', 'タップで全部見る'), skip);
+    wrap.append(capsule, launch, grid, hint, skip);
     this.part('body').prepend(wrap);
-    skip.focus({ preventScroll: true });
+    launch.focus({ preventScroll: true });
   }
 }

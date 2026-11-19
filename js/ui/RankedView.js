@@ -11,6 +11,7 @@ export class RankedView {
   constructor({ toast = () => {}, onMatched = () => {}, onNeedMember = () => {} } = {}) {
     Object.assign(this, { toast, onMatched, onNeedMember });
     this.state = 'idle';
+    this.pending = false;
     const box = this.box = document.createElement('div');
     box.id = 'ranked'; box.className = 'screen dim'; box.hidden = true;
     box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'ranked-title');
@@ -46,10 +47,10 @@ export class RankedView {
     this.say('');
     this.box.querySelector('.ranked-close').focus({ preventScroll: true });
     await this.refresh();
-    this.startPolling();
+    if (!this.box.hidden) this.startPolling();
   }
 
-  close() { this.box.hidden = true; this.stopPolling(); }
+  close() { this.box.hidden = true; this.stopPolling(); clearTimeout(this.matchTimer); }
   say(text, bad = false) { const m = this.part('msg'); m.textContent = text; m.classList.toggle('bad', bad); }
   startPolling() { this.stopPolling(); this.poll = setInterval(() => this.pollStatus(), POLL_MS); this.tickTimer = setInterval(() => this.renderTimer(), 500); }
   stopPolling() { clearInterval(this.poll); clearInterval(this.tickTimer); }
@@ -69,23 +70,35 @@ export class RankedView {
 
   async pollStatus() {
     if (this.box.hidden) return;
-    try { const r = await account.api('GET', '/api/ranked/status'); if (r.json?.ok) { this.apply(r.json); this.renderAction(); } } catch { /* 次の回に */ }
+    if (this.pending) return;
+    const previous = this.state;
+    const operation = this.queueOperation;
+    try {
+      const r = await account.api('GET', '/api/ranked/status');
+      if (!this.box.hidden && !this.pending && operation === this.queueOperation && r.json?.ok) {
+        this.apply(r.json);
+        if (previous !== this.state) this.renderAction();
+      }
+    } catch { /* 次の回に */ }
   }
 
   apply(st) {
     const prev = this.state;
     this.state = st.state;
     this.st = st;
+    this.box.dataset.state = this.state;
     if (st.state === 'queued') this.queuedAt = Date.now() - st.waitedMs;
     if (st.state === 'matched' && prev !== 'matched') {
       this.say('対戦相手が見つかりました！');
-      setTimeout(() => { if (this.state === 'matched') this.enter(); }, 900);
+      this.matchTimer = setTimeout(() => this.enter(), 1000);
     }
     if (st.state === 'timeout') this.say('対戦相手が見つかりませんでした。時間をおいて、もう一度探してください（人が少ない時間帯かもしれません）', true);
   }
 
   enter() {
+    if (this.state !== 'matched' || this.box.hidden) return;
     const st = this.st;
+    this.state = 'idle';
     this.close();
     this.onMatched({ token: st.token, playerId: st.playerId });
   }
@@ -98,7 +111,9 @@ export class RankedView {
     this.part('rankName').textContent = !d.member ? 'ゲスト' : rank ? rank.divisionLabel : '認定戦中';
     this.part('rankSub').textContent = rank ? (rank.position ? `順位 ${rank.position}位` : '') : d.member ? `認定戦 ${sum.placementTotal - sum.placementLeft}/${sum.placementTotal}` : '';
     const fill = this.part('rpFill');
-    fill.style.width = rank && rank.rpForNext ? `${Math.round((rank.rpIntoDivision / rank.rpForNext) * 100)}%` : rank ? '100%' : '0%';
+    const rpProgress = rank?.rpForNext ? Math.round(rank.rpIntoDivision / rank.rpForNext * 100) : rank ? 100 : 0;
+    fill.style.width = `${rpProgress}%`;
+    fill.parentElement.setAttribute('aria-valuenow', String(rpProgress));
     this.part('rpText').textContent = rank ? (rank.rpForNext ? `RP ${rank.rpIntoDivision}/${rank.rpForNext}（次のランクまで）` : `RP ${rank.rp}`) : '';
     const pips = this.part('pips'); pips.replaceChildren();
     if (d.member && sum && !sum.placed) {
@@ -135,7 +150,7 @@ export class RankedView {
       box.append(t); this.renderTimer();
       mk('探すのをやめる', 'small-btn', () => this.leaveQueue());
     } else if (this.state === 'matched') {
-      const p = document.createElement('p'); p.className = 'ranked-wait'; p.textContent = '試合に入ります…'; box.append(p);
+      const p = document.createElement('p'); p.className = 'ranked-matched'; p.textContent = '対戦成立'; box.append(p);
       mk('試合に入る', 'plank-btn', () => this.enter());
     } else {
       mk('対戦相手を探す', 'plank-btn big ranked-find', () => this.findMatch());
@@ -150,16 +165,31 @@ export class RankedView {
   }
 
   async findMatch() {
-    this.say('');
-    const r = await account.api('POST', '/api/ranked/queue', {});
-    if (!r.json?.ok) { this.say(r.json?.reason ?? '探せませんでした', true); if (r.json?.state) this.apply(r.json); this.renderAction(); return; }
-    this.apply(r.json); this.renderAction();
+    await this.requestQueue('/api/ranked/queue', '探せませんでした');
   }
 
   async leaveQueue() {
-    const r = await account.api('POST', '/api/ranked/leave', {});
-    if (!r.json?.ok) { this.say(r.json?.reason ?? 'やめられませんでした', true); return; }
-    this.state = 'idle'; this.say('探すのをやめました'); this.renderAction();
+    await this.requestQueue('/api/ranked/leave', 'やめられませんでした', '探すのをやめました');
+  }
+
+  async requestQueue(path, failure, success = '') {
+    if (this.pending) return;
+    this.pending = true;
+    this.queueOperation = Symbol();
+    this.say('通信しています…');
+    const button = this.part('action').querySelector('button');
+    if (button) button.disabled = true;
+    try {
+      const { json } = await account.api('POST', path, {});
+      if (json?.state) this.apply(json);
+      if (!json?.ok) this.say(json?.reason ?? failure, true);
+      else if (this.state !== 'matched') this.say(success);
+    } catch {
+      this.say(`${failure}。接続を確認して、もう一度お試しください。`, true);
+    } finally {
+      this.pending = false;
+      this.renderAction();
+    }
   }
 }
 

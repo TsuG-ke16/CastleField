@@ -1,3 +1,4 @@
+import { profileArt } from './profileArt.js';
 // プロフィール画面：自分の情報・戦績・最近の対戦・アイコンと公開設定・レベル報酬の受け取り。
 // 値はすべてサーバーから受け取って表示する（ここで経験値や勝敗を変えることはできない）。文字は textContent で入れる。
 import { account } from './Account.js';
@@ -79,7 +80,7 @@ export class ProfileView {
     p('title').textContent = pf.title;
     p('lv').textContent = `Lv.${pf.level}`;
     if (homeJson?.icons) this.icons = homeJson.icons;
-    const iconSrc = pf.iconImage ?? (this.icons ?? []).find((i) => i.id === pf.icon)?.image;
+    const iconSrc = profileArt(pf.icon, pf.iconImage ?? (this.icons ?? []).find((i) => i.id === pf.icon)?.image);
     const av = p('avatar'); av.replaceChildren();
     if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); }
     const lv = homeJson?.level;
@@ -109,9 +110,17 @@ export class ProfileView {
     const st = p('stats'); st.replaceChildren();
     if (pf.stats) {
       for (const [k, v] of [['対戦数', pf.stats.matches], ['勝利', pf.stats.wins], ['敗北', pf.stats.losses], ['勝率', pf.stats.winRate == null ? '—' : `${pf.stats.winRate}%`]]) {
-        const dt = document.createElement('dt'); dt.textContent = k; const dd = document.createElement('dd'); dd.textContent = String(v); st.append(dt, dd);
+        const stat = document.createElement('div');
+        const dt = document.createElement('dt'); dt.textContent = k;
+        const dd = document.createElement('dd'); dd.textContent = String(v);
+        stat.append(dt, dd); st.append(stat);
       }
-    } else { const dd = document.createElement('dd'); dd.textContent = '非公開です'; st.append(dd); }
+    } else {
+      const label = document.createElement('dt'); label.textContent = '戦績';
+      const value = document.createElement('dd'); value.textContent = '非公開です';
+      const stat = document.createElement('div'); stat.className = 'profile-private-stat';
+      stat.append(label, value); st.append(stat);
+    }
     // 履歴
     const hist = p('history'); hist.replaceChildren();
     if (pf.history == null) { const li = document.createElement('li'); li.className = 'empty'; li.textContent = '非公開です'; hist.append(li); }
@@ -136,7 +145,7 @@ export class ProfileView {
     for (const i of this.icons ?? []) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'profile-icon raw-btn'; b.setAttribute('role', 'radio'); b.setAttribute('aria-checked', String(i.id === pf.icon)); b.setAttribute('aria-label', i.name);
-      const img = new Image(); img.src = i.image; img.alt = ''; b.append(img);
+      const img = new Image(); img.src = profileArt(i.id, i.image); img.alt = ''; b.append(img);
       b.addEventListener('click', () => this.save({ icon: i.id }));
       icons.append(b);
     }

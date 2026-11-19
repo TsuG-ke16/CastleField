@@ -464,3 +464,27 @@ OpenAI ImageGen を使用。利用条件は OpenAI Terms of Use（生成出力�
 | `cards/frame-beast.png` | `exec-b50963cc-36c8-40d6-8a96-efc34bd2abe6.png` | `cards/window-beast.png` | `exec-5c2fb752-6c1b-4b64-ab5c-4189097fb44f.png` |
 
 - `cards/relief/frame-{common,uncommon,rare,epic,legendary,special,beast}-{relief,raised}.png` — 上記の枠から `node js/ui/build-card-relief.js` で再生成。素材の利用条件は元の枠と同じ。
+
+## オンラインホーム（2026-11-19）
+
+OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`assets/style-reference.png` を参照。
+
+- `bg/home-castle.png` — `exec-e7fe433a-71f4-4f10-9cff-c8560bdfe4fd.png` を縮小・圧縮。城、空、森を含む背景。
+- `ui/home/{rank,casual,ranking,deck,catalog,skin,friend,profile,shop,gacha,mission,settings}.png` — `exec-a80be6be-5768-4b8b-846e-2f0575b9c42a.png` から個別に切り出した透過PNG。
+
+## 王国リーグのランク紋章（2026-11-19）
+
+- `ranks/rank-{iron,bronze,silver,gold,platinum,diamond,ascendant,immortal,radiant}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照、生成原本 `exec-94e3676c-e909-4979-8c5c-c776b8b38cf2.png` を切り出し。オリジナルの9図柄。
+
+## ショップ景品の専用イラスト（2026-11-19）
+
+OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style-reference.png` を参照した各原本から切り出し。
+
+- `skins/unit-{crimson,forest,frost,royal,gold,shadow}.png` — `exec-4bdcaf7a-5a84-4efa-8c4d-f5478ea9aa43.png`
+- `skins/castle-{crimson,forest,frost,gold,shadow}.png` — `exec-3349807c-8033-4b8f-8f15-0c37d6e7968b.png`
+- `skins/icon-{paladin,giant,scout,sniper,sage,dragon-knight}.png` — `exec-9e898060-b01b-4dee-bfba-368947370196.png`
+- `skins/back-{crimson,forest,royal,gold}.png`、`skins/fx-{emerald,violet,azure,gold}.png`、`skins/win-{gold,sakura,aurora}.png`、`skins/title-{rookie,hunter,wall,lucky,legend}.png` — `exec-d9504ee8-43f0-4d05-91e1-b08c1c00f73d.png`
+
+## プロフィールの基本アイコン（2026-11-19）
+
+- `profiles/{infantry,spearman,knight,archer,mage,hero}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照し、生成原本 `exec-8e2458c1-3ca0-485e-93ba-17aa6f3f9b98.png` から切り出した透過PNG。
