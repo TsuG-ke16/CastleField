@@ -131,3 +131,19 @@
 
 /* 軽い表示（WebGL なし）と、動きを減らす設定：層の厚みは同じで、光の計算だけしない */
 .reduced-motion .zoom-shadow { will-change: auto; }
+
+/* ---------- 360度回す（CardZoom.js）：裏の面 ----------
+   表が向こうを向いたら（.zoom-flipped）表の層を全部隠して、裏の絵だけ見せる（JS が向きから決める）。
+   裏の絵は、装備中のカードの裏スキン（#app の --back-art・--back-filter）。なければ標準の絵 */
+.zoom-card > .zoom-back {
+  position: absolute; inset: 0; display: block; pointer-events: none; visibility: hidden;
+  transform: translateZ(calc(var(--z-step, .5px) * -7)) rotateY(180deg);
+}
+.zoom-back-img { width: 100%; height: 100%; object-fit: contain; display: block; filter: var(--back-filter, none); }
+#app[data-painted-back] .zoom-back-img { content: var(--back-art); }
+.zoom-card.zoom-flipped > .zoom-back { visibility: visible !important; }
+.zoom-card.zoom-flipped > :not(.zoom-back) { visibility: hidden !important; }
+.zoom-card.zoom-flipped::after { display: none; }
+/* なぞって回すとき、文字・画像の範囲選択が始まらないように（選択された画像は青くかぶって見える） */
+.zoom-stage, .zoom-stage * { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+.zoom-reset { margin: 2px 0 0; padding: 6px 14px; border-radius: 999px; border: 1px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 13px; }
