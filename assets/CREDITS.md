@@ -484,3 +484,7 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style
 ## カード枠の作り直し（2026-11-19）
 
 `cards/frame-{common,uncommon,rare,epic,legendary,special,beast}.png` を OpenAI画像生成（ChatGPT）で作り直した。右上の丸をなくし、窓・文字枠・左上の丸の位置を7枚で同じにそろえた（`css/rarity-assets.css` の共通の数値）。凹凸マップ（`cards/relief/`）も作り直した。
+
+## ランク報酬スキンの素材（2026-11-19）
+
+`review/rank-skins/` の `card/card-{front,back}-<ランク>.png`・`icon/rank-{frame,emblem}-<ランク>.png`（8ランク×4種）。OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。ゲームにはまだ入れていない（置き場）。
