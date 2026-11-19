@@ -1,5 +1,5 @@
 // アカウント画面のテスト：node ui-tests/account.js（Playwright は環境にあるものを使う）
-// アカウント付きのサーバーを一時のデータベースで起動し、ゲスト作成・デッキ保存・再読み込み・連携ボタンの表示・メールアドレスでの登録とログインを確かめる。
+// アカウント付きのサーバーを一時のデータベースで起動し、ゲスト作成・デッキ保存・再読み込み・アカウント作成（メールアドレス）とログイン・設定画面の入口を確かめる。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -62,7 +62,8 @@ try {
   await page.locator('#account:not([hidden])').waitFor();
   assert.match(await page.locator('#account [data-part=name]').textContent(), /^ゲスト\d{4}$/);
   assert.match(await page.locator('#account [data-part=kind]').textContent(), /ゲスト/);
-  assert.ok(await page.locator('#account .account-provider[data-provider=google]').isDisabled()); // 認証の設定がないサーバー
+  assert.equal(await page.locator('#account [data-part=oauth]').isVisible(), false); // Google の設定がないサーバーでは、Google のボタンを出さない
+  assert.match(await page.locator('#account [data-part=linkTitle]').textContent(), /アカウントを作成/);
   await page.screenshot({ path: resolve(artifacts, 'account-panel.png') });
   // 名前を変えて、読み込み直しても同じゲストのまま
   await page.fill('#account [data-part=nameInput]', 'テストさん');
@@ -86,6 +87,12 @@ try {
   await page.reload();
   await page.waitForFunction(() => JSON.parse(localStorage.getItem('cf-mydecks-v2') ?? 'null')?.slots?.[0]?.name === '画面テスト', null, { timeout: 8000 });
   // メールアドレスとパスワードを登録すると会員になり、別の端末（別のブラウザ）でログインすると同じアカウント
+  // 設定画面にも入口がある（ゲストには「アカウントを作成」）
+  await page.click('#home [data-act=settings]');
+  await page.locator('#settings .set-account-btn', { hasText: 'アカウントを作成' }).click();
+  await page.locator('#account:not([hidden])').waitFor();
+  assert.ok(await page.locator('#settings').isHidden());
+  await page.click('#account [data-act=close]');
   const openAccount = async (pg) => { await pg.click('#home [data-act=start]'); await pg.click('#levels-back'); await pg.click('#title-account'); await pg.locator('#account:not([hidden])').waitFor(); };
   await openAccount(page);
   assert.equal(await page.locator('#account .account-provider[data-provider=apple]').count(), 0); // Apple はなくした
@@ -95,9 +102,10 @@ try {
   await page.locator('#account [data-part=msg].bad', { hasText: '8文字以上' }).waitFor();
   await page.fill('#account [data-part=passInput]', 'ui-test-pass-1');
   await page.click('#account [data-act=emailRegister]');
-  await page.locator('#account [data-part=msg]', { hasText: 'メールアドレスを登録しました' }).waitFor();
-  assert.match(await page.locator('#account [data-part=kind]').textContent(), /連携済み：メールアドレス/);
+  await page.locator('#account [data-part=msg]', { hasText: 'アカウントを作成しました' }).waitFor();
+  assert.match(await page.locator('#account [data-part=kind]').textContent(), /アカウント作成済み（ログイン：メールアドレス）/);
   assert.ok(await page.locator('#account [data-part=passForm]').isVisible());
+  assert.equal(await page.locator('#account [data-part=emailForm]').isVisible(), false);
   await page.screenshot({ path: resolve(artifacts, 'account-email.png') });
   await page.click('#account [data-act=close]');
   const other = await (await browser.newContext({ viewport: { width: 390, height: 844 } })).newPage();

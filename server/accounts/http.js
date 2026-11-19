@@ -23,7 +23,7 @@ const AUTH_ERRORS = {
   denied: '認証がキャンセルされました',
   state: '認証の有効期限が切れました。もう一度試してください',
   failed: '認証に失敗しました。もう一度試してください',
-  linked: 'このアカウントは、別のキャッスルフィールドのアカウントに連携済みです',
+  linked: 'このGoogleアカウントは、別のキャッスルフィールドのアカウントで使われています',
 };
 
 export function createAccountRoutes({ db, cards = null, env = process.env, oidc = null, accounts = null, progression, profile, ranks, seasons, shop = null, gacha = null, missions: missionsCfg = null, modes: modesCfg = null, data = null, metrics = null, limiter = new RateLimiter(), now = () => Date.now(), log = console, readJson }) {
@@ -160,7 +160,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
       }
       if (req.method === 'POST' && path === '/api/auth/oauth/start') {
         const provider = body.provider;
-        if (provider !== 'google') { fail(req, res, 400, '連携先が正しくありません'); return true; }
+        if (provider !== 'google') { fail(req, res, 400, 'ログイン方法が正しくありません'); return true; }
         const b = idp.begin(provider);
         if (!b) { fail(req, res, 501, publicUrl ? 'Googleログインはこのサーバーでは設定されていません' : 'サーバーの公開URL（CF_PUBLIC_URL）が設定されていません', { code: 'notConfigured' }); return true; }
         acc.saveOAuthState({ state: b.state, provider, nonce: b.nonce, verifier: b.verifier, userId: session.userId });
@@ -349,7 +349,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     if (!matchmaker) { fail(req, res, 503, 'ランクマッチはこのサーバーでは使えません'); return true; }
     if (req.method === 'GET' && path === '/api/ranked/status') { send(req, res, 200, { ok: true, ...matchmaker.status(uid) }); return true; }
     if (req.method === 'POST' && path === '/api/ranked/queue') {
-      if (user.kind !== 'member') { fail(req, res, 403, 'ランクマッチは、Googleかメールアドレスで登録したアカウントで遊べます（ゲストでは遊べません）', { code: 'needsMember' }); return true; }
+      if (user.kind !== 'member') { fail(req, res, 403, 'ランクマッチは、アカウントを作成すると遊べます（ゲストでは遊べません）', { code: 'needsMember' }); return true; }
       if (lobby.activeSeatOfUser(uid)) { fail(req, res, 409, 'ほかの試合の途中です。終わってから探してください', { code: 'busy' }); return true; }
       const mode = body.mode ?? modes.default;
       if (!modeIds.includes(mode)) { fail(req, res, 400, 'そのモードは、まだ遊べません（準備中です）', { code: 'modeUnavailable' }); return true; }

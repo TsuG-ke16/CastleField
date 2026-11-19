@@ -35,7 +35,7 @@ try {
   // ゲストはランクマッチに参加できない
   await A.click('#home .home-tile[data-id=rank]');
   await A.locator('#ranked:not([hidden]) .ranked-action').waitFor();
-  assert.match(await A.locator('#ranked .ranked-note').textContent(), /Googleかメールアドレス/);
+  assert.match(await A.locator('#ranked .ranked-note').textContent(), /アカウントを作成/);
   await A.screenshot({ path: resolve(artifacts, 'ranked-guest.png') });
   await A.click('#ranked .ranked-close');
   // 会員にする（本物の Google 連携・メールの登録の代わりに、データベースを直接更新）

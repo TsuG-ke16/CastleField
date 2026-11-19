@@ -140,9 +140,9 @@ export class RankedView {
     if (!this.data) return;
     if (!this.data.member) {
       const p = document.createElement('p'); p.className = 'ranked-note';
-      p.textContent = 'ランクマッチは、Googleかメールアドレスで登録したアカウントで遊べます。ゲストのままでは遊べません。';
+      p.textContent = 'ランクマッチは、アカウントを作成すると遊べます。ゲストのままでは遊べません。';
       box.append(p);
-      mk('アカウントを連携する', 'plank-btn', () => { this.close(); this.onNeedMember(); });
+      mk('アカウントを作成する', 'plank-btn', () => { this.close(); this.onNeedMember(); });
       return;
     }
     if (this.state === 'queued') {
@@ -219,7 +219,7 @@ export class RankingView {
     try { r = (await account.api('GET', '/api/ranking?limit=50')).json; } catch { r = null; }
     if (!r?.ok) { this.part('season').textContent = '読み込めませんでした。つながってから、もう一度開いてください'; return; }
     this.part('season').textContent = `シーズン ${r.season.id}　あと${daysLeft(r.season.endsAt)}日`;
-    this.part('me').textContent = r.me ? (r.me.rank ? `あなた：${r.me.rank.divisionLabel}（${r.me.position}位）` : `あなた：認定戦中（あと${r.me.placementLeft}試合）`) : 'ランキングに載るには、アカウントを連携してランクマッチで遊びます';
+    this.part('me').textContent = r.me ? (r.me.rank ? `あなた：${r.me.rank.divisionLabel}（${r.me.position}位）` : `あなた：認定戦中（あと${r.me.placementLeft}試合）`) : 'ランキングに載るには、アカウントを作成してランクマッチで遊びます';
     this.part('empty').hidden = r.board.length > 0;
     for (const e of r.board) {
       const li = document.createElement('li');

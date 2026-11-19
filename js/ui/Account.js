@@ -10,7 +10,7 @@ const AUTH_MESSAGES = {
   denied: '認証がキャンセルされました',
   state: '認証の有効期限が切れました。もう一度試してください',
   failed: '認証に失敗しました。もう一度試してください',
-  linked: 'このGoogleアカウントは、別のキャッスルフィールドのアカウントに連携済みです',
+  linked: 'このGoogleアカウントは、別のキャッスルフィールドのアカウントで使われています',
 };
 
 const readMeta = () => { try { return JSON.parse(localStorage.getItem(SYNC_KEY)) ?? {}; } catch { return {}; } };
