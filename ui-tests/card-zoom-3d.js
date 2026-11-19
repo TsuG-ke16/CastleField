@@ -104,7 +104,7 @@ for (const rarity of ['common', 'uncommon', 'rare', 'epic', 'legendary', 'specia
       assert.ok(Math.abs(geometry.depth - geometry.cardWidth * UI_CONFIG.card3D.depth) < 0.1);
       assert.ok(Math.abs(geometry.depth + geometry.backZ) < 0.1, '側面と裏面の深さがそろう');
       if (rarity === 'special') assert.match(geometry.edgePaint, /rgb\(246, 139, 164\)/, '虹色の側面');
-      assert.equal(await card.locator('.zoom-wall').count(), UI_CONFIG.card3D.wallLayers, 'zoom-wall count');
+      assert.equal(await card.locator('.zoom-wall:visible').count(), UI_CONFIG.card3D.wallLayers, 'zoom-wall count');
       assert.equal(await card.locator('.zoom-floor').count(), 1, 'zoom-floor count');
       assert.equal(await card.locator('.zoom-raised').count(), 1, 'zoom-raised count');
       assert.equal(await page.locator('.zoom-card canvas.zoom-gl-base').count(), 1, 'canvas.zoom-gl-base');
@@ -145,6 +145,7 @@ await scenario('B legendary: fx=lite は CSS だけ', async () => {
     await longPress(page);
     await page.locator('.zoom-card.zoom-lite').waitFor();
     assert.equal(await page.locator('canvas.zoom-gl-base').count(), 0, 'canvas.zoom-gl-base should not exist');
+    assert.equal(await page.locator('.zoom-wall:visible').count(), UI_CONFIG.card3D.liteWallLayers);
     assert.ok(await page.locator('.zoom-raised').isVisible(), '.zoom-raised visible');
     await closeZoom(page);
   } finally {

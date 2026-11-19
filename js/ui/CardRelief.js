@@ -150,7 +150,7 @@ function texture(gl, unit, img, premultiply) {
 // 返すもの：base / raised のキャンバス（呼ぶ側が置く）、resize()、draw(axes)、destroy()
 // isCurrent：読み込みのあいだに閉じた・別のカードを開いたら false を返す関数。そのときは共有の WebGL に触らない
 // onLost：WebGL が消えたときに呼ぶ
-export async function createRelief({ frameSrc, preset, isCurrent = () => true, onLost = null }) {
+export async function createRelief({ frameSrc, preset, pixelRatioLimit = 2, isCurrent = () => true, onLost = null }) {
   const paths = reliefPaths(frameSrc);
   if (!paths || !window.WebGLRenderingContext) return null;
   let images;
@@ -176,7 +176,7 @@ export async function createRelief({ frameSrc, preset, isCurrent = () => true, o
   let size = [0, 0];
   // 大きさは開いたとき・画面の大きさが変わったときだけ測る（毎フレーム測ると、レイアウトの計算が走って重い）
   const resize = () => {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const dpr = Math.min(pixelRatioLimit, window.devicePixelRatio || 1);
     const w = Math.max(1, Math.round(base.clientWidth * dpr)), h = Math.max(1, Math.round(base.clientHeight * dpr));
     if (w === size[0] && h === size[1]) return;
     size = [w, h];

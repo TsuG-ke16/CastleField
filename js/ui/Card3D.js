@@ -139,16 +139,27 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
   let loading = false;
   let previous;
   let motion;
+  let wallCount;
   let lastDraw = 0;
   let slowFrames = 0;
   const canUseRelief = () => paths && quality !== 'lite' && (quality === 'full' || (!degraded
     && !(navigator.deviceMemory && navigator.deviceMemory <= 2)
     && !(navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2)));
+  const updateWalls = () => {
+    const count = motion ? config.reducedWallLayers : relief ? config.wallLayers : config.liteWallLayers;
+    if (count === wallCount) return;
+    wallCount = count;
+    walls.forEach((wall, i) => {
+      wall.hidden = i >= count;
+      if (!wall.hidden) wall.style.setProperty('--wall-depth', config.recess * (i + 1) / (count + 1));
+    });
+  };
   const dropRelief = () => {
     relief?.destroy();
     relief = null;
     card.classList.remove('zoom-gl');
     card.classList.add('zoom-lite');
+    if (active) updateWalls();
     lastDraw = slowFrames = 0;
   };
 
@@ -161,12 +172,8 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
     previous = state;
     if (motion !== still) {
       motion = still;
-      const count = still ? config.reducedWallLayers : config.wallLayers;
-      walls.forEach((wall, i) => {
-        wall.hidden = i >= count;
-        if (!wall.hidden) wall.style.setProperty('--wall-depth', config.recess * (i + 1) / (count + 1));
-      });
       if (still) dropRelief();
+      else updateWalls();
     }
     const tilt = still ? '' : ` rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg)`;
     card.style.transform = `translate3d(0,0,0)${tilt}${rotationCss(quaternion)}`;
@@ -215,11 +222,13 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
     loading = true;
     const current = () => active && card.isConnected && !cardMotionReduced();
     const result = await createRelief({ frameSrc: source, preset: rarity, isCurrent: current,
+      pixelRatioLimit: quality === 'full' ? 2 : config.reliefPixelRatio,
       onLost: () => { if (active) dropRelief(); } }).catch(() => null);
     loading = false;
     if (!current()) { result?.destroy(); return; }
     if (!result) { dropRelief(); return; }
     relief = result;
+    updateWalls();
     frame.after(result.base);
     raised.after(result.raised);
     result.resize();

@@ -11,7 +11,8 @@ export const UI_CONFIG = {
   card3D: {
     depth: .055,          // カード幅に対する表裏の間隔
     recess: .05, nameDepth: .012, medalDepth: .02, raisedDepth: .034,
-    wallLayers: 6, reducedWallLayers: 2,
+    wallLayers: 6, liteWallLayers: 3, reducedWallLayers: 2,
+    reliefPixelRatio: 1.5,
     fallbackColor: '#9aa3ad',
     lightTravel: 36, faceShade: .28, recessShadow: .045, edgeShade: .22,
     shadow: { minScale: .25, heightRange: .55, shift: 14, opacity: .9, softOpacity: .26, floorSlope: .75, baseAlpha: .62 },
