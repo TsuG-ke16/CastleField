@@ -197,3 +197,56 @@
 .gacha-pull .plank-btn small { font-size: .8em; }
 /* 320幅で見出しの「ガチャ」が「ガチ／ャ」と折り返していた */
 .collection-head h2 { white-space: nowrap; flex: none; }
+
+/* ---------- 出す前の見通し（js/ui/Forecast.js）と、ピンチの演出 ---------- */
+/* 城への魔法を選ぶと、相手の城のゲージに「減るぶん」が点滅し、「-8」か「とどめ！」の札が出る */
+#app .castle-hp { position: relative; }
+#app .health-forecast { background: #ff5a3c; animation: forecast-blink .7s ease-in-out infinite alternate; z-index: 1; }
+@keyframes forecast-blink { from { opacity: .35; } to { opacity: 1; } }
+#app .forecast-tag {
+  position: absolute; left: 50%; top: 100%; transform: translate(-50%, 4px); z-index: 6; pointer-events: none;
+  padding: 1px 8px; border-radius: 999px; background: #3d1d12; color: #ffd6c2; border: 1px solid #ff8a5c;
+  font: 900 14px/1.3 var(--font, sans-serif); white-space: nowrap; box-shadow: 0 2px 6px #0007;
+  animation: forecast-pop .22s ease-out;
+}
+#app .forecast-tag.lethal {
+  background: linear-gradient(#ffdf5e, #f08a1c); color: #4a1b06; border-color: #fff4c0; font-size: 16px;
+  animation: forecast-pop .22s ease-out, lethal-pulse .6s ease-in-out .22s infinite alternate;
+}
+@keyframes forecast-pop { from { transform: translate(-50%, 0) scale(.6); opacity: 0; } }
+@keyframes lethal-pulse { to { transform: translate(-50%, 4px) scale(1.12); } }
+#app .castle.forecast-lethal .castle-pic { filter: drop-shadow(0 0 8px #ff6a2a) drop-shadow(0 0 2px #ffd93b); }
+
+/* 手札：出せば城を落とせるカードは、金色に光って「とどめ」の札が付く */
+#app #hand .card.lethal { box-shadow: 0 0 0 2px #ffd93b, 0 0 14px 3px #ff8a1c; animation: lethal-card 1s ease-in-out infinite alternate; }
+#app #hand .card.lethal::after {
+  content: 'とどめ'; position: absolute; z-index: 5; top: 3px; left: 50%; transform: translateX(-50%);
+  padding: 0 6px; border-radius: 999px; background: linear-gradient(#ffdf5e, #f08a1c); color: #4a1b06;
+  border: 1px solid #fff4c0; font: 900 11px/1.5 var(--font, sans-serif); white-space: nowrap; pointer-events: none;
+}
+@keyframes lethal-card { to { box-shadow: 0 0 0 2px #fff4c0, 0 0 22px 6px #ff8a1c; } }
+#app #card-detail .detail-hint.lethal { color: #a3410b; font-weight: 800; }
+
+/* 自分の城がピンチ（体力25%以下）：画面のふちが赤く脈打つ */
+#app.pinch::after {
+  content: ''; position: fixed; inset: 0; z-index: 30; pointer-events: none;
+  box-shadow: inset 0 0 40px 8px #d1222299; animation: pinch-pulse 1.1s ease-in-out infinite;
+}
+@keyframes pinch-pulse { 50% { box-shadow: inset 0 0 70px 18px #e02a2acc; } }
+@media (prefers-reduced-motion: reduce) {
+  #app .health-forecast, #app .forecast-tag, #app .forecast-tag.lethal, #app #hand .card.lethal, #app.pinch::after { animation: none; }
+}
+
+/* 続けて出したカードの数（Animations.combo）：右上に「3 連続！」。多いほど熱い色 */
+.fx-combo {
+  position: absolute; right: 10px; top: 22%; z-index: 40; pointer-events: none;
+  display: flex; align-items: baseline; gap: 2px; padding: 2px 12px 4px; border-radius: 14px;
+  color: #fff; font-family: var(--head, sans-serif); font-weight: 900; transform-origin: 80% 50%;
+  text-shadow: 0 2px 0 #5a2a0a, 0 0 6px #5a2a0a; background: radial-gradient(ellipse, #00000055, transparent 70%);
+}
+.fx-combo:not(.mine) { left: 10px; right: auto; top: 12%; transform-origin: 20% 50%; }
+.fx-combo b { font-size: 40px; line-height: 1; color: #ffe066; }
+.fx-combo span { font-size: 16px; }
+.fx-combo[data-n="3"] b { color: #ffb34a; }
+.fx-combo[data-n="4"] b { color: #ff7a3a; font-size: 46px; }
+.fx-combo[data-n="5"] b, .fx-combo[data-n="6"] b { color: #ff4a5a; font-size: 52px; text-shadow: 0 2px 0 #5a0a1a, 0 0 14px #ffcf4a; }

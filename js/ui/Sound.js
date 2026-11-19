@@ -122,6 +122,12 @@ const SOUNDS = {
   },
   weatherRain: (s) => [740, 554, 440].forEach((freq, i) => s.tone({ freq, endFreq: freq * .92, dur: .18, at: i * .085, gain: .095 })),
   weatherChime: (s) => [659, 880, 1175].forEach((f, i) => s.tone({ freq: f, dur: 0.25, type: 'triangle', gain: 0.14, at: i * 0.1 })),
+  // 続けて出した：数が増えるほど高く上がる2音
+  combo: (s, p) => {
+    const f = 620 + p * 520;
+    s.tone({ freq: f, dur: 0.07, type: 'triangle', gain: 0.13 });
+    s.tone({ freq: f * 1.5, endFreq: f * 1.6, dur: 0.12, type: 'triangle', gain: 0.13, at: 0.07 });
+  },
   tap: (s) => s.tone({ freq: 720, endFreq: 900, dur: 0.05, type: 'triangle', gain: 0.12 }),
   deny: (s) => {
     s.tone({ freq: 170, dur: 0.09, type: 'square', gain: 0.1 });

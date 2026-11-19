@@ -487,6 +487,35 @@ export class Renderer {
     }
   }
 
+  /**
+   * 出す前の見通し：城の体力ゲージに「減るぶん」を点滅で出し、「-8」か「とどめ！」の札を付ける。
+   * @param {Array<{ playerId: string, hp: number, after: number, lethal: boolean }>|null} targets null で消す
+   */
+  showForecast(targets = null) {
+    for (const old of this.forecastEls ?? []) old.remove();
+    for (const c of document.querySelectorAll('.castle.forecast')) c.classList.remove('forecast', 'forecast-lethal');
+    this.forecastEls = [];
+    for (const t of targets ?? []) {
+      const castle = this.castleEl(t.playerId);
+      const bar = castle?.querySelector('.hp-bar');
+      if (!bar || t.after >= t.hp) continue;
+      const max = Number(castle.dataset.max) || this.rules.castleMaxHp;
+      const seg = document.createElement('div');
+      seg.className = 'meter-fill health-forecast';
+      seg.style.left = `${(Math.max(0, t.after) / max) * 100}%`;
+      seg.style.width = `${(Math.min(max, t.hp) - Math.max(0, t.after)) / max * 100}%`;
+      bar.append(seg);
+      const tag = document.createElement('div');
+      tag.className = `forecast-tag${t.lethal ? ' lethal' : ''}`;
+      tag.textContent = t.lethal ? 'とどめ！' : `-${t.hp - t.after}`;
+      tag.setAttribute('aria-hidden', 'true');
+      castle.querySelector('.castle-hp').append(tag);
+      castle.classList.add('forecast');
+      castle.classList.toggle('forecast-lethal', t.lethal);
+      this.forecastEls.push(seg, tag);
+    }
+  }
+
   showMpShortage(amount = 0) {
     this.el.myMp.querySelector('.mp-shortage').textContent = amount > 0 ? `あと${amount}足りない` : '';
   }
@@ -511,6 +540,8 @@ export class Renderer {
     updateHealth(castle.querySelector('.hp-bar'), hp, maxHp, `${name}の城の体力`, instant);
     castle.setAttribute('aria-label', `${name}の城、HP ${Math.max(0, hp)}/${maxHp}`);
     castle.classList.toggle('danger', ratio <= 0.25 && ratio > 0);
+    // 自分の城がピンチ：画面のふちを赤く脈打たせる（逆転の緊張感）
+    if (this.viewerId && castle === this.castleEl(this.viewerId)) document.getElementById('app')?.classList.toggle('pinch', ratio <= 0.25 && ratio > 0);
     // 城が壊れていく見た目（0：無傷 〜 3：落ちた）
     const damage = String(ratio <= 0 ? 3 : ratio <= 0.34 ? 2 : ratio <= 0.67 ? 1 : 0);
     if (castle.querySelector('.castle-pic > .castle-art')?.dataset.damageStage !== damage) {

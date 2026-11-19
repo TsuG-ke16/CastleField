@@ -47,6 +47,7 @@ import { STRATEGIES } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
 import { sound } from './ui/Sound.js';
+import { castleForecast } from './ui/Forecast.js';
 import { castleArt, unitArt, imageArt, icon, colorOf, preloadAssets, isAssetReady } from './ui/art.js';
 import { playerName, setPlayerNames, reasonText, soldierInfo, monsterInfo, GAME_OVER_TEXT, GAME_OVER_TEXT_LOST } from './ui/text.js';
 
@@ -1214,6 +1215,8 @@ function setBusy(value) {
   el.app.classList.toggle('busy', value);
   handView.setLocked(value);
   if (value) {
+    handView.setLethal(new Set());
+    renderer.showForecast(null);
     cancelTargeting();
     upgradePanel?.setEnabled(false, { reason: upgradeOffReason(session?.getState(viewerId)) });
     el.endTurn.disabled = true;
@@ -1299,6 +1302,9 @@ async function settle({ check = true } = {}) {
   // 手札の表示は並べ替えてあるので、並びではなく、同じカードがそろっているかで比べる
   if (!handView.sameCards(me.hand)) handView.render(me.hand);
   const blocked = playability(st);
+  const forecast = castleForecast(st, viewerId, cards, castles, (id) => session.getTargets(id));
+  handView.onPreview = (cardId) => renderer.showForecast(cardId && !busy ? forecast.get(cardId)?.targets ?? null : null);
+  handView.setLethal(new Set([...forecast].filter(([, f]) => f.lethal).map(([id]) => id)));
   handView.setPlayability(blocked);
 
   if (st.phase === 'gameOver') {

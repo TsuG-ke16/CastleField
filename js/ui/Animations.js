@@ -166,6 +166,23 @@ export class Animations {
     return el;
   }
 
+  /** 1ターンに続けて出したカードの数（2枚目から）。多いほど大きく・高い音で（待たない） */
+  combo(n, mine) {
+    if (this.skipping) return;
+    const el = this.fx(`fx-combo${mine ? ' mine' : ''}`);
+    el.dataset.n = String(Math.min(n, 6));
+    el.innerHTML = `<b>${n}</b><span>連続！</span>`;
+    sound.play('combo', Math.min(1, (n - 1) / 5));
+    const k = 1 + Math.min(n, 6) * 0.08;
+    this.animate(el, [
+      { transform: 'scale(.3) rotate(-12deg)', opacity: 0 },
+      { transform: `scale(${(k * 1.25).toFixed(2)}) rotate(4deg)`, opacity: 1, offset: 0.18 },
+      { transform: `scale(${k.toFixed(2)}) rotate(-3deg)`, opacity: 1, offset: 0.3 },
+      { transform: `scale(${k.toFixed(2)}) rotate(-3deg)`, opacity: 1, offset: 0.75 },
+      { transform: `translateY(-24px) scale(${k.toFixed(2)}) rotate(-3deg)`, opacity: 0 },
+    ], { duration: Math.max(500, 600 * UI_CONFIG.speed), fill: 'forwards' }).then(() => el.remove());
+  }
+
   /** 大きな数字を出す（待たない） */
   number(targetEl, text, { size, duration, kind = 'damage', dy = 0 }) {
     if (this.skipping) return;
@@ -943,6 +960,7 @@ export class Animations {
     if (!free && def.kind === 'soldier') pl.soldiersPlayedThisTurn = (pl.soldiersPlayedThisTurn ?? 0) + 1;
     else if (!free && def.kind === 'spell' && !['summonSpirit', 'gainCoins', 'gainMp'].includes(def.effect)) pl.playedThisTurn = true;
     pl.cardsPlayedThisTurn = (pl.cardsPlayedThisTurn ?? 0) + 1;
+    if (pl.cardsPlayedThisTurn >= 2 && !free) this.combo(pl.cardsPlayedThisTurn, playerId === ctx.viewerId);
     if (!def.exhaust && def.monster === undefined && (model.deckMode === 'shared' || playerId === ctx.viewerId)) model.discardCount += 1;
     model.pieceCards.delete(cardId);
     model.hand = model.hand.filter((c) => c.cardId !== cardId);

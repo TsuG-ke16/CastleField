@@ -36,6 +36,7 @@ export class HandView {
     this.locked = true;      // 演出中・交代画面中は操作しない
     // ランクカードの装備が変わったら、手札を同じ並びのまま描き直す（枠が変わる）
     document.addEventListener('cardskinchange', () => { if (this.hand?.length) this.render(this.hand); });
+    this.lethal = new Set();  // 出せば相手の城を落とせるカード（js/ui/Forecast.js）
     this.blocked = new Map(); // 出せないカード：cardId → 理由（見た目を暗くするだけ。押せば理由が出る）
     this.discardCount = 0;   // 0 以外なら「捨てるカードを選ぶ」モード
     this.discardPicks = new Set();
@@ -253,6 +254,7 @@ export class HandView {
     else el.removeAttribute('aria-description');
     el.classList.toggle('selected', id === this.selectedId);
     el.classList.toggle('dim', this.blocked.has(id) && !this.discardCount);
+    el.classList.toggle('lethal', this.lethal.has(id) && !this.blocked.has(id) && !this.discardCount);
     el.classList.toggle('discard-pick', this.discardPicks.has(id));
   }
 
@@ -282,6 +284,13 @@ export class HandView {
   /** @param {Map<string, string>} blocked 出せないカード：cardId → 理由 */
   setPlayability(blocked) {
     this.blocked = blocked;
+    this.refreshClasses();
+    this.updateDetail();
+  }
+
+  /** @param {Set<string>} ids 出せば相手の城を落とせるカード */
+  setLethal(ids) {
+    this.lethal = ids;
     this.refreshClasses();
     this.updateDetail();
   }
@@ -363,6 +372,7 @@ export class HandView {
     const card = this.hand.find((c) => c.cardId === this.selectedId);
     if (!card || this.discardCount) {
       this.onMpSelect?.(0);
+      this.onPreview?.(null);
       this.el.detail.hidden = true;
       return;
     }
@@ -375,7 +385,10 @@ export class HandView {
     const reason = this.blocked.get(card.cardId);
     this.el.detailHint.classList.toggle('warn', Boolean(reason));
     if (reason) this.el.detailHint.textContent = `いまは出せません：${reason}`;
+    else if (this.lethal.has(card.cardId)) this.el.detailHint.textContent = `このカードで相手の城を落とせます！ ${slotNote(def)}`;
     else this.el.detailHint.textContent = slotNote(def);
+    this.el.detailHint.classList.toggle('lethal', !reason && this.lethal.has(card.cardId));
+    this.onPreview?.(reason ? null : card.cardId);
     const rarity = this.rarities?.[def.rarity];
     const badge = this.el.detail.querySelector('.detail-rarity');
     badge.textContent = rarity?.name ?? '';
