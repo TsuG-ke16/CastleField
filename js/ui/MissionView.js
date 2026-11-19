@@ -1,6 +1,7 @@
 // ミッションとシーズン報酬の画面。進み具合・達成はサーバーの値を表示するだけ（ここから達成を申告することはできない）。
 import { account } from './Account.js';
 import { rankEmblem } from './RankEmblem.js';
+import { itemPreview } from './Cosmetics.js';
 
 const KINDS = [['daily', 'デイリー'], ['weekly', 'ウィークリー'], ['season', 'シーズン'], ['rewards', 'シーズン報酬']];
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -54,7 +55,7 @@ export class MissionView {
     const tabs = this.part('tabs'); tabs.replaceChildren();
     for (const [id, label] of KINDS) {
       const t = el('button', 'social-tab raw-btn', label); t.type = 'button'; t.dataset.tab = id; t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(this.tab === id));
-      const n = id === 'rewards' ? this.rewards.rewards.filter((r) => r.eligible && !r.claimed && r.coins > 0).length : this.data[id].missions.filter((m) => m.completed && !m.claimed).length;
+      const n = id === 'rewards' ? this.rewards.rewards.filter((r) => r.eligible && !r.claimed && r.items?.length).length : this.data[id].missions.filter((m) => m.completed && !m.claimed).length;
       if (n) t.append(Object.assign(el('i'), { textContent: String(n) }));
       tabs.append(t);
     }
@@ -85,9 +86,9 @@ export class MissionView {
       const em = el('span', 'ranking-emblem'); em.innerHTML = r.peak ? rankEmblem(r.peak, 36) : rankEmblem(null, 36);
       li.append(em, el('strong', 'mission-name', `シーズン${r.season}　${r.peak ? `最高 ${r.peak.divisionLabel}` : '対象外'}`));
       li.append(el('small', null, r.eligible ? '' : `ランク戦を${r.minMatches}試合以上＋認定戦の終了が必要（${r.matches}試合）`));
-      if (r.eligible && r.coins > 0) li.append(el('span', 'mission-reward', `🪙 ${r.coins}`));
+      if (r.eligible && r.items?.length) { const rw = el('span', 'mission-reward'); for (const it of r.items) rw.append(itemPreview(it)); rw.title = r.items.map((it) => it.name).join('・'); li.append(rw); }
       const act = el('button', 'small-btn mission-claim', r.claimed ? '受け取り済み' : '受け取る');
-      act.type = 'button'; act.disabled = !r.eligible || r.claimed || r.coins <= 0; act.dataset.act = 'season'; act.dataset.id = String(r.season);
+      act.type = 'button'; act.disabled = !r.eligible || r.claimed || !r.items?.length; act.dataset.act = 'season'; act.dataset.id = String(r.season);
       li.append(act); list.append(li);
     }
     body.append(list);
@@ -109,7 +110,7 @@ export class MissionView {
     }
     if (!this.box.hidden) {
       const balance = Number.isFinite(r.json.balance) ? `（残高 ${r.json.balance}）` : '';
-      this.say(`+${r.json.coins} コインを受け取りました${balance}`);
+      this.say(r.json.items ? `${r.json.items.length}個の報酬（アイコンフレーム・カード裏面）を受け取りました。所持品から装備できます` : `+${r.json.coins} コインを受け取りました${balance}`);
       const receipt = this.part('msg');
       receipt.classList.remove('mission-received');
       requestAnimationFrame(() => { if (!this.box.hidden) receipt.classList.add('mission-received'); });

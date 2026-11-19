@@ -118,13 +118,13 @@ test('シーズン報酬：終わったシーズンの最高ランクに応じ�
   fails(() => missions.claimSeason(a, 1), /ありません/);
   now.t += 57 * 86400_000; // 次のシーズン
   const list = missions.seasonRewards(a);
-  assert.equal(list[0].season, 1); assert.equal(list[0].peak.tierId, 'gold'); assert.equal(list[0].coins, 600); assert.equal(list[0].claimed, false);
+  assert.equal(list[0].season, 1); assert.equal(list[0].peak.tierId, 'gold'); assert.deepEqual(list[0].items.map((i) => i.id), ['frame_gold', 'back_rank_gold']); assert.equal(list[0].claimed, false);
   fails(() => missions.claimSeason(b, 1), /5試合以上/);
   const r = missions.claimSeason(a, 1);
-  assert.equal(r.coins, 600); assert.equal(economy.balance(a).coins, 600); assert.match(r.tier, /Gold/);
+  assert.deepEqual(r.items, ['frame_gold', 'back_rank_gold']); assert.equal(economy.owns(a, 'frame_gold'), true); assert.equal(economy.owns(a, 'back_rank_gold'), true); assert.equal(economy.balance(a).coins, 0); assert.match(r.tier, /Gold/);
+  assert.equal(economy.equip(a, 'iconFrame', 'frame_gold').iconFrame, 'frame_gold');
   fails(() => missions.claimSeason(a, 1), /もう受け取って/);
   assert.equal(missions.seasonRewards(a)[0].claimed, true);
-  assert.equal(economy.ledger(a)[0].reason, 'seasonReward');
 });
 
 test('モード（世界）：デッキは世界ごとに別。使えない世界は断る。戦績もモードごと。既存のデッキは王国に移る（移行）', () => {

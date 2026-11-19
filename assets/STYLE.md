@@ -88,7 +88,7 @@ simple soft background vignette, no text, no frame.
 | `card-thunder.png` | a dark cloud shooting a bright yellow lightning bolt |
 | `card-heal.png` | a glowing pink heart surrounded by green sparkles |
 
-### カードの枠（`cards/frame-soldier.png`、`cards/frame-spell.png`、2:3）
+### カードの枠（`cards/frame-<レアリティ>.png`、2:3）
 
 ```
 Empty card frame for a fantasy card game, 2:3 portrait. [種類].
@@ -98,6 +98,41 @@ small round medallion slots in the top-left and top-right corners. No text.
 
 - 兵士：Sturdy wooden frame with metal corner rivets
 - 魔法：Lavender magic scroll frame with small gold stars
+
+### 魔物のカード（ルビー色。`cards/frame-beast.png`・`cards/window-beast.png`）
+
+魔物の駒のカードは、**「魔物＝ビースト＝赤」なので、ルビーのような赤い宝石の見た目**にする（いまは翡翠色＝緑。人間の指示で作り替え）。枠と窓の2枚。窓・帯・メダルの位置は、いまの `frame-beast.png` と同じにする（`js/ui/config.js` の `card.layout` を変えなくてすむように）。
+
+```
+[共通の指示文] Empty card frame for a fantasy card game, 2:3 portrait, 512x768, transparent background.
+Ruby-red beast card: the frame looks carved from a deep crimson ruby with gold trim,
+faceted red gemstones set at the top and in the corners, a gold paw-print medallion at the top center,
+dark wine-red carved wood-and-crystal border, sharp claw-like ornaments, a faint glowing red light from the gems.
+Square window in the upper half for an illustration, blank cream banner area below for a name,
+small round medallion slots in the top-left and top-right corners. No text.
+```
+- `cards/frame-beast.png`（512×768、透過）：上の指示文。いまの緑の枠と同じ配置で、色だけでなく**宝石らしい面の反射・金のふち・爪の飾り**で「ルビー」だと分かるようにする
+- `cards/window-beast.png`（512×512。絵の窓の背景。不透明）：
+
+```
+[共通の指示文] A square background for a card illustration window, 512x512,
+deep ruby-red glowing mist with dark crimson crystal shards and faint ember sparkles at the edges,
+bright soft red-orange glow in the center, the center area plain and empty, no text, no characters.
+```
+- 絵ができたら：`assets/CREDITS.md` に出どころを書き、`node js/ui/build-card-relief.js` で `cards/relief/frame-beast-*.png` を作り直す（先に `js/ui/build-card-relief.js` の `beast` の `organic` / `gemHue` を緑（70〜140・120〜170）から赤（335〜15）に直す）。画面側の緑の色（`css/beast.css` の枠・駒の影・仲間になる演出の `recruit-*`・`.beast-insignia` の `#1f624e` など）も赤に直す。最後に `node js/ui/build-precache.js` を回す
+- 魔物そのものの絵（`cards/card-beast-<魔物>.png`、`units/monster-<魔物>.png`）は、いまのまま使う
+
+### 解毒薬の絵（`cards/card-antidote.png`、1:1）
+いまは仮の絵（`js/ui/art.js` の `antidote`）が出ている。カードの絵と同じ共通の指示文で作る：
+
+```
+Square card illustration for a fantasy card game, a small round glass potion bottle with a cork stopper
+filled with glowing green antidote liquid, a few green sparkles and a tiny white cross-shaped leaf sprig floating around it,
+a faint curl of purple poison smoke being dispelled behind it, centered,
+simple soft background vignette, no text, no frame.
+```
+- 解毒薬はスペシャル（虹色の枠）のカードなので、絵は**緑の薬びん**で、枠から浮かないようにする
+- 絵ができたら `assets/cards/card-antidote.png` に置き、`assets/CREDITS.md` に出どころを書く。画像の一覧（`js/ui/art.js` の `CARD_TYPES`）に `antidote` が入っているか確かめ、`node js/ui/build-precache.js` を回す
 
 ### 演出（`fx/`）
 
@@ -114,6 +149,56 @@ Cartoon game effect sprite, [内容], bright colors, transparent background.
 | `fireball.png` | a flying round fireball with a short flame tail, cheeky face, seen from the side |
 
 - `fireball.png` ができるまでは、画面側（`js/ui/assets.js` の `OVERRIDES`）で `cards/card-fireball.png` を丸く切り抜いて代わりに飛ばしている。ファイルを置けば自動で本物に替わる
+
+### ランクの絵（`ranks/`・`frames/`・`skins/back-rank-*.png`）
+
+階級が上がるほど**飾りが増え、光り、豪華になる**ようにそろえる（Iron は素朴な金属 → Champion は王冠・多色の光・羽）。**他作品のランク図柄は参考にしても、形・配色・モチーフを写さない**（オリジナルのモチーフで描く）。階級は 8つ：Iron・Bronze・Silver・Gold・Platinum・Diamond・Master・Champion。
+
+豪華さの目安（全部の絵で同じ段階をそろえる）：
+
+| 階級 | 素材・色 | 飾りの量 | 光 |
+|---|---|---|---|
+| Iron | くすんだ鉄・灰 | ほとんどなし。リベットだけ | なし |
+| Bronze | 銅・茶 | 小さな葉・ふちの彫り | ごく弱い |
+| Silver | 銀・青みの白 | 旗・つばさの飾り | 弱い |
+| Gold | 金 | 宝石・太陽の輪 | 金のにじみ |
+| Platinum | 白金・青緑 | 左右のつばさ・角 | 青緑の光 |
+| Diamond | 水晶・青 | 結晶の城・多面の宝石 | 青い反射と火花 |
+| Master | 深紅・黒金 | 大きなつばさ・炎・宝玉 | 赤い炎の光 |
+| Champion | 白金＋虹色 | 王冠・光の輪・雲・たくさんの宝石 | 虹色の光・きらめき |
+
+`[階級の素材・飾り・光]` には上の表の行を入れる。
+
+```
+[共通の指示文] A rank emblem for a ranked ladder tier, [階級の素材・飾り・光],
+symmetrical, front view, ornate level matches the tier (higher tier = more ornate), no text.
+```
+- エンブレム：`ranks/rank-<階級>.png`（256×256 以上の正方形。いまの8枚が仮）
+
+```
+[共通の指示文] A circular profile icon frame (ring only, empty transparent center), [階級の素材・飾り・光],
+ornament grows with the tier (Iron: plain ring; Champion: crown on top and rainbow glow), no text.
+```
+- アイコンフレーム：`frames/frame-<階級>.png`（256×256、真ん中は透明。リングは外側 12% に収める）。できたら `css/rank-frames.css` の仮の見た目をやめて画像に差しかえる
+
+```
+[共通の指示文] The back of a fantasy playing card, 2:3 portrait, [階級の素材・飾り・光],
+the same layout for every tier (border, center emblem), the border and emblem get richer with the tier, no text.
+```
+- カード裏面：`skins/back-rank-<階級>.png`（512×768。`js/ui/skinArt.js` の一覧に足すと色替えの代わりに出る）
+- 絵を足すときは `assets/CREDITS.md` に出どころを書く
+
+### キャラ・魔法のスキン（`skins/char-<キャラ>.png`・`skins/fx-<魔法>.png`）
+
+全キャラ（兵士20・魔物12）と全魔法（53）に、専用スキンが1つずつある（`data/shop.json` の `skin_<キャラ>`・`fxskin_<魔法>`）。いまは色替えだけの仮の見た目。専用の絵は、元の絵と**同じ姿・同じ大きさ・同じ向き**で、色・服・飾り・光だけを変える。
+
+```
+[共通の指示文] The same character as the reference image (same pose, size and silhouette), redrawn as an alternate skin:
+[スキン名の雰囲気（例：黄金の鎧・氷の結晶・影の装束）], keep the face and role readable at small size, no text.
+```
+- キャラ：兵士は 256×256（青・オレンジの2色）、魔物は元の `monster-*.png` と同じ大きさ
+- 魔法：元の演出（`fx/`）と同じ大きさで、光・弾・雷の色と形だけ変える
+- 絵ができたら `js/ui/skinArt.js` の一覧に足して、色替えから差しかえる。足したら `assets/CREDITS.md` に出どころを書く
 
 ### 画面の部品（`ui/`）
 
@@ -148,3 +233,7 @@ Fantasy mobile game UI element, [内容], cartoon style, transparent background,
 
 - カードの枠（`frame-*.png`）は、絵の窓・名前の帯・左右のメダルの位置を `js/ui/config.js` の `card.layout` に合わせる（窓：左 12%・上 13%・幅 76%・高さ 50%、名前の帯：上から 75% を中心に高さ 14%、メダル：左右とも上から 10%・横 14% と 86%）。位置が違う枠を作ったら、`card.layout` の数値を直す
 - 背景（`bg/board.png`）の飛び石は、画面のマスとぴったり合わなくてよい。マスの位置は `js/ui/config.js` の `board.road` で背景に合わせる
+
+### カード裏のスキンを3Dにする手順（拡大表示で裏を見たとき）
+- 絵は 512×768、背景が透明の PNG（カードの形がそのまま絵の形）。置き場所は `assets/skins/back-<名前>.png`（`js/ui/skinArt.js` の一覧に足す）
+- 手前に浮かせる部分（金の飾り・紋章）の形を切り抜いたマスク `assets/skins/back-<名前>-raised.png`（同じ大きさ。アルファが形）を一緒に置き、`skinArt.js` の `raised` の一覧に足す。マスクがない裏は、浮かない（平らな絵＋つやの光だけ）

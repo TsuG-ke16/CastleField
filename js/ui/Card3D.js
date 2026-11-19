@@ -2,6 +2,7 @@
 import { UI_CONFIG } from './config.js';
 import { createRelief, reliefPaths, CARD_LIGHT } from './CardRelief.js';
 import { hasCardFoil } from './Hologram.js';
+import { rankSkinBack } from './skinArt.js';
 
 const config = UI_CONFIG.card3D;
 const rad = Math.PI / 180;
@@ -106,6 +107,16 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
   backImg.draggable = false;
   back.append(backImg);
   add(back, 'zoom-back-shade');
+  // 裏面の金の飾り・紋章：裏のスキンに地図があるときだけ、別の層にして手前に浮かせる（css/card-zoom.css）
+  add(card, 'zoom-back-raised');
+  // ランク報酬のカードスキン：表の枠と同じランクの裏（と、浮かせる部分の地図）を、このカードだけに使う
+  const skinBack = card.dataset.skin ? rankSkinBack(card.dataset.skin) : null;
+  if (skinBack) {
+    setStyle('--back-art', abs(skinBack.art));
+    setStyle('--back-raised', abs(skinBack.raised));
+    card.setAttribute('data-painted-back', '');
+    card.setAttribute('data-back-raised', '');
+  }
   add(back, 'zoom-sheen');
   add(back, 'foil-sheet zoom-foil');
   let raised = null;
@@ -256,6 +267,7 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
       dropRelief();
       for (const el of added) el.remove();
       card.classList.remove('card-3d', 'zoom-3d', 'zoom-lite', 'zoom-flipped');
+      if (skinBack) { card.removeAttribute('data-painted-back'); card.removeAttribute('data-back-raised'); }
       for (const [name, value] of initialStyles) card.style.setProperty(name, value);
       card.style.transform = initialTransform;
       if (shadow) {

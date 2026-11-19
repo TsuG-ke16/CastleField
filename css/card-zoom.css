@@ -5,7 +5,7 @@
   background: rgba(14, 22, 20, .86); color: #fff4da; box-sizing: border-box;
   /* 画面の高さが足りないときは、上が切れずにスクロールできる（上下の安全領域もよける） */
   padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right)) max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
-  overflow-y: auto; overscroll-behavior: contain;
+  overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain;
 }
 .card-zoom[open] { display: flex; flex-direction: column; align-items: center; justify-content: safe center; gap: 8px; }
 .card-zoom::backdrop { background: rgba(8, 14, 12, .7); }
@@ -15,10 +15,11 @@
 }
 /* 説明と操作ボタンの高さを残す。 */
 .zoom-stage {
-  --zw: clamp(120px, min(56vw, 230px, calc((100dvh - 250px) / 1.86)), 230px);
+  --zw: clamp(120px, min(calc((100vw - 36px) / 1.12), 340px, calc((100dvh - 250px) / 1.8)), 340px);  /* 大きく見せる。はみ出したぶんはスクロールできる */
   position: relative; display: grid; place-items: center; flex: none;
-  padding: calc(var(--zw) * .26) calc(var(--zw) * .14) calc(var(--zw) * .1);  /* 上は王冠が箱の外にはみ出す分（レジェンドで約 0.22 × 幅）＋手前に浮かせた分 */
+  padding: calc(var(--zw) * .26) calc(var(--zw) * .06) calc(var(--zw) * .1);  /* 上は王冠が箱の外にはみ出す分（レジェンドで約 0.22 × 幅）＋手前に浮かせた分 */
   perspective: calc(var(--zw) * 3.4); touch-action: none;
+  margin-bottom: calc(var(--zw) * -.08);
 }
 /* 影は、カードとは別の層に置く（動くカードに filter をかけると重くなってカクつくため）。傾きに合わせて Card3D.js が形を変える */
 .zoom-shadow {
@@ -171,14 +172,28 @@
   transform: translateZ(calc(var(--depth) * -1)) rotateY(180deg);
 }
 .zoom-back-img { width: 100%; height: 100%; object-fit: fill; display: block; scale: 1.055; filter: var(--back-filter, none); }
-#app[data-painted-back] .zoom-back-img { content: var(--back-art); object-fit: contain; scale: 1; }
+#app[data-painted-back] .zoom-back-img, .card-3d[data-painted-back] .zoom-back-img { content: var(--back-art); object-fit: fill; scale: 1; }
+/* 絵のある裏は、絵の形がそのままカードの形（裏の地の色を敷かない） */
+/* 前と同じ大きさ（カードの箱いっぱい）。標準の裏のように側面の内側に収めず、絵がはみ出してよい */
+#app[data-painted-back] .card-3d > .zoom-back, .card-3d[data-painted-back] > .zoom-back { background: transparent; inset: 0; border-radius: 0; overflow: visible; }
 .zoom-back-shade { background: rgb(12 16 24 / var(--face-shade, 0)); }
 .card-3d .zoom-back > .zoom-foil {
   --foil: linear-gradient(122deg, transparent 32%, #a6d6ee52 45%, #fcebc688 50%, #d6bbf35c 55%, transparent 68%);
   opacity: .24;
 }
+/* 裏面の飾りを浮かせる層（裏のスキンに -raised 地図があるときだけ）。裏と同じ枠・同じ絵を、飾りの形で切り抜いて手前へ */
+.card-3d > .zoom-back-raised { display: none; }
+#app[data-painted-back][data-back-raised] .card-3d > .zoom-back-raised, .card-3d[data-painted-back][data-back-raised] > .zoom-back-raised {
+  position: absolute; inset: 0; display: block; pointer-events: none;
+  backface-visibility: hidden; visibility: hidden;
+  background: var(--back-art) 0 0 / 100% 100% no-repeat;
+  -webkit-mask: var(--back-raised) 0 0 / 100% 100% no-repeat; mask: var(--back-raised) 0 0 / 100% 100% no-repeat;
+  transform: translateZ(calc(var(--depth) * -1 - var(--card-unit) * .012)) rotateY(180deg);
+  filter: drop-shadow(0 0 1px rgb(30 12 4 / .6));
+}
 .card-3d.zoom-flipped > .zoom-back { visibility: visible; }
-.card-3d.zoom-flipped > :not(.zoom-back, .zoom-edge) { visibility: hidden !important; }
+.card-3d.zoom-flipped > .zoom-back-raised { visibility: visible !important; }
+.card-3d.zoom-flipped > :not(.zoom-back, .zoom-back-raised, .zoom-edge) { visibility: hidden !important; }
 /* なぞって回すとき、文字・画像の範囲選択が始まらないように（選択された画像は青くかぶって見える） */
 .zoom-stage, .zoom-stage * { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .zoom-reset { margin: 2px 0 0; padding: 6px 14px; border-radius: 999px; border: 1px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 13px; }

@@ -1,0 +1,24 @@
+/* ランク報酬のアイコンフレーム（assets/frames/rank-frame-<ランク>.png。階級が上がるほど飾りが豪華）。data-frame はフレームの景品ID（frame_iron …） */
+[data-frame] { --fill: #365b64; position: relative; overflow: visible !important; border: 0 !important; border-radius: 22% !important;
+  background: var(--fill) !important; box-shadow: none; }
+[data-frame] > img { border-radius: inherit; }
+/* 枠の絵は正方形で、窓（透明）の外に飾りがはみ出す。アイコンの外側に重ねる */
+[data-frame]::before { position: absolute; inset: -28%; z-index: 2; pointer-events: none; content: '';
+  background: var(--frame-art) center / 100% 100% no-repeat; }
+[data-frame]::after { content: none; }
+/* 飾りが外にはみ出すぶん、横のすき間をあける */
+.home-avatar[data-frame] { margin: 0 12px 0 8px; }
+[data-frame="frame_iron"] { --frame-art: url("../assets/frames/rank-frame-iron.png"); }
+[data-frame="frame_bronze"] { --frame-art: url("../assets/frames/rank-frame-bronze.png"); }
+[data-frame="frame_silver"] { --frame-art: url("../assets/frames/rank-frame-silver.png"); }
+[data-frame="frame_gold"] { --frame-art: url("../assets/frames/rank-frame-gold.png"); }
+[data-frame="frame_platinum"] { --frame-art: url("../assets/frames/rank-frame-platinum.png"); }
+[data-frame="frame_diamond"] { --frame-art: url("../assets/frames/rank-frame-diamond.png"); }
+[data-frame="frame_master"] { --frame-art: url("../assets/frames/rank-frame-master.png"); }
+[data-frame="frame_champion"] { --frame-art: url("../assets/frames/rank-frame-champion.png"); }
+/* 景品の見本（所持品・受け取り画面） */
+.item-preview.slot-iconFrame { display: inline-grid; place-items: center; width: 64px; height: 64px; }
+.item-preview.slot-iconFrame i { display: block; width: 44px; height: 44px; border-radius: 50%; }
+/* キャラ・魔法のスキン：対象ごとの見出し */
+.skin-group { margin: 10px 0 4px; }
+.skin-group-title { margin: 0 0 4px; font-size: 14px; color: #5a3a14; }

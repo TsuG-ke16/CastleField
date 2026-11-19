@@ -32,6 +32,7 @@ import { AccountPanel } from './ui/AccountPanel.js';
 import { Home } from './ui/Home.js';
 import { ProfileView } from './ui/ProfileView.js';
 import { RankedView, RankingView } from './ui/RankedView.js';
+import { RankRewardsView } from './ui/RankRewardsView.js';
 import { SocialView } from './ui/SocialView.js';
 import { CollectionView } from './ui/CollectionView.js';
 import { Cosmetics } from './ui/Cosmetics.js';
@@ -339,8 +340,12 @@ async function boot() {
     onMission: () => missionView.open(),
   });
   // ランクマッチ：相手が見つかったら、サーバーが作った部屋の鍵で入る（ページを読み直したときと同じつなぎ方）
+  // ランク報酬を見る画面（見本の表示だけ。ランクの色は data/ranks.json。なくても見られる）
+  const rankRewardsView = new RankRewardsView({ cards, rarities });
+  loadOptionalJson('data/ranks.json').then((ranks) => { if (ranks?.tiers) { rankRewardsView.tiers = ranks.tiers; rankRewardsView.render(); } }).catch(() => {});
   rankedView = new RankedView({
     toast,
+    onRewards: () => rankRewardsView.open(),
     onNeedMember: () => accountPanel.open(),
     onMatched: ({ token, playerId }) => {
       try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, playerId, passphrase: '' })); } catch { /* 読み直せないだけ */ }

@@ -1,21 +1,18 @@
-/* 魔物の駒には、レアリティを示す印と翡翠の専用枠を併用する。 */
+/* 魔物の駒には、レアリティを示す印とルビー色の専用枠（赤い枠と赤い宝石）を併用する。 */
 :is(.card.has-frame, .mini-card)[data-beast] {
   --card-window: url('../assets/cards/window-beast.png');
 }
-/* 共通のメダル台に、種類と取得元のレアリティを表示する。 */
-#app .card.has-frame[data-beast][data-rarity] > :is(.card-kind, .card-rarity) { display: flex; }
-#app .mini-card[data-beast][data-rarity] > :is(.mini-card-kind, .mini-card-rarity) { display: grid; }
 #app [data-beast] :is(.card-art, .mini-card-image) .asset-image { padding: 0; }
 #app .mini-card[data-beast] .mini-card-name:not(:empty) { font-size: clamp(7px, 1.35vw, 10px); }
-.soldier[data-beast] .soldier-pic { filter: drop-shadow(0 2px 3px #144a2680); }
+.soldier[data-beast] .soldier-pic { filter: drop-shadow(0 2px 3px #5a101a80); }
 .beast-insignia {
   position: absolute;
   top: 8%;
   right: 0;
   padding: 1px 4px;
-  border: 1px solid #efcf83;
+  border: 1px solid #f2c36b;
   border-radius: 5px 5px 7px 7px;
-  background: #1f624e;
+  background: #8c1426;
   color: #fff1cb;
   font-size: 9px;
   line-height: 1.3;
@@ -37,15 +34,15 @@
   z-index: -1;
   inset: 0 -15%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, #214d3aef 10%, #2b5236d9 37%, transparent 73%);
+  background: radial-gradient(ellipse at center, #5a0f1aef 10%, #6b1622d9 37%, transparent 73%);
 }
 .recruit-heading, .recruit-count {
   padding: 5px 12px;
-  border: 1px solid #d5b96e;
+  border: 1px solid #e0b265;
   border-radius: var(--radius-pill);
-  background: #173a2a;
+  background: #4a0c16;
   color: #fff4cf;
-  box-shadow: 0 2px 10px #142c1f8c;
+  box-shadow: 0 2px 10px #2c0a108c;
 }
 .recruit-heading { font: 900 clamp(14px, 4vw, 20px)/1.25 var(--head); }
 .recruit-count { font-size: 11px; }
@@ -55,12 +52,12 @@
   align-self: center;
   width: 78%;
   aspect-ratio: 1;
-  border: 3px double #9aebba;
+  border: 3px double #ffb3bf;
   border-radius: 50%;
   background:
-    radial-gradient(circle, #335b45 46%, transparent 47% 58%, #dcffe7a6 59% 60%, transparent 61%),
-    repeating-conic-gradient(from 7deg, #e3ffd39c 0 2deg, transparent 2deg 15deg);
-  box-shadow: inset 0 0 24px #4dbe84, 0 0 18px #5ad692b3;
+    radial-gradient(circle, #6a1626 46%, transparent 47% 58%, #ffdfe5a6 59% 60%, transparent 61%),
+    repeating-conic-gradient(from 7deg, #ffe0e69c 0 2deg, transparent 2deg 15deg);
+  box-shadow: inset 0 0 24px #d92f4c, 0 0 18px #ff5c78b3;
 }
 .recruit-gleam {
   position: absolute;
@@ -68,23 +65,23 @@
   inset: 4% 3%;
   pointer-events: none;
   border-radius: 15%;
-  background: linear-gradient(122deg, transparent 40%, #dcffe371 46%, #fffee3c2 50%, #a5ffbc80 53%, transparent 59%) 0 0 / 310% 100%;
+  background: linear-gradient(122deg, transparent 40%, #ffdfe571 46%, #fff0e3c2 50%, #ff9fb080 53%, transparent 59%) 0 0 / 310% 100%;
   mix-blend-mode: screen;
 }
 #app .recruit-stage .effect-card.mini-card {
   width: clamp(87px, 29vw, 138px);
   height: auto;
-  filter: drop-shadow(0 0 15px #99f4ba89);
+  filter: drop-shadow(0 0 15px #ff7d9689);
 }
 .recruit-sigil {
   position: absolute;
   translate: -50% -50%;
   width: 128px;
   aspect-ratio: 1;
-  border: 3px double #c8f9c7;
+  border: 3px double #ffc7cf;
   border-radius: 50%;
-  background: repeating-conic-gradient(from 15deg, #d7ffe165 0 6deg, transparent 6deg 30deg);
-  box-shadow: 0 0 24px #b4f4bf, inset 0 0 26px #6ce0a6ab;
+  background: repeating-conic-gradient(from 15deg, #ffd3da65 0 6deg, transparent 6deg 30deg);
+  box-shadow: 0 0 24px #ff9aa8, inset 0 0 26px #e03a56ab;
 }
 #app.skipping :is(.recruit-stage, .recruit-sigil) { visibility: hidden; }
 @media (max-height: 500px) {

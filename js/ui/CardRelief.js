@@ -86,7 +86,7 @@ const PRESETS = {
 export const CARD_LIGHT = (() => { const v = [-.42, -.62, .66]; const l = Math.hypot(...v); return v.map(x => x / l); })();
 
 export const reliefPaths = (frameSrc) => {
-  const m = /cards\/(frame-[a-z]+)\.png/.exec(frameSrc ?? '');
+  const m = /cards\/(frame-[a-z-]+)\.png/.exec(frameSrc ?? '');
   return m ? { relief: `assets/cards/relief/${m[1]}-relief.png`, raised: `assets/cards/relief/${m[1]}-raised.png` } : null;
 };
 

@@ -9,7 +9,7 @@ const poly = (cx, cy, r, n, rot = -Math.PI / 2) => Array.from({ length: n }, (_,
   return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
 }).join(' ');
 
-// 階級の順（Iron … Radiant）ごとの中心の図柄。色は ranks.json の color
+// 階級の順（Iron … Champion）ごとの中心の図柄。色は ranks.json の color
 const CENTER = [
   (c) => `<polygon points="${poly(50, 52, 17, 6)}" fill="${c}" stroke="#3b2a1a" stroke-width="3"/><circle cx="50" cy="52" r="5" fill="#3b2a1a" opacity=".55"/>`,
   (c) => `<polygon points="50,32 70,52 50,72 30,52" fill="${c}" stroke="#3b2a1a" stroke-width="3"/><polygon points="50,40 62,52 50,64 38,52" fill="#fff" opacity=".35"/>`,
@@ -22,7 +22,7 @@ const CENTER = [
   (c) => `<g stroke="${c}" stroke-width="4" stroke-linecap="round">${Array.from({ length: 12 }, (_, i) => { const a = (Math.PI * 2 * i) / 12; return `<line x1="${(50 + 17 * Math.cos(a)).toFixed(1)}" y1="${(52 + 17 * Math.sin(a)).toFixed(1)}" x2="${(50 + 26 * Math.cos(a)).toFixed(1)}" y2="${(52 + 26 * Math.sin(a)).toFixed(1)}"/>`; }).join('')}</g><circle cx="50" cy="52" r="14" fill="${c}" stroke="#3b2a1a" stroke-width="3"/><circle cx="50" cy="52" r="6" fill="#fff" opacity=".7"/>`,
 ];
 
-const tierArt = ['iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'ascendant', 'immortal', 'radiant'];
+const tierArt = ['iron', 'bronze', 'silver', 'gold', 'platinum', 'diamond', 'master', 'champion'];
 const divisions = ['', 'I', 'II', 'III'];
 const escapeAttribute = (value) => String(value).replaceAll('&', '&amp;').replaceAll('"', '&quot;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 

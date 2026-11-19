@@ -65,7 +65,7 @@ export class Ranking {
     const top = tiers.findIndex((t) => t.divisions === 0);
     const upperMin = top >= 0 ? tiers[top].start : Infinity;
     if (top >= 0 && rp >= upperMin && position != null) {
-      // 上位階級：順位で決まる（Radiant は Immortal より人数が少ない）
+      // 上位階級：順位で決まる（Champion は Master より人数が少ない）
       const byN = tiers.filter((t) => t.divisions === 0).sort((a, b) => a.topN - b.topN);
       const hit = byN.find((t) => position <= t.topN);
       if (hit) return { tierId: hit.id, name: hit.name, division: null, divisionLabel: hit.name, rp, rpIntoDivision: null, rpForNext: null, color: hit.color, tierIndex: tiers.indexOf(hit), position };

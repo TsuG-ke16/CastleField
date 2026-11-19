@@ -1,9 +1,12 @@
 import { cardArt, icon } from './art.js';
 import { KIND_LABEL } from './text.js';
 import { frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
+import { rankSkinFront } from './skinArt.js';
 
-export function mountMiniCard(root, type, def, rarities, { showName = true } = {}) {
-  const path = frameAsset(def, rarities);
+/** skin：ランク報酬のカードスキン（ランクの id）。枠が変わるだけで、レアリティの色・光は出さない（common と同じ扱い） */
+export function mountMiniCard(root, type, def, rarities, { showName = true, skin = null } = {}) {
+  const skinPath = skin && !def?.monster ? rankSkinFront(skin) : null;
+  const path = skinPath ?? frameAsset(def, rarities);
   if (!path) {
     root.innerHTML = cardArt(type, 'blue', def?.name ?? '');
     return root;
@@ -11,7 +14,8 @@ export function mountMiniCard(root, type, def, rarities, { showName = true } = {
   root.classList.add('mini-card');
   if (def?.monster) root.dataset.beast = def.monster;
   if (def?.effect === 'wild') root.classList.add('wild');
-  if (def?.rarity && rarities?.[def.rarity]) root.dataset.rarity = def.rarity;
+  if (skinPath) { root.dataset.rarity = 'common'; root.dataset.skin = skin; }
+  else if (def?.rarity && rarities?.[def.rarity]) root.dataset.rarity = def.rarity;
   const frame = document.createElement('img');
   frame.className = 'mini-card-frame';
   frame.src = `assets/${path}`;

@@ -207,23 +207,24 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     stage.replaceChildren();
   });
 
-  const open = (type) => {
+  // opts：skin＝ランク報酬のカードスキン（ランクの id）、color＝そのとき側面に使う色、flip＝裏から見せる、title／text＝下の見出しと説明
+  const open = (type, opts = {}) => {
     const def = cards?.[type];
     if (!def) return;
     card = document.createElement('div');
     card.className = 'zoom-card';
-    mountMiniCard(card, type, def, rarities);
+    mountMiniCard(card, type, def, rarities, { skin: opts.skin ?? null });
     const fx = new URLSearchParams(location.search).get('fx');
     card3D = createCard3D(card, {
-      rarityColor: rarities?.[def.rarity]?.color,
+      rarityColor: opts.skin ? opts.color : rarities?.[def.rarity]?.color,
       shadow,
       quality: fx === 'full' || fx === 'lite' ? fx : 'auto',
     });
     stage.replaceChildren(shadow, card);
-    nameEl.textContent = def.name ?? '';
-    textEl.textContent = `${rarities?.[def.rarity]?.name ?? ''}　${cardDescription(def, rules)}`;
+    nameEl.textContent = opts.title ?? def.name ?? '';
+    textEl.textContent = opts.text ?? `${rarities?.[def.rarity]?.name ?? ''}　${cardDescription(def, rules)}`;
     target.x = target.y = now.x = now.y = 0.5;
-    q = [1, 0, 0, 0]; spin = null; homing = false; resetBtn.hidden = true;
+    q = opts.flip ? qAxis(0, 1, 0, Math.PI) : [1, 0, 0, 0]; spin = null; homing = false; resetBtn.hidden = !opts.flip;
     if (!dialog.open) dialog.showModal();
     measure();
     paint();
@@ -247,7 +248,8 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
       timer: setTimeout(() => {
         hold = null;
         swallowReleaseClick = true;
-        open(source.dataset.zoom);
+        const d = source.dataset;
+        open(d.zoom, { skin: d.zoomSkin, color: d.zoomColor, flip: d.zoomFlip === '1', title: d.zoomTitle, text: d.zoomText });
       }, HOLD_MS),
     };
   }, true);

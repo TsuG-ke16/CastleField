@@ -81,13 +81,15 @@ export class Economy {
     return out;
   }
   /** 対戦の画面に渡す（相手にも見える）。見た目だけの景品の id */
-  cosmeticsOf(userId) { const e = this.equippedOf(userId); delete e.icon; delete e.title; return e; }
+  cosmeticsOf(userId) { const e = this.equippedOf(userId); delete e.icon; delete e.iconFrame; delete e.title; return e; }
 
   equip(userId, slot, itemId, world = this.catalog.world) {
-    if (!Object.hasOwn(this.catalog.slots, slot)) throw new AccountError('そこには装備できません');
+    // キャラ・魔法のスキンは「枠:対象」（例：charSkin:dragonKnight）で、対象ごとに1つ装備する
+    const [base, target = null] = typeof slot === 'string' ? slot.split(':') : [];
+    if (!Object.hasOwn(this.catalog.slots, base)) throw new AccountError('そこには装備できません');
     if (itemId == null) { this.db.run('DELETE FROM equipped WHERE user_id = ? AND world = ? AND slot = ?', userId, world, slot); return this.equippedOf(userId, world); }
     const it = this.item(itemId);
-    if (!it || it.slot !== slot || (it.world !== world && it.world !== 'all')) throw new AccountError('そこには装備できません');
+    if (!it || it.slot !== base || (it.target ?? null) !== target || (it.world !== world && it.world !== 'all')) throw new AccountError('そこには装備できません');
     if (!this.owns(userId, itemId)) throw new AccountError('持っていないアイテムです', 403);
     this.db.run(`INSERT INTO equipped (user_id, world, slot, item_id) VALUES (?, ?, ?, ?) ON CONFLICT(user_id, world, slot) DO UPDATE SET item_id = excluded.item_id`, userId, world, slot, itemId);
     return this.equippedOf(userId, world);
