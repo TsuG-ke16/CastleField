@@ -82,6 +82,7 @@ export class ProfileView {
     if (homeJson?.icons) this.icons = homeJson.icons;
     const iconSrc = profileArt(pf.icon, pf.iconImage ?? (this.icons ?? []).find((i) => i.id === pf.icon)?.image);
     const av = p('avatar'); av.replaceChildren();
+    if (pf.iconFrame) av.dataset.frame = pf.iconFrame; else delete av.dataset.frame;
     if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); }
     const lv = homeJson?.level;
     p('xp').style.width = lv ? `${lv.maxed ? 100 : Math.round((lv.xpIntoLevel / Math.max(1, lv.xpForNext)) * 100)}%` : '0%';

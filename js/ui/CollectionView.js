@@ -5,7 +5,7 @@ import { itemPreview } from './Cosmetics.js';
 import { skinArt } from './skinArt.js';
 
 const RARITY_NAME = { common: 'コモン', uncommon: 'アンコモン', rare: 'レア', epic: 'エピック', legendary: 'レジェンド' };
-const SLOT_ORDER = ['unit', 'castle', 'cardBack', 'attackFx', 'winFx', 'icon', 'title'];
+const SLOT_ORDER = ['unit', 'castle', 'cardBack', 'attackFx', 'winFx', 'icon', 'iconFrame', 'title'];
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
 export class CollectionView {

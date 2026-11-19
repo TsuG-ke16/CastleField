@@ -1,0 +1,29 @@
+/* ランク報酬のアイコンフレーム（仮の見た目。専用の絵ができたら assets/frames/ の画像に差しかえる）
+   階級が上がるほど、ふちが太く・色が増え・光り・飾りがつく。data-frame はフレームの景品ID（frame_iron …） */
+[data-frame] { --fw: 4px; --fill: #365b64; position: relative; overflow: visible !important; border: var(--fw) solid transparent !important;
+  background: linear-gradient(var(--fill), var(--fill)) padding-box, var(--ring) border-box !important; box-shadow: var(--glow, none); }
+[data-frame] > img { border-radius: 50%; }
+[data-frame]::before, [data-frame]::after { position: absolute; pointer-events: none; content: ''; }
+[data-frame="frame_iron"]     { --ring: linear-gradient(#6f747c, #3d4148); }
+[data-frame="frame_bronze"]   { --ring: linear-gradient(135deg, #e1a25f, #8a5026 55%, #d28a46); --glow: 0 0 4px #b9783f88; }
+[data-frame="frame_silver"]   { --ring: linear-gradient(135deg, #fff, #9fb0c2 45%, #e9f0f7 70%, #8497ab); --glow: 0 0 6px #c5ced8aa; }
+[data-frame="frame_gold"]     { --fw: 5px; --ring: linear-gradient(135deg, #fff3b0, #f0b92e 40%, #b97a10 70%, #ffe27a); --glow: 0 0 8px #f0b92ecc; }
+[data-frame="frame_gold"]::after { inset: -9px; border-radius: 50%; border: 2px dotted #ffe27a; opacity: .85; }
+[data-frame="frame_platinum"] { --fw: 5px; --ring: conic-gradient(from 30deg, #b8fff6, #2fa89d, #e8fffb, #2fa89d, #b8fff6); --glow: 0 0 10px #52c2b8, 0 0 20px #52c2b855; }
+[data-frame="frame_platinum"]::after { inset: -10px; border-radius: 50%; border: 2px solid #8ff3e8; opacity: .8; }
+[data-frame="frame_diamond"]  { --fw: 6px; --ring: conic-gradient(from 0deg, #e6f4ff, #5aa3f0, #b8dcff, #2f6fd0, #e6f4ff, #5aa3f0, #e6f4ff); --glow: 0 0 12px #5aa3f0, 0 0 26px #5aa3f066; }
+[data-frame="frame_diamond"]::before { left: 50%; top: -12px; width: 14px; height: 14px; margin-left: -7px; background: #e6f4ff; transform: rotate(45deg); border: 2px solid #2f6fd0; box-shadow: 0 0 8px #8cc4ff; }
+[data-frame="frame_diamond"]::after { inset: -11px; border-radius: 50%; border: 2px solid #9fd0ff; opacity: .8; }
+[data-frame="frame_master"]   { --fw: 6px; --ring: conic-gradient(from 0deg, #ffb1b9, #d6404f, #7a1020, #ff6b7a, #d6404f, #ffb1b9); --glow: 0 0 14px #d6404f, 0 0 30px #d6404f77; }
+[data-frame="frame_master"]::before { left: -14px; right: -14px; top: 18%; bottom: 18%; border-radius: 50%; background:
+  radial-gradient(ellipse at 0 50%, #ff8a97 0 30%, transparent 32%), radial-gradient(ellipse at 100% 50%, #ff8a97 0 30%, transparent 32%); opacity: .9; }
+[data-frame="frame_master"]::after { inset: -12px; border-radius: 50%; border: 2px solid #ff8a97; box-shadow: 0 0 10px #ff6b7a; }
+[data-frame="frame_champion"] { --fw: 7px; --ring: conic-gradient(from 0deg, #fff7c7, #ffd24a, #ff9d2e, #fff0a0, #6fd6ff, #c58bff, #ffd24a, #fff7c7); --glow: 0 0 16px #ffe27a, 0 0 34px #ffb23a88; animation: frame-pulse 2.4s ease-in-out infinite; }
+[data-frame="frame_champion"]::before { left: 50%; top: -17px; width: 30px; height: 16px; margin-left: -15px;
+  background: linear-gradient(#ffe27a, #e0a020); clip-path: polygon(0 100%, 0 30%, 25% 60%, 50% 0, 75% 60%, 100% 30%, 100% 100%); filter: drop-shadow(0 0 4px #fff3b0); }
+[data-frame="frame_champion"]::after { inset: -13px; border-radius: 50%; border: 2px solid #fff0a0; box-shadow: 0 0 12px #ffe27a, inset 0 0 8px #ffe27a88; }
+@keyframes frame-pulse { 50% { box-shadow: 0 0 22px #fff0a0, 0 0 44px #ffb23acc; } }
+@media (prefers-reduced-motion: reduce) { [data-frame="frame_champion"] { animation: none; } }
+/* 景品の見本（所持品・受け取り画面） */
+.item-preview.slot-iconFrame { display: inline-grid; place-items: center; width: 64px; height: 64px; }
+.item-preview.slot-iconFrame i { display: block; width: 44px; height: 44px; border-radius: 50%; }

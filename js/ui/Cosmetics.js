@@ -21,7 +21,7 @@ export class Cosmetics {
 
   /** 自分の装備（サーバーの値）。アイコン・称号は盤面に出さない */
   setMine(equipped) {
-    this.mine = Object.fromEntries(Object.entries(equipped ?? {}).filter(([slot]) => !['icon', 'title'].includes(slot)));
+    this.mine = Object.fromEntries(Object.entries(equipped ?? {}).filter(([slot]) => !['icon', 'iconFrame', 'title'].includes(slot)));
   }
 
   /** オンライン：部屋の席ごと */
@@ -120,6 +120,7 @@ export function itemPreview(it) {
   else if (it.slot === 'cardBack') img('assets/ui/card-back.png', it.filter);
   else if (it.slot === 'attackFx') img('assets/fx/fireball.png', it.filter);
   else if (it.slot === 'icon') img(it.image);
+  else if (it.slot === 'iconFrame') { const c = document.createElement('i'); c.dataset.frame = it.id; c.style.background = '#365b64'; box.append(c); }
   else if (it.slot === 'winFx') for (const c of it.colors ?? []) { const s = document.createElement('i'); s.style.background = /^#[0-9a-f]{3,8}$/i.test(c) ? c : '#ccc'; box.append(s); }
   else if (it.slot === 'title') { const t = document.createElement('b'); t.textContent = it.text ?? it.name; box.append(t); }
   return box;

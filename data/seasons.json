@@ -1,5 +1,5 @@
 {
-  "_note": "シーズンは起点から一定の日数ごとに自動で切り替わる（仮）。新しいシーズンでは、MMRを初期値に近づけ、短い認定戦をやり直す",
+  "_note": "シーズンは起点から一定の日数ごとに自動で切り替わる（仮）。新しいシーズンでは、MMRを初期値に近づけ、短い認定戦をやり直す。報酬は、そのシーズンで到達した最高ランクの「アイコンフレーム＋カード裏面」1組（コインはなし）",
   "epoch": "2026-11-01T00:00:00Z",
   "lengthDays": 56,
   "softReset": {
@@ -8,13 +8,37 @@
   },
   "minMatchesForReward": 5,
   "rewards": {
-    "iron": 100,
-    "bronze": 200,
-    "silver": 350,
-    "gold": 600,
-    "platinum": 900,
-    "diamond": 1300,
-    "master": 2500,
-    "champion": 3500
+    "iron": {
+      "iconFrame": "frame_iron",
+      "cardBack": "back_rank_iron"
+    },
+    "bronze": {
+      "iconFrame": "frame_bronze",
+      "cardBack": "back_rank_bronze"
+    },
+    "silver": {
+      "iconFrame": "frame_silver",
+      "cardBack": "back_rank_silver"
+    },
+    "gold": {
+      "iconFrame": "frame_gold",
+      "cardBack": "back_rank_gold"
+    },
+    "platinum": {
+      "iconFrame": "frame_platinum",
+      "cardBack": "back_rank_platinum"
+    },
+    "diamond": {
+      "iconFrame": "frame_diamond",
+      "cardBack": "back_rank_diamond"
+    },
+    "master": {
+      "iconFrame": "frame_master",
+      "cardBack": "back_rank_master"
+    },
+    "champion": {
+      "iconFrame": "frame_champion",
+      "cardBack": "back_rank_champion"
+    }
   }
 }

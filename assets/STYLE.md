@@ -115,6 +115,44 @@ Cartoon game effect sprite, [内容], bright colors, transparent background.
 
 - `fireball.png` ができるまでは、画面側（`js/ui/assets.js` の `OVERRIDES`）で `cards/card-fireball.png` を丸く切り抜いて代わりに飛ばしている。ファイルを置けば自動で本物に替わる
 
+### ランクの絵（`ranks/`・`frames/`・`skins/back-rank-*.png`）
+
+階級が上がるほど**飾りが増え、光り、豪華になる**ようにそろえる（Iron は素朴な金属 → Champion は王冠・多色の光・羽）。**他作品のランク図柄は参考にしても、形・配色・モチーフを写さない**（オリジナルのモチーフで描く）。階級は 8つ：Iron・Bronze・Silver・Gold・Platinum・Diamond・Master・Champion。
+
+豪華さの目安（全部の絵で同じ段階をそろえる）：
+
+| 階級 | 素材・色 | 飾りの量 | 光 |
+|---|---|---|---|
+| Iron | くすんだ鉄・灰 | ほとんどなし。リベットだけ | なし |
+| Bronze | 銅・茶 | 小さな葉・ふちの彫り | ごく弱い |
+| Silver | 銀・青みの白 | 旗・つばさの飾り | 弱い |
+| Gold | 金 | 宝石・太陽の輪 | 金のにじみ |
+| Platinum | 白金・青緑 | 左右のつばさ・角 | 青緑の光 |
+| Diamond | 水晶・青 | 結晶の城・多面の宝石 | 青い反射と火花 |
+| Master | 深紅・黒金 | 大きなつばさ・炎・宝玉 | 赤い炎の光 |
+| Champion | 白金＋虹色 | 王冠・光の輪・雲・たくさんの宝石 | 虹色の光・きらめき |
+
+`[階級の素材・飾り・光]` には上の表の行を入れる。
+
+```
+[共通の指示文] A rank emblem for a ranked ladder tier, [階級の素材・飾り・光],
+symmetrical, front view, ornate level matches the tier (higher tier = more ornate), no text.
+```
+- エンブレム：`ranks/rank-<階級>.png`（256×256 以上の正方形。いまの8枚が仮）
+
+```
+[共通の指示文] A circular profile icon frame (ring only, empty transparent center), [階級の素材・飾り・光],
+ornament grows with the tier (Iron: plain ring; Champion: crown on top and rainbow glow), no text.
+```
+- アイコンフレーム：`frames/frame-<階級>.png`（256×256、真ん中は透明。リングは外側 12% に収める）。できたら `css/rank-frames.css` の仮の見た目をやめて画像に差しかえる
+
+```
+[共通の指示文] The back of a fantasy playing card, 2:3 portrait, [階級の素材・飾り・光],
+the same layout for every tier (border, center emblem), the border and emblem get richer with the tier, no text.
+```
+- カード裏面：`skins/back-rank-<階級>.png`（512×768。`js/ui/skinArt.js` の一覧に足すと色替えの代わりに出る）
+- 絵を足すときは `assets/CREDITS.md` に出どころを書く
+
 ### 画面の部品（`ui/`）
 
 ```

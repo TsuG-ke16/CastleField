@@ -155,7 +155,8 @@ node server/backup.js restore /path/out.db  # サーバーを止めてから。�
 ## シーズン（`data/seasons.json`）
 - 起点（`epoch`）から `lengthDays`（56日）ごとに自動で番号が進む。`season_stats` にシーズン・モードごとの成績（MMR・RP・最高RP・試合数）が残る（`mode_id` は `kingdom`。将来の別モードは別の行＝独立ランクにできる）
 - 新しいシーズンの最初の参加で、MMR を初期値に近づけ（差を半分）、短い認定戦（2試合）からやり直す。**前のシーズンの記録（最高到達ランク）は残る**
-- シーズン報酬（到達ランクに応じた報酬の受け取り）は **Phase 6**
+- シーズン報酬は **Phase 6**。終わったシーズンの最高到達ランクの階級に応じて、**「アイコンフレーム（`frame_<階級>`）＋カード裏面（`back_rank_<階級>`）」を1組**もらう（コインはなし。人間の指示）。対象は認定戦を終えて `minMatchesForReward` 試合以上。景品は `data/shop.json`（`rankReward` つき。ショップ・ガチャでは手に入らない）、階級との対応は `data/seasons.json` の `rewards`。アイコンフレームは新しい装備の枠 `iconFrame`（ホーム・プロフィールのアイコンの周りに出る）。専用の絵ができるまでは、フレームは `css/rank-frames.css`、カード裏面は色替えの仮の見た目
+- 見た目は階級が上がるほど豪華にする（Iron は素朴な金属 → Champion は王冠・多色の光）。絵の指示文は `assets/STYLE.md` の「ランクの絵」
 
 ## マッチメイキング（`server/accounts/matchmaking.js`）
 - **正会員（Google 連携かメールアドレスの登録）だけ**参加できる。ゲストは 403（`needsMember`）。CPU・ゲスト・カジュアル（合言葉）の対戦ではレートは動かない

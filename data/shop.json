@@ -8,6 +8,7 @@
     "attackFx": "攻撃エフェクト",
     "winFx": "勝利演出",
     "icon": "プロフィールアイコン",
+    "iconFrame": "アイコンフレーム",
     "title": "称号"
   },
   "rarities": [
@@ -395,6 +396,174 @@
       "world": "kingdom",
       "desc": "プロフィールに出る称号。",
       "text": "伝説の城主"
+    },
+    "frame_iron": {
+      "slot": "iconFrame",
+      "name": "Ironのフレーム",
+      "rarity": "common",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "iron",
+      "desc": "シーズンでIronに到達した人だけがもらえる、鉄のアイコンフレーム。"
+    },
+    "back_rank_iron": {
+      "slot": "cardBack",
+      "name": "Ironのカード裏",
+      "rarity": "common",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "iron",
+      "desc": "シーズンでIronに到達した人だけがもらえる、鉄のカード裏面。",
+      "filter": "grayscale(1) brightness(.8)"
+    },
+    "frame_bronze": {
+      "slot": "iconFrame",
+      "name": "Bronzeのフレーム",
+      "rarity": "common",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "bronze",
+      "desc": "シーズンでBronzeに到達した人だけがもらえる、銅のアイコンフレーム。"
+    },
+    "back_rank_bronze": {
+      "slot": "cardBack",
+      "name": "Bronzeのカード裏",
+      "rarity": "common",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "bronze",
+      "desc": "シーズンでBronzeに到達した人だけがもらえる、銅のカード裏面。",
+      "filter": "sepia(.8) saturate(1.4) hue-rotate(-10deg)"
+    },
+    "frame_silver": {
+      "slot": "iconFrame",
+      "name": "Silverのフレーム",
+      "rarity": "uncommon",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "silver",
+      "desc": "シーズンでSilverに到達した人だけがもらえる、銀のアイコンフレーム。"
+    },
+    "back_rank_silver": {
+      "slot": "cardBack",
+      "name": "Silverのカード裏",
+      "rarity": "uncommon",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "silver",
+      "desc": "シーズンでSilverに到達した人だけがもらえる、銀のカード裏面。",
+      "filter": "grayscale(1) brightness(1.25)"
+    },
+    "frame_gold": {
+      "slot": "iconFrame",
+      "name": "Goldのフレーム",
+      "rarity": "uncommon",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "gold",
+      "desc": "シーズンでGoldに到達した人だけがもらえる、金のアイコンフレーム。"
+    },
+    "back_rank_gold": {
+      "slot": "cardBack",
+      "name": "Goldのカード裏",
+      "rarity": "uncommon",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "gold",
+      "desc": "シーズンでGoldに到達した人だけがもらえる、金のカード裏面。",
+      "filter": "sepia(.9) saturate(2.2) brightness(1.15)"
+    },
+    "frame_platinum": {
+      "slot": "iconFrame",
+      "name": "Platinumのフレーム",
+      "rarity": "rare",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "platinum",
+      "desc": "シーズンでPlatinumに到達した人だけがもらえる、白金のアイコンフレーム。"
+    },
+    "back_rank_platinum": {
+      "slot": "cardBack",
+      "name": "Platinumのカード裏",
+      "rarity": "rare",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "platinum",
+      "desc": "シーズンでPlatinumに到達した人だけがもらえる、白金のカード裏面。",
+      "filter": "hue-rotate(150deg) saturate(1.3) brightness(1.1)"
+    },
+    "frame_diamond": {
+      "slot": "iconFrame",
+      "name": "Diamondのフレーム",
+      "rarity": "rare",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "diamond",
+      "desc": "シーズンでDiamondに到達した人だけがもらえる、金剛石のアイコンフレーム。"
+    },
+    "back_rank_diamond": {
+      "slot": "cardBack",
+      "name": "Diamondのカード裏",
+      "rarity": "rare",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "diamond",
+      "desc": "シーズンでDiamondに到達した人だけがもらえる、金剛石のカード裏面。",
+      "filter": "hue-rotate(185deg) saturate(1.6) brightness(1.15)"
+    },
+    "frame_master": {
+      "slot": "iconFrame",
+      "name": "Masterのフレーム",
+      "rarity": "epic",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "master",
+      "desc": "シーズンでMasterに到達した人だけがもらえる、覇者のアイコンフレーム。"
+    },
+    "back_rank_master": {
+      "slot": "cardBack",
+      "name": "Masterのカード裏",
+      "rarity": "epic",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "master",
+      "desc": "シーズンでMasterに到達した人だけがもらえる、覇者のカード裏面。",
+      "filter": "hue-rotate(260deg) saturate(1.8) brightness(1.05)"
+    },
+    "frame_champion": {
+      "slot": "iconFrame",
+      "name": "Championのフレーム",
+      "rarity": "legendary",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "champion",
+      "desc": "シーズンでChampionに到達した人だけがもらえる、王者のアイコンフレーム。"
+    },
+    "back_rank_champion": {
+      "slot": "cardBack",
+      "name": "Championのカード裏",
+      "rarity": "legendary",
+      "price": null,
+      "gacha": false,
+      "world": "kingdom",
+      "rankReward": "champion",
+      "desc": "シーズンでChampionに到達した人だけがもらえる、王者のカード裏面。",
+      "filter": "hue-rotate(-30deg) saturate(2.4) brightness(1.2)"
     }
   }
 }
