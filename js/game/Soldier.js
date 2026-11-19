@@ -20,7 +20,7 @@ export class Soldier {
     this.maxHp = card.def.hp;
     this.baseAttack = card.def.attack;
     this.speed = card.def.speed ?? 0;
-    /** 役割（"melee" | "archer" | "mage"）。弓兵・魔法使いは動かずに撃つ */
+    /** 役割（"melee" | "archer" | "mage" | "ninja"）。弓兵・魔法使いは動かずに撃つ。忍者は進むが、相手から見えず、相手の兵士とは戦わない */
     this.role = card.def.role ?? 'melee';
     /** 撃てる距離（自分のマスから何マス先まで。弓兵・魔法使いだけ） */
     this.range = card.def.range ?? 0;
@@ -38,6 +38,16 @@ export class Soldier {
     this.poison = null;
     /** 凍結の残り回数（0 なら凍結していない） */
     this.frozen = 0;
+  }
+
+  /** 弓兵・魔法使い（動かずに撃つ） */
+  get isRanged() {
+    return this.role === 'archer' || this.role === 'mage';
+  }
+
+  /** 忍者：相手から見えない（getState・イベントで隠す）。相手の兵士と戦わず、撃たれず、妖術（魔法）の的にもならない */
+  get stealth() {
+    return this.role === 'ninja';
   }
 
   get attack() {
@@ -78,7 +88,7 @@ export class Soldier {
       position: this.position,
       role: this.role,
       range: this.range,
-      turnsLeft: this.role === 'melee' ? null : this.turnsLeft,
+      turnsLeft: this.isRanged ? this.turnsLeft : null,
       roadId: this.roadId,
       targetId: this.targetId,
       weapon: this.weapon,

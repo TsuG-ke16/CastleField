@@ -395,6 +395,7 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 | `ui/stamps/sorry.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `ui/stamps/gg.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `ui/stamps/again.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+| `cards/relief/frame-*-relief.png`・`cards/relief/frame-*-raised.png` | 自作スクリプト（`node js/ui/build-card-relief.js`）で、同じ名前の枠の絵から自動生成（高さ・法線・材質の地図と、浮かせる部品の形）。絵柄は含まない | 元の枠の絵と同じ | 2026-11-18 |
 
 ## カード素材の品質監査と透過の修正（2026-11-18）
 
@@ -404,3 +405,62 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 - 絵が小さすぎたので、透過の修正のあと、絵を切り出して中央に大きく置き直した（乗算済みアルファでLanczos拡大。倍率は1.2〜2.4倍）：`cards/card-mana-shard.png`、`card-mana-drop.png`、`card-mana-crystal.png`、`card-mana-spring.png`、`card-world-tree-dew.png`（かけら・しずくは2倍前後の拡大なので、作り直すまでの暫定）
 - `ui/card-back.png`：512×768 の中央に小さく描かれていたので、絵の部分だけを切り出した（281×426。拡大はしていない）
 - 確認画像：`review/visual-audit-v2/`（Playwright同梱Chromiumとpillowで作成）
+
+## カード素材の描き直し v2（2026-11-19）
+
+OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。カード絵は512×512の透過パレットPNGに書き出しました。
+
+### 魔物の駒
+
+- `cards/card-beast-bat.png` — 参照元 `cards/card-beast-bat.png`（差し替え前）・`style-reference.png`、生成原本 `exec-99448b87-c643-44a7-877a-787928e24a14.png`。
+- `cards/card-beast-slime.png` — 参照元 `cards/card-beast-slime.png`（差し替え前）・`style-reference.png`、生成原本 `exec-4fd1ed02-a31f-4ad1-aa93-f15b538a3889.png`。
+- `cards/card-beast-goblin.png` — 参照元 `cards/card-beast-goblin.png`（差し替え前）・`style-reference.png`、生成原本 `exec-3e183f42-5965-43ba-86f9-7d882dddf1eb.png`。
+- `cards/card-beast-skeleton.png` — 参照元 `cards/card-beast-skeleton.png`（差し替え前）・`style-reference.png`、生成原本 `exec-fedca43e-248b-4df1-be96-6e38d2d494ff.png`。
+- `cards/card-beast-golem.png` — 参照元 `cards/card-beast-golem.png`（差し替え前）・`style-reference.png`、生成原本 `exec-c091d2bf-8700-4e33-934e-10717fa7eb60.png`。
+- `cards/card-beast-demon.png` — 参照元 `cards/card-beast-demon.png`（差し替え前）・`style-reference.png`、生成原本 `exec-aaff9cd5-acfd-43fa-8640-661bc3ae51da.png`。
+- `cards/card-beast-dragon.png` — 参照元 `cards/card-beast-dragon.png`（差し替え前）・`style-reference.png`、生成原本 `exec-e3d08730-58a1-40fb-a8ea-7de2e21a00bb.png`。
+- `cards/card-beast-ghost.png` — 参照元 `cards/card-beast-ghost.png`（差し替え前）・`style-reference.png`、生成原本 `exec-dd82c891-0436-45e4-8c9b-0988f7cb82e9.png`。
+- `cards/card-beast-treant.png` — 参照元 `cards/card-beast-treant.png`（差し替え前）・`style-reference.png`、生成原本 `exec-edefadd4-4106-4b4b-9758-4da373846334.png`。
+- `cards/card-beast-mimic.png` — 参照元 `cards/card-beast-mimic.png`（差し替え前）・`style-reference.png`、生成原本 `exec-f89bd0eb-84f6-4835-9a72-702c238c3eba.png`。
+- `cards/card-beast-vampire.png` — 参照元 `cards/card-beast-vampire.png`（差し替え前）・`style-reference.png`、生成原本 `exec-dfb62b6b-e6a2-42ca-8a2c-e7cbea5d3fa2.png`。
+- `cards/card-beast-demon-king.png` — 参照元 `cards/card-beast-demon-king.png`（差し替え前）・`style-reference.png`、生成原本 `exec-0f8a7c74-537f-4702-9863-6258084b2580.png`。
+
+### 端で切れていたカード
+
+- `cards/card-fire-king.png` — 参照元 `cards/card-fire-king.png`（差し替え前）・`style-reference.png`、生成原本 `exec-8da1f9b2-b582-4bc5-85d6-69e9ac620476.png`。
+- `cards/card-water-king.png` — 参照元 `cards/card-water-king.png`（差し替え前）・`style-reference.png`、生成原本 `exec-c268b522-196b-44c4-b090-5a173f87f254.png`。
+- `cards/card-great-water-spirit.png` — 参照元 `cards/card-great-water-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-f21bc5f2-2e10-42a0-aca5-4e72f0d74475.png`。
+- `cards/card-great-fire-spirit.png` — 参照元 `cards/card-great-fire-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-b9e45b48-b6c8-4887-93a1-f2294875d120.png`。
+- `cards/card-great-wind-spirit.png` — 参照元 `cards/card-great-wind-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-8df8a091-9aac-47d5-bae2-acd2eb683d4c.png`。
+- `cards/card-king-treasure.png` — 参照元 `cards/card-king-treasure.png`（差し替え前）・`style-reference.png`、生成原本 `exec-ff0d6af3-a906-417a-b14e-b925842134f9.png`。
+- `cards/card-god-shield.png` — 参照元 `cards/card-god-shield.png`（差し替え前）・`style-reference.png`、生成原本 `exec-47a56306-5578-4052-b434-d4811cf6a97a.png`。
+- `cards/card-wind-spirit.png` — 参照元 `cards/card-wind-spirit.png`（差し替え前）・`style-reference.png`、生成原本 `exec-945a91d5-a948-4b09-a011-56ae46ec88ed.png`。
+
+### マナ回復カード
+
+- `cards/card-mana-shard.png` — 参照元 `cards/card-mana-shard.png`（差し替え前）・`style-reference.png`、生成原本 `exec-2b7b0112-4b17-47a8-9968-48f2108d43d8.png`。
+- `cards/card-mana-drop.png` — 参照元 `cards/card-mana-drop.png`（差し替え前）・`style-reference.png`、生成原本 `exec-5982b20f-25cf-4b9e-93da-705027fe9136.png`。
+
+### 天候の呪文
+
+- `cards/card-weather-call.png` — 参照元 `cards/card-weather-call.png`（差し替え前）・`style-reference.png`、生成原本 `exec-bdce4c6e-7903-41c6-8a93-c889925eb861.png`。
+
+### 魔物の枠（レビュー候補）
+
+- `review/visual-art-v2/frame-beast-candidate.png` — 参照元 `cards/frame-beast.png`・`cards/frame-rare.png`・`style-reference.png`、生成原本 `exec-b00e3120-e842-4ecd-8bbe-10227b0c1586.png`。レア枠の窓・帯・メダル位置を基準に形状を調整し、512×768の透過パレットPNGに書き出しました。
+
+## レアリティ枠と窓背景 v2（2026-11-19）
+
+OpenAI ImageGen を使用。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。各生成に `style-reference.png`、`review/frame-v2/layout-guide.png` と同名の差し替え前の枠を参照しました。枠は描画の輪郭と材質を切り出し、共通座標に透過窓・丸・帯・台を組み込みました。描画部分は等比で処理し、枠は512×768のRGBA PNG、背景は512×512の不透明PNGです。
+
+| 枠 | 枠の生成原本 | 窓背景 | 窓背景の生成原本 |
+|---|---|---|---|
+| `cards/frame-common.png` | `exec-af049282-8ff9-4a24-90fe-18385351faee.png` | `cards/window-common.png` | `exec-2a083d0f-1e1f-4768-9ac7-872e071891dd.png` |
+| `cards/frame-uncommon.png` | `exec-0cba4264-3bc1-4b6b-846b-411a7ffcb470.png` | `cards/window-uncommon.png` | `exec-1d53e19d-e7d6-43e4-be0f-270bb7b1ded6.png` |
+| `cards/frame-rare.png` | `exec-ee016e1d-3857-463d-a89c-ee9c82877456.png` | `cards/window-rare.png` | `exec-05d3439f-d8aa-4dc6-97fc-a3afaa8eda59.png` |
+| `cards/frame-epic.png` | `exec-10864d80-c829-456a-a508-f377f7bd8a22.png` | `cards/window-epic.png` | `exec-a7b7bae9-2dac-4c94-b6bb-570cbd39a50b.png` |
+| `cards/frame-legendary.png` | `exec-de448fe3-aaba-4e53-b846-501a411639cd.png` | `cards/window-legendary.png` | `exec-9c5ecd7c-2061-4d78-93f3-bb703d67914a.png` |
+| `cards/frame-special.png` | `exec-8e126037-9fc4-414d-b8b3-d97c5144d020.png` | `cards/window-special.png` | `exec-06562f87-9056-436d-a9fa-1a4657e8d3aa.png` |
+| `cards/frame-beast.png` | `exec-b50963cc-36c8-40d6-8a96-efc34bd2abe6.png` | `cards/window-beast.png` | `exec-5c2fb752-6c1b-4b64-ab5c-4189097fb44f.png` |
+
+- `cards/relief/frame-{common,uncommon,rare,epic,legendary,special,beast}-{relief,raised}.png` — 上記の枠から `node js/ui/build-card-relief.js` で再生成。素材の利用条件は元の枠と同じ。

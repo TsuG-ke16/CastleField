@@ -19,7 +19,7 @@ try{
  browser=await chromium.launch();
  for(const[width,height]of[[390,844],[360,640],[844,390],[1440,1000]]){
   const page=await browser.newPage({viewport:{width,height},reducedMotion:'reduce'});page.setDefaultTimeout(15000);
-  page.on('pageerror',e=>errors.push(e.message));const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8';await page.goto(url.href);
+  page.on('pageerror',e=>errors.push(e.message));const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8&rules='+encodeURIComponent(JSON.stringify({defenseReaction:false}));await page.goto(url.href);
   await page.waitForFunction(()=>window.castlefield?.game()&&!document.querySelector('#app').classList.contains('busy'));
   await page.addStyleTag({content:'#debug-toggle{display:none}'});
   async function coverage(){
