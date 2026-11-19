@@ -26,7 +26,7 @@ try {
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   await page.goto(base);
-  await page.locator('#home:not([hidden])').waitFor({ timeout: 8000 });
+  await page.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
   // 世界：王国が選ばれていて、戦国は準備中で押せない
   await page.waitForFunction(() => document.querySelectorAll('#home .home-world').length >= 2);
   assert.equal(await page.locator('#home .home-world[aria-selected=true]').textContent(), '王国');

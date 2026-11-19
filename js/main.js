@@ -381,15 +381,13 @@ async function boot() {
   });
   const missionView = new MissionView({ toast, onChanged: () => home.refresh() });
   let socialStarted = false;
-  let homeOpened = false;
   account.onChange(() => {
     $('title-account').hidden = !account.enabled;
-    $('title-home').hidden = !home.available();
     if (!socialStarted && account.user?.kind === 'member') { socialStarted = true; socialView.refresh(); }
     if (account.enabled && account.user && !cosmetics.loaded) { cosmetics.loaded = true; loadMine(); }
-    // 起動してアカウントの準備ができたら、ホームを入口にする（タイトルの最初の画面にいるときだけ）
-    if (!homeOpened && home.available() && !el.title.hidden && !el.titleMain.hidden && document.documentElement.classList.contains('at-title')) { homeOpened = true; el.title.hidden = true; home.open(); }
+    // ホームは起動したときから入口（showTitle）。アカウントの準備ができたら、開いているホームが自分で描き直す
   });
+  $('title-home').hidden = false; // タイトルからホームへ戻るボタン（ホームはいつも使える）
   $('title-home').addEventListener('click', () => { el.title.hidden = true; home.open(); });
   $('title-account').addEventListener('click', () => accountPanel.open());
   account.init().then(() => accountPanel.handleReturn());
@@ -707,7 +705,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
   stopLocal();
   setPlayerNames({});
   resetForNewGame();
-  el.title.hidden = true;
+  el.title.hidden = true; home?.close();
   sound.setScene('battle');
 
   seed = seedOverride ?? URL_SEED ?? Math.floor(Math.random() * 2 ** 32);
@@ -1020,7 +1018,7 @@ function onRoom(r) {
   setPlayerNames(Object.fromEntries(r.players.map((p) => [p.playerId, p.name])));
   if (!r.started) {
     gen++; anim.skip(); queue = []; batches = []; model = null;
-    el.result.hidden = true; el.title.hidden = true;
+    el.result.hidden = true; el.title.hidden = true; home?.close(); // つなぎ直したときも、ホームの上に部屋を出す
     roomView.render(r, roomPassphrase);
   } else roomView.hide();
   $('back-to-room').hidden = r.you !== r.hostId || !!r.ranked;
@@ -1117,7 +1115,7 @@ async function showBatch(batch) {
     matchStats.begin(st);
     if (st.turn <= 1) for (const ev of batch.events) matchStats.event(ev);
     for (const c of st.players[viewerId]?.hand ?? []) knownCards.set(c.cardId, { ...c });
-    el.title.hidden = true;
+    el.title.hidden = true; home?.close();
     roomView.hide();
     renderer.setViewer(viewerId);
     handView.setColor(colorOf(viewerId));

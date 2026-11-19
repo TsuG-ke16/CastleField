@@ -28,7 +28,7 @@ try {
     page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`));
     page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(`${name}: ${m.text()}`); });
     await page.goto(base);
-    await page.locator('#home:not([hidden])').waitFor({ timeout: 8000 });
+    await page.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
     return page;
   };
   const A = await open('A'); const B = await open('B');
@@ -44,7 +44,7 @@ try {
     const id = await page.evaluate(async () => (await (await fetch('/api/me', { credentials: 'same-origin' })).json()).user.id);
     db.prepare("UPDATE users SET kind = 'member' WHERE id = ?").run(id);
     await page.reload();
-    await page.locator('#home:not([hidden])').waitFor();
+    await page.locator('#home:not([hidden]):not(.home-local)').waitFor();
   }
   db.close();
   await A.click('#home .home-tile[data-id=rank]');

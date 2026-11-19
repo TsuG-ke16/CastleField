@@ -1,8 +1,9 @@
 import { profileArt } from './profileArt.js';
 // ホーム画面：プレイヤー情報・選んだモード・デッキ・大きな対戦開始ボタン・メニュー。
-// サーバーのアカウント機能があるときだけ出る（なければ今までのタイトルがそのまま入口）。
-// まだ作っていない機能（ランクマッチ・フレンド・ショップなど）は「準備中」と表示して押せない。表示名などは textContent で入れる。
+// いつも入口になる。サーバーのアカウント機能がないとき（python の簡易サーバー・オフライン）は、
+// ひとりで遊ぶ・同じ端末・デッキ編成・図鑑・設定だけを使え、サーバーが要るメニューは押すと理由を出す。表示名などは textContent で入れる。
 import { account } from './Account.js';
+import { loadDecks } from './DeckStore.js';
 import { sound } from './Sound.js';
 import { rankEmblem } from './RankEmblem.js';
 
@@ -12,6 +13,9 @@ const MODES = {
   online: { label: 'カジュアル対戦', chip: 'カジュアル', note: '合言葉で友だちと', titleButton: 'title-online' },
   local: { label: '同じ端末で遊ぶ', chip: '同じ端末', note: '2〜8人で交代', titleButton: 'title-local' },
 };
+// サーバーのアカウント機能がないと使えないメニュー
+const NEEDS_SERVER = new Set(['rank', 'ranking', 'friend', 'profile', 'shop', 'gacha', 'skin', 'mission']);
+const SERVER_REASON = 'この機能は、オンライン対戦のサーバー（node server/server.js）で開くと使えます';
 const menuIcon = (id) => `<img src="assets/ui/home/${id}.png" alt="" width="36" height="36">`;
 const GROUPS = [
   ['対戦', ['rank', 'casual', 'ranking']],
@@ -55,7 +59,7 @@ export class Home {
           <span class="home-who">
             <strong data-part="name">…</strong>
             <small data-part="title"></small>
-            <span class="home-level"><b data-part="lv">Lv.1</b><span class="home-xp" role="progressbar" aria-label="次のレベルまで" data-part="xpbar"><i data-part="xpfill"></i></span></span>
+            <span class="home-level" data-part="lvWrap"><b data-part="lv">Lv.1</b><span class="home-xp" role="progressbar" aria-label="次のレベルまで" data-part="xpbar"><i data-part="xpfill"></i></span></span>
           </span>
         </button>
         <div class="home-side">
@@ -88,8 +92,11 @@ export class Home {
     account.onChange(() => { if (!box.hidden) this.refresh(); });
   }
 
-  /** ホームを入口にするか（アカウント機能があって、ログイン中のとき） */
-  available() { return account.enabled && !!account.user; }
+  /** ホームを入口にするか（いつも。アカウント機能がなければ、端末だけで使えるメニューにする） */
+  available() { return true; }
+
+  /** サーバーのアカウント機能につながっているか */
+  online() { return account.enabled && !!account.user; }
 
   open() {
     this.box.hidden = false;
@@ -109,8 +116,9 @@ export class Home {
       this.dataUser = userId;
     }
     this.render();
-    this.part('note').textContent = this.data ? '' : 'プレイヤー情報を読み込み中…';
     this.box.querySelector('[data-act=retry]').hidden = true;
+    if (!this.online()) { this.part('note').textContent = ''; return; }
+    this.part('note').textContent = this.data ? '' : 'プレイヤー情報を読み込み中…';
     account.api('GET', '/api/ranked/summary').then(({ json }) => {
       if (this.request !== request || !json?.ok) return;
       this.season = json.season;
@@ -153,6 +161,16 @@ export class Home {
   }
 
   render() {
+    const local = !this.online();
+    this.box.classList.toggle('home-local', local);
+    for (const tile of this.box.querySelectorAll('.home-tile')) {
+      const off = local && NEEDS_SERVER.has(tile.dataset.id);
+      tile.classList.toggle('home-tile-off', off);
+      if (off) tile.title = SERVER_REASON; else tile.removeAttribute('title');
+    }
+    if (local) return this.renderLocal();
+    this.part('lvWrap').hidden = false;
+    this.part('coins').hidden = false;
     const d = this.data;
     const u = d?.user ?? account.user;
     this.part('name').textContent = u?.displayName ?? '';
@@ -185,6 +203,30 @@ export class Home {
       : sum?.rank ? `${sum.rank.divisionLabel}（${sum.rank.rp} RP）` : sum ? `認定戦 ${sum.placementTotal - sum.placementLeft}/${sum.placementTotal}` : '—';
     this.part('deck').textContent = d?.deck?.name ?? '未設定';
     this.part('stats').textContent = d?.stats?.matches ? `${d.stats.matches}戦 ${d.stats.wins}勝 ${d.stats.losses}敗（勝率 ${d.stats.winRate}%）` : 'まだ対戦がありません';
+    this.renderFacts();
+  }
+
+  /** サーバーのアカウント機能がないとき：端末の情報だけで描く */
+  renderLocal() {
+    this.part('name').textContent = 'プレイヤー';
+    this.part('title').textContent = 'この端末で遊ぶ';
+    this.part('lvWrap').hidden = true;
+    this.part('coins').hidden = true;
+    const av = this.part('avatar');
+    av.replaceChildren();
+    av.textContent = '🏰';
+    this.part('guest').hidden = true;
+    this.part('season').textContent = '';
+    const worlds = this.part('worlds'); worlds.replaceChildren();
+    const w = document.createElement('button'); w.type = 'button'; w.className = 'home-world raw-btn'; w.textContent = '王国'; w.setAttribute('role', 'tab'); w.setAttribute('aria-selected', 'true'); worlds.append(w);
+    this.part('rankEmblem').innerHTML = '';
+    this.part('rankText').textContent = 'サーバーで遊ぶと参加できます';
+    let deck = null;
+    try { const state = loadDecks(); deck = state.slots?.[state.active]; } catch { /* 読めなくても動く */ }
+    this.part('deck').textContent = deck?.name ?? '見本のデッキ';
+    this.part('stats').textContent = 'サーバーで遊ぶと記録されます';
+    for (const tile of this.box.querySelectorAll('.home-tile')) tile.querySelector('.home-badge')?.remove();
+    this.part('dot').hidden = true;
     this.renderFacts();
   }
 
@@ -248,6 +290,7 @@ export class Home {
     sound.play('tap');
     if (act === 'account') return this.onAccount();
     if (act === 'retry') return this.refresh();
+    if (!this.online() && (NEEDS_SERVER.has(act) || act === 'notice')) return this.toast(act === 'notice' ? '新しいお知らせはありません' : SERVER_REASON, 'info');
     if (act === 'start') return this.onPlay(this.mode, MODES[this.mode].titleButton);
     if (act === 'casual') return this.onPlay('online', MODES.online.titleButton);
     if (act === 'deck') return this.onDeck();

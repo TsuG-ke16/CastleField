@@ -402,3 +402,7 @@ html:not(.at-title) #social-banner { display:none; }
 @media (prefers-reduced-motion: reduce) {
   #missions .mission-received, .levelup { animation: none; }
 }
+
+/* サーバーのアカウント機能がないとき（python の簡易サーバー・オフライン）：サーバーが要るメニューは薄く出す（押すと理由が出る） */
+.home-tile.home-tile-off { opacity: .5; filter: grayscale(.7); }
+.home-coins[hidden], .home-level[hidden] { display: none; }

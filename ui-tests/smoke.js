@@ -55,13 +55,13 @@ try{
   page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{if(message.type()==='error'&&!message.location().url?.endsWith('/api/me'))errors.push(message.text()); /* アカウント機能のない簡易サーバーでは /api/me が404になる（想定内） */if(message.text().startsWith('[sync]'))warnings.push(message.text())});
   // debugは公開状態を読むためだけに使用。Gameの変更メソッドはテストから呼ばない。
-  // 既存のdebug起動からメニューでタイトルへ戻り、以降は実際のUIで開始する。
+  // 既存のdebug起動からメニューでホーム（入口）へ戻り、以降は実際のUIで開始する。
   const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8';
   await page.goto(url.href);await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:60000});
   await page.evaluate(async()=>{(await import('./js/ui/config.js')).UI_CONFIG.speed=.03});
   await press('#menu-open');await press('#menu-title-btn');
-  assert.ok(await page.locator('#title').isVisible(),'タイトルを表示');await snapshot('title');
-  await press('#title-solo');await press('.level[data-level="hard"]');
+  assert.ok(await page.locator('#home').isVisible(),'ホームを表示');await snapshot('home');
+  await press('#home .home-mode[data-mode="solo"]');await press('#home [data-act="start"]');await press('.level[data-level="hard"]');
   await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:60000});
   await page.evaluate(()=>{window.__uiSmokeCards=0;const id=document.querySelector('#app').dataset.viewer;castlefield.game().on('cardPlayed',e=>{if(e.playerId===id)window.__uiSmokeCards++})});
   const deadline=Date.now()+180000;let deployed=false,ended=false;
