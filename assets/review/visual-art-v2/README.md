@@ -5,11 +5,6 @@ ImageGen で魔物の駒12枚、端が切れていたカード8枚、魔力の�
 - 絵の比較は [魔物12枚](beast.jpg)、[端の切れていた8枚](uncropped.jpg)、[マナ2枚](mana.jpg)、[天候の呪文](weather.jpg)。市松模様、暗色、明色の順に各背景で左右比較。
 - Chromiumの390×844で撮った実画面は [手札](hand-beast.jpg)、[マナの手札](hand-mana.jpg)、[天候の手札](hand-weather.jpg)、[図鑑詳細](guide-slime.jpg)、[長押し拡大](zoom-slime.jpg)。火の精霊王、ドラゴン、マナ2枚、天候の呪文の拡大も同じフォルダに収録した。
 
-## 魔物枠の仮表示
-
-[枠候補](frame-beast-candidate.png)は512×768の透過パレットPNG。レア枠を基準に窓・帯・メダルの位置と大きさを調整した。[素材比較](frame-beast.jpg)、[手札](hand-frame-preview.jpg)、[長押し拡大](zoom-frame-preview.jpg)の右側は候補をブラウザのリクエスト差し替えで仮表示したもの。現行の魔物用レイアウトでは、拡大すると絵の背景が左右のメダルに重なる。
-
-組み込みには `css/beast.css` の窓・帯・メダルの座標調整が必要。さらに `js/ui/build-card-relief.js` のPNGデコーダーはパレットPNGを `unsupported PNG type 3/8` で拒否する。パレットPNGに対応した上で、候補と同じ寸法の魔物枠用3Dマップ2枚を再生成する必要がある。ゲームが使用する枠の差し替えは保留した。
 
 ## 検証
 

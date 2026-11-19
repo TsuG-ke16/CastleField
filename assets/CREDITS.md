@@ -441,10 +441,6 @@ OpenAI ImageGen で生成。利用条件は OpenAI Terms of Use（生成出力�
 
 - `cards/card-weather-call.png` — 参照元 `cards/card-weather-call.png`（差し替え前）・`style-reference.png`、生成原本 `exec-bdce4c6e-7903-41c6-8a93-c889925eb861.png`。
 
-### 魔物の枠（レビュー候補）
-
-- `review/visual-art-v2/frame-beast-candidate.png` — 参照元 `cards/frame-beast.png`・`cards/frame-rare.png`・`style-reference.png`、生成原本 `exec-b00e3120-e842-4ecd-8bbe-10227b0c1586.png`。レア枠の窓・帯・メダル位置を基準に形状を調整し、512×768の透過パレットPNGに書き出しました。
-
 ## レアリティ枠と窓背景 v2（2026-11-19）
 
 OpenAI ImageGen を使用。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません。各生成に `style-reference.png`、`review/frame-v2/layout-guide.png` と同名の差し替え前の枠を参照しました。枠は描画の輪郭と材質を切り出し、共通座標に透過窓・丸・帯・台を組み込みました。描画部分は等比で処理し、枠は512×768のRGBA PNG、背景は512×512の不透明PNGです。
