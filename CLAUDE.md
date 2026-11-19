@@ -1174,7 +1174,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **毒は5ターンで治り、量は10まで**（`rules.poisonTurns`、仮：5／`rules.poisonMax`、仮：10）：兵士は進軍のたび、城は持ち主のターンの始めに、ダメージを受けるごとに残りが1減って 0 で治る。重ねがけは足し算（上限 `poisonMax`）で、残りターンは5に戻る。城の毒が期限で治るときは `castleCured`、兵士は `statusCleared`。`getState().players.pX.castlePoisonTurns`（城の毒の残り。永続なら `null`）。0 または省略なら従来どおり（永続・上限なし）
 - **コインのカードは1ターン1枚まで**（`rules.coinCardsPerTurn`、仮：1）：`gainCoins` が対象。出せないときの理由は「コインのカードは1ターンに1枚までです」。0 または省略なら無制限
 - **王の財宝（レジェンドのコイン）はデッキ編成で1枚まで**：`cards.json` のカードに `maxCopies`（1以上の整数）を書くと、レアリティの `maxCopies` より厳しい上限になる（`checkCostDeck`）
-- 画面（UI担当にお願い）：`js/ui/text.js` の城壁（`armorCastle`）と毒（`poisonEnemy`）の説明文は、まだ「次の自分のターンまで」「永続の毒」のまま。城壁の上限・毒の残りターンの表示も未対応
+- 画面：`js/ui/text.js` の城壁・毒の説明文を `armorMax` / `poisonTurns` / `poisonMax` に合わせた。城の毒の残りターンのバッジ表示は未対応
 - 確かめたこと：`node --test` は全部通る。`node tests/sim/run.js --games 300`：全組み合わせが決着。smart 同士は平均38.7手番・p1 勝率49%、smart vs random 85%
 
 ## 全体の設計（STEP 2〜5 の見通し）
