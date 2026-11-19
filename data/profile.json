@@ -1,0 +1,12 @@
+{
+  "icons": [
+    { "id": "infantry", "name": "歩兵", "image": "assets/units/infantry-blue.png" },
+    { "id": "spearman", "name": "槍兵", "image": "assets/units/spearman-blue.png" },
+    { "id": "knight", "name": "騎士", "image": "assets/units/knight-blue.png" },
+    { "id": "archer", "name": "弓兵", "image": "assets/units/archer-blue.png" },
+    { "id": "mage", "name": "魔法使い", "image": "assets/units/mage-blue.png" },
+    { "id": "hero", "name": "勇者", "image": "assets/units/hero-blue.png" }
+  ],
+  "defaultPrivacy": { "stats": "public", "history": "private", "decks": "private", "ranking": "public" },
+  "privacyLevels": ["public", "friends", "private"]
+}

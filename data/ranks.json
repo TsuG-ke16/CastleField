@@ -1,0 +1,22 @@
+{
+  "_note": "ランクの数値はすべて仮（正式に決まっていない）。ここを直してリロード（サーバー再起動）するだけで調整できる",
+  "initialMmr": 1000,
+  "placementMatches": 5,
+  "elo": { "k": 32, "placementK": 64, "scale": 400 },
+  "rp": { "win": 22, "loss": 18, "minGain": 10, "maxGain": 40, "minLoss": 8, "maxLoss": 30 },
+  "rpFromMmr": { "base": 800, "perMmr": 2, "max": 900 },
+  "tiers": [
+    { "id": "iron", "name": "Iron", "start": 0, "divisions": 3, "divisionRp": 100, "color": "#8b8f96" },
+    { "id": "bronze", "name": "Bronze", "start": 300, "divisions": 3, "divisionRp": 100, "color": "#b9783f" },
+    { "id": "silver", "name": "Silver", "start": 600, "divisions": 3, "divisionRp": 100, "color": "#c5ced8" },
+    { "id": "gold", "name": "Gold", "start": 900, "divisions": 3, "divisionRp": 100, "color": "#f0b92e" },
+    { "id": "platinum", "name": "Platinum", "start": 1200, "divisions": 3, "divisionRp": 100, "color": "#52c2b8" },
+    { "id": "diamond", "name": "Diamond", "start": 1500, "divisions": 3, "divisionRp": 100, "color": "#5aa3f0" },
+    { "id": "ascendant", "name": "Ascendant", "start": 1800, "divisions": 3, "divisionRp": 200, "color": "#58c78a" },
+    { "id": "immortal", "name": "Immortal", "start": 2400, "divisions": 0, "topN": 500, "color": "#d6404f" },
+    { "id": "radiant", "name": "Radiant", "start": 2400, "divisions": 0, "topN": 100, "color": "#ffe27a" }
+  ],
+  "matchmaking": { "baseRange": 100, "expandPerStep": 50, "stepMs": 10000, "maxRange": 800, "timeoutMs": 90000, "tickMs": 2000, "resultKeepMs": 21600000 },
+  "ranked": { "connectGraceMs": 60000, "disconnectGraceMs": 90000, "idleTurnMs": 180000 },
+  "pairLimit": { "windowMs": 86400000, "fullGains": 3, "halfUntil": 6 }
+}

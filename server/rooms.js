@@ -6,6 +6,7 @@
 //   → 試合 → 「もう1回」（同じ設定）か「部屋に戻る」（設定を変える・人が入れる）
 import { randomBytes } from 'node:crypto';
 import { Game, EVENT_TYPES, TEAM_IDS, MAX_TEAM_SIZE } from '../js/game/Game.js';
+import { randomUUID } from 'node:crypto';
 import { filterEventFor } from '../js/game/visibility.js';
 import { STRATEGIES } from '../js/game/strategies.js';
 import { checkCostDeck } from '../js/game/Setup.js';
@@ -13,6 +14,7 @@ import { checkCostDeck } from '../js/game/Setup.js';
 /** 試合中の操作（Game のメソッドに渡す） */
 const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense'];
 /** 部屋の操作（いつでも送れる。だめなときは理由を返す） */
+const RANKED_BLOCKED = ['start', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'rematch'];
 const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
 const ACTIONS = [...GAME_ACTIONS, ...ROOM_ACTIONS];
 /** 攻撃を受けた人（自分の番でなくても）が送れる操作 */
@@ -61,8 +63,18 @@ export class Room {
    * @param {() => () => number} makeRng 試合ごとに乱数を作る関数
    * @param {{ cpuDelayMs?: number }} [options] cpuDelayMs：CPU が1手ごとに待つ時間（0 ならすぐ動く。テスト用）
    */
-  constructor(roomId, data, makeRng, { cpuDelayMs = 700 } = {}) {
+  constructor(roomId, data, makeRng, { cpuDelayMs = 700, onMatchEnd = null, ranked = null, onRankedVoid = null, cosmeticsOf = null } = {}) {
+    /** アカウントの装備中の見た目（スキン）を、席に結びつける。相手にも見える */
+    this.cosmeticsOf = cosmeticsOf;
+    /** ランク戦の部屋なら { cfg, ... }。設定は固定（1対1・最初に城を落とした人の勝ち・コスト制）で、始める・設定を変える・もう1回はできない */
+    this.ranked = ranked;
+    this.onRankedVoid = onRankedVoid;
+    this.lastActionAt = Date.now();
+    this.watch = null;
     this.roomId = roomId;
+    /** 試合が決着したときに、サーバーが確定した結果を渡す（戦績・経験値の記録。Game や画面は関与しない） */
+    this.onMatchEnd = onMatchEnd;
+    this.matchMeta = null;
     this.data = data;
     this.makeRng = makeRng;
     this.cpuDelayMs = cpuDelayMs;
@@ -99,10 +111,12 @@ export class Room {
     return this.game !== null;
   }
 
-  join(name) {
+  join(name, userId = null) {
     if (this.game) return { ok: false, reason: 'この部屋は試合中です。終わって部屋に戻るまで待ってください' };
     if (this.seats.length >= this.capacity) return { ok: false, reason: 'この部屋はもう満員です' };
     const seat = this.addSeat({ name, token: randomBytes(16).toString('hex'), cpu: null });
+    seat.cosmetics = userId && this.cosmeticsOf ? this.cosmeticsOf(userId) : {};
+    seat.userId = userId; // ログイン中のアカウント（なければ null）。戦績の記録に使う
     if (!this.host) this.host = seat;
     this.lastActive = Date.now();
     this.broadcastRoom();
@@ -192,6 +206,16 @@ export class Room {
     this.cpuActedTurn = null;
     this.rematchVotes.clear();
     const game = this.game;
+    this.matchMeta = {
+      matchId: randomUUID(), startedAt: Date.now(),
+      seats: this.seats.map((s, i) => ({ seat: i, playerId: s.playerId, userId: s.userId ?? null, name: s.name, cpu: s.cpu ?? null, team: teams?.[i] ?? null, deckName: rules.deckMode === 'cost' ? (s.deckList ? 'マイデッキ' : s.costDeck) : null })),
+      deckMode: rules.deckMode, winCondition: rules.winCondition,
+    };
+    // ミッション用：試合のあいだの、合成した回数・魔物のとどめを、席ごとに数える（サーバーが見たゲームのイベントから）
+    this.matchMeta.stats = Object.fromEntries(this.seats.map((s) => [s.playerId, { fuses: 0, monsters: 0 }]));
+    game.on('cardsFused', (p) => { const st = this.matchMeta?.stats?.[p.playerId]; if (st && this.game === game) st.fuses += 1; });
+    game.on('monsterDefeated', (p) => { const st = this.matchMeta?.stats?.[p.playerId]; if (st && this.game === game) st.monsters += 1; });
+    game.on('gameOver', (payload) => this.finishMatch(game, payload));
     for (const type of EVENT_TYPES) {
       game.on(type, (payload) => {
         if (this.game !== game) return;
@@ -206,6 +230,24 @@ export class Room {
     this.broadcastRoom(); // started と、もう1回の投票を空に戻したことを知らせる
     this.broadcastState();
     this.runCpu();
+  }
+
+  /** 決着：確定した勝敗を、記録する側（戦績・経験値）へ渡す。失敗しても試合は止めない */
+  finishMatch(game, payload) {
+    const meta = this.matchMeta;
+    if (!this.onMatchEnd || !meta || this.game !== game) return;
+    try {
+      const seats = meta.seats.map((m) => {
+        const won = payload.winnerTeam ? m.team === payload.winnerTeam : m.playerId === payload.winner;
+        return { seat: m.seat, userId: m.userId, name: m.name, cpu: m.cpu, won, left: !!this.seats[m.seat]?.left, deckName: m.deckName, stats: meta.stats?.[m.playerId] ?? { fuses: 0, monsters: 0 } };
+      });
+      this.onMatchEnd({
+        matchId: meta.matchId, modeId: this.ranked?.modeId ?? 'kingdom', roomId: this.roomId, startedAt: meta.startedAt, endedAt: Date.now(),
+        turns: game.getState(null).turn, reason: payload.reason, ranked: !!this.ranked, deckMode: meta.deckMode, winCondition: meta.winCondition, seats,
+      });
+    } catch (err) {
+      console.error('match record', err);
+    }
   }
 
   /** つないだとき：部屋と状態を送る */
@@ -230,9 +272,13 @@ export class Room {
     if (typeof method !== 'string' || !ACTIONS.includes(method)) return { ok: false, reason: `"${method}" という操作はありません` };
     if (!Array.isArray(args)) return { ok: false, reason: 'args は配列で送ってください' };
     if (seat.cpu) return { ok: false, reason: 'CPU の席です' };
+    if (this.ranked && RANKED_BLOCKED.includes(method)) return { ok: false, reason: 'ランク戦では使えません' };
     switch (method) {
       case 'rematch': return this.voteRematch(seat);
-      case 'leave': return this.leave(seat);
+      case 'leave':
+        // ランク戦で抜けるのは降参と同じ（負け）。切断・抜けで負けを逃れられないようにする
+        if (this.ranked && this.game && this.game.phase !== 'gameOver') this.surrender(seat);
+        return this.leave(seat);
       case 'surrender': return this.surrender(seat);
       case 'start': return this.start(seat);
       case 'setRules': return this.setRules(seat, args[0]);
@@ -263,9 +309,56 @@ export class Room {
       console.error(err);
       result = { ok: false, reason: '操作の形が正しくありません' };
     }
+    if (result?.ok) this.lastActionAt = Date.now();
     this.broadcastState();
     this.runCpu();
     return result;
+  }
+
+  // ---------- ランク戦の見張り ----------
+
+  /**
+   * ランク戦：つながりが切れたまま戻らない人・手を打たない人を、降参にする（勝ち逃げ・負け逃れをさせない）。
+   * 最初から誰もつながなかったときは、勝敗をつけずに終わる（レートは変わらない）。
+   */
+  startRankedWatch() {
+    const cfg = this.ranked.cfg;
+    const born = Date.now();
+    this.lastActionAt = born;
+    this.watch = setInterval(() => this.checkRanked(cfg, born), this.ranked.checkMs ?? 5000);
+    this.watch.unref();
+  }
+
+  checkRanked(cfg, born) {
+    if (!this.game || this.game.phase === 'gameOver') return this.stopWatch();
+    const t = Date.now();
+    const away = [];
+    for (const seat of this.humanSeats) {
+      if (seat.clients.size > 0) { seat.lastSeen = t; seat.everConnected = true; continue; }
+      const since = seat.lastSeen ?? born;
+      if (t - since > (seat.everConnected ? cfg.disconnectGraceMs : cfg.connectGraceMs)) away.push(seat);
+    }
+    if (away.length === this.humanSeats.length) {
+      // 全員いない：勝敗はつけない
+      this.stopWatch();
+      this.voided = true;
+      this.onRankedVoid?.(this);
+      return undefined;
+    }
+    for (const seat of away) this.surrender(seat);
+    if (away.length === 0 && t - this.lastActionAt > cfg.idleTurnMs) {
+      // つながっているのに手を打たない（放置）
+      const g = this.game;
+      const pid = g.phase === 'defend' ? g.pending.defenderId : g.currentPlayer;
+      const seat = this.seatOf(pid);
+      if (seat && !seat.cpu) this.surrender(seat);
+    }
+    return undefined;
+  }
+
+  stopWatch() {
+    clearInterval(this.watch);
+    this.watch = null;
   }
 
   // ---------- チャットとスタンプ ----------
@@ -677,6 +770,7 @@ export class Room {
         playerId: s.playerId,
         name: s.name,
         connected: s.cpu ? true : s.clients.size > 0,
+        cosmetics: s.cosmetics ?? {},
         left: s.left,
         cpu: s.cpu,
         castle: s.castle,
@@ -690,6 +784,7 @@ export class Room {
       capacity: this.capacity,
       minPlayers: MIN_PLAYERS,
       started: this.started,
+      ranked: !!this.ranked,
       settings: { ...this.settings },
       choices: {
         winConditions: Object.entries(WIN_CONDITIONS).map(([id, name]) => ({ id, name })),
@@ -741,7 +836,8 @@ export class Lobby {
     this.nextRoom = 1;
   }
 
-  join(passphrase, name) {
+  join(passphrase, name, userId = null) {
+    if (typeof passphrase === 'string' && passphrase.startsWith('\u0000')) return { ok: false, reason: '合言葉が正しくありません' };
     if (typeof passphrase !== 'string' || passphrase.trim().length < 1 || passphrase.length > 32) {
       return { ok: false, reason: '合言葉は1〜32文字で入れてください' };
     }
@@ -762,13 +858,42 @@ export class Lobby {
       room = new Room(`r${this.nextRoom++}`, this.data, this.makeRng, this.options);
       this.rooms.set(key, room);
     }
-    return room.join(name.trim());
+    return room.join(name.trim(), userId);
+  }
+
+  /**
+   * ランクマッチが成立したときの部屋を、サーバーが作る（合言葉では入れない）。すぐ試合が始まる。
+   * @param {{ userId: string, name: string, deckList?: object|null }[]} users 席の順
+   */
+  createRankedRoom(users, ranked) {
+    const room = new Room(`r${this.nextRoom++}`, this.data, this.makeRng, { ...this.options, ranked });
+    room.settings = { winCondition: 'firstDestroy', deckMode: 'cost', teams: 'off' };
+    const seats = {};
+    for (const u of users) {
+      const r = room.join(u.name, u.userId);
+      const seat = room.seatByToken(r.token);
+      if (u.deckList) seat.deckList = u.deckList;
+      seats[u.userId] = { token: r.token, playerId: r.playerId };
+    }
+    this.rooms.set(`\u0000ranked:${room.roomId}:${randomBytes(8).toString('hex')}`, room);
+    room.startGame();
+    room.startRankedWatch();
+    return { room, roomId: room.roomId, matchId: room.matchMeta.matchId, seats };
   }
 
   drop(key) {
     this.rooms.get(key)?.stopCpu();
+    this.rooms.get(key)?.stopWatch?.();
     this.rooms.delete(key);
     return null;
+  }
+
+  /** このアカウントが、いま進行中の試合に席を持っているか（ランクの待ち行列に並ぶ前の確認） */
+  activeSeatOfUser(userId) {
+    for (const room of this.rooms.values()) {
+      if (room.game && room.game.phase !== 'gameOver' && room.seats.some((s) => s.userId === userId && !s.left)) return true;
+    }
+    return false;
   }
 
   findSeat(token) {

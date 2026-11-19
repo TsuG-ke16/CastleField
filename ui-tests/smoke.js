@@ -53,7 +53,7 @@ try{
   const context=await browser.newContext({viewport,reducedMotion:'reduce'});
   page=await context.newPage();page.setDefaultTimeout(10000);
   page.on('pageerror',error=>errors.push(error.message));
-  page.on('console',message=>{if(message.type()==='error')errors.push(message.text());if(message.text().startsWith('[sync]'))warnings.push(message.text())});
+  page.on('console',message=>{if(message.type()==='error'&&!message.location().url?.endsWith('/api/me'))errors.push(message.text()); /* アカウント機能のない簡易サーバーでは /api/me が404になる（想定内） */if(message.text().startsWith('[sync]'))warnings.push(message.text())});
   // debugは公開状態を読むためだけに使用。Gameの変更メソッドはテストから呼ばない。
   // 既存のdebug起動からメニューでタイトルへ戻り、以降は実際のUIで開始する。
   const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8';
