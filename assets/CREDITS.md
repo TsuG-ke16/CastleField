@@ -406,3 +406,12 @@ OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`asset
 ## 王国リーグのランク紋章（2026-11-19）
 
 - `ranks/rank-{iron,bronze,silver,gold,platinum,diamond,ascendant,immortal,radiant}.png` — OpenAI ImageGen、OpenAI Terms of Use（生成出力）。`style-reference.png` を参照、生成原本 `exec-94e3676c-e909-4979-8c5c-c776b8b38cf2.png` を切り出し。オリジナルの9図柄。
+
+## ショップ景品の専用イラスト（2026-11-19）
+
+OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`style-reference.png` を参照した各原本から切り出し。
+
+- `skins/unit-{crimson,forest,frost,royal,gold,shadow}.png` — `exec-4bdcaf7a-5a84-4efa-8c4d-f5478ea9aa43.png`
+- `skins/castle-{crimson,forest,frost,gold,shadow}.png` — `exec-3349807c-8033-4b8f-8f15-0c37d6e7968b.png`
+- `skins/icon-{paladin,giant,scout,sniper,sage,dragon-knight}.png` — `exec-9e898060-b01b-4dee-bfba-368947370196.png`
+- `skins/back-{crimson,forest,royal,gold}.png`、`skins/fx-{emerald,violet,azure,gold}.png`、`skins/win-{gold,sakura,aurora}.png`、`skins/title-{rookie,hunter,wall,lucky,legend}.png` — `exec-d9504ee8-43f0-4d05-91e1-b08c1c00f73d.png`

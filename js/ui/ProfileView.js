@@ -1,3 +1,4 @@
+import { skinArt } from './skinArt.js';
 // プロフィール画面：自分の情報・戦績・最近の対戦・アイコンと公開設定・レベル報酬の受け取り。
 // 値はすべてサーバーから受け取って表示する（ここで経験値や勝敗を変えることはできない）。文字は textContent で入れる。
 import { account } from './Account.js';
@@ -79,7 +80,7 @@ export class ProfileView {
     p('title').textContent = pf.title;
     p('lv').textContent = `Lv.${pf.level}`;
     if (homeJson?.icons) this.icons = homeJson.icons;
-    const iconSrc = pf.iconImage ?? (this.icons ?? []).find((i) => i.id === pf.icon)?.image;
+    const iconSrc = skinArt(pf.icon) ?? pf.iconImage ?? (this.icons ?? []).find((i) => i.id === pf.icon)?.image;
     const av = p('avatar'); av.replaceChildren();
     if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); }
     const lv = homeJson?.level;

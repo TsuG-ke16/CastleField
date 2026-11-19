@@ -1701,6 +1701,14 @@ async function showResult(winner) {
   if (won && !UI_CONFIG.reducedMotion) {
     el.result.classList.remove('celebration-done');
     anim.confetti(el.confetti, colors);
+    const winArt = cosmetics.winArt(winner);
+    if (winArt) {
+      const effect = new Image();
+      effect.src = winArt;
+      effect.alt = '';
+      effect.className = 'win-skin-art';
+      el.confetti.prepend(effect);
+    }
     el.confetti.lastElementChild?.addEventListener('animationend', () => {
       if (s === session && !el.result.hidden) stopCelebration();
     }, { once: true });
