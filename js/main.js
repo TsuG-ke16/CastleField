@@ -48,6 +48,7 @@ import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
 import { sound } from './ui/Sound.js';
 import { castleForecast } from './ui/Forecast.js';
+import { showVersus } from './ui/VersusIntro.js';
 import { castleArt, unitArt, imageArt, icon, colorOf, preloadAssets, isAssetReady } from './ui/art.js';
 import { playerName, setPlayerNames, reasonText, soldierInfo, monsterInfo, GAME_OVER_TEXT, GAME_OVER_TEXT_LOST } from './ui/text.js';
 
@@ -791,6 +792,8 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     renderer.renderAll(model);
     handView.mpCosts = model.mpCosts ?? {};
     handView.render(model.hand);
+    await showVersus(model.playerOrder.map((id) => id === cpu.humanId ? myVersusPlayer(id) : { playerId: id, name: playerName(id), cpu: cpu.level, cpuLabel: CPU_LEVELS[cpu.level]?.name }));
+    if (request !== startRequest) return; // 見ているあいだに、やめた・やり直した
     sound.play('turn');
     introBoard();
     anim.banner(cpu.humanId === model.playerOrder[0] ? '対戦開始！ あなたが先攻' : '対戦開始！ CPU が先攻', 1100);
@@ -1129,6 +1132,7 @@ async function showBatch(batch) {
     handView.render(model.hand);
     setBusy(true);
     if (st.turn <= 1 && st.phase !== 'gameOver') {
+      await showVersus(versusPlayers(st.playerOrder), { ranked: !!room?.ranked });
       sound.play('turn');
       introBoard();
       anim.banner(st.currentPlayer === viewerId ? '対戦開始！ あなたが先攻' : '対戦開始！ 相手が先攻', 1100);
@@ -1774,6 +1778,23 @@ async function showResult(winner) {
 }
 
 // ---------- 小物 ----------
+
+/** VS 画面に出す人（オンライン）：部屋の席の名前・プロフィール（アイコン・称号・レベル・ランク） */
+function versusPlayers(order) {
+  return order.map((id) => {
+    const p = room?.players?.find((x) => x.playerId === id);
+    return { playerId: id, name: p?.name ?? playerName(id), you: id === viewerId, cpu: p?.cpu ?? null,
+      cpuLabel: p?.cpu ? CPU_LEVELS[p.cpu]?.name : undefined, profile: p?.profile ?? null };
+  });
+}
+
+/** VS 画面に出す自分（ひとりで遊ぶ）：ホームで読んだアカウントの情報。なければ名前だけ */
+function myVersusPlayer(id) {
+  const d = home?.data;
+  const profile = d ? { icon: d.icon, iconImage: d.iconImage, title: d.title, level: d.level?.level,
+    rank: d.rank?.rank ?? null, placement: d.rank && !d.rank.placed ? { left: d.rank.placementLeft, total: d.rank.placementTotal } : null } : null;
+  return { playerId: id, name: d?.user?.displayName ?? playerName(id), you: true, profile };
+}
 
 /** 対戦のはじまり：城がせり上がり、道がのび、手札が配られる（css/motion.css の .match-intro） */
 function introBoard() {
