@@ -5,7 +5,9 @@
 
 import { sound } from './Sound.js';
 
-const BUBBLE_MS = 3500;   // 吹き出しが出ている時間
+const BUBBLE_MS = 7000;       // 吹き出しが出ている時間（最低）
+const BUBBLE_MS_PER_CHAR = 150; // 長い文字は、1文字ごとに足す
+const BUBBLE_MS_MAX = 12000;
 const LOG_MAX = 40;       // パネルに残す数
 
 export class ChatView {
@@ -229,7 +231,8 @@ export class ChatView {
       this.renderBadge();
       sound.play('chatNotice');
     }
-    if (bubble && this.panel.hidden) this.bubble(msg, stamp, mine);
+    // 自分の発言は、パネルを開いたまま送るので、開いていても吹き出しを出す
+    if (bubble && (this.panel.hidden || mine)) this.bubble(msg, stamp, mine);
   }
 
   bubble(msg, stamp, mine) {
@@ -243,7 +246,8 @@ export class ChatView {
     box.append(who, body);
     this.bubbles.appendChild(box);
     while (this.bubbles.children.length > 3) this.bubbles.firstElementChild.remove();
-    setTimeout(() => box.remove(), BUBBLE_MS);
+    const ms = Math.min(BUBBLE_MS_MAX, BUBBLE_MS + (stamp ? 0 : String(msg.text ?? '').length * BUBBLE_MS_PER_CHAR));
+    setTimeout(() => box.remove(), ms);
   }
 
   renderBadge() {

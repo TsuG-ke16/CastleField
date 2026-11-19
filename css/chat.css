@@ -118,7 +118,7 @@
 .chat-note:empty { display: none; }
 #app #chat-bubbles {
   position: absolute;
-  z-index: 60;
+  z-index: 75; /* パネル（70）を開いたままでも、自分の吹き出しが見えるように */
   top: var(--chat-bubbles-top, 68px);
   left: 8px;
   display: flex;
