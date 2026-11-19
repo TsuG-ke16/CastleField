@@ -131,6 +131,8 @@ export class Card {
           if (def.fuseTo !== undefined) throw new Error(`${where}: 魔物の兵士カード（monster）に fuseTo は書けません`);
         } else if (def.effect === 'wild' || rarities[def.rarity].special) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: 適応（effect: "wild"）やスペシャルのカードに fuseTo は書けません（合成の結果は相手のカードで決まる）`);
+        } else if (def.fuseTo === null) {
+          // fuseTo: null … 合成できないカード（はっきり書いたときだけ。書き忘れは下で弾く）
         } else if (next === undefined) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: いちばん上のレアリティのカードに fuseTo は書けません`);
         } else {

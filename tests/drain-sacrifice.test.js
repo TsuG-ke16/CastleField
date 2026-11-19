@@ -1,4 +1,4 @@
-// 追加カード（仕様書4章。スペシャル）：魔力強奪・命の簒奪・決死の砲撃・火薬庫のテスト。
+// 追加カード（仕様書4章。レア・合成しない）：魔力強奪・命の簒奪・決死の砲撃・火薬庫のテスト。
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/Game.js';
@@ -17,17 +17,37 @@ function pass(g) {
   }
 }
 
-test('cards.json：4枚はスペシャル（合成しない）。数値と MP のコスト', () => {
+test('cards.json：4枚はレアで、合成しない（fuseTo: null）。MP はレアのコスト（3）', () => {
   const c = loadJson('cards.json');
-  const expect = { manaRaid: ['drainMp', 4, undefined], lifeSteal: ['drainCastle', 8, 3], desperateShot: ['sacrificeAttack', 20, 3], powderKeg: ['damageAllSoldiers', 8, 3] };
-  for (const [type, [effect, amount, mpCost]] of Object.entries(expect)) {
+  const expect = { manaRaid: ['drainMp', 4], lifeSteal: ['drainCastle', 8], desperateShot: ['sacrificeAttack', 20], powderKeg: ['damageAllSoldiers', 8] };
+  for (const [type, [effect, amount]] of Object.entries(expect)) {
     assert.equal(c[type].effect, effect, type);
     assert.equal(c[type].amount, amount, type);
-    assert.equal(c[type].rarity, 'special', type);
-    assert.equal(c[type].fuseTo, undefined, type);
-    assert.equal(c[type].mpCost, mpCost, type);
+    assert.equal(c[type].rarity, 'rare', type);
+    assert.equal(c[type].fuseTo, null, type);
+    assert.equal(c[type].mpCost, undefined, type);
   }
   assert.equal(c.desperateShot.selfDamage, 6);
+});
+
+test('合成しないカード（fuseTo: null）：同じカード2枚でも、適応とでも合成できない', () => {
+  const g = make({ initialMp: 10, maxMp: 20 });
+  g.debugSetHand('p1', ['lifeSteal', 'lifeSteal', 'adapt']);
+  g.start();
+  const ids = g.getState('p1').players.p1.hand.filter((x) => x.type === 'lifeSteal').map((x) => x.cardId);
+  assert.equal(g.canFuse(ids[0], ids[1]).reason, 'このカードは合成できません');
+  assert.equal(g.canFuse(idOf(g, 'p1', 'adapt'), ids[0]).reason, 'このカードは合成できません');
+});
+
+test('剣の攻撃力：魔剣+4・聖剣+6・神剣+9', () => {
+  const c = loadJson('cards.json');
+  assert.deepEqual(['magicSword', 'holySword', 'godSword'].map((t) => c[t].attackBonus), [4, 6, 9]);
+});
+
+test('cards.json：fuseTo を書き忘れたレア（null でない）は例外', () => {
+  const { cards, rules } = buildData();
+  delete cards.lifeSteal.fuseTo;
+  assert.throws(() => new Game({ cards, rules, rarities: loadJson('rarities.json') }), /fuseTo/);
 });
 
 test('MPドレイン：相手の MP を奪って自分の MP にする。MP は使わない。相手の MP が0なら出せない', () => {
@@ -73,7 +93,7 @@ test('生命吸収：相手の城に与えたぶん自分の城を回復。城�
   assert.equal(g.players.p2.castle.hp, hp2 - 5);
   assert.equal(g.players.p1.castle.hp, 35);
   assert.deepEqual(log.map((e) => e.event), ['mpChanged', 'castleDamaged', 'castleHealed']);
-  assert.equal(log[0].delta, -3); // mpCost 3
+  assert.equal(log[0].delta, -3); // レア
   assert.equal(log[2].amount, 5);
 });
 
@@ -149,7 +169,7 @@ test('爆発：自分の兵士も相手の兵士も、場の兵士全員にダ�
 
 // ---------- 合成・高レアリティの機会を増やす調整（適応の排出率・排出率アップの強化の値段） ----------
 
-test('適応の排出率は約2.5%。解毒薬・天候の呪文は今までどおり（約0.33%・0.16%）', async () => {
+test('適応の排出率は約2.5%。解毒薬・天候の呪文は約0.33%・0.16%', async () => {
   const { dropRates } = await import('../js/game/Setup.js');
   const all = dropRates(loadJson("cards.json"), loadJson("rarities.json")); const rates = all.cards ?? all;
   assert.ok(Math.abs(rates.adapt - 2.5) < 0.05, String(rates.adapt));

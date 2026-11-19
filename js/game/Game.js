@@ -1432,7 +1432,12 @@ export class Game {
     // 適応は、どのカードとでも合成できる（相手のカードを2枚合成したのと同じ結果）
     const base = wildA ? b : a;
     if (!wildA && !wildB && a.type !== b.type) return fail('同じ種類のカードどうしでないと合成できません');
-    if (!base.def.fuseTo) return fail(base.def.monster ? '魔物の兵士は合成できません' : 'レジェンドはこれ以上合成できません');
+    if (!base.def.fuseTo) {
+      if (base.def.monster) return fail('魔物の兵士は合成できません');
+      // いちばん上のレアリティ（スペシャルを除く）だけ「これ以上」。ほかは合成しないカード（fuseTo: null・スペシャル）
+      const order = Object.keys(this.rarityDefs ?? {}).filter((id) => !this.rarityDefs[id].special);
+      return fail(base.def.rarity === order.at(-1) ? 'レジェンドはこれ以上合成できません' : 'このカードは合成できません');
+    }
     return { ok: true, player, a, b, base };
   }
 
