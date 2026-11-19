@@ -152,3 +152,43 @@ test('爆発：自分の兵士も相手の兵士も、場の兵士全員にダ�
   assert.equal(mine.hp, hpMine - 3);
   assert.equal(theirs.hp, hpTheirs - 3);
 });
+
+// ---------- 合成・高レアリティの機会を増やす調整（適応の排出率・排出率アップの強化の値段） ----------
+
+test('適応の排出率は約2.5%。解毒薬・天候の呪文は今までどおり（約0.33%・0.16%）', async () => {
+  const { dropRates } = await import('../js/game/Setup.js');
+  const all = dropRates(loadJson("cards.json"), loadJson("rarities.json")); const rates = all.cards ?? all;
+  assert.ok(Math.abs(rates.adapt - 2.5) < 0.05, String(rates.adapt));
+  assert.ok(Math.abs(rates.antidote - 0.328) < 0.01);
+  assert.ok(Math.abs(rates.weatherCall - 0.164) < 0.01);
+  const total = Object.values(loadJson('rarities.json')).reduce((a, r) => a + r.dropRate, 0);
+  assert.ok(Math.abs(total - 100) < 1e-9);
+});
+
+test('幸運の加護は買うたびに値段が上がる（3 → 5 → 8 → 11、4回まで）。運命の祈りは3', () => {
+  const { cards, rules } = buildData({ rules: { drawUntilHand: 0 } });
+  const g = new Game({ cards, rules, rng: seededRng(3), rarities: loadJson('rarities.json'), upgrades: loadJson('upgrades.json') });
+  g.start();
+  const p1 = g.players.p1;
+  p1.coins = 100;
+  assert.equal(g.getState('p1').players.p1.upgradeCosts.luck, 3);
+  const log = recordEvents(g, ['upgradeBought']);
+  const paid = [];
+  for (let i = 0; i < 4; i++) {
+    assert.equal(g.getState('p2').players.p1.upgradeCosts.permLuck, [3, 5, 8, 11][i]); // 相手からも見える
+    assert.equal(g.buyUpgrade('permLuck').ok, true);
+    paid.push(log.at(-1).cost);
+  }
+  assert.deepEqual(paid, [3, 5, 8, 11]);
+  assert.equal(p1.coins, 100 - 27);
+  assert.equal(g.canBuyUpgrade('permLuck').reason, 'この強化は1試合に4回までです');
+  p1.coins = 2;
+  assert.equal(g.canBuyUpgrade('luck').reason, 'コインが足りません（あと1枚）');
+});
+
+test('upgrades.json：costs の最初が cost と違うと例外', () => {
+  const { cards, rules } = buildData();
+  const upgrades = loadJson('upgrades.json');
+  upgrades.permLuck.costs = [4, 5];
+  assert.throws(() => new Game({ cards, rules, rarities: loadJson('rarities.json'), upgrades }), /costs の最初は cost と同じ/);
+});

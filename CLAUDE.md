@@ -1062,7 +1062,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 確かめたこと：`node tests/sim/run.js --games 300`：smart 同士は平均43手番・周回上限で終わる6.7%・p1 勝率52%（変更前とほぼ同じ）。**CPU の強さの順が変わった**（先攻のとき random に勝つ割合：rush 44%・defensive 30%・smart 89%。以前は rush < defensive < smart）。強い CPU がコインで強化を買うため smart が大きく伸びた。`CPU_LEVELS`（`js/main.js`）の割り当てを見直すか決める必要がある
 
 ### コインで排出率を上げる・出した枚数ぶん引く（人間に確認して決めた）
-- **運命の祈り**（`upgrades.json` の `luck`、効果 `boostDrops`。仮：コスト5・1試合2回まで）：買うと、自分の**次の `amount` 枚（仮：5）のドロー**が、山札からではなく、`fromRarity`（仮：レア）以上のレアリティの排出率を `boost` 倍（仮：4倍）にして引き当てたカードになる（山札は減らない）。効いているあいだは重ねて買えない。`rarities` を渡していないと買えない。`getState().players.pX.luck` は `{ draws, boost }` か `null`。CPU の smart 系は、とぎ石の次に買う
+- **運命の祈り**（`upgrades.json` の `luck`、効果 `boostDrops`。仮：コスト3・1試合2回まで）：買うと、自分の**次の `amount` 枚（仮：5）のドロー**が、山札からではなく、`fromRarity`（仮：レア）以上のレアリティの排出率を `boost` 倍（仮：4倍）にして引き当てたカードになる（山札は減らない）。効いているあいだは重ねて買えない。`rarities` を渡していないと買えない。`getState().players.pX.luck` は `{ draws, boost }` か `null`。CPU の smart 系は、とぎ石の次に買う
 - **出した枚数ぶん引く**：`rules.drawPerPlayed`（省略すると `false`。仮：`true`）。ターンの始めに引く枚数は `max(drawPerTurn（先攻の最初は firstTurnDraw）, drawUntilHand − 手札, 前のターンに出した枚数)`。合成は「出した」に数えない
 - 確かめたこと（`node tests/sim/run.js --games 200`）：全組み合わせが決着。城HP100のときは平均110手番で上限60周に近かった。城HP40にして解消（上の城HPの項）。**運命の祈りの強さは遊んで確かめる**
 
@@ -1076,7 +1076,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - CPU：MP が上限の半分以下になったら、ターンの最初にマナ回復のカードを出す（`pass` 以外）
 - **武器は重ねられる**：攻撃力は足し算（`weaponBonus` に足す）。属性は上書き（最後に持たせた武器。属性なしの鉄の剣なら属性が消える）。同じ武器も重ねられる。（以前は「1体に1つ」で、持ちかえると攻撃力が下がっていた）
 - **開幕のコインは 0**（`rules.initialCoins`）。**速さ**：歩兵2・騎兵3（騎兵は4→3。斥候騎兵は4のまま）
-- **排出率の恒久強化**（`upgrades.json` の `permLuck`、効果 `permanentLuck`：`amount`（買うたびに増える%）・`boost`・`fromRarity`。仮：コスト12・3回まで・15%ずつ・レア以上3倍）：買うと、その試合ずっと、ドローのたびに確率 `amount`% × 買った回数で、山札からではなく排出率（レア以上が `boost` 倍）で引き当てる（山札は減らない）。運命の祈り（次の5ドローだけ）とは別に重なる。`getState().players.pX.permLuck` は `{ chance, boost }` か `null`。CPU（`smart` 系）は、運命の祈りより先に買う
+- **排出率の恒久強化**（`upgrades.json` の `permLuck`、効果 `permanentLuck`：`amount`（買うたびに増える%）・`boost`・`fromRarity`。仮：コストは買うたびに 3 → 5 → 8 → 11（`costs`）・4回まで・15%ずつ・レア以上3倍）：買うと、その試合ずっと、ドローのたびに確率 `amount`% × 買った回数で、山札からではなく排出率（レア以上が `boost` 倍）で引き当てる（山札は減らない）。運命の祈り（次の5ドローだけ）とは別に重なる。`getState().players.pX.permLuck` は `{ chance, boost }` か `null`。CPU（`smart` 系）は、運命の祈りより先に買う
 - **魔物は後半ほど強く、放置するほど育つ**
   - 後半ほど強い魔物が出やすい：`rules.monsterLateBias`（仮：0.15）。魔物の出やすさ（`weight`）に × (1 + 値 × ごほうびの段階（コモン0〜レジェンド4）× `monsterFirstRound` を過ぎた周回の数)
   - 放置するとレアリティが上がる：`rules.monsterEvolveEvery`（仮：3。0 なら強くならない）周ごとに、魔物の HP・攻撃・城への攻撃が `rules.monsterEvolveMultiplier`（仮：1.2）倍（HP は増えたぶん回復）になり、ごほうびのレアリティが1つ上がる（レジェンドの上はない）。倒したときは、育ったあとのレアリティのごほうびが出る。イベント `monsterEvolved`。`getState().monsters[]` に `evolveCount`
@@ -1201,6 +1201,15 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 画面（UI担当にお願いしたいこと）：カードの絵（今は仮の絵）、`js/ui/text.js` の効果アイコン、`js/ui/DeckEditor.js` の分類、`js/ui/CardGuide.js` の MP を使う effect の一覧、`js/ui/Animations.js` の演出（爆発・吸収・捨て身）。説明文は `cards.json` の `description` に書いてある
 - 魔法スキン（`data/shop.json` の `fxskin_*`）を20枚ぶん足した（全魔法に1つずつ、のテストに合わせた）
 - 確かめたこと：`node --test` 全部通る（`tests/drain-sacrifice.test.js` を追加）、`node ui-tests/stories.js`・`node ui-tests/smoke.js` も通る
+
+## 合成・高レアリティの機会を増やす調整（人間の指示。仮）
+
+カードの種類が増えると、同じカードがそろいにくくなって合成の機会が減り、高レアリティを手に入れる機会も減る。そこで次のように変えた（数値は人間の指示）。
+- **適応の排出率を約0.33% → 約2.5%**（解毒薬・天候の呪文が増えて、スペシャル0.82%を3枚で分けていたため下がっていた）。`rarities.json` のスペシャルを 0.82 → 3、コモンを 50 → 47.82（合計100）。`cards.json` の適応の `weight` を 1 → 7.625（解毒薬 約0.33%・天候の呪文 約0.16% は今までどおり）
+- **排出率アップの強化を安くした**：運命の祈り 5 → 3コイン（2回まで）。幸運の加護 12 → **買うたびに 3 → 5 → 8 → 11コイン**（3回 → 4回まで）
+- `upgrades.json` の `costs`（省略できる）：買うたびの値段の配列（1回目・2回目…。回数が配列より多ければ最後の値段）。`costs[0]` は `cost` と同じにする（違うと起動時に例外）。`upgradeBought.cost` は実際に払った値段
+- `getState().players.pX.upgradeCosts`：`{ upgradeId: 次に買うときの値段 }`（だれからも見える）。画面は強化の値段をここから出す（`js/main.js` の `refreshUpgrades`・`js/ui/UpgradePanel.js`。UI担当の確認がほしい）
+- 確かめたこと：`node --test` 全部通る（排出率の恒久強化のテストを4回までに直した。適応のテストは、山札の並びが変わって相手が防御カードを持つようになったので、相手の手札を決めるようにした）
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

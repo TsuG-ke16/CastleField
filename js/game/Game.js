@@ -1305,6 +1305,14 @@ export class Game {
 
   // ================= コインと強化 =================
 
+  /** その人が次にその強化を買うときの値段。costs があれば、買った回数で上がる（足りなければ最後の値段） */
+  upgradeCostOf(player, upgradeId) {
+    const def = this.upgradeDefs[upgradeId];
+    if (!def.costs) return def.cost;
+    const bought = player.upgradesBought[upgradeId] ?? 0;
+    return def.costs[Math.min(bought, def.costs.length - 1)];
+  }
+
   /** 強化を買えるか（読むだけ） */
   canBuyUpgrade(upgradeId) {
     if (this.phase === 'ready') return fail('ゲームがまだ始まっていません');
@@ -1316,7 +1324,8 @@ export class Game {
     const player = this.players[this.currentPlayer];
     const bought = player.upgradesBought[upgradeId] ?? 0;
     if (def.limit !== undefined && bought >= def.limit) return fail(`この強化は1試合に${def.limit}回までです`);
-    if (player.coins < def.cost) return fail(`コインが足りません（あと${def.cost - player.coins}枚）`);
+    const cost = this.upgradeCostOf(player, upgradeId);
+    if (player.coins < cost) return fail(`コインが足りません（あと${cost - player.coins}枚）`);
     if (def.effect === 'repairCastle' && player.castle.isFull) return fail('城のHPが満タンです');
     const pile = this.pileOf(player.id);
     if (def.effect === 'drawCards' && pile.deck.length + pile.discard.length === 0) return fail('山札も捨て札もありません');
@@ -1343,9 +1352,10 @@ export class Game {
     if (!check.ok) return check;
     const def = this.upgradeDefs[upgradeId];
     const player = this.players[this.currentPlayer];
+    const cost = this.upgradeCostOf(player, upgradeId);
     player.upgradesBought[upgradeId] = (player.upgradesBought[upgradeId] ?? 0) + 1;
-    this.changeCoins(player, -def.cost, 'upgrade');
-    this.emit('upgradeBought', { playerId: player.id, upgradeId, cost: def.cost });
+    this.changeCoins(player, -cost, 'upgrade');
+    this.emit('upgradeBought', { playerId: player.id, upgradeId, cost });
     if (def.effect === 'repairCastle') {
       const healed = player.castle.heal(def.amount);
       this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
@@ -2556,6 +2566,8 @@ export class Game {
         deckCount: own ? pile.deck.length : null,
         discardCount: own ? pile.discard.length : null,
         exhaustedCount: own ? pile.exhausted.length : null,
+        // 強化の今の値段（costs で買うたびに上がる強化があるので、人ごと）
+        upgradeCosts: Object.fromEntries(Object.keys(this.upgradeDefs).map((u) => [u, this.upgradeCostOf(p, u)])),
       };
     }
     // いちばん上の山札の数：shared は共通の山札、own は viewer 本人の山札（viewer がいなければ null）

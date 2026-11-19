@@ -258,6 +258,7 @@ test('適応：どのカードとでも合成できて、相手のカードの1�
 test('適応：メインのカードを出したあとも、出せない理由は「合成に使うカード」のまま', () => {
   const game = make();
   game.debugSetHand('p1', ['adapt', 'fireball']);
+  game.debugSetHand('p2', ['infantry']); // 相手が防御カードを持っていると、防御を待って止まるので
   game.start();
   const hand = game.getState('p1').players.p1.hand;
   const id = (t) => hand.find((c) => c.type === t).cardId;

@@ -118,6 +118,13 @@ export function validateUpgrades(upgrades) {
       if (typeof def.boost !== 'number' || def.boost < 1) throw new Error(`${where}: boost は1以上の数にしてください`);
     }
     if (def.effect === 'gainCard' && typeof def.rarity !== 'string') throw new Error(`${where}: rarity（手に入るカードのレアリティ）を書いてください`);
+    if (def.costs !== undefined) {
+      // costs：買うたびに上がる値段（1回目・2回目…）。最初の値段は cost と同じにする
+      if (!Array.isArray(def.costs) || def.costs.length === 0 || !def.costs.every((c) => Number.isInteger(c) && c >= 1)) {
+        throw new Error(`${where}: costs（買うたびの値段）は1以上の整数の配列にしてください`);
+      }
+      if (def.costs[0] !== def.cost) throw new Error(`${where}: costs の最初は cost と同じにしてください`);
+    }
     if (def.limit !== undefined && (!Number.isInteger(def.limit) || def.limit < 1)) {
       throw new Error(`${where}: limit（1試合に買える回数）は1以上の整数にしてください（書かなければ何回でも）`);
     }
