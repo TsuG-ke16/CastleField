@@ -5,7 +5,7 @@ import { itemPreview } from './Cosmetics.js';
 import { skinArt } from './skinArt.js';
 
 const RARITY_NAME = { common: 'コモン', uncommon: 'アンコモン', rare: 'レア', epic: 'エピック', legendary: 'レジェンド' };
-const SLOT_ORDER = ['unit', 'castle', 'cardBack', 'attackFx', 'winFx', 'icon', 'iconFrame', 'title'];
+const SLOT_ORDER = ['unit', 'castle', 'charSkin', 'spellSkin', 'cardBack', 'attackFx', 'winFx', 'icon', 'iconFrame', 'title'];
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
 export class CollectionView {
@@ -88,25 +88,31 @@ export class CollectionView {
     return c;
   }
 
+  /** キャラ・魔法のスキンは、対象（キャラ・魔法）ごとにまとめて見出しをつける */
+  gridFor(items, body, fill) {
+    if (!['charSkin', 'spellSkin'].includes(this.slot)) { const grid = el('div', 'item-grid'); for (const it of items) fill(grid, it); body.append(grid); return; }
+    const by = new Map();
+    for (const it of items) { if (!by.has(it.target)) by.set(it.target, []); by.get(it.target).push(it); }
+    for (const [, list] of by) {
+      const sec = el('section', 'skin-group'); sec.append(el('h4', 'skin-group-title', list[0].targetName));
+      const grid = el('div', 'item-grid'); for (const it of list) fill(grid, it); sec.append(grid); body.append(sec);
+    }
+  }
+
   renderShop(body) {
     const items = this.shop.items.filter((i) => i.slot === this.slot);
-    const grid = el('div', 'item-grid');
-    for (const it of items) {
+    this.gridFor(items, body, (grid, it) => {
       if (it.owned) grid.append(this.card(it, { note: '持っています' }));
       else if (it.buyable) grid.append(this.card(it, { action: 'buy', label: `買う　${it.price}`, disabled: this.shop.coins < it.price, note: this.shop.coins < it.price ? `あと ${it.price - this.shop.coins} コイン` : '' }));
       else grid.append(this.card(it, { note: 'ガチャか交換で手に入ります' }));
-    }
-    body.append(grid, el('p', 'collection-note', 'コインは、対戦（オンライン）で遊ぶと増えます。景品は見た目だけで、対戦の強さには影響しません。'));
+    });
+    body.append(el('p', 'collection-note', 'コインは、対戦（オンライン）で遊ぶと増えます。景品は見た目だけで、対戦の強さには影響しません。'));
   }
 
   renderCollection(body) {
     const owned = this.shop.items.filter((i) => i.owned && i.slot === this.slot);
     if (!owned.length) body.append(el('p', 'collection-empty', 'まだ持っていません。ショップかガチャで手に入れましょう'));
-    const grid = el('div', 'item-grid');
-    const none = this.shop.items.find((i) => i.slot === this.slot && i.equipped);
-    for (const it of owned) grid.append(this.card(it, it.equipped ? { action: 'unequip', label: '外す', note: '装備中' } : { action: 'equip', label: '装備する' }));
-    body.append(grid);
-    void none;
+    this.gridFor(owned, body, (grid, it) => grid.append(this.card(it, it.equipped ? { action: 'unequip', label: '外す', note: '装備中' } : { action: 'equip', label: '装備する' })));
     body.append(el('p', 'collection-note', '装備したスキンは、対戦中に相手にも見えます。持っていないスキンは表示されません（標準の見た目になります）。'));
   }
 
@@ -178,7 +184,7 @@ export class CollectionView {
       if (r) { this.toast(`${r.item.name} を手に入れました`, 'info'); await this.reload(); }
     } else if (act === 'equip' || act === 'unequip') {
       const it = this.shop.items.find((i) => i.id === id);
-      const r = await this.call('POST', '/api/collection/equip', { slot: it.slot, itemId: act === 'equip' ? id : null });
+      const r = await this.call('POST', '/api/collection/equip', { slot: it.target ? `${it.slot}:${it.target}` : it.slot, itemId: act === 'equip' ? id : null });
       if (r) { this.onEquipChanged(r.equipped); await this.reload(); }
     } else if (act === 'exchange') {
       const r = await this.call('POST', '/api/gacha/exchange', { itemId: id });

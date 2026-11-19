@@ -54,6 +54,15 @@ export class Cosmetics {
     el.dataset.owner = pid;
     const pic = el.querySelector('.soldier-pic');
     if (!pic) return;
+    const own = this.spec(this.map(pid)?.[`charSkin:${el.dataset.unitType}`]); // このキャラだけのスキンが先
+    if (own) {
+      el.dataset.owner = pid;
+      setArt(pic, '--unit-art', null);
+      pic.removeAttribute('data-painted');
+      const cf = own.filters?.[el.dataset.color] ?? own.filter;
+      if (cf) pic.style.setProperty('--skin-filter', cf); else pic.style.removeProperty('--skin-filter');
+      return;
+    }
     const art = el.dataset.unitType === 'infantry' ? skinArt(this.map(pid)?.unit) : null;
     setArt(pic, '--unit-art', art);
     pic.toggleAttribute('data-painted', Boolean(art));
@@ -70,11 +79,20 @@ export class Cosmetics {
     else el.style.removeProperty('--castle-skin-filter');
   }
 
-  /** 魔法・射撃の演出（誰が撃ったかで色が変わる） */
-  styleFx(container, pid) {
+  /** 盤面の魔物：画面を見ている人のスキン（魔物は種類ごと。`beast_<種類>`） */
+  styleMonster(el, type) {
+    const pic = el.querySelector('.monster-pic');
+    if (!pic) return;
+    const own = this.spec(this.map(this.viewerId)?.[`charSkin:beast_${type}`]);
+    const f = own?.filters?.blue ?? own?.filter;
+    if (f) pic.style.setProperty('filter', f); else pic.style.removeProperty('filter');
+  }
+
+  /** 魔法・射撃の演出（誰が撃ったかで色が変わる。魔法ごとのスキンが先） */
+  styleFx(container, pid, cardType = null) {
     if (!container) return;
-    const it = this.equipped(pid, 'attackFx');
-    const art = skinArt(this.map(pid)?.attackFx);
+    const it = (cardType && this.equipped(pid, `spellSkin:${cardType}`)) || this.equipped(pid, 'attackFx');
+    const art = it?.slot === 'spellSkin' ? null : skinArt(this.map(pid)?.attackFx);
     setArt(container, '--attack-art', art);
     container.toggleAttribute('data-painted-fx', Boolean(art));
     if (it?.filter) container.style.setProperty('--fx-filter', it.filter); else container.style.removeProperty('--fx-filter');
@@ -97,6 +115,7 @@ export class Cosmetics {
   /** いま画面にある兵士・城に、装備を反映しなおす（装備や席の情報が変わったとき） */
   refresh(root) {
     for (const el of root.querySelectorAll('.soldier[data-owner]')) this.styleSoldier(el, el.dataset.owner);
+    for (const el of root.querySelectorAll('.monster[data-id]')) { const t = el.dataset.type; if (t) this.styleMonster(el, t); }
     for (const el of root.querySelectorAll('.castle[data-player-id]')) this.styleCastle(el, el.dataset.playerId);
     this.applyBack(root);
   }
@@ -115,7 +134,12 @@ export function itemPreview(it) {
       title.textContent = it.text ?? it.name;
       box.append(title);
     }
-  } else if (it.slot === 'unit') img('assets/units/knight-blue.png', it.filters?.blue);
+  } else if (it.slot === 'charSkin') {
+    const kebab = (s) => s.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
+    const beast = it.target.startsWith('beast_');
+    img(beast ? `assets/units/monster-${kebab(it.target.slice(6))}.png` : `assets/units/${kebab(it.target)}-blue.png`, it.filters?.blue ?? it.filter);
+  } else if (it.slot === 'spellSkin') img('assets/fx/fireball.png', it.filter);
+  else if (it.slot === 'unit') img('assets/units/knight-blue.png', it.filters?.blue);
   else if (it.slot === 'castle') img('assets/castles/castle-blue.png', it.filters?.blue);
   else if (it.slot === 'cardBack') img('assets/ui/card-back.png', it.filter);
   else if (it.slot === 'attackFx') img('assets/fx/fireball.png', it.filter);

@@ -153,6 +153,18 @@ the same layout for every tier (border, center emblem), the border and emblem ge
 - カード裏面：`skins/back-rank-<階級>.png`（512×768。`js/ui/skinArt.js` の一覧に足すと色替えの代わりに出る）
 - 絵を足すときは `assets/CREDITS.md` に出どころを書く
 
+### キャラ・魔法のスキン（`skins/char-<キャラ>.png`・`skins/fx-<魔法>.png`）
+
+全キャラ（兵士20・魔物12）と全魔法（53）に、専用スキンが1つずつある（`data/shop.json` の `skin_<キャラ>`・`fxskin_<魔法>`）。いまは色替えだけの仮の見た目。専用の絵は、元の絵と**同じ姿・同じ大きさ・同じ向き**で、色・服・飾り・光だけを変える。
+
+```
+[共通の指示文] The same character as the reference image (same pose, size and silhouette), redrawn as an alternate skin:
+[スキン名の雰囲気（例：黄金の鎧・氷の結晶・影の装束）], keep the face and role readable at small size, no text.
+```
+- キャラ：兵士は 256×256（青・オレンジの2色）、魔物は元の `monster-*.png` と同じ大きさ
+- 魔法：元の演出（`fx/`）と同じ大きさで、光・弾・雷の色と形だけ変える
+- 絵ができたら `js/ui/skinArt.js` の一覧に足して、色替えから差しかえる。足したら `assets/CREDITS.md` に出どころを書く
+
 ### 画面の部品（`ui/`）
 
 ```

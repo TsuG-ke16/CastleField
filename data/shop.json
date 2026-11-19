@@ -5,6 +5,8 @@
     "unit": "兵士スキン",
     "castle": "城の外観",
     "cardBack": "カード裏面",
+    "charSkin": "キャラのスキン",
+    "spellSkin": "魔法のスキン",
     "attackFx": "攻撃エフェクト",
     "winFx": "勝利演出",
     "icon": "プロフィールアイコン",
@@ -564,6 +566,1122 @@
       "rankReward": "champion",
       "desc": "シーズンでChampionに到達した人だけがもらえる、王者のカード裏面。",
       "filter": "hue-rotate(-30deg) saturate(2.4) brightness(1.2)"
+    },
+    "skin_infantry": {
+      "slot": "charSkin",
+      "target": "infantry",
+      "targetName": "歩兵",
+      "name": "歩兵・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "歩兵の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_spearman": {
+      "slot": "charSkin",
+      "target": "spearman",
+      "targetName": "槍兵",
+      "name": "槍兵・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "槍兵の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_heavy": {
+      "slot": "charSkin",
+      "target": "heavy",
+      "targetName": "重装兵",
+      "name": "重装兵・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "重装兵の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_giant": {
+      "slot": "charSkin",
+      "target": "giant",
+      "targetName": "巨人",
+      "name": "巨人・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "巨人の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_hero": {
+      "slot": "charSkin",
+      "target": "hero",
+      "targetName": "勇者",
+      "name": "勇者・紅蓮",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "勇者の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_scout": {
+      "slot": "charSkin",
+      "target": "scout",
+      "targetName": "斥候騎兵",
+      "name": "斥候騎兵・深緑",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "斥候騎兵の見た目が「深緑」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_cavalry": {
+      "slot": "charSkin",
+      "target": "cavalry",
+      "targetName": "騎兵",
+      "name": "騎兵・深緑",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "騎兵の見た目が「深緑」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_knight": {
+      "slot": "charSkin",
+      "target": "knight",
+      "targetName": "騎士",
+      "name": "騎士・深緑",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "騎士の見た目が「深緑」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_paladin": {
+      "slot": "charSkin",
+      "target": "paladin",
+      "targetName": "聖騎士",
+      "name": "聖騎士・深緑",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "聖騎士の見た目が「深緑」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragonKnight": {
+      "slot": "charSkin",
+      "target": "dragonKnight",
+      "targetName": "竜騎士",
+      "name": "竜騎士・深緑",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜騎士の見た目が「深緑」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_apprenticeArcher": {
+      "slot": "charSkin",
+      "target": "apprenticeArcher",
+      "targetName": "見習い弓兵",
+      "name": "見習い弓兵・氷結",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "見習い弓兵の見た目が「氷結」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_archer": {
+      "slot": "charSkin",
+      "target": "archer",
+      "targetName": "弓兵",
+      "name": "弓兵・氷結",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "弓兵の見た目が「氷結」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_longbowman": {
+      "slot": "charSkin",
+      "target": "longbowman",
+      "targetName": "長弓兵",
+      "name": "長弓兵・氷結",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "長弓兵の見た目が「氷結」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_sniper": {
+      "slot": "charSkin",
+      "target": "sniper",
+      "targetName": "狙撃手",
+      "name": "狙撃手・氷結",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "狙撃手の見た目が「氷結」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_skyArcher": {
+      "slot": "charSkin",
+      "target": "skyArcher",
+      "targetName": "天弓の射手",
+      "name": "天弓の射手・氷結",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "天弓の射手の見た目が「氷結」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(150deg) saturate(2.4) brightness(1.15) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_apprenticeMage": {
+      "slot": "charSkin",
+      "target": "apprenticeMage",
+      "targetName": "見習い魔法使い",
+      "name": "見習い魔法使い・王家",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "見習い魔法使いの見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_mage": {
+      "slot": "charSkin",
+      "target": "mage",
+      "targetName": "魔法使い",
+      "name": "魔法使い・王家",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔法使いの見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_sorcerer": {
+      "slot": "charSkin",
+      "target": "sorcerer",
+      "targetName": "魔導士",
+      "name": "魔導士・王家",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔導士の見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_archmage": {
+      "slot": "charSkin",
+      "target": "archmage",
+      "targetName": "大魔導士",
+      "name": "大魔導士・王家",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "大魔導士の見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_sage": {
+      "slot": "charSkin",
+      "target": "sage",
+      "targetName": "賢者",
+      "name": "賢者・王家",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "賢者の見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_slime": {
+      "slot": "charSkin",
+      "target": "beast_slime",
+      "targetName": "スライム（魔物）",
+      "name": "スライム（魔物）・黄金",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "スライム（魔物）の見た目が「黄金」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_goblin": {
+      "slot": "charSkin",
+      "target": "beast_goblin",
+      "targetName": "ゴブリン（魔物）",
+      "name": "ゴブリン（魔物）・黄金",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ゴブリン（魔物）の見た目が「黄金」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_dragon": {
+      "slot": "charSkin",
+      "target": "beast_dragon",
+      "targetName": "ドラゴン（魔物）",
+      "name": "ドラゴン（魔物）・影",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ドラゴン（魔物）の見た目が「影」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) contrast(1.3) brightness(.62) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) contrast(1.3) brightness(.62) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_bat": {
+      "slot": "charSkin",
+      "target": "beast_bat",
+      "targetName": "コウモリ（魔物）",
+      "name": "コウモリ（魔物）・深緑",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "コウモリ（魔物）の見た目が「深緑」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_skeleton": {
+      "slot": "charSkin",
+      "target": "beast_skeleton",
+      "targetName": "スケルトン（魔物）",
+      "name": "スケルトン（魔物）・深緑",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "スケルトン（魔物）の見た目が「深緑」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_golem": {
+      "slot": "charSkin",
+      "target": "beast_golem",
+      "targetName": "ゴーレム（魔物）",
+      "name": "ゴーレム（魔物）・深緑",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ゴーレム（魔物）の見た目が「深緑」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(85deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_demon": {
+      "slot": "charSkin",
+      "target": "beast_demon",
+      "targetName": "デーモン（魔物）",
+      "name": "デーモン（魔物）・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "デーモン（魔物）の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(-40deg) saturate(3.5) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_ghost": {
+      "slot": "charSkin",
+      "target": "beast_ghost",
+      "targetName": "ゴースト（魔物）",
+      "name": "ゴースト（魔物）・黄金",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ゴースト（魔物）の見た目が「黄金」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) saturate(3.4) brightness(1.2) contrast(1.05) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_treant": {
+      "slot": "charSkin",
+      "target": "beast_treant",
+      "targetName": "トレント（魔物）",
+      "name": "トレント（魔物）・王家",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "トレント（魔物）の見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_mimic": {
+      "slot": "charSkin",
+      "target": "beast_mimic",
+      "targetName": "ミミック（魔物）",
+      "name": "ミミック（魔物）・王家",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ミミック（魔物）の見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_vampire": {
+      "slot": "charSkin",
+      "target": "beast_vampire",
+      "targetName": "ヴァンパイア（魔物）",
+      "name": "ヴァンパイア（魔物）・王家",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ヴァンパイア（魔物）の見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_beast_demonKing": {
+      "slot": "charSkin",
+      "target": "beast_demonKing",
+      "targetName": "魔王（魔物）",
+      "name": "魔王（魔物）・王家",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔王（魔物）の見た目が「王家」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(240deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "fxskin_fireball": {
+      "slot": "spellSkin",
+      "target": "fireball",
+      "targetName": "ファイアボール",
+      "name": "ファイアボール・翠",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ファイアボールを使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_thunder": {
+      "slot": "spellSkin",
+      "target": "thunder",
+      "targetName": "サンダー",
+      "name": "サンダー・紫電",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "サンダーを使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_heal": {
+      "slot": "spellSkin",
+      "target": "heal",
+      "targetName": "ヒール",
+      "name": "ヒール・蒼",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ヒールを使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_poisonMist": {
+      "slot": "spellSkin",
+      "target": "poisonMist",
+      "targetName": "毒の霧",
+      "name": "毒の霧・黄金",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "毒の霧を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_frostBreath": {
+      "slot": "spellSkin",
+      "target": "frostBreath",
+      "targetName": "氷の息",
+      "name": "氷の息・翠",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "氷の息を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_meteor": {
+      "slot": "spellSkin",
+      "target": "meteor",
+      "targetName": "隕石",
+      "name": "隕石・紫電",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "隕石を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_bigThunder": {
+      "slot": "spellSkin",
+      "target": "bigThunder",
+      "targetName": "大雷",
+      "name": "大雷・蒼",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "大雷を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_venom": {
+      "slot": "spellSkin",
+      "target": "venom",
+      "targetName": "猛毒",
+      "name": "猛毒・黄金",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "猛毒を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_deepFreeze": {
+      "slot": "spellSkin",
+      "target": "deepFreeze",
+      "targetName": "大氷結",
+      "name": "大氷結・翠",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "大氷結を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_blessing": {
+      "slot": "spellSkin",
+      "target": "blessing",
+      "targetName": "天の恵み",
+      "name": "天の恵み・紫電",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "天の恵みを使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_prayer": {
+      "slot": "spellSkin",
+      "target": "prayer",
+      "targetName": "神頼み",
+      "name": "神頼み・蒼",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "神頼みを使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_thief": {
+      "slot": "spellSkin",
+      "target": "thief",
+      "targetName": "盗賊",
+      "name": "盗賊・黄金",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "盗賊を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_minorHeal": {
+      "slot": "spellSkin",
+      "target": "minorHeal",
+      "targetName": "小回復",
+      "name": "小回復・翠",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "小回復を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_toxicRain": {
+      "slot": "spellSkin",
+      "target": "toxicRain",
+      "targetName": "毒の雨",
+      "name": "毒の雨・紫電",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "毒の雨を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_glacier": {
+      "slot": "spellSkin",
+      "target": "glacier",
+      "targetName": "氷河",
+      "name": "氷河・蒼",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "氷河を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_bolt": {
+      "slot": "spellSkin",
+      "target": "bolt",
+      "targetName": "雷光",
+      "name": "雷光・黄金",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "雷光を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_fireSpirit": {
+      "slot": "spellSkin",
+      "target": "fireSpirit",
+      "targetName": "火の精霊",
+      "name": "火の精霊・翠",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "火の精霊を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_greatFireSpirit": {
+      "slot": "spellSkin",
+      "target": "greatFireSpirit",
+      "targetName": "火の大精霊",
+      "name": "火の大精霊・紫電",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "火の大精霊を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_waterSpirit": {
+      "slot": "spellSkin",
+      "target": "waterSpirit",
+      "targetName": "水の精霊",
+      "name": "水の精霊・蒼",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "水の精霊を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_greatWaterSpirit": {
+      "slot": "spellSkin",
+      "target": "greatWaterSpirit",
+      "targetName": "水の大精霊",
+      "name": "水の大精霊・黄金",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "水の大精霊を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_windSpirit": {
+      "slot": "spellSkin",
+      "target": "windSpirit",
+      "targetName": "風の精霊",
+      "name": "風の精霊・翠",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "風の精霊を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_greatWindSpirit": {
+      "slot": "spellSkin",
+      "target": "greatWindSpirit",
+      "targetName": "風の大精霊",
+      "name": "風の大精霊・紫電",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "風の大精霊を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_earthSpirit": {
+      "slot": "spellSkin",
+      "target": "earthSpirit",
+      "targetName": "土の精霊",
+      "name": "土の精霊・蒼",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "土の精霊を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_greatEarthSpirit": {
+      "slot": "spellSkin",
+      "target": "greatEarthSpirit",
+      "targetName": "土の大精霊",
+      "name": "土の大精霊・黄金",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "土の大精霊を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_inferno": {
+      "slot": "spellSkin",
+      "target": "inferno",
+      "targetName": "業火",
+      "name": "業火・翠",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "業火を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_starfall": {
+      "slot": "spellSkin",
+      "target": "starfall",
+      "targetName": "星降り",
+      "name": "星降り・紫電",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "星降りを使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_apocalypse": {
+      "slot": "spellSkin",
+      "target": "apocalypse",
+      "targetName": "終末の炎",
+      "name": "終末の炎・蒼",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "終末の炎を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_raijin": {
+      "slot": "spellSkin",
+      "target": "raijin",
+      "targetName": "雷神の怒り",
+      "name": "雷神の怒り・黄金",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "雷神の怒りを使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_judgment": {
+      "slot": "spellSkin",
+      "target": "judgment",
+      "targetName": "天罰",
+      "name": "天罰・翠",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "天罰を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_greatHeal": {
+      "slot": "spellSkin",
+      "target": "greatHeal",
+      "targetName": "大回復",
+      "name": "大回復・紫電",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "大回復を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_holyLight": {
+      "slot": "spellSkin",
+      "target": "holyLight",
+      "targetName": "聖なる光",
+      "name": "聖なる光・蒼",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "聖なる光を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_goddess": {
+      "slot": "spellSkin",
+      "target": "goddess",
+      "targetName": "女神の祝福",
+      "name": "女神の祝福・黄金",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "女神の祝福を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_deathMist": {
+      "slot": "spellSkin",
+      "target": "deathMist",
+      "targetName": "死の霧",
+      "name": "死の霧・翠",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "死の霧を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_plague": {
+      "slot": "spellSkin",
+      "target": "plague",
+      "targetName": "疫病",
+      "name": "疫病・紫電",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "疫病を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_absoluteZero": {
+      "slot": "spellSkin",
+      "target": "absoluteZero",
+      "targetName": "絶対零度",
+      "name": "絶対零度・蒼",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "絶対零度を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_frozenWorld": {
+      "slot": "spellSkin",
+      "target": "frozenWorld",
+      "targetName": "氷結世界",
+      "name": "氷結世界・黄金",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "氷結世界を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_fireKing": {
+      "slot": "spellSkin",
+      "target": "fireKing",
+      "targetName": "火の精霊王",
+      "name": "火の精霊王・翠",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "火の精霊王を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_waterKing": {
+      "slot": "spellSkin",
+      "target": "waterKing",
+      "targetName": "水の精霊王",
+      "name": "水の精霊王・紫電",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "水の精霊王を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_windKing": {
+      "slot": "spellSkin",
+      "target": "windKing",
+      "targetName": "風の精霊王",
+      "name": "風の精霊王・蒼",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "風の精霊王を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_earthKing": {
+      "slot": "spellSkin",
+      "target": "earthKing",
+      "targetName": "土の精霊王",
+      "name": "土の精霊王・黄金",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "土の精霊王を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_adapt": {
+      "slot": "spellSkin",
+      "target": "adapt",
+      "targetName": "適応",
+      "name": "適応・翠",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "適応を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_coinPouch": {
+      "slot": "spellSkin",
+      "target": "coinPouch",
+      "targetName": "小銭袋",
+      "name": "小銭袋・紫電",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "小銭袋を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_goldCoin": {
+      "slot": "spellSkin",
+      "target": "goldCoin",
+      "targetName": "金貨",
+      "name": "金貨・蒼",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "金貨を使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_treasure": {
+      "slot": "spellSkin",
+      "target": "treasure",
+      "targetName": "財宝",
+      "name": "財宝・黄金",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "財宝を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_goldVein": {
+      "slot": "spellSkin",
+      "target": "goldVein",
+      "targetName": "金脈",
+      "name": "金脈・翠",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "金脈を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_kingTreasure": {
+      "slot": "spellSkin",
+      "target": "kingTreasure",
+      "targetName": "王の財宝",
+      "name": "王の財宝・紫電",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "王の財宝を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_manaShard": {
+      "slot": "spellSkin",
+      "target": "manaShard",
+      "targetName": "魔力のかけら",
+      "name": "魔力のかけら・蒼",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔力のかけらを使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_manaDrop": {
+      "slot": "spellSkin",
+      "target": "manaDrop",
+      "targetName": "魔力のしずく",
+      "name": "魔力のしずく・黄金",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔力のしずくを使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_manaCrystal": {
+      "slot": "spellSkin",
+      "target": "manaCrystal",
+      "targetName": "魔力の水晶",
+      "name": "魔力の水晶・翠",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔力の水晶を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
+    },
+    "fxskin_manaSpring": {
+      "slot": "spellSkin",
+      "target": "manaSpring",
+      "targetName": "魔力の泉",
+      "name": "魔力の泉・紫電",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "魔力の泉を使うときの光が「紫電」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(200deg) saturate(1.2)"
+    },
+    "fxskin_worldTreeDew": {
+      "slot": "spellSkin",
+      "target": "worldTreeDew",
+      "targetName": "世界樹のしずく",
+      "name": "世界樹のしずく・蒼",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "世界樹のしずくを使うときの光が「蒼」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg)"
+    },
+    "fxskin_antidote": {
+      "slot": "spellSkin",
+      "target": "antidote",
+      "targetName": "解毒薬",
+      "name": "解毒薬・黄金",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "解毒薬を使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_weatherCall": {
+      "slot": "spellSkin",
+      "target": "weatherCall",
+      "targetName": "天候の呪文",
+      "name": "天候の呪文・翠",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "天候の呪文を使うときの光が「翠」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg)"
     }
   }
 }

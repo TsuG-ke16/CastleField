@@ -27,3 +27,6 @@
 /* 景品の見本（所持品・受け取り画面） */
 .item-preview.slot-iconFrame { display: inline-grid; place-items: center; width: 64px; height: 64px; }
 .item-preview.slot-iconFrame i { display: block; width: 44px; height: 44px; border-radius: 50%; }
+/* キャラ・魔法のスキン：対象ごとの見出し */
+.skin-group { margin: 10px 0 4px; }
+.skin-group-title { margin: 0 0 4px; font-size: 14px; color: #5a3a14; }
