@@ -186,6 +186,7 @@ export class Home {
     const iconSrc = profileArt(d?.icon, d?.iconImage ?? d?.icons?.find((i) => i.id === d.icon)?.image);
     const av = this.part('avatar');
     av.replaceChildren();
+    if (d?.iconFrame) av.dataset.frame = d.iconFrame; else delete av.dataset.frame;
     if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); } else av.textContent = [...(u?.displayName ?? '?')][0];
     this.part('coins').querySelector('b').textContent = String(d?.coins ?? 0);
     this.part('guest').hidden = u?.kind !== 'guest';

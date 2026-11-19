@@ -149,7 +149,7 @@ export class Progress {
   profileRow(userId) {
     const row = this.db.get('SELECT icon, title FROM user_profiles WHERE user_id = ?', userId) ?? { icon: this.profileCfg.icons[0].id, title: null };
     const eq = this.economy?.equippedOf(userId) ?? {};
-    return { icon: eq.icon ?? row.icon, title: eq.title ? this.economy.item(eq.title)?.text ?? row.title : row.title };
+    return { icon: eq.icon ?? row.icon, iconFrame: eq.iconFrame ?? null, title: eq.title ? this.economy.item(eq.title)?.text ?? row.title : row.title };
   }
 
   /** アイコンの id から画像（無料のアイコンと、ショップのアイコン） */
@@ -200,7 +200,7 @@ export class Progress {
     const lv = this.levelInfo(this.getXp(userId));
     const prow = this.profileRow(userId);
     const out = {
-      userId, displayName: u.displayName, kind: u.kind, icon: prow.icon, iconImage: this.iconImage(prow.icon), title: prow.title ?? this.titleFor(lv.level),
+      userId, displayName: u.displayName, kind: u.kind, icon: prow.icon, iconImage: this.iconImage(prow.icon), iconFrame: prow.iconFrame, title: prow.title ?? this.titleFor(lv.level),
       level: lv.level, rank: this.rankSummary(userId, u), bestRank: u.kind === 'member' ? this.ranking?.bestRank(userId) ?? null : null, createdAt: u.createdAt, self,
       equipped: null /* Phase 5：装備中スキン */,
     };
@@ -224,7 +224,7 @@ export class Progress {
     const prow = this.profileRow(userId);
     const d = this.accounts.getDecks(userId);
     return {
-      user: u, icon: prow.icon, title: prow.title ?? this.titleFor(lv.level), level: lv, coins: this.getCoins(userId),
+      user: u, icon: prow.icon, iconFrame: prow.iconFrame, title: prow.title ?? this.titleFor(lv.level), level: lv, coins: this.getCoins(userId),
       rank: this.rankSummary(userId, u), season: this.ranking ? this.ranking.seasonAt() : null,
       deck: d.slots[d.active] ? { slot: d.active, name: d.slots[d.active].name } : null,
       stats: this.stats(userId), rewardsAvailable: this.availableRewards(userId).length,

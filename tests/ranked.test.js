@@ -65,17 +65,16 @@ test('MMR：同じ強さなら勝者 +32・敗者 −32（認定戦）。強い�
   assert.ok(ranking.entry(strong).rp < 1000 - 18);
 });
 
-test('ランクの表示：階級・ディビジョンの境目。Immortal・Radiant は順位で決まる', () => {
+test('ランクの表示：階級・ディビジョンの境目。Master・Champion は順位で決まる', () => {
   const { ranking } = setup();
   const label = (rp, pos) => ranking.displayRank(rp, pos).divisionLabel;
   assert.equal(label(0), 'Iron I'); assert.equal(label(99), 'Iron I'); assert.equal(label(100), 'Iron II'); assert.equal(label(300), 'Bronze I');
   assert.equal(label(899), 'Silver III'); assert.equal(label(900), 'Gold I'); assert.equal(label(1799), 'Diamond III');
-  assert.equal(label(1800), 'Ascendant I'); assert.equal(label(2000), 'Ascendant II'); assert.equal(label(2399), 'Ascendant III');
-  assert.equal(label(2399 + 1, 800), 'Ascendant III'); // 順位が足りない
-  assert.equal(label(2500, 300), 'Immortal'); assert.equal(label(2500, 50), 'Radiant');
+  assert.equal(label(1800, 800), 'Diamond III'); // 順位が足りない
+  assert.equal(label(2500, 300), 'Master'); assert.equal(label(2500, 50), 'Champion');
   const r = ranking.displayRank(150);
   assert.deepEqual([r.rpIntoDivision, r.rpForNext], [50, 100]);
-  assert.equal(ranking.cfg.tiers.length, 9);
+  assert.equal(ranking.cfg.tiers.length, 8);
 });
 
 test('昇格・降格：RP がまたぐと rank が変わり、RP は 0 より下がらない', () => {

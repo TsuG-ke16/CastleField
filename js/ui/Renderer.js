@@ -851,6 +851,7 @@ export class Renderer {
     el.className = 'monster';
     el.dataset.id = st.monsterId;
     el.dataset.motion = monsterMotion(st.type);
+    el.dataset.type = st.type;
     el.tabIndex=0;el.setAttribute('role','button');
     if (appear) el.classList.add('appear');
     el.innerHTML = '<div class="monster-token"><div class="monster-pic"></div>' +
@@ -858,6 +859,7 @@ export class Renderer {
       '<div class="monster-hp meter health-meter" role="meter"><i class="meter-fill health-lag"></i><i class="meter-fill health-fill"></i><span class="monster-hp-text" aria-hidden="true"></span></div>' +
       `<div class="monster-stats"><span class="st atk">${icon('sword')}<b></b></span></div>`;
     el.querySelector('.monster-pic').innerHTML = monsterArt(st.type, def.name ?? st.type);
+    this.cosmetics?.styleMonster(el, st.type);
     el.style.top = `${((this.rowOfSquare(st.square) + 0.5) / this.laneLength) * 100}%`;
     el.style.left = `${this.laneCenter(this.laneOf(st.roadId))}%`;
     if (st.roadId === 'plaza') { el.style.top = '50%'; el.style.left = '50%'; }
