@@ -233,3 +233,7 @@ Fantasy mobile game UI element, [内容], cartoon style, transparent background,
 
 - カードの枠（`frame-*.png`）は、絵の窓・名前の帯・左右のメダルの位置を `js/ui/config.js` の `card.layout` に合わせる（窓：左 12%・上 13%・幅 76%・高さ 50%、名前の帯：上から 75% を中心に高さ 14%、メダル：左右とも上から 10%・横 14% と 86%）。位置が違う枠を作ったら、`card.layout` の数値を直す
 - 背景（`bg/board.png`）の飛び石は、画面のマスとぴったり合わなくてよい。マスの位置は `js/ui/config.js` の `board.road` で背景に合わせる
+
+### カード裏のスキンを3Dにする手順（拡大表示で裏を見たとき）
+- 絵は 512×768、背景が透明の PNG（カードの形がそのまま絵の形）。置き場所は `assets/skins/back-<名前>.png`（`js/ui/skinArt.js` の一覧に足す）
+- 手前に浮かせる部分（金の飾り・紋章）の形を切り抜いたマスク `assets/skins/back-<名前>-raised.png`（同じ大きさ。アルファが形）を一緒に置き、`skinArt.js` の `raised` の一覧に足す。マスクがない裏は、浮かない（平らな絵＋つやの光だけ）

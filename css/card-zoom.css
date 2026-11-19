@@ -171,14 +171,27 @@
   transform: translateZ(calc(var(--depth) * -1)) rotateY(180deg);
 }
 .zoom-back-img { width: 100%; height: 100%; object-fit: fill; display: block; scale: 1.055; filter: var(--back-filter, none); }
-#app[data-painted-back] .zoom-back-img { content: var(--back-art); object-fit: contain; scale: 1; }
+#app[data-painted-back] .zoom-back-img { content: var(--back-art); object-fit: fill; scale: 1; }
+/* 絵のある裏は、絵の形がそのままカードの形（裏の地の色を敷かない） */
+#app[data-painted-back] .card-3d > .zoom-back { background: transparent; }
 .zoom-back-shade { background: rgb(12 16 24 / var(--face-shade, 0)); }
 .card-3d .zoom-back > .zoom-foil {
   --foil: linear-gradient(122deg, transparent 32%, #a6d6ee52 45%, #fcebc688 50%, #d6bbf35c 55%, transparent 68%);
   opacity: .24;
 }
+/* 裏面の飾りを浮かせる層（裏のスキンに -raised 地図があるときだけ）。裏と同じ枠・同じ絵を、飾りの形で切り抜いて手前へ */
+.card-3d > .zoom-back-raised { display: none; }
+#app[data-painted-back][data-back-raised] .card-3d > .zoom-back-raised {
+  position: absolute; inset: var(--edge-inset-top) var(--edge-inset-x) var(--edge-inset-bottom); display: block; pointer-events: none;
+  backface-visibility: hidden; visibility: hidden;
+  background: var(--back-art) 0 0 / 100% 100% no-repeat;
+  -webkit-mask: var(--back-raised) 0 0 / 100% 100% no-repeat; mask: var(--back-raised) 0 0 / 100% 100% no-repeat;
+  transform: translateZ(calc(var(--depth) * -1 - var(--card-unit) * .012)) rotateY(180deg);
+  filter: drop-shadow(0 0 1px rgb(30 12 4 / .6));
+}
 .card-3d.zoom-flipped > .zoom-back { visibility: visible; }
-.card-3d.zoom-flipped > :not(.zoom-back, .zoom-edge) { visibility: hidden !important; }
+.card-3d.zoom-flipped > .zoom-back-raised { visibility: visible !important; }
+.card-3d.zoom-flipped > :not(.zoom-back, .zoom-back-raised, .zoom-edge) { visibility: hidden !important; }
 /* なぞって回すとき、文字・画像の範囲選択が始まらないように（選択された画像は青くかぶって見える） */
 .zoom-stage, .zoom-stage * { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .zoom-reset { margin: 2px 0 0; padding: 6px 14px; border-radius: 999px; border: 1px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 13px; }

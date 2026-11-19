@@ -106,6 +106,8 @@ export function createCard3D(card, { rarityColor, shadow, quality = 'auto' } = {
   backImg.draggable = false;
   back.append(backImg);
   add(back, 'zoom-back-shade');
+  // 裏面の金の飾り・紋章：裏のスキンに地図があるときだけ、別の層にして手前に浮かせる（css/card-zoom.css）
+  add(card, 'zoom-back-raised');
   add(back, 'zoom-sheen');
   add(back, 'foil-sheet zoom-foil');
   let raised = null;

@@ -2,7 +2,7 @@
 // - 景品の中身は data/shop.json（サーバーと同じ一覧）。専用画像がない部位は既存の色替えを使う。
 // - 対戦中は、部屋の席ごとの装備（サーバーが決めた、その人が持っているものだけ）を使う。ひとりで遊ぶ・同じ端末では、自分の装備を使う
 // - 見た目だけで、ゲームの強さ・ルールには関わらない
-import { skinArt } from './skinArt.js';
+import { skinArt, skinRaised } from './skinArt.js';
 
 function setArt(el, property, path) {
   if (path) el.style.setProperty(property, `url("${new URL(path, document.baseURI)}")`);
@@ -108,6 +108,8 @@ export class Cosmetics {
     const it = this.spec(id);
     const art = skinArt(id);
     setArt(app, '--back-art', art);
+    setArt(app, '--back-raised', skinRaised(id));
+    app.toggleAttribute('data-back-raised', Boolean(art && skinRaised(id)));
     app.toggleAttribute('data-painted-back', Boolean(art));
     if (it?.filter && !art) app.style.setProperty('--back-filter', it.filter); else app.style.removeProperty('--back-filter');
   }
