@@ -395,3 +395,10 @@ OpenAI の画像生成ツールで `assets/style-reference.png` と STYLE.md の
 | `ui/stamps/sorry.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `ui/stamps/gg.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
 | `ui/stamps/again.png` | OpenAI画像生成（見本を参照） | 上記OpenAI規約・AI生成 | 2026-11-18 |
+
+## オンラインホーム（2026-11-19）
+
+OpenAI ImageGen。利用条件は OpenAI Terms of Use（生成出力）。`assets/style-reference.png` を参照。
+
+- `bg/home-castle.png` — `exec-e7fe433a-71f4-4f10-9cff-c8560bdfe4fd.png` を縮小・圧縮。城、空、森を含む背景。
+- `ui/home/{rank,casual,ranking,deck,catalog,skin,friend,profile,shop,gacha,mission,settings}.png` — `exec-a80be6be-5768-4b8b-846e-2f0575b9c42a.png` から個別に切り出した透過PNG。

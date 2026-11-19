@@ -334,6 +334,7 @@ async function boot() {
     onCatalog: () => $('title-catalog').click(),
     onSettings: () => settings.open(),
     onProfile: () => profileView.open(),
+    onAccount: () => accountPanel.open(),
     onRanked: () => rankedView.open(),
     onRanking: () => rankingView.open(),
     onFriends: () => socialView.open(),
