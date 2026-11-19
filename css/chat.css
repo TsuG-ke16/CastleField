@@ -3,8 +3,8 @@
 #chat-open[data-unread]:not([data-unread=""])::after, .room-chat-btn[data-unread]:not([data-unread=""])::after {
   content: attr(data-unread);
   position: absolute;
-  top: -11px;
-  right: -9px;
+  top: -10px;
+  right: -28px;
   left: auto;
   inset-inline-start: auto;
   width: 26px;
