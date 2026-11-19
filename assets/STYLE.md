@@ -99,6 +99,41 @@ small round medallion slots in the top-left and top-right corners. No text.
 - 兵士：Sturdy wooden frame with metal corner rivets
 - 魔法：Lavender magic scroll frame with small gold stars
 
+### 魔物のカード（ルビー色。`cards/frame-beast.png`・`cards/window-beast.png`）
+
+魔物の駒のカードは、**「魔物＝ビースト＝赤」なので、ルビーのような赤い宝石の見た目**にする（いまは翡翠色＝緑。人間の指示で作り替え）。枠と窓の2枚。窓・帯・メダルの位置は、いまの `frame-beast.png` と同じにする（`js/ui/config.js` の `card.layout` を変えなくてすむように）。
+
+```
+[共通の指示文] Empty card frame for a fantasy card game, 2:3 portrait, 512x768, transparent background.
+Ruby-red beast card: the frame looks carved from a deep crimson ruby with gold trim,
+faceted red gemstones set at the top and in the corners, a gold paw-print medallion at the top center,
+dark wine-red carved wood-and-crystal border, sharp claw-like ornaments, a faint glowing red light from the gems.
+Square window in the upper half for an illustration, blank cream banner area below for a name,
+small round medallion slots in the top-left and top-right corners. No text.
+```
+- `cards/frame-beast.png`（512×768、透過）：上の指示文。いまの緑の枠と同じ配置で、色だけでなく**宝石らしい面の反射・金のふち・爪の飾り**で「ルビー」だと分かるようにする
+- `cards/window-beast.png`（512×512。絵の窓の背景。不透明）：
+
+```
+[共通の指示文] A square background for a card illustration window, 512x512,
+deep ruby-red glowing mist with dark crimson crystal shards and faint ember sparkles at the edges,
+bright soft red-orange glow in the center, the center area plain and empty, no text, no characters.
+```
+- 絵ができたら：`assets/CREDITS.md` に出どころを書き、`node js/ui/build-card-relief.js` で `cards/relief/frame-beast-*.png` を作り直す（先に `js/ui/build-card-relief.js` の `beast` の `organic` / `gemHue` を緑（70〜140・120〜170）から赤（335〜15）に直す）。画面側の緑の色（`css/beast.css` の枠・駒の影・仲間になる演出の `recruit-*`・`.beast-insignia` の `#1f624e` など）も赤に直す。最後に `node js/ui/build-precache.js` を回す
+- 魔物そのものの絵（`cards/card-beast-<魔物>.png`、`units/monster-<魔物>.png`）は、いまのまま使う
+
+### 解毒薬の絵（`cards/card-antidote.png`、1:1）
+いまは仮の絵（`js/ui/art.js` の `antidote`）が出ている。カードの絵と同じ共通の指示文で作る：
+
+```
+Square card illustration for a fantasy card game, a small round glass potion bottle with a cork stopper
+filled with glowing green antidote liquid, a few green sparkles and a tiny white cross-shaped leaf sprig floating around it,
+a faint curl of purple poison smoke being dispelled behind it, centered,
+simple soft background vignette, no text, no frame.
+```
+- 解毒薬はスペシャル（虹色の枠）のカードなので、絵は**緑の薬びん**で、枠から浮かないようにする
+- 絵ができたら `assets/cards/card-antidote.png` に置き、`assets/CREDITS.md` に出どころを書く。画像の一覧（`js/ui/art.js` の `CARD_TYPES`）に `antidote` が入っているか確かめ、`node js/ui/build-precache.js` を回す
+
 ### 演出（`fx/`）
 
 ```
