@@ -61,6 +61,28 @@ const CARD_MODELS = {
     },
     foil: null,
   },
+  special: {
+    path: 'assets/models/card-special.glb',
+    frameFile: 'frame-special.png',
+    backBase: '#452b5e',
+    rimLight: { color: '#e6a8ff', intensity: 1.15, position: [-2.4, -1.6, 2.2] },
+    gem: {
+      ior: 2.42,
+      attenuationColor: '#d9a8ff',
+      attenuationDistance: 0.08,
+      thickness: 0.06,
+      dispersion: 0.65,
+      iridescence: 1.0,
+      iridescenceIOR: 1.45,
+      iridescenceThicknessRange: [120, 620],
+      emissive: '#3b1d66',
+      emissiveIntensity: 0.22,
+      lightColor: '#a688ff',
+      lightEmissive: '#3e2178',
+      lightEmissiveIntensity: 0.36,
+    },
+    foil: 'special',
+  },
 };
 const BACK = 'assets/ui/card-back.png';
 const PX_PER_UNIT = 600;          // 表の絵の細かさ（カードの幅 1 あたりのピクセル）
@@ -579,6 +601,9 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
   // 宝石：カットの面ごとに向きが違うので、傾けると面ごとに映り込みと奥の透け方が変わる。
   // スマホ等の軽量モードでは透過（追加の場面描画）を切り、高コントラストな不透明ファセット表現にする
   const gemCfg = spec.gem;
+  const gemIridescence = gemCfg.iridescence
+    ? { iridescence: gemCfg.iridescence, iridescenceIOR: gemCfg.iridescenceIOR ?? 1.4, iridescenceThicknessRange: gemCfg.iridescenceThicknessRange ?? [120, 560] }
+    : {};
   const gemLook = !highGfx
     ? {
         color: new THREE.Color(gemCfg.lightColor),
@@ -588,17 +613,20 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
         metalness: 0.12,
         ior: Math.max(1.8, gemCfg.ior),
         envMapIntensity: 2.4,
+        ...gemIridescence,
       }
     : {
         transmission: 1,
         thickness: gemCfg.thickness,
         attenuationColor: gemCfg.attenuationColor,
         attenuationDistance: gemCfg.attenuationDistance,
+        ...(gemCfg.dispersion ? { dispersion: gemCfg.dispersion } : {}),
         ...(gemCfg.emissive ? { emissive: gemCfg.emissive, emissiveIntensity: gemCfg.emissiveIntensity ?? 0.2 } : {}),
         roughness: 0.02,
         metalness: 0,
         ior: gemCfg.ior,
         envMapIntensity: 2.3,
+        ...gemIridescence,
       };
   // 裏の絵：絵の外の透けている所（角のまわり）が黒く出ないように、レアリティ別の側面ベース色の上に描いてから貼る
   const backImage = backTexture.image;
@@ -617,17 +645,26 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
     silver_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.24, metalness: 0.32, clearcoat: 0.65, clearcoatRoughness: 0.16, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.15, alphaTest: 0.4, side: source.side }),
     crystal_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.14, metalness: 0.14, clearcoat: 1.0, clearcoatRoughness: 0.05, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.35, alphaTest: 0.4, side: source.side }),
     gold_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.20, metalness: 0.48, clearcoat: 0.55, clearcoatRoughness: 0.16, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, alphaTest: 0.4, side: source.side }),
+    prism_frame_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.16, metalness: 0.24, clearcoat: 0.90, clearcoatRoughness: 0.06, iridescence: 0.90, iridescenceIOR: 1.35, iridescenceThicknessRange: [140, 520], envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, alphaTest: 0.4, side: source.side }),
+    prism_metal_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.15, metalness: 0.50, clearcoat: 0.85, clearcoatRoughness: 0.06, iridescence: 0.85, iridescenceIOR: 1.40, iridescenceThicknessRange: [180, 560], envMap: jewelMap, envMapIntensity: highGfx ? 1.65 : 1.25, alphaTest: 0.4, side: source.side }),
     back: (source) => new THREE.MeshStandardMaterial({ map: backOnBase, roughness: 0.5, side: source.side }),
     wood: (source) => new THREE.MeshStandardMaterial({ color: source.color, roughness: 0.78, metalness: 0, side: source.side }),
     metal_blue: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.72, roughness: 0.28, envMap: jewelMap, envMapIntensity: highGfx ? 1.25 : 1.05, side: source.side }),
     obsidian_red: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.65, roughness: 0.30, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.05, side: source.side }),
+    prism_edge: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 0.80, roughness: 0.20, iridescence: 0.75, iridescenceIOR: 1.35, envMap: jewelMap, envMapIntensity: highGfx ? 1.50 : 1.15, side: source.side }),
     // 金具・箔・宝石だけが、明暗差の大きい映り込み（jewelMap）を使う
     gold: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.18, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.15, side: source.side }),
     silver: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.15, envMap: jewelMap, envMapIntensity: highGfx ? 1.40 : 1.20, side: source.side }),
+    pearl_gold: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 1, roughness: 0.14, iridescence: 0.45, iridescenceIOR: 1.35, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.25, side: source.side }),
     foil: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.45, side: source.side }),
+    prism_foil: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 1, roughness: 0.08, iridescence: 1.0, iridescenceIOR: 1.50, iridescenceThicknessRange: [120, 650], envMap: jewelMap, envMapIntensity: highGfx ? 2.0 : 1.6, side: source.side }),
     gem: (source) => new THREE.MeshPhysicalMaterial({
       color: source.color, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0.02, envMap: jewelMap,
       side: THREE.FrontSide, ...gemLook,           // 宝石は閉じた形なので片面（両面だと透過の描き直しが毎回2回になる）
+    }),
+    prism_gem: (source) => new THREE.MeshPhysicalMaterial({
+      color: source.color, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0.02, envMap: jewelMap,
+      side: THREE.FrontSide, ...gemLook,
     }),
   };
   // 同じ名前の材質は1つだけ作って使い回す。知らない名前は wood 相当で描く
@@ -642,7 +679,7 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
   model.traverse((node) => {
     if (!node.isMesh) return;
     const rawMats = Array.isArray(node.material) ? node.material : [node.material];
-    const isGem = rawMats.some((m) => m?.name?.replace(/\.\d+$/, '') === 'gem');
+    const isGem = rawMats.some((m) => m?.name?.replace(/\.\d+$/, '').endsWith('gem'));
     node.geometry = own(shareGeometry(THREE, node.geometry));
     node.material = Array.isArray(node.material) ? rawMats.map(materialFor) : materialFor(node.material);
     node.receiveShadow = true;

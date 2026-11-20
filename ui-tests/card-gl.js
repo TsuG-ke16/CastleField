@@ -88,6 +88,7 @@ async function scenario(name, { query = '?fx=full', glExpected = true, rank = nu
 await scenario('Blender 製の板で出る・なぞって回る', {});
 await scenario('アンコモンは Blender 製の立体の枠（card-uncommon.glb）で出る・なぞって回る', { rarity: 'uncommon', model: 'card-uncommon.glb' });
 await scenario('レアは Blender 製の立体の枠（card-rare.glb）で出る・なぞって回る', { rarity: 'rare', model: 'card-rare.glb' });
+await scenario('スペシャルは Blender 製の立体の枠（card-special.glb）で出る・なぞって回る', { rarity: 'special', model: 'card-special.glb' });
 await scenario('ランクの裏（金）も3D・なぞって回る', { rank: 'gold', back: true });
 await scenario('ランクの表（チャンピオン）も3D', { rank: 'champion' });
 await scenario('?card3d=css では CSS の 3D', { query: '?fx=full&card3d=css', glExpected: false });
