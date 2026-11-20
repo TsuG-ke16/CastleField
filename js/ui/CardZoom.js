@@ -4,6 +4,7 @@
 import { mountMiniCard } from './cardView.js';
 import { cardDescription } from './text.js';
 import { cardMotionReduced as reduced, createCard3D } from './Card3D.js';
+import { preloadCardGL, createCardGL } from './CardGL.js';
 import { canRequestFoilTilt, enableFoilTilt } from './Hologram.js';
 
 const HOLD_MS = 420;       // 長押しと見なす時間
@@ -207,6 +208,28 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     stage.replaceChildren();
   });
 
+  // 拡大するカード。まず CSS の 3D で出し、Blender 製の板（CardGL.js）が読めたら入れかえる（読めない・WebGL がないときは CSS のまま。?card3d=css で最初から CSS）
+  const createZoomCard = (cardEl, { rarityColor, quality }) => {
+    let impl = createCard3D(cardEl, { rarityColor, shadow, quality });
+    let closed = false;
+    let last = null;
+    preloadCardGL().then(async () => {
+      if (closed || !cardEl.isConnected) return;
+      impl.destroy();                                    // 元の見た目に戻してから、絵を写す
+      const gl = await createCardGL(cardEl, { stage, rarityColor });
+      if (closed || !cardEl.isConnected) { gl?.destroy(); return; }
+      if (!gl) { impl = createCard3D(cardEl, { rarityColor, shadow, quality }); impl.resize(); if (last) impl.render(last); return; }
+      impl = gl;
+      shadow.hidden = true;
+      if (last) gl.render(last);
+    }).catch(() => {});
+    return {
+      render(state) { last = state; impl.render(state); },
+      resize() { impl.resize(); },
+      destroy() { closed = true; impl.destroy(); shadow.hidden = false; },
+    };
+  };
+
   // opts：skin＝ランク報酬のカードスキン（ランクの id）、color＝そのとき側面に使う色、flip＝裏から見せる、title／text＝下の見出しと説明
   const open = (type, opts = {}) => {
     const def = cards?.[type];
@@ -215,9 +238,8 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     card.className = 'zoom-card';
     mountMiniCard(card, type, def, rarities, { skin: opts.skin || undefined });
     const fx = new URLSearchParams(location.search).get('fx');
-    card3D = createCard3D(card, {
+    card3D = createZoomCard(card, {
       rarityColor: opts.skin ? opts.color : def.monster ? '#a51d34' : rarities?.[def.rarity]?.color,
-      shadow,
       quality: fx === 'full' || fx === 'lite' ? fx : 'auto',
     });
     stage.replaceChildren(shadow, card);

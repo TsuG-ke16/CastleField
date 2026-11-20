@@ -531,3 +531,10 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 | `bg/home-deck.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
 | `bg/home-account.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
 | `bg/home-settings.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
+
+## 3Dのカードの板・three.js（2026-11-20）
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `models/card-slab.glb` | Blender（bpy 5.3）で `models/make-card.py` を実行して作った（開発者の依頼で、この開発で作成）。角丸・厚み・縁の面取りの板。絵は含まない | 自作（このリポジトリのライセンスに従う） | 2026-11-20 |
+| `js/vendor/three/`（three.module.min.js・GLTFLoader.js・BufferGeometryUtils.js） | three.js r170（https://github.com/mrdoob/three.js）。GLTFLoader・BufferGeometryUtils は import の行だけ相対パスに書きかえた | MIT（`js/vendor/three/LICENSE`） | 2026-11-20 取得 |

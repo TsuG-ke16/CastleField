@@ -68,7 +68,7 @@ YouTube「桜井政博のゲーム作るには」の考え方を、このゲー�
 
 ## 技術
 
-- HTML / CSS / JavaScript（フレームワークなし、ES Modules）
+- HTML / CSS / JavaScript（フレームワークなし、ES Modules）。**例外：three.js を `js/vendor/three/` に置いてある**（図鑑・デッキ編成の拡大表示のカードを3Dで描くためだけに使う。人間に確認して入れた。npm からは入れず、ファイルをそのまま置く。拡大表示を開いたときにだけ読み込む）
 - 起動：リポジトリのルートで `python3 -m http.server` を実行し、`http://localhost:8000` を開く（Windows は `python -m http.server`）
 - 自動テスト：リポジトリのルートで `node --test`（Node.js 22.7 以上。`package.json` がなくても `.js` を ES Modules として読めるのが 22.7 から。外部パッケージは使わない）。ロジックを変えたら必ず全部通してからPRを出す。新しい機能にはテストを足す
 - 画面のスモークテスト：`node ui-tests/smoke.js`（タイトル→ひとりで遊ぶ→1手出す→結果→再戦。Playwright は環境にあるものを使い、リポジトリには入れない）。画面を大きく変えたら通す
@@ -117,7 +117,8 @@ js/
     MatchStats.js  … 結果のまとめと戦績
     ChatView.js    … チャットとスタンプ（💬ボタン・吹き出し）
     DeckEditor.js・DeckStore.js … デッキ編成の画面と、マイデッキの保存（この端末の localStorage）
-    CardZoom.js    … デッキ編成・図鑑でカードを長押しすると拡大（傾き・偏光）
+    CardZoom.js    … デッキ編成・図鑑でカードを長押しすると拡大（傾き・偏光・360度回転）
+    CardGL.js      … 拡大表示のカードを、Blender 製の板（assets/models/card-slab.glb）と three.js で描く。読めないときは Card3D.js（CSS の 3D）のまま。`?card3d=css` で CSS に固定
     stories.js     … 図鑑で読むカードのストーリー（画面だけで使う文。カードを増やしたら1つ足す。ui-tests/stories.js が確かめる）
     art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
     precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
@@ -158,6 +159,7 @@ assets/            … 画像素材（UI担当）
   cards/           … カードの絵と枠
   fx/              … 演出（爆発・雷・回復・土けむりなど）
   ui/              … ボタン・看板・帯などの画面部品
+  models/          … 3Dのモデル（.glb）と、それを作る Blender のスクリプト（make-card.py。python3 assets/models/make-card.py。bpy が要る）
 ```
 
 ## 画像素材
