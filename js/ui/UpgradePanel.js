@@ -142,7 +142,7 @@ export class UpgradePanel {
         reason.id = `upgrade-reason-${id}`;
         btn.setAttribute('aria-describedby', reason.id);
       }
-      btn.querySelector('.upgrade-cost').innerHTML = `${icon('coin')}<b>${Number(def.cost)}</b>`;
+      btn.querySelector('.upgrade-cost').innerHTML = `${icon('coin')}<b>${Number(st.cost ?? def.cost)}</b>`;
       list.appendChild(btn);
     }
   }
