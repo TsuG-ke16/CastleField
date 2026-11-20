@@ -484,6 +484,10 @@ export class Renderer {
     // 絵があるときは、絵の飛び石を使う（画面側の飛び石を消す。css/stage.css の [data-stage-art]）
     if (ready) this.el.app.dataset.stageArt = '1';
     else delete this.el.app.dataset.stageArt;
+    // 自分の城の絵も、そのステージの城（assets/castles/stage-<ステージ>.png）にする。相手の城は背景の絵の城を使う（css/stage.css）
+    const castleArtPath = art ? art.replace('bg/stage-', 'castles/stage-') : null;
+    if (ready && isAssetReady(castleArtPath)) this.el.app.style.setProperty('--stage-castle', `url("../assets/${castleArtPath}")`); // css/stage.css から見た場所
+    else this.el.app.style.removeProperty('--stage-castle');
     if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
   }
 
