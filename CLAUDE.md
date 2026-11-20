@@ -109,6 +109,7 @@ js/
     strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
   ui/              … 画面表示と入力
     Renderer.js    … 盤面（道・広場・城・兵士・魔物）
+    Board3D.js     … 盤面の地形を three.js で立体に描く（兵士・魔物は 2D の絵を写した位置に立てる。?flat=1・広場は 2D）
     HandView.js    … 手札
     Animations.js  … 演出
     RoomView.js・LocalSetup.js … 部屋・ひとりで遊ぶの設定
@@ -120,6 +121,7 @@ js/
     CardZoom.js    … デッキ編成・図鑑でカードを長押しすると拡大（傾き・偏光）
     stories.js     … 図鑑で読むカードのストーリー（画面だけで使う文。カードを増やしたら1つ足す。ui-tests/stories.js が確かめる）
     art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
+    vendor/        … 外から持ってきたライブラリ（three.js r170・MIT。three.LICENSE.txt）
     precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
 data/
   cards.json       … カードの定義

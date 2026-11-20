@@ -39,6 +39,8 @@ export const UI_CONFIG = {
   bossMonsters: ['dragon', 'demon', 'demonKing'],
   // 真ん中のマス（魔物・ワールドボスが出る場所）の高さ。ほかのマスの何倍か（道のマスの数が奇数のときだけ）
   midCellScale: 1.8,
+  // 盤面の地形を three.js で立体に描くか（js/ui/Board3D.js）。false なら今の 2D のまま（URL の ?flat=1 でも 2D）
+  board3d: true,
 
   // Web Animations API の共通イージング。各演出の長さは timing を使う。
   easing: { enter: 'ease-out', exit: 'ease-in', linear: 'linear', inOut: 'ease-in-out' },

@@ -13,6 +13,7 @@ import { ELEMENT_LOOK } from './look.js';
 import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt, isAssetReady } from './art.js';
 import { soldierMotion, monsterMotion } from './motion.js';
 import { WeatherView } from './WeatherView.js';
+import { Board3D } from './Board3D.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -106,12 +107,13 @@ export class Renderer {
     for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = icon(el.dataset.icon);
     this.buildScenery();
     this.buildRoad();
+    this.init3D();
 
     // 盤面のタップ：対象を選んでいるときは対象を、そうでなければ兵士・魔物の情報を出す
     this.el.board.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.targetable,.soldier,.monster,.castle')) { e.preventDefault(); e.target.click(); } });
     this.el.board.addEventListener('click', (e) => {
       if (this.targets) {
-        this.onTargetTap?.(this.targetFromEl(e.target));
+        this.onTargetTap?.(this.targetFromEl(e.target, e));
         return;
       }
       const castle=e.target.closest('.castle');
@@ -129,6 +131,9 @@ export class Renderer {
       }
     });
     window.addEventListener('resize', () => { this.layoutStacks(); this.fitPlaza(); });
+    // 3D の盤面：キーボードで選んでいる道を、3D の側でも強く光らせる（道の DOM は見えないが、フォーカスは受ける）
+    this.el.road.addEventListener('focusin', (e) => { const lane = e.target.closest?.('.lane'); if (lane) this.board3d?.setFocusLane(Number(lane.dataset.lane)); });
+    this.el.road.addEventListener('focusout', () => this.board3d?.setFocusLane(null));
     this.buildPlazaControls();
   }
 
@@ -215,6 +220,71 @@ export class Renderer {
         cell.innerHTML = '<span class="stone"></span>';
       }
     }
+    this.board3d?.setLayout(this.layout3D());
+  }
+
+  // ---------- 3D の盤面（js/ui/Board3D.js） ----------
+
+  /** 3D の地形を用意する（使えない・使わないときは今の 2D のまま。three.js はここで初めて読み込む） */
+  init3D() {
+    Board3D.create({ field: this.el.field, layer: this.el.units, onLayout: () => this.relayout3D() }).then((board) => {
+      if (!board) return;
+      this.board3d = board;
+      board.setLayout(this.layout3D());
+      board.setStage(this.stage?.id ?? 'meadow');
+      board.setNight(this.time === 'night');
+      this.sync3D();
+    });
+  }
+
+  /** 3D で描いているか（広場のときは 2D） */
+  get use3D() {
+    return Boolean(this.board3d?.active);
+  }
+
+  /** 3D に渡す道の形：上から順のマスの高さ（rowCenter と同じ %）と、レーンの中心 */
+  layout3D() {
+    const L = this.laneLength;
+    const mid = L % 2 === 1 ? (L - 1) / 2 : -1;
+    return {
+      laneCount: this.laneCount,
+      rows: Array.from({ length: L }, (_, i) => ({ yPct: this.rowCenter(i), mid: i === mid && this.midScale > 1 })),
+      laneX: Array.from({ length: this.laneCount }, (_, n) => this.laneCenter(n)),
+    };
+  }
+
+  /** 3D を見せるかを今の盤面に合わせる（広場なら消す）。切りかわったら兵士・魔物を置き直す */
+  sync3D() {
+    if (!this.board3d) return;
+    const on = !this.isPlaza;
+    this.el.app.classList.toggle('three', on);
+    if (this.board3d.active !== on) this.board3d.setActive(on);
+    this.relayout3D();
+  }
+
+  /** 写り方が変わったので、兵士・魔物を置き直す（3D の大きさが変わったとき・3D と 2D が切りかわったとき） */
+  relayout3D() {
+    if (this.isPlaza) return;
+    for (const s of this.soldiers.values()) {
+      s.el.classList.add('no-anim');
+      this.place(s);
+      void s.el.offsetWidth;
+      s.el.classList.remove('no-anim');
+    }
+    for (const m of this.monsters.values()) this.placeMonster(m);
+    this.layoutStacks();
+  }
+
+  /** 平らな盤面の位置（#unit-layer の %）を、要素に置く。3D のときはカメラで写した位置と奥行きの縮尺（--depth）にする */
+  placeAt(el, xPct, yPct, prop) {
+    if (this.use3D) {
+      const p = this.board3d.project(xPct, yPct);
+      xPct = p.xPct; yPct = p.yPct;
+      el.style.setProperty('--depth', p.scale.toFixed(3));
+    } else el.style.removeProperty('--depth');
+    el.style.top = `${yPct}%`;
+    if (prop === '--x') el.style.setProperty('--x', `${xPct}%`);
+    else el.style.left = `${xPct}%`;
   }
 
   // ---------- 視点 ----------
@@ -316,6 +386,7 @@ export class Renderer {
         this.buildRoad();
       }
       this.fitPlaza();
+      this.sync3D();
     }
     const palette = UI_CONFIG.teamColors;
     for (const id of this.owners) {
@@ -484,6 +555,7 @@ export class Renderer {
     // 絵があるときは、絵の飛び石を使う（画面側の飛び石を消す。css/stage.css の [data-stage-art]）
     if (ready) this.el.app.dataset.stageArt = '1';
     else delete this.el.app.dataset.stageArt;
+    this.board3d?.setStage(stage?.id ?? 'meadow');
     if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
   }
 
@@ -493,6 +565,7 @@ export class Renderer {
     this.nightLeft = nightLeft;
     if (time === 'night') this.el.app.dataset.time = 'night';
     else delete this.el.app.dataset.time;
+    this.board3d?.setNight(time === 'night');
     if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
   }
 
@@ -709,11 +782,10 @@ export class Renderer {
       s.el.style.top = `${p.y}%`; s.el.style.setProperty('--x', `${p.x}%`); return;
     }
     const arrived = s.position >= this.laneLength;
-    s.el.style.top = `${this.topPercent(s.playerId, s.position)}%`;
     // レーンの中で、自分は右より・相手は左より。城に着いた兵士は、そのレーンのまん中へ寄る
     const center = this.laneCenter(this.laneOf(s.roadId));
     const side = ((this.sideOf(s.playerId) === 'me' ? X_ME : X_OPP) - 50) / 100; // レーン幅に対する割合
-    s.el.style.setProperty('--x', `${arrived ? center : center + (side * 100) / this.laneCount}%`);
+    this.placeAt(s.el, arrived ? center : center + (side * 100) / this.laneCount, this.topPercent(s.playerId, s.position), '--x');
   }
 
   addSoldier(playerId, st, { appear = false } = {}) {
@@ -932,14 +1004,18 @@ export class Renderer {
       `<div class="monster-stats"><span class="st atk">${icon('sword')}<b></b></span></div>`;
     el.querySelector('.monster-pic').innerHTML = monsterArt(st.type, def.name ?? st.type);
     this.cosmetics?.styleMonster(el, st.type);
-    el.style.top = `${this.rowCenter(this.rowOfSquare(st.square))}%`;
-    el.style.left = `${this.laneCenter(this.laneOf(st.roadId))}%`;
-    if (st.roadId === 'plaza') { el.style.top = '50%'; el.style.left = '50%'; }
     this.el.units.appendChild(el);
     const m = { ...st, el };
+    this.placeMonster(m);
     this.monsters.set(st.monsterId, m);
     this.updateMonster(st.monsterId, {}, { instant: true });
     return el;
+  }
+
+  /** 魔物を置く（真ん中のマス。広場なら広場のまん中） */
+  placeMonster(m) {
+    if (m.roadId === 'plaza') { m.el.style.top = '50%'; m.el.style.left = '50%'; return; }
+    this.placeAt(m.el, this.laneCenter(this.laneOf(m.roadId)), this.rowCenter(this.rowOfSquare(m.square)), 'left');
   }
 
   monsterEl(monsterId) {
@@ -1047,6 +1123,8 @@ export class Renderer {
     this.targetRestore=[];
     this.targets=targets?.length?targets:null;
     this.el.app.classList.toggle('targeting',Boolean(this.targets));
+    // 3D の盤面では、選べる道を 3D の側で光らせる（道の DOM は見えない）
+    this.board3d?.setTargetLanes(this.targets && !this.isPlaza ? new Set(this.targets.filter(x => x.roadId && !x.soldierId && !x.monsterId).map(x => this.laneOf(x.roadId))) : null);
     if(!this.targets)return;
     for(const t of this.targets){const el=this.elOfTarget(t);if(!el||this.targetRestore.some(x=>x.el===el))continue;
       this.targetRestore.push({el,tab:el.getAttribute('tabindex'),role:el.getAttribute('role'),label:el.getAttribute('aria-label')});
@@ -1064,8 +1142,18 @@ export class Renderer {
     return null;
   }
 
-  /** タップされた要素 → 対象（光っている対象でなければ null） */
-  targetFromEl(node) {
+  /**
+   * タップされた要素 → 対象（光っている対象でなければ null）。
+   * 3D の盤面では道の DOM は押せないので、要素で決まらなければ、タップした場所の 3D の道（写した台形）で決める
+   */
+  targetFromEl(node, point = null) {
+    const found = this.targetFromNode(node);
+    if (found || !point || !this.use3D || !this.targets) return found;
+    const lane = this.board3d.laneAt(point.clientX, point.clientY);
+    return lane == null ? null : this.targets.find((x) => x.roadId && !x.soldierId && !x.monsterId && this.laneOf(x.roadId) === lane) ?? null;
+  }
+
+  targetFromNode(node) {
     if (!this.targets) return null;
     const sEl = node.closest('.soldier');
     const mEl = node.closest('.monster');

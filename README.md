@@ -12,6 +12,7 @@ node server/server.js           # → http://localhost:8787（オンライン対
 - タイトルの「ひとりで遊ぶ」で CPU と対戦（`?local=1&cpu=hard` ですぐ始まる）
 - オンラインは同じ合言葉を入れた人が同じ部屋に入る（最大8人。CPU も追加できる）
 - デバッグ：URL に `?debug=1`（城HP・手札・山札を変えられる）
+- 盤面の地形は three.js（r170・MIT ライセンス）で立体に描く。`js/ui/vendor/` に同梱（ライセンスは `three.LICENSE.txt`）。URL に `?flat=1` で今までの 2D の盤面
 - 外部パッケージなし。Node.js 22.7 以上が必要（アカウント・保存機能は `node:sqlite` を使うため 22.13 以上。設定は `docs/accounts.md`）
 
 ## 確かめる

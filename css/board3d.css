@@ -1,0 +1,40 @@
+/* 3D の盤面（js/ui/Board3D.js）。#app.three のときだけ効く（?flat=1・WebGL なし・広場・UI_CONFIG.board3d=false なら今の 2D のまま）。
+   地形は #field の一番下の canvas に three.js で描き、兵士・魔物は今までどおり DOM の絵を、写した位置に「立てる」。 */
+
+/* 3D の地形を描く canvas。上下と左右のふちはぼかして、まわりの景色（#scenery）となじませる */
+#field > .board3d-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  display: block;
+  pointer-events: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 93%, transparent), linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 93%, transparent), linear-gradient(to right, transparent, #000 4%, #000 96%, transparent);
+  mask-composite: intersect;
+}
+#field > .board3d-canvas[hidden] { display: none; }
+
+/* 道の DOM（.lane / .cell / .stone）は見た目だけ消す。要素は残す（Renderer.laneEl・演出・キーボードで道を選ぶため）。
+   タップは 3D の道の形で当てる（Renderer.targetFromEl → Board3D.laneAt）ので、平らな道は押せないようにする */
+#app.three #field #road { opacity: 0; pointer-events: none; }
+#app.three #field #road .lane.targetable { pointer-events: none; }
+
+/* 兵士・魔物：奥ほど小さく（--depth は Renderer.placeAt が入れる奥行きの縮尺）。
+   --unit を要素ごとに縮めるので、影（motion.css の ::before）や中の部品も同じ割合で縮む。文字の大きさは変えない */
+#app.three #unit-layer { --unit-3d: var(--unit); }
+#app.three #unit-layer .soldier,
+#app.three #unit-layer .monster { --unit: calc(var(--unit-3d) * var(--depth, 1)); }
+/* 足もとを地面の点に合わせる（絵の真ん中ではなく、少し下が地面に立つ）。transform は演出が使うので margin でずらす */
+#app.three #unit-layer .soldier { margin-top: calc(var(--unit) * -0.3); transition: top var(--t-move) cubic-bezier(.4, 0, .3, 1), left var(--t-move) cubic-bezier(.4, 0, .3, 1), width var(--t-move) cubic-bezier(.4, 0, .3, 1); }
+#app.three #unit-layer .soldier.no-anim, #app.three.skipping #unit-layer .soldier { transition: none; }
+/* 魔物は、体の下に HP・ごほうびなどの札が長く続くので、ずらさない（今の 2D と同じく、箱のまん中が真ん中のマス） */
+
+/* 夜は 3D の光そのものを暗く青くするので、上にかける影は少し薄くする（二重に暗くならないように） */
+#app.three[data-time="night"] #field::after {
+  opacity: .55;
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 93%, transparent);
+  mask-image: linear-gradient(to bottom, transparent, #000 9%, #000 93%, transparent);
+}
