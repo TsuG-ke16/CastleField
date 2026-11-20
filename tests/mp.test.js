@@ -2,10 +2,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/Game.js';
-import { buildData, loadJson, seededRng, recordEvents } from './helpers.js';
+import { buildData, loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
 
 function make(rulesPatch = {}, extra = {}) {
-  const { cards, rules } = buildData({ rules: { drawUntilHand: 0, ...rulesPatch } });
+  const { cards, rules } = buildData({ rules: { ...PLAIN_START, drawUntilHand: 0, ...rulesPatch } });
   return new Game({ cards, rules, rng: seededRng(5), rarities: loadJson('rarities.json'), ...extra });
 }
 /** ターンを終える（手札が多ければ先頭から捨てる） */

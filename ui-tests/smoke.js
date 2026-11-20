@@ -27,7 +27,7 @@ async function state(){
   return page.evaluate(()=>{
     const game=window.castlefield.game(),id=document.querySelector('#app').dataset.viewer,st=game.getState(id);
     const mine=st.players[id];
-    return {id,phase:st.phase,turn:st.turn,winner:st.winner,current:st.currentPlayer,busy:document.querySelector('#app').classList.contains('busy'),
+    return {id,phase:st.phase,turn:st.turn,mulligan:st.phase==='mulligan'&&st.mulligan.pending.includes(id),winner:st.winner,current:st.currentPlayer,busy:document.querySelector('#app').classList.contains('busy'),
       defending:st.defense?.defenderId===id,
       discard:st.phase==='discard'&&st.currentPlayer===id?mine.hand.slice(0,mine.handCount-mine.maxHand).map(c=>c.cardId):null,
       playable:st.phase==='main'&&st.currentPlayer===id?mine.hand.filter(c=>game.canPlayCard(c.cardId).ok).map(c=>({id:c.cardId,soldier:document.querySelector(`.card[data-id="${CSS.escape(c.cardId)}"]`)?.classList.contains('soldier')})):[],
@@ -64,10 +64,12 @@ try{
   await page.click('#home .home-tab[data-tab=battle]'); await press('#home .home-mode[data-mode="solo"]');await press('#home [data-act="start"]');await press('.level[data-level="hard"]');
   await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:60000});
   await page.evaluate(()=>{window.__uiSmokeCards=0;const id=document.querySelector('#app').dataset.viewer;castlefield.game().on('cardPlayed',e=>{if(e.playerId===id)window.__uiSmokeCards++})});
-  const deadline=Date.now()+180000;let deployed=false,ended=false;
+  const deadline=Date.now()+180000;let deployed=false,ended=false,mulliganShown=false;
   while(Date.now()<deadline){
     const s=await state();if(s.busy){await page.waitForTimeout(20);continue}
     if(s.defending){await press('#end-turn');continue}
+    // マリガン（最初の手札の引き直し）：選ぶバーが出るので、そのまま始める
+    if(s.mulligan){await page.locator('#discard-bar').waitFor({state:'visible'});mulliganShown=true;await snapshot('mulligan');await press('.discard-ok');continue}
     if(s.current!==s.id||s.phase!=='main'){await page.waitForTimeout(20);continue}
     const card=s.playable.find(c=>c.soldier);assert.ok(card,'最初の手番に出せる兵士がある');
     await play(card);
@@ -76,6 +78,7 @@ try{
     await page.waitForFunction(()=>!document.querySelector('#app').classList.contains('busy'));
     await press('#end-turn');ended=true;break;
   }
+  assert.ok(mulliganShown,'マリガンの選択が出る');
   assert.ok(deployed&&ended,'実際のUIで兵士を出してターンを終える');
   while(Date.now()<deadline){
     if(await page.locator('#result').isVisible())break;

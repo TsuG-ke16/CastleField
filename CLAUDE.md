@@ -195,7 +195,8 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 | メソッド | 説明 |
 |---|---|
 | `new Game({ cards, rules, rng, monsters, upgrades, castles, decks, stages, setup })` | ゲームを作る。`stages`（`data/stages.json`）を渡すと、`setup.stage`（ステージのIDか `"random"`。省略すると `"random"`）のステージで遊ぶ。`cards` / `rules` / `monsters` / `upgrades` / `castles` / `decks` は `data/` の JSON の中身（Game はファイルを読まない）。`cards` / `rules` 以外は省略でき、省略すると魔物は出ず・強化は買えず・城の種類はなし。`setup` は席ごとの選択 `{ castles: [...], decks: [...] }`（省略すると `rules.defaultCastle` / `rules.defaultDeck`）。`rng` は 0以上1未満を返す乱数で、省略すると `Math.random`。作った時点で初期手札は配られていて、`phase` は `"ready"`。イベントは出さない |
-| `game.start()` | ゲームを始める。全イベントを `on()` で購読してから呼ぶと、p1 のターン1が始まる（`turnStarted` → ドロー → 進軍） |
+| `game.start()` | ゲームを始める。全イベントを `on()` で購読してから呼ぶと、先攻（`setup.firstPlayer`。省略すると p1）のターン1が始まる（`turnStarted` → ドロー → 進軍）。`rules.mulligan` が `true` なら、先に `phase` が `"mulligan"` になり、全員が `mulligan()` を選んでからターン1 |
+| `game.mulligan(playerId, cardIds)` | マリガン（`phase` が `"mulligan"` のときだけ。1人1回。自分の番でなくてよい）。`cardIds`（0枚でもよい）を山札に戻してシャッフルし、同じ枚数を引き直す。全員が選んだら先攻のターン1が始まる |
 | `game.getState(viewerId)` | 今の状態をただのオブジェクトで返す。`viewerId` の手札は中身まで、相手の手札は枚数だけ入る |
 | `game.canPlayCard(cardId, target)` | そのカードを今出せるかを返す（読むだけで、状態は変わらない）。出せないときは `{ ok: false, reason }`。`playCard` と同じ判定なので、UIは出せない理由を前もって表示できる。`target` を省略して、対象が2つ以上あるときは `{ ok: true, needsTarget: true }` |
 | `game.getTargets(cardId)` | そのカードを今出せる対象の一覧（読むだけ）。出せないときは空の配列。対象の形は下の「対象」 |
@@ -288,6 +289,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | イベント | ペイロード |
 |---|---|
 | `turnStarted` | `{ playerId, turn }` |
+| `mulliganStarted` | `{ playerIds, firstPlayer }` … マリガンの場面が始まった（`start()` のとき。`rules.mulligan` が `true`） |
+| `mulliganDone` | `{ playerId, count, returnedIds, cardIds }` … 引き直した。オンラインでは本人以外に `{ playerId, count }` だけ送る |
 | `timeChanged` | `{ time, previous, rounds, cause, playerId }` … 昼と夜が変わった。`time` は `"night"` / `"day"`、`rounds` は夜が続く周回（昼なら0）、`cause` は `"natural"` か `"card"`（ムーンライズ・ドーンブレイク。`playerId` は出した人） |
 | `stageEruption` | `{ roadId, square, amount }` … 溶岩のステージの噴火（広場なら `roadId` は `"plaza"`）。このあと、そのマスの兵士の `soldierDamaged`（`cause: "eruption"`）→ `statusApplied`（`"burn"`） |
 | `cardDrawn` | `{ playerId, cardIds }` |
@@ -1196,6 +1199,17 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - CPU（`smart` 系）：次の進軍で城に着きそうな兵士がいるとき、凍結がなければ使う
 - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均39.7手番・p1 勝率49%（追加前とほぼ同じ）。CPU の弱い順は変わらない（`--games 200` で random に勝つ割合：defensive 10%・rush 16%・smart 89%。追加前は 8%・17%・84%）
 - 画面：説明文・札（`js/ui/text.js`）、道に土けむりと風の音の演出（`Animations.js` の `mist`・`Sound.js` の `gust`）、押し戻しは今の進軍の動きで後ろへ下がる。チュートリアルは押し戻しを「進軍した」と数えない。絵は仮の SVG（`js/ui/art.js`）、魔法のスキン `fxskin_galeForce`（`data/shop.json`）。専用の絵ができたら差しかえる
+
+## コイントス・後攻の補正・マリガン（人間に確認して決めた。仮）
+
+- **先攻（コイントス）**：`new Game({ setup: { firstPlayer } })`（省略すると席順の最初の人）。ひとりで遊ぶ・同じ端末は画面がシードから、オンラインはサーバーが部屋の乱数で、ランダムに選んで渡す（チーム戦は席順のまま。`firstPlayer` を変えると例外）。周回は先攻のターンで増える（先攻が抜けたら、先攻から席順に数えて残っている人）。`getState().firstPlayer`。画面は、試合の始めにコインが回る演出で知らせる（`Animations.coinToss`・`css/coin-toss.css`。演出なしの設定なら帯だけ）
+- **後攻の補正**（先攻以外の人。チーム戦では使わない）：初期手札 +`secondPlayerHandBonus`（仮：1）、最初から城壁 `secondPlayerArmor`（仮：5）。今までの `secondPlayerCastleBonus`（城HP）は0のまま
+- **マリガン**（`rules.mulligan`、仮：`true`）：`start()` のあと `phase` が `"mulligan"`（`getState().mulligan` は `{ pending: まだ選んでいない人 }`）。そのあいだ `playCard` / `endTurn` などは「最初の手札を選んでいるところです」。降参はできる（2人なら相手の勝ち）
+  - CPU：兵士が1枚もない手札なら全部戻し、それ以外は戻さない（`mulliganChoice` in `js/game/strategies.js`）
+  - オンライン：`POST /api/action` の `method` に `mulligan`（`args: [cardIds]`。自分の手札だけ。自分の番でなくても送れる）。CPU は少し間をおいて選ぶ
+  - 画面：「捨てる」と同じバーで、0枚から何枚でも選ぶ（「このまま始める」／「引き直す（N枚）」）。**2人で交代して遊ぶときはしない**（手札を見せ合えないため）
+- テスト：本物の `data/rules.json` で、マリガン・後攻の補正と関係のない仕組みを確かめるテストは、`tests/helpers.js` の `PLAIN_START` でこの3つを切る
+- 確かめたこと（`node tests/sim/run.js --match smart,smart --games 600`。シミュレーションは p1 が先攻）：全試合決着、平均40手番、**先攻の勝率45%±4%**（補正が手札+1だけ・城壁5だけなら47%、補正なしは前の測定で52%）。後攻がやや有利なので、遊んで確かめる（直すなら `secondPlayerHandBonus` か `secondPlayerArmor` を0にする）。CPU の弱い順は変わらない（random に勝つ割合：defensive 8%・rush 13%・smart 78%。random が後攻の補正をもらうため smart の数字は下がった）
 
 ## 魔法4種：チェーン・ブラスト／イグニッション・バースト／シールド・ブラスト／ピュリファイ・フレア（人間に確認して決めた。仮）
 

@@ -34,6 +34,8 @@ export const PLAYER_IDS = ['p1', 'p2'];
 /** Game が出すイベントの名前（CLAUDE.md「Gameが出すイベント」の表と同じ） */
 export const EVENT_TYPES = [
   'turnStarted',
+  'mulliganStarted',
+  'mulliganDone',
   'timeChanged',
   'stageEruption',
   'cardDrawn',
@@ -155,6 +157,11 @@ const OPTIONAL_RULES = {
   nightBeastAttack: 0,
   nightStealthAttack: 0,
   nightMonsterAttack: 0,
+  // 後攻（先攻以外の人）の補正：初期手札に足す枚数と、最初から持っている城壁（チーム戦では使わない）
+  secondPlayerHandBonus: 0,
+  secondPlayerArmor: 0,
+  // マリガン：true なら、start() のあと全員が1回だけ手札を引き直せる（phase "mulligan"）
+  mulligan: false,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -355,6 +362,30 @@ export class Game {
       }
     }
 
+    // 先攻：setup.firstPlayer（省略すると席順の最初の人）。コイントスの結果を画面・サーバーが渡す。チーム戦では席順のまま
+    const first = setup.firstPlayer ?? this.playerOrder[0];
+    if (!this.playerOrder.includes(first)) throw new Error(`setup.firstPlayer は ${this.playerOrder.join(' / ')} のどれかにしてください`);
+    if (first !== this.playerOrder[0] && this.teamOrder) throw new Error('チーム戦では setup.firstPlayer を使えません（チームの順で始まります）');
+    this.firstPlayer = first;
+    this.currentPlayer = first;
+    // 後攻の補正：先攻以外の人は、初期手札が secondPlayerHandBonus 枚多く、最初から城壁 secondPlayerArmor を持つ
+    if (!this.teamOrder) {
+      for (const id of this.playerOrder) {
+        if (id === first) continue;
+        const pile = this.piles.get(id);
+        for (let i = 0; i < this.rules.secondPlayerHandBonus; i++) {
+          const card = pile.deck.shift();
+          if (!card) break;
+          this.players[id].hand.push(card);
+        }
+        if (this.rules.secondPlayerArmor > 0) {
+          this.players[id].armor = this.rules.armorMax ? Math.min(this.rules.armorMax, this.rules.secondPlayerArmor) : this.rules.secondPlayerArmor;
+        }
+      }
+    }
+    /** マリガン（phase "mulligan"）で、まだ選んでいない人 */
+    this.mulliganPending = new Set();
+
     // ステージ：setup.stage（ID か "random"。省略すると "random"）。山札を作ったあとに選ぶ（ステージを使わないときの山札の並びを変えないため）
     if (stages !== null) {
       const want = setup.stage ?? 'random';
@@ -441,7 +472,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -724,7 +755,54 @@ export class Game {
   /** ゲームを始める（席順の最初の人のターン1）。UI が on() で購読してから呼ぶ */
   start() {
     if (this.phase !== 'ready') return fail('ゲームはもう始まっています');
-    this.beginTurn(this.playerOrder[0]);
+    // マリガン：全員が手札を引き直すか選んでから、先攻のターン1が始まる
+    if (this.rules.mulligan) {
+      this.phase = 'mulligan';
+      this.mulliganPending = new Set(this.alivePlayerIds());
+      this.emit('mulliganStarted', { playerIds: [...this.mulliganPending], firstPlayer: this.firstPlayer });
+      return ok();
+    }
+    this.beginTurn(this.firstPlayer);
+    return ok();
+  }
+
+  /** 周回を始める人（先攻から席順に数えて、まだ負けていない最初の人） */
+  roundLeader() {
+    const order = this.playerOrder;
+    const start = order.indexOf(this.firstPlayer);
+    for (let i = 0; i < order.length; i++) {
+      const id = order[(start + i) % order.length];
+      if (!this.players[id].eliminated) return id;
+    }
+    return null;
+  }
+
+  /**
+   * マリガン：最初の手札から cardIds（0枚でもよい）を山札に戻してシャッフルし、同じ枚数を引き直す。1人1回だけ。
+   * 全員が選び終わったら、先攻のターン1が始まる。自分の番でなくても送れる
+   */
+  mulligan(playerId, cardIds = []) {
+    if (this.phase !== 'mulligan') return fail('今は手札を引き直す場面ではありません');
+    if (!this.mulliganPending.has(playerId)) return fail('手札の引き直しはもう選びました');
+    if (!Array.isArray(cardIds)) return fail('引き直すカードのIDを配列で渡してください');
+    const player = this.players[playerId];
+    if (new Set(cardIds).size !== cardIds.length) return fail('同じカードを2回選んでいます');
+    const cards = cardIds.map((id) => player.findInHand(id));
+    if (cards.some((c) => !c)) return fail('そのカードは手札にありません');
+    const pile = this.pileOf(playerId);
+    player.hand = player.hand.filter((c) => !cardIds.includes(c.cardId));
+    pile.deck.push(...cards);
+    pile.deck = this.shuffle(pile.deck);
+    const drawn = [];
+    for (let i = 0; i < cards.length; i++) {
+      const card = pile.deck.shift();
+      if (!card) break;
+      player.hand.push(card);
+      drawn.push(card.cardId);
+    }
+    this.mulliganPending.delete(playerId);
+    this.emit('mulliganDone', { playerId, count: cards.length, returnedIds: [...cardIds], cardIds: drawn });
+    if (this.mulliganPending.size === 0) this.beginTurn(this.firstPlayer);
     return ok();
   }
 
@@ -735,7 +813,7 @@ export class Game {
     // チーム戦は、最初のチームの手番が来るたびに周回が変わる
     const isRoundStart = !continueRound && (this.teamOrder
       ? this.teamOf.get(playerId) === this.aliveTeams()[0] && (this.rules.teamTurns === 'rotate' || this.teamCursor.get(this.teamOf.get(playerId)) === -1)
-      : playerId === this.alivePlayerIds()[0]);
+      : playerId === this.roundLeader());
     if (isRoundStart && this.rules.maxRounds > 0 && this.round >= this.rules.maxRounds) {
       this.finishByRoundLimit();
       return;
@@ -1930,6 +2008,7 @@ export class Game {
     if (this.phase === 'gameOver') return fail('ゲームは終わっています');
     if (this.phase === 'discard') return fail('手札を捨てているところです');
     if (this.phase === 'defend') return fail('相手が防御を選んでいます');
+    if (this.phase === 'mulligan') return fail('最初の手札を選んでいるところです');
 
     const player = this.players[this.currentPlayer];
     const card = player.findInHand(cardId);
@@ -2469,6 +2548,7 @@ export class Game {
     if (this.phase === 'gameOver') return fail('ゲームは終わっています');
     if (this.phase === 'discard') return fail('先に手札を捨ててください');
     if (this.phase === 'defend') return fail('相手が防御を選んでいます');
+    if (this.phase === 'mulligan') return fail('最初の手札を選んでいるところです');
 
     const player = this.players[this.currentPlayer];
     // 溶岩のステージ：ターンの終わりの灼熱
@@ -2701,7 +2781,7 @@ export class Game {
     // 3つ以上のときは、降参した人（チーム戦ならチーム全員）の城が壊れて抜け、残りの試合を見守る
     if (this.phase === 'defend') this.passDefense(); // 防御待ちだったら、先に攻撃を済ませる
     if (this.phase === 'gameOver') return { ok: true };
-    const wasTurn = this.side(this.currentPlayer) === mine;
+    const wasTurn = this.side(this.currentPlayer) === mine && this.phase !== 'mulligan';
     const members = alive.filter((id) => this.side(id) === mine);
     const castle = this.players[mine].castle;
     const lost = castle.hp;
@@ -2711,6 +2791,12 @@ export class Game {
     if (this.aliveSides().length <= 1) {
       const left = this.alivePlayerIds();
       this.finish(left[0] ?? playerId, 'lastStanding');
+      return { ok: true };
+    }
+    // マリガン中なら、降参した人は選ばなくてよい。残りが全員選び終わっていれば、先攻（から数えて残っている人）のターン1を始める
+    if (this.phase === 'mulligan') {
+      for (const id of members) this.mulliganPending.delete(id);
+      if (this.mulliganPending.size === 0) this.beginTurn(this.roundLeader());
       return { ok: true };
     }
     // 降参した人の番だったら、次の人の番にする
@@ -2813,6 +2899,9 @@ export class Game {
         : null,
       winnerTeam: this.winnerTeam,
       playerOrder: [...this.playerOrder],
+      // 先攻（コイントスで決まった人）と、マリガンで引き直しをまだ選んでいない人（phase "mulligan" のときだけ）
+      firstPlayer: this.firstPlayer,
+      mulligan: this.phase === 'mulligan' ? { pending: this.playerOrder.filter((id) => this.mulliganPending.has(id)) } : null,
       round: this.round,
       weather: this.weather ? { type: this.weather.type, name: this.weatherDef().name, icon: this.weatherDef().icon ?? null, description: this.weatherDef().description ?? null, roundsLeft: this.weather.roundsLeft } : null,
       weatherEnabled: Boolean(this.weatherDefs),

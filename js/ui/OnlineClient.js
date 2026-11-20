@@ -151,6 +151,7 @@ export class OnlineClient {
   defend(cardId, target) { return this.act('defend', target ? [cardId, target] : [cardId]); }
   passDefense() { return this.act('passDefense'); }
   discard(cardIds) { return this.act('discard', [cardIds]); }
+  mulligan(cardIds) { return this.act('mulligan', [cardIds]); }
   rematch() { return this.act('rematch'); }
   /** チャット：{ text } か { stamp }（スタンプの id） */
   chat(payload) { return this.act('chat', [payload]); }
