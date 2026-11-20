@@ -1256,7 +1256,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 「移動マス−1」（氷）は、滑ると逆の効果になるので入れていない。「溶岩の裂け目噴火」は噴火で表した
 - **選び方**：ふだんは毎試合ランダム。ひとりで遊ぶ・同じ端末の詳細設定（`js/ui/LocalSetup.js`）と、オンラインの部屋主の「ルールを変更」（`setRules` の `stage`。`"random"` かステージのID。`room.settings.stage`、`choices.stages`）で決めたステージも選べる
 - `getState().stage`：`{ id, name, icon, description, element, elementMultiplier }` か `null`
-- 画面：ステージごとに、盤面の景色（`#scenery`）・道・飛び石・城の色味を変える（`css/stage.css`。今はグラデーションと模様で描いた仮の見た目）。背景の絵 `assets/bg/stage-<ステージ>.png`（`darkForest` は `stage-dark-forest.png`）を置いて `assets/asset-manifest.json` に足せば、`js/ui/Renderer.js` の `setStage` が自動でそちらを使う（作り方は `assets/STYLE.md`）。上の「○周目」の前にステージのアイコン。試合の始めにステージの説明をお知らせで出す。噴火の演出
+- 画面：ステージごとに、盤面の景色（`#scenery`）・道・飛び石・城の色味を変える（`css/stage.css`。今はグラデーションと模様で描いた仮の見た目）。背景の絵 `assets/bg/stage-<ステージ>.png`（`darkForest` は `stage-dark-forest.png`）を置いて `assets/asset-manifest.json` に足せば、`js/ui/Renderer.js` の `setStage` が自動でそちらを使う（作り方は `assets/STYLE.md`）。2人のときは、相手の城を大きく（1.35倍）、自分の城を小さく（0.78倍）見せる（奥行き。人間の指示。`css/stage.css`）。上の「○周目」の前にステージのアイコン。試合の始めにステージの説明をお知らせで出す。噴火の演出
 - シミュレーション：`node tests/sim/run.js` は毎試合ランダムなステージで回す。`--stage lava` で1つに決める、`--no-stages` でステージなし
 - 確かめたこと（`--games 200 --match smart,smart --stage …`）：どのステージも全試合決着。平均手番：草原38・溶岩38・氷35・遺跡33・闇の森39・砂漠36、先攻の勝率49〜53%。CPU の弱い順は変わらない（random に勝つ割合：defensive 10%・rush 13%・smart 84%）
 

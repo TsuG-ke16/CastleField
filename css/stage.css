@@ -80,6 +80,11 @@
 #app[data-stage="darkForest"] .castle .castle-art { filter: brightness(.88) saturate(.95) drop-shadow(0 0 6px #9b6dff99); }
 #app[data-stage="desert"] .castle .castle-art { filter: sepia(.25) saturate(.95); }
 
+/* ---------- お城の大きさ：相手の城を大きく、自分の城を小さく見せる（奥行き。2人のときだけ） ----------
+   演出（ダメージ・回復）は transform を使うので、ぶつからない scale で変える。場所（レイアウト）は変えない */
+#app #board:not(.plaza-board) #castle-opp .castle-pic { scale: 1.35; transform-origin: 50% 20%; }
+#app #board:not(.plaza-board) #castle-me .castle-pic { scale: .78; }
+
 /* 夜：盤面に青い影をかける（操作のじゃまにならないよう、押せない層） */
 #app[data-time="night"] #field::after {
   content: "";
