@@ -74,15 +74,14 @@
 #app[data-stage][data-stage-art] #scenery .tree { display: none; }
 #app[data-stage][data-stage-art] #road .lane:not(.targetable) { border-color: transparent; background: none; box-shadow: none; }
 #app[data-stage][data-stage-art] #road .stone { display: none; }
-#app[data-stage][data-stage-art] #road .cell.mid .stone {
-  display: block; width: 80%; height: 64%; opacity: 1; filter: none;
-  background: radial-gradient(ellipse, #f1e6ffcc, #c4a6f088 55%, #b79be622 72%);
-  border: 3px dashed #ffffffe6; border-radius: 50%; box-shadow: 0 0 16px #c9a8ffcc, inset 0 0 10px #ffffff88;
-}
+/* 真ん中のマスだけは、どのステージでも砂漠と同じ石の台（kingdom.css の飛び石の絵）を大きく出す */
+#app[data-stage][data-stage-art] #road .cell.mid .stone { display: block; opacity: .95; filter: sepia(.4) saturate(1.2) brightness(1.05); }
 
 /* 真ん中のマス（魔物・ワールドボスの場所）は、ほかのマスより大きい（js/ui/Renderer.js の --cell-rows と rowCenter） */
 #app #road .cells { grid-template-rows: var(--cell-rows, repeat(var(--cells), 1fr)); }
 #app #road .cell.mid .stone { width: 70%; height: 56%; }
+/* 真ん中の石を光らせる演出（motion.css の rune-pulse）の影が四角く出ないよう、箱を楕円にする */
+#app[data-stage] #road .cell.mid .stone { border-radius: 50%; }
 
 /* ---------- 道（レーン）と飛び石：景色が透けて見えるように（草原と同じくらい薄く）。
    道を選ぶときの光る表示（.targetable）は kingdom.css のまま ---------- */
