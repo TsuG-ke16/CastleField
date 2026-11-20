@@ -18,7 +18,8 @@ const page = await context.newPage();
 page.setDefaultTimeout(12000);
 page.on('pageerror', (error) => errors.push(error.message));
 page.on('console', (message) => { if (message.type() === 'error') errors.push(message.text()); });
-await page.goto(`${root}?local=1&cpu=easy&seed=3`);
+// 拡大表示の CSS の 3D（浮かせる層）を確かめるので、three.js の 3D は使わない（そちらは ui-tests/card-gl.js）
+await page.goto(`${root}?local=1&cpu=easy&seed=3&card3d=css`);
 await page.locator('#home:not([hidden]), #app').first().waitFor();
 await page.waitForFunction(() => document.getElementById('rank-rewards'));
 await page.evaluate(() => { document.getElementById('rank-rewards').hidden = false; });

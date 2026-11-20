@@ -71,6 +71,23 @@ function buildBackRaised(png) {
 }
 
 // ---------- PNG（8bit・インターレースなし） ----------
+
+// ランク報酬のカード裏の凹凸：材質（金・銀・宝石の色）は同じランクの表の設定を使い、地（真ん中の模様）は金属にしない。
+// 浮かせる部品は、上下の飾り・左右の宝石・真ん中の紋章（BACK_RAISED と同じ範囲）。羊皮紙はない
+// 裏の宝石の色：金・銅の裏は、オレンジがかった金の飾りを宝石にしないよう、赤みの強い色だけにする
+const BACK_GEMS = { gold: { gemHue: [345, 24], gemMinSat: .55 }, bronze: { gemHue: null } };
+function backReliefConfig(rank) {
+  const box = ([x0, y0, x1, y1]) => [x0 * 512, y0 * 768, x1 * 512, y1 * 768];
+  const [ex, ey, rx, ry] = BACK_RAISED.emblem;
+  return {
+    ...SKINS[rank], base: { metal: .25, smooth: .45 }, maxRaisedPart: .012,   // 地の模様の大きな面は浮かせない（飾り・宝石だけ）
+    raised: [box(BACK_RAISED.top), box(BACK_RAISED.bottom), ...BACK_RAISED.sides.map(box), box([ex - rx, ey - ry, ex + rx, ey + ry])],
+    paper: { name: [0, 0, -1], medals: [] },
+    goldMinVal: .68, maxGemPart: .0025,               // 宝石は小さな石だけ（地の格子模様は宝石にしない）                                   // 地の茶色は金属にしない（明るい金の飾りだけ）
+    ...BACK_GEMS[rank],
+  };
+}
+
 const crcTable = new Uint32Array(256).map((_, n) => { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; return c >>> 0; });
 const crc32 = (buf) => { let c = 0xffffffff; for (const b of buf) c = crcTable[(c ^ b) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; };
 
@@ -256,7 +273,7 @@ export function buildRelief(png, cfg) {
   parts.forEach((part, id) => {
     let inside = 0;
     for (const j of part.pixels) { const x = j % W; if (inRects(x, (j - x) / W)) inside++; }
-    raisedPart[id] = part.pixels.length < N * .2 && inside / part.pixels.length >= .85 ? 1 : 0;
+    raisedPart[id] = part.pixels.length < N * (cfg.maxRaisedPart ?? .2) && inside / part.pixels.length >= .85 ? 1 : 0;
   });
   let raised = new Uint8Array(N);
   for (let i = 0; i < N; i++) if (lab[i] >= 0 && raisedPart[lab[i]]) raised[i] = 1;
@@ -275,11 +292,16 @@ export function buildRelief(png, cfg) {
     if (outline[i]) { m *= .5; g = .2; }
     else if (raised[i] && gemLike[i]) { gem[i] = 1; m = 0; g = 1; }
     else if (inPaper(x, y) && s < .42 && v > .66 && h >= 18 && h <= 60) { paper[i] = 1; m = 0; g = .18; }
-    else if (cfg.gold && h >= 30 && h <= 62 && s > .35 && v > .5) { m = cfg.gold.metal; g = cfg.gold.smooth; }
+    else if (cfg.gold && h >= 30 && h <= 62 && s > .35 && v > (cfg.goldMinVal ?? .5)) { m = cfg.gold.metal; g = cfg.gold.smooth; }
     else if (cfg.silver && s < .2 && v > .5) { m = cfg.silver.metal; g = cfg.silver.smooth; }
     else if (cfg.cloth && inHue(h, cfg.cloth) && s > .45) { m = 0; g = .25; }
     else if (cfg.organic && inHue(h, cfg.organic) && s > .25) { m = 0; g = .35; }
     metal[i] = m; smooth[i] = g;
+  }
+  // 大きすぎる宝石の色の面（地の模様など）は宝石にしない（cfg.maxGemPart：全体に対する割合）
+  if (cfg.maxGemPart) {
+    const mask = new Uint8Array(N); for (let i = 0; i < N; i++) mask[i] = gem[i] ? 1 : 0;
+    for (const part of label(W, H, mask).parts) if (part.pixels.length > N * cfg.maxGemPart) for (const j of part.pixels) { gem[j] = 0; metal[j] = cfg.base.metal; smooth[j] = cfg.base.smooth; }
   }
   // 宝石は輪郭線のすき間を埋めて、1つの丸い石にする
   {
@@ -363,6 +385,10 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     const back = decodePng(readFileSync(join(root, `assets/skins/back-rank-${rank}.png`)));
     const out = encodePng(back.width, back.height, 2, buildBackRaised(back));
     writeFileSync(join(root, `assets/skins/back-rank-${rank}-raised.png`), out);
-    console.log(`back-rank-${rank}: raised ${(out.length / 1024).toFixed(0)}KB`);
+    // 3D の拡大表示（CardGL.js）で、裏も本物の凹凸のメッシュにするための地図（枠と同じ作り方。地の模様は金属にしない）
+    const r = buildRelief(back, backReliefConfig(rank));
+    const relief = encodePng(r.width, r.height * 2, 3, r.relief);
+    writeFileSync(join(root, `assets/skins/back-rank-${rank}-relief.png`), relief);
+    console.log(`back-rank-${rank}: raised ${(out.length / 1024).toFixed(0)}KB, relief ${(relief.length / 1024).toFixed(0)}KB`);
   }
 }

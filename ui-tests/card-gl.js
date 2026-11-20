@@ -14,7 +14,7 @@ const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=sw
 const errors = [];
 let failed = 0;
 
-async function scenario(name, { query = '?fx=full', glExpected = true }) {
+async function scenario(name, { query = '?fx=full', glExpected = true, rank = null, back = false }) {
   const context = await browser.newContext({ viewport: { width: 390, height: 797 }, serviceWorkers: 'block' });
   await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
@@ -22,25 +22,42 @@ async function scenario(name, { query = '?fx=full', glExpected = true }) {
   page.on('pageerror', e => errors.push(`[${name}] ${e.message}`));
   page.on('console', m => { if (m.type() === 'error' && !IGNORED.test(m.text())) errors.push(`[${name}] ${m.text()}`); });
   try {
-    await page.goto(new URL(query, base).href);
-    await page.click('#home .home-tab[data-tab=deck]'); await page.locator('#home .home-tile[data-id="deck"]').click();
-    await page.locator('.deck-summary').waitFor();
-    await page.locator('.deck-filter-rarity').selectOption('legendary');
-    const target = page.locator('.deck-grid-item [data-zoom]').first();
-    await target.waitFor();
-    const box = await target.boundingBox();
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(600); await page.mouse.up();
+    if (rank) {
+      // ランク報酬の見本（表・裏）を長押し
+      await page.goto(new URL(`${query}&local=1&cpu=easy&seed=3`, base).href);
+      await page.waitForFunction(() => document.getElementById('rank-rewards'));
+      await page.evaluate(() => { document.getElementById('rank-rewards').hidden = false; });
+      const dialog = page.locator('dialog.card-zoom');
+      const target = page.locator(`#rank-rewards .rank-reward-row[data-rank="${rank}"] .rank-reward-card${back ? '.back' : ':not(.back)'}`);
+      await page.waitForTimeout(600);
+      await target.scrollIntoViewIfNeeded();
+      await page.waitForTimeout(400);
+      for (let i = 0; i < 5 && !(await dialog.isVisible()); i++) {
+        const box = await target.boundingBox();
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(700); await page.mouse.up();
+        await page.waitForTimeout(400);
+      }
+    } else {
+      await page.goto(new URL(query, base).href);
+      await page.click('#home .home-tab[data-tab=deck]'); await page.locator('#home .home-tile[data-id="deck"]').click();
+      await page.locator('.deck-summary').waitFor();
+      await page.locator('.deck-filter-rarity').selectOption('legendary');
+      const target = page.locator('.deck-grid-item [data-zoom]').first();
+      await target.waitFor();
+      const box = await target.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(600); await page.mouse.up();
+    }
     await page.waitForSelector('dialog.card-zoom[open]');
     if (glExpected) {
-      await page.waitForSelector('canvas.zoom-gl-canvas');
+      await page.waitForSelector('canvas.zoom-gl-canvas', { timeout: 20000 });
       // なぞると向きが変わる（描かれる絵が変わる）
-      const before = await page.locator('canvas.zoom-gl-canvas').screenshot();
+      const before = await page.locator('canvas.zoom-gl-canvas').screenshot({ timeout: 40000 });
       assert.ok(before.length > 20000, 'カードが描かれている（真っ透明の画像は小さい）');
       const s = await page.locator('.zoom-stage').boundingBox();
       await page.mouse.move(s.x + s.width / 2, s.y + s.height / 2); await page.mouse.down();
       await page.mouse.move(s.x + s.width / 2 + 120, s.y + s.height / 2, { steps: 8 }); await page.mouse.up();
       await page.waitForTimeout(300);
-      assert.notDeepEqual(await page.locator('canvas.zoom-gl-canvas').screenshot(), before, 'なぞると向きが変わる');
+      assert.notDeepEqual(await page.locator('canvas.zoom-gl-canvas').screenshot({ timeout: 40000 }), before, 'なぞると向きが変わる');
     } else {
       await page.waitForTimeout(1500);
       assert.equal(await page.locator('canvas.zoom-gl-canvas').count(), 0, 'CSS の 3D のままで canvas は出ない');
@@ -59,6 +76,8 @@ async function scenario(name, { query = '?fx=full', glExpected = true }) {
 }
 
 await scenario('Blender 製の板で出る・なぞって回る', {});
+await scenario('ランクの裏（金）も3D・なぞって回る', { rank: 'gold', back: true });
+await scenario('ランクの表（チャンピオン）も3D', { rank: 'champion' });
 await scenario('?card3d=css では CSS の 3D', { query: '?fx=full&card3d=css', glExpected: false });
 await browser.close();
 for (const e of errors) { failed++; console.log(`ERROR ${e}`); }

@@ -538,3 +538,7 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 |---|---|---|---|
 | `models/card-slab.glb` | Blender（bpy 5.3）で `models/make-card.py` を実行して作った（開発者の依頼で、この開発で作成）。角丸・厚み・縁の面取りの板。絵は含まない | 自作（このリポジトリのライセンスに従う） | 2026-11-20 |
 | `js/vendor/three/`（three.module.min.js・GLTFLoader.js・BufferGeometryUtils.js） | three.js r170（https://github.com/mrdoob/three.js）。GLTFLoader・BufferGeometryUtils は import の行だけ相対パスに書きかえた | MIT（`js/vendor/three/LICENSE`） | 2026-11-20 取得 |
+
+## ランク報酬の裏の凹凸の地図（2026-11-20）
+
+- `skins/back-rank-{iron,bronze,silver,gold,platinum,diamond,master,champion}-relief.png` — 自作スクリプト（`node js/ui/build-card-relief.js`）で、同じ名前のランクの裏の絵（`skins/back-rank-*.png`）から自動生成（高さ・法線・材質の地図）。3Dの拡大表示（`js/ui/CardGL.js`）で裏を本物の凹凸のメッシュにするために使う。絵柄は含まない。利用条件は元の絵と同じ
