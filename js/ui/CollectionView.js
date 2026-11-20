@@ -123,7 +123,10 @@ export class CollectionView {
     body.append(head);
     const row = el('div', 'gacha-pull');
     for (const [count, cost, label] of [[1, g.banner.costSingle, '1回'], [10, g.banner.costTen, '10連']]) {
-      const b = el('button', 'plank-btn', `${label}　${cost} コイン`); b.type = 'button'; b.dataset.act = 'pull'; b.dataset.count = String(count); b.disabled = this.shop.coins < cost; row.append(b);
+      // 「10連　900 コイン」は狭い画面で切れるので、コインの絵＋数にする（読み上げは文で）
+      const b = el('button', 'plank-btn'); b.type = 'button'; b.setAttribute('aria-label', `${label}　${cost} コイン`);
+      const coin = new Image(); coin.src = 'assets/ui/icon-coin.png'; coin.alt = ''; coin.width = 20; coin.height = 20; coin.className = 'gacha-pull-coin';
+      b.append(el('span', 'gacha-pull-label', label), coin, el('b', null, String(cost))); b.dataset.act = 'pull'; b.dataset.count = String(count); b.disabled = this.shop.coins < cost; row.append(b);
     }
     body.append(row);
     if (this.shop.coins < g.banner.costTen) {

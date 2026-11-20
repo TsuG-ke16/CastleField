@@ -107,6 +107,7 @@ let castles = null;
 let decks = null;
 let rarities = null;
 let stamps = null;   // data/stamps.json（読めなければ null：チャットなし）
+let cardZoom = null; // カードの拡大表示（CardZoom）。ホームのデッキのカードをタップしても開く
 let deckEditor = null; // デッキ編成の画面（コスト制の見本のデッキがあるときだけ）
 let chat = null;     // チャットとスタンプ（ChatView）
 let weather = null;  // data/weather.json（読めなければ null：天候なし）
@@ -258,7 +259,7 @@ async function boot() {
     onEditDeck: openDeckEditor, savedDecks, presetDeck, previewDeck,
   });
   initHolograms(el.app);
-  initCardZoom({ root: el.app, cards, rarities, rules });
+  cardZoom = initCardZoom({ root: el.app, cards, rarities, rules });
   $('back-to-room').addEventListener('click', async () => {
     const res = await session?.act('backToRoom');
     if (!res?.ok) toast(res?.reason ?? '部屋に戻れませんでした');
@@ -322,9 +323,10 @@ async function boot() {
   const accountPanel = new AccountPanel({ toast });
   const profileView = new ProfileView({ toast, onChanged: () => home.refresh() });
   home = new Home({
-    toast,
+    toast, cards, rarities, rules, decks,
+    onZoomCard: (type) => cardZoom?.open(type),
     onPlay: (mode) => openPlaySetup(mode),
-    onDeck: () => deckEditor?.open(),
+    onDeck: (slot) => deckEditor?.open(slot),
     onCatalog: () => { sound.play('tap'); cardGuide.open('cards'); },
     onHelp: () => openHelp(),
     getRecord: () => matchStats.recordText(),

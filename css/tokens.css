@@ -39,6 +39,30 @@
   --shadow-panel: 0 6px 18px rgb(0 0 0 / 35%);
   --touch-target: 44px;
 
+  /* 余白・角丸・影・文字の段階（ホームから順に使う。ほかの画面も新しく作るときはこれを使う） */
+  --space-4: 16px;
+  --space-5: 24px;
+  --radius-card: 16px;
+  --radius-hero: 20px;
+  --line-outline: #3f2511;          /* 絵と同じ、こげ茶の太い輪郭 */
+  --outline-w: 2px;
+  --shadow-raised: 0 3px 0 rgb(63 37 17 / 55%), 0 8px 18px rgb(10 24 20 / 35%);
+  --shadow-soft: 0 6px 16px rgb(10 24 20 / 30%);
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-lg: 17px;
+  --text-xl: 22px;
+  --gold-hi: #ffe38e;
+  --gold-lo: #e98a20;
+  --forest-1: #224b40;
+  --forest-2: #12302a;
+  --forest-3: #0b211c;
+  --selected: #506d61;              /* 選択中（金色とは別の色にする） */
+  --selected-hi: #8fe0b5;
+
+  --motion-tap: 120ms;              /* タップの反応 */
+  --motion-page: 260ms;             /* タブの切りかえ */
   --motion-press: 50ms;
   --motion-feedback: 180ms;
   --motion-button-release: 220ms;
