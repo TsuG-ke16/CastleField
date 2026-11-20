@@ -79,6 +79,7 @@ export const SPELL_TINT = {
   poisonEnemy: 'rgba(132, 204, 22, 0.45)',
   freezeEnemySoldiers: 'rgba(125, 211, 252, 0.5)',
   pushBackEnemySoldiers: 'rgba(226, 244, 236, 0.55)',
+  purifyFlare: 'rgba(255, 228, 140, 0.5)',
 };
 
 export function soldierMark(type, def) {

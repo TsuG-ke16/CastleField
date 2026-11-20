@@ -256,6 +256,18 @@ const CARD_ART = {
     `<g ${S} stroke-width="6" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/><path d="M40 20 L50 30 L60 20 M40 80 L50 70 L60 80 M19 45 L32 40 L28 26 M81 55 L68 60 L72 74 M19 55 L32 60 L28 74 M81 45 L68 40 L72 26"/></g>` +
     `<g stroke="#8fdcff" stroke-width="2.5" stroke-linecap="round" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/></g>` +
     `<circle cx="50" cy="50" r="8" fill="#e9faff" ${S} stroke-width="3"/>`,
+  chainBlast: () => bg('#ffe0b8', '#fff4e4') +
+    `<g ${S} stroke-width="4"><circle cx="50" cy="50" r="16" fill="#ff8a3d"/><circle cx="20" cy="34" r="9" fill="#ffc06b"/><circle cx="80" cy="34" r="9" fill="#ffc06b"/><circle cx="34" cy="80" r="8" fill="#ffc06b"/><circle cx="68" cy="80" r="8" fill="#ffc06b"/></g>` +
+    `<g stroke="#ff8a3d" stroke-width="3" stroke-dasharray="4 4" fill="none"><path d="M36 44 L27 37 M64 44 L73 37 M42 63 L37 73 M58 63 L64 73"/></g>`,
+  ignitionBurst: () => bg('#ffc7a6', '#ffe9d8') +
+    `<path d="M50 8 Q62 28 74 34 Q92 50 82 72 Q72 92 50 92 Q26 92 18 70 Q10 48 30 34 Q34 46 42 44 Q38 24 50 8 Z" fill="#f2622e" ${S} stroke-width="4"/>` +
+    `<path d="M50 44 Q62 56 60 70 Q56 80 48 78 Q38 74 42 60 Q44 52 50 44 Z" fill="#ffd23d" ${S} stroke-width="3"/>`,
+  shieldBlast: () => bg('#cfe0f5', '#eef5ff') +
+    `<path d="M50 12 L82 24 V50 Q82 76 50 90 Q18 76 18 50 V24 Z" fill="#8fb8e8" ${S} stroke-width="4"/>` +
+    `<g ${S} stroke-width="4" fill="#ffd23d"><path d="M50 30 L56 46 L72 46 L59 56 L64 72 L50 62 L36 72 L41 56 L28 46 L44 46 Z"/></g>`,
+  purifyFlare: () => bg('#fff3c4', '#fffbe8') +
+    `<path d="M50 14 Q60 34 70 40 Q84 54 74 72 Q64 88 50 88 Q34 88 26 72 Q18 54 32 42 Q38 50 44 48 Q40 30 50 14 Z" fill="#ffe27a" ${S} stroke-width="4"/>` +
+    `<path d="M50 48 V76 M38 62 H62" ${S} stroke-width="5"/>`,
   moonrise: () => bg('#3b3f78', '#6d6fb3') +
     `<circle cx="54" cy="46" r="26" fill="#fff4c4" ${S} stroke-width="4"/><circle cx="66" cy="38" r="22" fill="#4b4f8c"/>` +
     `<g fill="#fff4c4"><circle cx="20" cy="22" r="2.5"/><circle cx="82" cy="78" r="2"/><circle cx="28" cy="80" r="2"/></g>`,

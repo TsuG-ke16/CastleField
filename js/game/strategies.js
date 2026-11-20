@@ -367,6 +367,24 @@ function smartStep(game, pid, ctx) {
   // 永続の毒は早く入れるほど効く。強い毒から
   const toxins = typesWithEffect(ctx, 'poisonEnemy').sort((a, b) => ctx.cards[b].amount - ctx.cards[a].amount);
   if (enemy && playFirst(game, playable, toxins)) return true;
+  // 自分の兵士・城が毒・やけど・凍結なら、浄化の炎で治す
+  const ailing = me.castlePoison || me.soldiers.some((s) => s.statuses?.poison || s.statuses?.burn || s.statuses?.frozen > 0);
+  if (ailing && playFirst(game, playable, typesWithEffect(ctx, 'purifyFlare'))) return true;
+  // シールド・ブラスト：城壁が10以上か、相手の城を落とせるなら
+  if (enemy && (me.armor >= 10 || me.armor >= enemy.castleHp) && playFirst(game, playable, typesWithEffect(ctx, 'armorBlast'))) return true;
+  // イグニッション・バースト：自分の城に余裕があり、相手の兵士が2体以上か、相手の城を落とせるなら
+  for (const t of typesWithEffect(ctx, 'ignitionBurst')) {
+    const roomy = me.castleHp > me.castleMaxHp / 2;
+    if (enemy && roomy && (enemy.soldiers.length >= 2 || ctx.cards[t].amount >= enemy.castleHp) && playFirst(game, playable, [t])) return true;
+  }
+  // チェーン・ブラスト：いちばん前まで来ている相手の兵士を狙う
+  if (enemy && enemy.soldiers.length > 0) {
+    const front = (targets) => {
+      const byId = new Map(enemies.flatMap((e) => e.soldiers).map((s) => [s.soldierId, s]));
+      return [...targets].sort((a, b) => (byId.get(b.soldierId)?.position ?? -1) - (byId.get(a.soldierId)?.position ?? -1))[0];
+    };
+    for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'chainBlast')) if (playWith(game, c.cardId, front)) return true;
+  }
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;

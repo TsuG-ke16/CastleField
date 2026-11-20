@@ -20,6 +20,10 @@ export const EFFECTS = {
     poisonEnemy: ['amount'], // 毒：選んだ相手の兵士と城を、永続の毒状態にする（毎ターン amount ダメージ。盾・城壁は効かない）
     curePoison: [], // 解毒薬：自分の毒状態（兵士・城）をすべて治す
     freezeEnemySoldiers: ['turns'],
+    chainBlast: ['amount'], // チェーン・ブラスト：相手の兵士1体に amount、まわり（同じ道の前後1マス・となりの道の同じマス）に半分（切り上げ）
+    ignitionBurst: ['amount', 'selfDamage'], // イグニッション・バースト：自分の城に selfDamage、相手の兵士全員と城に amount
+    armorBlast: [], // シールド・ブラスト：自分の城壁の値ぶん相手の城にダメージ。城壁は0になる
+    purifyFlare: ['amount'], // ピュリファイ・フレア：自分の毒・やけど・凍結を治し、相手の兵士全員に amount
     pushBackEnemySoldiers: ['amount'], // ゲイルフォース：相手の兵士を amount マス押し戻す（自分の城の前＝マス0より後ろには下がらない）
     redrawHand: [], // 天の恵み：手札を全部引き直す
     randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
@@ -46,7 +50,7 @@ export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers',
 export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison'];
 
 /** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'summonSpirit'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、

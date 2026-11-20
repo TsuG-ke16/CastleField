@@ -1829,6 +1829,25 @@ export class Game {
           targets: player.castle.poison || player.soldiers.some((x) => x.poison) ? [{ playerId: player.id }] : [],
           reason: '毒にかかっているものがありません',
         };
+      case 'chainBlast':
+        // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
+        return {
+          targets: this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers.map((x) => ({ soldierId: x.soldierId }))),
+          reason: '道の上に相手の兵士がいません',
+        };
+      case 'ignitionBurst': {
+        // 自分の城が落ちるほどのときは出せない（自滅させない）
+        if (player.castle.hp <= card.def.selfDamage + 1) return { targets: [], reason: `城のHPが足りません（${card.def.selfDamage + 2}以上必要）` };
+        return { targets: playerTargets(this.enemySides(player.id)), reason: '相手がいません' };
+      }
+      case 'armorBlast':
+        if (player.armor <= 0) return { targets: [], reason: '城壁がありません' };
+        return { targets: playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id)), reason: '相手がいません' };
+      case 'purifyFlare': {
+        const cures = player.castle.poison || player.soldiers.some((x) => x.poison || x.burn || x.frozen > 0);
+        const foes = this.opponentsOf(player.id).some(hasSoldiers);
+        return { targets: cures || foes ? [{ playerId: player.id }] : [], reason: '治すものも、相手の兵士もいません' };
+      }
       case 'setTime': {
         // 刻の魔法：ムーンライズは昼のとき（夜にする）、ドーンブレイクは夜のとき（昼にする）だけ出せる
         const now = this.night ? 'night' : 'day';
@@ -2028,6 +2047,8 @@ export class Game {
         hp: soldier.hp,
         attack: soldier.attack,
       });
+    } else if (card.isSpell && target.soldierId) {
+      this.chainBlast(player, card, target.soldierId);
     } else if (card.isSpell && target.monsterId) {
       const monster = this.findMonster(target.monsterId);
       this.emit('spellCast', { playerId: player.id, type: card.type, target: monster.monsterId, targetKind: 'monster' });
@@ -2043,6 +2064,45 @@ export class Game {
       this.playSupport(player, card, target);
     }
 
+  }
+
+  /**
+   * チェーン・ブラスト：相手の兵士1体に amount、そのまわりの同じ陣地の兵士に半分（切り上げ）。
+   * まわり＝同じ道の前後1マス（同じマスも）・となりの道（同じ2人の間のレーンが1つちがい）の同じマス。
+   * 兵士に当たる魔法なので、相手は盾を出せる
+   */
+  chainBlast(player, card, soldierId) {
+    const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
+    const center = owner.soldiers.find((x) => x.soldierId === soldierId);
+    const amount = card.def.amount;
+    const half = Math.ceil(amount / 2);
+    const road = this.findRoad(center.roadId);
+    const side = this.side(owner.id);
+    const sq = road.toSquare(side, center.position);
+    const near = [];
+    for (const id of this.alivePlayerIds().filter((id) => this.side(id) === side)) {
+      for (const x of this.players[id].visibleSoldiers) {
+        if (x === center) continue;
+        const r = this.findRoad(x.roadId);
+        const xsq = r.toSquare(side, x.position);
+        const sameRoad = r.roadId === road.roadId && Math.abs(xsq - sq) <= 1;
+        const nextLane = r.pairId === road.pairId && Math.abs(r.lane - road.lane) === 1 && xsq === sq;
+        if (sameRoad || nextLane) near.push({ owner: this.players[id], soldier: x });
+      }
+    }
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: center.roadId, soldierId });
+    if (this.rollMiss()) {
+      this.emitMiss(player.id, 'spell', { type: card.type });
+      return;
+    }
+    this.requestDefense(
+      { kind: 'soldiers', defenderId: side, attackerId: player.id, amount, soldierIds: [soldierId, ...near.map((n) => n.soldier.soldierId)] },
+      () => {
+        if (owner.soldiers.includes(center)) this.damageSoldier(owner, center, amount, 'spell');
+        for (const n of near) if (n.owner.soldiers.includes(n.soldier)) this.damageSoldier(n.owner, n.soldier, half, 'spell');
+      },
+      () => this.checkGameOver(),
+    );
   }
 
   castSpell(player, card, targetPlayer, roadId) {
@@ -2158,6 +2218,62 @@ export class Game {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         const healed = player.castle.heal(amount);
         this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        break;
+      }
+
+      case 'ignitionBurst': {
+        // 先に自分の城が燃える（城壁が先に受ける）。そのあと相手の兵士全員と城に amount（防御は聞かない）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        this.damageCastle(player, card.def.selfDamage, { kind: 'self', type: card.type });
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          break;
+        }
+        for (const id of this.alivePlayerIds().filter((id) => this.side(id) === enemy.id)) {
+          const owner = this.players[id];
+          for (const soldier of [...owner.visibleSoldiers]) this.damageSoldier(owner, soldier, amount, 'spell');
+        }
+        this.damageCastle(enemy, amount, { kind: 'spell', type: card.type });
+        this.checkGameOver();
+        break;
+      }
+
+      case 'armorBlast': {
+        // 城壁を全部ぶつける（城壁は0になる）。城に当たる魔法なので、相手は防御（反射など）を出せる
+        const damage = player.armor;
+        player.armor = 0;
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        this.emit('castleArmored', { playerId: player.id, armor: 0 });
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          break;
+        }
+        this.requestDefense(
+          { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount: damage, from: 'spell', spellType: card.type },
+          () => this.damageCastle(enemy, damage, { kind: 'spell', type: card.type }),
+          () => this.checkGameOver(),
+        );
+        break;
+      }
+
+      case 'purifyFlare': {
+        // 自分の毒・やけど・凍結を治し、相手の兵士全員に amount
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        for (const soldier of player.soldiers) {
+          for (const status of ['poison', 'burn', 'frozen']) {
+            if (status === 'frozen' ? soldier.frozen <= 0 : !soldier[status]) continue;
+            soldier[status] = status === 'frozen' ? 0 : null;
+            this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status });
+          }
+        }
+        if (player.castle.poison) {
+          player.castle.poison = null;
+          player.castle.poisonTurns = null;
+          this.emit('castleCured', { playerId: player.id });
+        }
+        for (const foe of this.opponentsOf(player.id)) {
+          for (const soldier of [...foe.visibleSoldiers]) this.damageSoldier(foe, soldier, amount, 'spell');
+        }
         break;
       }
 

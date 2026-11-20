@@ -1358,6 +1358,10 @@ export class Animations {
     const enemy = typeof target === 'string' ? target : this.renderer.opponentOf(playerId);
     if (def.effect === 'damageEnemyCastle') return this.fireball(playerId, enemy, def.amount);
     if (def.effect === 'damageEnemySoldiers') return this.thunder(enemy, roadId, def.amount);
+    // チェーン・ブラスト：狙った道に雷のような爆発。イグニッション・バースト／シールド・ブラスト：相手の城へ大きな火の玉
+    if (def.effect === 'chainBlast') return this.thunder(enemy, roadId, def.amount);
+    if (def.effect === 'ignitionBurst') { this.screenShake('spell', 10); return this.fireball(playerId, enemy, def.amount); }
+    if (def.effect === 'armorBlast') { const armor = this.renderer.players?.[playerId]?.armor; return this.fireball(playerId, enemy, Math.max(8, armor ?? 12)); }
     if (SPELL_TINT[def.effect]) return this.mist(enemy, SPELL_TINT[def.effect], roadId);
     if (def.effect === 'redrawHand') return this.banner('手札を引き直す！', UI_CONFIG.timing.shuffle, 'small');
     if (def.effect === 'randomEffect') return this.banner('神頼み！', UI_CONFIG.timing.shuffle, 'small');
@@ -1437,11 +1441,12 @@ export class Animations {
     if (this.skipping) return;
     const gust = color === SPELL_TINT.pushBackEnemySoldiers;
     const lava = color.startsWith('rgba(255, 96, 32');
-    if (!lava) sound.play(gust ? 'gust' : color === SPELL_TINT.freezeEnemySoldiers ? 'freeze' : 'poison');
+    const pure = color === SPELL_TINT.purifyFlare;
+    if (!lava) sound.play(pure ? 'heal' : gust ? 'gust' : color === SPELL_TINT.freezeEnemySoldiers ? 'freeze' : 'poison');
     const app = this.el.app.getBoundingClientRect();
     const r = this.renderer.laneEl(roadId).getBoundingClientRect(); // レーンを選んだ魔法は、その道だけに霧をかける
     const fog = this.fx('fx-mist');
-    fog.innerHTML = imageArt(`fx/${lava ? 'explosion' : gust ? 'dust' : color === SPELL_TINT.freezeEnemySoldiers ? 'ice' : 'poison'}.png`, '', 'art');
+    fog.innerHTML = imageArt(`fx/${lava ? 'explosion' : pure ? 'heal' : gust ? 'dust' : color === SPELL_TINT.freezeEnemySoldiers ? 'ice' : 'poison'}.png`, '', 'art');
     fog.style.left = `${r.left - app.left}px`;
     fog.style.top = `${r.top - app.top}px`;
     fog.style.width = `${r.width}px`;
