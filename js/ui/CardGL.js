@@ -2,7 +2,7 @@
 // 板（角丸・厚み・縁）が glb、カードの絵（枠・イラスト・名前・マーク）は画面の DOM から canvas に写して、板の表に貼る。
 // Card3D.js（CSS の 3D）と同じ使い方：render({ quaternion, tiltX, tiltY })・resize()・destroy()。
 // 読み込めない・WebGL が使えないときは null を返すので、呼ぶ側は CSS の 3D のままにする。
-import { CARD_LIGHT, RELIEF_FRAG, RELIEF_PRESETS, reliefPaths } from './CardRelief.js';
+import { CARD_LIGHT, RELIEF_PRESETS, reliefPaths } from './CardRelief.js';
 import { UI_CONFIG } from './config.js';
 import { rankSkinBack } from './skinArt.js';
 import { cardMotionReduced, cardAxes } from './Card3D.js';
@@ -69,7 +69,7 @@ async function paintFace(card) {
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(PX_PER_UNIT * (1 + MARGIN * 2));
   canvas.height = Math.round(PX_PER_UNIT * (1.5 + MARGIN * 2));
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.translate(MARGIN * PX_PER_UNIT, MARGIN * PX_PER_UNIT);
   ctx.imageSmoothingQuality = 'high';
   const rects = {};
@@ -161,20 +161,92 @@ const FACE_W = Math.round(PX_PER_UNIT * (1 + MARGIN * 2));
 const FACE_H = Math.round(PX_PER_UNIT * (1.5 + MARGIN * 2));
 const M = MARGIN * PX_PER_UNIT;
 
-/** 凹凸の地図（上半分：法線と高さ／下半分：金属・つや・宝石）と、浮かせる部品の地図を、顔の canvas と同じ位置に並べる */
-function reliefMaps(images, frameRect) {
+/** 画像を canvas に写してピクセルを読む */
+function pixels(image, w, h) {
+  const c = blank(w, h);
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(image, 0, 0, w, h);
+  return { canvas: c, data: ctx.getImageData(0, 0, w, h).data };
+}
+
+const RELIEF_HEIGHT = 0.03;     // 枠の凹凸の高さ（カードの幅を 1 として。地図の明るさ 1 のところ）
+const RAISED_HEIGHT = 0.03;     // 浮かせる部品（王冠・宝石）のさらに手前への持ち上げ
+const GRID = [256, 384];        // 枠のメッシュの分割数
+
+/**
+ * 枠の凹凸の地図（高さ）から、実際に高さのあるメッシュを作る。絵の canvas と同じ UV を持つ。
+ * 絵が透けているところの面は作らない。つや・金属の地図は、絵と同じ位置の canvas（G=あらさ・B=金属）にして返す。
+ */
+function reliefMesh(THREE, images, rects, face) {
   const [reliefImg, raisedImg] = images;
-  const relief = blank(FACE_W, FACE_H * 2);
-  const rc = relief.getContext('2d');
-  rc.fillStyle = 'rgb(128,128,0)'; rc.fillRect(0, 0, FACE_W, FACE_H);   // 凹凸なし・高さ 0
-  rc.fillStyle = 'rgb(0,0,0)'; rc.fillRect(0, FACE_H, FACE_W, FACE_H);  // 金属・つや・宝石なし
-  const half = reliefImg.naturalHeight / 2;
-  const { x, y, w, h } = frameRect;
-  rc.drawImage(reliefImg, 0, 0, reliefImg.naturalWidth, half, M + x, M + y, w, h);
-  rc.drawImage(reliefImg, 0, half, reliefImg.naturalWidth, half, M + x, FACE_H + M + y, w, h);
-  const raised = blank(FACE_W, FACE_H);
-  raised.getContext('2d').drawImage(raisedImg, M + x, M + y, w, h);
-  return { relief, raised };
+  const { x, y, w, h } = rects.frame;
+  const sw = reliefImg.naturalWidth, sh = reliefImg.naturalHeight / 2;
+  const relief = pixels(reliefImg, sw, sh * 2).data;
+  const raised = pixels(raisedImg, sw, sh).data;
+  const alpha = face.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, FACE_W, FACE_H).data;
+  const [nx, ny] = GRID;
+  const sample = (data, u, v, row, channel) => data[((Math.min(sh - 1, Math.round(v * (sh - 1))) + row) * sw + Math.min(sw - 1, Math.round(u * (sw - 1)))) * 4 + channel];
+  const positions = new Float32Array((nx + 1) * (ny + 1) * 3);
+  const uvs = new Float32Array((nx + 1) * (ny + 1) * 2);
+  const solid = new Uint8Array((nx + 1) * (ny + 1));
+  for (let j = 0; j <= ny; j++) {
+    for (let i = 0; i <= nx; i++) {
+      const k = j * (nx + 1) + i;
+      const u = i / nx, v = j / ny;
+      const px = M + x + u * w, py = M + y + v * h;                       // 絵の canvas の中の位置
+      const lift = sample(relief, u, v, 0, 2) / 255 * RELIEF_HEIGHT + sample(raised, u, v, 0, 3) / 255 * RAISED_HEIGHT;
+      positions.set([px / PX_PER_UNIT - 0.5 - MARGIN, 0.75 + MARGIN - py / PX_PER_UNIT, 0.0015 + lift], k * 3);
+      uvs.set([px / FACE_W, 1 - py / FACE_H], k * 2);
+      solid[k] = alpha[(Math.min(FACE_H - 1, Math.round(py)) * FACE_W + Math.min(FACE_W - 1, Math.round(px))) * 4 + 3] > 8 ? 1 : 0;
+    }
+  }
+  const index = [];
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const a = j * (nx + 1) + i, b = a + 1, c = a + nx + 1, d = c + 1;
+      if (!(solid[a] || solid[b] || solid[c] || solid[d])) continue;      // 透けているところは面を作らない
+      index.push(a, c, b, b, c, d);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geometry.setIndex(index);
+  geometry.computeVertexNormals();
+
+  // つや・金属の地図（G=あらさ・B=金属）。枠のないところは、金属なし・あらさ 0.7
+  const orm = blank(FACE_W, FACE_H);
+  const oc = orm.getContext('2d');
+  oc.fillStyle = 'rgb(0,178,0)'; oc.fillRect(0, 0, FACE_W, FACE_H);
+  const mw = Math.ceil(w), mh = Math.ceil(h);
+  const mat = blank(mw, mh);
+  const mc = mat.getContext('2d', { willReadFrequently: true });
+  mc.drawImage(reliefImg, 0, sh, sw, sh, 0, 0, mw, mh);
+  const m = mc.getImageData(0, 0, mw, mh);
+  for (let q = 0; q < m.data.length; q += 4) {
+    const metal = m.data[q], smooth = m.data[q + 1];
+    m.data[q] = 0; m.data[q + 1] = 255 * (0.7 - 0.55 * smooth / 255); m.data[q + 2] = metal; m.data[q + 3] = 255;
+  }
+  mc.putImageData(m, 0, 0);
+  oc.drawImage(mat, M + x, M + y);
+  return { geometry, orm };
+}
+
+/** 反射に映す部屋（世界に固定）：上の細長い照明と、右のうすい照明。金属の映り込みになる */
+function roomEnvironment(THREE, renderer) {
+  const room = new THREE.Scene();
+  room.add(new THREE.Mesh(new THREE.BoxGeometry(12, 12, 12), new THREE.MeshBasicMaterial({ color: '#9aa1ad', side: THREE.BackSide })));
+  const panel = (w, h, color, position, look) => {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+    mesh.position.set(...position); mesh.lookAt(...look); room.add(mesh);
+  };
+  panel(7, 1.2, new THREE.Color(9, 9, 9), [0, 5.5, 1], [0, 0, 0]);
+  panel(1.6, 5, new THREE.Color(3.2, 3.2, 3.2), [5.5, 0, 1], [0, 0, 0]);
+  panel(5, 1.2, new THREE.Color(1.4, 1.3, 1.1), [-1, -5.5, 3], [0, 0, 0]);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const target = pmrem.fromScene(room, 0.03);
+  pmrem.dispose();
+  return target;
 }
 
 /** 偏光のフィルム（css/hologram.css の --foil と同じ色。CSS では背景が窓の 225%×200% で、位置が光で動く） */
@@ -227,6 +299,8 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     if (!card.isConnected) return null;
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
     if (!renderer.getContext()) throw new Error('no webgl');
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(28, 1, 0.1, 50);
@@ -234,9 +308,15 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     scene.add(group);
 
     // 光（CSS の 3D と同じ向き。y と z は three.js の向きに直す）
-    const light = new THREE.DirectionalLight('#ffffff', 2.4);
+    const light = new THREE.DirectionalLight('#ffffff', 2.2);
     light.position.set(CARD_LIGHT[0] * 3, -CARD_LIGHT[1] * 3, CARD_LIGHT[2] * 3);
-    scene.add(light, new THREE.AmbientLight('#fff4e0', 1.5));
+    light.castShadow = true;                       // 王冠や縁の影が、枠の上に落ちる
+    light.shadow.mapSize.set(2048, 2048);
+    Object.assign(light.shadow.camera, { left: -1.3, right: 1.3, top: 1.3, bottom: -1.3, near: 0.5, far: 8 });
+    light.shadow.bias = -0.0004; light.shadow.normalBias = 0.003; light.shadow.radius = 3;
+    scene.add(light, new THREE.AmbientLight('#fff4e0', 0.9));
+    const environment = roomEnvironment(THREE, renderer);
+    scene.environment = environment.texture;
 
     // 板（Blender 製）。マテリアルは名前で見つけて、色と裏の絵を付ける
     const model = gltf.scene.clone(true);
@@ -276,46 +356,25 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     const frameSrc = card.querySelector('.mini-card-frame')?.getAttribute('src');
     const paths = reliefPaths(frameSrc);
     const images = paths && rects.frame ? await Promise.all([loadImage(paths.relief), loadImage(paths.raised)]) : [];
-    const shaders = [];       // 凹凸のシェーダー（表の下地と、浮かせる部品）
-    let setLight = null;
+    let frameMesh = null;
     if (images[0] && images[1]) {
-      // 凹凸・金属・宝石・キラキラは、CSS 版（CardRelief.js）と同じ式で光らせる
-      const maps = reliefMaps(images, rects.frame);
-      const raw = (canvas, premultiply = false) => {
-        const t = own(new THREE.CanvasTexture(canvas));
-        t.flipY = false; t.colorSpace = THREE.NoColorSpace; t.premultiplyAlpha = premultiply;
-        t.generateMipmaps = false; t.minFilter = THREE.LinearFilter;
-        return t;
-      };
-      const frameTex = raw(face, true);
-      const reliefTex = raw(maps.relief), raisedTex = raw(maps.raised);
+      // 凹凸は、枠の高さの地図から作った本物のメッシュ。光と影・金属の映り込みは three.js の材質に任せる
+      const { geometry, orm } = reliefMesh(THREE, images, rects, face);
+      own(geometry);
+      faceTexture.colorSpace = THREE.SRGBColorSpace;
+      const ormTexture = own(new THREE.CanvasTexture(orm));
+      ormTexture.anisotropy = 4;
       const preset = RELIEF_PRESETS[card.dataset.skin ? `skin-${card.dataset.skin}` : rarity] ?? RELIEF_PRESETS.other;
-      const fragment = RELIEF_FRAG.replace(/\bsmooth\b/g, 'smth');      // smooth は GLSL ES 3.0 の予約語
-      const vertex = 'varying vec2 vUv; void main() { vUv = vec2(uv.x, 1. - uv.y); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }';
-      const make = (layer, z, order) => {
-        const material = own(new THREE.ShaderMaterial({
-          vertexShader: vertex, fragmentShader: fragment, transparent: true, premultipliedAlpha: true, depthWrite: false,
-          uniforms: {
-            uFrame: { value: frameTex }, uRelief: { value: reliefTex }, uRaised: { value: raisedTex },
-            uL: { value: new THREE.Vector3() }, uV: { value: new THREE.Vector3(0, 0, 1) }, uM: { value: new THREE.Matrix3() },
-            uFlat: { value: CARD_LIGHT[2] }, uBump: { value: preset.bump }, uSpec: { value: preset.spec }, uEnv: { value: preset.env },
-            uIri: { value: preset.iri }, uGem: { value: preset.gem }, uPar: { value: 0.018 }, uKd: { value: preset.kd },
-            uLayer: { value: layer }, uShadow: { value: 0.012 }, uGlit: { value: preset.glit ?? 0 },
-          },
-        }));
-        if (layer === 0) { material.polygonOffset = true; material.polygonOffsetFactor = -2; }
-        const mesh = new THREE.Mesh(own(new THREE.PlaneGeometry(...faceSize)), material);
-        mesh.position.z = z; mesh.renderOrder = order;
-        group.add(mesh);
-        shaders.push(material);
-      };
-      make(0, depth / 2 + 0.0015, 1);
-      make(1, depth / 2 + UI_CONFIG.card3D.raisedDepth, 3);
-      setLight = (axes) => {
-        const L = axes.map(([x, y, z]) => x * CARD_LIGHT[0] + y * CARD_LIGHT[1] + z * CARD_LIGHT[2]);
-        const V = axes.map((axis) => axis[2]);
-        for (const m of shaders) { m.uniforms.uL.value.set(...L); m.uniforms.uV.value.set(...V); m.uniforms.uM.value.fromArray(axes.flat()); }
-      };
+      const material = own(new THREE.MeshPhysicalMaterial({
+        map: faceTexture, metalnessMap: ormTexture, roughnessMap: ormTexture, metalness: 0.7, roughness: 1,
+        envMapIntensity: 0.6 + preset.env * 0.5, alphaTest: 0.4,
+        iridescence: Math.min(1, preset.iri * 1.4), iridescenceIOR: 1.6, iridescenceThicknessRange: [200, 600],
+        clearcoat: preset.gem > 1 ? 0.4 : 0, clearcoatRoughness: 0.2,
+      }));
+      frameMesh = new THREE.Mesh(geometry, material);
+      frameMesh.position.z = depth / 2;
+      frameMesh.castShadow = frameMesh.receiveShadow = true;
+      group.add(frameMesh);
     } else {
       // 凹凸の地図がない枠は、ふつうの材質で貼る
       faceTexture.colorSpace = THREE.SRGBColorSpace;
@@ -362,7 +421,6 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
       const q = tiltQ(still ? 0 : last.tiltX, still ? 0 : last.tiltY).multiply(new THREE.Quaternion(-x, y, -z, w));
       group.quaternion.copy(q);
       const axes = cardAxes(last.quaternion, still ? 0 : last.tiltX, still ? 0 : last.tiltY);
-      setLight?.(axes);
       if (foilTex) {
         // 光と視線の中間方向への傾きで、フィルムの位置を決める（Card3D.js と同じ式）
         const half = [CARD_LIGHT[0], CARD_LIGHT[1], CARD_LIGHT[2] + 1];
@@ -405,6 +463,7 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
         active = false;
         canvas.removeEventListener('webglcontextlost', lost);
         for (const item of owned) item.dispose?.();
+        environment.dispose();
         renderer.dispose();
         renderer.forceContextLoss();
         canvas.remove();
