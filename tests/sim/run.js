@@ -3,6 +3,7 @@
 //   node tests/sim/run.js --games 200 --seed 7  … 試合数とシードを変える
 //   node tests/sim/run.js --match smart,random  … 1つの組み合わせだけ
 //   node tests/sim/run.js --rules '{"castleMaxHp":30}' --cards '{"fireball":{"count":3}}'
+//   node tests/sim/run.js --stage lava（ステージを1つに決める）／--no-stages（ステージなし）
 //       … data/ の値を一部だけ上書きして試す（cards はカードごとに中身をまぜる）
 //   node tests/sim/run.js --json                … 結果を JSON で出す
 //   node tests/sim/run.js --no-monsters         … 魔物と強化なしで回す
@@ -40,6 +41,9 @@ const DEFAULT_MATCHES = [
 const matches = opt('match', null) ? [opt('match')] : DEFAULT_MATCHES;
 const { rules, cards } = buildData({ rules: rulesPatch, cards: cardsPatch });
 const gameOptions = args.includes('--no-monsters') ? {} : loadOptionalData();
+// --stage lava：ステージを1つに決める（省略すると毎試合ランダム。--no-stages でステージなし）
+if (args.includes('--no-stages')) delete gameOptions.stages;
+else if (opt('stage', null)) gameOptions.setup = { ...(gameOptions.setup ?? {}), stage: opt('stage') };
 const rows = matches.map((m) => runMany({ games, seed, cards, rules, gameOptions, strategies: m.split(',') }));
 
 if (args.includes('--json')) {

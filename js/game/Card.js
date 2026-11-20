@@ -27,6 +27,7 @@ export const EFFECTS = {
     gainCoins: ['amount'], // コインを増やす
     gainMp: ['amount'], // マナ回復：MP を増やす（上限を超えたぶんは捨てる）
     changeWeather: [], // 天候の呪文：天候をランダムに変える
+    setTime: [], // 刻の魔法：time（"night" か "day"）にする（ムーンライズ・ドーンブレイク）
     wild: [], // 適応：どのカードとでも合成できる（出せない。合成専用）
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
   },
@@ -150,6 +151,13 @@ export class Card {
         if (!SPIRIT_KINDS.includes(def.spirit)) throw new Error(`${where}: spirit は ${SPIRIT_KINDS.join(' / ')} のどれかにしてください`);
       } else if (def.spirit !== undefined) {
         throw new Error(`${where}: spirit を書けるのは effect が summonSpirit の魔法だけです`);
+      }
+
+      if (def.effect === 'setTime' && def.time !== 'night' && def.time !== 'day') {
+        throw new Error(`${where}: time は "night"（夜にする）か "day"（昼にする）にしてください`);
+      }
+      if (def.beast !== undefined && (def.kind !== 'soldier' || typeof def.beast !== 'boolean')) {
+        throw new Error(`${where}: beast（獣）は兵士にだけ、true か false で書けます`);
       }
 
       if (def.scope !== undefined) {

@@ -182,7 +182,7 @@ test('魔物のごほうび：rewardRarity の魔物を倒すと、そのレア�
 
 test('放置：魔物が城を攻めるたびに、ダメージが monsterAttackGrowth ずつ重くなる', () => {
   const monsters = { rock: { name: 'いわ', hp: 99, attack: 1, rewardRarity: 'common', castleAttack: 2, attackEvery: 1, weight: 1 } };
-  const { cards, rules } = buildData({ rules: { monsterFirstRound: 1, monsterSpawnChance: 1, monsterAttackGrowth: 3, drawUntilHand: 0, monsterEvolveEvery: 0 } });
+  const { cards, rules } = buildData({ rules: { monsterFirstRound: 1, monsterSpawnChance: 1, monsterAttackGrowth: 3, drawUntilHand: 0, monsterEvolveEvery: 0, nightChance: 0 } });
   const g = new Game({ cards, rules, rng: seededRng(2), monsters });
   const log = recordEvents(g, ['monsterAttackedCastle']);
   g.start();

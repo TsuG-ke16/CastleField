@@ -43,6 +43,7 @@ export const MONSTER_ICON_DEFAULT = '👾';
 export const STATUS_ICON = {
   poison: '☠️',
   frozen: '❄️',
+  burn: '🔥',
 };
 
 /** 強化の絵文字 */

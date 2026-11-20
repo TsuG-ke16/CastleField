@@ -26,6 +26,7 @@ import { Player } from './Player.js';
 import { Road } from './Road.js';
 import { Castle } from './Castle.js';
 import { validateWeather } from './Weather.js';
+import { validateStages, pickStage } from './Stage.js';
 
 /** 2人のときのプレイヤーID（人数は rules.playerCount。3人以上は p3〜p8 が続く） */
 export const PLAYER_IDS = ['p1', 'p2'];
@@ -33,6 +34,8 @@ export const PLAYER_IDS = ['p1', 'p2'];
 /** Game が出すイベントの名前（CLAUDE.md「Gameが出すイベント」の表と同じ） */
 export const EVENT_TYPES = [
   'turnStarted',
+  'timeChanged',
+  'stageEruption',
   'cardDrawn',
   'deckShuffled',
   'cardPlayed',
@@ -146,6 +149,12 @@ const OPTIONAL_RULES = {
   // 天候（weather.json を渡したとき）：出はじめる周回と、天候が切り替わるときに新しい天候になる確率（0 ならずっと天候なし）
   weatherFirstRound: 2,
   weatherChangeChance: 0,
+  // 昼と夜：出はじめる周回・夜が続く周回の数・夜に強くなる量（獣＝魔物の駒、暗殺者・忍者、魔物の城への攻撃）
+  nightFirstRound: 2,
+  nightRounds: 2,
+  nightBeastAttack: 0,
+  nightStealthAttack: 0,
+  nightMonsterAttack: 0,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -162,6 +171,7 @@ const CHOICE_RULES = {
 /** 0以上1以下の数（整数でなくてよい）の省略できる項目 */
 const OPTIONAL_RATE_RULES = {
   monsterSpawnChance: 0, // 周回の始めに、魔物がいない道ごとに魔物が出る確率
+  nightChance: 0, // 昼のとき、周回の始めに夜になる確率（0 なら夜にならない。ステージの nightChance が優先）
   rewardLuckyChance: 0, // 魔物のごほうびが、1つ上のレアリティになる確率（ラッキー）
   // チーム戦の城HP ＝ 代表の城HP ＋ この割合 × ほかのメンバーの城HPの合計（1 なら人数ぶん、0 なら1人ぶん）
   teamCastleHpShare: 1,
@@ -197,7 +207,7 @@ export class Game {
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
     if (rarities !== null) validateRarities(rarities);
     Card.validateDefinitions(cards, rarities);
@@ -208,6 +218,7 @@ export class Game {
       if (rules.laneLength % 2 === 0) throw new Error('魔物を使うときは、真ん中のマスがひとつに決まるよう rules.json の laneLength を奇数にしてください');
     }
     if (weather !== null) validateWeather(weather, ELEMENTS);
+    if (stages !== null) validateStages(stages, ELEMENTS);
     if (upgrades !== null) validateUpgrades(upgrades);
     if (castles !== null) validateCastles(castles);
     if (decks !== null) validateDecks(decks, cards);
@@ -218,6 +229,11 @@ export class Game {
     this.weatherDefs = weather;
     /** 今の天候 { type, roundsLeft }（なければ null＝ふつうの天気） */
     this.weather = null;
+    this.stageDefs = stages;
+    /** ステージのID（stages を渡さなければ null）。試合の最初に決まり、変わらない */
+    this.stage = null;
+    /** 夜なら { roundsLeft }（昼なら null） */
+    this.night = null;
     this.upgradeDefs = upgrades || {};
     this.rules = {
       ...OPTIONAL_RULES,
@@ -338,6 +354,15 @@ export class Game {
         this.players[id].hand.push(card);
       }
     }
+
+    // ステージ：setup.stage（ID か "random"。省略すると "random"）。山札を作ったあとに選ぶ（ステージを使わないときの山札の並びを変えないため）
+    if (stages !== null) {
+      const want = setup.stage ?? 'random';
+      if (want !== 'random' && !Object.hasOwn(stages, want)) throw new Error(`setup.stage は stages.json のステージか "random" にしてください（"${want}"）`);
+      this.stage = want === 'random' ? pickStage(stages, this.rng) : want;
+    } else if (setup.stage !== undefined && setup.stage !== null) {
+      throw new Error('setup.stage を使うときは stages（data/stages.json）を渡してください');
+    }
   }
 
   /**
@@ -416,7 +441,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -435,6 +460,7 @@ export class Game {
         || rules.seatCastleBonus.length < (rules.playerCount ?? 2))) {
       throw new Error('rules.json の seatCastleBonus は、人数ぶん以上の0以上の整数の配列にしてください');
     }
+    if (rules.nightRounds !== undefined && (!Number.isInteger(rules.nightRounds) || rules.nightRounds < 1)) throw new Error('rules.json の nightRounds は 1 以上の整数にしてください');
     for (const key of ['monsterLateBias', 'monsterEvolveMultiplier']) {
       const v = rules[key];
       if (v !== undefined && (typeof v !== 'number' || !(v >= 0))) throw new Error(`rules.json の ${key} は 0 以上の数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -731,8 +757,10 @@ export class Game {
       this.round += 1;
       this.emit('roundStarted', { round: this.round });
       this.tickWeather();
+      this.tickNight();
       // 天候の雷・砂嵐で城が落ちたら、そこで止める
       if (this.weatherRoundEffects() && this.checkGameOver()) return;
+      this.stageEruption();
       this.monstersAttackCastles();
       // 魔物に城を落とされたら、そこで止める（魔物の出現・ドロー・進軍はしない）
       if (this.checkGameOver()) return;
@@ -763,6 +791,9 @@ export class Game {
     // コインの雨：自分のターンの始めにコインがもらえる
     const rainCoins = this.weatherDef()?.coinPerTurn ?? 0;
     if (rainCoins > 0) this.changeCoins(player, rainCoins, 'weather');
+    // 古代遺跡：自分のターンの始めに MP が増える
+    const stageMp = this.stageDef()?.mpPerTurn ?? 0;
+    if (stageMp > 0 && this.rules.maxMp > 0) this.changeMp(player, stageMp, 'stage');
 
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
@@ -808,6 +839,23 @@ export class Game {
           this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'poison' });
         }
       }
+      // やけど（盾は効かない。毒と同じく、回数が来たら治る）
+      if (soldier.burn) {
+        const { amount } = soldier.burn;
+        soldier.takeDamage(amount, { ignoreShield: true });
+        this.emit('soldierDamaged', {
+          playerId: player.id, soldierId: soldier.soldierId, amount, hp: soldier.hp, cause: 'burn', blocked: 0,
+        });
+        soldier.burn.turns -= 1;
+        if (soldier.isDead) {
+          this.removeSoldier(player, soldier, 'killed');
+          continue;
+        }
+        if (soldier.burn.turns <= 0) {
+          soldier.burn = null;
+          this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'burn' });
+        }
+      }
       // 凍結：この進軍は休む
       if (soldier.frozen > 0) {
         soldier.frozen -= 1;
@@ -846,6 +894,18 @@ export class Game {
           opponent = this.findClashTarget(soldier, player);
           if (!opponent) monster = this.findMonsterInRange(soldier, player);
         }
+        // 氷のステージ：止められずに歩き切ったら、滑って1マス余分に進むことがある
+        let slipped = false;
+        const slip = this.stageDef()?.slipChance ?? 0;
+        if (slip > 0 && moved > 0 && steps >= speed && !opponent && !monster && !soldier.hasReachedCastle(laneLength) && this.rng() < slip) {
+          soldier.moveForward();
+          moved += 1;
+          slipped = true;
+          if (!soldier.hasReachedCastle(laneLength)) {
+            opponent = this.findClashTarget(soldier, player);
+            if (!opponent) monster = this.findMonsterInRange(soldier, player);
+          }
+        }
         reached = soldier.hasReachedCastle(laneLength);
         if (moved > 0) {
           // 城に着いた兵士は城の位置（laneLength）まで動いたことにする
@@ -855,6 +915,7 @@ export class Game {
             roadId: road.roadId,
             from,
             to: reached ? laneLength : soldier.position,
+            ...(slipped ? { slipped: true } : {}),
           });
         }
         if (!opponent) break;
@@ -868,7 +929,7 @@ export class Game {
       }
       if (!reached) continue;
 
-      const damage = soldier.attack * this.rules.soldierCastleDamageMultiplier;
+      const damage = this.stageBoost(soldier, this.attackOf(soldier)) * this.rules.soldierCastleDamageMultiplier;
       const hit = () => {
         this.damageCastle(enemy, damage, { kind: 'soldier', soldierId: soldier.soldierId });
         player.removeSoldier(soldier.soldierId);
@@ -1015,7 +1076,9 @@ export class Game {
    */
   shoot(player, soldier) {
     const here = soldier.position;
-    const inRange = (q) => q !== null && q >= here && q <= here + soldier.range;
+    // 砂漠のステージ：射程が短くなる（最低1）
+    const range = Math.max(1, soldier.range - (this.stageDef()?.rangePenalty ?? 0));
+    const inRange = (q) => q !== null && q >= here && q <= here + range;
     const foes = this.foesOf(soldier, player).filter((c) => inRange(c.q));
     foes.sort((a, b) => a.q - b.q || soldierNumber(a.soldier) - soldierNumber(b.soldier));
     const shot = { playerId: player.id, soldierId: soldier.soldierId, role: soldier.role };
@@ -1045,7 +1108,7 @@ export class Game {
         const enemy = this.players[soldier.targetId];
         const miss = this.rollMiss();
         // 城を撃つときも、天候の属性ボーナスは効く（兵士・魔物を撃つときと同じ）
-        const amount = soldier.attack + this.weatherElementBonus(soldier.element);
+        const amount = this.stageBoost(soldier, this.attackOf(soldier) + this.weatherElementBonus(soldier.element));
         this.emit('soldierShot', { ...shot, target: { kind: 'castle', playerId: enemy.id }, amount: miss ? 0 : amount });
         if (miss) {
           this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
@@ -1134,7 +1197,7 @@ export class Game {
         victims = [road.players[Math.floor(this.rng() * 2)]];
       }
       // 放置するほど攻撃が重くなる（同じ回に攻める城には、同じダメージ）
-      const damage = m.nextCastleAttack;
+      const damage = m.nextCastleAttack + (this.night ? this.rules.nightMonsterAttack : 0);
       m.attackCount += 1;
       for (const id of victims) {
         const victim = this.players[id];
@@ -1441,7 +1504,115 @@ export class Game {
   /** a が b に与えるダメージ（攻撃力 ＋ 属性が強ければ elementBonus） */
   fightDamage(a, b) {
     const strong = a.element && b.element && ELEMENT_BEATS[a.element] === b.element;
-    return a.attack + (strong ? this.rules.elementBonus : 0) + this.weatherElementBonus(a.element);
+    const attack = a instanceof Soldier ? this.attackOf(a) : a.attack;
+    return this.stageBoost(a, attack + (strong ? this.rules.elementBonus : 0) + this.weatherElementBonus(a.element));
+  }
+
+  /** 兵士の今の攻撃力（夜は、獣＝魔物の駒と、暗殺者・忍者が強くなる） */
+  attackOf(soldier) {
+    if (!this.night) return soldier.attack;
+    const def = this.cardDefs[soldier.type] ?? {};
+    let bonus = 0;
+    if (def.monster !== undefined || def.beast) bonus += this.rules.nightBeastAttack;
+    if (soldier.stealth) bonus += this.rules.nightStealthAttack;
+    return soldier.attack + bonus;
+  }
+
+  // ================= ステージ =================
+  // data/stages.json のステージが、試合の最初に1つ決まる（setup.stage）。
+
+  /** 今のステージの定義（ステージを使わないなら null） */
+  stageDef() {
+    return this.stage ? this.stageDefs[this.stage] : null;
+  }
+
+  /** ステージに合う属性の武器を持った兵士なら、ダメージを elementMultiplier 倍（小数は切り上げ） */
+  stageBoost(x, amount) {
+    const def = this.stageDef();
+    if (!def?.element || !(x instanceof Soldier) || !x.weapon || x.element !== def.element || amount <= 0) return amount;
+    return Math.ceil(amount * (def.elementMultiplier ?? 1));
+  }
+
+  /** ステージで、カードの効果の数値（amount。凍結は turns）に足す量 */
+  stageEffectBonus(effect) {
+    return this.stageDef()?.effectBonus?.[effect] ?? 0;
+  }
+
+  /** やけどにする（重ねがけでは増えない：量・残りの回数を大きい方にそろえる） */
+  applyBurn(owner, soldier) {
+    const burn = this.stageDef()?.burn;
+    if (!burn || !owner.soldiers.includes(soldier)) return;
+    const turns = Math.max(burn.turns, soldier.burn?.turns ?? 0);
+    soldier.burn = { amount: Math.max(burn.amount, soldier.burn?.amount ?? 0), turns };
+    this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status: 'burn', turns, amount: soldier.burn.amount });
+  }
+
+  /** 溶岩：ターンの終わりに、手番の人の兵士全員に灼熱のダメージ。溶岩マスにいる兵士はやけど */
+  stageTurnEnd(player) {
+    const def = this.stageDef();
+    if (!def?.heat && !def?.lavaSquares) return;
+    for (const soldier of [...player.soldiers]) {
+      if (def.heat && this.damageSoldier(player, soldier, def.heat, 'heat')) continue;
+      if (def.lavaSquares?.includes(soldier.position)) this.applyBurn(player, soldier);
+    }
+  }
+
+  /** 溶岩：周回の始めに、eruption.chance の確率で、どこかの道の1マスが噴火する（そこにいる兵士に amount ダメージとやけど） */
+  stageEruption() {
+    const er = this.stageDef()?.eruption;
+    if (!er || this.rng() >= er.chance) return;
+    const { laneLength } = this.rules;
+    const square = 1 + Math.floor(this.rng() * Math.max(1, laneLength - 2));
+    let roadId;
+    let here;
+    if (this.plaza) {
+      // 広場：噴火は広場（真ん中のマス）で起きる
+      roadId = PLAZA;
+      here = (id, x) => this.placeOf(id, x)?.at === 'plaza';
+    } else {
+      const road = this.roads[Math.floor(this.rng() * this.roads.length)];
+      roadId = road.roadId;
+      here = (id, x) => x.roadId === road.roadId && road.toSquare(this.side(id), x.position) === square;
+    }
+    this.emit('stageEruption', { roadId, square: this.plaza ? this.middleSquare() : square, amount: er.amount });
+    for (const id of this.alivePlayerIds()) {
+      const owner = this.players[id];
+      for (const soldier of owner.soldiers.filter((x) => here(id, x))) {
+        if (!this.damageSoldier(owner, soldier, er.amount, 'eruption')) this.applyBurn(owner, soldier);
+      }
+    }
+  }
+
+  // ================= 昼と夜 =================
+
+  /** 夜になる確率（ステージの nightChance が優先） */
+  nightChance() {
+    return this.stageDef()?.nightChance ?? this.rules.nightChance;
+  }
+
+  /** 夜が続く周回の数（闇の森は長い） */
+  nightLength() {
+    return this.rules.nightRounds + (this.stageDef()?.nightRoundsBonus ?? 0);
+  }
+
+  /** 昼と夜を変える。timeChanged を出す */
+  setTime(time, cause, playerId = null) {
+    const previous = this.night ? 'night' : 'day';
+    const rounds = time === 'night' ? this.nightLength() : 0;
+    this.night = time === 'night' ? { roundsLeft: rounds } : null;
+    this.emit('timeChanged', { time, previous, rounds, cause, playerId });
+  }
+
+  /** 周回の始め：夜の残りを1つ減らし、終わったら昼に。昼なら、確率で夜になる（確率が0なら乱数を使わない） */
+  tickNight() {
+    if (this.night) {
+      this.night.roundsLeft -= 1;
+      if (this.night.roundsLeft <= 0) this.setTime('day', 'natural');
+      return;
+    }
+    if (this.round < this.rules.nightFirstRound) return;
+    const chance = this.nightChance();
+    if (chance > 0 && this.rng() < chance) this.setTime('night', 'natural');
   }
 
   // ================= 天候 =================
@@ -1492,9 +1663,11 @@ export class Game {
   pickWeather(exclude = null) {
     const types = Object.keys(this.weatherDefs).filter((t) => t !== exclude);
     if (types.length === 0) return null;
-    const total = types.reduce((a, t) => a + this.weatherDefs[t].weight, 0);
+    // 砂漠のステージ：砂嵐が起きやすい（weatherWeights の倍率）
+    const w = (t) => this.weatherDefs[t].weight * (this.stageDef()?.weatherWeights?.[t] ?? 1);
+    const total = types.reduce((a, t) => a + w(t), 0);
     let r = this.rng() * total;
-    return types.find((t) => (r -= this.weatherDefs[t].weight) < 0) ?? types.at(-1);
+    return types.find((t) => (r -= w(t)) < 0) ?? types.at(-1);
   }
 
   /** 周回の始め：天候の残りを1つ減らし、終わったらふつうの天気に。ふつうの天気なら、確率で新しい天候になる */
@@ -1656,6 +1829,14 @@ export class Game {
           targets: player.castle.poison || player.soldiers.some((x) => x.poison) ? [{ playerId: player.id }] : [],
           reason: '毒にかかっているものがありません',
         };
+      case 'setTime': {
+        // 刻の魔法：ムーンライズは昼のとき（夜にする）、ドーンブレイクは夜のとき（昼にする）だけ出せる
+        const now = this.night ? 'night' : 'day';
+        return {
+          targets: now !== card.def.time ? [{ playerId: player.id }] : [],
+          reason: card.def.time === 'night' ? 'もう夜です' : 'もう昼です',
+        };
+      }
       case 'changeWeather': {
         // 今と違う天候に変える。変えられる天候がなければ出せない（出しても何も起きないので）
         if (!this.weatherDefs) return { targets: [], reason: 'このルールでは天候を使いません' };
@@ -1712,7 +1893,7 @@ export class Game {
   /** その魔法で、兵士 x の状態が変わるか（毒・凍結：もう同じかそれ以上なら変わらない。サンダーはいつも変わる） */
   changesSoldier(def) {
     if (def.effect === 'poisonEnemySoldiers') return (x) => !x.poison || x.poison.turns < def.turns || x.poison.amount < def.amount;
-    if (def.effect === 'freezeEnemySoldiers') return (x) => x.frozen < def.turns;
+    if (def.effect === 'freezeEnemySoldiers') return (x) => x.frozen < def.turns + this.stageEffectBonus(def.effect);
     // 押し戻し：自分の城の前（マス0）にいる兵士は、それより後ろに下がれない
     if (def.effect === 'pushBackEnemySoldiers') return (x) => x.position > 0;
     return () => true;
@@ -1853,7 +2034,7 @@ export class Game {
       if (this.rollMiss()) {
         this.emitMiss(player.id, 'spell', { type: card.type });
       } else {
-        this.damageMonster(monster, card.def.amount, { playerId: player.id, type: card.type });
+        this.damageMonster(monster, card.def.amount + this.stageEffectBonus(card.def.effect), { playerId: player.id, type: card.type });
         this.defeatMonsterIfDead(monster, player.id);
       }
     } else if (card.isSpell) {
@@ -1866,7 +2047,9 @@ export class Game {
 
   castSpell(player, card, targetPlayer, roadId) {
     const enemy = targetPlayer;
-    const { effect, amount } = card.def;
+    const { effect } = card.def;
+    // ステージで、魔法の数値が増える（溶岩・遺跡）
+    const amount = card.def.amount === undefined ? undefined : card.def.amount + this.stageEffectBonus(effect);
     // レーンを選んだ魔法は、その道の兵士だけに効く（spellCast にも roadId を入れる）
     const lane = roadId === undefined ? {} : { roadId };
     const victims = () => enemy.visibleSoldiers.filter((x) => roadId === undefined || x.roadId === roadId);
@@ -1919,7 +2102,7 @@ export class Game {
             soldier.poison = { amount: Math.max(amount, soldier.poison?.amount ?? 0), turns };
             this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status, turns });
           } else {
-            soldier.frozen = Math.max(card.def.turns, soldier.frozen);
+            soldier.frozen = Math.max(card.def.turns + this.stageEffectBonus(effect), soldier.frozen);
             this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status, turns: soldier.frozen });
           }
         }
@@ -1975,6 +2158,12 @@ export class Game {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         const healed = player.castle.heal(amount);
         this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        break;
+      }
+
+      case 'setTime': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        this.setTime(card.def.time, 'card', player.id);
         break;
       }
 
@@ -2143,8 +2332,10 @@ export class Game {
           playerId: player.id, soldierId: soldier.soldierId, type: card.type, attack: soldier.attack, element: soldier.element,
         });
       } else {
-        soldier.shield += def.amount;
-        this.emit('shieldAdded', { playerId: player.id, soldierId: soldier.soldierId, amount: def.amount, shield: soldier.shield });
+        // 氷のステージ：盾が厚くなる
+        const amount = def.amount + this.stageEffectBonus(def.effect);
+        soldier.shield += amount;
+        this.emit('shieldAdded', { playerId: player.id, soldierId: soldier.soldierId, amount, shield: soldier.shield });
       }
       return;
     }
@@ -2164,6 +2355,8 @@ export class Game {
     if (this.phase === 'defend') return fail('相手が防御を選んでいます');
 
     const player = this.players[this.currentPlayer];
+    // 溶岩のステージ：ターンの終わりの灼熱
+    this.stageTurnEnd(player);
     const over = player.hand.length - player.maxHand;
     if (over > 0) {
       this.phase = 'discard';
@@ -2507,6 +2700,11 @@ export class Game {
       round: this.round,
       weather: this.weather ? { type: this.weather.type, name: this.weatherDef().name, icon: this.weatherDef().icon ?? null, description: this.weatherDef().description ?? null, roundsLeft: this.weather.roundsLeft } : null,
       weatherEnabled: Boolean(this.weatherDefs),
+      // ステージ（stages を渡さなければ null）
+      stage: this.stage ? (({ name, icon, description, element, elementMultiplier }) => ({ id: this.stage, name, icon: icon ?? null, description: description ?? null, element: element ?? null, elementMultiplier: elementMultiplier ?? null }))(this.stageDef()) : null,
+      // 昼と夜："day" か "night"。夜なら nightRoundsLeft に残りの周回
+      time: this.night ? 'night' : 'day',
+      nightRoundsLeft: this.night ? this.night.roundsLeft : 0,
       monsters: this.monsters.map((m) => m.toState()),
       roads: this.roads.map((r) => r.toState()),
       turn: this.turn,

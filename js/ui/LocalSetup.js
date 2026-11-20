@@ -2,7 +2,7 @@
 import { pillify } from './pills.js';
 import { deckChoice, deckSlot, loadDecks } from './DeckStore.js';
 export class LocalSetup {
-  constructor({castles,decks,rules,onStart,savedDecks,presetDeck,previewDeck,openDeckEditor}) {
+  constructor({castles,decks,rules,stages,onStart,savedDecks,presetDeck,previewDeck,openDeckEditor}) {
     const box=document.getElementById('title-levels');
     this.mode='solo';this.rules=rules;
     Object.assign(this, { savedDecks, presetDeck, previewDeck, openDeckEditor });
@@ -26,6 +26,8 @@ export class LocalSetup {
     this.fields.append(this.preview, this.editDeck);
     this.inputs.deck.addEventListener('change', () => this.renderPreview());
     add('teams','チーム',[['off','個人戦'],['auto','自動で2チーム']]);
+    // ステージ（data/stages.json）。最初は毎試合ランダム
+    if(stages)add('stage','ステージ',[['random','ランダム'],...Object.entries(stages).map(([id,s])=>[id,`${s.icon??''} ${s.name}`.trim()])]);
     const note=document.createElement('p');note.textContent='CPUは残りの席。同じ端末では全員が人。自分以外の城・デッキは標準です。2チームの城は共有になります。';note.className='local-note';this.fields.append(note);
     this.inputs.deckMode.onchange = () => this.refreshDecks();
     this.refreshDecks();
@@ -70,7 +72,7 @@ export class LocalSetup {
     this.previewDeck(this.preview, deck);
   }
 
-  reset(){for(const [k,v] of Object.entries({playerCount:2,winCondition:'firstDestroy',castle:this.rules.defaultCastle??'standard',deckMode:this.deckChoices.cost.length?'cost':'shared',deck:this.deckChoices.cost.length?(this.rules.defaultCostDeck??this.deckChoices.cost[0][0]):(this.rules.defaultDeck??'balanced'),teams:'off'})){this.inputs[k].value=v;if(k==='deckMode')this.inputs.deckMode.onchange();}
+  reset(){for(const [k,v] of Object.entries({playerCount:2,winCondition:'firstDestroy',castle:this.rules.defaultCastle??'standard',deckMode:this.deckChoices.cost.length?'cost':'shared',deck:this.deckChoices.cost.length?(this.rules.defaultCostDeck??this.deckChoices.cost[0][0]):(this.rules.defaultDeck??'balanced'),teams:'off',...(this.inputs.stage?{stage:'random'}:{})})){this.inputs[k].value=v;if(k==='deckMode')this.inputs.deckMode.onchange();}
     // 山札は、プレイヤーごとに別（コスト制）が最初の設定。編成したデッキがあれば、それを選んでおく
     const mine=this.inputs.deckMode.value==='cost'?this.savedDecks().find(d=>d?.valid&&d.slot===loadDecks().active):null;
     if(mine){this.inputs.deck.value=deckChoice(mine.slot);this.renderPreview();}

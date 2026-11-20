@@ -5,7 +5,7 @@ import { rankEmblem } from './RankEmblem.js';
 import { deckChoice, deckSlot } from './DeckStore.js';
 
 const ROOM_DECK_KEY = 'cf-room-deck-v1';
-const RULE_ROWS = [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes']];
+const RULE_ROWS = [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes'],['stage','ステージ','stages']];
 
 export class RoomView {
   constructor({ onAction, onLeave, onChat, getUnread, onEditDeck, savedDecks, presetDeck, previewDeck }) {
@@ -157,6 +157,7 @@ export class RoomView {
     panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-label', 'ルールを変更');
     panel.append(this.node('h2', 'ルールを変更'));
     for (const [key,label,list] of RULE_ROWS) {
+      if (!choices[list]?.length) continue; // ステージを使わないサーバーなど
       this.select(panel, label, choices[list], room.settings[key], true, v => this.act('setRules', [{[key]:v}]), `rule:${key}`);
     }
     this.numberInput(panel, '城のHP', room.settings.castleHp, choices.castleHpRange, true, v => this.act('setRules', [{castleHp:v}]), 'rule:castleHp');
@@ -267,6 +268,7 @@ export class RoomView {
     const settings = this.node('section', null, 'room-settings'); box.append(settings);
     settings.append(this.node('h2', '対戦ルール'));
     for (const [key,label,list] of RULE_ROWS) {
+      if (!choices[list]?.length) continue;
       this.select(settings, label, choices[list], room.settings[key], false);
     }
     this.numberInput(settings, '城のHP', room.settings.castleHp, choices.castleHpRange, false);

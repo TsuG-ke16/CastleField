@@ -103,6 +103,7 @@ js/
     Road.js        … 道（となりの席どうし・広場の通り道）
     Monster.js     … 魔物と、強化のデータのチェック
     Weather.js     … 天候のデータのチェック
+    Stage.js       … ステージ（マップ）のデータのチェックと選び方
     Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
     strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
@@ -129,6 +130,7 @@ data/
   rarities.json    … レアリティと排出率（コモン〜レジェンド）
   upgrades.json    … コインで買う強化（STEP 3）
   weather.json     … 天候（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨）
+  stages.json      … ステージ（草原・溶岩・氷・古代遺跡・闇の森・砂漠）
   stamps.json      … チャットのスタンプの一覧
 ui-tests/          … 画面のスモークテスト（node ui-tests/smoke.js。Playwright は環境にあるものを使う。UI担当）
 docs/              … 設計メモ。archive/ は終わった依頼（Codex 向けのプロンプトなど）
@@ -192,7 +194,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 
 | メソッド | 説明 |
 |---|---|
-| `new Game({ cards, rules, rng, monsters, upgrades, castles, decks, setup })` | ゲームを作る。`cards` / `rules` / `monsters` / `upgrades` / `castles` / `decks` は `data/` の JSON の中身（Game はファイルを読まない）。`cards` / `rules` 以外は省略でき、省略すると魔物は出ず・強化は買えず・城の種類はなし。`setup` は席ごとの選択 `{ castles: [...], decks: [...] }`（省略すると `rules.defaultCastle` / `rules.defaultDeck`）。`rng` は 0以上1未満を返す乱数で、省略すると `Math.random`。作った時点で初期手札は配られていて、`phase` は `"ready"`。イベントは出さない |
+| `new Game({ cards, rules, rng, monsters, upgrades, castles, decks, stages, setup })` | ゲームを作る。`stages`（`data/stages.json`）を渡すと、`setup.stage`（ステージのIDか `"random"`。省略すると `"random"`）のステージで遊ぶ。`cards` / `rules` / `monsters` / `upgrades` / `castles` / `decks` は `data/` の JSON の中身（Game はファイルを読まない）。`cards` / `rules` 以外は省略でき、省略すると魔物は出ず・強化は買えず・城の種類はなし。`setup` は席ごとの選択 `{ castles: [...], decks: [...] }`（省略すると `rules.defaultCastle` / `rules.defaultDeck`）。`rng` は 0以上1未満を返す乱数で、省略すると `Math.random`。作った時点で初期手札は配られていて、`phase` は `"ready"`。イベントは出さない |
 | `game.start()` | ゲームを始める。全イベントを `on()` で購読してから呼ぶと、p1 のターン1が始まる（`turnStarted` → ドロー → 進軍） |
 | `game.getState(viewerId)` | 今の状態をただのオブジェクトで返す。`viewerId` の手札は中身まで、相手の手札は枚数だけ入る |
 | `game.canPlayCard(cardId, target)` | そのカードを今出せるかを返す（読むだけで、状態は変わらない）。出せないときは `{ ok: false, reason }`。`playCard` と同じ判定なので、UIは出せない理由を前もって表示できる。`target` を省略して、対象が2つ以上あるときは `{ ok: true, needsTarget: true }` |
@@ -286,6 +288,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | イベント | ペイロード |
 |---|---|
 | `turnStarted` | `{ playerId, turn }` |
+| `timeChanged` | `{ time, previous, rounds, cause, playerId }` … 昼と夜が変わった。`time` は `"night"` / `"day"`、`rounds` は夜が続く周回（昼なら0）、`cause` は `"natural"` か `"card"`（ムーンライズ・ドーンブレイク。`playerId` は出した人） |
+| `stageEruption` | `{ roadId, square, amount }` … 溶岩のステージの噴火（広場なら `roadId` は `"plaza"`）。このあと、そのマスの兵士の `soldierDamaged`（`cause: "eruption"`）→ `statusApplied`（`"burn"`） |
 | `cardDrawn` | `{ playerId, cardIds }` |
 | `deckShuffled` | `{ deckCount, playerId }` … `playerId` は、`"own"` のときだれの山札か（`"shared"` なら `null`） |
 | `cardPlayed` | `{ playerId, cardId, type }` |
@@ -293,9 +297,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `discardRequired` | `{ playerId, count }` … 捨てる必要がある枚数 |
 | `cardDiscarded` | `{ playerId, cardIds }` |
 | `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack }` … `hp` / `attack` は出した時点の値 |
-| `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい） |
+| `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause?, slipped? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい）。`slipped: true` は氷のステージで滑って1マス余分に進んだとき |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
-| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
+| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
 | `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
 | `spellCast` | `{ playerId, type, target, targetKind, roadId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）のときだけ入る。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
@@ -1192,6 +1196,43 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - CPU（`smart` 系）：次の進軍で城に着きそうな兵士がいるとき、凍結がなければ使う
 - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均39.7手番・p1 勝率49%（追加前とほぼ同じ）。CPU の弱い順は変わらない（`--games 200` で random に勝つ割合：defensive 10%・rush 16%・smart 89%。追加前は 8%・17%・84%）
 - 画面：説明文・札（`js/ui/text.js`）、道に土けむりと風の音の演出（`Animations.js` の `mist`・`Sound.js` の `gust`）、押し戻しは今の進軍の動きで後ろへ下がる。チュートリアルは押し戻しを「進軍した」と数えない。絵は仮の SVG（`js/ui/art.js`）、魔法のスキン `fxskin_galeForce`（`data/shop.json`）。専用の絵ができたら差しかえる
+
+## ステージ（マップ）と昼と夜（人間に確認して決めた。仮）
+
+**数値はすべて仮**（`data/stages.json`・`data/rules.json`）。
+
+### ステージ（`new Game({ stages, setup: { stage } })`）
+- 試合の最初に1つ決まり、試合のあいだ変わらない。`setup.stage` がIDならそのステージ、省略か `"random"` なら `weight` の重みでランダム（山札を作ったあとに乱数を使う。`stages` を渡さなければ乱数を使わない）
+- **合う属性の武器を持った兵士は、ダメージが `elementMultiplier`（1.5）倍**（小数は切り上げ）。武器を持っていて、兵士の属性（最後に持たせた武器の属性）がステージの `element` と同じときだけ。兵士同士の戦い・魔物との戦い・射撃・城へのダメージに効く（城へは「攻撃力×1.5（切り上げ）」× `soldierCastleDamageMultiplier`）。魔法・魔物には効かない（人間の指示）
+- 溶岩＝火（炎の剣）・氷＝水（水の槍。「氷の剣」はないので水の槍に当てた）・闇の森＝風（風の弓）・砂漠＝土（土の槌）。遺跡・草原は属性なし
+
+| ステージ（ID） | 属性 | ギミック |
+|---|---|---|
+| 草原・王都（`meadow`） | なし | なし（標準） |
+| 溶岩（`lava`） | 火 | 城への魔法+3（`effectBonus`）。**ターンの終わりに、手番の人の兵士全員に灼熱1**（`heat`。盾は効く）、自分の城から数えて `lavaSquares`（1・3）のマスにいる兵士は**やけど**。**周回の始めに40%で噴火**（`eruption`）：ランダムな道の1マス（城の前のマス以外。広場なら広場）の兵士に3ダメージとやけど |
+| 氷（`ice`） | 水 | 進む兵士が止められずに歩き切ったら、25%で**滑って1マス余分に進む**（`slipChance`）。凍結の休み+1・盾+1（`effectBonus`） |
+| 古代遺跡（`ruins`） | なし | 自分のターンの始めに **MP+1**（`mpPerTurn`。`maxMp` が0なら何もしない）。城・兵士へのダメージの魔法+2 |
+| 闇の森（`darkForest`） | 風 | **夜になりやすく（50%）、夜が1周長い**（`nightChance`・`nightRoundsBonus`） |
+| 砂漠・荒野（`desert`） | 土 | 弓兵・魔法使いの**射程−1**（最低1。`rangePenalty`）。**砂嵐が4倍起きやすい**（`weatherWeights`） |
+
+- **やけど**（`burn`。ステージの `burn`：1ダメージ×2回）：持ち主の進軍の前に `amount` ダメージ（盾は効かない）。回数が来たら治る（`statusCleared`）。重ねがけは量・回数を大きい方にそろえる。`statuses.burn` は `{ amount, turns }` か `null`
+- 「移動マス−1」（氷）は、滑ると逆の効果になるので入れていない。「溶岩の裂け目噴火」は噴火で表した
+- **選び方**：ふだんは毎試合ランダム。ひとりで遊ぶ・同じ端末の詳細設定（`js/ui/LocalSetup.js`）と、オンラインの部屋主の「ルールを変更」（`setRules` の `stage`。`"random"` かステージのID。`room.settings.stage`、`choices.stages`）で決めたステージも選べる
+- `getState().stage`：`{ id, name, icon, description, element, elementMultiplier }` か `null`
+- 画面：盤面の道の色をステージごとに変える（`css/stage.css`。専用の背景の絵ができたら差しかえる）。上の「○周目」の前にステージのアイコン。試合の始めにステージの説明をお知らせで出す。噴火の演出
+- シミュレーション：`node tests/sim/run.js` は毎試合ランダムなステージで回す。`--stage lava` で1つに決める、`--no-stages` でステージなし
+- 確かめたこと（`--games 200 --match smart,smart --stage …`）：どのステージも全試合決着。平均手番：草原38・溶岩38・氷35・遺跡33・闇の森39・砂漠36、先攻の勝率49〜53%。CPU の弱い順は変わらない（random に勝つ割合：defensive 10%・rush 13%・smart 84%）
+
+### 昼と夜（`rules.nightChance` など）
+- 周回の始め（天候のあと）に、昼なら `nightChance`（仮：0.15。ステージの `nightChance` が優先。0 なら乱数を使わず夜にならない）の確率で夜になる（`nightFirstRound`（仮：3）周目から）。夜は `nightRounds`（仮：2）＋ステージの `nightRoundsBonus` 周続き、昼に戻る。イベント `timeChanged`。`getState().time`（`"day"` / `"night"`）・`nightRoundsLeft`
+- **夜の効果**：**獣**（魔物の駒＝`monster` のある兵士カードと、`beast: true` の兵士）の攻撃 +`nightBeastAttack`（仮：2。**ビースト覚醒**）／**暗殺者・忍者**（`role: "ninja"`）の攻撃 +`nightStealthAttack`（仮：2）／**魔物の城への攻撃** +`nightMonsterAttack`（仮：1。夜の脅威）。`getState()` の兵士の `attack` には夜の分を足さない（戦い・城へのダメージのときに足す）
+- **刻の魔法**（`effect: "setTime"`、`time`。スペシャル・メインを使う・MPなし）：**ムーンライズ**（`moonrise`、昼のときだけ。夜にする）／**ドーンブレイク**（`dawnbreak`、夜のときだけ。昼に戻す）。出せないときは「もう夜です」「もう昼です」
+- **暗殺者**（`assassin`。スペシャルの兵士・`role: "ninja"`・HP3/攻撃4/速さ3）：忍者と同じく、相手から見えず、敵の兵士をすり抜け、魔物には止められる。夜は攻撃+2。ひとりで遊ぶときも、相手の暗殺者のイベント（`stealth` 付き）は画面に出さない（`js/main.js`）
+- CPU（`smart` 系）：自分に獣・暗殺者がいれば昼にムーンライズ。夜に、自分には獣・暗殺者がいなくて、相手に獣が見えるか魔物がいればドーンブレイク
+- 画面：夜は盤面に青い影、「○周目」の前に🌙、夜になった・明けたの帯
+
+### まだ作っていないもの
+- **ワールドレイド**（ボスごとに専用ステージ：ドラゴン＝溶岩・古代竜＝古代遺跡・魔王＝闇の魔城）：遊び方（だれとだれが、どこで、何人で、何を倒すか）がまだ決まっていないので、人間に確認してから作る
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
