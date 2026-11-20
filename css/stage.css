@@ -62,7 +62,7 @@
    絵の奥に相手の城、手前に自分の側。絵の飛び石を見せるので、道の箱と画面側の飛び石は消し、
    真ん中の大きなマス（魔物・ワールドボスの場所）だけ印を残す */
 #app[data-stage][data-stage-art] #scenery {
-  /* 横幅に合わせて上（相手の城の側）から並べ、足りない下は、その絵の地面の色でつなぐ */
+  /* フィールド（城と城の間の地面）の絵。横幅に合わせて上から並べ、足りない下は地面の色でつなぐ */
   background-size: 100% auto; background-position: center top; background-repeat: no-repeat;
   background-color: var(--stage-ground, #5d8d51); filter: saturate(1.05); opacity: 1;
 }
@@ -73,29 +73,10 @@
 #app[data-stage="lava"] { --stage-ground: #904a45; }
 #app[data-stage][data-stage-art] #scenery .tree { display: none; }
 #app[data-stage][data-stage-art] #road .lane:not(.targetable) { border-color: transparent; background: none; box-shadow: none; }
-#app[data-stage][data-stage-art] #road .stone { display: none; }
+/* 飛び石は、道にぴったり合う画面側のもの（砂漠と同じ石）を、地面の絵の上に並べる（絵の飛び石は道とずれるため） */
+#app[data-stage][data-stage-art] #road .stone { display: block; width: 48%; height: 34%; opacity: .95; filter: sepia(.4) saturate(1.2) brightness(1.05); }
 /* 真ん中のマスだけは、どのステージでも砂漠と同じ石の台（kingdom.css の飛び石の絵）を大きく出す */
 #app[data-stage][data-stage-art] #road .cell.mid .stone { display: block; opacity: .95; filter: sepia(.4) saturate(1.2) brightness(1.05); }
-
-/* ステージの絵があるとき（2人）：相手の城は背景の絵の城を使い、ゲームの城の絵は重ねない。
-   自分の城は、そのステージの城の絵（--stage-castle。js/ui/Renderer.js の setStage）にする。
-   壊れ具合・背水の陣・回復などの色の変化は、城の枠（.castle-pic）にかかるので、そのまま効く */
-#app[data-stage-art] #board:not(.plaza-board) #castle-opp .castle-pic .castle-art { opacity: 0; }
-#app[data-stage-art] #board:not(.plaza-board) #castle-opp .castle-pic { scale: 1.6; }
-#app[data-stage-art][style*="--stage-castle"] #board:not(.plaza-board) #castle-me .castle-pic .castle-art { opacity: 0; }
-#app[data-stage-art][style*="--stage-castle"] #board:not(.plaza-board) #castle-me .castle-pic {
-  background: var(--stage-castle) center 85% / contain no-repeat; scale: 1.05;
-}
-
-/* 城の土台の石（kingdom.css の ::before）は、絵の城と重なるので消す。
-   城が傷んだら（ダメージ2・3段階）同じ場所からけむりを上げる（背景の絵の城でも傷み具合が分かるように） */
-#app[data-stage-art] #board:not(.plaza-board) .castle .castle-pic::before { background: none; }
-#app[data-stage-art] #board:not(.plaza-board) .castle:is([data-damage="2"], [data-damage="3"]) .castle-pic::before {
-  inset: auto; left: 52%; top: -6%; width: 34%; height: auto; aspect-ratio: 1; z-index: 2; opacity: 1;
-  background: url("../assets/fx/dust.png") center / contain no-repeat; filter: grayscale(1) brightness(.55);
-  animation: castle-smoke 2.6s ease-out infinite; pointer-events: none;
-}
-#app[data-stage-art] #board:not(.plaza-board) .castle[data-damage="3"] .castle-pic::before { left: 26%; width: 46%; animation-duration: 2s; }
 
 /* 真ん中のマス（魔物・ワールドボスの場所）は、ほかのマスより大きい（js/ui/Renderer.js の --cell-rows と rowCenter） */
 #app #road .cells { grid-template-rows: var(--cell-rows, repeat(var(--cells), 1fr)); }
