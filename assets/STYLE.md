@@ -237,3 +237,23 @@ Fantasy mobile game UI element, [内容], cartoon style, transparent background,
 ### カード裏のスキンを3Dにする手順（拡大表示で裏を見たとき）
 - 絵は 512×768、背景が透明の PNG（カードの形がそのまま絵の形）。置き場所は `assets/skins/back-<名前>.png`（`js/ui/skinArt.js` の一覧に足す）
 - 手前に浮かせる部分（金の飾り・紋章）の形を切り抜いたマスク `assets/skins/back-<名前>-raised.png`（同じ大きさ。アルファが形）を一緒に置き、`skinArt.js` の `raised` の一覧に足す。マスクがない裏は、浮かない（平らな絵＋つやの光だけ）
+
+## ステージの背景（`bg/stage-<ステージ>.png`、9:16）
+
+ステージ（`data/stages.json`）ごとの盤面の背景。`stage-lava.png`・`stage-ice.png`・`stage-ruins.png`・`stage-dark-forest.png`・`stage-desert.png`（草原はいつもの `board` の絵）。
+置いて `assets/asset-manifest.json` に足せば、`js/ui/Renderer.js` の `setStage` が自動で使う（ないあいだは `css/stage.css` のグラデーションで描く）。
+1080×1920、不透明、300KB 以下。真ん中を縦に3本の道が通り、上下に城が立つ前提で、**城・飛び石・文字は描かない**（画面側で重ねる）。左右の端に景色の飾りを寄せ、真ん中は落ち着いた色にする。
+
+共通の指示文のあとに：
+
+```
+Vertical 9:16 battlefield background for a mobile card game, 3/4 top-down view,
+an open central area for three vertical lanes, decorations only near the left and right edges,
+no castles, no stepping stones, no characters, no text, opaque background.
+```
+
+- 溶岩：`A volcanic field of dark red basalt with glowing orange lava cracks and small lava pools, drifting smoke near the edges.`
+- 氷：`A frozen glacier field of pale blue ice with white cracks, snow drifts and ice crystals near the edges, light snowfall.`
+- 古代遺跡：`Ancient ruins on sandy stone paving, broken pillars and fallen stone blocks near the edges, faint purple magic glow in the center.`
+- 闇の森：`A dark enchanted forest clearing with mossy teal ground, twisted trees and glowing purple mushrooms near the edges, soft teal light in the center.`
+- 砂漠：`A sunny desert with golden sand dunes and wind ripples, small rocks and dry plants near the edges.`

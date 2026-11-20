@@ -10,7 +10,7 @@ import { UI_CONFIG } from './config.js';
 import { RARITY_NAMES } from './rarity.js';
 import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
-import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt } from './art.js';
+import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt, isAssetReady } from './art.js';
 import { soldierMotion, monsterMotion } from './motion.js';
 import { WeatherView } from './WeatherView.js';
 
@@ -450,6 +450,10 @@ export class Renderer {
     this.stage = stage;
     if (stage) this.el.app.dataset.stage = stage.id;
     else delete this.el.app.dataset.stage;
+    // 背景の絵（assets/bg/stage-<ステージ>.png）が読み込めていれば、それを使う。なければ css/stage.css の描き方のまま
+    const scenery = document.getElementById('scenery');
+    const art = stage ? `bg/stage-${stage.id.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}.png` : null;
+    if (scenery) scenery.style.backgroundImage = art && isAssetReady(art) ? `url("assets/${art}")` : '';
     if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
   }
 

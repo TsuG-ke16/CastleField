@@ -1,26 +1,84 @@
 /* ステージ（#app[data-stage]）と夜（#app[data-time="night"]）の見た目。
    道の色だけを変える（専用の背景の絵ができたら、ここで差しかえる）。草原はいつもの色のまま。 */
 
-#app[data-stage="lava"] #road {
-  background: linear-gradient(#5b2a1c, #8a3a1a 55%, #c4521d);
-  box-shadow: 0 8px 18px #7a1e0a55, inset 0 0 24px #ff7a2b88;
+/* ---------- 景色（#scenery）：ステージごとの背景 ----------
+   画像（assets/bg/stage-<ステージ>.png）があれば、js/ui/Renderer.js の setStage が inline で差しかえる。
+   ない間は、ここのグラデーションと模様で描く（モックアップに寄せた仮の見た目） */
+#app[data-stage="lava"] #scenery {
+  background:
+    radial-gradient(ellipse 18% 9% at 18% 30%, #ffd25a 0 30%, #ff7a1f 55%, transparent 72%),
+    radial-gradient(ellipse 22% 10% at 82% 58%, #ffd25a 0 25%, #ff6a1a 55%, transparent 72%),
+    radial-gradient(ellipse 16% 8% at 30% 82%, #ffc04a 0 25%, #ff5a14 55%, transparent 72%),
+    radial-gradient(ellipse 14% 7% at 74% 16%, #ffb03a 0 25%, #f2501a 55%, transparent 72%),
+    repeating-linear-gradient(58deg, transparent 0 46px, #ff6a1a55 46px 49px, transparent 49px 92px),
+    repeating-linear-gradient(-34deg, transparent 0 62px, #ff8a2a44 62px 65px, transparent 65px 124px),
+    radial-gradient(ellipse at 50% 50%, #7a2a14, #3c140c 80%);
 }
-#app[data-stage="ice"] #road {
-  background: linear-gradient(#e8f6ff, #bfe3f7);
-  box-shadow: 0 8px 18px #2c6a9033, inset 0 2px #ffffff;
+#app[data-stage="ice"] #scenery {
+  background:
+    radial-gradient(ellipse 30% 12% at 12% 20%, #ffffff 0 40%, transparent 72%),
+    radial-gradient(ellipse 28% 12% at 90% 70%, #ffffff 0 40%, transparent 72%),
+    radial-gradient(ellipse 24% 10% at 8% 88%, #f4fbff 0 40%, transparent 72%),
+    repeating-linear-gradient(62deg, transparent 0 70px, #ffffffaa 70px 72px, transparent 72px 140px),
+    repeating-linear-gradient(-28deg, transparent 0 90px, #9fd4f0aa 90px 92px, transparent 92px 180px),
+    linear-gradient(90deg, #ffffffcc, transparent 14%, transparent 86%, #ffffffcc),
+    radial-gradient(ellipse at 50% 45%, #cdeeff, #86c4ea 80%);
 }
-#app[data-stage="ruins"] #road {
-  background: linear-gradient(#d9d2c3, #a99f8a);
-  box-shadow: 0 8px 18px #4d3f6a33, inset 0 0 18px #9b7df255;
+#app[data-stage="ruins"] #scenery {
+  background:
+    radial-gradient(ellipse 40% 22% at 50% 50%, #b9a2ff55, transparent 70%),
+    radial-gradient(ellipse 10% 6% at 12% 24%, #a9a08c 0 60%, transparent 62%),
+    radial-gradient(ellipse 12% 6% at 88% 36%, #a9a08c 0 60%, transparent 62%),
+    radial-gradient(ellipse 9% 5% at 16% 76%, #b4ab96 0 60%, transparent 62%),
+    radial-gradient(ellipse 11% 6% at 86% 86%, #a9a08c 0 60%, transparent 62%),
+    repeating-linear-gradient(0deg, transparent 0 38px, #9c8a6455 38px 40px),
+    repeating-linear-gradient(90deg, transparent 0 58px, #9c8a6444 58px 60px),
+    linear-gradient(90deg, #8c7e6488, transparent 14%, transparent 86%, #8c7e6488),
+    linear-gradient(#e6d2a6, #d2b98a);
 }
-#app[data-stage="darkForest"] #road {
-  background: linear-gradient(#3e5a3a, #26392a);
-  box-shadow: 0 8px 18px #0b1a0e66, inset 0 2px #7fae7a55;
+#app[data-stage="darkForest"] #scenery {
+  background:
+    radial-gradient(circle at 10% 30%, #c77dff 0 6px, transparent 8px),
+    radial-gradient(circle at 88% 22%, #c77dff 0 7px, transparent 9px),
+    radial-gradient(circle at 14% 72%, #b06dff 0 6px, transparent 8px),
+    radial-gradient(circle at 92% 80%, #c77dff 0 8px, transparent 10px),
+    radial-gradient(ellipse 36% 26% at 50% 48%, #3fe0c455, transparent 72%),
+    radial-gradient(ellipse 30% 40% at 0% 50%, #0d1f16, transparent 70%),
+    radial-gradient(ellipse 30% 40% at 100% 50%, #0d1f16, transparent 70%),
+    linear-gradient(90deg, #08140ee6, transparent 18%, transparent 82%, #08140ee6),
+    linear-gradient(#2c5a46, #1d3d30 55%, #14281f);
 }
-#app[data-stage="desert"] #road {
-  background: linear-gradient(#f6dc9c, #e2b86a);
-  box-shadow: 0 8px 18px #8a5a1e33, inset 0 2px #fff3cc;
+#app[data-stage="desert"] #scenery {
+  background:
+    repeating-radial-gradient(ellipse 140% 60% at 30% 120%, transparent 0 44px, #d49a4f44 44px 50px),
+    repeating-radial-gradient(ellipse 140% 60% at 80% -20%, transparent 0 52px, #fff2c844 52px 58px),
+    radial-gradient(ellipse 20% 10% at 84% 20%, #c9874255, transparent 70%),
+    linear-gradient(90deg, #c98a4a66, transparent 16%, transparent 84%, #c98a4a66),
+    linear-gradient(#f6dc9c, #e2b469);
 }
+#app[data-stage] #scenery { background-size: cover; filter: none; opacity: 1; }
+
+/* ---------- 道（レーン）と飛び石：景色が透けて見えるように（草原と同じくらい薄く）。
+   道を選ぶときの光る表示（.targetable）は kingdom.css のまま ---------- */
+#app[data-stage="lava"] #road .lane:not(.targetable) { border-color: #ff8a3a55; background: linear-gradient(90deg, #2a0c0624, #5a1e0e40 48%, #2a0c0624); }
+#app[data-stage="ice"] #road .lane:not(.targetable) { border-color: #ffffff99; background: linear-gradient(90deg, #ffffff22, #ffffff55 48%, #ffffff22); }
+#app[data-stage="ruins"] #road .lane:not(.targetable) { border-color: #8c826c66; background: linear-gradient(90deg, #b9a47a24, #f0e2bf4d 48%, #b9a47a24); }
+#app[data-stage="darkForest"] #road .lane:not(.targetable) { border-color: #3fe0c444; background: linear-gradient(90deg, #0d1f1624, #3fe0c41f 48%, #0d1f1624); }
+#app[data-stage="desert"] #road .lane:not(.targetable) { border-color: #a0763f55; background: linear-gradient(90deg, #d49a4f24, #fff2c84d 48%, #d49a4f24); }
+
+/* 飛び石は同じ絵のまま、色味だけステージに寄せる */
+#app[data-stage="lava"] #road .stone { filter: brightness(.7) sepia(.8) hue-rotate(-25deg) saturate(1.8) drop-shadow(0 0 4px #ff7a2a); opacity: .8; }
+#app[data-stage="ice"] #road .stone { filter: brightness(1.35) saturate(.25) hue-rotate(170deg); opacity: .85; }
+#app[data-stage="ruins"] #road .stone { filter: saturate(.3) brightness(.95); opacity: .75; }
+#app[data-stage="darkForest"] #road .stone { filter: brightness(.75) saturate(.8) hue-rotate(40deg); opacity: .8; }
+#app[data-stage="desert"] #road .stone { filter: sepia(.4) saturate(1.2) brightness(1.05); opacity: .7; }
+
+/* ---------- 城：ステージの雰囲気に合わせて色味を寄せる（プレイヤーの色は残す） ---------- */
+#app[data-stage="lava"] .castle .castle-art { filter: saturate(1.1) drop-shadow(0 0 6px #ff6a2a99); }
+#app[data-stage="ice"] .castle .castle-art { filter: brightness(1.12) saturate(.7) drop-shadow(0 0 6px #bfe8ff); }
+#app[data-stage="ruins"] .castle .castle-art { filter: sepia(.35) saturate(.75); }
+#app[data-stage="darkForest"] .castle .castle-art { filter: brightness(.88) saturate(.95) drop-shadow(0 0 6px #9b6dff99); }
+#app[data-stage="desert"] .castle .castle-art { filter: sepia(.25) saturate(.95); }
 
 /* 夜：盤面に青い影をかける（操作のじゃまにならないよう、押せない層） */
 #app[data-time="night"] #field::after {
