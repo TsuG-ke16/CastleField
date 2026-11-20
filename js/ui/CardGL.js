@@ -9,8 +9,16 @@ import { rankSkinBack } from './skinArt.js';
 import { cardMotionReduced, cardAxes } from './Card3D.js';
 
 const MODEL = 'assets/models/card-slab.glb';
-/** レアリティ別の専用3Dモデル定義（make-card-*.py で生成した GLB に対応） */
+/** レアリティ別・魔物・ランクスキンの専用3Dモデル定義（make-card-*.py で生成した GLB に対応） */
 const CARD_MODELS = {
+  common: {
+    path: 'assets/models/card-common.glb',
+    frameFile: 'frame-common.png',
+    backBase: '#734723',
+    rimLight: { color: '#ffd9a8', intensity: 0.55, position: [-2.2, -1.8, 2.0] },
+    gem: null,
+    foil: null,
+  },
   uncommon: {
     path: 'assets/models/card-uncommon.glb',
     frameFile: 'frame-uncommon.png',
@@ -42,6 +50,42 @@ const CARD_MODELS = {
       lightEmissiveIntensity: 0.30,
     },
     foil: 'rare',
+  },
+  epic: {
+    path: 'assets/models/card-epic.glb',
+    frameFile: 'frame-epic.png',
+    backBase: '#2b103d',
+    rimLight: { color: '#d699ff', intensity: 0.95, position: [-2.2, -1.8, 2.0] },
+    gem: {
+      ior: 1.58,
+      attenuationColor: '#9a24ff',
+      attenuationDistance: 0.055,
+      thickness: 0.05,
+      emissive: '#470880',
+      emissiveIntensity: 0.24,
+      lightColor: '#9018e0',
+      lightEmissive: '#3e0870',
+      lightEmissiveIntensity: 0.32,
+    },
+    foil: 'epic',
+  },
+  legendary: {
+    path: 'assets/models/card-legendary.glb',
+    frameFile: 'frame-legendary.png',
+    backBase: '#5a3d14',
+    rimLight: { color: '#ffcb6b', intensity: 1.05, position: [-2.3, -1.7, 2.1] },
+    gem: {
+      ior: 1.77,
+      attenuationColor: '#e01130',
+      attenuationDistance: 0.055,
+      thickness: 0.055,
+      emissive: '#4d0610',
+      emissiveIntensity: 0.22,
+      lightColor: '#c90d28',
+      lightEmissive: '#590512',
+      lightEmissiveIntensity: 0.34,
+    },
+    foil: 'legendary',
   },
   beast: {
     path: 'assets/models/card-beast.glb',
@@ -80,6 +124,90 @@ const CARD_MODELS = {
       lightColor: '#a688ff',
       lightEmissive: '#3e2178',
       lightEmissiveIntensity: 0.36,
+    },
+    foil: 'special',
+  },
+  'skin-platinum': {
+    path: 'assets/models/card-skin-platinum.glb',
+    frameFile: 'frame-skin-platinum.png',
+    backBase: '#1b2b3d',
+    has3DBack: true,
+    rimLight: { color: '#b5eeff', intensity: 1.0, position: [-2.3, -1.7, 2.2] },
+    gem: {
+      ior: 1.62,
+      attenuationColor: '#1ad4ff',
+      attenuationDistance: 0.065,
+      thickness: 0.05,
+      emissive: '#054059',
+      emissiveIntensity: 0.22,
+      lightColor: '#17b2e0',
+      lightEmissive: '#074561',
+      lightEmissiveIntensity: 0.32,
+    },
+    foil: 'rare',
+  },
+  'skin-diamond': {
+    path: 'assets/models/card-skin-diamond.glb',
+    frameFile: 'frame-skin-diamond.png',
+    backBase: '#132440',
+    has3DBack: true,
+    rimLight: { color: '#a8e4ff', intensity: 1.15, position: [-2.4, -1.6, 2.2] },
+    gem: {
+      ior: 2.42,
+      attenuationColor: '#7ad4ff',
+      attenuationDistance: 0.075,
+      thickness: 0.06,
+      dispersion: 0.55,
+      iridescence: 0.85,
+      iridescenceIOR: 1.45,
+      iridescenceThicknessRange: [130, 580],
+      emissive: '#0d3b66',
+      emissiveIntensity: 0.20,
+      lightColor: '#66c2ff',
+      lightEmissive: '#144b7a',
+      lightEmissiveIntensity: 0.34,
+    },
+    foil: 'rare',
+  },
+  'skin-master': {
+    path: 'assets/models/card-skin-master.glb',
+    frameFile: 'frame-skin-master.png',
+    backBase: '#271240',
+    has3DBack: true,
+    rimLight: { color: '#dfb3ff', intensity: 1.15, position: [-2.4, -1.6, 2.2] },
+    gem: {
+      ior: 1.55,
+      attenuationColor: '#b948ff',
+      attenuationDistance: 0.06,
+      thickness: 0.055,
+      emissive: '#3d0b66',
+      emissiveIntensity: 0.24,
+      lightColor: '#a638eb',
+      lightEmissive: '#420d73',
+      lightEmissiveIntensity: 0.34,
+    },
+    foil: 'epic',
+  },
+  'skin-champion': {
+    path: 'assets/models/card-skin-champion.glb',
+    frameFile: 'frame-skin-champion.png',
+    backBase: '#2c173d',
+    has3DBack: true,
+    rimLight: { color: '#ffdf9e', intensity: 1.25, position: [-2.4, -1.6, 2.2] },
+    gem: {
+      ior: 2.42,
+      attenuationColor: '#d9c2ff',
+      attenuationDistance: 0.08,
+      thickness: 0.06,
+      dispersion: 0.60,
+      iridescence: 0.90,
+      iridescenceIOR: 1.48,
+      iridescenceThicknessRange: [120, 620],
+      emissive: '#331d59',
+      emissiveIntensity: 0.20,
+      lightColor: '#b8a3ff',
+      lightEmissive: '#38226b',
+      lightEmissiveIntensity: 0.34,
     },
     foil: 'special',
   },
@@ -542,10 +670,16 @@ function foilTexture(THREE, rarity, aspect) {
   return { texture, opacity: spec.opacity };
 }
 
-/** レアリティ別・魔物用の専用3Dモデルを使うカードならその定義を返す（スキン枠の場合は使わない） */
+/** レアリティ別・魔物・ランクスキン用の専用3Dモデルを使うカードならその定義を返す（?card3d=slab で無効化可能） */
 function cardModelSpec(card) {
-  if (!card || card.dataset.skin) return null;
+  if (!card) return null;
+  if (new URLSearchParams(location.search).get('card3d') === 'slab') return null;
   const frameSrc = (card.querySelector('.mini-card-frame')?.getAttribute('src') ?? '').split('?')[0];
+  if (card.dataset.skin) {
+    const skinKey = `skin-${card.dataset.skin}`;
+    const skinSpec = CARD_MODELS[skinKey];
+    return skinSpec && frameSrc.endsWith(skinSpec.frameFile) ? { key: skinKey, ...skinSpec } : null;
+  }
   if (card.dataset.beast && frameSrc.endsWith(CARD_MODELS.beast.frameFile)) {
     return { key: 'beast', ...CARD_MODELS.beast };
   }
@@ -600,34 +734,52 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
 
   // 宝石：カットの面ごとに向きが違うので、傾けると面ごとに映り込みと奥の透け方が変わる。
   // スマホ等の軽量モードでは透過（追加の場面描画）を切り、高コントラストな不透明ファセット表現にする
-  const gemCfg = spec.gem;
-  const gemIridescence = gemCfg.iridescence
-    ? { iridescence: gemCfg.iridescence, iridescenceIOR: gemCfg.iridescenceIOR ?? 1.4, iridescenceThicknessRange: gemCfg.iridescenceThicknessRange ?? [120, 560] }
-    : {};
-  const gemLook = !highGfx
-    ? {
-        color: new THREE.Color(gemCfg.lightColor),
-        emissive: gemCfg.lightEmissive,
-        emissiveIntensity: gemCfg.lightEmissiveIntensity,
-        roughness: 0.04,
-        metalness: 0.12,
-        ior: Math.max(1.8, gemCfg.ior),
-        envMapIntensity: 2.4,
-        ...gemIridescence,
-      }
-    : {
-        transmission: 1,
-        thickness: gemCfg.thickness,
-        attenuationColor: gemCfg.attenuationColor,
-        attenuationDistance: gemCfg.attenuationDistance,
-        ...(gemCfg.dispersion ? { dispersion: gemCfg.dispersion } : {}),
-        ...(gemCfg.emissive ? { emissive: gemCfg.emissive, emissiveIntensity: gemCfg.emissiveIntensity ?? 0.2 } : {}),
-        roughness: 0.02,
-        metalness: 0,
-        ior: gemCfg.ior,
-        envMapIntensity: 2.3,
-        ...gemIridescence,
-      };
+  const makeGemLook = (cfg) => {
+    if (!cfg) return null;
+    const iri = cfg.iridescence
+      ? { iridescence: cfg.iridescence, iridescenceIOR: cfg.iridescenceIOR ?? 1.4, iridescenceThicknessRange: cfg.iridescenceThicknessRange ?? [120, 560] }
+      : {};
+    return !highGfx
+      ? {
+          color: new THREE.Color(cfg.lightColor),
+          emissive: cfg.lightEmissive,
+          emissiveIntensity: cfg.lightEmissiveIntensity,
+          roughness: 0.04,
+          metalness: 0.12,
+          ior: Math.max(1.8, cfg.ior),
+          envMapIntensity: 2.4,
+          ...iri,
+        }
+      : {
+          transmission: 1,
+          thickness: cfg.thickness,
+          attenuationColor: cfg.attenuationColor,
+          attenuationDistance: cfg.attenuationDistance,
+          ...(cfg.dispersion ? { dispersion: cfg.dispersion } : {}),
+          ...(cfg.emissive ? { emissive: cfg.emissive, emissiveIntensity: cfg.emissiveIntensity ?? 0.2 } : {}),
+          roughness: 0.02,
+          metalness: 0,
+          ior: cfg.ior,
+          envMapIntensity: 2.3,
+          ...iri,
+        };
+  };
+  const gemLook = makeGemLook(spec.gem);
+  const rubyGemLook = makeGemLook({
+    ior: 1.77,
+    attenuationColor: '#e81c2c',
+    attenuationDistance: 0.055,
+    thickness: 0.05,
+    emissive: '#4d0610',
+    emissiveIntensity: 0.24,
+    lightColor: '#d11428',
+    lightEmissive: '#590512',
+    lightEmissiveIntensity: 0.34,
+  });
+  const makeGemMaterial = (source, look) => new THREE.MeshPhysicalMaterial({
+    color: source.color, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0.02, envMap: jewelMap,
+    side: THREE.FrontSide, ...(look ?? {}),        // 宝石は閉じた形なので片面（両面だと透過の描き直しが毎回2回になる）
+  });
   // 裏の絵：絵の外の透けている所（角のまわり）が黒く出ないように、レアリティ別の側面ベース色の上に描いてから貼る
   const backImage = backTexture.image;
   const backCanvas = blank(backImage.naturalWidth || backImage.width || 1, backImage.naturalHeight || backImage.height || 1);
@@ -640,32 +792,55 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
   backOnBase.colorSpace = THREE.SRGBColorSpace;
   backOnBase.anisotropy = highGfx ? Math.min(8, maxAniso) : 4;
   const makers = {
+    // 表面テクスチャ付きパーツ
     face: (source) => new THREE.MeshStandardMaterial({ map: faceTexture, roughness: 0.72, metalness: 0, alphaTest: 0.4, side: source.side }),
     leaf: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.38, metalness: 0, clearcoat: 0.25, clearcoatRoughness: 0.35, alphaTest: 0.4, side: source.side }),
     silver_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.24, metalness: 0.32, clearcoat: 0.65, clearcoatRoughness: 0.16, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.15, alphaTest: 0.4, side: source.side }),
     crystal_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.14, metalness: 0.14, clearcoat: 1.0, clearcoatRoughness: 0.05, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.35, alphaTest: 0.4, side: source.side }),
     gold_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.20, metalness: 0.48, clearcoat: 0.55, clearcoatRoughness: 0.16, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, alphaTest: 0.4, side: source.side }),
+    gold_relief: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.24, metalness: 0.62, clearcoat: 0.72, clearcoatRoughness: 0.15, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, alphaTest: 0.4, side: source.side }),
     prism_frame_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.16, metalness: 0.24, clearcoat: 0.90, clearcoatRoughness: 0.06, iridescence: 0.90, iridescenceIOR: 1.35, iridescenceThicknessRange: [140, 520], envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, alphaTest: 0.4, side: source.side }),
     prism_metal_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.15, metalness: 0.50, clearcoat: 0.85, clearcoatRoughness: 0.06, iridescence: 0.85, iridescenceIOR: 1.40, iridescenceThicknessRange: [180, 560], envMap: jewelMap, envMapIntensity: highGfx ? 1.65 : 1.25, alphaTest: 0.4, side: source.side }),
+    platinum_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.18, metalness: 0.52, clearcoat: 0.75, clearcoatRoughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, alphaTest: 0.4, side: source.side }),
+    master_gold_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.18, metalness: 0.58, clearcoat: 0.70, clearcoatRoughness: 0.12, envMap: jewelMap, envMapIntensity: highGfx ? 1.60 : 1.25, alphaTest: 0.4, side: source.side }),
+    master_feather_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.24, metalness: 0.34, clearcoat: 0.55, clearcoatRoughness: 0.16, iridescence: 0.35, iridescenceIOR: 1.35, envMap: jewelMap, envMapIntensity: highGfx ? 1.45 : 1.15, alphaTest: 0.4, side: source.side }),
+    champ_gold_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.16, metalness: 0.62, clearcoat: 0.75, clearcoatRoughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.65 : 1.25, alphaTest: 0.4, side: source.side }),
+    champ_wing_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.20, metalness: 0.44, clearcoat: 0.68, clearcoatRoughness: 0.14, iridescence: 0.55, iridescenceIOR: 1.38, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, alphaTest: 0.4, side: source.side }),
+    // 裏面テクスチャ付きパーツ（ランクスキンは完全3D裏面）
     back: (source) => new THREE.MeshStandardMaterial({ map: backOnBase, roughness: 0.5, side: source.side }),
+    back_platinum: (source) => new THREE.MeshPhysicalMaterial({ map: backOnBase, roughness: 0.18, metalness: 0.52, clearcoat: 0.75, clearcoatRoughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, side: source.side }),
+    back_crystal: (source) => new THREE.MeshPhysicalMaterial({ map: backOnBase, roughness: 0.14, metalness: 0.16, clearcoat: 1.0, clearcoatRoughness: 0.05, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.35, side: source.side }),
+    back_metal: (source) => new THREE.MeshPhysicalMaterial({ map: backOnBase, roughness: 0.18, metalness: 0.55, clearcoat: 0.72, clearcoatRoughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.60 : 1.25, side: source.side }),
+    back_gold_face: (source) => new THREE.MeshPhysicalMaterial({ map: backOnBase, roughness: 0.18, metalness: 0.60, clearcoat: 0.72, clearcoatRoughness: 0.12, envMap: jewelMap, envMapIntensity: highGfx ? 1.60 : 1.25, side: source.side }),
+    back_feather_face: (source) => new THREE.MeshPhysicalMaterial({ map: backOnBase, roughness: 0.24, metalness: 0.34, clearcoat: 0.55, clearcoatRoughness: 0.16, iridescence: 0.35, iridescenceIOR: 1.35, envMap: jewelMap, envMapIntensity: highGfx ? 1.45 : 1.15, side: source.side }),
+    back_wing_face: (source) => new THREE.MeshPhysicalMaterial({ map: backOnBase, roughness: 0.20, metalness: 0.44, clearcoat: 0.68, clearcoatRoughness: 0.14, iridescence: 0.55, iridescenceIOR: 1.38, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, side: source.side }),
+    // 側面・金属・構造パーツ
     wood: (source) => new THREE.MeshStandardMaterial({ color: source.color, roughness: 0.78, metalness: 0, side: source.side }),
+    iron: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.82, roughness: 0.34, envMap: jewelMap, envMapIntensity: highGfx ? 1.25 : 1.05, side: source.side }),
+    rivet: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.86, roughness: 0.24, envMap: jewelMap, envMapIntensity: highGfx ? 1.40 : 1.15, side: source.side }),
     metal_blue: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.72, roughness: 0.28, envMap: jewelMap, envMapIntensity: highGfx ? 1.25 : 1.05, side: source.side }),
+    purple: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.45, roughness: 0.34, envMap: jewelMap, envMapIntensity: highGfx ? 1.25 : 1.05, side: source.side }),
+    crimson: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.05, roughness: 0.82, side: source.side }),
+    gold_dark: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.92, roughness: 0.28, envMap: jewelMap, envMapIntensity: highGfx ? 1.30 : 1.10, side: source.side }),
     obsidian_red: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.65, roughness: 0.30, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.05, side: source.side }),
     prism_edge: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 0.80, roughness: 0.20, iridescence: 0.75, iridescenceIOR: 1.35, envMap: jewelMap, envMapIntensity: highGfx ? 1.50 : 1.15, side: source.side }),
-    // 金具・箔・宝石だけが、明暗差の大きい映り込み（jewelMap）を使う
+    platinum: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.96, roughness: 0.16, envMap: jewelMap, envMapIntensity: highGfx ? 1.50 : 1.25, side: source.side }),
+    diamond_metal: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.94, roughness: 0.15, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.25, side: source.side }),
+    amethyst_metal: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.85, roughness: 0.22, envMap: jewelMap, envMapIntensity: highGfx ? 1.45 : 1.20, side: source.side }),
+    // 金具・箔・発光・宝石（明暗差の大きい映り込み jewelMap を使用）
     gold: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.18, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.15, side: source.side }),
     silver: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.15, envMap: jewelMap, envMapIntensity: highGfx ? 1.40 : 1.20, side: source.side }),
     pearl_gold: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 1, roughness: 0.14, iridescence: 0.45, iridescenceIOR: 1.35, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.25, side: source.side }),
     foil: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.45, side: source.side }),
     prism_foil: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 1, roughness: 0.08, iridescence: 1.0, iridescenceIOR: 1.50, iridescenceThicknessRange: [120, 650], envMap: jewelMap, envMapIntensity: highGfx ? 2.0 : 1.6, side: source.side }),
-    gem: (source) => new THREE.MeshPhysicalMaterial({
-      color: source.color, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0.02, envMap: jewelMap,
-      side: THREE.FrontSide, ...gemLook,           // 宝石は閉じた形なので片面（両面だと透過の描き直しが毎回2回になる）
-    }),
-    prism_gem: (source) => new THREE.MeshPhysicalMaterial({
-      color: source.color, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0.02, envMap: jewelMap,
-      side: THREE.FrontSide, ...gemLook,
-    }),
+    glow: (source) => (spec.key === 'legendary'
+      ? new THREE.MeshStandardMaterial({ color: '#ffd573', emissive: '#ff421c', emissiveIntensity: 1.35, metalness: 0.65, roughness: 0.20, side: source.side })
+      : new THREE.MeshPhysicalMaterial({ map: faceTexture, emissive: '#e078ff', emissiveMap: faceTexture, emissiveIntensity: 0.72, clearcoat: 1.0, clearcoatRoughness: 0.08, alphaTest: 0.4, side: source.side })),
+    gem: (source) => makeGemMaterial(source, gemLook),
+    prism_gem: (source) => makeGemMaterial(source, gemLook),
+    diamond_gem: (source) => makeGemMaterial(source, gemLook),
+    amethyst_gem: (source) => makeGemMaterial(source, gemLook),
+    ruby_gem: (source) => makeGemMaterial(source, rubyGemLook),
   };
   // 同じ名前の材質は1つだけ作って使い回す。知らない名前は wood 相当で描く
   const madeByName = new Map();
@@ -679,11 +854,12 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
   model.traverse((node) => {
     if (!node.isMesh) return;
     const rawMats = Array.isArray(node.material) ? node.material : [node.material];
+    const baseNode = (node.name || '').replace(/\.\d+$/, '');
     const isGem = rawMats.some((m) => m?.name?.replace(/\.\d+$/, '').endsWith('gem'));
     node.geometry = own(shareGeometry(THREE, node.geometry));
     node.material = Array.isArray(node.material) ? rawMats.map(materialFor) : materialFor(node.material);
     node.receiveShadow = true;
-    node.castShadow = !isGem;          // 縁・台座・葉・翼の影は枠の上に落とす。宝石は影を落とさない（奥の箔が暗くなるため）
+    node.castShadow = !isGem && baseNode !== 'glow-accent';   // 縁・台座・葉・翼の影は枠の上に落とす。宝石や発光部は影を落とさない
   });
 
   // 置き方：モデルの 1 は枠の絵の幅で、原点は枠の絵の中心。canvas の枠の位置（rects.frame）の中心に置き、大きさをそろえる。
@@ -862,8 +1038,8 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
       group.add(mesh);
     }
 
-    // ランク報酬の裏：裏の絵も、高さの地図から作った本物の凹凸のメッシュにする（板の裏の上に重ねる）
-    if (card.dataset.skin && backSource) {
+    // ランク報酬の裏：専用3Dモデルが裏面まで立体化していないときだけ、高さの地図から凹凸メッシュを作って重ねる
+    if (card.dataset.skin && backSource && !(dedicatedGltf && modelSpec.has3DBack)) {
       const backReliefSrc = backSource.replace(/\.png$/, '-relief.png');
       const backRaisedSrc = rankSkinBack(card.dataset.skin)?.raised;
       const [backImg, backRelief, backRaised] = await Promise.all([loadImage(new URL(backSource, document.baseURI).href), loadImage(backReliefSrc), backRaisedSrc ? loadImage(backRaisedSrc) : null]);
