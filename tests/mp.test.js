@@ -140,7 +140,8 @@ test('排出率の恒久強化：買うほど、引くときに高レアが出�
   assert.equal(g.buyUpgrade('permLuck').ok, true);
   assert.ok(Math.abs(g.getState('p1').players.p1.permLuck.chance - 0.3) < 1e-9);
   assert.equal(g.buyUpgrade('permLuck').ok, true);
-  assert.equal(g.canBuyUpgrade('permLuck').ok, false); // 3回まで
+  assert.equal(g.buyUpgrade('permLuck').ok, true);
+  assert.equal(g.canBuyUpgrade('permLuck').ok, false); // 4回まで
   g.players.p1.permLuck.chance = 1;
   const deck = g.pileOf('p1').deck.length;
   g.drawCards(g.players.p1, 3);
