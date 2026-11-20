@@ -325,5 +325,10 @@
   "ui/stamps/scared.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
   "ui/stamps/sorry.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
   "ui/stamps/gg.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
-  "ui/stamps/again.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png"
+  "ui/stamps/again.png": "exec-c4a40e86-cde1-47eb-bd9f-2be383d8db76.png",
+  "bg/stage-meadow.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）",
+  "bg/stage-ruins.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）",
+  "bg/stage-dark-forest.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）",
+  "bg/stage-ice.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）",
+  "bg/stage-lava.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）"
 }

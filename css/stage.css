@@ -58,6 +58,32 @@
 }
 #app[data-stage] #scenery { background-size: cover; filter: none; opacity: 1; }
 
+/* ---------- ステージの背景の絵があるとき（#app[data-stage-art]） ----------
+   絵の奥に相手の城、手前に自分の側。絵の飛び石を見せるので、道の箱と画面側の飛び石は消し、
+   真ん中の大きなマス（魔物・ワールドボスの場所）だけ印を残す */
+#app[data-stage][data-stage-art] #scenery {
+  /* 横幅に合わせて上（相手の城の側）から並べ、足りない下は、その絵の地面の色でつなぐ */
+  background-size: 100% auto; background-position: center top; background-repeat: no-repeat;
+  background-color: var(--stage-ground, #5d8d51); filter: saturate(1.05); opacity: 1;
+}
+#app[data-stage="meadow"] { --stage-ground: #5d8d51; }
+#app[data-stage="ruins"] { --stage-ground: #7e7e63; }
+#app[data-stage="darkForest"] { --stage-ground: #418280; }
+#app[data-stage="ice"] { --stage-ground: #b5cbf2; }
+#app[data-stage="lava"] { --stage-ground: #904a45; }
+#app[data-stage][data-stage-art] #scenery .tree { display: none; }
+#app[data-stage][data-stage-art] #road .lane:not(.targetable) { border-color: transparent; background: none; box-shadow: none; }
+#app[data-stage][data-stage-art] #road .stone { display: none; }
+#app[data-stage][data-stage-art] #road .cell.mid .stone {
+  display: block; width: 80%; height: 64%; opacity: 1; filter: none;
+  background: radial-gradient(ellipse, #f1e6ffcc, #c4a6f088 55%, #b79be622 72%);
+  border: 3px dashed #ffffffe6; border-radius: 50%; box-shadow: 0 0 16px #c9a8ffcc, inset 0 0 10px #ffffff88;
+}
+
+/* 真ん中のマス（魔物・ワールドボスの場所）は、ほかのマスより大きい（js/ui/Renderer.js の --cell-rows と rowCenter） */
+#app #road .cells { grid-template-rows: var(--cell-rows, repeat(var(--cells), 1fr)); }
+#app #road .cell.mid .stone { width: 70%; height: 56%; }
+
 /* ---------- 道（レーン）と飛び石：景色が透けて見えるように（草原と同じくらい薄く）。
    道を選ぶときの光る表示（.targetable）は kingdom.css のまま ---------- */
 #app[data-stage="lava"] #road .lane:not(.targetable) { border-color: #ff8a3a55; background: linear-gradient(90deg, #2a0c0624, #5a1e0e40 48%, #2a0c0624); }

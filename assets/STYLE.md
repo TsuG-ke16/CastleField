@@ -240,7 +240,7 @@ Fantasy mobile game UI element, [内容], cartoon style, transparent background,
 
 ## ステージの背景（`bg/stage-<ステージ>.png`、9:16）
 
-ステージ（`data/stages.json`）ごとの盤面の背景。`stage-lava.png`・`stage-ice.png`・`stage-ruins.png`・`stage-dark-forest.png`・`stage-desert.png`（草原はいつもの `board` の絵）。
+ステージ（`data/stages.json`）ごとの盤面の背景。`stage-meadow.png`・`stage-lava.png`・`stage-ice.png`・`stage-ruins.png`・`stage-dark-forest.png`・`stage-desert.png`（砂漠以外はある）。いちばん上（奥）に相手の城の側の景色、その下に飛び石が並ぶ広場。
 置いて `assets/asset-manifest.json` に足せば、`js/ui/Renderer.js` の `setStage` が自動で使う（ないあいだは `css/stage.css` のグラデーションで描く）。
 1080×1920、不透明、300KB 以下。真ん中を縦に3本の道が通り、上下に城が立つ前提で、**城・飛び石・文字は描かない**（画面側で重ねる）。左右の端に景色の飾りを寄せ、真ん中は落ち着いた色にする。
 
