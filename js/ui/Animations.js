@@ -11,6 +11,7 @@ import { frameAsset } from './cardFrame.js';
 import { playerName } from './text.js';
 import { mountMiniCard } from './cardView.js';
 import { attackOf, attackFrames, impactSvg } from './motion.js';
+import { CardFx3D } from './CardFx3D.js';
 import { ELEMENT_BEATS } from '../game/Game.js';
 
 const $ = (id) => document.getElementById(id);
@@ -33,6 +34,7 @@ export class Animations {
     this.timers = new Set();     // 待っている delay
     this.running = new Set();    // 動いている Web Animation
     this.el = { app: $('app'), board: $('board'), fx: $('fx-layer') };
+    this.cardFx3D = new CardFx3D(this.el.fx);
     /** 攻撃を受ける向き（ぶつかった・撃たれた直後のダメージで、ノックバックに使う）。要素 → { x, y, weight, weak } */
     this.hitDir = new WeakMap();
     /** とどめを受けた向き（消えるときに、その向きへ吹き飛ぶ） */
@@ -79,6 +81,7 @@ export class Animations {
     for (const a of [...this.running]) {
       try { a.finish(); } catch { a.cancel(); }
     }
+    this.cardFx3D?.skipAll();
     // 兵士の移動・HPバーなど CSS の動きも終わらせる
     for (const a of document.getAnimations()) {
       if (a instanceof CSSTransition) a.finish();
@@ -767,30 +770,37 @@ export class Animations {
     glow.style.background = wild ? 'conic-gradient(#ff7b9c,#ffdf7a,#89eebc,#8abaff,#d79aff,#ff7b9c)' : `radial-gradient(circle, #fff 0%, ${color} 35%, transparent 70%)`;
     if (wild) glow.style.borderRadius = '50%';
     this.animate(glow, [{ transform: 'scale(.2)', opacity: 0 }, { transform: 'scale(.6)', opacity: .9, offset: .45 }, { transform: `scale(${1.6 + rank * .35})`, opacity: 0 }], { duration: total, fill: 'forwards' }).then(() => glow.remove());
-    for (const side of [0, 1]) {
-      const inputType = wild && side === 0 ? 'adapt' : from;
-      const el = this.effectCard(inputType, this.cards[inputType]?.name); stage.append(el);
-      this.animate(el, [
-        { transform: `translate(${side ? 150 : -150}px, 20px) rotate(${side ? 20 : -20}deg) scale(.9)`, opacity: 0 },
-        { transform: `translate(${side ? 80 : -80}px, 0) rotate(${side ? 12 : -12}deg)`, opacity: 1, offset: .18 },
-        { transform: 'translate(0, 0) scale(.75)', opacity: 1, offset: .45, easing: 'cubic-bezier(.6, 0, .9, .5)' },
-        { transform: 'scale(.2)', opacity: 0, offset: .6 }, { opacity: 0 },
-      ], { duration: total, fill: 'forwards' });
-    }
-    const result = this.effectCard(to, this.cards[to]?.name); stage.append(result);
-    this.delay(total * .55).then(() => {
+    const onFusionImpact = () => {
       if (this.skipping) return;
       this.ring(center, { size: 140 + rank * 40, color, duration: 420 });
       this.sparks(center, { count: 10 + rank * 6, color, spread: 70 + rank * 25, size: 7 + rank });
       this.shake(this.renderer.el.field, 3 + rank * 2, 260);
       if (rank >= 3) this.screenFlash(color, 300 + rank * 60);
-    });
+    };
     const label = document.createElement('strong'); label.className = 'reward-heading';
     label.textContent = `${this.cards[to]?.name ?? ''}に合成！ ${rarity?.name ?? ''}`;
     label.style.cssText = 'position:absolute;left:50%;top:92px;transform:translateX(-50%);white-space:nowrap;opacity:0';
     stage.append(label);
     this.animate(label, [{ opacity: 0 }, { opacity: 0, offset: .6 }, { opacity: 1, offset: .72 }, { opacity: 1, offset: .9 }, { opacity: 0 }], { duration: total, fill: 'forwards' });
-    await this.animate(result, [{ transform: 'scale(.1)', opacity: 0 }, { transform: 'scale(.1)', opacity: 0, offset: .4 }, { transform: 'scale(1.25)', opacity: 1, offset: .62 }, { transform: 'scale(1)', opacity: 1, offset: .8 }, { transform: 'translateY(40px) scale(.6)', opacity: 0 }], { duration: total, fill: 'forwards' });
+    const leftType = wild ? 'adapt' : from;
+    const used3D = await this.cardFx3D?.playFusion({
+      leftType, rightType: from, toType: to, cards: this.cards, rarities: this.rarities, center, duration: total, onImpact: onFusionImpact,
+    });
+    if (!used3D) {
+      for (const side of [0, 1]) {
+        const inputType = wild && side === 0 ? 'adapt' : from;
+        const el = this.effectCard(inputType, this.cards[inputType]?.name); stage.append(el);
+        this.animate(el, [
+          { transform: `translate(${side ? 150 : -150}px, 20px) rotate(${side ? 20 : -20}deg) scale(.9)`, opacity: 0 },
+          { transform: `translate(${side ? 80 : -80}px, 0) rotate(${side ? 12 : -12}deg)`, opacity: 1, offset: .18 },
+          { transform: 'translate(0, 0) scale(.75)', opacity: 1, offset: .45, easing: 'cubic-bezier(.6, 0, .9, .5)' },
+          { transform: 'scale(.2)', opacity: 0, offset: .6 }, { opacity: 0 },
+        ], { duration: total, fill: 'forwards' });
+      }
+      const result = this.effectCard(to, this.cards[to]?.name); stage.append(result);
+      this.delay(total * .55).then(onFusionImpact);
+      await this.animate(result, [{ transform: 'scale(.1)', opacity: 0 }, { transform: 'scale(.1)', opacity: 0, offset: .4 }, { transform: 'scale(1.25)', opacity: 1, offset: .62 }, { transform: 'scale(1)', opacity: 1, offset: .8 }, { transform: 'translateY(40px) scale(.6)', opacity: 0 }], { duration: total, fill: 'forwards' });
+    }
     stage.remove();
   }
 
@@ -968,6 +978,24 @@ export class Animations {
     if (!r.width) return; // 手札をたたんでいる
     const from = this.centerOf(pile.getClientRects().length ? pile : document.getElementById('hud'));
     const to = { x: Math.max(r.width / 2, Math.min(app.width - r.width / 2, r.left - app.left + r.width / 2)), y: r.top - app.top + r.height / 2 };
+    el.classList.remove('new');
+    el.style.visibility = 'hidden';
+    this.handView.hand3D?.kick();
+    if (this.cardFx3D?.available()) {
+      const def = this.cards?.[card.type] ?? { name: card.type };
+      void this.cardFx3D.playDrawFlip({
+        type: card.type, def, rarities: this.rarities, from, to, cardHeight: r.height, duration: UI_CONFIG.timing.drawFly,
+      }).then((ok) => {
+        if (!ok) {
+          el.style.visibility = '';
+          this.handView.hand3D?.kick();
+          return;
+        }
+        el.style.visibility = '';
+        this.handView.hand3D?.kick();
+      });
+      return;
+    }
     const clone = el.cloneNode(true);
     clone.classList.remove('new', 'selected', 'dim');
     clone.classList.add('fx-card');
@@ -976,8 +1004,6 @@ export class Animations {
     clone.style.width = `${r.width}px`;
     clone.style.height = `${r.height}px`;
     this.el.fx.appendChild(clone);
-    el.classList.remove('new');
-    el.style.visibility = 'hidden';
     const dx = from.x - to.x;
     const dy = from.y - to.y;
     const base = 'translate(-50%, -50%)';
@@ -989,6 +1015,7 @@ export class Animations {
     ], { duration: UI_CONFIG.timing.drawFly, fill: 'forwards' }).then(() => {
       clone.remove();
       el.style.visibility = '';
+      this.handView.hand3D?.kick();
     });
   }
 
@@ -1029,32 +1056,40 @@ export class Animations {
     if (this.skipping) return;
     sound.play('card');
 
-    clone.classList.remove('selected', 'dim', 'new', 'denied', 'drag-source', 'drag-ghost');
-    clone.classList.add('fx-card');
-    clone.style.left = `${from.x}px`;
-    clone.style.top = `${from.y}px`;
-    this.el.fx.appendChild(clone);
     const to = this.centerOf(this.renderer.el.field);
-    const dx = to.x - from.x;
-    const dy = to.y - from.y;
-    const base = 'translate(-50%, -50%)';
     const dur = UI_CONFIG.timing.cardPlay;
-    // 少し沈んでから（ため）、傾きながら盤面へ飛び、ドンと止まって見せる。レアなカードほど光が大きい
-    const lean = Math.max(-14, Math.min(14, dx * 0.08));
-    const cardAnimation = this.animate(clone, [
-      { transform: `${base} translate(0, 0) scale(1)` },
-      { transform: `${base} translate(0, 8px) scale(.94, .9)`, offset: 0.07, easing: 'cubic-bezier(.2, .7, .3, 1)' },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.86) rotate(${lean}deg)`, offset: 0.33 },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.66) rotate(0deg)`, offset: 0.42 },
-      { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75, easing: UI_CONFIG.easing.exit },
-      { transform: `${base} translate(${dx}px, ${dy - 30}px) scale(1.4)`, opacity: 0 },
-    ], { duration: dur, fill: 'forwards' }).then(() => clone.remove());
     const rank = Math.max(0, Object.keys(this.rarities ?? {}).indexOf(def.rarity));
     const shine = this.rarities?.[def.rarity]?.color ?? '#fff7df';
     this.delay(dur * 0.33).then(() => {
       this.ring(to, { size: 170 + rank * 34, color: shine, duration: 300 + rank * 40 });
       if (rank >= 2) this.sparks(to, { count: 3 + rank * 3, color: shine, spread: 70 + rank * 16, size: 7 });
     });
+
+    let cardAnimation;
+    if (this.cardFx3D?.available()) {
+      cardAnimation = this.cardFx3D.playCardFly({
+        type, def, rarities: this.rarities, from, to, cardHeight: 114, duration: dur,
+      });
+    } else {
+      clone.classList.remove('selected', 'dim', 'new', 'denied', 'drag-source', 'drag-ghost');
+      clone.classList.add('fx-card');
+      clone.style.left = `${from.x}px`;
+      clone.style.top = `${from.y}px`;
+      this.el.fx.appendChild(clone);
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      const base = 'translate(-50%, -50%)';
+      // 少し沈んでから（ため）、傾きながら盤面へ飛び、ドンと止まって見せる。レアなカードほど光が大きい
+      const lean = Math.max(-14, Math.min(14, dx * 0.08));
+      cardAnimation = this.animate(clone, [
+        { transform: `${base} translate(0, 0) scale(1)` },
+        { transform: `${base} translate(0, 8px) scale(.94, .9)`, offset: 0.07, easing: 'cubic-bezier(.2, .7, .3, 1)' },
+        { transform: `${base} translate(${dx}px, ${dy}px) scale(1.86) rotate(${lean}deg)`, offset: 0.33 },
+        { transform: `${base} translate(${dx}px, ${dy}px) scale(1.66) rotate(0deg)`, offset: 0.42 },
+        { transform: `${base} translate(${dx}px, ${dy}px) scale(1.7)`, opacity: 1, offset: 0.75, easing: UI_CONFIG.easing.exit },
+        { transform: `${base} translate(${dx}px, ${dy - 30}px) scale(1.4)`, opacity: 0 },
+      ], { duration: dur, fill: 'forwards' }).then(() => clone.remove());
+    }
     // 防御の帯はカードが消えてから見せる。ほかの効果は従来どおり重ねてテンポを保つ。
     if (type === 'reflect' || type === 'decoy') await cardAnimation;
     else await this.delay(dur * 0.7);

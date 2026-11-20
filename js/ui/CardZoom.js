@@ -4,6 +4,8 @@
 import { mountMiniCard } from './cardView.js';
 import { cardDescription } from './text.js';
 import { cardMotionReduced as reduced, createCard3D } from './Card3D.js';
+import { card3DWanted } from './CardMesh3D.js';
+import { createCardZoom3D } from './CardZoom3D.js';
 import { canRequestFoilTilt, enableFoilTilt } from './Hologram.js';
 
 const HOLD_MS = 420;       // 長押しと見なす時間
@@ -38,6 +40,7 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
   shadow.setAttribute('aria-hidden', 'true');
   let card = null;
   let card3D = null;
+  let openToken = 0;
 
   // ---------- 向き（どの向きにも360度）と、小さな傾き ----------
   // 向き：押してなぞると、なぞった方向へカードが回る（裏も見える）。離すと少し回り続けて止まる。ダブルタップ・「正面に戻す」で正面へ。
@@ -199,11 +202,13 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     if (!event.target.closest('.zoom-stage, .zoom-text, .zoom-name, .zoom-hint, .zoom-sensor, .zoom-reset')) close();
   });
   dialog.addEventListener('close', () => {
+    openToken += 1;
     window.removeEventListener('deviceorientation', orient);
     card3D?.destroy(); card3D = null;
     orienting = false; held = false; drag = null; spin = null; homing = false; justDragged = false; q = [1, 0, 0, 0];
     card = null; rect = null; lastStep = 0;
     if (frame) { cancelAnimationFrame(frame); frame = 0; }
+    stage.classList.remove('zoom-stage-gl');
     stage.replaceChildren();
   });
 
@@ -211,12 +216,15 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
   const open = (type, opts = {}) => {
     const def = cards?.[type];
     if (!def) return;
+    const token = ++openToken;
+    card3D?.destroy(); card3D = null;
     card = document.createElement('div');
     card.className = 'zoom-card';
     mountMiniCard(card, type, def, rarities, { skin: opts.skin || undefined });
+    const rarityColor = opts.skin ? opts.color : def.monster ? '#a51d34' : rarities?.[def.rarity]?.color;
     const fx = new URLSearchParams(location.search).get('fx');
     card3D = createCard3D(card, {
-      rarityColor: opts.skin ? opts.color : def.monster ? '#a51d34' : rarities?.[def.rarity]?.color,
+      rarityColor,
       shadow,
       quality: fx === 'full' || fx === 'lite' ? fx : 'auto',
     });
@@ -230,6 +238,21 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     paint();
     if (canRequestFoilTilt() && !sensorAllowed) sensorBtn.hidden = reduced();
     else listenOrientation();
+
+    // 3D モデルが有効なら、GLB の読み込み完了後に CSS 3D からシームレスに切りかえる（失敗・?flat=1 は今の CSS 3D のまま）
+    if (card3DWanted()) {
+      void createCardZoom3D(stage, {
+        type, def, rarities, skin: opts.skin || undefined, rarityColor, shadow,
+        isCurrent: () => token === openToken && dialog.open,
+      }).then((gl3D) => {
+        if (!gl3D || token !== openToken || !dialog.open) { gl3D?.destroy(); return; }
+        card3D?.destroy();
+        card.hidden = true;
+        card3D = gl3D;
+        measure();
+        paint();
+      });
+    }
   };
 
   // ---------- 長押しの検出（まとめて受ける） ----------

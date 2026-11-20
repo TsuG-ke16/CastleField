@@ -531,3 +531,17 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 | `bg/home-deck.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
 | `bg/home-account.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
 | `bg/home-settings.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
+
+## 3D カードモデル（2026-11-20 追加）
+
+Blender 5.3.0 の Python スクリプト（`tools/blender/build_card.py`・`tools/blender/card_presets.json`）でプロシージャルに生成した 3D カードの素体（`.glb`）。テクスチャは含めず、ゲーム内で既存の PNG 素材を張りかえて使用する。
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `models/card-common.glb` | Blender 5.3.0（`tools/blender/build_card.py`） | このリポジトリの一部（外部の素材なし） | 2026-11-20 |
+| `models/card-uncommon.glb` | Blender 5.3.0（`tools/blender/build_card.py`） | このリポジトリの一部（外部の素材なし） | 2026-11-20 |
+| `models/card-rare.glb` | Blender 5.3.0（`tools/blender/build_card.py`） | このリポジトリの一部（外部の素材なし） | 2026-11-20 |
+| `models/card-epic.glb` | Blender 5.3.0（`tools/blender/build_card.py`） | このリポジトリの一部（外部の素材なし） | 2026-11-20 |
+| `models/card-legendary.glb` | Blender 5.3.0（`tools/blender/build_card.py`） | このリポジトリの一部（外部の素材なし） | 2026-11-20 |
+| `models/card-special.glb` | Blender 5.3.0（`tools/blender/build_card.py`） | このリポジトリの一部（外部の素材なし） | 2026-11-20 |
+| `models/card-beast.glb` | Blender 5.3.0（`tools/blender/build_card.py`） | このリポジトリの一部（外部の素材なし） | 2026-11-20 |

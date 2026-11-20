@@ -195,3 +195,13 @@
 /* なぞって回すとき、文字・画像の範囲選択が始まらないように（選択された画像は青くかぶって見える） */
 .zoom-stage, .zoom-stage * { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
 .zoom-reset { margin: 2px 0 0; padding: 6px 14px; border-radius: 999px; border: 1px solid #e6c987; background: #3a2a1a; color: #fff4da; font-size: 13px; }
+
+/* three.js + Blender GLB の拡大カード表示（js/ui/CardZoom3D.js） */
+.zoom-gl-card {
+  display: block;
+  width: calc(var(--zw) * 1.38);
+  height: calc(var(--zw) * 1.98);
+  margin: calc(var(--zw) * -0.24) calc(var(--zw) * -0.19);
+  pointer-events: none;
+}
+.zoom-stage-gl .zoom-card[hidden] { display: none; }

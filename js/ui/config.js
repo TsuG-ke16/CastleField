@@ -41,6 +41,8 @@ export const UI_CONFIG = {
   midCellScale: 1.8,
   // 盤面の地形を three.js で立体に描くか（js/ui/Board3D.js）。false なら今の 2D のまま（URL の ?flat=1 でも 2D）
   board3d: true,
+  // カードを Blender の 3D モデル（glb）＋ three.js で描くか。false なら今の CSS 3D / 2D のまま（URL の ?flat=1 でも従来表示）
+  card3d: true,
 
   // Web Animations API の共通イージング。各演出の長さは timing を使う。
   easing: { enter: 'ease-out', exit: 'ease-in', linear: 'linear', inOut: 'ease-in-out' },

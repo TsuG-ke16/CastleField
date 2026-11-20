@@ -1,0 +1,53 @@
+/* 手札の 3D カード表示（js/ui/Hand3D.js）と 3D カード演出（js/ui/CardFx3D.js）。
+   手札全体で WebGL の canvas は 1 つだけ。文字・数値・アイコンは DOM のまま上に重ねてくっきり読めるようにする。 */
+
+#controls { position: relative; }
+
+.hand3d-canvas {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  display: block;
+}
+
+#hand.hand-3d {
+  position: relative;
+  z-index: 2;
+}
+
+/* 3D 有効時：カードの枠と絵の 2D 要素だけ透明にし、文字・数値・種別アイコンの DOM はそのまま残す */
+#hand.hand-3d .card.has-frame .card-frame,
+#hand.hand-3d .card.has-frame .card-art {
+  opacity: 0;
+}
+
+/* ドラッグ中のゴースト（#app 直下）は通常の 2D 表示のまま見せる */
+#app > .card.drag-ghost .card-frame,
+#app > .card.drag-ghost .card-art {
+  opacity: 1;
+}
+
+/* 3D 有効時の選択・ホバーは、背面の 3D カードと動きをそろえる */
+#hand.hand-3d .card.has-frame {
+  background: transparent;
+}
+#hand.hand-3d .card.has-frame.selected {
+  transform: translateY(-10px);
+}
+#hand.hand-3d .card.has-frame.dim {
+  filter: none;
+}
+#hand.hand-3d .card.has-frame.dim .card-name,
+#hand.hand-3d .card.has-frame.dim .card-short {
+  opacity: 0.72;
+}
+
+/* カードを出す・引く・合成の 3D 演出用オーバーレイ canvas（1つだけ使い回す） */
+.card-fx-3d {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 25;
+}

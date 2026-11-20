@@ -11,6 +11,7 @@ import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
 import { cardSkinNow, frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
+import { Hand3D } from './Hand3D.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -104,6 +105,8 @@ export class HandView {
     this.el.app.addEventListener('click', (e) => {
       if (this.selectedId && !e.target.closest('#hand, #card-detail, #debug-panel, #debug-toggle')) this.select(null);
     });
+    // 手札全体で 1 つの WebGL canvas を使って 3D カードを描画する（?flat=1 / 設定オフ / WebGL 不可時は 2D のまま）
+    this.hand3D = new Hand3D({ controls: this.el.controls, handEl: this.el.hand, cards: this.cards, rarities: this.rarities });
   }
 
   // ---------- 表示 ----------
@@ -128,6 +131,7 @@ export class HandView {
     this.layout();
     this.updateDetail();
     this.updateDiscardBar();
+    void this.hand3D?.sync(this.hand, this.selectedId);
   }
 
   /** 今の手札が、server/Game の手札と同じカードの集まりか（並びは見ない。表示は並べ替えてあるため） */
@@ -265,6 +269,7 @@ export class HandView {
 
   refreshClasses() {
     for (const el of this.el.hand.querySelectorAll('.card')) this.applyCardClasses(el);
+    this.hand3D?.updateStates(this.selectedId);
   }
 
   /** 手札を一度空にする（手番交代の画面を出すとき、前の人の手札を残さない） */
@@ -278,6 +283,7 @@ export class HandView {
     this.layout();
     this.updateDetail();
     this.updateDiscardBar();
+    void this.hand3D?.sync([], null);
   }
 
   setLocked(locked) {
@@ -318,6 +324,7 @@ export class HandView {
     this.markCards();
     this.layout();
     this.updateDetail();
+    void this.hand3D?.sync(this.hand, this.selectedId);
     return info;
   }
 
@@ -332,6 +339,7 @@ export class HandView {
     this.el.hand.insertBefore(el, next);
     this.markCards();
     this.layout();
+    void this.hand3D?.sync(this.hand, this.selectedId);
   }
 
   /** 出せなかったカードを揺らす */
@@ -466,6 +474,7 @@ export class HandView {
       d.ghost.classList.add('drag-ghost');
       this.el.app.appendChild(d.ghost);
       d.el.classList.add('drag-source');
+      this.hand3D?.kick();
       this.el.dropHint.hidden = false;
       this.select(null);
     }
@@ -498,6 +507,7 @@ export class HandView {
     if (!d) return;
     d.ghost?.remove();
     d.el.classList.remove('drag-source');
+    this.hand3D?.kick();
     this.el.dropHint.hidden = true;
     this.el.dropHint.classList.remove('active');
     // click イベントが後から来るので、少し後に drag を消す
