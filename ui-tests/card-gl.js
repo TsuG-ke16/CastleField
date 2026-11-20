@@ -47,7 +47,7 @@ async function scenario(name, { query = '?fx=full', glExpected = true, rank = nu
       const box = await target.boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(600); await page.mouse.up();
     }
-    await page.waitForSelector('dialog.card-zoom[open]');
+    await page.waitForSelector('dialog.card-zoom[open]', { timeout: 30000 });   // ソフトウェア描画では3Dの組み立てで数秒止まる
     if (glExpected) {
       await page.waitForSelector('canvas.zoom-gl-canvas', { timeout: 20000 });
       // なぞると向きが変わる（描かれる絵が変わる）
