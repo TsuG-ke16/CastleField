@@ -36,6 +36,8 @@ export class Player {
     this.armyHp = 0;
     /** 今来ている精霊（1人1体まで）。{ type, spirit, amount, turns, targetId, fresh } か null */
     this.spirit = null;
+    /** 初期手札の引き直し（マリガン）を使ったか。start() の前に1回だけ */
+    this.mulliganUsed = false;
   }
 
   /** 城壁の残り。次の自分のターンの始めに消える（城に置く。チーム戦では城を共有するので、城壁もチームで共有） */
@@ -88,6 +90,7 @@ export class Player {
       luck: this.luck ? { draws: this.luck.draws, boost: this.luck.boost } : null,
       hand: showHand ? this.hand.map((c) => c.toState()) : null,
       handCount: this.hand.length,
+      mulliganUsed: this.mulliganUsed,
       playedThisTurn: this.playedThisTurn,
       soldiersPlayedThisTurn: this.soldiersPlayedThisTurn,
       soldiers: this.soldiers.map((s) => s.toState()),

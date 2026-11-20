@@ -2174,6 +2174,36 @@ export class Game {
     return ok();
   }
 
+  // ================= マリガン（初期手札の引き直し） =================
+
+  /**
+   * 初期手札の引き直し。phase が "ready"（start() の前）のときだけ、1人1回。
+   * 選んだカードを山札に戻して、同じ枚数を引き直す。先に山札の上から引いてから戻してシャッフルするので、
+   * 山札が足りる限り、戻したカードをそのまま引き直すことはない。
+   * cardIds が空の配列なら「引き直さない」と決めたことになる（もう使えない）。
+   * ゲーム開始前なのでイベントは出さない（呼んだあとは getState() を読み直す）。
+   */
+  mulligan(playerId, cardIds) {
+    if (this.phase !== 'ready') return fail('手札の引き直しは、ゲームが始まる前だけです');
+    const player = this.players[playerId];
+    if (!player) return fail('そのプレイヤーはいません');
+    if (player.mulliganUsed) return fail('手札の引き直しは1回だけです');
+    if (!Array.isArray(cardIds)) return fail('戻すカードのIDを配列で渡してください');
+    if (new Set(cardIds).size !== cardIds.length) return fail('同じカードが2回選ばれています');
+    if (!cardIds.every((id) => player.findInHand(id))) return fail('手札にないカードが選ばれています');
+
+    const pile = this.pileOf(playerId);
+    const back = cardIds.map((id) => player.takeFromHand(id));
+    const drawn = pile.deck.splice(0, back.length);
+    pile.deck.push(...back);
+    this.shuffle(pile.deck);
+    // 山札が戻した枚数より少なかったときは、足りないぶんを（戻したカードも混ざった）山札から引く
+    while (drawn.length < back.length && pile.deck.length > 0) drawn.push(pile.deck.shift());
+    player.hand.push(...drawn);
+    player.mulliganUsed = true;
+    return ok();
+  }
+
   // ================= 防御（攻撃を受けたときの反応） =================
   // rules.defenseReaction が true のとき、攻撃が当たる前に、受ける人が防御カードを何枚でも出せる。
   //   城に着いた兵士・ファイアボールや隕石 → 城壁・土嚢（城を守る）

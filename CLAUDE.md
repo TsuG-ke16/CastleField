@@ -205,6 +205,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 | `game.defend(cardId, target)` | 攻撃を受けた人が、防御カードをその場で出す（何枚でも）。出せるカードがなくなったら、自動で攻撃を受ける。対象が1つなら `target` は省略できる |
 | `game.passDefense()` | 防御しないで（これ以上出さずに）攻撃を受ける |
 | `game.canFuse(cardIdA, cardIdB)` / `game.fuse(cardIdA, cardIdB)` | 手札の同じ種類のカード2枚を合成して、1つ上のレアリティのカード1枚にする（`phase` が `"main"` の自分の番に、何回でも。メインの1枚には数えない）。`canFuse` は読むだけ。レジェンドは合成できない |
+| `game.mulligan(playerId, cardIds)` | 初期手札の引き直し。`phase` が `"ready"`（`start()` の前）のときだけ、1人1回。選んだカードを山札に戻して同じ枚数を引き直す（先に山札の上から引いてから戻してシャッフルするので、戻したカードはふつう引かない）。空の配列なら「引き直さない」と決めたことになる。イベントは出さない（`getState()` を読み直す）。`players.pX.mulliganUsed` に使ったかが入る |
 | `game.endTurn()` | ターンを終える。手札が上限を超えていたら `phase` が `"discard"` になり、捨て終わるまで次の人の番にならない |
 | `game.surrender(playerId)` | 降参する。自分の番でなくても使える。城が2つ（2人・2チーム）のときは、相手の勝ちですぐ終わる（`gameOver` の `reason` は `"surrender"`）。城が3つ以上のときは、降参した人（チーム戦はチーム全員）の城が壊れて（`castleDamaged`、`source: { kind: "surrender" }`）抜け、`playerEliminated` のあと、残りの試合を見守る（番が来ない）。残りの城が1つになったら `gameOver`（`reason` は `"lastStanding"`） |
 | `game.on(type, handler)` / `game.off(type, handler)` | イベントの購読と解除。`handler` はペイロードのオブジェクトを1つ受け取る。表にない `type` を渡すと `{ ok: false }` |
