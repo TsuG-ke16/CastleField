@@ -2,11 +2,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/Game.js';
-import { buildData, loadJson, seededRng, recordEvents } from './helpers.js';
+import { buildData, loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
 
 /** rng を差しかえられる Game（サイコロの目を決めるため） */
 function make(rulesPatch = {}) {
-  const { cards, rules } = buildData({ rules: { drawUntilHand: 0, defenseReaction: false, initialMp: 10, maxMp: 20, armorMax: 40, coinCardsPerTurn: 1, monsterSpawnChance: 0, weatherChangeChance: 0, ...rulesPatch } });
+  const { cards, rules } = buildData({ rules: { ...PLAIN_START, drawUntilHand: 0, defenseReaction: false, initialMp: 10, maxMp: 20, armorMax: 40, coinCardsPerTurn: 1, monsterSpawnChance: 0, weatherChangeChance: 0, ...rulesPatch } });
   const g = new Game({ cards, rules, rng: seededRng(11), rarities: loadJson('rarities.json') });
   return g;
 }
@@ -116,7 +116,7 @@ test('ランダムサイコロ：1回目で種類（1=攻撃…）、2回目は4
 test('ランダムサイコロ：今使えない種類にはならない（城が満タン・兵士なし・MP 満タンなど）。目はいつも4以上', () => {
   for (let seed = 1; seed <= 40; seed++) {
     // コストはコインだけにする（城HP・MP を払うと、ヒール・マナが使えるようになるので）。MP なしのルール
-    const { cards, rules } = buildData({ rules: { drawUntilHand: 0, defenseReaction: false, initialMp: 0, maxMp: 0, monsterSpawnChance: 0, weatherChangeChance: 0 }, cards: { randomDice: { randomCost: { coins: 3 } } } });
+    const { cards, rules } = buildData({ rules: { ...PLAIN_START, drawUntilHand: 0, defenseReaction: false, initialMp: 0, maxMp: 0, monsterSpawnChance: 0, weatherChangeChance: 0 }, cards: { randomDice: { randomCost: { coins: 3 } } } });
     const g = new Game({ cards, rules, rng: seededRng(seed), rarities: loadJson('rarities.json') });
     g.debugSetHand('p1', ['randomDice']);
     g.start();
@@ -156,7 +156,7 @@ test('ランダムサイコロのコスト：城HP4・コイン3・MP3 のうち
 test('ランダムサイコロのコスト：払うものはランダム（城HP・コイン・MP がどれも出る）', () => {
   const seen = new Set();
   for (let seed = 1; seed <= 30; seed++) {
-    const { cards, rules } = buildData({ rules: { drawUntilHand: 0, defenseReaction: false, initialMp: 10, maxMp: 20, monsterSpawnChance: 0, weatherChangeChance: 0 } });
+    const { cards, rules } = buildData({ rules: { ...PLAIN_START, drawUntilHand: 0, defenseReaction: false, initialMp: 10, maxMp: 20, monsterSpawnChance: 0, weatherChangeChance: 0 } });
     const g = new Game({ cards, rules, rng: seededRng(seed), rarities: loadJson('rarities.json') });
     g.debugSetHand('p1', ['randomDice']);
     g.start();

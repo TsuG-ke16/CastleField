@@ -58,6 +58,11 @@ export class LocalSession {
     return this.game.passDefense();
   }
 
+  /** マリガン：playerId（ひとりで遊ぶなら自分）の最初の手札から cardIds を引き直す */
+  async mulligan(cardIds, playerId) {
+    return this.game.mulligan(playerId, cardIds);
+  }
+
   async discard(cardIds) {
     return this.game.discard(cardIds);
   }

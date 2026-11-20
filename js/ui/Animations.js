@@ -578,6 +578,30 @@ export class Animations {
     await this.delay(UI_CONFIG.timing.round * 0.5);
   }
 
+  /**
+   * コイントス：コインが回って落ち、先攻を知らせる（heads なら表）。タップ・演出なしの設定なら帯だけ
+   */
+  async coinToss(text, heads = true) {
+    sound.play('coin');
+    if (this.skipping || UI_CONFIG.speed === 0) {
+      this.banner(`🪙 ${text}`, 900, 'small');
+      return;
+    }
+    const wrap = this.fx('coin-toss');
+    wrap.innerHTML = '<div class="coin-toss-coin"><span class="face front">表</span><span class="face back">裏</span></div><p class="coin-toss-result" aria-live="polite"></p>';
+    const coin = wrap.querySelector('.coin-toss-coin');
+    const turns = heads ? 5 : 5.5; // 表なら整数回、裏なら半回転多く回す
+    await this.animate(coin, [
+      { transform: 'translateY(0) rotateY(0deg)' },
+      { transform: `translateY(-110px) rotateY(${turns * 180}deg)`, offset: 0.5, easing: 'ease-in' },
+      { transform: `translateY(0) rotateY(${turns * 360}deg)` },
+    ], { duration: 1100, fill: 'forwards', easing: 'ease-out' });
+    wrap.querySelector('.coin-toss-result').textContent = `${heads ? '表' : '裏'}！ ${text}`;
+    sound.play('coin');
+    await this.delay(800);
+    wrap.remove();
+  }
+
   /** 昼と夜が変わる：盤面を暗く（明るく）して、帯で知らせる */
   async timeChanged({ time, rounds }, model) {
     model.time = time;

@@ -454,6 +454,15 @@ function refillMp(game, pid, ctx) {
 }
 
 /** どの戦い方も、ターンの最初に同点の選び方の乱数を入れる */
+/**
+ * マリガン（最初の手札の引き直し）で戻すカード。兵士が1枚もない手札なら全部、それ以外は戻さない（どの戦い方も同じ）。
+ * 自分の手札しか見ない
+ */
+export function mulliganChoice(game, pid, ctx) {
+  const hand = game.getState(pid).players[pid].hand ?? [];
+  return hand.some((c) => ctx.cards[c.type]?.kind === 'soldier') ? [] : hand.map((c) => c.cardId);
+}
+
 export const STRATEGIES = Object.fromEntries(
   Object.entries(RAW_STRATEGIES).map(([name, st]) => [
     name,

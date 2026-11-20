@@ -21,7 +21,7 @@ export class HandView {
    *           onDiscard: (cardIds: string[]) => void,
    *           onNotice: (text: string) => void }} opts
    */
-  constructor({ cards, rules, rarities = null, textOpts = {}, getContext = () => ({}), onPlay, onDiscard, onNotice }) {
+  constructor({ cards, rules, rarities = null, textOpts = {}, getContext = () => ({}), onPlay, onDiscard, onMulligan = () => {}, onNotice }) {
     this.rarities = rarities;
     this.getContext = getContext;
     this.cards = cards;
@@ -29,6 +29,9 @@ export class HandView {
     this.textOpts = textOpts; // 説明文の切りかえ（魔物が出るゲームか など）
     this.onPlay = onPlay;
     this.onDiscard = onDiscard;
+    this.onMulligan = onMulligan;
+    /** マリガン（最初の手札の引き直し）を選んでいるところか。捨てるときと同じ選び方で、0枚から何枚でも選べる */
+    this.mulliganMode = false;
     this.onNotice = onNotice;
 
     this.hand = [];          // [{ cardId, type }]
@@ -88,6 +91,10 @@ export class HandView {
     });
     this.el.discardOk.addEventListener('click', () => {
       if (this.locked || !this.discardCount) return;
+      if (this.mulliganMode) {
+        this.onMulligan([...this.discardPicks]);
+        return;
+      }
       const left = this.discardCount - this.discardPicks.size;
       if (left > 0) this.onNotice(`捨てるカードをあと${left}枚えらんでください`);
       else this.onDiscard([...this.discardPicks]);
@@ -511,7 +518,20 @@ export class HandView {
     this.updateDiscardBar();
   }
 
+  /** マリガン：引き直すカードを0枚から何枚でも選ぶ */
+  enterMulligan() {
+    if (this.mulliganMode) return;
+    this.mulliganMode = true;
+    this.discardCount = Math.max(1, this.hand.length);
+    this.discardPicks.clear();
+    this.select(null);
+    this.el.controls.classList.add('discarding');
+    this.refreshClasses();
+    this.updateDiscardBar();
+  }
+
   exitDiscard() {
+    this.mulliganMode = false;
     this.discardCount = 0;
     this.discardPicks.clear();
     this.el.controls.classList.remove('discarding');
@@ -535,6 +555,14 @@ export class HandView {
   updateDiscardBar() {
     if (!this.discardCount) {
       this.el.discardBar.hidden = true;
+      return;
+    }
+    if (this.mulliganMode) {
+      const n = this.discardPicks.size;
+      this.el.discardMsg.textContent = n > 0 ? `この${n}枚を山札に戻して、引き直します` : '引き直したいカードを選んでください（選ばなければ、このまま始めます）';
+      this.el.discardOk.textContent = n > 0 ? `引き直す（${n}枚）` : 'このまま始める';
+      this.el.discardOk.classList.remove('not-ready');
+      this.el.discardBar.hidden = false;
       return;
     }
     const left = this.discardCount - this.discardPicks.size;

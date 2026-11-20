@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
-import { loadFixture, loadJson, seededRng, recordEvents } from './helpers.js';
+import { loadFixture, loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
 
 const WEATHER = {
   sunny: { name: '晴れ', weight: 1, rounds: [2, 2], elementBonus: { fire: 2 } },
@@ -239,14 +239,14 @@ test('weather.json の書き間違いは例外', () => {
 test('data/weather.json は読めて、7種類の天候がある', () => {
   const w = loadJson('weather.json');
   assert.deepEqual(Object.keys(w).sort(), ['coinRain', 'fog', 'heavyRain', 'rain', 'sandstorm', 'storm', 'sunny']);
-  new Game({ cards: loadJson('cards.json'), rules: loadJson('rules.json'), rarities: loadJson('rarities.json'), weather: w, rng: seededRng(1) });
+  new Game({ cards: loadJson('cards.json'), rules: { ...loadJson('rules.json'), ...PLAIN_START }, rarities: loadJson('rarities.json'), weather: w, rng: seededRng(1) });
 });
 
 test('倒した魔物は、駒（兵士カード）としてとどめを刺した人の手札に入る', () => {
   const cards = loadJson('cards.json');
   const monsters = loadJson('monsters.json');
   const rarities = loadJson('rarities.json');
-  const game = new Game({ cards, rules: { ...loadJson('rules.json'), monsterSpawnChance: 0 }, rng: seededRng(1), monsters, rarities });
+  const game = new Game({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, monsterSpawnChance: 0 }, rng: seededRng(1), monsters, rarities });
   game.start();
   const log = recordEvents(game, EVENT_TYPES);
   // 魔物を1体置いて倒す
@@ -270,7 +270,7 @@ test('倒した魔物は、駒（兵士カード）としてとどめを刺し�
 test('魔物の駒は合成できず、排出（山札・ごほうび）では出ない', () => {
   const cards = loadJson('cards.json');
   const rarities = loadJson('rarities.json');
-  const game = new Game({ cards, rules: loadJson('rules.json'), rng: seededRng(1), monsters: loadJson('monsters.json'), rarities });
+  const game = new Game({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START }, rng: seededRng(1), monsters: loadJson('monsters.json'), rarities });
   game.start();
   game.debugSetHand('p1', ['beast_bat', 'beast_bat']);
   const [a, b] = game.getState('p1').players.p1.hand;
@@ -280,7 +280,7 @@ test('魔物の駒は合成できず、排出（山札・ごほうび）では�
 
 test('魔物の駒は、出しても捨てても山札に戻らない（使い切り置き場へ）', () => {
   const cards = loadJson('cards.json');
-  const rules = { ...loadJson('rules.json'), monsterSpawnChance: 0, weatherChangeChance: 0 };
+  const rules = { ...loadJson('rules.json'), ...PLAIN_START, monsterSpawnChance: 0, weatherChangeChance: 0 };
   const g = new Game({ cards, rules, rng: seededRng(1), monsters: loadJson('monsters.json'), rarities: loadJson('rarities.json') });
   g.start();
   const pile = g.pileOf('p1');

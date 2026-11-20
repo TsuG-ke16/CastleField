@@ -119,6 +119,11 @@ test('2人ぶんの接続で1試合を最後まで遊ぶ。相手の手札は届
     for (let step = 0; step < 3000 && !over; step++) {
       const st = ca.lastState().state;
       if (st.phase === 'gameOver') { over = st; break; }
+      // マリガン：まだ選んでいない人は、そのまま始める（自分の番でなくても送れる）
+      if (st.phase === 'mulligan') {
+        for (const pid of st.mulligan.pending) assert.equal((await act(me[pid].token, 'mulligan', [[]])).ok, true);
+        continue;
+      }
       // 攻撃を受けて防御を選ぶ場面：受ける人が防御カードを出す（出せるなら半分の確率で）か、防御しない
       if (st.phase === 'defend') {
         const defender = st.defense.defenderId;
@@ -182,6 +187,10 @@ test('2人ぶんの接続で1試合を最後まで遊ぶ。相手の手札は届
     // もう1回：全員が rematch を送ったら新しい試合
     assert.equal((await post(base, '/api/action', { token: a.token, method: 'rematch', args: [] })).ok, true);
     assert.equal((await act(b.token, 'rematch', [])).ok, true);
+    // 新しい試合は、マリガンの場面から始まる（全員が選ぶとターン1）
+    assert.equal(ca.lastState().state.phase, 'mulligan');
+    assert.equal((await act(a.token, 'mulligan', [[]])).ok, true);
+    assert.equal((await act(b.token, 'mulligan', [[]])).ok, true);
     assert.equal(ca.lastState().state.phase, 'main');
     assert.equal(ca.lastState().state.turn, 1);
   } finally {
@@ -219,8 +228,8 @@ test('壊れたリクエストでもサーバーは止まらず、返事をす�
       assert.equal((await post(base, '/api/action', { token: a.token, method, args: [] })).ok, false);
     }
     assert.equal((await post(base, '/api/action', { token: a.token, method: 'endTurn', args: 'x' })).ok, false);
-    // サーバーはまだ生きている
-    assert.equal((await post(base, '/api/action', { token: a.token, method: 'endTurn', args: [] })).ok, true);
+    // サーバーはまだ生きている（始まった直後はマリガンの場面なので、引き直しを選ぶ操作が通る）
+    assert.equal((await post(base, '/api/action', { token: a.token, method: 'mulligan', args: [[]] })).ok, true);
     assert.ok(b.ok);
   } finally {
     server.closeAllConnections();

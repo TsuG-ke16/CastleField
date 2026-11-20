@@ -43,7 +43,7 @@ import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
 import { initCardZoom } from './ui/CardZoom.js';
 import { checkCostDeck } from './game/Setup.js';
-import { STRATEGIES } from './game/strategies.js';
+import { STRATEGIES, mulliganChoice } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
 import { sound } from './ui/Sound.js';
@@ -266,7 +266,7 @@ async function boot() {
   });
   handView = new HandView({
     cards, rules, rarities, getContext: uiContext, textOpts: { monsters: Boolean(monsters), debug: DEBUG },
-    onPlay: playCard, onDiscard: discard, onNotice: toast,
+    onPlay: playCard, onDiscard: discard, onMulligan: mulligan, onNotice: toast,
   });
   anim = new Animations({ renderer, handView, cards, rules, monsters, upgrades, rarities });
   renderer.cosmetics = cosmetics; anim.cosmetics = cosmetics;
@@ -741,7 +741,12 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
       }
     }
     // 2人で交代して遊ぶときは、相手に手札を見せないので、攻撃を受けたときの防御は聞かない
-    if (!cpuLevel) opts.rules.defenseReaction = false;
+    if (!cpuLevel) { opts.rules.defenseReaction = false; opts.rules.mulligan = false; } // 手札を見せ合えないので、マリガンもしない
+    // コイントス：先攻はランダム（シードが同じなら同じ）。チーム戦は席順のまま
+    if (!opts.setup?.teams) {
+      const coin = mulberry32(seed ^ 0x51ed270b);
+      opts.setup = { ...(opts.setup ?? {}), firstPlayer: `p${1 + Math.floor(coin() * (opts.rules.playerCount ?? 2))}` };
+    }
     if (monsters) opts.monsters = structuredClone(monsters);
     if (upgrades) opts.upgrades = structuredClone(upgrades);
     if (weather) opts.weather = structuredClone(weather);
@@ -804,14 +809,23 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     handView.render(model.hand);
     sound.play('turn');
     introBoard();
-    anim.banner(cpu.humanId === model.playerOrder[0] ? '対戦開始！ あなたが先攻' : '対戦開始！ CPU が先攻', 1100);
   }
-  announceStage(model.stage);
   setBusy(true);
+  // コイントス：先攻・後攻をコインで見せる（タップで飛ばせる）
+  const first = game.getState(null).firstPlayer;
+  const thisGame = game;
+  await anim.coinToss(cpu ? (first === cpu.humanId ? 'あなたが先攻！' : 'CPU が先攻！') : `${playerName(first)}が先攻！`, first === (cpu?.humanId ?? 'p1'));
+  // コイントスのあいだにタイトルへ戻ったり、別の試合を始めたりしたら、この試合は始めない
+  if (game !== thisGame || request !== startRequest) return;
+  announceStage(model.stage);
   const res = game.start();
   if (!res?.ok) {
     showError(`ゲームを始められませんでした：${reasonText(res?.reason)}`);
     return;
+  }
+  // マリガン：CPU はすぐに選ぶ（人は手札から選ぶ画面が出る）
+  if (cpu && game.getState(null).phase === 'mulligan') {
+    for (const id of cpu.ids) game.mulligan(id, mulliganChoice(game, id, { cards }));
   }
   drainAndSettle();
 }
@@ -1143,9 +1157,9 @@ async function showBatch(batch) {
     if (st.turn <= 1 && st.phase !== 'gameOver') {
       sound.play('turn');
       introBoard();
-      anim.banner(st.currentPlayer === viewerId ? '対戦開始！ あなたが先攻' : '対戦開始！ 相手が先攻', 1100);
+      const first = st.firstPlayer ?? st.currentPlayer;
+      await anim.coinToss(first === viewerId ? 'あなたが先攻！' : `${playerName(first)}が先攻！`, first === viewerId);
       announceStage(st.stage);
-      await anim.delay(900);
     }
   } else {
     for (const ev of batch.events) enqueue(ev);
@@ -1343,6 +1357,21 @@ async function settle({ check = true } = {}) {
     el.endTurn.classList.add('off');
     handView.exitDiscard();
     setMessage('');
+    return;
+  }
+  if (st.phase === 'mulligan') {
+    // 最初の手札の引き直し：まだ選んでいなければ、手札から選ぶ。選んだら相手を待つ
+    el.endTurn.disabled = true;
+    el.endTurn.classList.add('off');
+    upgradePanel.setEnabled(false, { reason: '最初の手札を選んでいます' });
+    if (st.mulligan?.pending.includes(viewerId)) {
+      setHandVisible(true);
+      handView.enterMulligan();
+      setMessage('');
+    } else {
+      handView.exitDiscard();
+      setMessage('相手が最初の手札を選んでいます…');
+    }
     return;
   }
   refreshUpgrades();
@@ -1630,6 +1659,14 @@ async function endTurn() {
   const defending = session.getState(viewerId)?.phase === 'defend';
   const res = await act(() => (defending ? session.passDefense() : session.endTurn()));
   if (res && !res.ok) toast(reasonText(res.reason));
+}
+
+/** マリガン：選んだカードを引き直す（0枚ならそのまま始める） */
+async function mulligan(cardIds) {
+  handView.exitDiscard();
+  const res = await act(() => session.mulligan(cardIds, viewerId));
+  if (res && !res.ok) toast(reasonText(res.reason));
+  else if (cardIds.length) toast(`${cardIds.length}枚を引き直しました`, 'info');
 }
 
 async function discard(cardIds) {

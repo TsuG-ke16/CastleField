@@ -2,10 +2,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/Game.js';
-import { buildData, loadJson, seededRng, recordEvents } from './helpers.js';
+import { buildData, loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
 
 function make(rulesPatch = {}) {
-  const { cards, rules } = buildData({ rules: { drawUntilHand: 0, defenseReaction: false, ...rulesPatch } });
+  const { cards, rules } = buildData({ rules: { ...PLAIN_START, drawUntilHand: 0, defenseReaction: false, ...rulesPatch } });
   return new Game({ cards, rules, rng: seededRng(7), rarities: loadJson('rarities.json') });
 }
 const idOf = (g, pid, type) => g.getState(pid).players[pid].hand.find((c) => c.type === type).cardId;
@@ -45,7 +45,7 @@ test('剣の攻撃力：魔剣+4・聖剣+6・神剣+9', () => {
 });
 
 test('cards.json：fuseTo を書き忘れたレア（null でない）は例外', () => {
-  const { cards, rules } = buildData();
+  const { cards, rules } = buildData({ rules: PLAIN_START });
   delete cards.lifeSteal.fuseTo;
   assert.throws(() => new Game({ cards, rules, rarities: loadJson('rarities.json') }), /fuseTo/);
 });
@@ -180,7 +180,7 @@ test('適応の排出率は約2.5%。解毒薬・天候の呪文は約0.33%・0.
 });
 
 test('幸運の加護は買うたびに値段が上がる（3 → 5 → 8 → 11、4回まで）。運命の祈りは3', () => {
-  const { cards, rules } = buildData({ rules: { drawUntilHand: 0 } });
+  const { cards, rules } = buildData({ rules: { ...PLAIN_START, drawUntilHand: 0 } });
   const g = new Game({ cards, rules, rng: seededRng(3), rarities: loadJson('rarities.json'), upgrades: loadJson('upgrades.json') });
   g.start();
   const p1 = g.players.p1;
@@ -201,7 +201,7 @@ test('幸運の加護は買うたびに値段が上がる（3 → 5 → 8 → 11
 });
 
 test('upgrades.json：costs の最初が cost と違うと例外', () => {
-  const { cards, rules } = buildData();
+  const { cards, rules } = buildData({ rules: PLAIN_START });
   const upgrades = loadJson('upgrades.json');
   upgrades.permLuck.costs = [4, 5];
   assert.throws(() => new Game({ cards, rules, rarities: loadJson('rarities.json'), upgrades }), /costs の最初は cost と同じ/);

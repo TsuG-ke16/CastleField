@@ -5,11 +5,11 @@ import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { checkCostDeck, deckCostOf } from '../js/game/Setup.js';
 import { Lobby } from '../server/rooms.js';
 import { loadData } from '../server/server.js';
-import { loadJson, seededRng, recordEvents } from './helpers.js';
+import { loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
 
 const cards = loadJson('cards.json');
 const rarities = loadJson('rarities.json');
-const rules = loadJson('rules.json');
+const rules = { ...loadJson('rules.json'), ...PLAIN_START };
 const decks = loadJson('decks.json');
 const check = (list) => checkCostDeck(list, cards, rarities, rules);
 

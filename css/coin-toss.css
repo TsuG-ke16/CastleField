@@ -1,0 +1,46 @@
+/* コイントス（試合の始めに先攻・後攻を決める演出）。js/ui/Animations.js の coinToss() */
+.coin-toss {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 18px;
+  pointer-events: none;
+  perspective: 600px;
+  background: radial-gradient(circle at 50% 45%, #0000, #0006);
+}
+.coin-toss-coin {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  transform-style: preserve-3d;
+}
+.coin-toss-coin .face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 5px solid #8a5a12;
+  background: radial-gradient(circle at 35% 30%, #fff6c4, #f5c542 55%, #c98a17);
+  color: #5a3a08;
+  font-size: 40px;
+  font-weight: 900;
+  backface-visibility: hidden;
+  box-shadow: inset 0 0 0 4px #ffe58a, 0 6px 14px #0005;
+}
+.coin-toss-coin .back { transform: rotateY(180deg); background: radial-gradient(circle at 35% 30%, #fff0c8, #e0a93a 55%, #a86d12); }
+.coin-toss-result {
+  margin: 0;
+  min-height: 1.4em;
+  padding: 6px 16px;
+  border-radius: 999px;
+  background: #fff8e6;
+  color: #4b3522;
+  font-size: 22px;
+  font-weight: 900;
+  box-shadow: 0 4px 12px #0004;
+}
+.coin-toss-result:empty { visibility: hidden; }

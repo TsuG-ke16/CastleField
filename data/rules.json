@@ -51,5 +51,8 @@
   "nightRounds": 2,
   "nightBeastAttack": 2,
   "nightStealthAttack": 2,
-  "nightMonsterAttack": 1
+  "nightMonsterAttack": 1,
+  "secondPlayerHandBonus": 1,
+  "secondPlayerArmor": 5,
+  "mulligan": true
 }
