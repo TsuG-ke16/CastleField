@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync, deflateSync } from 'node:zlib';
+import { FRONT_SHAPES, BACK_SHAPES, shapeHeight } from './card-shapes.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const SRC = join(root, 'assets/cards');
@@ -53,6 +54,8 @@ const SKINS = {
   champion: { base: { metal: .7, smooth: .88 }, gold: { metal: 1, smooth: .92 }, silver: { metal: .7, smooth: .92 }, gemHue: [190, 340], gemMinSat: .18, raised: [[150, 0, 362, 140], [0, 120, 150, 470], [362, 120, 512, 470]] },
 };
 for (const [rank, cfg] of Object.entries(SKINS)) FRAMES[`skin-${rank}`] = { ...cfg, paper: SKIN_PAPER };
+// 凹凸は形から（js/ui/card-shapes.js）
+for (const [name, cfg] of Object.entries(FRAMES)) if (FRONT_SHAPES[name]) cfg.shape = FRONT_SHAPES[name];
 
 // ランク報酬のカード裏（assets/skins/back-rank-<ランク>.png）。拡大表示で手前に浮かせる部分（上下の飾り・左右の宝石・真ん中の紋章）の地図
 const BACK_RAISED = { top: [.18, 0, .82, .2], bottom: [.18, .8, .82, 1], sides: [[0, .4, .2, .56], [.8, .4, 1, .56]], emblem: [.5, .49, .36, .3] };
@@ -90,6 +93,7 @@ function backReliefConfig(rank) {
     colorEdges: .09, groundAmp: .3,                    // 地の模様は低く（紋章・飾りを浮き上がらせる）                                   // 輪郭線のない光る水晶の星も、1つの部品としてふくらませる
     goldMinVal: .68, maxGemPart: .0025,               // 宝石は小さな石だけ（地の格子模様は宝石にしない）                                   // 地の茶色は金属にしない（明るい金の飾りだけ）
     ...BACK_GEMS[rank],
+    shape: BACK_SHAPES[rank],                          // 凹凸は形から（js/ui/card-shapes.js）
   };
 }
 
@@ -450,6 +454,17 @@ export function buildRelief(png, cfg) {
         if (low < Infinity && low > height[i]) next[i] = low;
       }
       height.set(next);
+    }
+  }
+  // 形の部品（js/ui/card-shapes.js）があれば、凹凸は色ではなく形だけで作る：高さ・宝石・浮かせる部品を置きかえる
+  // （色から決めるのは、金属・つやの材質だけ）
+  if (cfg.shape) {
+    const sh = shapeHeight({ W, H, solid, big, shape: cfg.shape });
+    height.set(sh.height);
+    for (let i = 0; i < N; i++) {
+      if (sh.gem[i]) { gem[i] = 1; metal[i] = 0; smooth[i] = 1; }
+      else if (gem[i]) { gem[i] = 0; metal[i] = cfg.base.metal; smooth[i] = cfg.base.smooth; }
+      raised[i] = solid[i] && sh.raised[i] > .5 ? 1 : 0;
     }
   }
   const hs = blur(W, H, blur(W, H, height, 1), 1);

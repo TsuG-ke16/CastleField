@@ -203,6 +203,7 @@ function surfaceMesh(THREE, { reliefImg, raisedImg, place, uvAt, pick, glitter, 
   const positions = new Float32Array(count * 3);
   const uvs = new Float32Array(count * 2);
   const solid = new Uint8Array(count);
+  const core = new Uint8Array(count);
   for (let j = 0; j <= ny; j++) {
     for (let i = 0; i <= nx; i++) {
       const k = j * (nx + 1) + i;
@@ -211,7 +212,9 @@ function surfaceMesh(THREE, { reliefImg, raisedImg, place, uvAt, pick, glitter, 
       const [x, y] = place(u, v);
       positions.set([x, y, 0.0015 + lift], k * 3);
       uvs.set(uvAt(u, v), k * 2);
-      solid[k] = pick(u, v)[3] > 8 ? 1 : 0;
+      const alpha = pick(u, v)[3];
+      solid[k] = alpha > 8 ? 1 : 0;
+      core[k] = alpha > 128 ? 1 : 0;       // 高さの地図に高さがあるのは、半分より不透明な所だけ
     }
   }
   // 絵のない点の高さは、となりの絵のある点にそろえる。そうしないと、持ち上げた飾りの縁から外へ斜めの面ができ、
@@ -221,18 +224,20 @@ function surfaceMesh(THREE, { reliefImg, raisedImg, place, uvAt, pick, glitter, 
   for (let j = 0; j <= ny; j++) {
     for (let i = 0; i <= nx; i++) {
       const k = j * (nx + 1) + i;
-      if (solid[k]) continue;
+      if (core[k]) continue;
+      // 半透明の縁取り（高さの地図では高さ 0）も、絵の外も、近くのしっかり不透明な点の高さにそろえる。
+      // そうしないと、持ち上げた飾りの縁取りだけが奥の板の高さに残り、回すと離れた欠片に見える
       let best = -1;
-      for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+      for (let dj = -2; dj <= 2; dj++) for (let di = -2; di <= 2; di++) {
         const ii = i + di, jj = j + dj;
         if (ii < 0 || jj < 0 || ii > nx || jj > ny) continue;
         const kk = jj * (nx + 1) + ii;
-        if (solid[kk] && z(kk) > best) best = z(kk);
+        if (core[kk] && z(kk) > best) best = z(kk);
       }
       lifted[k] = best;
     }
   }
-  for (let k = 0; k < count; k++) if (!solid[k] && lifted[k] >= 0) positions[k * 3 + 2] = lifted[k];
+  for (let k = 0; k < count; k++) if (!core[k]) positions[k * 3 + 2] = lifted[k] >= 0 ? lifted[k] : positions[k * 3 + 2];
   const index = [];
   for (let j = 0; j < ny; j++) {
     for (let i = 0; i < nx; i++) {
