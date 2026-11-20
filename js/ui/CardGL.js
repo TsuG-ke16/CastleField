@@ -85,6 +85,7 @@ async function paintFace(card) {
     rects.win = win;
     ctx.save();
     ctx.beginPath(); ctx.rect(win.x, win.y, win.w, win.h); ctx.clip();
+    ctx.fillStyle = '#fff4dc'; ctx.fillRect(win.x, win.y, win.w, win.h);   // 絵が透けるところの下地（CSS 版の .zoom-floor と同じ色）
     const img = await readyImage(windowEl.querySelector('img'));
     if (img) {
       const at = place(img);
@@ -137,6 +138,23 @@ async function paintFace(card) {
   return { canvas, rects };
 }
 
+
+/** 枠の外形（王冠・角の飾りを除いた本体）を求める。行・列ごとの不透明な点の数が、最大の6割を超える範囲 */
+function bodyBounds(canvas) {
+  const { width, height } = canvas;
+  const data = canvas.getContext('2d').getImageData(0, 0, width, height).data;
+  const rows = new Uint16Array(height), cols = new Uint16Array(width);
+  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (data[(y * width + x) * 4 + 3] > 128) { rows[y]++; cols[x]++; }
+  const range = (counts) => {
+    const limit = Math.max(...counts) * 0.6;
+    let a = 0, b = counts.length - 1;
+    while (a < b && counts[a] < limit) a++;
+    while (b > a && counts[b] < limit) b--;
+    return [a, b + 1];
+  };
+  const [x0, x1] = range(cols), [y0, y1] = range(rows);
+  return { x0, x1, y0, y1 };
+}
 
 const blank = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
 const FACE_W = Math.round(PX_PER_UNIT * (1 + MARGIN * 2));
@@ -236,11 +254,18 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
       const next = mats.map((m) => {
         if (m.name === 'edge') return own(new THREE.MeshStandardMaterial({ color: rarityColor, metalness: 0.55, roughness: 0.38 }));
         if (m.name === 'back') return own(new THREE.MeshStandardMaterial({ map: backTexture, roughness: 0.5 }));
-        return own(new THREE.MeshStandardMaterial({ color: '#efe6cf', roughness: 0.6 }));
+        return own(new THREE.MeshStandardMaterial({ color: rarityColor, metalness: 0.55, roughness: 0.38 }));   // 枠の外にのぞく下地は、側面と同じ色（白く見せない）
       });
       node.material = Array.isArray(node.material) ? next : next[0];
     });
     group.add(model);
+    // 板は、枠の外形に合わせて縮める（枠の外に板の色がはみ出して見えないように）。厚みはそのまま
+    if (rects.frame) {
+      const { x0, x1, y0, y1 } = bodyBounds(face);
+      const left = (x0 - M) / PX_PER_UNIT, right = (x1 - M) / PX_PER_UNIT, top = (y0 - M) / PX_PER_UNIT, bottom = (y1 - M) / PX_PER_UNIT;
+      model.scale.set(Math.min(1.1, right - left), Math.min(1.65, bottom - top) / 1.5, 1);   // 板の元の大きさは 1 × 1.5
+      model.position.set((left + right) / 2 - 0.5, 0.75 - (top + bottom) / 2, 0);
+    }
 
     // 表の絵（枠の飾りが板の外にはみ出すので、板より大きな板に貼って、透けるところは抜く）
     const rarity = card.dataset.rarity;
