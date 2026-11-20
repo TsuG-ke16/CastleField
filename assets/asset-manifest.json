@@ -339,5 +339,10 @@
   "bg/stage-ruins.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
   "bg/stage-dark-forest.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
   "bg/stage-ice.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
-  "bg/stage-lava.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）"
+  "bg/stage-lava.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
+  "bg/home-sky.png": "ChatGPT で作った開発者提供の背景（縮小・256色、2026-11-20、CREDITS.md参照）",
+  "bg/home-gacha.png": "ChatGPT で作った開発者提供の背景（縮小・256色、2026-11-20、CREDITS.md参照）",
+  "bg/home-deck.png": "ChatGPT で作った開発者提供の背景（縮小・256色、2026-11-20、CREDITS.md参照）",
+  "bg/home-account.png": "ChatGPT で作った開発者提供の背景（縮小・256色、2026-11-20、CREDITS.md参照）",
+  "bg/home-settings.png": "ChatGPT で作った開発者提供の背景（縮小・256色、2026-11-20、CREDITS.md参照）"
 }

@@ -16,3 +16,27 @@
   position: absolute;
   inset: 0 auto 0 0;
 }
+
+/* ボタン（.cf-btn）：王国の配色（tokens.css）で描く立体ボタン。太いこげ茶の輪郭・上のつや・底面つき。
+   種類：.cf-btn-primary（いちばん大事な操作。明るい金〜オレンジ。1画面に1つ）／.cf-btn-secondary（ふつう。クリーム）／.cf-btn-danger（削除・取り消し。赤）。:disabled は押せない。
+   大きさ：ふつう 44px、.cf-btn-sm 40px。状態：押す（底面ぶん沈む）・離す（はねて戻る）・マウスを乗せる（少し明るく）・無効（灰色）。 */
+.cf-btn {
+  --btn-h: 44px; --btn-top: #ffffff; --btn-mid: var(--cream); --btn-bot: #f3dfb0; --btn-base: #c9a96a; --btn-ink: var(--ink-royal);
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+  min-width: var(--touch-target); height: var(--btn-h); padding: 0 18px;
+  border: var(--outline-w) solid var(--line-outline); border-radius: 12px; color: var(--btn-ink);
+  background: linear-gradient(180deg, var(--btn-top) 0%, var(--btn-mid) 48%, var(--btn-bot) 100%);
+  box-shadow: inset 0 2px 0 #ffffffb0, inset 0 -3px 0 var(--btn-base), 0 3px 0 var(--line-outline), 0 5px 10px rgb(24 52 120 / 22%);
+  font: 800 var(--text-md)/1.2 var(--font); white-space: nowrap; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+  transition: transform var(--motion-button-release) var(--ease-button-release), box-shadow var(--motion-button-release) var(--ease-button-release), filter var(--motion-feedback) ease;
+}
+.cf-btn-sm { --btn-h: 40px; padding: 0 12px; font-size: var(--text-sm); border-radius: 10px; }
+.cf-btn-primary { --btn-top: #fff0b0; --btn-mid: var(--gold-main); --btn-bot: #f7962a; --btn-base: #d97b16; --btn-ink: #3a1f08; text-shadow: 0 1px 0 #fff3c4; }
+.cf-btn-danger { --btn-top: #ff9d8c; --btn-mid: #e2574c; --btn-bot: #c23a30; --btn-base: #9e2a22; --btn-ink: #fff; text-shadow: 0 1px 0 #7a1d16; }
+.cf-btn:not(:disabled):active { transform: translateY(3px); filter: brightness(.96); transition-duration: var(--motion-press);
+  box-shadow: inset 0 2px 0 #ffffffb0, inset 0 -2px 0 var(--btn-base), 0 0 0 var(--line-outline), 0 2px 4px rgb(24 52 120 / 22%); }
+@media (hover: hover) { .cf-btn:not(:disabled):hover { filter: brightness(1.05); } }
+.cf-btn:disabled { filter: grayscale(.7) opacity(.7); cursor: not-allowed; }
+.reduced-motion .cf-btn:active { transform: none; }
+@media (prefers-reduced-motion: reduce) { .cf-btn:active { transform: none; } }
