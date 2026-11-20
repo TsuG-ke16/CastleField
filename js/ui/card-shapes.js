@@ -51,7 +51,7 @@ export const FRONT_SHAPES = {
   'skin-bronze': { gems: [{ x: 256, y: 50, w: 42, h: 43, cut: 'star4' }, { x: 256, y: 608, w: 16, h: 14, cut: 'diamond', gem: false }] },
   'skin-silver': { gems: [{ x: 256, y: 56, w: 34, h: 40, cut: 'star4' }, { x: 256, y: 608, w: 24, h: 20, cut: 'diamond' }] },
   'skin-gold': {
-    gems: [{ x: 256, y: 67, w: 47, h: 50, cut: 'star4' }, ...mirror([{ x: 39, y: 327, w: 27, h: 27, cut: 'star4' }]), { x: 256, y: 606, w: 26, h: 24, cut: 'diamond' }],
+    gems: [{ x: 256, y: 68, w: 46, h: 42, cut: 'diamond' }, ...mirror([{ x: 39, y: 327, w: 27, h: 27, cut: 'star4' }]), { x: 256, y: 606, w: 26, h: 24, cut: 'diamond' }],
   },
   'skin-platinum': {
     gems: [
@@ -126,7 +126,7 @@ const bevel = (t) => t >= 1 ? 1 : t <= 0 ? 0 : Math.sqrt(1 - (1 - t) * (1 - t));
 const tube = (u) => u >= 1 ? 0 : Math.sqrt(1 - u * u);       // 丸い管の断面（u：中心からの距離 ÷ 半分の幅）
 
 /** 宝石の形の中での位置 t（真ん中 1・ふち 0・外は負） */
-function gemT(cut, dx, dy, w, h) {
+export function gemT(cut, dx, dy, w, h) {
   const ax = Math.abs(dx) / w, ay = Math.abs(dy) / h;
   if (cut === 'round') return 1 - Math.hypot(ax, ay);
   if (cut === 'diamond') return 1 - (ax + ay);
@@ -145,7 +145,9 @@ function gemT(cut, dx, dy, w, h) {
 export function shapeHeight({ W, H, solid, big, shape, back }) {
   const N = W * H, sx = W / 512, sy = H / 768, s = (sx + sy) / 2;
   const height = new Float32Array(N), gem = new Uint8Array(N), raised = new Float32Array(N), paper = new Uint8Array(N);
-  const claimed = new Uint8Array(N);   // 帯・メダル・宝石・鋲が形を決めた所（線画の部品のふくらみは足さない）
+  const claimed = new Uint8Array(N);
+  // 宝石：どの宝石か（番号＋1）と、カットした石の高さ（0〜1。ふちが0・真ん中が1。平らな面のピラミッドで、へこむ所はない）
+  const gemId = new Uint16Array(N), gemProfile = new Float32Array(N);   // 帯・メダル・宝石・鋲が形を決めた所（線画の部品のふくらみは足さない）
   // 本体の四角：外形の行・列のうち、6割以上が埋まっている範囲（はみ出す飾りは、この外）
   const rows = new Float32Array(H), cols = new Float32Array(W);
   for (let i = 0; i < N; i++) if (solid[i]) { rows[(i / W) | 0]++; cols[i % W]++; }
@@ -222,6 +224,9 @@ export function shapeHeight({ W, H, solid, big, shape, back }) {
         const t = gemT(g.cut ?? 'diamond', dx, dy, g.w * sx, g.h * sy);
         if (t > 0) {
           claimed[i] = 1;
+          const ax = Math.abs(dx) / (g.w * sx), ay = Math.abs(dy) / (g.h * sy);
+          const profile = g.cut === 'round' ? 1 - Math.hypot(ax, ay) : 1 - (ax + ay);   // 外へ盛り上がる面だけ（星の腕のあいだは形の外）
+          if (profile > gemProfile[i] || !gemId[i]) { gemProfile[i] = Math.max(0, profile); gemId[i] = shape.gems.indexOf(g) + 1; }
           h += .1 + .32 * Math.min(1, t / .55);
           if (g.gem !== false) gem[i] = 1;
           raised[i] = Math.max(raised[i], 1);
@@ -233,5 +238,5 @@ export function shapeHeight({ W, H, solid, big, shape, back }) {
       height[i] = Math.max(0, Math.min(1, h));
     }
   }
-  return { height, gem, raised, paper, claimed, body: [bx0, by0, bx1, by1] };
+  return { height, gem, raised, paper, claimed, gemId, gemProfile, body: [bx0, by0, bx1, by1] };
 }

@@ -15,7 +15,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync, deflateSync } from 'node:zlib';
-import { FRONT_SHAPES, BACK_SHAPES, shapeHeight } from './card-shapes.js';
+import { FRONT_SHAPES, BACK_SHAPES, shapeHeight, gemT } from './card-shapes.js';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const SRC = join(root, 'assets/cards');
@@ -461,6 +461,8 @@ export function buildRelief(png, cfg) {
   if (cfg.shape) {
     const sh = shapeHeight({ W, H, solid, big, shape: cfg.shape });
     height.set(sh.height);
+    const gemFound = new Set();   // 絵の輪郭線から形を取れた宝石
+    const stoneAll = new Uint8Array(N);   // 絵から取った宝石の形
     // 羽・葉・飾りの1枚1枚：絵の線画（太いこげ茶の輪郭線。STYLE.md の決まり）で区切った部品ごとに、
     // 輪郭線からの距離でまんじゅうのように丸くふくらませる。色の濃さ・明るさは高さに使わない（区切りに使うのは線だけ）
     {
@@ -483,7 +485,8 @@ export function buildRelief(png, cfg) {
         const n = area(cnt, x0, y0, x1, y1);
         if (n && lum[i] < area(sum, x0, y0, x1, y1) / n - .08) line[i] = 1;
       }
-      for (const part of label(W, H, line).parts) if (part.pixels.length < 12 * sx * sx) for (const j of part.pixels) line[j] = 0;
+      // 短い筋（地に描いたキラキラ✦・木目・模様の線）は部品の区切りではない。長くつながった輪郭線だけを残す
+      for (const part of label(W, H, line).parts) if (part.pixels.length < 70 * sx * sx) for (const j of part.pixels) line[j] = 0;
       const inside = new Uint8Array(N);
       for (let i = 0; i < N; i++) inside[i] = solid[i] && !line[i] ? 1 : 0;
       const seg = label(W, H, inside);
@@ -496,9 +499,76 @@ export function buildRelief(png, cfg) {
         if (id < 0 || sh.claimed[i] || reach[id] < 1.5 * sx) continue;
         const part = seg.parts[id];
         // 大きい部品ほど高く（ただし地や窓まわりのような広い面は、ゆるく）
-        let amp = .08 + Math.min(.16, reach[id] / (40 * sx));
-        if (part.pixels.length > N * .03) amp = .05;
+        // 小さな部品（羽根・葉・水晶）だけをふくらませる。地・枠の広い面は、線で区切られていてもふくらませない（レンズのように盛り上がった）
+        if (part.pixels.length > N * .006) continue;
+        const amp = .08 + Math.min(.14, reach[id] / (40 * sx));
         height[i] += amp * bevel(toLine[i] / reach[id]);
+      }
+      // 宝石：測った位置は「どの宝石か」の目印だけに使い、形は絵の輪郭線で囲まれた部品から取る。
+      // 目印の形を少し広げた範囲に6割以上入る小さな部品（宝石の面）を集め、輪郭線のすき間も埋めて1つの石にする。
+      // 高さは、まわり（4px 外側）のいちばん高い所の上に、石のふちからの距離で真ん中へ高くなる形（へこむ所はない）
+      for (const [gi, g] of (cfg.shape.gems ?? []).entries()) {
+        const cx = g.x * sx, cy = g.y * (H / 768), gw = g.w * sx * 1.12, gh = g.h * (H / 768) * 1.12;
+        const x0 = Math.max(0, Math.floor(cx - gw - 6)), x1 = Math.min(W - 1, Math.ceil(cx + gw + 6));
+        const y0 = Math.max(0, Math.floor(cy - gh - 6)), y1 = Math.min(H - 1, Math.ceil(cy + gh + 6));
+        const inArea = (x, y) => gemT(g.cut ?? 'diamond', x - cx, y - cy, gw, gh) > 0;
+        const count = new Map(), hit = new Map();
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+          const id = seg.lab[y * W + x];
+          if (id < 0) continue;
+          hit.set(id, (hit.get(id) ?? 0) + (inArea(x, y) ? 1 : 0));
+        }
+        const mask = new Uint8Array(N);
+        let any = false;
+        for (const [id, n] of hit) {
+          const part = seg.parts[id];
+          if (part.pixels.length > N * .02 || n < part.pixels.length * .8) continue;   // 8割以上が目印の形の中にある部品だけ
+          for (const j of part.pixels) mask[j] = 1;
+          any = true;
+        }
+        if (!any) continue;
+        // 輪郭線のすき間（面と面のあいだの線）を埋める：3px ふくらませて縮め直す
+        const grown = distance(W, H, mask, 99);   // distance(…, src) は src が 1 の所からの距離
+        const closed = new Uint8Array(N); for (let i = 0; i < N; i++) closed[i] = grown[i] <= 3 * sx && solid[i] ? 1 : 0;
+        const back = distance(W, H, closed.map((v) => v ? 0 : 1), 99);
+        const stone = new Uint8Array(N); for (let i = 0; i < N; i++) stone[i] = closed[i] && back[i] > 3 * sx ? 1 : 0;
+        // 見つけた形が目印から大きく外れていたら（となりの部品まで拾った）、使わない
+        let area = 0; for (let i = 0; i < N; i++) area += stone[i];
+        // 目印の形の面積（ひし形 2wh・丸 πwh・星 約0.7wh）と比べて、大きすぎ・小さすぎ（となりまで拾った／一部しか取れない）なら使わない
+        const w0 = g.w * sx, h0 = g.h * (H / 768);
+        const expect = g.cut === 'round' ? Math.PI * w0 * h0 : g.cut === 'diamond' || !g.cut ? 2 * w0 * h0 : .7 * w0 * h0;
+        if (area > expect * 1.5 || area < expect * .35) continue;
+        const toEdge = distance(W, H, stone.map((v) => v ? 0 : 1), 999);
+        let top = 0, ringTop = 0;
+        for (let i = 0; i < N; i++) if (stone[i] && toEdge[i] > top) top = toEdge[i];
+        const fromStone = distance(W, H, stone, 99);
+        for (let i = 0; i < N; i++) if (!stone[i] && solid[i] && fromStone[i] <= 4 * sx && height[i] > ringTop) ringTop = height[i];
+        for (let i = 0; i < N; i++) {
+          if (!stone[i]) continue;
+          height[i] = ringTop + .04 + .3 * Math.min(1, toEdge[i] / Math.max(1, top));
+          sh.claimed[i] = 1;
+          stoneAll[i] = g.gem !== false ? 2 : 1;
+        }
+        gemFound.add(gi);
+      }
+      // 絵から形を取れなかった宝石は、測った形のまま、まわりのいちばん高い所の上に載せる
+      {
+        const ring = new Map(), R = Math.round(4 * sx);
+        for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+          const id = sh.gemId[y * W + x];
+          if (!id || gemFound.has(id - 1)) continue;
+          for (let dy = -R; dy <= R; dy += R) for (let dx = -R; dx <= R; dx += R) {
+            const xx = x + dx, yy = y + dy;
+            if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+            const j = yy * W + xx;
+            if (sh.gemId[j] || !solid[j]) continue;
+            if (height[j] > (ring.get(id) ?? 0)) ring.set(id, height[j]);
+          }
+        }
+        for (let i = 0; i < N; i++) {
+          const id = sh.gemId[i];
+          if (id && !gemFound.has(id - 1) && !stoneAll[i]) height[i] = (ring.get(id) ?? height[i]) + .04 + .3 * sh.gemProfile[i];
+        }
       }
       // 輪郭線そのものは、両どなりの部品の低い方にそろえた浅い溝（深い溝にすると、暗い線ほど低い＝色が高さに出る）
       for (let pass = 0; pass < 2; pass++) {
@@ -519,9 +589,11 @@ export function buildRelief(png, cfg) {
       }
     }
     for (let i = 0; i < N; i++) {
-      if (sh.gem[i]) { gem[i] = 1; metal[i] = 0; smooth[i] = 1; }
+      const measured = sh.gemId[i] && !gemFound.has(sh.gemId[i] - 1);
+      const isStone = stoneAll[i] === 2 || (measured && sh.gem[i]);
+      if (isStone) { gem[i] = 1; metal[i] = 0; smooth[i] = 1; }
       else if (gem[i]) { gem[i] = 0; metal[i] = cfg.base.metal; smooth[i] = cfg.base.smooth; }
-      raised[i] = solid[i] && sh.raised[i] > .5 ? 1 : 0;
+      raised[i] = solid[i] && (stoneAll[i] || (sh.raised[i] > .5 && (!sh.gemId[i] || measured))) ? 1 : 0;
     }
   }
   const hs = blur(W, H, blur(W, H, height, 1), 1);
