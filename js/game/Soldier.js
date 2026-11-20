@@ -38,6 +38,8 @@ export class Soldier {
     this.poison = null;
     /** 凍結の残り回数（0 なら凍結していない） */
     this.frozen = 0;
+    /** やけど { amount, turns }（溶岩のステージ。なければ null） */
+    this.burn = null;
   }
 
   /** 弓兵・魔法使い（動かずに撃つ） */
@@ -104,7 +106,7 @@ export class Soldier {
       weapon: this.weapon,
       element: this.element,
       shield: this.shield,
-      statuses: { poison: this.poison ? { ...this.poison } : null, frozen: this.frozen },
+      statuses: { poison: this.poison ? { ...this.poison } : null, frozen: this.frozen, burn: this.burn ? { ...this.burn } : null },
     };
   }
 }

@@ -59,6 +59,7 @@ const EFFECT_TEXT = {
   },
   curePoison: () => '自分の毒状態（兵士・城）をすべて治す。毒にかかっていないと出せない。何枚でも出せる',
   freezeEnemySoldiers: (c) => `相手の兵士全員を${c.turns}回休みにする`,
+  pushBackEnemySoldiers: (c) => `相手の兵士全員を${c.amount}マス押し戻す（城の前より後ろには下がらない）`,
   shieldSoldier: (c) => `自分の兵士に盾${c.amount}（ダメージを先に受ける）`,
   summonSpirit: (c) => {
     const t = c.turns;
@@ -141,6 +142,7 @@ export function cardShort(def) {
     case 'poisonEnemy': return [{ icon: 'skull', text: `毒 ${def.amount}/ターン` }];
     case 'curePoison': return [{ icon: 'heart', text: '毒を治す' }];
     case 'freezeEnemySoldiers': return [{ icon: 'snow', text: `${def.turns}回休み` }];
+    case 'pushBackEnemySoldiers': return [{ icon: 'boot', text: `${def.amount}マス戻す` }];
     case 'shieldSoldier': return [{ icon: 'shield', text: `盾 +${def.amount}` }];
     case 'armorCastle': return [{ icon: 'wall', text: `城壁 ${def.amount}` }];
     default: return [];

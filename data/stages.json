@@ -1,0 +1,19 @@
+{
+  "meadow": {"name": "草原・王都", "icon": "🌿", "weight": 2, "description": "特別なしかけのない、ふつうの戦場"},
+  "lava": {"name": "溶岩（マグマ・ボルケーノ）", "icon": "🌋", "weight": 1, "element": "fire", "elementMultiplier": 1.5,
+    "heat": 1, "lavaSquares": [1, 3], "burn": {"amount": 1, "turns": 2}, "eruption": {"chance": 0.4, "amount": 3},
+    "effectBonus": {"damageEnemyCastle": 3},
+    "description": "火の武器の兵士のダメージ1.5倍。城への魔法+3。ターンの終わりに自分の兵士全員に灼熱1、溶岩マスの兵士はやけど。周回の始めに噴火することがある"},
+  "ice": {"name": "氷（フローズン・グレイシア）", "icon": "❄️", "weight": 1, "element": "water", "elementMultiplier": 1.5,
+    "slipChance": 0.25, "effectBonus": {"freezeEnemySoldiers": 1, "shieldSoldier": 1},
+    "description": "水の武器の兵士のダメージ1.5倍。進む兵士が滑って1マス余分に進むことがある。凍結の休み+1、盾+1"},
+  "ruins": {"name": "古代遺跡（魔導）", "icon": "🏛️", "weight": 1, "mpPerTurn": 1,
+    "effectBonus": {"damageEnemyCastle": 2, "damageEnemySoldiers": 2},
+    "description": "自分のターンの始めにMP+1。城・兵士へのダメージの魔法+2"},
+  "darkForest": {"name": "闇の森", "icon": "🌲", "weight": 1, "element": "wind", "elementMultiplier": 1.5,
+    "nightChance": 0.5, "nightRoundsBonus": 1,
+    "description": "風の武器の兵士のダメージ1.5倍。夜になりやすく、夜が長い（獣・暗殺者が強くなる）"},
+  "desert": {"name": "砂漠・荒野", "icon": "🏜️", "weight": 1, "element": "earth", "elementMultiplier": 1.5,
+    "rangePenalty": 1, "weatherWeights": {"sandstorm": 4},
+    "description": "土の武器の兵士のダメージ1.5倍。弓兵・魔法使いの射程-1（最低1）。砂嵐が起きやすい"}
+}

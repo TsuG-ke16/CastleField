@@ -56,7 +56,7 @@ test('部屋主：最初に入った人。モードは部屋主だけが選べ�
   assert.equal(a.room.action(a.seat, 'setRules', [{ winCondition: 'nope' }]).ok, false);
   assert.equal(a.room.action(a.seat, 'setRules', [{ castleMaxHp: 1 }]).ok, false);
   assert.equal(a.room.action(a.seat, 'setRules', [{ winCondition: 'lastStanding', deckMode: 'own' }]).ok, true);
-  assert.deepEqual(b.lastRoom().settings, { winCondition: 'lastStanding', deckMode: 'own', teams: 'off', castleHp: loadData().rules.castleMaxHp });
+  assert.deepEqual(b.lastRoom().settings, { winCondition: 'lastStanding', deckMode: 'own', teams: 'off', castleHp: loadData().rules.castleMaxHp, stage: 'random' });
   const ids = (list) => list.map((x) => x.id);
   assert.deepEqual(ids(b.lastRoom().choices.winConditions), ['firstDestroy', 'lastStanding']);
   assert.deepEqual(ids(b.lastRoom().choices.deckModes), ['shared', 'own', 'cost']);
@@ -278,4 +278,16 @@ test('チャット：アカウントがある人の発言には、アイコン�
   assert.deepEqual(msg.profile, profile);
   assert.equal(b.room.action(b.seat, 'chat', [{ text: 'どうも' }]).ok, true);
   assert.equal(seen.filter((m) => m.type === 'chat').at(-1).profile, undefined);
+});
+
+test('部屋主はステージを選べる（最初はランダム）。選んだステージで試合が始まる', () => {
+  const lobby = newLobby();
+  const a = enter(lobby, 'stage', 'あ');
+  enter(lobby, 'stage', 'い');
+  assert.equal(a.lastRoom().settings.stage, 'random');
+  assert.deepEqual(a.lastRoom().choices.stages.map((s) => s.id), ['random', 'meadow', 'lava', 'ice', 'ruins', 'darkForest', 'desert']);
+  assert.equal(a.room.action(a.seat, 'setRules', [{ stage: 'nowhere' }]).ok, false);
+  assert.equal(a.room.action(a.seat, 'setRules', [{ stage: 'ice' }]).ok, true);
+  assert.equal(a.room.action(a.seat, 'start', []).ok, true);
+  assert.equal(a.room.game.getState(null).stage.id, 'ice');
 });

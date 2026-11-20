@@ -110,6 +110,7 @@ let stamps = null;   // data/stamps.json（読めなければ null：チャッ�
 let deckEditor = null; // デッキ編成の画面（コスト制の見本のデッキがあるときだけ）
 let chat = null;     // チャットとスタンプ（ChatView）
 let weather = null;  // data/weather.json（読めなければ null：天候なし）
+let stages = null;  // data/stages.json（読めなければ null：ステージなし）
 let progressPanel;
 let cardGuide;
 let cards;
@@ -205,9 +206,9 @@ function hideLoading() {
 
 async function boot() {
   try {
-    [cards, rules, monsters, upgrades, rarities, castles, decks, weather, stamps] = await Promise.all([
+    [cards, rules, monsters, upgrades, rarities, castles, decks, weather, stamps, stages] = await Promise.all([
       loadJson('data/cards.json'), loadJson('data/rules.json'),
-      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'),
+      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'), loadOptionalJson('data/stages.json'),
     ]);
   } catch (err) {
     console.error(err);
@@ -463,7 +464,7 @@ async function setupOffline() {
 // ---------- タイトル・メニュー ----------
 
 function setupTitle(deckOptions) {
-  localSetup = new LocalSetup({castles,decks,rules,...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
+  localSetup = new LocalSetup({castles,decks,rules,stages,...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
   // ホームの「対戦開始」から開く設定画面（CPUの強さ・同じ端末・合言葉）。「もどる」はホームへ戻る
   openPlaySetup = (mode) => {
     sound.play('tap');
@@ -744,6 +745,12 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     if (monsters) opts.monsters = structuredClone(monsters);
     if (upgrades) opts.upgrades = structuredClone(upgrades);
     if (weather) opts.weather = structuredClone(weather);
+    // ステージ：詳細設定で選んだもの（選ばなければ毎試合ランダム）
+    if (stages) {
+      opts.stages = structuredClone(stages);
+      const want = options?.stage && (options.stage === 'random' || Object.hasOwn(stages, options.stage)) ? options.stage : 'random';
+      opts.setup = { ...(opts.setup ?? {}), stage: want };
+    }
     game = new Game(opts);
   } catch (err) {
     console.error(err);
@@ -769,8 +776,13 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     replayTutorial = false;
   }
   // Game が出すイベントは全部受け取る（演出がないものは Animations が何もしない）
+  // ひとりで遊ぶ：相手の忍者・暗殺者（見えない兵士）のイベントは見せない（オンラインの visibility.js と同じ決まり）
+  const mySide = cpu ? game.side(cpu.humanId) : null;
   for (const type of EVENT_TYPES) {
-    const h = (payload) => enqueue({ type, payload });
+    const h = (payload) => {
+      if (mySide && payload?.stealth !== undefined && payload.stealth !== mySide) return;
+      enqueue({ type, payload });
+    };
     game.on(type, h);
     listeners.push([type, h]);
   }
@@ -794,6 +806,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     introBoard();
     anim.banner(cpu.humanId === model.playerOrder[0] ? '対戦開始！ あなたが先攻' : '対戦開始！ CPU が先攻', 1100);
   }
+  announceStage(model.stage);
   setBusy(true);
   const res = game.start();
   if (!res?.ok) {
@@ -1131,6 +1144,7 @@ async function showBatch(batch) {
       sound.play('turn');
       introBoard();
       anim.banner(st.currentPlayer === viewerId ? '対戦開始！ あなたが先攻' : '対戦開始！ 相手が先攻', 1100);
+      announceStage(st.stage);
       await anim.delay(900);
     }
   } else {
@@ -1176,6 +1190,9 @@ function modelFromState(st) {
     turn: st.turn,
     round: st.round ?? 0,
     weather: st.weather ? { ...st.weather } : null,
+    stage: st.stage ? { ...st.stage } : null,
+    time: st.time ?? 'day',
+    nightRoundsLeft: st.nightRoundsLeft ?? 0,
     currentPlayer: st.currentPlayer,
     phase: st.phase,
     winner: st.winner,
@@ -1784,6 +1801,12 @@ function setMessage(text) {
 }
 
 let toastTimer = 0;
+/** 試合の始めに、ステージの名前と効果を知らせる */
+function announceStage(stage) {
+  if (!stage) return;
+  toast(`${stage.icon ?? ''} ステージ：${stage.name}${stage.description ? `　${stage.description}` : ''}`.trim(), 'info');
+}
+
 function toast(text, kind = 'error') {
   el.toast.textContent = text;
   el.toast.className = `show ${kind}`;

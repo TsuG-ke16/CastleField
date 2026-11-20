@@ -1,0 +1,41 @@
+/* ステージ（#app[data-stage]）と夜（#app[data-time="night"]）の見た目。
+   道の色だけを変える（専用の背景の絵ができたら、ここで差しかえる）。草原はいつもの色のまま。 */
+
+#app[data-stage="lava"] #road {
+  background: linear-gradient(#5b2a1c, #8a3a1a 55%, #c4521d);
+  box-shadow: 0 8px 18px #7a1e0a55, inset 0 0 24px #ff7a2b88;
+}
+#app[data-stage="ice"] #road {
+  background: linear-gradient(#e8f6ff, #bfe3f7);
+  box-shadow: 0 8px 18px #2c6a9033, inset 0 2px #ffffff;
+}
+#app[data-stage="ruins"] #road {
+  background: linear-gradient(#d9d2c3, #a99f8a);
+  box-shadow: 0 8px 18px #4d3f6a33, inset 0 0 18px #9b7df255;
+}
+#app[data-stage="darkForest"] #road {
+  background: linear-gradient(#3e5a3a, #26392a);
+  box-shadow: 0 8px 18px #0b1a0e66, inset 0 2px #7fae7a55;
+}
+#app[data-stage="desert"] #road {
+  background: linear-gradient(#f6dc9c, #e2b86a);
+  box-shadow: 0 8px 18px #8a5a1e33, inset 0 2px #fff3cc;
+}
+
+/* 夜：盤面に青い影をかける（操作のじゃまにならないよう、押せない層） */
+#app[data-time="night"] #field::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 30%, #1b2a6a33, #0a1033aa);
+  transition: opacity .6s;
+}
+
+/* やけど：兵士がうっすら赤く光る */
+.soldier.burning .soldier-token { filter: drop-shadow(0 0 4px #ff6a1f); }
+
+@media (prefers-reduced-motion: reduce) {
+  #app[data-time="night"] #field::after { transition: none; }
+}

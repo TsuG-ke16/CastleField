@@ -372,6 +372,8 @@ function smartStep(game, pid, ctx) {
   const L = ctx.rules.laneLength;
   const threat = enemy && enemy.soldiers.some((s) => s.position + ctx.cards[s.type].speed >= L);
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'freezeEnemySoldiers'))) return true;
+  // 凍結がなければ、突風で押し戻す
+  if (threat && playFirst(game, playable, typesWithEffect(ctx, 'pushBackEnemySoldiers'))) return true;
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'poisonEnemySoldiers'))) return true;
   const played = playFirst(game, playable, [
     ...soldierTypes(ctx),
@@ -384,6 +386,18 @@ function smartStep(game, pid, ctx) {
   if (playFirst(game, playable, typesWithEffect(ctx, 'gainCoins'))) return true;
   // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み
   // 精霊：今いなければ、1体呼ぶ（大精霊は使い切りなので、城HPが半分を切ったときだけ）
+  // 刻の魔法：自分に獣（魔物の駒）・暗殺者がいれば夜に。夜で相手に獣が見えるか、魔物がいれば昼に戻す
+  {
+    const { state } = view(game, pid);
+    const nightLover = (s) => ctx.cards[s.type]?.monster !== undefined || ctx.cards[s.type]?.beast || ctx.cards[s.type]?.role === 'ninja';
+    const timeSpells = typesWithEffect(ctx, 'setTime');
+    if (state.time === 'day' && me.soldiers.some(nightLover)) {
+      if (playFirst(game, playable, timeSpells.filter((t) => ctx.cards[t].time === 'night'))) return true;
+    }
+    if (state.time === 'night' && !me.soldiers.some(nightLover) && (enemies.some((e) => e.soldiers.some(nightLover)) || state.monsters.length > 0)) {
+      if (playFirst(game, playable, timeSpells.filter((t) => ctx.cards[t].time === 'day'))) return true;
+    }
+  }
   if (!me.spirit) {
     const spirits = typesWithEffect(ctx, 'summonSpirit').filter((t) => !ctx.cards[t].exhaust || me.castleHp * 2 < me.castleMaxHp);
     if (playFirst(game, playable, spirits)) return true;
