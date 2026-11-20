@@ -414,6 +414,7 @@ export class Renderer {
       this.setCastleHp(id, p.castleHp, { instant: true, max: p.castleMaxHp });
       this.setArmor(id, p.armor);
       this.setCastlePoison(id, p.castlePoison);
+      this.setOverdrive(id, p.overdrive);
       this.setSpirit(id, p.spirit);
       this.setCoins(id, p.coins);
       this.setMp(id, p.mp, model.maxMp);
@@ -436,6 +437,12 @@ export class Renderer {
     if (night) lines.push(`夜（あと${this.nightLeft}周）`);
     this.el.turnInfo.title = lines.join('\n');
     this.el.turnInfo.setAttribute('aria-label', lines.slice(1).concat(base).join('、'));
+  }
+
+  /** 背水の陣：城が赤く燃える */
+  setOverdrive(playerId, on) {
+    const castle = this.castleEl(playerId);
+    if (castle) castle.classList.toggle('overdrive', Boolean(on));
   }
 
   /** ステージ（{ id, name, icon, description, element } か null）。盤面の色を変える */

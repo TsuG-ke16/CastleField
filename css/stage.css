@@ -33,9 +33,17 @@
   transition: opacity .6s;
 }
 
+/* 背水の陣：城が赤く燃える（js/ui/Renderer.js の setOverdrive） */
+#app .castle.overdrive[class] .castle-pic { filter: drop-shadow(0 0 6px #ff4a1a) drop-shadow(0 0 14px #ff8a3d); animation: overdrive-burn 1.1s ease-in-out infinite alternate; }
+@keyframes overdrive-burn {
+  from { filter: drop-shadow(0 0 4px #ff4a1a) drop-shadow(0 0 10px #ff8a3d); }
+  to { filter: drop-shadow(0 0 9px #ff2a0a) drop-shadow(0 0 20px #ffb43d); }
+}
+
 /* やけど：兵士がうっすら赤く光る */
 .soldier.burning .soldier-token { filter: drop-shadow(0 0 4px #ff6a1f); }
 
 @media (prefers-reduced-motion: reduce) {
   #app[data-time="night"] #field::after { transition: none; }
+  #app .castle.overdrive[class] .castle-pic { animation: none; }
 }

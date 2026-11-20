@@ -43,6 +43,7 @@ import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
 import { initCardZoom } from './ui/CardZoom.js';
 import { checkCostDeck } from './game/Setup.js';
+import { musicScene } from './ui/musicScene.js';
 import { STRATEGIES, mulliganChoice } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
@@ -834,7 +835,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
 function enqueue(ev) {
   matchStats.event(ev);
   const p = ev.payload ?? {};
-  if (ev.type === 'monsterAppeared') sound.setScene('tension');
+  if (ev.type === 'monsterAppeared') sound.setScene(musicScene({ ...model, monsters: [...(model?.monsters ?? []), p] }));
   if (ev.type === 'castleDamaged') lastCastleHit = 'castle';
   if (ev.type === 'monsterAttackedCastle') lastCastleHit = 'monster';
   if (ev.type === 'upgradeBought') {
@@ -1177,7 +1178,7 @@ function modelFromState(st) {
     const p = st.players[id];
     players[id] = {
       castleType:p.castleType, deckId:p.deckId,
-      team: p.team, castleOwner: p.castleOwner ?? id, eliminated: p.eliminated,
+      team: p.team, castleOwner: p.castleOwner ?? id, eliminated: p.eliminated, overdrive: Boolean(p.overdrive),
       castleHp: p.castleHp,
       castleMaxHp: p.castleMaxHp,
       armor: p.armor ?? 0,
@@ -1323,7 +1324,7 @@ async function settle({ check = true } = {}) {
   renderer.showMpShortage();
   model = modelFromState(st);
   renderer.renderAll(model);
-  if (st.phase !== 'gameOver') sound.setScene(st.monsters.length ? 'tension' : 'battle');
+  if (st.phase !== 'gameOver') sound.setScene(musicScene(st)); // ピンチ＞ボス戦＞夜＞魔物＞ふつう
   renderer.setCurrentPlayer(st.phase === 'gameOver' ? null : st.currentPlayer);
   const me = st.players[viewerId];
   battleLayout.update(st, viewerId);

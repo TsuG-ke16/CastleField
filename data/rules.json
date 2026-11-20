@@ -54,5 +54,7 @@
   "nightMonsterAttack": 1,
   "secondPlayerHandBonus": 1,
   "secondPlayerArmor": 5,
-  "mulligan": true
+  "mulligan": true,
+  "overdriveHpRatio": 0.3333,
+  "overdriveAttack": 10
 }

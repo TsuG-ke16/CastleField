@@ -289,6 +289,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | イベント | ペイロード |
 |---|---|
 | `turnStarted` | `{ playerId, turn }` |
+| `overdriveChanged` | `{ playerId, active, hp, attack }` … 背水の陣になった（`active: true`）／終わった。`playerId` は城の持ち主。城HPが変わるイベント（`castleDamaged` / `castleHealed` / `monsterAttackedCastle`）のすぐあとに出る |
 | `mulliganStarted` | `{ playerIds, firstPlayer }` … マリガンの場面が始まった（`start()` のとき。`rules.mulligan` が `true`） |
 | `mulliganDone` | `{ playerId, count, returnedIds, cardIds }` … 引き直した。オンラインでは本人以外に `{ playerId, count }` だけ送る |
 | `timeChanged` | `{ time, previous, rounds, cause, playerId }` … 昼と夜が変わった。`time` は `"night"` / `"day"`、`rounds` は夜が続く周回（昼なら0）、`cause` は `"natural"` か `"card"`（ムーンライズ・ドーンブレイク。`playerId` は出した人） |
@@ -1288,6 +1289,13 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - CPU（`smart` 系）：次の進軍で城に着きそうな兵士がいるとき、凍結がなければ使う
 - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均39.7手番・p1 勝率49%（追加前とほぼ同じ）。CPU の弱い順は変わらない（`--games 200` で random に勝つ割合：defensive 10%・rush 16%・smart 89%。追加前は 8%・17%・84%）
 - 画面：説明文・札（`js/ui/text.js`）、道に土けむりと風の音の演出（`Animations.js` の `mist`・`Sound.js` の `gust`）、押し戻しは今の進軍の動きで後ろへ下がる。チュートリアルは押し戻しを「進軍した」と数えない。絵は仮の SVG（`js/ui/art.js`）、魔法のスキン `fxskin_galeForce`（`data/shop.json`）。専用の絵ができたら差しかえる
+
+## 背水の陣とBGMの切り替え（人間に確認して決めた。仮）
+
+- **背水の陣**（`rules.overdriveHpRatio`、仮：0.3333／`rules.overdriveAttack`、仮：10。どちらかが0なら使わない）：城HPが「上限 × `overdriveHpRatio`（四捨五入）」以下（城HP60なら20以下。部屋で城HPを変えても同じ割合）になると、その城の兵士全員（チーム戦は城を共有するメンバー全員）の攻撃が +`overdriveAttack`。戦い・射撃・城へのダメージに効く（城へは「攻撃力×`soldierCastleDamageMultiplier`」なので +20）。回復して線を超えたら終わる。イベント `overdriveChanged`、`getState().players.pX.overdrive`（`true` / `false`）。`getState()` の兵士の `attack` には足さない（夜と同じ）
+- 確かめたこと：`--match smart,smart --games 600` で平均39手番・先攻の勝率46%（背水の陣なしと同じくらい）。**先に城HPが1/3以下になった側が勝つ割合**は、背水の陣なしで19%、+5で22%、**+10で27%**（smart 同士400試合）。逆転は起きやすくなったが、強すぎてはいない。遊んで確かめる
+- 画面：城が赤く燃える（`css/stage.css` の `.castle.overdrive`）、「🔥 背水の陣！」の帯と画面の揺れ
+- **BGM**（`js/ui/Music.js`・`js/ui/musicScene.js`）：場面の優先は **ピンチ**（どこかの城が背水の陣）＞**ボス戦**（`UI_CONFIG.bossMonsters`＝ドラゴン・デーモン・魔王か、ごほうびがエピック以上まで育った魔物）＞**夜**＞**魔物がいる**＞ふつう。試合中の場面どうしは、曲を止めずに8拍の切れ目で次の曲へ移る。夜・ボス・ピンチの曲を足した（音源ファイルなし。今までと同じく音符で書いた旋律）
 
 ## コイントス・後攻の補正・マリガン（人間に確認して決めた。仮）
 

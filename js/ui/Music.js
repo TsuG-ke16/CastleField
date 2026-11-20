@@ -5,7 +5,15 @@ const TRACKS = {
   tension: { beat:.17, bass:38, notes:[62,0,65,66,62,0,69,66,63,0,66,69,66,65,63,61] },
   victory: { beat:.28, bass:48, notes:[72,76,79,84,0,79,84,88,86,84,79,76,79,84,0,0] },
   defeat: { beat:.45, bass:45, notes:[76,0,74,72,71,0,69,0,72,0,71,67,69,0,0,0] },
+  // 夜：ゆっくり、低く、静かに
+  night: { beat:.30, bass:40, notes:[64,0,67,0,71,0,69,67,64,0,62,0,64,0,0,0] },
+  // ボス戦：速く、重い低音
+  boss: { beat:.15, bass:33, notes:[57,57,60,57,63,57,62,60,57,57,60,57,65,64,63,62] },
+  // ピンチ（背水の陣）：いちばん速く、高く
+  pinch: { beat:.13, bass:41, notes:[77,76,74,76,77,0,81,79,77,76,74,72,74,76,77,79] },
 };
+/** 試合中の場面どうしは、止めずに8拍の切れ目で次の曲へ移る（シームレス） */
+const FLOW = new Set(['battle', 'tension', 'night', 'boss', 'pinch']);
 export class Music {
   constructor(sound) {
     this.sound=sound; this.scene='title'; this.nodes=new Set();
@@ -13,17 +21,25 @@ export class Music {
     window.addEventListener('pagehide',()=>this.stop());
     window.addEventListener('pageshow',()=>this.start());
   }
-  setScene(scene) { if(scene===this.scene)return;this.scene=scene;this.stop();this.start(); }
+  setScene(scene) {
+    if(scene===this.scene)return;
+    const smooth=this.timer&&FLOW.has(this.scene)&&FLOW.has(scene);
+    this.scene=scene;
+    if(smooth)return; // 鳴っている曲の切れ目で移る（tick の中）
+    this.stop();this.start();
+  }
   start() {
     const s=this.sound;
     if(this.timer||!s.ctx||document.hidden)return;
     if(!this.gain){this.gain=s.ctx.createGain();this.gain.connect(s.ctx.destination);}
-    this.updateVolume();this.step=0;this.next=s.ctx.currentTime+.02;
+    this.updateVolume();this.step=0;this.playing=this.scene;this.next=s.ctx.currentTime+.02;
     const tick=()=>{
       if(s.ctx.state!=='running')return;
-      const track=TRACKS[this.scene]??TRACKS.title;
       if(this.next<s.ctx.currentTime)this.next=s.ctx.currentTime+.02;
       while(this.next<s.ctx.currentTime+.15){
+        // 場面が変わったら、8拍の切れ目で新しい曲の頭から鳴らす
+        if(this.playing!==this.scene&&this.step%8===0){this.playing=this.scene;this.step=0;}
+        const track=TRACKS[this.playing]??TRACKS.title;
         if(!s.muted){
           const note=track.notes[this.step%track.notes.length];
           if(note)this.note(note,this.next,track.beat*.8,.12,'triangle');

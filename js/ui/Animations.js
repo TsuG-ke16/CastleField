@@ -2,6 +2,7 @@
 // 演出しながら「表示用の状態（model）」も進める。最後に main.js が getState() で答え合わせをする。
 // 画面をタップすると skip() が呼ばれ、残りの演出は一瞬で終わる。
 
+import { musicScene } from './musicScene.js';
 import { UI_CONFIG, scaled } from './config.js';
 import { ELEMENT_LOOK, STATUS_ICON, ICON, SPELL_TINT, GLOW, upgradeIcon } from './look.js';
 import { sound } from './Sound.js';
@@ -339,6 +340,7 @@ export class Animations {
       case 'roundStarted': return this.roundStarted(p, model);
       case 'weatherChanged': return this.weatherChanged(p, model);
       case 'timeChanged': return this.timeChanged(p, model);
+      case 'overdriveChanged': return this.overdriveChanged(p, model);
       case 'stageEruption': return this.stageEruption(p);
       case 'weatherLightning': return this.weatherLightning(p);
       case 'attackMissed': return this.attackMissed(p);
@@ -607,9 +609,21 @@ export class Animations {
     model.time = time;
     model.nightRoundsLeft = rounds;
     this.renderer.setTime(time, rounds);
+    sound.setScene(musicScene(model));
     if (this.skipping) return;
     sound.play(time === 'night' ? 'freeze' : 'heal');
     await this.banner(time === 'night' ? '🌙 夜になった！ 獣と暗殺者が強くなる' : '☀️ 夜が明けた', UI_CONFIG.timing.round, 'small');
+  }
+
+  /** 背水の陣：城が赤く燃え、兵士の攻撃が上がる。BGM がピンチに変わる */
+  async overdriveChanged({ playerId, active, attack }, model) {
+    for (const p of Object.values(model.players)) if ((p.castleOwner ?? null) === playerId || p === model.players[playerId]) p.overdrive = active;
+    this.renderer.setOverdrive(playerId, active);
+    sound.setScene(musicScene(model));
+    if (this.skipping || !active) return;
+    sound.play('fire');
+    this.screenShake('spell', 9);
+    await this.banner(`🔥 背水の陣！ ${playerName(playerId)}の兵士の攻撃+${attack}`, UI_CONFIG.timing.round, 'small');
   }
 
   /** 溶岩の噴火：その道のマスに炎を噴き上げる（このあと兵士の soldierDamaged・やけど） */
