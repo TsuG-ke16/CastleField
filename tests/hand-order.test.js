@@ -9,8 +9,8 @@ const hand = (...types) => types.map((type, i) => ({ cardId: `c${String(i + 1).p
 const types = (h) => h.map((c) => c.type);
 
 test('手札の並び：種類順（兵士 → 武器 → 魔法 → 防御 → 特殊）', () => {
-  const sorted = sortHand(hand('prayer', 'shield', 'fireball', 'ironSword', 'infantry'), cards, rarities);
-  assert.deepEqual(types(sorted), ['infantry', 'ironSword', 'fireball', 'shield', 'prayer']);
+  const sorted = sortHand(hand('blessing', 'shield', 'fireball', 'ironSword', 'infantry'), cards, rarities);
+  assert.deepEqual(types(sorted), ['infantry', 'ironSword', 'fireball', 'shield', 'blessing']);
 });
 
 test('手札の並び：同じ種類の中は、レアリティが高い方から低い方へ', () => {
@@ -27,11 +27,11 @@ test('手札の並び：同じカードは隣り合い、同じ並びなら毎�
 });
 
 test('手札の並び：コインや手札を引き直すカードは「特殊」。元の配列は変えない', () => {
-  assert.equal(groupOf(cards.coinPouch), 'special');
+  assert.equal(groupOf(cards.treasure), 'special');
   assert.equal(groupOf(cards.blessing), 'special');
   assert.equal(groupOf(cards.heal), 'spell');
   assert.equal(groupOf(cards.shield), 'defense');
-  const h = hand('coinPouch', 'heal');
+  const h = hand('treasure', 'heal');
   const copy = [...h];
   sortHand(h, cards, rarities);
   assert.deepEqual(h, copy);

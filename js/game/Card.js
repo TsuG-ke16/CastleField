@@ -3,7 +3,8 @@
 
 export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense'];
 /** 兵士の役割：melee（進んで戦う）・archer（弓兵：動かず、射程の中の1体を撃つ）・mage（魔法使い：動かず、兵士がいなければ城を撃つ） */
-export const SOLDIER_ROLES = ['melee', 'archer', 'mage', 'ninja'];
+/** guard（護衛）：自分の城の前から動かず、左右のとなりの道の城の前も守る。stay ターンで帰る */
+export const SOLDIER_ROLES = ['melee', 'archer', 'mage', 'ninja', 'guard'];
 /** 進んで城を攻める役割（speed を書く）。ninja（忍者）は進むが、相手から見えず、相手の兵士とは戦わずにすり抜ける */
 export const MOVING_ROLES = ['melee', 'ninja'];
 export const ELEMENTS = ['fire', 'water', 'wind', 'earth'];
@@ -28,6 +29,15 @@ export const EFFECTS = {
     changeWeather: [], // 天候の呪文：天候をランダムに変える
     wild: [], // 適応：どのカードとでも合成できる（出せない。合成専用）
     summonSpirit: ['amount', 'turns'], // 精霊：数ターンのあいだ続く効果（1人1体まで）
+    drainMp: ['amount'], // MPドレイン：相手の MP を amount 奪って自分の MP にする（MP は使わない）
+    drainCastle: ['amount'], // 生命吸収：相手の城に amount ダメージ。城HPを実際に減らしたぶん自分の城を回復
+    sacrificeAttack: ['amount', 'selfDamage'], // 捨て身：自分の城HPを selfDamage 払って、相手の城に amount ダメージ
+    damageAllSoldiers: ['amount'], // 爆発：場にいる兵士全員（自分の兵士も）に amount ダメージ
+    damageCastleAndHeal: ['amount', 'heal'], // 吸血（ヴァンパイアのカード）：相手の城に amount ダメージ、自分の城を heal 回復
+    healCastleOrMp: ['amount'], // スライムのカード：城HPか MP のどちらかをランダムに amount 回復
+    healAndArmor: ['amount', 'armor'], // トレントのカード：自分の城HPを amount 回復し、城壁を armor 置く
+    stealCoins: ['amount'], // ミミックのカード：相手のコインを amount 枚まで奪う
+    damageEnemyAll: ['amount'], // 魔王のカード：相手の城と、相手の兵士全員に amount ダメージ
   },
   defense: {
     shieldSoldier: ['amount'],
@@ -44,7 +54,7 @@ export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers',
 export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison'];
 
 /** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'summonSpirit'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
@@ -127,6 +137,8 @@ export class Card {
           if (def.fuseTo !== undefined) throw new Error(`${where}: 魔物の兵士カード（monster）に fuseTo は書けません`);
         } else if (def.effect === 'wild' || rarities[def.rarity].special) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: 適応（effect: "wild"）やスペシャルのカードに fuseTo は書けません（合成の結果は相手のカードで決まる）`);
+        } else if (def.fuseTo === null) {
+          // fuseTo: null … 合成できないカード（はっきり書いたときだけ。書き忘れは下で弾く）
         } else if (next === undefined) {
           if (def.fuseTo !== undefined) throw new Error(`${where}: いちばん上のレアリティのカードに fuseTo は書けません`);
         } else {
@@ -158,8 +170,8 @@ export class Card {
         }
       }
 
-      if (def.monster !== undefined && (typeof def.monster !== 'string' || def.kind !== 'soldier')) {
-        throw new Error(`${where}: monster（魔物の種類）を書けるのは兵士カード（kind: "soldier"）だけです`);
+      if (def.monster !== undefined && (typeof def.monster !== 'string' || (def.kind !== 'soldier' && def.kind !== 'spell'))) {
+        throw new Error(`${where}: monster（魔物の種類）を書けるのは兵士か魔法のカード（kind: "soldier" / "spell"）だけです`);
       }
 
       if (def.kind === 'soldier') {
@@ -167,7 +179,7 @@ export class Card {
         const role = def.role ?? 'melee';
         if (!SOLDIER_ROLES.includes(role)) throw new Error(`${where}: role は ${SOLDIER_ROLES.join(' / ')} のどれかにしてください（書かなければ melee）`);
         const moving = MOVING_ROLES.includes(role);
-        const keys = moving ? ['hp', 'attack', 'speed'] : ['hp', 'attack', 'range', 'stay'];
+        const keys = moving ? ['hp', 'attack', 'speed'] : role === 'guard' ? ['hp', 'attack', 'stay'] : ['hp', 'attack', 'range', 'stay'];
         for (const key of keys) {
           if (!isPositive(def[key])) throw new Error(`${where}: ${key} は1以上の整数にしてください`);
         }

@@ -313,7 +313,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `monsterClashed` | `{ attacker: { playerId, soldierId }, monsterId, roadId, square }` … 兵士が魔物と戦う。`square` は兵士が止まったマス |
 | `monsterDamaged` | `{ monsterId, amount, hp, by }` … `by` は `{ playerId, soldierId }`（兵士）か `{ playerId, type }`（魔法） |
 | `monsterDefeated` | `{ monsterId, playerId, reward }` … `playerId` はとどめを刺した人 |
-| `coinsChanged` | `{ playerId, delta, coins, reason }` … `reason` は `"reward"` か `"upgrade"` |
+| `coinsChanged` | `{ playerId, delta, coins, reason }` … `reason` は `"reward"` / `"upgrade"` / `"turn"` / `"card"` / `"weather"` / `"stolen"`（ミミックに奪われた）/ `"steal"`（奪った） |
 | `upgradeBought` | `{ playerId, upgradeId, cost }` … このあと効果のイベント（`castleHealed` / `cardDrawn` / `soldierBuffed`） |
 | `soldierBuffed` | `{ playerId, soldierId, attack }` … とぎ石で攻撃力が上がった |
 | `playerEliminated` | `{ playerId, by }` … 城が落ちて抜けた（`lastStanding`）。`by` は落とした人 |
@@ -327,7 +327,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
 | `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
-| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）か `"card"`（マナ回復）。上限や0で止まったぶんは `delta` に含まない |
+| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
 
@@ -1062,7 +1062,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 確かめたこと：`node tests/sim/run.js --games 300`：smart 同士は平均43手番・周回上限で終わる6.7%・p1 勝率52%（変更前とほぼ同じ）。**CPU の強さの順が変わった**（先攻のとき random に勝つ割合：rush 44%・defensive 30%・smart 89%。以前は rush < defensive < smart）。強い CPU がコインで強化を買うため smart が大きく伸びた。`CPU_LEVELS`（`js/main.js`）の割り当てを見直すか決める必要がある
 
 ### コインで排出率を上げる・出した枚数ぶん引く（人間に確認して決めた）
-- **運命の祈り**（`upgrades.json` の `luck`、効果 `boostDrops`。仮：コスト5・1試合2回まで）：買うと、自分の**次の `amount` 枚（仮：5）のドロー**が、山札からではなく、`fromRarity`（仮：レア）以上のレアリティの排出率を `boost` 倍（仮：4倍）にして引き当てたカードになる（山札は減らない）。効いているあいだは重ねて買えない。`rarities` を渡していないと買えない。`getState().players.pX.luck` は `{ draws, boost }` か `null`。CPU の smart 系は、とぎ石の次に買う
+- **運命の祈り**（`upgrades.json` の `luck`、効果 `boostDrops`。仮：コスト3・1試合2回まで）：買うと、自分の**次の `amount` 枚（仮：5）のドロー**が、山札からではなく、`fromRarity`（仮：レア）以上のレアリティの排出率を `boost` 倍（仮：4倍）にして引き当てたカードになる（山札は減らない）。効いているあいだは重ねて買えない。`rarities` を渡していないと買えない。`getState().players.pX.luck` は `{ draws, boost }` か `null`。CPU の smart 系は、とぎ石の次に買う
 - **出した枚数ぶん引く**：`rules.drawPerPlayed`（省略すると `false`。仮：`true`）。ターンの始めに引く枚数は `max(drawPerTurn（先攻の最初は firstTurnDraw）, drawUntilHand − 手札, 前のターンに出した枚数)`。合成は「出した」に数えない
 - 確かめたこと（`node tests/sim/run.js --games 200`）：全組み合わせが決着。城HP100のときは平均110手番で上限60周に近かった。城HP40にして解消（上の城HPの項）。**運命の祈りの強さは遊んで確かめる**
 
@@ -1076,7 +1076,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - CPU：MP が上限の半分以下になったら、ターンの最初にマナ回復のカードを出す（`pass` 以外）
 - **武器は重ねられる**：攻撃力は足し算（`weaponBonus` に足す）。属性は上書き（最後に持たせた武器。属性なしの鉄の剣なら属性が消える）。同じ武器も重ねられる。（以前は「1体に1つ」で、持ちかえると攻撃力が下がっていた）
 - **開幕のコインは 0**（`rules.initialCoins`）。**速さ**：歩兵2・騎兵3（騎兵は4→3。斥候騎兵は4のまま）
-- **排出率の恒久強化**（`upgrades.json` の `permLuck`、効果 `permanentLuck`：`amount`（買うたびに増える%）・`boost`・`fromRarity`。仮：コスト12・3回まで・15%ずつ・レア以上3倍）：買うと、その試合ずっと、ドローのたびに確率 `amount`% × 買った回数で、山札からではなく排出率（レア以上が `boost` 倍）で引き当てる（山札は減らない）。運命の祈り（次の5ドローだけ）とは別に重なる。`getState().players.pX.permLuck` は `{ chance, boost }` か `null`。CPU（`smart` 系）は、運命の祈りより先に買う
+- **排出率の恒久強化**（`upgrades.json` の `permLuck`、効果 `permanentLuck`：`amount`（買うたびに増える%）・`boost`・`fromRarity`。仮：コストは買うたびに 3 → 5 → 8 → 11（`costs`）・4回まで・15%ずつ・レア以上3倍）：買うと、その試合ずっと、ドローのたびに確率 `amount`% × 買った回数で、山札からではなく排出率（レア以上が `boost` 倍）で引き当てる（山札は減らない）。運命の祈り（次の5ドローだけ）とは別に重なる。`getState().players.pX.permLuck` は `{ chance, boost }` か `null`。CPU（`smart` 系）は、運命の祈りより先に買う
 - **魔物は後半ほど強く、放置するほど育つ**
   - 後半ほど強い魔物が出やすい：`rules.monsterLateBias`（仮：0.15）。魔物の出やすさ（`weight`）に × (1 + 値 × ごほうびの段階（コモン0〜レジェンド4）× `monsterFirstRound` を過ぎた周回の数)
   - 放置するとレアリティが上がる：`rules.monsterEvolveEvery`（仮：3。0 なら強くならない）周ごとに、魔物の HP・攻撃・城への攻撃が `rules.monsterEvolveMultiplier`（仮：1.2）倍（HP は増えたぶん回復）になり、ごほうびのレアリティが1つ上がる（レジェンドの上はない）。倒したときは、育ったあとのレアリティのごほうびが出る。イベント `monsterEvolved`。`getState().monsters[]` に `evolveCount`
@@ -1111,6 +1111,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士の平均43手番・p1 勝率50%（天候なしと同じ）
 
 ### 倒した魔物は駒になる
+- （のちに変更：魔物のカードの多くは効果のカードにした。下の「魔物のカードを「効果」にする」。駒のままなのはゴブリン・スケルトン（弓兵）・ゴーレム（護衛））
 - 魔物のとどめを刺した人の手札に、その魔物の**兵士カード**（`cards.json` の `beast_<魔物の種類>`、`monster: "<種類>"`）が1枚入る（ごほうびのカードとは別。`monsterDefeated` に `pieceType`、このあと `cardDrawn`）。兵士カードと同じように、兵士の枠で出せる
 - 魔物の駒は HP・攻撃が魔物と同じ（`monsters.json` の値）、速さは1〜2。合成できない（`fuseTo` なし）。山札・ごほうび・入手券では出ない（`weight: 0`）。**出しても捨てても使い切り置き場へ行き、山札に戻らない**（シャッフルで山札に混ざらないように）。魔物は放置で強くなる（`monsterEvolve*`）が、駒は元の強さ
 - 絵は魔物の絵を使う（`js/ui/art.js`）
@@ -1180,6 +1181,72 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **王の財宝（レジェンドのコイン）はデッキ編成で1枚まで**：`cards.json` のカードに `maxCopies`（1以上の整数）を書くと、レアリティの `maxCopies` より厳しい上限になる（`checkCostDeck`）
 - 画面：`js/ui/text.js` の城壁・毒の説明文を `armorMax` / `poisonTurns` / `poisonMax` に合わせた。城の毒の残りターンのバッジ表示は未対応
 - 確かめたこと：`node --test` は全部通る。`node tests/sim/run.js --games 300`：全組み合わせが決着。smart 同士は平均38.7手番・p1 勝率49%、smart vs random 85%
+
+## 吸収・捨て身・爆発のカード（仕様書4章。レア・合成しない。人間に確認して決めた。数値は仮）
+
+仕様書（`docs/system-spec-4-8.md`）の4章から、カード4枚を足した。**SP は今の MP と同じもの**（呼び名は MP のまま）。最初は各5段階（20枚）で作ったが、「カードを増やしすぎ」なので1枚ずつにまとめた。いったんスペシャルにしたが「スペシャルにしては弱い」ので**レア・合成しない（`fuseTo: null`）**にした（人間の指示）。数値はレアの段の値。シミュレーションでの調整はしない（人間の指示）。
+
+| カード（`effect`） | 効果 | MP | 長所／短所 |
+|---|---|---|---|
+| 魔力強奪 `manaRaid`（`drainMp`） | 相手の MP を4奪って自分の MP にする（自分の上限を超えたぶんは捨てる） | 使わない | MP 回復のカードがなくても魔法を撃てる／相手の MP が0なら出せない（「相手のMPがありません」） |
+| 命の簒奪 `lifeSteal`（`drainCastle`） | 相手の城に8ダメージ。城HPを実際に減らしたぶん、自分の城を回復（城壁が受けたぶんは回復しない） | 3 | 攻めと回復を一度に／魔物は狙えない |
+| 決死の砲撃 `desperateShot`（`sacrificeAttack`、`selfDamage`） | 自分の城HPを6払って、相手の城に20ダメージ | 3 | 大きな威力／自分の城が削れる。城HPが `selfDamage` 以下なら出せない（「城のHPが足りません（○より多く必要です）」） |
+| 火薬庫 `powderKeg`（`damageAllSoldiers`） | 場にいる兵士全員（**自分の兵士も**、全レーン）に8ダメージ | 3 | まとめて倒せる／味方も巻き込む。場に兵士がいなければ出せない |
+
+- **`fuseTo: null`**（`cards.json`）：合成しないカード（同じカード2枚でも、適応とでも合成できない。理由は「このカードは合成できません」）。書き忘れ（`fuseTo` なし）は今までどおり起動時に例外。MP はレアのコスト（3）。排出率はレアの枠（13.18%）の中で `weight` 1
+- どれもメイン（1ターン1枚）。命の簒奪・決死の砲撃は城への魔法と同じく、魔法の塔の `castleSpellBonus` が乗り、攻撃を受けたときの防御（城壁・土嚢・反射）を聞く。反射されたときは回復しない
+- 決死の砲撃の支払いは、城壁・土の精霊を通さず、霧で外れても払う。`castleDamaged`（`source: { kind: "sacrifice", type }`、`blocked: 0`）
+- 命の簒奪の回復は `castleDamaged` → `castleHealed`。相手の城が落ちたときは回復せずに決着
+- 火薬庫は対象を選ばない（`{ playerId: 自分 }`）。席順に、各プレイヤーの兵士へ `soldierDamaged`（`cause: "spell"`）。忍者には当たらない。防御は聞かない。霧で外れることがある
+- 魔力強奪のイベント：`spellCast` → `mpChanged`（相手、`reason: "drained"`）→ `mpChanged`（自分、`reason: "drain"`）
+- CPU：`random` は出せるカードとして使う。`smart` などの戦い方は、まだ選んで使わない
+- 画面（UI担当にお願いしたいこと）：カードの絵（今は仮の絵）、`js/ui/text.js` の効果アイコン、`js/ui/DeckEditor.js` の分類、`js/ui/CardGuide.js` の MP を使う effect の一覧、`js/ui/Animations.js` の演出。説明文は `cards.json` の `description` に書いてある
+- 魔法スキン（`data/shop.json` の `fxskin_*`）を4枚ぶん足した（全魔法に1つずつ、のテストに合わせた。レア扱い）
+- 確かめたこと：`node --test` 全部通る（`tests/drain-sacrifice.test.js`）
+
+## 合成・高レアリティの機会を増やす調整（人間の指示。仮）
+
+カードの種類が増えると、同じカードがそろいにくくなって合成の機会が減り、高レアリティを手に入れる機会も減る。そこで次のように変えた（数値は人間の指示）。
+- **適応の排出率を約0.33% → 約2.5%**（解毒薬・天候の呪文が増えて、スペシャル0.82%を3枚で分けていたため下がっていた）。`rarities.json` のスペシャルを 0.82 → 3、コモンを 50 → 47.82（合計100）。`cards.json` の適応の `weight` を 1 → 7.625（解毒薬 約0.33%・天候の呪文 約0.16% は今までどおり）
+- **排出率アップの強化を安くした**：運命の祈り 5 → 3コイン（2回まで）。幸運の加護 12 → **買うたびに 3 → 5 → 8 → 11コイン**（3回 → 4回まで）
+- `upgrades.json` の `costs`（省略できる）：買うたびの値段の配列（1回目・2回目…。回数が配列より多ければ最後の値段）。`costs[0]` は `cost` と同じにする（違うと起動時に例外）。`upgradeBought.cost` は実際に払った値段
+- `getState().players.pX.upgradeCosts`：`{ upgradeId: 次に買うときの値段 }`（だれからも見える）。画面は強化の値段をここから出す（`js/main.js` の `refreshUpgrades`・`js/ui/UpgradePanel.js`。UI担当の確認がほしい）
+- 確かめたこと：`node --test` 全部通る（排出率の恒久強化のテストを4回までに直した。適応のテストは、山札の並びが変わって相手が防御カードを持つようになったので、相手の手札を決めるようにした）
+
+## カードの整理と剣の強化（人間の指示。仮）
+
+- **神頼み（`prayer`）・小銭袋（`coinPouch`）・金貨（`goldCoin`）をなくした**。特殊の系統は 天の恵み（アンコモン）→ 盗賊 → 身代わり → 反射、コインの系統は 財宝（レア）→ 金脈 → 王の財宝 から始まる。`randomEffect`（神頼みの効果）のしくみは Game に残してある（使うカードはない）。この節より上の記述で神頼み・小銭袋・金貨に触れている所は、昔の経緯として読む
+- **剣を強くした**：魔剣 +3 → **+4**、聖剣 +4 → **+6**、神剣 +6 → **+9**
+- 画面のテスト（`ui-tests/layout.js`）の手札にあった神頼みを、天の恵みに替えた（UI担当の確認がほしい）
+- 合成できないときの理由：レジェンドだけ「レジェンドはこれ以上合成できません」、スペシャル・`fuseTo: null` は「このカードは合成できません」（以前はスペシャルにもレジェンドの文が出ていた）
+
+## 魔物のカードを「効果」にする（人間の指示。仮）
+
+**これからは、倒した魔物のカード（`beast_<魔物>`）は兵士（駒）ではなく、効果のカード（魔法）として作る**（人間の指示）。魔物ごとに効果を決めて、1体ずつ置きかえる。駒のままにすると決めた魔物（ゴブリン・スケルトン（弓兵）・ゴーレム（護衛））は、駒（兵士）のまま。
+
+- 書き方：`cards.json` の魔物のカードを `kind: "spell"`・`monster: "<魔物>"`・`effect` にする（`monster` は兵士か魔法に書ける）。手に入れ方（とどめを刺した人の手札に入る）・使い切り（使っても捨てても山札に戻らない）・合成できない（「魔物のカードは合成できません」）・排出では出ない（`weight: 0`）は、駒のときと同じ。MP は使わない（`MP_EFFECTS` に入れていない効果）
+- 魔物のカードには魔法スキン（`fxskin_*`）を作らない（キャラのスキン `charSkin:beast_<魔物>` を使う。`tests/economy.test.js` を合わせた）
+
+| 魔物 | カード | 効果（`effect`） |
+|---|---|---|
+| コウモリ（`beast_bat`） | 効果 | 超音波：相手の兵士全員を1ターン止める（`freezeEnemySoldiers`、`turns: 1`） |
+| スライム（`beast_slime`） | 効果 | 自分の城HPか MP のどちらかをランダムに5回復（`healCastleOrMp`。満タンの方は選ばない。両方満タンなら出せない） |
+| ゴブリン（`beast_goblin`） | 駒（兵士） | 今までどおり（HP7・攻撃3・速さ2） |
+| スケルトン（`beast_skeleton`） | 駒（弓兵） | HP6・攻撃3・射程2・2ターンで帰る（`role: "archer"`） |
+| ゴースト（`beast_ghost`） | 効果 | 相手の手札を2枚ランダムに奪う（`stealCard`、`amount: 2`。`stealCard` に `amount` を書けるようにした。省略すると1枚） |
+| トレント（`beast_treant`） | 効果 | 自分の城HPを10回復し、城壁を5置く（`healAndArmor`：`amount`・`armor`。城壁の決まりは城壁のカードと同じ） |
+| ゴーレム（`beast_golem`） | 駒（護衛） | 城の護衛：HP14・攻撃2。自分の城の前（マス0）から動かず、**出した道と左右のとなりの道**（1体で3本まで）の城の前を守る。4ターンで帰る（`role: "guard"`・`stay: 4`） |
+| デーモン（`beast_demon`） | 効果 | 相手の城と兵士を毒3にする（`poisonEnemy`、`amount: 3`） |
+| ミミック（`beast_mimic`） | 効果 | 相手のコインを5枚奪う（持っている分だけ。`stealCoins`。相手が0枚なら出せない。`coinsChanged` の `reason` は `"stolen"`（奪われた）／`"steal"`（奪った）） |
+| ドラゴン（`beast_dragon`） | 効果 | 相手の城に15ダメージ（`damageEnemyCastle`。防御を聞く・魔物も狙える） |
+| ヴァンパイア（`beast_vampire`） | 効果 | 相手の城に10ダメージ、自分の城を10回復（`damageCastleAndHeal`：`amount`・`heal`） |
+| 魔王（`beast_demonKing`） | 効果 | 相手の城と、相手の兵士全員に15ダメージ（`damageEnemyAll`。兵士が先、城は防御を聞く。忍者には当たらない） |
+
+- **護衛（`role: "guard"`）**：`hp`・`attack`・`stay` を書く（`speed`・`range` は書かない）。動かず、自分から戦いには行かない。相手の兵士は、護衛のいる道か、そのとなりの道（同じ2人の間で `lane` が1つ違う道）を進むとき、護衛を「自分の道の相手の城の前（マス0）にいる兵士」として扱い、いつもの決まり（同じマスか1つ先）でぶつかって戦う（同時に攻撃し合う）。弓兵・魔法使いも、となりの道の護衛を撃てる。弓兵・魔法使いと同じく、自分のターンごとに `turnsLeft` が1減り、0で帰る（`soldierDestroyed` の `reason` は `"returned"`。凍っていても減る）。広場（3人以上）では、自分の道だけを守る
+- **魔物のカードは MP を使わない**（`mpCostOf` が `monster` のカードを0にする。ドラゴン・デーモン・コウモリ・魔王のように、ふつうなら MP を使う効果でも）
+
+- ヴァンパイアのカード：メイン（1ターン1枚）。城への攻撃は防御（城壁・土嚢・反射）を聞く。魔法の塔の `castleSpellBonus` は乗せない（10ちょうど）。**回復は、外れても・防がれても・反射されても起きる**。相手の城が落ちたら回復せずに決着。イベント：`spellCast` →（防御）→ `castleDamaged` → `castleHealed`
+- 確かめたこと：`node --test` 全部通る（`tests/drain-sacrifice.test.js` に4件）
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
