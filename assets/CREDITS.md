@@ -351,6 +351,7 @@ OpenAI image generation、STYLE.mdの共通指示文と `assets/style-reference.
 - `ui/natural/{primary,neutral,selected,danger}-{40,44,72}-{left,middle,right}.png`: 生成元 `exec-9fa7748e-70dc-44cd-a094-a24537d36dcc.png`。高さ40/44/72 CSS px用に縦横比を維持して2倍密度で書き出し、左右端と中央2px（1 CSS px）を切り出し。左右固定・中央反復、非等方拡大なし。
 - `ui/natural/{paper,oak,leather}-tile.png`: 生成元 `exec-02fdc3cd-e1e2-4b77-9bce-577aad9a2045.png`。素材の中央を切り出し、ミラー配置で継ぎ目を合わせる。128 CSS px固定で反復。
 - `ui/natural/frame.png`、`round-neutral.png`、`round-selected.png`: 同じ生成元。角は14px固定・辺は同じ縮尺・辺反復、丸ボタンは40×40 CSS px固定。
+- `ui/natural/selected-{40,44,72}-{left,middle,right}.png`・`round-selected.png` の色替え（2026-11-20）：メインカラーを「夜空の王国」（藍紫＋古金）にしたため、緑（セージ色）の部分だけを Python（Pillow）で色相255°へずらした。形・金具の色はそのまま。ライセンスは元の素材と同じ
 
 すべてPNG・1ファイル300KB以下。
 

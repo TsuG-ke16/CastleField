@@ -1,6 +1,6 @@
 /* Fixed-density illustrated kit. No stretched centers, borders or nonuniform image scaling.
    Large quiet paper/sage surfaces; dark neutral oak; ochre limited to primary commands. */
-:root { --mat-ink:#372f25; --mat-paper:#eee5d1; --mat-muted:#685b45; --mat-selected:#506d61; --mat-accent:#bc914b; }
+:root { --mat-ink:#372f25; --mat-paper:#eee5d1; --mat-muted:#685b45; --mat-selected:#4d3b82; --mat-accent:#bc914b; }
 body { background:radial-gradient(ellipse at top,#565348,#272822); }
 #app #scenery { filter:saturate(.53) brightness(.98); }
 #app [data-ui-frame] {
@@ -32,8 +32,8 @@ body { background:radial-gradient(ellipse at top,#565348,#272822); }
 #app .set-group h3 { background:#bba47c33; border-color:#af987144; color:#574b35; }
 #app #title::before { background:linear-gradient(#f6f2df14,transparent 40%,#414b3338); }
 #app #title, #app #handover { background-color:#b9c28c; }
-#app #my-mp { background:#d8e4df; border-color:#9fae9f; color:#284c4a; }
-#app .mp-track { background:#415d55; border-color:#334a43; }
+#app #my-mp { background:#d8e4df; border-color:#9fae9f; color:#2f2450; }
+#app .mp-track { background:#40316d; border-color:#332756; }
 #app .mp-fill { background:#91bdc1; box-shadow:none; }
 /* Caps have native CSS widths (16px); only the 8px center strip repeats horizontally. */
 #app button[data-ui-skin] {

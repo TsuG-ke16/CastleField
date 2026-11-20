@@ -1,9 +1,9 @@
 /* 王国のホーム */
 #home {
   --home-ink: #34231b;
-  --home-green: #1d473b;
+  --home-green: #281d47;
   --home-paper: #fbf1db;
-  background: radial-gradient(ellipse at 50% 0, #47746b, #102d27 78%);
+  background: radial-gradient(ellipse at 50% 0, #4c3a81, #17102d 78%);
   overflow: auto;
   align-content: start;
   place-items: start center;
@@ -14,10 +14,10 @@
 .home-top {
   min-width: 0; display: flex; align-items: center; gap: 8px;
   padding: 8px; border: 1px solid #a68e55; border-radius: 16px; color: #fff8e7;
-  background: #16382f; box-shadow: 0 4px 12px #14282165;
+  background: #1f1638; box-shadow: 0 4px 12px #18132965;
 }
 .home-player { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 44px; min-height: 50px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
-.home-avatar { flex: 0 0 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; border: 2px solid #c4a35c; background: #365b64; overflow: hidden; font-size: 20px; font-weight: 800; }
+.home-avatar { flex: 0 0 44px; height: 44px; display: grid; place-items: center; border-radius: 50%; border: 2px solid #c4a35c; background: #3b3270; overflow: hidden; font-size: 20px; font-weight: 800; }
 .home-avatar img { width: 100%; height: 100%; object-fit: contain; }
 .home-who { display: grid; gap: 2px; min-width: 0; flex: 1; }
 .home-who strong, .home-who small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -26,14 +26,14 @@
 .home-who small:empty { display: none; }
 .home-level, .home-side { display: flex; align-items: center; gap: 5px; }
 .home-level b { color: #ffe4a1; white-space: nowrap; font-size: 11px; }
-.home-xp { flex: 1; height: 6px; border-radius: 9px; background: #0d251e; overflow: hidden; }
+.home-xp { flex: 1; height: 6px; border-radius: 9px; background: #130d25; overflow: hidden; }
 .home-xp i { display: block; height: 100%; width: 0; background: #ffcc61; }
 .home-coins { display: flex; align-items: center; gap: 3px; color: #ffe4a1; font-size: 12px; font-variant-numeric: tabular-nums; }
 .home-coins img { width: 19px; height: 19px; }
-.home-icon-btn { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #b2965d; border-radius: 12px; background: #305348; color: #fff5d5; font-size: 19px; cursor: pointer; }
+.home-icon-btn { position: relative; display: grid; place-items: center; width: 44px; height: 44px; border: 1px solid #b2965d; border-radius: 12px; background: #35295a; color: #fff5d5; font-size: 19px; cursor: pointer; }
 .home-icon-btn img { width: 24px; height: 24px; object-fit: contain; }
 .home-dot { position: absolute; top: 4px; right: 4px; width: 11px; height: 11px; border-radius: 50%; background: #e45b43; border: 1px solid #fff6d5; }
-.home-hero { border-radius: 18px; border: 1px solid #c3a46e; overflow: hidden; background: var(--home-paper); color: var(--home-ink); box-shadow: 0 6px 20px #0f252380; }
+.home-hero { border-radius: 18px; border: 1px solid #c3a46e; overflow: hidden; background: var(--home-paper); color: var(--home-ink); box-shadow: 0 6px 20px #150f2580; }
 #home .home-worlds { display: flex; gap: 4px; margin: 0; padding: 4px 8px; background: var(--home-green); }
 #home .home-world { flex: 1; min-height: 44px; border: 0; border-radius: 8px; color: #fff4d8; background: transparent; font: 750 12px/1.2 var(--font, sans-serif); }
 #home .home-world[aria-selected=true] { background: #f3d79b; color: #392d25; }
@@ -42,7 +42,7 @@
   position: relative; min-height: clamp(172px, 26dvh, 254px);
   background: #9ad2de url('../assets/bg/home-castle.png') center 28% / cover no-repeat;
 }
-.home-season { position: absolute; bottom: 10px; left: 10px; background: #16382f; color: #fff3cc; font-weight: 750; font-size: 12px; padding: 5px 10px; border: 1px solid #bc9b60; border-radius: 8px; }
+.home-season { position: absolute; bottom: 10px; left: 10px; background: #1f1638; color: #fff3cc; font-weight: 750; font-size: 12px; padding: 5px 10px; border: 1px solid #bc9b60; border-radius: 8px; }
 .home-season:empty { display: none; }
 .home-controls { padding: 10px; display: grid; gap: 8px; }
 .home-modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 3px; border-radius: 11px; background: #e8dbc1; }
@@ -58,7 +58,7 @@
 .home-start { min-height: 55px; width: 100%; border: 1px solid #79451e; border-radius: 12px; background: linear-gradient(#ffd780, #efad48); color: #392415; font: 900 19px/1.1 var(--font, sans-serif); cursor: pointer; box-shadow: inset 0 0 0 2px #ffedbc, 0 3px 0 #a56628; }
 .home-note { margin: 0; color: #832d24; font-size: 12px; }
 .home-note:empty { display: none; }
-.home-link { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; color: #fff3dc; background: #1e4539; border: 1px solid #8e8358; border-radius: 12px; font-size: 12px; }
+.home-link { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; color: #fff3dc; background: #281e45; border: 1px solid #8e8358; border-radius: 12px; font-size: 12px; }
 .home-retry { min-height: 44px; border: 1px solid #b49b67; border-radius: 8px; padding: 5px 10px; color: #332518; background: #f7e4b5; font: 750 12px/1.2 var(--font, sans-serif); cursor: pointer; }
 .home-link .home-retry { margin-left: auto; flex-shrink: 0; }
 #home [hidden] { display: none; }
@@ -118,7 +118,7 @@
 .profile-close { display:block; margin:14px auto 0; min-width:160px; }
 
 /* 試合のあとの経験値・レベルアップ */
-.match-progress { position:relative; margin:8px auto; max-width:340px; padding:8px 14px; border:1px solid #9f956d; border-radius:12px; background:#fff9e9; color:#294744; text-align:center; }
+.match-progress { position:relative; margin:8px auto; max-width:340px; padding:8px 14px; border:1px solid #9f956d; border-radius:12px; background:#fff9e9; color:#2d234d; text-align:center; }
 .match-progress .mp-gain { margin:0 0 4px; font-weight:bold; font-size:16px; } .match-progress .mp-level { margin:4px 0 0; font-size:13px; }
 .match-progress .home-xp { display:block; height:10px; }
 .levelup { position:fixed; left:50%; top:38%; z-index:300; transform:translate(-50%,-50%); display:grid; gap:2px; justify-items:center; padding:18px 30px; border:4px solid #3f2511; border-radius:22px; background:radial-gradient(circle,#fff6c8,#f6ca69); box-shadow:0 0 0 4px #fff3b0, 0 0 40px 12px #ffd54f99; color:#4a2f17; cursor:pointer; animation:levelup-pop .6s cubic-bezier(.3,1.6,.5,1) both; }
@@ -256,24 +256,24 @@ html:not(.at-title) #social-banner { display:none; }
 }
 .rank-emblem-painted img { width: 100%; height: 100%; object-fit: contain; }
 .rank-emblem-painted b {
-  position: absolute; bottom: -2%; left: 50%; transform: translateX(-50%); background: #17382f; color: #fff2cb;
+  position: absolute; bottom: -2%; left: 50%; transform: translateX(-50%); background: #1f1738; color: #fff2cb;
   border: 1px solid #bd9d62; border-radius: 5px; padding: 1px 3px; white-space: nowrap;
   font: 800 clamp(7px, calc(var(--rank-emblem-size) * .16), 12px)/1 sans-serif;
 }
 #ranked .ranked-box, #ranking .ranking-box {
   color: #34231b; background: #faf0da; border: 2px solid #ba9a63; border-radius: 18px;
-  box-shadow: 0 10px 30px #0c211bb3; max-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - env(safe-area-inset-bottom));
+  box-shadow: 0 10px 30px #110c21b3; max-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - env(safe-area-inset-bottom));
 }
-#ranked .ranked-box h2, #ranking .ranking-box h2 { color: #214638; margin: 0 0 14px; }
+#ranked .ranked-box h2, #ranking .ranking-box h2 { color: #2a2047; margin: 0 0 14px; }
 .ranked-box .ranked-hero {
-  background: radial-gradient(at 16% 50%, #547869, #17382f 78%); color: #fff8df;
-  border: 1px solid #b89a5f; box-shadow: inset 0 0 0 2px #244e41; padding: 12px; min-height: 124px;
+  background: radial-gradient(at 16% 50%, #533f8d, #1f1738 78%); color: #fff8df;
+  border: 1px solid #b89a5f; box-shadow: inset 0 0 0 2px #2e234f; padding: 12px; min-height: 124px;
 }
 .ranked-box .ranked-rank small { color: #f2deb4; }
 .ranked-box .ranked-action .small-btn, .ranked-box .ranked-close, .ranking-box .ranked-close { min-height: 44px; }
 .ranked-box .ranked-season, .ranking-box .ranking-season { padding: 7px 10px; border-radius: 7px; background: #e9dabc; font-weight: 750; margin: 8px 0; }
-.ranked-box .ranked-wait { width: 100%; padding: 10px 8px; background: #e5eddb; color: #254638; border-radius: 8px; font-variant-numeric: tabular-nums; }
-.ranked-matched { color: #1c4a39; font-size: 22px; font-weight: 900; margin: 4px 0; animation: rank-arrival .32s ease-out both; }
+.ranked-box .ranked-wait { width: 100%; padding: 10px 8px; background: #e5eddb; color: #2b214a; border-radius: 8px; font-variant-numeric: tabular-nums; }
+.ranked-matched { color: #281c4a; font-size: 22px; font-weight: 900; margin: 4px 0; animation: rank-arrival .32s ease-out both; }
 .ranking-box .ranking-list li { grid-template-columns: 24px 32px minmax(0, 1fr) auto; gap: 6px; min-height: 44px; }
 .ranking-box .ranking-list li:nth-child(-n+3) { background: #faeac2; border-color: #cda65a; }
 .ranked-history li { padding-block: 6px; border-bottom: 1px solid #d6c7a9; }
@@ -298,7 +298,7 @@ html:not(.at-title) #social-banner { display:none; }
 #app [data-painted-fx] .fx-fireball.sprite-fx .asset-image { content: var(--attack-art); }
 #app[data-painted-back] .card-back-icon .asset-image { content: var(--back-art); }
 #collection .collection-box { border: 2px solid #ba9a63; border-radius: 16px; max-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - env(safe-area-inset-bottom)); }
-#collection .collection-wallet { color: #224537; }
+#collection .collection-wallet { color: #2a2047; }
 #collection .collection-slot, #collection .item-act, #collection .collection-close { min-height: 44px; }
 #collection .item-card { background: #fff9e9; border-radius: 12px; }
 #collection .item-preview { background: radial-gradient(circle at 50% 45%, #fff6d8, #e9d8ad); border-radius: 9px; }
@@ -306,7 +306,7 @@ html:not(.at-title) #social-banner { display:none; }
 #collection .slot-title img { width: 48px; height: 48px; }
 #collection .gacha-card .slot-title img { width: 60px; height: 60px; }
 #collection .gacha-head {
-  display: grid; gap: 7px; background: radial-gradient(at 15% 40%, #46616b, #1c3939);
+  display: grid; gap: 7px; background: radial-gradient(at 15% 40%, #46616b, #221a3b);
   color: #fff5d5; padding: 12px; border: 1px solid #a88b50; border-radius: 10px;
 }
 #collection .gacha-head small { color: #fff1d2; }
@@ -314,7 +314,7 @@ html:not(.at-title) #social-banner { display:none; }
 #collection .collection-body:has(> .gacha-reveal) > :not(.gacha-reveal) { display: none; }
 #collection .gacha-reveal {
   position: static; min-height: 100%; width: 100%; overflow: visible; align-items: stretch;
-  justify-content: center; color: #fff7dc; background: #18352f;
+  justify-content: center; color: #fff7dc; background: #1f1835;
 }
 #collection .gacha-reveal-grid { width: auto; max-width: none; grid-template-columns: repeat(auto-fit, minmax(min(100%, 106px), 1fr)); }
 #collection .gacha-reveal :is(.gacha-capsule, .gacha-open, .gacha-hint) { align-self: center; }
@@ -346,15 +346,15 @@ html:not(.at-title) #social-banner { display:none; }
   max-height: calc(100dvh - max(24px, env(safe-area-inset-top)) - env(safe-area-inset-bottom));
   border: 2px solid #b99862; border-radius: 16px; color: #3c2b1f;
 }
-:is(#social, #profile, #missions) h2 { color: #214638; }
+:is(#social, #profile, #missions) h2 { color: #2a2047; }
 :is(#social, #profile, #missions) button { min-height: 44px; min-width: 44px; }
 #social .social-actions > button { white-space: normal; }
 #social .social-row { background: #fff9e9; border-color: #d7c298; }
 #social .social-row.open { border-color: #b29455; box-shadow: inset 0 0 0 1px #efddac; }
 #social .social-status { font-weight: 750; padding: 4px 7px; }
-#social .social-status.on { color: #194c34; background: #dcefd9; }
+#social .social-status.on { color: #26194c; background: #dcefd9; }
 #social .social-status.match { color: #254b65; background: #d6ebf4; }
-#social .social-party { background: #204639; border: 1px solid #b99d63; color: #fff4d9; }
+#social .social-party { background: #292046; border: 1px solid #b99d63; color: #fff4d9; }
 #social .social-party h3 { color: inherit; border-bottom-color: #beab75; }
 #social .social-party .social-note { color: #f9ebcb; }
 #social .social-party-members li { gap: 6px; padding: 4px; border-bottom: 1px solid #a8ad8e66; }
@@ -362,12 +362,12 @@ html:not(.at-title) #social-banner { display:none; }
 #social .party-leader { margin-left: auto; padding: 3px 6px; border-radius: 6px; background: #f4d699; color: #472d1f; }
 #social-banner .social-banner-row {
   display: grid; grid-template-columns: 30px minmax(0, 1fr) auto auto;
-  border: 1px solid #e5c482; background: #1e483b; color: #fff7dd; border-radius: 12px; font-size: 12px;
+  border: 1px solid #e5c482; background: #291e48; color: #fff7dd; border-radius: 12px; font-size: 12px;
 }
 #social-banner .social-banner-row > img { width: 30px; height: 30px; object-fit: contain; }
 #social-banner button { min-width: 44px; min-height: 44px; padding-inline: 6px; }
-#profile .profile-head { background: #21483b; color: #fff6dd; border: 1px solid #ba9a61; box-shadow: inset 0 0 0 2px #345b4a; }
-#profile .profile-avatar { background: #315b51; border: 1px solid #c6a86a; }
+#profile .profile-head { background: #2b2148; color: #fff6dd; border: 1px solid #ba9a61; box-shadow: inset 0 0 0 2px #3a2c63; }
+#profile .profile-avatar { background: #392b61; border: 1px solid #c6a86a; }
 #profile .profile-who small { color: #ffe2a5; }
 #profile .profile-icons { grid-template-columns: repeat(auto-fit, minmax(44px, 1fr)); gap: 4px; }
 #profile .profile-stats { gap: 4px; }
@@ -389,7 +389,7 @@ html:not(.at-title) #social-banner { display:none; }
 }
 .match-progress .match-earnings { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 2px 12px; }
 .match-progress .mp-coins { color: #78501b; }
-.match-progress .mp-level { color: #35594a; }
+.match-progress .mp-level { color: #3a2c62; }
 .match-progress .rank-change { border-top: 1px solid #d9c79b; padding-top: 6px; font-size: 13px; }
 .levelup { min-height: 44px; max-width: min(88vw, 370px); }
 .reduced-motion #missions .mission-received { animation: none; }

@@ -9,12 +9,12 @@
 #card-detail .detail-text {grid-column:1/-1;padding-right:30px;}
 #card-detail .detail-close {position:absolute;right:5px;top:5px;}
 #card-detail .detail-use {grid-column:1/-1;justify-self:end;position:sticky;bottom:0;}
-#card-detail .detail-desc {display:block!important;line-height:1.55;color:#29443c;}
+#card-detail .detail-desc {display:block!important;line-height:1.55;color:#2c224b;}
 #card-detail .detail-hint {display:block!important;line-height:1.5;color:#46513e;}
 #card-detail .detail-hint.warn {color:#922923;}
 .detail-meta {overflow-wrap:anywhere;}
 #target-bar,#discard-bar {max-height:45dvh;overflow:auto;flex-wrap:wrap;}
-#result.lost .result-title,#result.lost .result-sub {color:#294d43;}
+#result.lost .result-title,#result.lost .result-sub {color:#302551;}
 #result .result-title {animation-duration:.2s;}
 #message {max-width:100%;white-space:normal;line-height:1.4;overflow-wrap:anywhere;}
 html[data-text-size=large] .card.has-frame .card-name {font-size:12px;}
