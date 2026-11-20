@@ -15,6 +15,7 @@ const CARD_MODELS = {
     path: 'assets/models/card-uncommon.glb',
     frameFile: 'frame-uncommon.png',
     backBase: '#5f3d24',
+    rimLight: { color: '#ffe6b0', intensity: 0.75, position: [-2.2, -1.8, 2.0] },
     gem: {
       ior: 1.57,
       attenuationColor: '#2bc44b',
@@ -30,6 +31,7 @@ const CARD_MODELS = {
     path: 'assets/models/card-rare.glb',
     frameFile: 'frame-rare.png',
     backBase: '#273654',
+    rimLight: { color: '#8ac8ff', intensity: 0.85, position: [-2.2, -1.8, 2.0] },
     gem: {
       ior: 1.77,
       attenuationColor: '#227bff',
@@ -40,6 +42,24 @@ const CARD_MODELS = {
       lightEmissiveIntensity: 0.30,
     },
     foil: 'rare',
+  },
+  beast: {
+    path: 'assets/models/card-beast.glb',
+    frameFile: 'frame-beast.png',
+    backBase: '#3d1016',
+    rimLight: { color: '#ff4a38', intensity: 1.15, position: [-2.4, -1.6, 2.2] },
+    gem: {
+      ior: 1.77,
+      attenuationColor: '#e61635',
+      attenuationDistance: 0.055,
+      thickness: 0.05,
+      emissive: '#3a030b',
+      emissiveIntensity: 0.24,
+      lightColor: '#b80d28',
+      lightEmissive: '#4d0410',
+      lightEmissiveIntensity: 0.36,
+    },
+    foil: null,
   },
 };
 const BACK = 'assets/ui/card-back.png';
@@ -500,14 +520,17 @@ function foilTexture(THREE, rarity, aspect) {
   return { texture, opacity: spec.opacity };
 }
 
-/** レアリティ別の専用3Dモデルを使うカードならその定義を返す（スキン枠の場合は使わない） */
+/** レアリティ別・魔物用の専用3Dモデルを使うカードならその定義を返す（スキン枠の場合は使わない） */
 function cardModelSpec(card) {
   if (!card || card.dataset.skin) return null;
+  const frameSrc = (card.querySelector('.mini-card-frame')?.getAttribute('src') ?? '').split('?')[0];
+  if (card.dataset.beast && frameSrc.endsWith(CARD_MODELS.beast.frameFile)) {
+    return { key: 'beast', ...CARD_MODELS.beast };
+  }
   const key = card.dataset.rarity;
   const spec = CARD_MODELS[key];
   if (!spec) return null;
-  const frameSrc = card.querySelector('.mini-card-frame')?.getAttribute('src') ?? '';
-  return frameSrc.split('?')[0].endsWith(spec.frameFile) ? { key, ...spec } : null;
+  return frameSrc.endsWith(spec.frameFile) ? { key, ...spec } : null;
 }
 
 /**
@@ -543,21 +566,20 @@ function shareGeometry(THREE, source) {
  *   back＝裏の絵／wood＝木の側面／metal_blue＝青い金属側面／gold＝金／silver＝銀／foil＝反射箔／gem＝宝石。
  * 材質とテクスチャは開くたびに作って own に渡す（閉じるときに捨てる）
  */
-function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap, own }) {
+function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap, maxAniso = 8, highGfx = true, own }) {
   // 表の絵：モデルの UV は「枠の絵の 0〜1（上が 0）」。canvas の中の枠の絵の範囲だけを、repeat と offset で切り出して貼る
   const { x, y, w, h } = rects.frame;
   const faceTexture = own(new THREE.CanvasTexture(face));
   faceTexture.flipY = false;                       // glTF の UV は上が 0
   faceTexture.colorSpace = THREE.SRGBColorSpace;
-  faceTexture.anisotropy = 8;
+  faceTexture.anisotropy = highGfx ? Math.min(16, maxAniso) : Math.min(4, maxAniso);
   faceTexture.repeat.set(w / FACE_W, h / FACE_H);
   faceTexture.offset.set((M + x) / FACE_W, (M + y) / FACE_H);
 
   // 宝石：カットの面ごとに向きが違うので、傾けると面ごとに映り込みと奥の透け方が変わる。
   // スマホ等の軽量モードでは透過（追加の場面描画）を切り、高コントラストな不透明ファセット表現にする
   const gemCfg = spec.gem;
-  const lightGem = prefersLightGem();
-  const gemLook = lightGem
+  const gemLook = !highGfx
     ? {
         color: new THREE.Color(gemCfg.lightColor),
         emissive: gemCfg.lightEmissive,
@@ -572,10 +594,11 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
         thickness: gemCfg.thickness,
         attenuationColor: gemCfg.attenuationColor,
         attenuationDistance: gemCfg.attenuationDistance,
+        ...(gemCfg.emissive ? { emissive: gemCfg.emissive, emissiveIntensity: gemCfg.emissiveIntensity ?? 0.2 } : {}),
         roughness: 0.02,
         metalness: 0,
         ior: gemCfg.ior,
-        envMapIntensity: 2.2,
+        envMapIntensity: 2.3,
       };
   // 裏の絵：絵の外の透けている所（角のまわり）が黒く出ないように、レアリティ別の側面ベース色の上に描いてから貼る
   const backImage = backTexture.image;
@@ -587,18 +610,21 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
   const backOnBase = own(new THREE.CanvasTexture(backCanvas));
   backOnBase.flipY = false;
   backOnBase.colorSpace = THREE.SRGBColorSpace;
-  backOnBase.anisotropy = 4;
+  backOnBase.anisotropy = highGfx ? Math.min(8, maxAniso) : 4;
   const makers = {
     face: (source) => new THREE.MeshStandardMaterial({ map: faceTexture, roughness: 0.72, metalness: 0, alphaTest: 0.4, side: source.side }),
     leaf: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.38, metalness: 0, clearcoat: 0.25, clearcoatRoughness: 0.35, alphaTest: 0.4, side: source.side }),
-    silver_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.24, metalness: 0.32, clearcoat: 0.65, clearcoatRoughness: 0.16, envMap: jewelMap, envMapIntensity: 1.2, alphaTest: 0.4, side: source.side }),
+    silver_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.24, metalness: 0.32, clearcoat: 0.65, clearcoatRoughness: 0.16, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.15, alphaTest: 0.4, side: source.side }),
+    crystal_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.14, metalness: 0.14, clearcoat: 1.0, clearcoatRoughness: 0.05, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.35, alphaTest: 0.4, side: source.side }),
+    gold_face: (source) => new THREE.MeshPhysicalMaterial({ map: faceTexture, roughness: 0.20, metalness: 0.48, clearcoat: 0.55, clearcoatRoughness: 0.16, envMap: jewelMap, envMapIntensity: highGfx ? 1.55 : 1.20, alphaTest: 0.4, side: source.side }),
     back: (source) => new THREE.MeshStandardMaterial({ map: backOnBase, roughness: 0.5, side: source.side }),
     wood: (source) => new THREE.MeshStandardMaterial({ color: source.color, roughness: 0.78, metalness: 0, side: source.side }),
-    metal_blue: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.72, roughness: 0.28, envMap: jewelMap, envMapIntensity: 1.15, side: source.side }),
+    metal_blue: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.72, roughness: 0.28, envMap: jewelMap, envMapIntensity: highGfx ? 1.25 : 1.05, side: source.side }),
+    obsidian_red: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.65, roughness: 0.30, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.05, side: source.side }),
     // 金具・箔・宝石だけが、明暗差の大きい映り込み（jewelMap）を使う
-    gold: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.18, envMap: jewelMap, envMapIntensity: 1.25, side: source.side }),
-    silver: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.15, envMap: jewelMap, envMapIntensity: 1.3, side: source.side }),
-    foil: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.10, envMap: jewelMap, envMapIntensity: 1.6, side: source.side }),
+    gold: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.18, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.15, side: source.side }),
+    silver: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.15, envMap: jewelMap, envMapIntensity: highGfx ? 1.40 : 1.20, side: source.side }),
+    foil: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.45, side: source.side }),
     gem: (source) => new THREE.MeshPhysicalMaterial({
       color: source.color, specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0.02, envMap: jewelMap,
       side: THREE.FrontSide, ...gemLook,           // 宝石は閉じた形なので片面（両面だと透過の描き直しが毎回2回になる）
@@ -662,20 +688,27 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     const group = new THREE.Group();
     scene.add(group);
 
-    // 光（CSS の 3D と同じ向き。y と z は three.js の向きに直す）
+    // 光（CSS の 3D と同じ向き。y と z は three.js の向きに直す）。PC では高精細シャドウ＋立体エッジを際立たせるリムライトを追加
+    const highGfx = !prefersLightGem();
     const light = new THREE.DirectionalLight('#ffffff', 1.3);
     light.position.set(CARD_LIGHT[0] * 3, -CARD_LIGHT[1] * 3, CARD_LIGHT[2] * 3);
-    light.castShadow = true;                       // 王冠や縁の影が、枠の上に落ちる
-    light.shadow.mapSize.set(1024, 1024);          // カード専用の狭い範囲（±1.3）なので 1024 で十分鮮明かつ省メモリ
+    light.castShadow = true;                       // 王冠や縁・爪の影が、枠の上に落ちる
+    const shadowRes = highGfx ? 2048 : 1024;       // PC は 2048 で細部の影まで鮮明に、スマホは 1024 で省メモリ
+    light.shadow.mapSize.set(shadowRes, shadowRes);
     Object.assign(light.shadow.camera, { left: -1.3, right: 1.3, top: 1.3, bottom: -1.3, near: 0.5, far: 8 });
-    light.shadow.bias = -0.0004; light.shadow.normalBias = 0.003; light.shadow.radius = 2.5;
+    light.shadow.bias = -0.0004; light.shadow.normalBias = 0.003; light.shadow.radius = highGfx ? 3 : 2.5;
     light.shadow.autoUpdate = false;               // 影はカードが動いたときだけ描き直す（キラキラだけのコマでは描かない）
     scene.add(light, new THREE.AmbientLight('#ffffff', 1.7));
+    if (highGfx && dedicatedGltf && modelSpec.rimLight) {
+      const rim = new THREE.DirectionalLight(modelSpec.rimLight.color, modelSpec.rimLight.intensity);
+      rim.position.set(...modelSpec.rimLight.position);
+      scene.add(rim);
+    }
     environment = roomEnvironment(THREE, renderer);
     scene.environment = environment.texture;
     if (dedicatedGltf) jewelEnvironmentMap = jewelEnvironment(THREE, renderer);   // 立体の金具・宝石だけに使う、明暗のある映り込み
 
-    // 板（Blender 製）。対応レアリティは専用の立体モデル、ほかは板。マテリアルは名前で見つけて、色と絵を付ける
+    // 板（Blender 製）。対応レアリティ・魔物は専用の立体モデル、ほかは板。マテリアルは名前で見つけて、色と絵を付ける
     const model = (dedicatedGltf ?? gltf).scene.clone(true);
     const backSource = card.dataset.skin ? rankSkinBack(card.dataset.skin)?.art : null;
     const backTexture = own(await new THREE.TextureLoader().loadAsync(new URL(backSource || BACK, document.baseURI).href));
@@ -683,7 +716,8 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     backTexture.colorSpace = THREE.SRGBColorSpace;
     backTexture.anisotropy = 4;
     let slabBack = null;
-    if (dedicatedGltf) dressCardModel(THREE, model, modelSpec, { face, rects, backTexture, jewelMap: jewelEnvironmentMap.texture, own });   // 材質と置き方（頂点のデータはキャッシュのものを使う）
+    const maxAniso = renderer.capabilities.getMaxAnisotropy?.() || 8;
+    if (dedicatedGltf) dressCardModel(THREE, model, modelSpec, { face, rects, backTexture, jewelMap: jewelEnvironmentMap.texture, maxAniso, highGfx, own });   // 材質と置き方（頂点のデータはキャッシュのものを使う）
     else model.traverse((node) => {
       if (!node.isMesh) return;
       node.geometry = own(node.geometry.clone());
