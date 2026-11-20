@@ -398,6 +398,13 @@
 .profile-lv { display:flex; align-items:center; gap:6px; } .profile-lv b { background:#3f2511; color:var(--gold); border-radius:999px; padding:1px 9px; font-size:13px; }
 .profile-lv .home-xp { flex:1; }
 .profile-reward { width:100%; min-height:48px; margin:4px 0; font-size:15px; }
+.profile-reward-all { width:100%; min-height:52px; margin:4px 0 8px; font-size:16px; font-weight:800; }
+.profile-name-row { display:flex; align-items:center; gap:8px; min-width:0; }
+.profile-name-row strong { min-width:0; }
+.profile-rename-btn { flex:none; min-height:32px; padding:2px 10px; font-size:13px; }
+.profile-rename { display:flex; gap:6px; align-items:center; min-width:0; }
+.profile-rename input { flex:1; min-width:0; min-height:36px; font-size:16px; padding:4px 8px; }
+.profile-rename .small-btn { flex:none; min-height:36px; }
 .profile-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:4px; margin:0; text-align:center; }
 .profile-stats dt { font-size:11px; color:#7a6a48; } .profile-stats dd { margin:0; font-size:20px; font-weight:bold; font-variant-numeric:tabular-nums; }
 .profile-note { margin:6px 0 0; font-size:12px; color:#6b5a3a; }
