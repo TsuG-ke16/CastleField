@@ -79,7 +79,7 @@ try {
   await page.keyboard.press('Escape');
   assert.ok(!await page.locator('#weather-detail').isVisible());
   // Many cards use the same public debug interface as the built-in debug panel.
-  await page.evaluate(async()=>{const id=document.querySelector('#app').dataset.viewer;castlefield.game().debugSetHand(id,['infantry','infantry','fireball','manaShard','manaDrop','adapt','cavalry','thunder','shield','heal','earthHammer','prayer']);await castlefield.refresh()});
+  await page.evaluate(async()=>{const id=document.querySelector('#app').dataset.viewer;castlefield.game().debugSetHand(id,['infantry','infantry','fireball','manaShard','manaDrop','adapt','cavalry','thunder','shield','heal','earthHammer','blessing']);await castlefield.refresh()});
   assert.match(await page.locator('#hand-count').textContent(),/12枚/);
   await page.locator('#hand .card.can-fuse').first().waitFor();
   assert.match(await page.locator('#hand .card.can-fuse').first().getAttribute('aria-description'),/合成/);

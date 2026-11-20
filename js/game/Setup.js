@@ -162,7 +162,7 @@ export const DECK_COST_DEFAULTS = { deckCostMin: 90, deckCostMax: 100 };
 /** デッキ編成で、そのカードが数えられるレアリティ（スペシャルは deckAs のレアリティと同じ扱い） */
 export function deckRarityOf(def, rarities) {
   const r = rarities[def.rarity];
-  return r?.deckAs ?? def.rarity;
+  return def.deckAs ?? r?.deckAs ?? def.rarity; // カードの deckAs（ゴッドサイコロ：スペシャルだがレジェンド枠）が先
 }
 
 /** そのカード1枚のコスト（デッキ編成） */
