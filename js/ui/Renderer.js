@@ -10,7 +10,7 @@ import { UI_CONFIG } from './config.js';
 import { RARITY_NAMES } from './rarity.js';
 import { playerName } from './text.js';
 import { ELEMENT_LOOK } from './look.js';
-import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt } from './art.js';
+import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt, isAssetReady } from './art.js';
 import { soldierMotion, monsterMotion } from './motion.js';
 import { WeatherView } from './WeatherView.js';
 
@@ -158,6 +158,28 @@ export class Renderer {
     return this.el.road.querySelectorAll('.lane')[this.laneOf(roadId)] ?? this.el.road;
   }
 
+  /** 真ん中のマスの高さ（ほかのマスの何倍か）。道のマスの数が偶数なら 1 */
+  get midScale() {
+    return this.laneLength % 2 === 1 ? (UI_CONFIG.midCellScale ?? 1) : 1;
+  }
+
+  /**
+   * 上から row 行目（0から）のマスの中心の高さ（道の上からの%）。真ん中のマスは midScale 倍の高さ。
+   * row が -1 や laneLength（城に着いた兵士）でも、ふつうのマス1つぶん外を返す
+   */
+  rowCenter(row) {
+    const L = this.laneLength;
+    const M = this.midScale;
+    const mid = (L - 1) / 2;
+    const w = (i) => (i === mid ? M : 1);
+    let before = 0;
+    if (row < 0) before = row;
+    else for (let i = 0; i < Math.min(row, L); i++) before += w(i);
+    if (row >= L) before += row - L;
+    const own = row >= 0 && row < L ? w(row) : 1;
+    return ((before + own / 2) / (L - 1 + M)) * 100;
+  }
+
   /** 道の真ん中のマス番号（魔物の居場所） */
   get middleSquare() {
     return Math.floor(this.laneLength / 2);
@@ -174,6 +196,9 @@ export class Renderer {
   buildRoad() {
     const L = this.laneLength;
     document.documentElement.style.setProperty('--cells', String(L));
+    // 真ん中のマスだけ大きくする（css/stage.css が --cell-rows を使う。兵士・魔物の位置は rowCenter で同じ比率）
+    const mid = L % 2 === 1 ? (L - 1) / 2 : -1;
+    document.documentElement.style.setProperty('--cell-rows', Array.from({ length: L }, (_, i) => `${i === mid ? this.midScale : 1}fr`).join(' '));
     document.documentElement.style.setProperty('--lanes', String(this.laneCount));
     this.el.road.innerHTML = '';
     this.el.road.classList.toggle('multi', this.laneCount > 1);
@@ -185,7 +210,8 @@ export class Renderer {
       cells.className = 'cells';
       for (let i = 0; i < L; i++) {
         const cell = cells.appendChild(document.createElement('div'));
-        cell.className = 'cell';
+        // 真ん中のマス（魔物・ワールドボスの居場所）は、作るときから印を付ける（道のマスの数が奇数なら上下どちらから見ても同じ行）
+        cell.className = L % 2 === 1 && i === (L - 1) / 2 ? 'cell mid' : 'cell';
         cell.innerHTML = '<span class="stone"></span>';
       }
     }
@@ -450,6 +476,14 @@ export class Renderer {
     this.stage = stage;
     if (stage) this.el.app.dataset.stage = stage.id;
     else delete this.el.app.dataset.stage;
+    // 背景の絵（assets/bg/stage-<ステージ>.png）が読み込めていれば、それを使う。なければ css/stage.css の描き方のまま
+    const scenery = document.getElementById('scenery');
+    const art = stage ? `bg/stage-${stage.id.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}.png` : null;
+    const ready = Boolean(art && isAssetReady(art));
+    if (scenery) scenery.style.backgroundImage = ready ? `url("assets/${art}")` : '';
+    // 絵があるときは、絵の飛び石を使う（画面側の飛び石を消す。css/stage.css の [data-stage-art]）
+    if (ready) this.el.app.dataset.stageArt = '1';
+    else delete this.el.app.dataset.stageArt;
     if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
   }
 
@@ -661,7 +695,7 @@ export class Renderer {
     const L = this.laneLength;
     const pos = Math.max(0, Math.min(position, L));
     const fromTop = this.sideOf(playerId) === 'me' ? L - 1 - pos : pos;
-    return ((fromTop + 0.5) / L) * 100;
+    return this.rowCenter(fromTop);
   }
 
   place(s) {
@@ -898,7 +932,7 @@ export class Renderer {
       `<div class="monster-stats"><span class="st atk">${icon('sword')}<b></b></span></div>`;
     el.querySelector('.monster-pic').innerHTML = monsterArt(st.type, def.name ?? st.type);
     this.cosmetics?.styleMonster(el, st.type);
-    el.style.top = `${((this.rowOfSquare(st.square) + 0.5) / this.laneLength) * 100}%`;
+    el.style.top = `${this.rowCenter(this.rowOfSquare(st.square))}%`;
     el.style.left = `${this.laneCenter(this.laneOf(st.roadId))}%`;
     if (st.roadId === 'plaza') { el.style.top = '50%'; el.style.left = '50%'; }
     this.el.units.appendChild(el);
