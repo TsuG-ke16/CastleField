@@ -16,9 +16,11 @@ const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
  */
 
 /** 1人ぶんの札 */
-function plate(p, ranked) {
+function plate(p, ranked, duel) {
   const card = el('article', `vs-plate${p.you ? ' you' : ''}`);
-  card.style.setProperty('--seat', UI_CONFIG.teamColors[(Number(String(p.playerId).slice(1)) || 1) - 1] ?? '#4da3e8');
+  // 2人のときは、格闘ゲームのように 自分＝青・相手＝赤。3人以上は席の色
+  const color = duel ? (p.you ? '#2f7de1' : '#e03b3b') : UI_CONFIG.teamColors[(Number(String(p.playerId).slice(1)) || 1) - 1];
+  card.style.setProperty('--seat', color ?? '#4da3e8');
   const avatar = el('div', 'vs-avatar');
   const src = p.profile ? profileArt(p.profile.icon, p.profile.iconImage) : null;
   if (src) { const img = new Image(); img.src = src; img.alt = ''; avatar.append(img); }
@@ -58,7 +60,7 @@ function plate(p, ranked) {
 export function showVersus(players, { ranked = false, heading = '' } = {}) {
   if (!players?.length) return Promise.resolve();
   document.querySelector('.vs-intro')?.remove();
-  const root = el('div', `vs-intro${players.length > 2 ? ' many' : ''}${ranked ? ' ranked' : ''}`);
+  const root = el('div', `vs-intro${players.length > 2 ? ' many' : ' duel'}${ranked ? ' ranked' : ''}`);
   root.setAttribute('role', 'dialog');
   root.setAttribute('aria-label', '対戦相手');
   root.append(el('div', 'vs-heading', heading || (ranked ? 'ランクマッチ' : '対戦開始')));
@@ -67,7 +69,7 @@ export function showVersus(players, { ranked = false, heading = '' } = {}) {
   const order = players.length === 2 ? [...players].sort((a, b) => Number(Boolean(a.you)) - Number(Boolean(b.you))) : players;
   order.forEach((p, i) => {
     if (i > 0 && order.length === 2) list.append(el('div', 'vs-mark', 'VS'));
-    list.append(plate(p, ranked));
+    list.append(plate(p, ranked, order.length === 2));
   });
   root.append(list, el('div', 'vs-skip', 'タップで始める'));
   (document.getElementById('app') ?? document.body).append(root);

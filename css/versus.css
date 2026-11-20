@@ -59,3 +59,10 @@
 @media (prefers-reduced-motion: reduce) {
   .vs-intro, .vs-intro.leaving, .vs-plate, .vs-mark { animation: none; }
 }
+/* 2人：上（相手）は赤、下（自分）は青。背景も上下で赤と青に分ける */
+.vs-intro.duel {
+  background:
+    linear-gradient(180deg, #6e1414cc 0%, #2a0a0ae6 42%, #0a0a12f0 50%, #0a1a3ae6 58%, #123a7acc 100%);
+}
+.vs-intro.duel .vs-plate { background: linear-gradient(100deg, color-mix(in srgb, var(--seat) 70%, #120a0a), color-mix(in srgb, var(--seat) 25%, #0a0a12) 85%); }
+.vs-intro.duel .vs-mark { color: #fff; text-shadow: -3px 0 0 #e03b3b, 3px 0 0 #2f7de1, 0 0 18px #ffffffaa; }
