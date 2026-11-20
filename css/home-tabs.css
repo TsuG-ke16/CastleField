@@ -10,33 +10,33 @@
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end; gap: 2px;
   width: min(100%, 520px); margin: 0 auto;
   padding: 6px max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
-  background: linear-gradient(#271f19c0, #1a140fe6), url('../assets/ui/natural/oak-tile.png') 0 0 / 128px 128px repeat;
-  border-top: var(--outline-w) solid #3f2511; border-radius: 18px 18px 0 0;
-  box-shadow: inset 0 2px 0 #c49a5a66, 0 -6px 18px #0a1c1799;
+  background: linear-gradient(180deg, #ffffff26 0%, #ffffff00 40%), linear-gradient(180deg, var(--royal), var(--royal-lo) 55%, #22449a);
+  border-top: var(--outline-w) solid var(--ink-royal); border-radius: 18px 18px 0 0;
+  box-shadow: inset 0 2px 0 var(--gold-main), inset 0 4px 0 #ffffff33, 0 -6px 18px #1f3f8f80;
 }
 .home-tab {
   position: relative; display: grid; justify-items: center; align-content: end; gap: 3px; min-width: 0; min-height: 58px; padding: 6px 2px 5px;
-  border: 0; border-radius: 14px; background: transparent; color: #cfc3a3; font: 800 var(--text-xs)/1.2 var(--font, sans-serif); cursor: pointer;
+  border: 0; border-radius: 14px; background: transparent; color: #e3efff; font: 800 var(--text-xs)/1.2 var(--font, sans-serif); cursor: pointer;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   transition: color var(--motion-feedback), background-color var(--motion-feedback);
 }
 .home-tab-icon { display: grid; place-items: center; width: 34px; height: 30px; line-height: 0; transition: transform var(--motion-panel) var(--ease-badge); }
-.home-tab-icon img { width: 30px; height: 30px; object-fit: contain; opacity: .72; filter: saturate(.7); transition: opacity var(--motion-feedback), filter var(--motion-feedback); }
+.home-tab-icon img { width: 30px; height: 30px; object-fit: contain; opacity: .9; filter: drop-shadow(0 1px 0 #1f3f8f); transition: opacity var(--motion-feedback), filter var(--motion-feedback); }
 .home-tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 選択中 */
-.home-tab[aria-selected=true] { color: #fff3cf; background: linear-gradient(#ffffff1f, #ffffff08); box-shadow: inset 0 0 0 1px #ffffff1a; }
+.home-tab[aria-selected=true] { color: var(--ink-royal); background: linear-gradient(#ffffff, #dff1ff); box-shadow: inset 0 0 0 1.5px #ffffff, 0 2px 0 #1f3f8f99, 0 0 12px #ffffff80; }
 .home-tab[aria-selected=true] .home-tab-icon { transform: translateY(-3px) scale(1.12); }
-.home-tab[aria-selected=true] .home-tab-icon img { opacity: 1; filter: drop-shadow(0 2px 0 #0008); }
-.home-tab::before { content: ''; position: absolute; top: -6px; left: 50%; width: 0; height: 4px; translate: -50% 0; border-radius: 0 0 4px 4px; background: var(--selected-hi); box-shadow: 0 0 8px #8fe0b5aa; transition: width var(--motion-panel) var(--ease-panel); }
+.home-tab[aria-selected=true] .home-tab-icon img { opacity: 1; filter: drop-shadow(0 2px 0 #1f3f8f66); }
+.home-tab::before { content: ''; position: absolute; top: -6px; left: 50%; width: 0; height: 4px; translate: -50% 0; border-radius: 0 0 4px 4px; background: var(--selected); box-shadow: 0 0 8px #9be8adcc; transition: width var(--motion-panel) var(--ease-panel); }
 .home-tab[aria-selected=true]::before { width: 28px; }
 .home-tab:not([aria-selected=true]):active .home-tab-icon { transform: scale(.88); transition-duration: var(--motion-press); }
-@media (hover: hover) { .home-tab:not([aria-selected=true]):hover { color: #f0e3c0; } .home-tab:not([aria-selected=true]):hover img { opacity: .9; } }
+@media (hover: hover) { .home-tab:not([aria-selected=true]):hover { color: #fff; background: #ffffff1f; } .home-tab:not([aria-selected=true]):hover img { opacity: 1; } }
 /* 真ん中のバトル：いつも丸い金の台に乗って少し飛び出す（特別感）。選択中かどうかは、ほかのタブと同じ印で示す */
 .home-tab-main .home-tab-icon { width: 54px; height: 54px; margin-top: -26px; border-radius: 50%;
-  background: radial-gradient(circle at 50% 30%, #ffe08a, #e2a128 70%, #b97614); border: 3px solid #3f2511; box-shadow: inset 0 2px 0 #fff3c0, inset 0 -3px 0 #a86a12, 0 4px 0 #0007; }
+  background: radial-gradient(circle at 50% 30%, #ffe08a, #e2a128 70%, #b97614); border: 3px solid var(--ink-royal); box-shadow: inset 0 2px 0 #fff3c0, inset 0 -3px 0 #a86a12, 0 4px 0 #0007; }
 .home-tab-main .home-tab-icon img { width: 36px; height: 36px; opacity: 1; filter: drop-shadow(0 1px 0 #0006); }
-.home-tab-main[aria-selected=true] { background: transparent; box-shadow: none; }
-.home-tab-main[aria-selected=true] .home-tab-icon { transform: translateY(-3px) scale(1.06); box-shadow: inset 0 2px 0 #fff3c0, inset 0 -3px 0 #a86a12, 0 4px 0 #0007, 0 0 0 3px var(--selected-hi); }
+.home-tab-main[aria-selected=true] { background: transparent; box-shadow: none; color: #fff; }
+.home-tab-main[aria-selected=true] .home-tab-icon { transform: translateY(-3px) scale(1.06); box-shadow: inset 0 2px 0 #fff3c0, inset 0 -3px 0 #a86a12, 0 4px 0 #0007, 0 0 0 3px #fff, 0 0 0 6px var(--selected); }
 .home-tab-main::before { top: auto; bottom: -1px; }
 .home-tab-main[aria-selected=true]::before { width: 0; }
 .home-tab-dot { position: absolute; top: 4px; right: calc(50% - 22px); width: 12px; height: 12px; border-radius: 50%; background: #e45b43; border: 2px solid #fff6d5; }

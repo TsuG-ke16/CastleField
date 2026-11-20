@@ -109,7 +109,7 @@ body { background:radial-gradient(ellipse at top,#565348,#272822); }
 #app .upgrade-item .upgrade-name { color:#4c402e; }
 #app .upgrade-desc, #app .upgrade-note, #app .progress-note, #app .settings-box label { color:#584d39; }
 #app .room-settings,#app .local-options { background-color:var(--mat-paper); }
-#app .screen.dim { background:#20231bc4; }
+#app .screen.dim { background:#1a2e66bf; }
 #app #result .result-title { color:#6e512d; text-shadow:none; -webkit-text-stroke:0; }
 #app #result #result-stats { background:#f7f0de; color:#433a2a; }
 /* Existing illustration files keep their original 2:3 card ratio. */

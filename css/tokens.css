@@ -44,22 +44,31 @@
   --space-5: 24px;
   --radius-card: 16px;
   --radius-hero: 20px;
-  --line-outline: #3f2511;          /* 絵と同じ、こげ茶の太い輪郭 */
+  --line-outline: #4d3426;          /* 絵と同じ、こげ茶の太い輪郭 */
   --outline-w: 2px;
-  --shadow-raised: 0 3px 0 rgb(63 37 17 / 55%), 0 8px 18px rgb(10 24 20 / 35%);
-  --shadow-soft: 0 6px 16px rgb(10 24 20 / 30%);
+  --shadow-raised: 0 3px 0 rgb(77 52 38 / 45%), 0 8px 18px rgb(24 52 120 / 28%);
+  --shadow-soft: 0 6px 16px rgb(24 52 120 / 24%);
   --text-xs: 11px;
   --text-sm: 12px;
   --text-md: 14px;
   --text-lg: 17px;
   --text-xl: 22px;
+  /* 王国の配色（明るい青空 × ロイヤルブルー × クリーム × ゴールド）。ホームから使い、ほかの画面も順に寄せる */
+  --royal: #386cd8;                 /* メイン：ヘッダー・タブ・強調の面 */
+  --royal-hi: #5b8df0;
+  --royal-lo: #2a52b0;
+  --royal-deep: #1f3f8f;            /* 青の面の奥・数字の入れ物 */
+  --sky: #83c9ff;                   /* 明るい青空 */
+  --sky-light: #edf7ff;             /* 明るい背景・補助の面 */
+  --cream: #fff2d2;                 /* パネル */
+  --cream-hi: #fffaf0;
+  --gold-main: #ffbf52;             /* いちばん大事な操作と、金の縁だけに使う */
   --gold-hi: #ffe38e;
   --gold-lo: #e98a20;
-  --forest-1: #224b40;
-  --forest-2: #12302a;
-  --forest-3: #0b211c;
-  --selected: #506d61;              /* 選択中（金色とは別の色にする） */
-  --selected-hi: #8fe0b5;
+  --gold-line: #ffd98a;             /* 青の面にひく細い金の縁 */
+  --ink-royal: #4d3426;             /* 文字・輪郭線 */
+  --selected: #5ebb73;              /* 選択中（金色とは別の色にする） */
+  --selected-hi: #9be8ad;
 
   --motion-tap: 120ms;              /* タップの反応 */
   --motion-page: 260ms;             /* タブの切りかえ */
