@@ -34,6 +34,7 @@ export const PLAYER_IDS = ['p1', 'p2'];
 /** Game が出すイベントの名前（CLAUDE.md「Gameが出すイベント」の表と同じ） */
 export const EVENT_TYPES = [
   'turnStarted',
+  'overdriveChanged',
   'mulliganStarted',
   'mulliganDone',
   'timeChanged',
@@ -162,6 +163,8 @@ const OPTIONAL_RULES = {
   secondPlayerArmor: 0,
   // マリガン：true なら、start() のあと全員が1回だけ手札を引き直せる（phase "mulligan"）
   mulligan: false,
+  // 背水の陣：城HPが上限 × overdriveHpRatio（四捨五入）以下になると、その城の兵士全員の攻撃 +overdriveAttack（0 なら使わない）
+  overdriveAttack: 0,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -178,6 +181,7 @@ const CHOICE_RULES = {
 /** 0以上1以下の数（整数でなくてよい）の省略できる項目 */
 const OPTIONAL_RATE_RULES = {
   monsterSpawnChance: 0, // 周回の始めに、魔物がいない道ごとに魔物が出る確率
+  overdriveHpRatio: 0, // 背水の陣になる城HPの割合（上限に対して。0 なら使わない）
   nightChance: 0, // 昼のとき、周回の始めに夜になる確率（0 なら夜にならない。ステージの nightChance が優先）
   rewardLuckyChance: 0, // 魔物のごほうびが、1つ上のレアリティになる確率（ラッキー）
   // チーム戦の城HP ＝ 代表の城HP ＋ この割合 × ほかのメンバーの城HPの合計（1 なら人数ぶん、0 なら1人ぶん）
@@ -198,6 +202,8 @@ const ok = () => ({ ok: true });
 const fail = (reason) => ({ ok: false, reason });
 
 /** 忍者（見えない兵士）について、相手に隠すイベント。城・魔物へのダメージ（castleDamaged・monsterDamaged）は見せる */
+/** 城HPが変わるイベント（このあと背水の陣を確かめる） */
+const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttackedCastle']);
 const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
   'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
@@ -383,6 +389,8 @@ export class Game {
         }
       }
     }
+    /** 背水の陣になっている城（城の持ち主のID） */
+    this.overdrive = new Set();
     /** マリガン（phase "mulligan"）で、まだ選んでいない人 */
     this.mulliganPending = new Set();
 
@@ -472,7 +480,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor', 'overdriveAttack']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -563,6 +571,27 @@ export class Game {
         // 画面側のエラーでゲームの状態が途中で止まらないようにする
         console.error(`イベント "${type}" の処理中にエラー:`, err);
       }
+    }
+    // 城HPが変わったら、背水の陣になったか（終わったか）を確かめる
+    if (CASTLE_HP_EVENTS.has(type)) this.updateOverdrive();
+  }
+
+  /** 背水の陣になる城HP（上限 × overdriveHpRatio を四捨五入）。使わないなら -1 */
+  overdriveLine(owner) {
+    if (!this.rules.overdriveAttack || !this.rules.overdriveHpRatio) return -1;
+    return Math.round(owner.castle.maxHp * this.rules.overdriveHpRatio);
+  }
+
+  /** 城ごとに背水の陣かを確かめ、変わったら overdriveChanged を出す */
+  updateOverdrive() {
+    if (!this.rules.overdriveAttack || !this.rules.overdriveHpRatio) return;
+    for (const id of this.aliveSides()) {
+      const owner = this.players[id];
+      const on = owner.castle.hp > 0 && owner.castle.hp <= this.overdriveLine(owner);
+      if (on === this.overdrive.has(id)) continue;
+      if (on) this.overdrive.add(id);
+      else this.overdrive.delete(id);
+      this.emit('overdriveChanged', { playerId: id, active: on, hp: owner.castle.hp, attack: this.rules.overdriveAttack });
     }
   }
 
@@ -1588,11 +1617,17 @@ export class Game {
 
   /** 兵士の今の攻撃力（夜は、獣＝魔物の駒と、暗殺者・忍者が強くなる） */
   attackOf(soldier) {
-    if (!this.night) return soldier.attack;
-    const def = this.cardDefs[soldier.type] ?? {};
     let bonus = 0;
-    if (def.monster !== undefined || def.beast) bonus += this.rules.nightBeastAttack;
-    if (soldier.stealth) bonus += this.rules.nightStealthAttack;
+    // 背水の陣：自分の城が背水の陣なら、兵士全員の攻撃が上がる
+    if (this.overdrive.size > 0) {
+      const ownerId = this.playerOrder.find((id) => this.players[id].soldiers.includes(soldier));
+      if (ownerId && this.overdrive.has(this.side(ownerId))) bonus += this.rules.overdriveAttack;
+    }
+    if (this.night) {
+      const def = this.cardDefs[soldier.type] ?? {};
+      if (def.monster !== undefined || def.beast) bonus += this.rules.nightBeastAttack;
+      if (soldier.stealth) bonus += this.rules.nightStealthAttack;
+    }
     return soldier.attack + bonus;
   }
 
@@ -2877,6 +2912,8 @@ export class Game {
         ...base,
         team: this.teamOf?.get(id) ?? null,
         castleOwner: this.side(id),
+        // 背水の陣（城を共有するチームは同じ値）
+        overdrive: this.overdrive.has(this.side(id)),
         castleType: p.castleType,
         maxHand: p.maxHand,
         deckId: p.deckId ?? null,
@@ -2943,6 +2980,11 @@ export class Game {
     const max = this.players[playerId].castle.maxHp;
     if (!Number.isInteger(hp) || hp < 1 || hp > max) return fail(`HPは1〜${max}の整数にしてください`);
     this.players[playerId].castle.hp = hp;
+    // 背水の陣も合わせる（デバッグなのでイベントは出さない）
+    const side = this.side(playerId);
+    const line = this.overdriveLine(this.players[side]);
+    if (line >= 0 && this.players[side].castle.hp <= line) this.overdrive.add(side);
+    else this.overdrive.delete(side);
     return ok();
   }
 
