@@ -1,5 +1,6 @@
 // 拡大表示のカードを、Blender で作った板（assets/models/card-slab.glb）と three.js で描く。
 // 板（角丸・厚み・縁）が glb、カードの絵（枠・イラスト・名前・マーク）は画面の DOM から canvas に写して、板の表に貼る。
+// アンコモンの枠だけは、枠そのものを立体にしたモデル（assets/models/card-uncommon.glb）に、同じ canvas を貼る。
 // Card3D.js（CSS の 3D）と同じ使い方：render({ quaternion, tiltX, tiltY })・resize()・destroy()。
 // 読み込めない・WebGL が使えないときは null を返すので、呼ぶ側は CSS の 3D のままにする。
 import { CARD_LIGHT, RELIEF_PRESETS, reliefPaths } from './CardRelief.js';
@@ -8,18 +9,28 @@ import { rankSkinBack } from './skinArt.js';
 import { cardMotionReduced, cardAxes } from './Card3D.js';
 
 const MODEL = 'assets/models/card-slab.glb';
+const UNCOMMON_MODEL = 'assets/models/card-uncommon.glb';   // アンコモンの枠の立体（木枠・葉・金の縁・宝石）。make-card-uncommon.py で作る
 const BACK = 'assets/ui/card-back.png';
 const PX_PER_UNIT = 600;          // 表の絵の細かさ（カードの幅 1 あたりのピクセル）
 const MARGIN = 0.25;              // 枠の飾り（王冠など）が板の外にはみ出すぶん。カードの幅に対する割合
 const rad = Math.PI / 180;
 
 let libs;       // three.js と GLTFLoader（最初に使うときに読み込む）
-let slab;       // 板のモデル（1回だけ読む）
+const modelLoads = new Map();   // モデルのパス → 読み込みの Promise（同じモデルは1回だけ読む）
 const loadLibs = () => libs ??= Promise.all([
   import('../vendor/three/three.module.min.js'),
   import('../vendor/three/GLTFLoader.js'),
 ]).then(([THREE, { GLTFLoader }]) => ({ THREE, GLTFLoader }));
-const loadSlab = ({ GLTFLoader }) => slab ??= new GLTFLoader().loadAsync(new URL(MODEL, document.baseURI).href).catch((error) => { slab = null; throw error; });
+/** モデルをパスごとに1回だけ読む。読めなかったら覚えを消して、次に開いたときに読み直せるようにする */
+function loadModel(GLTFLoader, path) {
+  if (!modelLoads.has(path)) {
+    const loading = new GLTFLoader().loadAsync(new URL(path, document.baseURI).href)
+      .catch((error) => { modelLoads.delete(path); throw error; });
+    modelLoads.set(path, loading);
+  }
+  return modelLoads.get(path);
+}
+const loadSlab = ({ GLTFLoader }) => loadModel(GLTFLoader, MODEL);
 
 const loadImage = (src) => new Promise((resolve) => {
   const image = new Image();
@@ -55,11 +66,16 @@ function drawFitted(ctx, image, fit, x, y, w, h) {
   ctx.drawImage(image, x + (w - dw) / 2, y + (h - dh) / 2, dw, dh);
 }
 
-/** three.js と板のモデルを先に読む（読めなければ例外。CSSの3Dのままにする判断に使う） */
-export async function preloadCardGL() {
+/**
+ * three.js と板のモデルを先に読む（読めなければ例外。CSSの3Dのままにする判断に使う）。
+ * card がアンコモンの枠なら、立体のモデルも先に読む（CSS の 3D を消してから読むと、そのあいだ回せない平らなカードになるため）。こちらは読めなくても板で描けるので例外にしない
+ */
+export async function preloadCardGL(card) {
   const params = new URLSearchParams(location.search);
   if (params.get('card3d') === 'css' || params.get('fx') === 'lite') throw new Error('CSSの3Dを使う設定です');
-  await loadSlab(await loadLibs());
+  const libs = await loadLibs();
+  await loadSlab(libs);
+  if (card && usesUncommonModel(card)) await loadModel(libs.GLTFLoader, UNCOMMON_MODEL).catch(() => null);
 }
 
 /** 画面のカード（mountMiniCard）を、枠の飾りのはみ出しを含めて canvas に写す */
@@ -389,6 +405,29 @@ function roomEnvironment(THREE, renderer) {
   return target;
 }
 
+/**
+ * 宝石と金具のための映り込み：暗めの部屋に、明るい照明の板をいくつか置く。
+ * 一様な部屋だと金が灰色にくすみ、宝石のカット面もどれも同じ明るさになる。明暗の差があると、傾けるたびに面ごとに光る板が入れ替わる
+ */
+function jewelEnvironment(THREE, renderer) {
+  const room = new THREE.Scene();
+  room.add(new THREE.Mesh(new THREE.BoxGeometry(12, 12, 12), new THREE.MeshBasicMaterial({ color: '#4a4f5a', side: THREE.BackSide })));
+  const panel = (w, h, color, position) => {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+    mesh.position.set(...position); mesh.lookAt(0, 0, 0); room.add(mesh);
+  };
+  panel(6, 1.4, new THREE.Color(14, 13.5, 12.5), [-1, 5.5, 2]);     // 左上の大きな白い照明（いちばん強い光。CARD_LIGHT と同じ側）
+  panel(1.2, 5, new THREE.Color(6, 6.2, 7), [5.5, 0.5, 1.5]);        // 右の細い照明（傾けたときに縁へ走る光）
+  panel(4, 1, new THREE.Color(4.5, 3.4, 2.0), [0, -5.5, 2.5]);       // 下の暖かい照り返し（金を金色に見せる）
+  panel(1.5, 1.5, new THREE.Color(3.5, 4.5, 5), [-5.5, -1, 1]);      // 左の小さな青い照明（宝石の面に色の違う光を入れる）
+  panel(3, 3, new THREE.Color(2.2, 2.2, 2.2), [0, 0, 5.5]);          // 手前からの弱い光（正面でも暗くなりすぎないように。壁 z=6 と重ならない内側に置く）
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const target = pmrem.fromScene(room, 0.02);
+  pmrem.dispose();
+  room.traverse((node) => { node.geometry?.dispose(); node.material?.dispose(); });
+  return target;
+}
+
 /** 偏光のフィルム（css/hologram.css の --foil と同じ色。CSS では背景が窓の 225%×200% で、位置が光で動く） */
 const FOIL = {
   rare: { kind: 'linear', angle: 118, period: 0.66, stops: [[0, '#d8fbff00'], [0.38, '#d8fbff00'], [0.41, '#d8fbff15'], [0.45, '#c9edffbd'], [0.46, '#ffffff'], [0.53, '#ffffff00'], [0.66, '#ffffff00']], opacity: 0.44 },
@@ -425,17 +464,126 @@ function foilTexture(THREE, rarity, aspect) {
   return { texture, opacity: spec.opacity };
 }
 
+/** アンコモンの専用モデルを使うカードか：アンコモンで、スキン（ランク報酬の枠）がなく、枠の絵がアンコモンの枠のとき */
+function usesUncommonModel(card) {
+  if (card.dataset.rarity !== 'uncommon' || card.dataset.skin) return false;
+  const frameSrc = card.querySelector('.mini-card-frame')?.getAttribute('src') ?? '';
+  return frameSrc.split('?')[0].endsWith('frame-uncommon.png');
+}
+
+/**
+ * 宝石の透過（光が石の中を通って曲がる描き方）をやめて軽くする端末か。three.js は透過のために、場面をもう1回描く。
+ * Card3D.js の凹凸の判定と同じく、メモリが 2GB 以下か CPU のコアが2つ以下なら軽くする。?fx=full なら必ず透過する
+ */
+function prefersLightGem() {
+  if (new URLSearchParams(location.search).get('fx') === 'full') return false;
+  const touchDevice = matchMedia('(pointer: coarse)').matches;   // スマホ・タブレット：数十ピクセルの宝石1個のために、画面全体をもう1回描くのは重いので、既定で軽くする
+  const lowMemory = navigator.deviceMemory && navigator.deviceMemory <= 2;
+  const fewCores = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+  return Boolean(touchDevice || lowMemory || fewCores);
+}
+
+/**
+ * キャッシュしたモデルのジオメトリと同じ頂点データを指す、入れ物だけのジオメトリ（頂点のデータは複製しない）。
+ * three.js は描いたジオメトリに、描き手（renderer）ごとの後片付けを登録する。閉じるときはこの入れ物だけを dispose して、それを外す
+ */
+function shareGeometry(THREE, source) {
+  const shared = new THREE.BufferGeometry();
+  shared.setIndex(source.index);
+  for (const [name, attribute] of Object.entries(source.attributes)) shared.setAttribute(name, attribute);
+  for (const { start, count, materialIndex } of source.groups) shared.addGroup(start, count, materialIndex);
+  shared.boundingBox = source.boundingBox?.clone() ?? null;
+  shared.boundingSphere = source.boundingSphere?.clone() ?? null;
+  return shared;
+}
+
+/**
+ * アンコモンの立体モデル（card-uncommon.glb）に材質を付けて、枠の絵の位置に置く。
+ * マテリアル名で材質を決める：face＝表の絵／back＝裏の絵／wood＝木の側面／gold＝金具／foil＝宝石の奥の箔／gem＝宝石。
+ * 材質とテクスチャは開くたびに作って own に渡す（閉じるときに捨てる）
+ */
+function dressUncommonModel(THREE, model, { face, rects, backTexture, jewelMap, own }) {
+  // 表の絵：モデルの UV は「枠の絵の 0〜1（上が 0）」。canvas の中の枠の絵の範囲だけを、repeat と offset で切り出して貼る
+  const { x, y, w, h } = rects.frame;
+  const faceTexture = own(new THREE.CanvasTexture(face));
+  faceTexture.flipY = false;                       // glTF の UV は上が 0
+  faceTexture.colorSpace = THREE.SRGBColorSpace;
+  faceTexture.anisotropy = 8;
+  faceTexture.repeat.set(w / FACE_W, h / FACE_H);
+  faceTexture.offset.set((M + x) / FACE_W, (M + y) / FACE_H);
+
+  // 宝石：屈折率 1.57（エメラルドくらい）。カットの面ごとに向きが違うので、傾けると面ごとに映り込みと奥の透け方が変わる。
+  // 透過のときは、three.js がトーンマッピングを切った下描きを自動で1回足す（この描き手はもともとトーンマッピングなしなので、設定はそのまま）
+  const gemLook = prefersLightGem()
+    ? { color: new THREE.Color('#118a25'), emissive: '#05420f', emissiveIntensity: 0.6, envMapIntensity: 1.3 }   // 透過なし：不透明なので、色を濃い緑にして（明るい光で白っぽくならないように）少し内側から光らせる
+    : { transmission: 1, thickness: 0.04, attenuationColor: '#3fc85c', attenuationDistance: 0.08 };   // 透過：奥の金の箔が緑に透けて見える
+  // 裏の絵：絵の外の透けている所（角のまわり）が黒く出ないように、木の側面と同じ色（GLB の wood の色を sRGB にしたもの）の上に描いてから貼る
+  const backImage = backTexture.image;
+  const backCanvas = blank(backImage.naturalWidth || backImage.width || 1, backImage.naturalHeight || backImage.height || 1);
+  const backCtx = backCanvas.getContext('2d');
+  backCtx.fillStyle = '#5f3d24';
+  backCtx.fillRect(0, 0, backCanvas.width, backCanvas.height);
+  backCtx.drawImage(backImage, 0, 0);
+  const backOnWood = own(new THREE.CanvasTexture(backCanvas));
+  backOnWood.flipY = false;
+  backOnWood.colorSpace = THREE.SRGBColorSpace;
+  backOnWood.anisotropy = 4;
+  const makers = {
+    face: (source) => new THREE.MeshStandardMaterial({ map: faceTexture, roughness: 0.6, metalness: 0, alphaTest: 0.4, side: source.side }),
+    back: (source) => new THREE.MeshStandardMaterial({ map: backOnWood, roughness: 0.5, side: source.side }),
+    wood: (source) => new THREE.MeshStandardMaterial({ color: source.color, roughness: 0.7, metalness: 0, side: source.side }),
+    // 金具・箔・宝石だけが、明暗のある映り込み（jewelMap）を使う。絵の所は今までの部屋の映り込みのまま（色は絵のまま）
+    gold: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.22, envMap: jewelMap, side: source.side }),
+    foil: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.15, envMap: jewelMap, side: source.side }),
+    gem: (source) => new THREE.MeshPhysicalMaterial({
+      color: source.color, metalness: 0, roughness: 0.03, ior: 1.57,
+      specularIntensity: 1, clearcoat: 1, clearcoatRoughness: 0.04, envMap: jewelMap, envMapIntensity: 1.8,
+      side: THREE.FrontSide, ...gemLook,           // 宝石は閉じた形なので片面（両面だと透過の描き直しが毎回2回になる）
+    }),
+  };
+  // 同じ名前の材質は1つだけ作って使い回す（表の絵は、板・木枠・葉・名前欄・下の欄・メダルが同じものを使う）。知らない名前は木の側面にする
+  const madeByName = new Map();
+  const materialFor = (source) => {
+    if (!makers[source.name]) console.warn('アンコモンのモデルに知らない材質名があります（木の側面として描きます）', source.name);
+    const name = makers[source.name] ? source.name : 'wood';
+    if (!madeByName.has(name)) madeByName.set(name, own(makers[name](source)));
+    return madeByName.get(name);
+  };
+  model.traverse((node) => {
+    if (!node.isMesh) return;
+    node.geometry = own(shareGeometry(THREE, node.geometry));
+    node.material = Array.isArray(node.material) ? node.material.map(materialFor) : materialFor(node.material);
+    node.receiveShadow = true;
+    node.castShadow = node.name !== 'gem';          // 金の縁・台座・葉の影は枠の上に落とす。宝石は影を落とさない（奥の箔が暗くなり、中から光って見えなくなるため）
+  });
+
+  // 置き方：モデルの 1 は枠の絵の幅で、原点は枠の絵の中心。canvas の枠の位置（rects.frame）の中心に置き、大きさをそろえる。
+  // 座標の直し方は surfaceMesh の place と同じ（canvas は下が +y、three.js は上が +y）
+  const centerX = (M + x + w / 2) / PX_PER_UNIT - 0.5 - MARGIN;
+  const centerY = 0.75 + MARGIN - (M + y + h / 2) / PX_PER_UNIT;
+  const frameScale = w / PX_PER_UNIT;
+  model.scale.set(frameScale, h / (1.5 * PX_PER_UNIT), frameScale);   // 厚み（z）は幅と同じ倍率
+  model.position.set(centerX, centerY, 0);
+}
+
 /**
  * card：mountMiniCard で作った、画面に置いてあるカード（大きさを測るので、表示してから呼ぶ）。
  * stage：カードの親（ここに canvas を足す）。rarityColor：側面の色。
  * 使えないときは null。
  */
 export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}) {
-  let renderer;
+  let renderer, environment, jewelEnvironmentMap;
+  const owned = [];       // 開くたびに作るもの（閉じるとき・途中で失敗したときに捨てる）
+  const own = (value) => { owned.push(value); return value; };
   try {
     const { THREE, GLTFLoader } = await loadLibs();
     const gltf = await loadSlab({ GLTFLoader });
+    // アンコモンの専用モデルは、表の絵を写すのと並べて読み始める。読めなければ null にして、今の板＋凹凸で描く
+    const uncommonLoading = usesUncommonModel(card)
+      ? loadModel(GLTFLoader, UNCOMMON_MODEL).catch((error) => { console.warn('アンコモンの立体モデルを読めないので、板と凹凸で表示します', error); return null; })
+      : null;
     const { canvas: face, rects } = await paintFace(card);
+    const uncommonGltf = uncommonLoading && rects.frame ? await uncommonLoading : null;   // 枠の位置が測れないときも板に戻る
     if (!card.isConnected) return null;
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
     if (!renderer.getContext()) throw new Error('no webgl');
@@ -456,20 +604,20 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     light.shadow.bias = -0.0004; light.shadow.normalBias = 0.003; light.shadow.radius = 3;
     light.shadow.autoUpdate = false;               // 影はカードが動いたときだけ描き直す（キラキラだけのコマでは描かない）
     scene.add(light, new THREE.AmbientLight('#ffffff', 1.7));
-    const environment = roomEnvironment(THREE, renderer);
+    environment = roomEnvironment(THREE, renderer);
     scene.environment = environment.texture;
+    if (uncommonGltf) jewelEnvironmentMap = jewelEnvironment(THREE, renderer);   // 立体の金具・宝石だけに使う、明暗のある映り込み
 
-    // 板（Blender 製）。マテリアルは名前で見つけて、色と裏の絵を付ける
-    const model = gltf.scene.clone(true);
-    const owned = [];
-    const own = (value) => { owned.push(value); return value; };
+    // 板（Blender 製）。アンコモンの枠は専用の立体モデル、ほかは板。マテリアルは名前で見つけて、色と絵を付ける
+    const model = (uncommonGltf ?? gltf).scene.clone(true);
     const backSource = card.dataset.skin ? rankSkinBack(card.dataset.skin)?.art : null;
     const backTexture = own(await new THREE.TextureLoader().loadAsync(new URL(backSource || BACK, document.baseURI).href));
     backTexture.flipY = false;                  // glTF の UV は上が 0
     backTexture.colorSpace = THREE.SRGBColorSpace;
     backTexture.anisotropy = 4;
     let slabBack = null;
-    model.traverse((node) => {
+    if (uncommonGltf) dressUncommonModel(THREE, model, { face, rects, backTexture, jewelMap: jewelEnvironmentMap.texture, own });   // 材質と置き方（頂点のデータはキャッシュのものを使う）
+    else model.traverse((node) => {
       if (!node.isMesh) return;
       node.geometry = own(node.geometry.clone());
       const mats = Array.isArray(node.material) ? node.material : [node.material];
@@ -481,8 +629,8 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
       node.material = Array.isArray(node.material) ? next : next[0];
     });
     group.add(model);
-    // 板は、枠の外形に合わせて縮める（枠の外に板の色がはみ出して見えないように）。厚みはそのまま
-    if (rects.frame) {
+    // 板は、枠の外形に合わせて縮める（枠の外に板の色がはみ出して見えないように）。厚みはそのまま。アンコモンの立体モデルは、もう枠の絵に合わせて置いた
+    if (rects.frame && !uncommonGltf) {
       const { x0, x1, y0, y1 } = bodyBounds(face);
       const left = (x0 - M) / PX_PER_UNIT, right = (x1 - M) / PX_PER_UNIT, top = (y0 - M) / PX_PER_UNIT, bottom = (y1 - M) / PX_PER_UNIT;
       model.scale.set(Math.min(1.1, right - left), Math.min(1.65, bottom - top) / 1.5, 1);   // 板の元の大きさは 1 × 1.5
@@ -493,10 +641,10 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     const rarity = card.dataset.rarity;
     const depth = 0.055;
     const faceSize = [1 + MARGIN * 2, 1.5 + MARGIN * 2];
-    const faceTexture = own(new THREE.CanvasTexture(face));
-    faceTexture.anisotropy = 8;
+    const faceTexture = uncommonGltf ? null : own(new THREE.CanvasTexture(face));   // アンコモンの立体モデルは、dressUncommonModel で表の絵を貼った
+    if (faceTexture) faceTexture.anisotropy = 8;
     const frameSrc = card.querySelector('.mini-card-frame')?.getAttribute('src');
-    const paths = reliefPaths(frameSrc);
+    const paths = uncommonGltf ? null : reliefPaths(frameSrc);   // 立体モデルでは、凹凸の地図とキラキラは使わない（形はモデルが持っている）
     const images = paths && rects.frame ? await Promise.all([loadImage(paths.relief), loadImage(paths.raised)]) : [];
     const light3 = light.position.clone().normalize();
     const sparkMat = own(sparkMaterial(THREE, light3));
@@ -551,8 +699,8 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
           return [faceData.data[o], faceData.data[o + 1], faceData.data[o + 2], faceData.data[o + 3]];
         },
       });
-    } else {
-      // 凹凸の地図がない枠は、ふつうの材質で貼る
+    } else if (!uncommonGltf) {
+      // 凹凸の地図がない枠は、ふつうの材質で貼る（アンコモンの立体モデルは、もう表の絵を貼ってある）
       faceTexture.colorSpace = THREE.SRGBColorSpace;
       const plain = own(new THREE.MeshStandardMaterial({ map: faceTexture, transparent: true, alphaTest: 0.04, roughness: 0.55 }));
       plain.polygonOffset = true; plain.polygonOffsetFactor = -2;
@@ -561,10 +709,10 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
       group.add(mesh);
     }
 
-    // 偏光のフィルム（レア以上・適応）：絵の窓の上に重ねて、光の向きで色が動く
+    // 偏光のフィルム（レア以上・適応）：絵の窓の上に重ねて、光の向きで色が動く。アンコモンの立体モデルには付けない
     let foilTex = null;
     const foilKey = card.classList.contains('wild') ? 'special' : FOIL[rarity] ? rarity : null;
-    if (foilKey && rects.win) {
+    if (foilKey && rects.win && !uncommonGltf) {
       const win = rects.win;
       const { texture, opacity } = foilTexture(THREE, foilKey, win.w / win.h);
       foilTex = own(texture);
@@ -612,6 +760,7 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
 
     const canvas = renderer.domElement;
     canvas.className = 'zoom-gl-canvas';
+    canvas.dataset.model = uncommonGltf ? 'uncommon' : 'slab';   // どちらのモデルで描いているか（画面のテストが見る）
     canvas.setAttribute('aria-hidden', 'true');
     stage.append(canvas);
     const hidden = card.style.visibility;
@@ -696,6 +845,7 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
         canvas.removeEventListener('webglcontextlost', lost);
         for (const item of owned) item.dispose?.();
         environment.dispose();
+        jewelEnvironmentMap?.dispose();
         renderer.dispose();
         renderer.forceContextLoss();
         canvas.remove();
@@ -704,7 +854,12 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     };
   } catch (error) {
     console.warn('3Dのカードを使えないので、CSSの3Dで表示します', error);
+    // 途中で失敗したときも、作ったテクスチャ・材質・映り込みと WebGL を手放す（ブラウザが同時に持てる WebGL の数には上限がある）
+    for (const item of owned) item.dispose?.();
+    environment?.dispose();
+    jewelEnvironmentMap?.dispose();
     renderer?.dispose();
+    renderer?.forceContextLoss();
     return null;
   }
 }

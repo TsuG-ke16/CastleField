@@ -1,4 +1,4 @@
-// Blender 製の板（assets/models/card-slab.glb）と three.js で、拡大表示のカードが出ることを確かめる。PORT=8787 node server/server.js を起動しておく。
+// Blender 製の板（assets/models/card-slab.glb。アンコモンは立体の枠 card-uncommon.glb）と three.js で、拡大表示のカードが出ることを確かめる。PORT=8787 node server/server.js を起動しておく。
 // 実行：node ui-tests/card-gl.js（require('playwright') が見つからないときは NODE_PATH=$(npm root -g)）
 import assert from 'node:assert/strict';
 import { mkdirSync } from 'node:fs';
@@ -14,7 +14,8 @@ const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=sw
 const errors = [];
 let failed = 0;
 
-async function scenario(name, { query = '?fx=full', glExpected = true, rank = null, back = false }) {
+// rarity：デッキ編成で絞り込むレアリティ。model：読んでいるはずのモデルのファイル名（確かめるときだけ）
+async function scenario(name, { query = '?fx=full', glExpected = true, rank = null, back = false, rarity = 'legendary', model = null }) {
   const context = await browser.newContext({ viewport: { width: 390, height: 797 }, serviceWorkers: 'block' });
   await context.route('**/api/me', route => route.fulfill({ json: { ok: false } }));
   const page = await context.newPage();
@@ -41,15 +42,24 @@ async function scenario(name, { query = '?fx=full', glExpected = true, rank = nu
       await page.goto(new URL(query, base).href);
       await page.click('#home .home-tab[data-tab=deck]'); await page.locator('#home .home-tile[data-id="deck"]').click();
       await page.locator('.deck-summary').waitFor();
-      await page.locator('.deck-filter-rarity').selectOption('legendary');
+      await page.locator('.deck-filter-rarity').selectOption(rarity);
       const target = page.locator('.deck-grid-item [data-zoom]').first();
       await target.waitFor();
+      // 読んだファイルの記録を空にしておく（記録できる数には上限があり、一覧の画像でいっぱいだと、あとで読むモデルが残らないため）
+      if (model) await page.evaluate(() => performance.clearResourceTimings());
       const box = await target.boundingBox();
       await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down(); await page.waitForTimeout(600); await page.mouse.up();
     }
     await page.waitForSelector('dialog.card-zoom[open]', { timeout: 30000 });   // ソフトウェア描画では3Dの組み立てで数秒止まる
     if (glExpected) {
       await page.waitForSelector('canvas.zoom-gl-canvas', { timeout: 20000 });
+      // 専用のモデル（.glb）を読んでいる（canvas はモデルを読み終えてから作るので、この時点で記録がある）
+      if (model) {
+        const loaded = await page.evaluate((file) => performance.getEntriesByType('resource').some((entry) => entry.name.endsWith(file)), model);
+        assert.ok(loaded, `${model} を読んでいる`);
+        // 読めずに板へ戻ったときも記録は残るので、実際に立体のモデルで描いていることも確かめる
+        assert.equal(await page.locator('canvas.zoom-gl-canvas').getAttribute('data-model'), 'uncommon', '立体のモデルで描いている');
+      }
       // なぞると向きが変わる（描かれる絵が変わる）
       const before = await page.locator('canvas.zoom-gl-canvas').screenshot({ timeout: 40000 });
       assert.ok(before.length > 20000, 'カードが描かれている（真っ透明の画像は小さい）');
@@ -76,6 +86,7 @@ async function scenario(name, { query = '?fx=full', glExpected = true, rank = nu
 }
 
 await scenario('Blender 製の板で出る・なぞって回る', {});
+await scenario('アンコモンは Blender 製の立体の枠（card-uncommon.glb）で出る・なぞって回る', { rarity: 'uncommon', model: 'card-uncommon.glb' });
 await scenario('ランクの裏（金）も3D・なぞって回る', { rank: 'gold', back: true });
 await scenario('ランクの表（チャンピオン）も3D', { rank: 'champion' });
 await scenario('?card3d=css では CSS の 3D', { query: '?fx=full&card3d=css', glExpected: false });

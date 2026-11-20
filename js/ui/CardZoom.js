@@ -213,7 +213,7 @@ export function initCardZoom({ root = document.getElementById('app'), cards, rar
     let impl = createCard3D(cardEl, { rarityColor, shadow, quality });
     let closed = false;
     let last = null;
-    preloadCardGL().then(async () => {
+    preloadCardGL(cardEl).then(async () => {
       if (closed || !cardEl.isConnected) return;
       impl.destroy();                                    // 元の見た目に戻してから、絵を写す
       const gl = await createCardGL(cardEl, { stage, rarityColor });

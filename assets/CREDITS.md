@@ -537,6 +537,7 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 | ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
 |---|---|---|---|
 | `models/card-slab.glb` | Blender（bpy 5.3）で `models/make-card.py` を実行して作った（開発者の依頼で、この開発で作成）。角丸・厚み・縁の面取りの板。絵は含まない | 自作（このリポジトリのライセンスに従う） | 2026-11-20 |
+| `models/card-uncommon.glb` | Blender（bpy 5.3）で `models/make-card-uncommon.py` を実行して作った（開発者の依頼で、この開発で作成。スクリプトも自作）。アンコモンの枠の絵 `cards/frame-uncommon.png` を測って、板・木枠・葉・名前欄・下の欄・メダル・金の縁・宝石の台座と爪・カットした宝石を立体にした。絵（画像）は含まない（表の絵はゲームが貼る） | 自作（このリポジトリのライセンスに従う） | 2026-11-21 |
 | `js/vendor/three/`（three.module.min.js・GLTFLoader.js・BufferGeometryUtils.js） | three.js r170（https://github.com/mrdoob/three.js）。GLTFLoader・BufferGeometryUtils は import の行だけ相対パスに書きかえた | MIT（`js/vendor/three/LICENSE`） | 2026-11-20 取得 |
 
 ## ランク報酬の裏の凹凸の地図（2026-11-20）
