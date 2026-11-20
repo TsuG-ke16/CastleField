@@ -47,6 +47,16 @@ export class Soldier {
     return this.role === 'archer' || this.role === 'mage';
   }
 
+  /** 護衛（ゴーレム）：動かず、自分の道と左右のとなりの道の城の前を守る（相手の兵士はぶつかって戦う） */
+  get isGuard() {
+    return this.role === 'guard';
+  }
+
+  /** 動かずに、stay ターンで帰る兵士（弓兵・魔法使い・護衛） */
+  get isStationary() {
+    return this.isRanged || this.isGuard;
+  }
+
   /** 忍者：相手から見えない（getState・イベントで隠す）。相手の兵士と戦わず、撃たれず、妖術（魔法）の的にもならない */
   get stealth() {
     return this.role === 'ninja';
@@ -90,7 +100,7 @@ export class Soldier {
       position: this.position,
       role: this.role,
       range: this.range,
-      turnsLeft: this.isRanged ? this.turnsLeft : null,
+      turnsLeft: this.isStationary ? this.turnsLeft : null,
       roadId: this.roadId,
       targetId: this.targetId,
       weapon: this.weapon,
