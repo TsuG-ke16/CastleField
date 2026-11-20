@@ -6,6 +6,7 @@
 // 真ん中のマス（floor(laneLength / 2)）は魔物の居場所で、魔物はそのレーンのまん中に置く。
 // レーンは roadId の「#番号」で決まる（番号なしなら1本目）。
 
+import { profileArt } from './profileArt.js';
 import { UI_CONFIG } from './config.js';
 import { RARITY_NAMES } from './rarity.js';
 import { playerName } from './text.js';
@@ -307,14 +308,16 @@ export class Renderer {
       const kind=this.players[id]?.castleType;
       const kindName=this.castleDefs[kind]?.name??'';
       castle.dataset.castleType=kind??'standard';
-      castle.querySelector('.castle-label').textContent = `${model.playerOrder.length > 2 ? `席${model.playerOrder.indexOf(id)+1} ` : ''}${members.includes(this.viewerId) && !members.some(m => playerName(m) === 'あなた') ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
+      const labelEl = castle.querySelector('.castle-label');
+      labelEl.textContent = `${model.playerOrder.length > 2 ? `席${model.playerOrder.indexOf(id)+1} ` : ''}${members.includes(this.viewerId) && !members.some(m => playerName(m) === 'あなた') ? 'あなた · ' : ''}${label}${kind && kind!=='standard' ? ' · '+kindName : ''}`;
       castle.setAttribute('aria-label',`席${model.playerOrder.indexOf(id)+1}、${label}、${kindName}`);
-      castle.querySelector('.castle-label').title = label;
+      labelEl.title = label;
       castle.classList.toggle('eliminated', Boolean(this.players[id]?.eliminated));
       if (this.players[id]?.eliminated) {
-        castle.querySelector('.castle-label').textContent += ' · 脱落';
+        labelEl.textContent += ' · 脱落';
         castle.querySelector('.castle-pic').innerHTML = castleArt(colorOf(id), 4);
       }
+      this.labelAvatar(labelEl, members[0]);
       const tier = UI_CONFIG.castleTiers.filter(t => members.length >= t.min).at(-1);
       if (castle.dataset.tier !== tier.name || castle.dataset.artColor !== colorOf(id) || castle.dataset.artKind !== (kind??'standard')) {
         castle.dataset.artKind=kind??'standard';
@@ -485,6 +488,25 @@ export class Renderer {
     } else {
       this.el.oppMp.hidden = true; // 3人以上は、相手のMPは出さない
     }
+  }
+
+  /** 名札の頭に、その人が使っているアイコン（とアイコンフレーム）を付ける。プロフィールがなければ付けない */
+  labelAvatar(labelEl, playerId) {
+    const profile = this.profiles?.[playerId];
+    const src = profile ? profileArt(profile.icon, profile.iconImage) : null;
+    if (!src) return;
+    // 文字を持たない要素にする（名札の textContent を名前のまま使うところがあるため）
+    const av = document.createElement('span');
+    av.className = 'label-avatar';
+    av.setAttribute('aria-hidden', 'true');
+    const img = new Image(); img.src = src; img.alt = ''; av.append(img);
+    if (profile.iconFrame) av.dataset.frame = profile.iconFrame;
+    labelEl.prepend(av);
+  }
+
+  /** 席ごとのプロフィール（{ playerId: { icon, iconImage, iconFrame } }）。次に描くときに名札へ出る */
+  setProfiles(profiles) {
+    this.profiles = profiles ?? {};
   }
 
   /**

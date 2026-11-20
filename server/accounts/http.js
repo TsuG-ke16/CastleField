@@ -414,7 +414,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
         const rank = summary?.rank ?? null;
         const level = progress.levelInfo(progress.getXp(u)).level;
         return {
-          icon: prow.icon, iconImage: progress.iconImage(prow.icon),
+          icon: prow.icon, iconImage: progress.iconImage(prow.icon), iconFrame: prow.iconFrame ?? null,
           // 対戦開始の VS 画面に出す（公開プロフィールと同じく、だれでも見られる情報だけ）
           level, title: prow.title ?? progress.titleFor(level),
           rank: rank ? { tierIndex: rank.tierIndex, division: rank.division, color: rank.color, name: rank.name, divisionLabel: rank.divisionLabel, rp: rank.rp ?? null } : null,

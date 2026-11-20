@@ -779,6 +779,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
 
   // 開始前の状態を表示用に覚えてから start() する。p1 の turnStarted で最初の目隠しが出る
   viewerId = cpu ? cpu.humanId : null;
+  renderer.setProfiles(cpu ? { [cpu.humanId]: myVersusPlayer(cpu.humanId).profile } : {}); // 名札のアイコン（自分だけ。CPU・同じ端末はなし）
   cosmetics.setLocal(cpu ? [cpu.humanId] : []); // 自分のスキン（CPU・同じ端末のほかの人は標準）
   stopChat();
   if (cpu) startLocalChat();
@@ -1022,6 +1023,7 @@ function onRoom(r) {
   cosmetics.setFromRoom(r.players, r.you ?? viewerId); cosmetics.refresh(el.app); // 部屋の席ごとのスキン（相手にも見える）
   if (r.you) { viewerId = r.you; session.playerId = r.you; saveOnlineSession(session); }
   setPlayerNames(Object.fromEntries(r.players.map((p) => [p.playerId, p.name])));
+  renderer.setProfiles(Object.fromEntries(r.players.filter((p) => p.profile).map((p) => [p.playerId, p.profile]))); // 名札のアイコン
   if (!r.started) {
     gen++; anim.skip(); queue = []; batches = []; model = null;
     el.result.hidden = true; el.title.hidden = true; home?.close(); // つなぎ直したときも、ホームの上に部屋を出す
@@ -1791,7 +1793,7 @@ function versusPlayers(order) {
 /** VS 画面に出す自分（ひとりで遊ぶ）：ホームで読んだアカウントの情報。なければ名前だけ */
 function myVersusPlayer(id) {
   const d = home?.data;
-  const profile = d ? { icon: d.icon, iconImage: d.iconImage, title: d.title, level: d.level?.level,
+  const profile = d ? { icon: d.icon, iconImage: d.iconImage, iconFrame: d.iconFrame ?? null, title: d.title, level: d.level?.level,
     rank: d.rank?.rank ?? null, placement: d.rank && !d.rank.placed ? { left: d.rank.placementLeft, total: d.rank.placementTotal } : null } : null;
   return { playerId: id, name: d?.user?.displayName ?? playerName(id), you: true, profile };
 }

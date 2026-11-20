@@ -250,3 +250,24 @@
 .fx-combo[data-n="3"] b { color: #ffb34a; }
 .fx-combo[data-n="4"] b { color: #ff7a3a; font-size: 46px; }
 .fx-combo[data-n="5"] b, .fx-combo[data-n="6"] b { color: #ff4a5a; font-size: 52px; text-shadow: 0 2px 0 #5a0a1a, 0 0 14px #ffcf4a; }
+
+/* ---------- アイコンは四角（角丸）の絵を使う。ランク報酬のアイコンフレームの窓（css/rank-frames.css：角丸22%）に合わせる ---------- */
+.home-avatar, .profile-avatar, .profile-icon, .account-avatar, .social-avatar, .room-avatar, .chat-avatar,
+.vs-avatar, .rank-reward-avatar, .label-avatar, .item-preview.slot-iconFrame i { border-radius: 22% !important; }
+.home-avatar img, .profile-avatar img, .profile-icon img, .room-avatar img, .chat-avatar img, .vs-avatar img, .social-avatar img {
+  width: 100%; height: 100%; object-fit: cover; border-radius: inherit;
+}
+/* フレームの飾りは外にはみ出すので、すぐ横の名前とぶつからないよう少しあける */
+.room-avatar[data-frame], .chat-avatar[data-frame] { margin: 4px 8px 4px 4px; }
+.vs-avatar[data-frame] { margin: 10px 16px 10px 10px; }
+.vs-avatar[data-frame], .room-avatar[data-frame], .chat-avatar[data-frame] { border: 0; box-shadow: none; }
+
+/* 盤面の名札：名前の左に、その人が使っているアイコン（Renderer.labelAvatar） */
+#app .castle-label .label-avatar {
+  display: inline-block; vertical-align: middle; width: 26px; height: 26px; margin: -4px 6px -2px 0;
+  background: #365b64; overflow: hidden; box-shadow: 0 0 0 1px #fff8, 0 1px 2px #0006;
+}
+#app .castle-label .label-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; border-radius: inherit; }
+#app .castle-label .label-avatar[data-frame] { margin: -4px 9px -2px 4px; box-shadow: none; }
+/* 名札は小さいので、フレームの飾りは控えめに（顔が見えるように） */
+#app .castle-label .label-avatar[data-frame]::before { inset: -16%; }

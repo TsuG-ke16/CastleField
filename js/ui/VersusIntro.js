@@ -25,6 +25,7 @@ function plate(p, ranked, duel) {
   const src = p.profile ? profileArt(p.profile.icon, p.profile.iconImage) : null;
   if (src) { const img = new Image(); img.src = src; img.alt = ''; avatar.append(img); }
   else avatar.textContent = p.cpu ? '🤖' : ([...String(p.name ?? '?')][0] ?? '?');
+  if (p.profile?.iconFrame) avatar.dataset.frame = p.profile.iconFrame; // ランク報酬のアイコンフレーム
   const info = el('div', 'vs-info');
   const nameLine = el('div', 'vs-name');
   nameLine.append(el('b', null, p.name));

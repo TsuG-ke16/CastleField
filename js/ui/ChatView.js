@@ -256,6 +256,7 @@ export class ChatView {
     const src = profile ? profileArt(profile.icon, profile.iconImage) : null;
     if (src) { const img = new Image(); img.src = src; img.alt = ''; avatar.append(img); }
     else avatar.textContent = [...String(msg.name ?? '?')][0] ?? '?';
+    if (profile?.iconFrame) avatar.dataset.frame = profile.iconFrame; // ランク報酬のアイコンフレーム
     const head = document.createElement('span'); head.className = 'chat-head-line';
     const name = document.createElement('b'); name.className = 'chat-name'; name.textContent = msg.name ?? '';
     head.append(name);
