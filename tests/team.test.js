@@ -122,6 +122,7 @@ test('チーム：1人対7人・4チームでも、CPU 同士で最後まで進�
       ctx.onDefense = settle;
       game.on('discardRequired', (e) => { ctx.discardCount = e.count; });
       game.start();
+      for (const pid of game.getState(null).mulligan?.pending ?? []) game.mulligan(pid, []); // マリガンはしない
       for (let i = 0; i < 20000 && game.getState(null).phase !== 'gameOver'; i++) {
         const st = game.getState(null);
         if (st.phase === 'defend') { settle(); continue; }

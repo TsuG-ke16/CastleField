@@ -80,11 +80,14 @@ test('部屋：自分の番でない人も降参できる', () => {
   const lobby = newLobby();
   const a = lobby.join('abc', 'A');
   const b = lobby.join('abc', 'B');
-  const { room, seat } = lobby.findSeat(b.token);
+  const { room } = lobby.findSeat(b.token);
   room.action(lobby.findSeat(a.token).seat, 'start', []);
-  assert.equal(room.game.currentPlayer, 'p1');
-  assert.deepEqual(room.action(seat, 'surrender', []), { ok: true });
-  assert.equal(room.game.getState(null).winner, 'p1');
+  for (const t of [a.token, b.token]) room.action(lobby.findSeat(t).seat, 'mulligan', [[]]);
+  // 先攻はコイントスで決まる。先攻でない人が降参する
+  const first = room.game.currentPlayer;
+  const other = [a, b].map((x) => lobby.findSeat(x.token).seat).find((s) => s.playerId !== first);
+  assert.deepEqual(room.action(other, 'surrender', []), { ok: true });
+  assert.equal(room.game.getState(null).winner, first);
 });
 
 test('部屋：出た人がいると、もう1回はできず、同じ合言葉は新しい部屋になる', () => {

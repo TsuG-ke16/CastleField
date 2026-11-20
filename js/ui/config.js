@@ -35,6 +35,10 @@ export const UI_CONFIG = {
   // 演出の長さ
   // 天候が変わったときの警報の色合い：alert（赤）・good（金）・calm（青）。書いていない天候は alert
   weatherTone: { sunny: 'good', coinRain: 'good', rain: 'calm' },
+  // ボス戦の BGM にする魔物（js/ui/musicScene.js）。エピック以上のごほうびまで育った魔物もボス扱い
+  bossMonsters: ['dragon', 'demon', 'demonKing'],
+  // 真ん中のマス（魔物・ワールドボスが出る場所）の高さ。ほかのマスの何倍か（道のマスの数が奇数のときだけ）
+  midCellScale: 1.8,
 
   // Web Animations API の共通イージング。各演出の長さは timing を使う。
   easing: { enter: 'ease-out', exit: 'ease-in', linear: 'linear', inOut: 'ease-in-out' },

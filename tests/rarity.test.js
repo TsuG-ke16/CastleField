@@ -3,11 +3,11 @@ import assert from 'node:assert/strict';
 import { Game } from '../js/game/Game.js';
 import { dropRates, validateRarities } from '../js/game/Setup.js';
 import { filterEventFor } from '../js/game/visibility.js';
-import { buildData, loadJson, loadOptionalData, recordEvents, seededRng } from './helpers.js';
+import { buildData, loadJson, loadOptionalData, recordEvents, seededRng, PLAIN_START } from './helpers.js';
 
 const rarities = loadJson('rarities.json');
 const make = (extra = {}) => {
-  const { cards, rules } = buildData();
+  const { cards, rules } = buildData({ rules: PLAIN_START });
   return new Game({ cards, rules, rng: seededRng(3), ...loadOptionalData(), ...extra });
 };
 
@@ -44,7 +44,7 @@ test('山札：rules.deckSize 枚を排出率で作る（rarities なしなら c
   const g = make();
   const pile = g.pileOf('p1');
   assert.equal(pile.deck.length + 10, 100); // 初期手札5枚ずつ
-  const { cards, rules } = buildData();
+  const { cards, rules } = buildData({ rules: PLAIN_START });
   const old = new Game({ cards, rules, rng: seededRng(3) });
   assert.equal(old.pileOf('p1').deck.length + 10, Object.values(cards).reduce((n, d) => n + d.count, 0));
 });
@@ -84,7 +84,7 @@ test('合成：本人以外にはカードの中身を送らない', () => {
 });
 
 test('運命の祈り：買うと、次の数枚は排出率を上げて引き当てる（レア以上が出やすい）', () => {
-  const { cards, rules } = buildData();
+  const { cards, rules } = buildData({ rules: PLAIN_START });
   const upgrades = loadJson('upgrades.json');
   const base = dropRates(cards, rarities);
   const boosted = dropRates(cards, rarities, { from: 'rare', multiplier: 4 });
@@ -106,7 +106,7 @@ test('運命の祈り：買うと、次の数枚は排出率を上げて引き�
 });
 
 test('ドロー：drawPerPlayed なら、前のターンに出した枚数ぶん引く', () => {
-  const { cards, rules } = buildData({ rules: { drawUntilHand: 0, drawPerTurn: 1, drawPerPlayed: true, maxHand: 20 } });
+  const { cards, rules } = buildData({ rules: { ...PLAIN_START, drawUntilHand: 0, drawPerTurn: 1, drawPerPlayed: true, maxHand: 20 } });
   const g = new Game({ cards, rules, rng: seededRng(5) });
   g.debugSetHand('p1', ['infantry', 'shield', 'shield']);
   g.debugSetHand('p2', ['infantry']);
@@ -123,7 +123,7 @@ test('ドロー：drawPerPlayed なら、前のターンに出した枚数ぶん
 });
 
 test('コイン：最初に initialCoins、自分のターンの始めに coinPerTurn もらえる。コインのカードで増やせる', () => {
-  const { cards, rules } = buildData({ rules: { initialCoins: 5, coinPerTurn: 1 } });
+  const { cards, rules } = buildData({ rules: { ...PLAIN_START, initialCoins: 5, coinPerTurn: 1 } });
   const g = new Game({ cards, rules, rng: seededRng(7) });
   assert.equal(g.getState('p1').players.p1.coins, 5);
   assert.equal(g.getState('p1').players.p2.coins, 5);
@@ -186,7 +186,7 @@ test('魔物のごほうび：rewardRarity の魔物を倒すと、そのレア�
 
 test('放置：魔物が城を攻めるたびに、ダメージが monsterAttackGrowth ずつ重くなる', () => {
   const monsters = { rock: { name: 'いわ', hp: 99, attack: 1, rewardRarity: 'common', castleAttack: 2, attackEvery: 1, weight: 1 } };
-  const { cards, rules } = buildData({ rules: { monsterFirstRound: 1, monsterSpawnChance: 1, monsterAttackGrowth: 3, drawUntilHand: 0, monsterEvolveEvery: 0, nightChance: 0 } });
+  const { cards, rules } = buildData({ rules: { ...PLAIN_START, monsterFirstRound: 1, monsterSpawnChance: 1, monsterAttackGrowth: 3, drawUntilHand: 0, monsterEvolveEvery: 0, nightChance: 0 } });
   const g = new Game({ cards, rules, rng: seededRng(2), monsters });
   const log = recordEvents(g, ['monsterAttackedCastle']);
   g.start();

@@ -182,7 +182,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 
 ### 用語
 
-- プレイヤーID：`"p1"`〜`"p8"`（人数は `rules.playerCount`）。先攻は `"p1"`
+- プレイヤーID：`"p1"`〜`"p8"`（人数は `rules.playerCount`）。先攻は `setup.firstPlayer`（省略すると `"p1"`。「コイントス・後攻の補正・マリガン」）
 - カード種類（type）：`cards.json` のキー。例：`"infantry"`
 - カードID（cardId）：山札の1枚1枚につく一意のID。例：`"c07"`。同じ種類のカードでもIDは別
 - 兵士ID（soldierId）：場に出た兵士につく一意のID。例：`"s03"`
@@ -195,7 +195,8 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 | メソッド | 説明 |
 |---|---|
 | `new Game({ cards, rules, rng, monsters, upgrades, castles, decks, stages, setup })` | ゲームを作る。`stages`（`data/stages.json`）を渡すと、`setup.stage`（ステージのIDか `"random"`。省略すると `"random"`）のステージで遊ぶ。`cards` / `rules` / `monsters` / `upgrades` / `castles` / `decks` は `data/` の JSON の中身（Game はファイルを読まない）。`cards` / `rules` 以外は省略でき、省略すると魔物は出ず・強化は買えず・城の種類はなし。`setup` は席ごとの選択 `{ castles: [...], decks: [...] }`（省略すると `rules.defaultCastle` / `rules.defaultDeck`）。`rng` は 0以上1未満を返す乱数で、省略すると `Math.random`。作った時点で初期手札は配られていて、`phase` は `"ready"`。イベントは出さない |
-| `game.start()` | ゲームを始める。全イベントを `on()` で購読してから呼ぶと、p1 のターン1が始まる（`turnStarted` → ドロー → 進軍） |
+| `game.start()` | ゲームを始める。全イベントを `on()` で購読してから呼ぶと、先攻（`setup.firstPlayer`。省略すると p1）のターン1が始まる（`turnStarted` → ドロー → 進軍）。`rules.mulligan` が `true` なら、先に `phase` が `"mulligan"` になり、全員が `mulligan()` を選んでからターン1 |
+| `game.mulligan(playerId, cardIds)` | マリガン（`phase` が `"mulligan"` のときだけ。1人1回。自分の番でなくてよい）。`cardIds`（0枚でもよい）を山札に戻してシャッフルし、同じ枚数を引き直す。全員が選んだら先攻のターン1が始まる |
 | `game.getState(viewerId)` | 今の状態をただのオブジェクトで返す。`viewerId` の手札は中身まで、相手の手札は枚数だけ入る |
 | `game.canPlayCard(cardId, target)` | そのカードを今出せるかを返す（読むだけで、状態は変わらない）。出せないときは `{ ok: false, reason }`。`playCard` と同じ判定なので、UIは出せない理由を前もって表示できる。`target` を省略して、対象が2つ以上あるときは `{ ok: true, needsTarget: true }` |
 | `game.getTargets(cardId)` | そのカードを今出せる対象の一覧（読むだけ）。出せないときは空の配列。対象の形は下の「対象」 |
@@ -288,6 +289,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | イベント | ペイロード |
 |---|---|
 | `turnStarted` | `{ playerId, turn }` |
+| `overdriveChanged` | `{ playerId, active, hp, attack }` … 背水の陣になった（`active: true`）／終わった。`playerId` は城の持ち主。城HPが変わるイベント（`castleDamaged` / `castleHealed` / `monsterAttackedCastle`）のすぐあとに出る |
+| `mulliganStarted` | `{ playerIds, firstPlayer }` … マリガンの場面が始まった（`start()` のとき。`rules.mulligan` が `true`） |
+| `mulliganDone` | `{ playerId, count, returnedIds, cardIds }` … 引き直した。オンラインでは本人以外に `{ playerId, count }` だけ送る |
 | `timeChanged` | `{ time, previous, rounds, cause, playerId }` … 昼と夜が変わった。`time` は `"night"` / `"day"`、`rounds` は夜が続く周回（昼なら0）、`cause` は `"natural"` か `"card"`（ムーンライズ・ドーンブレイク。`playerId` は出した人） |
 | `stageEruption` | `{ roadId, square, amount }` … 溶岩のステージの噴火（広場なら `roadId` は `"plaza"`）。このあと、そのマスの兵士の `soldierDamaged`（`cause: "eruption"`）→ `statusApplied`（`"burn"`） |
 | `cardDrawn` | `{ playerId, cardIds }` |
@@ -485,7 +489,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 （コインの強化・精霊・兵士の追加で、以前の「rush が最弱」の順が入れかわったので、割り当てを直した。測定：`node tests/sim/run.js --games 200 --match <戦い方>,random`）
 
-- 先攻・後攻は毎回ランダム（後攻は今のルールどおり城HP+1）。「もう1回」は同じ強さで始まる
+- 先攻・後攻は毎回ランダム（後攻の補正は「コイントス・後攻の補正・マリガン」の節）。「もう1回」は同じ強さで始まる
 - 交代の画面は出さない（オンラインと同じく、だれの番かを帯で知らせる）。メニューから降参できる
 - 強さの割り当ては `js/ui/config.js` の `UI_CONFIG.cpuLevels`（`js/main.js` の `CPU_LEVELS` が読む）。カードや数値を変えたら、`node tests/sim/run.js --match rush,random` などで弱い順が変わっていないか確かめる
 
@@ -1286,6 +1290,24 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均39.7手番・p1 勝率49%（追加前とほぼ同じ）。CPU の弱い順は変わらない（`--games 200` で random に勝つ割合：defensive 10%・rush 16%・smart 89%。追加前は 8%・17%・84%）
 - 画面：説明文・札（`js/ui/text.js`）、道に土けむりと風の音の演出（`Animations.js` の `mist`・`Sound.js` の `gust`）、押し戻しは今の進軍の動きで後ろへ下がる。チュートリアルは押し戻しを「進軍した」と数えない。絵は仮の SVG（`js/ui/art.js`）、魔法のスキン `fxskin_galeForce`（`data/shop.json`）。専用の絵ができたら差しかえる
 
+## 背水の陣とBGMの切り替え（人間に確認して決めた。仮）
+
+- **背水の陣**（`rules.overdriveHpRatio`、仮：0.3333／`rules.overdriveAttack`、仮：10。どちらかが0なら使わない）：城HPが「上限 × `overdriveHpRatio`（四捨五入）」以下（城HP60なら20以下。部屋で城HPを変えても同じ割合）になると、その城の兵士全員（チーム戦は城を共有するメンバー全員）の攻撃が +`overdriveAttack`。戦い・射撃・城へのダメージに効く（城へは「攻撃力×`soldierCastleDamageMultiplier`」なので +20）。回復して線を超えたら終わる。イベント `overdriveChanged`、`getState().players.pX.overdrive`（`true` / `false`）。`getState()` の兵士の `attack` には足さない（夜と同じ）
+- 確かめたこと：`--match smart,smart --games 600` で平均39手番・先攻の勝率46%（背水の陣なしと同じくらい）。**先に城HPが1/3以下になった側が勝つ割合**は、背水の陣なしで19%、+5で22%、**+10で27%**（smart 同士400試合）。逆転は起きやすくなったが、強すぎてはいない。遊んで確かめる
+- 画面：城が赤く燃える（`css/stage.css` の `.castle.overdrive`）、「🔥 背水の陣！」の帯と画面の揺れ
+- **BGM**（`js/ui/Music.js`・`js/ui/musicScene.js`）：場面の優先は **ピンチ**（どこかの城が背水の陣）＞**ボス戦**（`UI_CONFIG.bossMonsters`＝ドラゴン・デーモン・魔王か、ごほうびがエピック以上まで育った魔物）＞**夜**＞**魔物がいる**＞ふつう。試合中の場面どうしは、曲を止めずに8拍の切れ目で次の曲へ移る。夜・ボス・ピンチの曲を足した（音源ファイルなし。今までと同じく音符で書いた旋律）
+
+## コイントス・後攻の補正・マリガン（人間に確認して決めた。仮）
+
+- **先攻（コイントス）**：`new Game({ setup: { firstPlayer } })`（省略すると席順の最初の人）。ひとりで遊ぶ・同じ端末は画面がシードから、オンラインはサーバーが部屋の乱数で、ランダムに選んで渡す（チーム戦は席順のまま。`firstPlayer` を変えると例外）。周回は先攻のターンで増える（先攻が抜けたら、先攻から席順に数えて残っている人）。`getState().firstPlayer`。画面は、試合の始めにコインが回る演出で知らせる（`Animations.coinToss`・`css/coin-toss.css`。演出なしの設定なら帯だけ）
+- **後攻の補正**（先攻以外の人。チーム戦では使わない）：初期手札 +`secondPlayerHandBonus`（仮：1）、最初から城壁 `secondPlayerArmor`（仮：5）。今までの `secondPlayerCastleBonus`（城HP）は0のまま
+- **マリガン**（`rules.mulligan`、仮：`true`）：`start()` のあと `phase` が `"mulligan"`（`getState().mulligan` は `{ pending: まだ選んでいない人 }`）。そのあいだ `playCard` / `endTurn` などは「最初の手札を選んでいるところです」。降参はできる（2人なら相手の勝ち）
+  - CPU：兵士が1枚もない手札なら全部戻し、それ以外は戻さない（`mulliganChoice` in `js/game/strategies.js`）
+  - オンライン：`POST /api/action` の `method` に `mulligan`（`args: [cardIds]`。自分の手札だけ。自分の番でなくても送れる）。CPU は少し間をおいて選ぶ
+  - 画面：「捨てる」と同じバーで、0枚から何枚でも選ぶ（「このまま始める」／「引き直す（N枚）」）。**2人で交代して遊ぶときはしない**（手札を見せ合えないため）
+- テスト：本物の `data/rules.json` で、マリガン・後攻の補正と関係のない仕組みを確かめるテストは、`tests/helpers.js` の `PLAIN_START` でこの3つを切る
+- 確かめたこと（`node tests/sim/run.js --match smart,smart --games 600`。シミュレーションは p1 が先攻）：全試合決着、平均40手番、**先攻の勝率45%±4%**（補正が手札+1だけ・城壁5だけなら47%、補正なしは前の測定で52%）。後攻がやや有利なので、遊んで確かめる（直すなら `secondPlayerHandBonus` か `secondPlayerArmor` を0にする）。CPU の弱い順は変わらない（random に勝つ割合：defensive 8%・rush 13%・smart 78%。random が後攻の補正をもらうため smart の数字は下がった）
+
 ## 魔法4種：チェーン・ブラスト／イグニッション・バースト／シールド・ブラスト／ピュリファイ・フレア（人間に確認して決めた。仮）
 
 | 名前（type・effect） | 効果 | 長所 | 短所 | レアリティ（MP）・合成先 |
@@ -1323,7 +1345,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 「移動マス−1」（氷）は、滑ると逆の効果になるので入れていない。「溶岩の裂け目噴火」は噴火で表した
 - **選び方**：ふだんは毎試合ランダム。ひとりで遊ぶ・同じ端末の詳細設定（`js/ui/LocalSetup.js`）と、オンラインの部屋主の「ルールを変更」（`setRules` の `stage`。`"random"` かステージのID。`room.settings.stage`、`choices.stages`）で決めたステージも選べる
 - `getState().stage`：`{ id, name, icon, description, element, elementMultiplier }` か `null`
-- 画面：盤面の道の色をステージごとに変える（`css/stage.css`。専用の背景の絵ができたら差しかえる）。上の「○周目」の前にステージのアイコン。試合の始めにステージの説明をお知らせで出す。噴火の演出
+- 画面：ステージごとに、盤面の景色（`#scenery`）・道・飛び石・城の色味を変える（`css/stage.css`。今はグラデーションと模様で描いた仮の見た目）。背景の絵 `assets/bg/stage-<ステージ>.png`（`darkForest` は `stage-dark-forest.png`）を置いて `assets/asset-manifest.json` に足せば、`js/ui/Renderer.js` の `setStage` が自動でそちらを使う（作り方は `assets/STYLE.md`）。2人のときは、相手の城を大きく（1.35倍）、自分の城を小さく（0.78倍）見せる（奥行き。人間の指示。`css/stage.css`）。背景の絵は草原・古代遺跡・闇の森・氷・溶岩の5枚がある（`assets/bg/stage-*.png`。城と城の間の地面（フィールド）だけの絵で、城はゲームの城のまま（人間の指示）。砂漠はまだ CSS の見た目）。絵があるときは、画面側の道の枠を消し、飛び石は道にぴったり合う画面側のもの（砂漠と同じ石。`ui/kingdom-platform.png`）を地面の絵の上に3列に並べる。真ん中のマスは、どのステージでも大きな石の台（人間の指示）。**真ん中のマス（魔物・のちのワールドボスの場所）は、ほかのマスの `UI_CONFIG.midCellScale`（1.8）倍の高さ**（画面だけ。`js/ui/Renderer.js` の `rowCenter` と `--cell-rows` が同じ比率を使う）。上の「○周目」の前にステージのアイコン。試合の始めにステージの説明をお知らせで出す。噴火の演出
 - シミュレーション：`node tests/sim/run.js` は毎試合ランダムなステージで回す。`--stage lava` で1つに決める、`--no-stages` でステージなし
 - 確かめたこと（`--games 200 --match smart,smart --stage …`）：どのステージも全試合決着。平均手番：草原38・溶岩38・氷35・遺跡33・闇の森39・砂漠36、先攻の勝率49〜53%。CPU の弱い順は変わらない（random に勝つ割合：defensive 10%・rush 13%・smart 84%）
 

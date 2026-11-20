@@ -21,6 +21,10 @@ export function filterEventFor(type, payload, viewerId, viewerSide = viewerId) {
   if (type === 'cardDrawn') {
     return { ...payload, count: payload.cardIds.length };
   }
+  if (type === 'mulliganDone' && payload.playerId !== viewerId) {
+    // 本人以外には、引き直した枚数だけ（戻したカード・引いたカードのIDは見せない）
+    return { playerId: payload.playerId, count: payload.count };
+  }
   if (type === 'cardsFused' && payload.playerId !== viewerId) {
     // 本人以外には、合成したことだけ（カードの中身は見せない）
     return { playerId: payload.playerId };

@@ -31,6 +31,12 @@ export function buildData({ rules: rulesPatch = {}, cards: cardsPatch = {}, sour
   return { rules, cards };
 }
 
+/**
+ * 試合の始めの決まり（マリガン・後攻の補正）を切るルールの上書き。
+ * それとは関係のない仕組みを、本物の data/rules.json で確かめるテストで使う（start() のあとすぐ先攻のターン1になる）
+ */
+export const PLAIN_START = { mulligan: false, secondPlayerHandBonus: 0, secondPlayerArmor: 0 };
+
 /** data/ の魔物と強化（STEP 3）。ファイルがなければ null */
 export function loadOptionalData() {
   const read = (name) => {

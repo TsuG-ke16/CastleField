@@ -34,6 +34,9 @@ export const PLAYER_IDS = ['p1', 'p2'];
 /** Game が出すイベントの名前（CLAUDE.md「Gameが出すイベント」の表と同じ） */
 export const EVENT_TYPES = [
   'turnStarted',
+  'overdriveChanged',
+  'mulliganStarted',
+  'mulliganDone',
   'timeChanged',
   'stageEruption',
   'cardDrawn',
@@ -156,6 +159,13 @@ const OPTIONAL_RULES = {
   nightBeastAttack: 0,
   nightStealthAttack: 0,
   nightMonsterAttack: 0,
+  // 後攻（先攻以外の人）の補正：初期手札に足す枚数と、最初から持っている城壁（チーム戦では使わない）
+  secondPlayerHandBonus: 0,
+  secondPlayerArmor: 0,
+  // マリガン：true なら、start() のあと全員が1回だけ手札を引き直せる（phase "mulligan"）
+  mulligan: false,
+  // 背水の陣：城HPが上限 × overdriveHpRatio（四捨五入）以下になると、その城の兵士全員の攻撃 +overdriveAttack（0 なら使わない）
+  overdriveAttack: 0,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -172,6 +182,7 @@ const CHOICE_RULES = {
 /** 0以上1以下の数（整数でなくてよい）の省略できる項目 */
 const OPTIONAL_RATE_RULES = {
   monsterSpawnChance: 0, // 周回の始めに、魔物がいない道ごとに魔物が出る確率
+  overdriveHpRatio: 0, // 背水の陣になる城HPの割合（上限に対して。0 なら使わない）
   nightChance: 0, // 昼のとき、周回の始めに夜になる確率（0 なら夜にならない。ステージの nightChance が優先）
   rewardLuckyChance: 0, // 魔物のごほうびが、1つ上のレアリティになる確率（ラッキー）
   // チーム戦の城HP ＝ 代表の城HP ＋ この割合 × ほかのメンバーの城HPの合計（1 なら人数ぶん、0 なら1人ぶん）
@@ -195,6 +206,8 @@ const fail = (reason) => ({ ok: false, reason });
 /** コインのカード（1ターンに coinCardsPerTurn 枚まで）：コインを増やすカードとコインサイコロ */
 const isCoinCard = (def) => def.effect === 'gainCoins' || (def.effect === 'dice' && def.dice === 'coin');
 
+/** 城HPが変わるイベント（このあと背水の陣を確かめる） */
+const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttackedCastle']);
 const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
   'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
@@ -359,6 +372,32 @@ export class Game {
       }
     }
 
+    // 先攻：setup.firstPlayer（省略すると席順の最初の人）。コイントスの結果を画面・サーバーが渡す。チーム戦では席順のまま
+    const first = setup.firstPlayer ?? this.playerOrder[0];
+    if (!this.playerOrder.includes(first)) throw new Error(`setup.firstPlayer は ${this.playerOrder.join(' / ')} のどれかにしてください`);
+    if (first !== this.playerOrder[0] && this.teamOrder) throw new Error('チーム戦では setup.firstPlayer を使えません（チームの順で始まります）');
+    this.firstPlayer = first;
+    this.currentPlayer = first;
+    // 後攻の補正：先攻以外の人は、初期手札が secondPlayerHandBonus 枚多く、最初から城壁 secondPlayerArmor を持つ
+    if (!this.teamOrder) {
+      for (const id of this.playerOrder) {
+        if (id === first) continue;
+        const pile = this.piles.get(id);
+        for (let i = 0; i < this.rules.secondPlayerHandBonus; i++) {
+          const card = pile.deck.shift();
+          if (!card) break;
+          this.players[id].hand.push(card);
+        }
+        if (this.rules.secondPlayerArmor > 0) {
+          this.players[id].armor = this.rules.armorMax ? Math.min(this.rules.armorMax, this.rules.secondPlayerArmor) : this.rules.secondPlayerArmor;
+        }
+      }
+    }
+    /** 背水の陣になっている城（城の持ち主のID） */
+    this.overdrive = new Set();
+    /** マリガン（phase "mulligan"）で、まだ選んでいない人 */
+    this.mulliganPending = new Set();
+
     // ステージ：setup.stage（ID か "random"。省略すると "random"）。山札を作ったあとに選ぶ（ステージを使わないときの山札の並びを変えないため）
     if (stages !== null) {
       const want = setup.stage ?? 'random';
@@ -445,7 +484,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor', 'overdriveAttack']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -536,6 +575,27 @@ export class Game {
         // 画面側のエラーでゲームの状態が途中で止まらないようにする
         console.error(`イベント "${type}" の処理中にエラー:`, err);
       }
+    }
+    // 城HPが変わったら、背水の陣になったか（終わったか）を確かめる
+    if (CASTLE_HP_EVENTS.has(type)) this.updateOverdrive();
+  }
+
+  /** 背水の陣になる城HP（上限 × overdriveHpRatio を四捨五入）。使わないなら -1 */
+  overdriveLine(owner) {
+    if (!this.rules.overdriveAttack || !this.rules.overdriveHpRatio) return -1;
+    return Math.round(owner.castle.maxHp * this.rules.overdriveHpRatio);
+  }
+
+  /** 城ごとに背水の陣かを確かめ、変わったら overdriveChanged を出す */
+  updateOverdrive() {
+    if (!this.rules.overdriveAttack || !this.rules.overdriveHpRatio) return;
+    for (const id of this.aliveSides()) {
+      const owner = this.players[id];
+      const on = owner.castle.hp > 0 && owner.castle.hp <= this.overdriveLine(owner);
+      if (on === this.overdrive.has(id)) continue;
+      if (on) this.overdrive.add(id);
+      else this.overdrive.delete(id);
+      this.emit('overdriveChanged', { playerId: id, active: on, hp: owner.castle.hp, attack: this.rules.overdriveAttack });
     }
   }
 
@@ -728,7 +788,54 @@ export class Game {
   /** ゲームを始める（席順の最初の人のターン1）。UI が on() で購読してから呼ぶ */
   start() {
     if (this.phase !== 'ready') return fail('ゲームはもう始まっています');
-    this.beginTurn(this.playerOrder[0]);
+    // マリガン：全員が手札を引き直すか選んでから、先攻のターン1が始まる
+    if (this.rules.mulligan) {
+      this.phase = 'mulligan';
+      this.mulliganPending = new Set(this.alivePlayerIds());
+      this.emit('mulliganStarted', { playerIds: [...this.mulliganPending], firstPlayer: this.firstPlayer });
+      return ok();
+    }
+    this.beginTurn(this.firstPlayer);
+    return ok();
+  }
+
+  /** 周回を始める人（先攻から席順に数えて、まだ負けていない最初の人） */
+  roundLeader() {
+    const order = this.playerOrder;
+    const start = order.indexOf(this.firstPlayer);
+    for (let i = 0; i < order.length; i++) {
+      const id = order[(start + i) % order.length];
+      if (!this.players[id].eliminated) return id;
+    }
+    return null;
+  }
+
+  /**
+   * マリガン：最初の手札から cardIds（0枚でもよい）を山札に戻してシャッフルし、同じ枚数を引き直す。1人1回だけ。
+   * 全員が選び終わったら、先攻のターン1が始まる。自分の番でなくても送れる
+   */
+  mulligan(playerId, cardIds = []) {
+    if (this.phase !== 'mulligan') return fail('今は手札を引き直す場面ではありません');
+    if (!this.mulliganPending.has(playerId)) return fail('手札の引き直しはもう選びました');
+    if (!Array.isArray(cardIds)) return fail('引き直すカードのIDを配列で渡してください');
+    const player = this.players[playerId];
+    if (new Set(cardIds).size !== cardIds.length) return fail('同じカードを2回選んでいます');
+    const cards = cardIds.map((id) => player.findInHand(id));
+    if (cards.some((c) => !c)) return fail('そのカードは手札にありません');
+    const pile = this.pileOf(playerId);
+    player.hand = player.hand.filter((c) => !cardIds.includes(c.cardId));
+    pile.deck.push(...cards);
+    pile.deck = this.shuffle(pile.deck);
+    const drawn = [];
+    for (let i = 0; i < cards.length; i++) {
+      const card = pile.deck.shift();
+      if (!card) break;
+      player.hand.push(card);
+      drawn.push(card.cardId);
+    }
+    this.mulliganPending.delete(playerId);
+    this.emit('mulliganDone', { playerId, count: cards.length, returnedIds: [...cardIds], cardIds: drawn });
+    if (this.mulliganPending.size === 0) this.beginTurn(this.firstPlayer);
     return ok();
   }
 
@@ -739,7 +846,7 @@ export class Game {
     // チーム戦は、最初のチームの手番が来るたびに周回が変わる
     const isRoundStart = !continueRound && (this.teamOrder
       ? this.teamOf.get(playerId) === this.aliveTeams()[0] && (this.rules.teamTurns === 'rotate' || this.teamCursor.get(this.teamOf.get(playerId)) === -1)
-      : playerId === this.alivePlayerIds()[0]);
+      : playerId === this.roundLeader());
     if (isRoundStart && this.rules.maxRounds > 0 && this.round >= this.rules.maxRounds) {
       this.finishByRoundLimit();
       return;
@@ -1716,11 +1823,17 @@ export class Game {
 
   /** 兵士の今の攻撃力（夜は、獣＝魔物の駒と、暗殺者・忍者が強くなる） */
   attackOf(soldier) {
-    if (!this.night) return soldier.attack;
-    const def = this.cardDefs[soldier.type] ?? {};
     let bonus = 0;
-    if (def.monster !== undefined || def.beast) bonus += this.rules.nightBeastAttack;
-    if (soldier.stealth) bonus += this.rules.nightStealthAttack;
+    // 背水の陣：自分の城が背水の陣なら、兵士全員の攻撃が上がる
+    if (this.overdrive.size > 0) {
+      const ownerId = this.playerOrder.find((id) => this.players[id].soldiers.includes(soldier));
+      if (ownerId && this.overdrive.has(this.side(ownerId))) bonus += this.rules.overdriveAttack;
+    }
+    if (this.night) {
+      const def = this.cardDefs[soldier.type] ?? {};
+      if (def.monster !== undefined || def.beast) bonus += this.rules.nightBeastAttack;
+      if (soldier.stealth) bonus += this.rules.nightStealthAttack;
+    }
     return soldier.attack + bonus;
   }
 
@@ -2176,6 +2289,7 @@ export class Game {
     if (this.phase === 'gameOver') return fail('ゲームは終わっています');
     if (this.phase === 'discard') return fail('手札を捨てているところです');
     if (this.phase === 'defend') return fail('相手が防御を選んでいます');
+    if (this.phase === 'mulligan') return fail('最初の手札を選んでいるところです');
 
     const player = this.players[this.currentPlayer];
     const card = player.findInHand(cardId);
@@ -2868,6 +2982,7 @@ export class Game {
     if (this.phase === 'gameOver') return fail('ゲームは終わっています');
     if (this.phase === 'discard') return fail('先に手札を捨ててください');
     if (this.phase === 'defend') return fail('相手が防御を選んでいます');
+    if (this.phase === 'mulligan') return fail('最初の手札を選んでいるところです');
 
     const player = this.players[this.currentPlayer];
     // 溶岩のステージ：ターンの終わりの灼熱
@@ -3100,7 +3215,7 @@ export class Game {
     // 3つ以上のときは、降参した人（チーム戦ならチーム全員）の城が壊れて抜け、残りの試合を見守る
     if (this.phase === 'defend') this.passDefense(); // 防御待ちだったら、先に攻撃を済ませる
     if (this.phase === 'gameOver') return { ok: true };
-    const wasTurn = this.side(this.currentPlayer) === mine;
+    const wasTurn = this.side(this.currentPlayer) === mine && this.phase !== 'mulligan';
     const members = alive.filter((id) => this.side(id) === mine);
     const castle = this.players[mine].castle;
     const lost = castle.hp;
@@ -3110,6 +3225,12 @@ export class Game {
     if (this.aliveSides().length <= 1) {
       const left = this.alivePlayerIds();
       this.finish(left[0] ?? playerId, 'lastStanding');
+      return { ok: true };
+    }
+    // マリガン中なら、降参した人は選ばなくてよい。残りが全員選び終わっていれば、先攻（から数えて残っている人）のターン1を始める
+    if (this.phase === 'mulligan') {
+      for (const id of members) this.mulliganPending.delete(id);
+      if (this.mulliganPending.size === 0) this.beginTurn(this.roundLeader());
       return { ok: true };
     }
     // 降参した人の番だったら、次の人の番にする
@@ -3190,6 +3311,8 @@ export class Game {
         ...base,
         team: this.teamOf?.get(id) ?? null,
         castleOwner: this.side(id),
+        // 背水の陣（城を共有するチームは同じ値）
+        overdrive: this.overdrive.has(this.side(id)),
         castleType: p.castleType,
         maxHand: p.maxHand,
         deckId: p.deckId ?? null,
@@ -3214,6 +3337,9 @@ export class Game {
         : null,
       winnerTeam: this.winnerTeam,
       playerOrder: [...this.playerOrder],
+      // 先攻（コイントスで決まった人）と、マリガンで引き直しをまだ選んでいない人（phase "mulligan" のときだけ）
+      firstPlayer: this.firstPlayer,
+      mulligan: this.phase === 'mulligan' ? { pending: this.playerOrder.filter((id) => this.mulliganPending.has(id)) } : null,
       round: this.round,
       weather: this.weather ? { type: this.weather.type, name: this.weatherDef().name, icon: this.weatherDef().icon ?? null, description: this.weatherDef().description ?? null, roundsLeft: this.weather.roundsLeft } : null,
       weatherEnabled: Boolean(this.weatherDefs),
@@ -3255,6 +3381,11 @@ export class Game {
     const max = this.players[playerId].castle.maxHp;
     if (!Number.isInteger(hp) || hp < 1 || hp > max) return fail(`HPは1〜${max}の整数にしてください`);
     this.players[playerId].castle.hp = hp;
+    // 背水の陣も合わせる（デバッグなのでイベントは出さない）
+    const side = this.side(playerId);
+    const line = this.overdriveLine(this.players[side]);
+    if (line >= 0 && this.players[side].castle.hp <= line) this.overdrive.add(side);
+    else this.overdrive.delete(side);
     return ok();
   }
 

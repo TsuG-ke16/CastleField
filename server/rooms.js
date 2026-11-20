@@ -8,11 +8,11 @@ import { randomBytes } from 'node:crypto';
 import { Game, EVENT_TYPES, TEAM_IDS, MAX_TEAM_SIZE } from '../js/game/Game.js';
 import { randomUUID } from 'node:crypto';
 import { filterEventFor } from '../js/game/visibility.js';
-import { STRATEGIES } from '../js/game/strategies.js';
+import { STRATEGIES, mulliganChoice } from '../js/game/strategies.js';
 import { checkCostDeck } from '../js/game/Setup.js';
 
 /** 試合中の操作（Game のメソッドに渡す） */
-const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense'];
+const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense', 'mulligan'];
 /** 部屋の操作（いつでも送れる。だめなときは理由を返す） */
 const RANKED_BLOCKED = ['start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'rematch'];
 const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
@@ -206,6 +206,11 @@ export class Room {
     if (teams) setup.teams = teams;
     this.lastTeams = teams;
     if (this.data.stages) setup.stage = this.settings.stage ?? 'random';
+    // コイントス：先攻はランダム（チーム戦はチームの順のまま）
+    if (!teams) {
+      const coin = this.makeRng();
+      setup.firstPlayer = this.seats[Math.floor(coin() * this.seats.length)].playerId;
+    }
     if (this.data.castles) setup.castles = this.seats.map((s) => s.castle);
     if (this.data.decks && rules.deckMode === 'own') setup.decks = this.seats.map((s) => s.deck);
     if (rules.deckMode === 'cost') {
@@ -302,7 +307,10 @@ export class Room {
       default: break;
     }
     if (!this.game) return { ok: false, reason: 'まだ試合が始まっていません' };
-    if (DEFENSE_ACTIONS.includes(method)) {
+    if (method === 'mulligan') {
+      // マリガン：だれでも自分の手札だけ（自分の番でなくても）。args は [cardIds]
+      args = [seat.playerId, args[0] ?? []];
+    } else if (DEFENSE_ACTIONS.includes(method)) {
       // 防御は、攻撃を受ける人だけが送れる
       if (this.game.phase !== 'defend') return { ok: false, reason: '今は防御する場面ではありません' };
       if (this.game.pending.defenderId !== seat.playerId) return { ok: false, reason: 'あなたは防御する人ではありません' };
@@ -691,6 +699,7 @@ export class Room {
   cpuWaiting() {
     const st = this.game.getState(null);
     if (st.phase === 'defend') return Boolean(this.seatOf(st.defense.defenderId)?.cpu);
+    if (st.phase === 'mulligan') return st.mulligan.pending.some((id) => this.seatOf(id)?.cpu);
     if (st.phase === 'main' || st.phase === 'discard') return Boolean(this.seatOf(st.currentPlayer)?.cpu);
     return false;
   }
@@ -731,6 +740,20 @@ export class Room {
     if (!game) return false;
     const st = game.getState(null);
     const ctx = this.cpuCtx();
+    if (st.phase === 'mulligan') {
+      // CPU は全員まとめて引き直しを選ぶ（人が選び終わるまでは、そのまま待つ）
+      const cpus = st.mulligan.pending.filter((id) => this.seatOf(id)?.cpu);
+      for (const id of cpus) {
+        let ids = [];
+        try {
+          ids = mulliganChoice(game, id, ctx);
+        } catch (err) {
+          console.error('CPU のマリガンでエラーが起きました', err);
+        }
+        if (!game.mulligan(id, ids).ok) game.mulligan(id, []);
+      }
+      return cpus.length > 0;
+    }
     if (st.phase === 'defend') {
       const def = this.seatOf(st.defense.defenderId);
       if (!def?.cpu) return false;

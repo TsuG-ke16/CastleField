@@ -2,7 +2,7 @@
 // 乱数はすべてシード付きなので、同じ引数なら誰が回しても同じ結果になる。
 import { Game, EVENT_TYPES } from '../../js/game/Game.js';
 import { seededRng } from '../helpers.js';
-import { STRATEGIES } from './strategies.js';
+import { STRATEGIES, mulliganChoice } from './strategies.js';
 
 /**
  * 1試合を回す。
@@ -72,6 +72,11 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
   ctx.onDefense = settleDefense;
 
   game.start();
+  // マリガン：全員が選ぶ（席順に）
+  for (const pid of game.getState(null).mulligan?.pending ?? []) {
+    const r = game.mulligan(pid, mulliganChoice(game, pid, ctx));
+    if (!r.ok) throw new Error(`mulligan が失敗: ${r.reason}`);
+  }
   let guard = 0;
   for (;;) {
     const now = game.getState(null);

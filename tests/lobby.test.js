@@ -26,6 +26,15 @@ function playOut(room) {
     const game = room.game;
     const st = game.getState(null);
     if (st.phase === 'gameOver') return st;
+    if (st.phase === 'mulligan') {
+      // 人の席は引き直さない（CPU は勝手に選ぶ）
+      for (const id of st.mulligan.pending) {
+        const s = room.seatOf(id);
+        assert.equal(s.cpu, null, 'CPU のマリガンで止まっている');
+        assert.equal(room.action(s, 'mulligan', [[]]).ok, true);
+      }
+      continue;
+    }
     if (st.phase === 'defend') {
       const s = room.seatOf(st.defense.defenderId);
       assert.equal(s.cpu, null, 'CPU の防御で止まっている');
@@ -189,13 +198,19 @@ test('CPU は間をおいて1手ずつ動く（cpuDelayMs）', async () => {
   const a = enter(lobby, 'r', 'A');
   a.room.action(a.seat, 'addCpu', ['hard']);
   a.room.action(a.seat, 'start', []);
-  assert.equal(a.room.action(a.seat, 'endTurn', []).ok, true);
-  const st = a.room.game.getState(null);
-  assert.equal(st.currentPlayer, 'p2'); // すぐには動かない
-  for (let i = 0; i < 200 && a.room.cpuWaiting(); i++) await new Promise((r) => setTimeout(r, 5));
+  const wait = async () => { for (let i = 0; i < 200 && a.room.cpuWaiting(); i++) await new Promise((r) => setTimeout(r, 5)); };
   // 人が動く場面で止まる（自分の番か、CPU の攻撃への防御）
-  const now = a.room.game.getState(null);
-  assert.equal(now.phase === 'defend' ? now.defense.defenderId : now.currentPlayer, 'p1');
+  const humanTurn = () => { const now = a.room.game.getState(null); return (now.phase === 'defend' ? now.defense.defenderId : now.currentPlayer) === 'p1'; };
+  assert.equal(a.room.action(a.seat, 'mulligan', [[]]).ok, true);
+  assert.equal(a.room.game.getState(null).phase, 'mulligan'); // CPU のマリガンも、すぐには選ばない
+  await wait();
+  assert.equal(humanTurn(), true);
+  if (a.room.game.getState(null).phase === 'main') {
+    assert.equal(a.room.action(a.seat, 'endTurn', []).ok, true);
+    assert.equal(a.room.game.getState(null).currentPlayer, 'p2'); // すぐには動かない
+    await wait();
+    assert.equal(humanTurn(), true);
+  }
   a.room.stopCpu();
 });
 
