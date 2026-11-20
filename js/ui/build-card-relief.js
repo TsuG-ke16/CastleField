@@ -461,6 +461,63 @@ export function buildRelief(png, cfg) {
   if (cfg.shape) {
     const sh = shapeHeight({ W, H, solid, big, shape: cfg.shape });
     height.set(sh.height);
+    // 羽・葉・飾りの1枚1枚：絵の線画（太いこげ茶の輪郭線。STYLE.md の決まり）で区切った部品ごとに、
+    // 輪郭線からの距離でまんじゅうのように丸くふくらませる。色の濃さ・明るさは高さに使わない（区切りに使うのは線だけ）
+    {
+      // 線画：まわり（半径4px）より明るさが一段低い細い筋（線は真っ黒ではなく茶色なので、決まった暗さでは拾えない）。小さな点は外す
+      const lum = new Float32Array(N);
+      for (let i = 0; i < N; i++) lum[i] = (data[i * 4] * .3 + data[i * 4 + 1] * .59 + data[i * 4 + 2] * .11) / 255;
+      const R = Math.max(2, Math.round(4 * sx));
+      const sum = new Float64Array((W + 1) * (H + 1)), cnt = new Float64Array((W + 1) * (H + 1));
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x, k = (y + 1) * (W + 1) + x + 1;
+        sum[k] = (solid[i] ? lum[i] : 0) + sum[k - 1] + sum[k - W - 1] - sum[k - W - 2];
+        cnt[k] = (solid[i] ? 1 : 0) + cnt[k - 1] + cnt[k - W - 1] - cnt[k - W - 2];
+      }
+      const area = (tbl, x0, y0, x1, y1) => tbl[y1 * (W + 1) + x1] - tbl[y0 * (W + 1) + x1] - tbl[y1 * (W + 1) + x0] + tbl[y0 * (W + 1) + x0];
+      const line = new Uint8Array(N);
+      for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (!solid[i]) continue;
+        const x0 = Math.max(0, x - R), y0 = Math.max(0, y - R), x1 = Math.min(W, x + R + 1), y1 = Math.min(H, y + R + 1);
+        const n = area(cnt, x0, y0, x1, y1);
+        if (n && lum[i] < area(sum, x0, y0, x1, y1) / n - .08) line[i] = 1;
+      }
+      for (const part of label(W, H, line).parts) if (part.pixels.length < 12 * sx * sx) for (const j of part.pixels) line[j] = 0;
+      const inside = new Uint8Array(N);
+      for (let i = 0; i < N; i++) inside[i] = solid[i] && !line[i] ? 1 : 0;
+      const seg = label(W, H, inside);
+      const lineZero = new Uint8Array(N); for (let i = 0; i < N; i++) lineZero[i] = inside[i] ? 0 : 1;
+      const toLine = distance(W, H, lineZero, 999);
+      const reach = new Float32Array(seg.parts.length);
+      for (let i = 0; i < N; i++) if (seg.lab[i] >= 0 && toLine[i] > reach[seg.lab[i]]) reach[seg.lab[i]] = toLine[i];
+      for (let i = 0; i < N; i++) {
+        const id = seg.lab[i];
+        if (id < 0 || sh.claimed[i] || reach[id] < 1.5 * sx) continue;
+        const part = seg.parts[id];
+        // 大きい部品ほど高く（ただし地や窓まわりのような広い面は、ゆるく）
+        let amp = .08 + Math.min(.16, reach[id] / (40 * sx));
+        if (part.pixels.length > N * .03) amp = .05;
+        height[i] += amp * bevel(toLine[i] / reach[id]);
+      }
+      // 輪郭線そのものは、両どなりの部品の低い方にそろえた浅い溝（深い溝にすると、暗い線ほど低い＝色が高さに出る）
+      for (let pass = 0; pass < 2; pass++) {
+        const next = Float32Array.from(height);
+        for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+          const i = y * W + x;
+          if (!line[i] || sh.claimed[i]) continue;
+          let low = Infinity;
+          for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+            const xx = x + dx, yy = y + dy;
+            if (xx < 0 || yy < 0 || xx >= W || yy >= H) continue;
+            const j = yy * W + xx;
+            if (inside[j] && height[j] < low) low = height[j];
+          }
+          if (low < Infinity) next[i] = Math.max(height[i], low - .02);
+        }
+        height.set(next);
+      }
+    }
     for (let i = 0; i < N; i++) {
       if (sh.gem[i]) { gem[i] = 1; metal[i] = 0; smooth[i] = 1; }
       else if (gem[i]) { gem[i] = 0; metal[i] = cfg.base.metal; smooth[i] = cfg.base.smooth; }

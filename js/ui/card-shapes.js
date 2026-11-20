@@ -145,6 +145,7 @@ function gemT(cut, dx, dy, w, h) {
 export function shapeHeight({ W, H, solid, big, shape, back }) {
   const N = W * H, sx = W / 512, sy = H / 768, s = (sx + sy) / 2;
   const height = new Float32Array(N), gem = new Uint8Array(N), raised = new Float32Array(N), paper = new Uint8Array(N);
+  const claimed = new Uint8Array(N);   // 帯・メダル・宝石・鋲が形を決めた所（線画の部品のふくらみは足さない）
   // 本体の四角：外形の行・列のうち、6割以上が埋まっている範囲（はみ出す飾りは、この外）
   const rows = new Float32Array(H), cols = new Float32Array(W);
   for (let i = 0; i < N; i++) if (solid[i]) { rows[(i / W) | 0]++; cols[i % W]++; }
@@ -174,7 +175,7 @@ export function shapeHeight({ W, H, solid, big, shape, back }) {
       // 板（名前の帯・下の帯）：はめ込みの名札。ふち（幅 5px）が立ち、中は一段へこむ
       for (const plate of shape.plates ?? []) {
         const d = rectInside(plate, x, y, 12);
-        if (d > 0) { h += d < 5 * s ? .07 * tube(Math.abs(d - 2.5 * s) / (2.5 * s)) : -.08 * bevel((d - 5 * s) / (4 * s)); paper[i] = d > 6 * s ? 1 : 0; }
+        if (d > 0) { claimed[i] = 1; h += d < 5 * s ? .07 * tube(Math.abs(d - 2.5 * s) / (2.5 * s)) : -.08 * bevel((d - 5 * s) / (4 * s)); paper[i] = d > 6 * s ? 1 : 0; }
       }
       for (const banner of shape.banners ?? []) {
         const d = rectInside(banner, x, y, 6);
@@ -183,12 +184,12 @@ export function shapeHeight({ W, H, solid, big, shape, back }) {
       // メダル・円盤：ふちのあるドーム
       for (const m of [shape.medal, ...(shape.discs ?? [])].filter(Boolean)) {
         const [cx, cy] = P(m.x, m.y), r = m.r * s, d = Math.hypot(x - cx, y - cy);
-        if (d < r) { const e = r - d; h += e < 5 * s ? .08 * tube(Math.abs(e - 2.5 * s) / (2.5 * s)) : -.06 * bevel((e - 5 * s) / (4 * s)); }   // ふちが立ち、中はへこむ
+        if (d < r) { claimed[i] = 1; const e = r - d; h += e < 5 * s ? .08 * tube(Math.abs(e - 2.5 * s) / (2.5 * s)) : -.06 * bevel((e - 5 * s) / (4 * s)); }   // ふちが立ち、中はへこむ
       }
       // 鋲：半球
       for (const dm of shape.domes ?? []) {
         const [cx, cy] = P(dm.x, dm.y), r = dm.r * s, d = Math.hypot(x - cx, y - cy);
-        if (d < r) { h += .22 * tube(d / r); raised[i] = Math.max(raised[i], 1); }
+        if (d < r) { claimed[i] = 1; h += .22 * tube(d / r); raised[i] = Math.max(raised[i], 1); }
       }
       // 輪・天使の輪：丸い管
       for (const ring of shape.rings ?? []) {
@@ -220,6 +221,7 @@ export function shapeHeight({ W, H, solid, big, shape, back }) {
         const [cx, cy] = P(g.x, g.y), dx = x - cx, dy = y - cy;
         const t = gemT(g.cut ?? 'diamond', dx, dy, g.w * sx, g.h * sy);
         if (t > 0) {
+          claimed[i] = 1;
           h += .1 + .32 * Math.min(1, t / .55);
           if (g.gem !== false) gem[i] = 1;
           raised[i] = Math.max(raised[i], 1);
@@ -231,5 +233,5 @@ export function shapeHeight({ W, H, solid, big, shape, back }) {
       height[i] = Math.max(0, Math.min(1, h));
     }
   }
-  return { height, gem, raised, paper, body: [bx0, by0, bx1, by1] };
+  return { height, gem, raised, paper, claimed, body: [bx0, by0, bx1, by1] };
 }
