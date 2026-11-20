@@ -11,7 +11,7 @@ attribute vec2 aPos;
 varying vec2 vUv;
 void main() { vUv = vec2(aPos.x * .5 + .5, .5 - aPos.y * .5); gl_Position = vec4(aPos, 0., 1.); }`;
 
-const FRAG = `
+export const RELIEF_FRAG = `
 precision mediump float;
 varying vec2 vUv;
 uniform sampler2D uFrame, uRelief, uRaised;
@@ -87,7 +87,7 @@ void main() {
 }`;
 
 // レアリティごとの材質の強さ（枠の地図の金属・つやに掛ける）
-const PRESETS = {
+export const RELIEF_PRESETS = {
   common:    { bump: .9,  spec: .35, env: .45, iri: 0,   gem: 0,   kd: .55 },
   uncommon:  { bump: 1,   spec: .5,  env: .6,  iri: 0,   gem: .6,  kd: .6 },
   rare:      { bump: 1.1, spec: .8,  env: .9,  iri: 0,   gem: .9,  kd: .65 },
@@ -134,7 +134,7 @@ function context(slot) {
   };
   const prog = gl.createProgram();
   gl.attachShader(prog, compile(gl.VERTEX_SHADER, VERT));
-  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FRAG));
+  gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, RELIEF_FRAG));
   gl.linkProgram(prog);
   if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(prog));
   gl.useProgram(prog);
@@ -191,7 +191,7 @@ export async function createRelief({ frameSrc, preset, pixelRatioLimit = 2, isCu
     ctx.onLost = onLost;
   }
   const mine = () => ctxs.every(c => c.owner === token);
-  const p = PRESETS[preset] ?? PRESETS.other;
+  const p = RELIEF_PRESETS[preset] ?? RELIEF_PRESETS.other;
   const [base, raised] = ctxs.map(c => c.canvas);
   base.className = 'zoom-gl-base';
   raised.className = 'zoom-gl-raised';

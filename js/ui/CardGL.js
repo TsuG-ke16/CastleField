@@ -2,15 +2,15 @@
 // 板（角丸・厚み・縁）が glb、カードの絵（枠・イラスト・名前・マーク）は画面の DOM から canvas に写して、板の表に貼る。
 // Card3D.js（CSS の 3D）と同じ使い方：render({ quaternion, tiltX, tiltY })・resize()・destroy()。
 // 読み込めない・WebGL が使えないときは null を返すので、呼ぶ側は CSS の 3D のままにする。
-import { CARD_LIGHT } from './CardRelief.js';
+import { CARD_LIGHT, RELIEF_FRAG, RELIEF_PRESETS, reliefPaths } from './CardRelief.js';
+import { UI_CONFIG } from './config.js';
 import { rankSkinBack } from './skinArt.js';
-import { cardMotionReduced } from './Card3D.js';
+import { cardMotionReduced, cardAxes } from './Card3D.js';
 
 const MODEL = 'assets/models/card-slab.glb';
 const BACK = 'assets/ui/card-back.png';
 const PX_PER_UNIT = 600;          // 表の絵の細かさ（カードの幅 1 あたりのピクセル）
 const MARGIN = 0.25;              // 枠の飾り（王冠など）が板の外にはみ出すぶん。カードの幅に対する割合
-const FOIL = new Set(['rare', 'epic', 'legendary', 'special']);
 const rad = Math.PI / 180;
 
 let libs;       // three.js と GLTFLoader（最初に使うときに読み込む）
@@ -57,7 +57,8 @@ function drawFitted(ctx, image, fit, x, y, w, h) {
 
 /** three.js と板のモデルを先に読む（読めなければ例外。CSSの3Dのままにする判断に使う） */
 export async function preloadCardGL() {
-  if (new URLSearchParams(location.search).get('card3d') === 'css') throw new Error('card3d=css');
+  const params = new URLSearchParams(location.search);
+  if (params.get('card3d') === 'css' || params.get('fx') === 'lite') throw new Error('CSSの3Dを使う設定です');
   await loadSlab(await loadLibs());
 }
 
@@ -71,6 +72,7 @@ async function paintFace(card) {
   const ctx = canvas.getContext('2d');
   ctx.translate(MARGIN * PX_PER_UNIT, MARGIN * PX_PER_UNIT);
   ctx.imageSmoothingQuality = 'high';
+  const rects = {};
   const place = (el) => {
     const r = el.getBoundingClientRect();
     return { x: (r.left - box.left) * unit, y: (r.top - box.top) * unit, w: r.width * unit, h: r.height * unit };
@@ -80,6 +82,7 @@ async function paintFace(card) {
   const windowEl = card.querySelector('.mini-card-image');
   if (windowEl) {
     const win = place(windowEl);
+    rects.win = win;
     ctx.save();
     ctx.beginPath(); ctx.rect(win.x, win.y, win.w, win.h); ctx.clip();
     const img = await readyImage(windowEl.querySelector('img'));
@@ -96,7 +99,7 @@ async function paintFace(card) {
   }
   // 枠
   const frame = await readyImage(card.querySelector('.mini-card-frame'));
-  if (frame) { const at = place(card.querySelector('.mini-card-frame')); ctx.drawImage(frame, at.x, at.y, at.w, at.h); }
+  if (frame) { const at = place(card.querySelector('.mini-card-frame')); rects.frame = at; ctx.drawImage(frame, at.x, at.y, at.w, at.h); }
   // 名前
   const nameEl = card.querySelector('.mini-card-name');
   if (nameEl?.textContent) {
@@ -131,7 +134,65 @@ async function paintFace(card) {
       ctx.fillText(text, at.x + at.w / 2, at.y + at.h / 2);
     }
   }
-  return canvas;
+  return { canvas, rects };
+}
+
+
+const blank = (w, h) => { const c = document.createElement('canvas'); c.width = w; c.height = h; return c; };
+const FACE_W = Math.round(PX_PER_UNIT * (1 + MARGIN * 2));
+const FACE_H = Math.round(PX_PER_UNIT * (1.5 + MARGIN * 2));
+const M = MARGIN * PX_PER_UNIT;
+
+/** 凹凸の地図（上半分：法線と高さ／下半分：金属・つや・宝石）と、浮かせる部品の地図を、顔の canvas と同じ位置に並べる */
+function reliefMaps(images, frameRect) {
+  const [reliefImg, raisedImg] = images;
+  const relief = blank(FACE_W, FACE_H * 2);
+  const rc = relief.getContext('2d');
+  rc.fillStyle = 'rgb(128,128,0)'; rc.fillRect(0, 0, FACE_W, FACE_H);   // 凹凸なし・高さ 0
+  rc.fillStyle = 'rgb(0,0,0)'; rc.fillRect(0, FACE_H, FACE_W, FACE_H);  // 金属・つや・宝石なし
+  const half = reliefImg.naturalHeight / 2;
+  const { x, y, w, h } = frameRect;
+  rc.drawImage(reliefImg, 0, 0, reliefImg.naturalWidth, half, M + x, M + y, w, h);
+  rc.drawImage(reliefImg, 0, half, reliefImg.naturalWidth, half, M + x, FACE_H + M + y, w, h);
+  const raised = blank(FACE_W, FACE_H);
+  raised.getContext('2d').drawImage(raisedImg, M + x, M + y, w, h);
+  return { relief, raised };
+}
+
+/** 偏光のフィルム（css/hologram.css の --foil と同じ色。CSS では背景が窓の 225%×200% で、位置が光で動く） */
+const FOIL = {
+  rare: { kind: 'linear', angle: 118, period: 0.66, stops: [[0, '#d8fbff00'], [0.38, '#d8fbff00'], [0.41, '#d8fbff15'], [0.45, '#c9edffbd'], [0.46, '#ffffff'], [0.53, '#ffffff00'], [0.66, '#ffffff00']], opacity: 0.44 },
+  epic: { kind: 'conic', from: 42, at: [0.45, 0.5], stops: [[0, '#a184ff00'], [0.1625, '#a184ffb0'], [0.325, '#ff9fe4ae'], [0.4875, '#90d6ff87'], [0.65, '#90d6ff00'], [1, '#90d6ff00']], opacity: 0.44 },
+  legendary: { kind: 'conic', from: 140, at: [0.5, 0.5], stops: [[0, '#ffdc7b30'], [1 / 6, '#ffe775de'], [2 / 6, '#fcab4466'], [3 / 6, '#b3fff5ad'], [4 / 6, '#f9b2eac9'], [5 / 6, '#fff4bd'], [1, '#ffdc7b30']], opacity: 0.44 },
+  special: { kind: 'conic', from: 50, at: [0.4, 0.58], stops: [[0, '#ed9dee99'], [0.2, '#91c6ffb3'], [0.4, '#a6ffdfb5'], [0.6, '#ffed9bb0'], [0.8, '#ff8596c7'], [1, '#ed9dee99']], opacity: 0.58 },
+};
+function foilTexture(THREE, rarity, aspect) {
+  const spec = FOIL[rarity];
+  const w = 512, h = Math.round(512 / aspect);                 // 窓と同じ縦横比
+  const W = Math.round(w * 2.25), H = Math.round(h * 2);        // 背景のぶんの大きさ
+  const canvas = blank(W, H);
+  const ctx = canvas.getContext('2d');
+  let gradient;
+  if (spec.kind === 'conic') {
+    gradient = ctx.createConicGradient((spec.from - 90) * rad, spec.at[0] * W, spec.at[1] * H);
+    for (const [at, color] of spec.stops) gradient.addColorStop(at, color);
+  } else {
+    // 角度 a の線（CSS は上が 0 度で時計まわり）の長さ L に沿って、period ごとに繰り返す
+    const a = spec.angle * rad;
+    const dx = Math.sin(a), dy = -Math.cos(a);
+    const L = Math.abs(W * dx) + Math.abs(H * dy);
+    const cx = W / 2, cy = H / 2;
+    gradient = ctx.createLinearGradient(cx - dx * L / 2, cy - dy * L / 2, cx + dx * L / 2, cy + dy * L / 2);
+    for (let rep = 0; rep * spec.period < 1; rep++) {
+      for (const [at, color] of spec.stops) { const t = rep * spec.period + at; if (t <= 1) gradient.addColorStop(t, color); }
+    }
+  }
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.NoColorSpace;
+  texture.repeat.set(1 / 2.25, 1 / 2);
+  return { texture, opacity: spec.opacity };
 }
 
 /**
@@ -144,7 +205,7 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
   try {
     const { THREE, GLTFLoader } = await loadLibs();
     const gltf = await loadSlab({ GLTFLoader });
-    const face = await paintFace(card);
+    const { canvas: face, rects } = await paintFace(card);
     if (!card.isConnected) return null;
     renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'low-power' });
     if (!renderer.getContext()) throw new Error('no webgl');
@@ -182,18 +243,77 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     group.add(model);
 
     // 表の絵（枠の飾りが板の外にはみ出すので、板より大きな板に貼って、透けるところは抜く）
+    const rarity = card.dataset.rarity;
+    const depth = 0.055;
+    const faceSize = [1 + MARGIN * 2, 1.5 + MARGIN * 2];
     const faceTexture = own(new THREE.CanvasTexture(face));
-    faceTexture.colorSpace = THREE.SRGBColorSpace;
     faceTexture.anisotropy = 8;
-    const foil = FOIL.has(card.dataset.rarity) || card.classList.contains('wild');
-    const faceMaterial = own(foil
-      ? new THREE.MeshPhysicalMaterial({ map: faceTexture, transparent: true, alphaTest: 0.04, roughness: 0.4, iridescence: 0.55, iridescenceIOR: 1.6, clearcoat: 0.6, clearcoatRoughness: 0.25 })
-      : new THREE.MeshStandardMaterial({ map: faceTexture, transparent: true, alphaTest: 0.04, roughness: 0.55 }));
-    faceMaterial.polygonOffset = true;
-    faceMaterial.polygonOffsetFactor = -2;
-    const plane = new THREE.Mesh(own(new THREE.PlaneGeometry(1 + MARGIN * 2, 1.5 + MARGIN * 2)), faceMaterial);
-    plane.position.z = 0.055 / 2 + 0.0015;
-    group.add(plane);
+    const frameSrc = card.querySelector('.mini-card-frame')?.getAttribute('src');
+    const paths = reliefPaths(frameSrc);
+    const images = paths && rects.frame ? await Promise.all([loadImage(paths.relief), loadImage(paths.raised)]) : [];
+    const shaders = [];       // 凹凸のシェーダー（表の下地と、浮かせる部品）
+    let setLight = null;
+    if (images[0] && images[1]) {
+      // 凹凸・金属・宝石・キラキラは、CSS 版（CardRelief.js）と同じ式で光らせる
+      const maps = reliefMaps(images, rects.frame);
+      const raw = (canvas, premultiply = false) => {
+        const t = own(new THREE.CanvasTexture(canvas));
+        t.flipY = false; t.colorSpace = THREE.NoColorSpace; t.premultiplyAlpha = premultiply;
+        t.generateMipmaps = false; t.minFilter = THREE.LinearFilter;
+        return t;
+      };
+      const frameTex = raw(face, true);
+      const reliefTex = raw(maps.relief), raisedTex = raw(maps.raised);
+      const preset = RELIEF_PRESETS[card.dataset.skin ? `skin-${card.dataset.skin}` : rarity] ?? RELIEF_PRESETS.other;
+      const fragment = RELIEF_FRAG.replace(/\bsmooth\b/g, 'smth');      // smooth は GLSL ES 3.0 の予約語
+      const vertex = 'varying vec2 vUv; void main() { vUv = vec2(uv.x, 1. - uv.y); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }';
+      const make = (layer, z, order) => {
+        const material = own(new THREE.ShaderMaterial({
+          vertexShader: vertex, fragmentShader: fragment, transparent: true, premultipliedAlpha: true, depthWrite: false,
+          uniforms: {
+            uFrame: { value: frameTex }, uRelief: { value: reliefTex }, uRaised: { value: raisedTex },
+            uL: { value: new THREE.Vector3() }, uV: { value: new THREE.Vector3(0, 0, 1) }, uM: { value: new THREE.Matrix3() },
+            uFlat: { value: CARD_LIGHT[2] }, uBump: { value: preset.bump }, uSpec: { value: preset.spec }, uEnv: { value: preset.env },
+            uIri: { value: preset.iri }, uGem: { value: preset.gem }, uPar: { value: 0.018 }, uKd: { value: preset.kd },
+            uLayer: { value: layer }, uShadow: { value: 0.012 }, uGlit: { value: preset.glit ?? 0 },
+          },
+        }));
+        if (layer === 0) { material.polygonOffset = true; material.polygonOffsetFactor = -2; }
+        const mesh = new THREE.Mesh(own(new THREE.PlaneGeometry(...faceSize)), material);
+        mesh.position.z = z; mesh.renderOrder = order;
+        group.add(mesh);
+        shaders.push(material);
+      };
+      make(0, depth / 2 + 0.0015, 1);
+      make(1, depth / 2 + UI_CONFIG.card3D.raisedDepth, 3);
+      setLight = (axes) => {
+        const L = axes.map(([x, y, z]) => x * CARD_LIGHT[0] + y * CARD_LIGHT[1] + z * CARD_LIGHT[2]);
+        const V = axes.map((axis) => axis[2]);
+        for (const m of shaders) { m.uniforms.uL.value.set(...L); m.uniforms.uV.value.set(...V); m.uniforms.uM.value.fromArray(axes.flat()); }
+      };
+    } else {
+      // 凹凸の地図がない枠は、ふつうの材質で貼る
+      faceTexture.colorSpace = THREE.SRGBColorSpace;
+      const plain = own(new THREE.MeshStandardMaterial({ map: faceTexture, transparent: true, alphaTest: 0.04, roughness: 0.55 }));
+      plain.polygonOffset = true; plain.polygonOffsetFactor = -2;
+      const mesh = new THREE.Mesh(own(new THREE.PlaneGeometry(...faceSize)), plain);
+      mesh.position.z = depth / 2 + 0.0015;
+      group.add(mesh);
+    }
+
+    // 偏光のフィルム（レア以上・適応）：絵の窓の上に重ねて、光の向きで色が動く
+    let foilTex = null;
+    const foilKey = card.classList.contains('wild') ? 'special' : FOIL[rarity] ? rarity : null;
+    if (foilKey && rects.win) {
+      const win = rects.win;
+      const { texture, opacity } = foilTexture(THREE, foilKey, win.w / win.h);
+      foilTex = own(texture);
+      const material = own(new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity, blending: THREE.AdditiveBlending, depthWrite: false, toneMapped: false }));
+      const mesh = new THREE.Mesh(own(new THREE.PlaneGeometry(win.w / PX_PER_UNIT, win.h / PX_PER_UNIT)), material);
+      mesh.position.set((win.x + win.w / 2) / PX_PER_UNIT - 0.5, 0.75 - (win.y + win.h / 2) / PX_PER_UNIT, depth / 2 + 0.004);
+      mesh.renderOrder = 2;
+      group.add(mesh);
+    }
 
     const canvas = renderer.domElement;
     canvas.className = 'zoom-gl-canvas';
@@ -216,6 +336,17 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
       const [w, x, y, z] = last.quaternion;
       const q = tiltQ(still ? 0 : last.tiltX, still ? 0 : last.tiltY).multiply(new THREE.Quaternion(-x, y, -z, w));
       group.quaternion.copy(q);
+      const axes = cardAxes(last.quaternion, still ? 0 : last.tiltX, still ? 0 : last.tiltY);
+      setLight?.(axes);
+      if (foilTex) {
+        // 光と視線の中間方向への傾きで、フィルムの位置を決める（Card3D.js と同じ式）
+        const half = [CARD_LIGHT[0], CARD_LIGHT[1], CARD_LIGHT[2] + 1];
+        const hx = axes[0][0] * half[0] + axes[0][1] * half[1] + axes[0][2] * half[2];
+        const hy = axes[1][0] * half[0] + axes[1][1] * half[1] + axes[1][2] * half[2];
+        const travel = UI_CONFIG.card3D.lightTravel;
+        const pos = (v) => Math.min(100, Math.max(0, 50 + v * travel)) / 100;
+        foilTex.offset.set((1 - 1 / 2.25) * pos(CARD_LIGHT[0] - hx), (1 - 1 / 2) * (1 - pos(CARD_LIGHT[1] - hy)));
+      }
       renderer.render(scene, camera);
     };
     const layout = () => {

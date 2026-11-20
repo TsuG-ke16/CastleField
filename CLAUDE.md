@@ -118,7 +118,7 @@ js/
     ChatView.js    … チャットとスタンプ（💬ボタン・吹き出し）
     DeckEditor.js・DeckStore.js … デッキ編成の画面と、マイデッキの保存（この端末の localStorage）
     CardZoom.js    … デッキ編成・図鑑でカードを長押しすると拡大（傾き・偏光・360度回転）
-    CardGL.js      … 拡大表示のカードを、Blender 製の板（assets/models/card-slab.glb）と three.js で描く。読めないときは Card3D.js（CSS の 3D）のまま。`?card3d=css` で CSS に固定
+    CardGL.js      … 拡大表示のカードを、Blender 製の板（assets/models/card-slab.glb）と three.js で描く。凹凸・金属・宝石・偏光は CardRelief.js と同じ式で再現。読めないときは Card3D.js（CSS の 3D）のまま。`?card3d=css` か `?fx=lite` で CSS に固定
     stories.js     … 図鑑で読むカードのストーリー（画面だけで使う文。カードを増やしたら1つ足す。ui-tests/stories.js が確かめる）
     art.js・config.js … 画像の割り当てと、UIの数値（CPUの強さの割り当ても）
     precache.js    … オフライン用の一覧（自動生成。node js/ui/build-precache.js）
