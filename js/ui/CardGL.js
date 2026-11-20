@@ -191,6 +191,14 @@ function surfaceMesh(THREE, { reliefImg, raisedImg, place, uvAt, pick, glitter, 
   const raised = pixels(raisedImg, sw, sh).data;
   const [nx, ny] = GRID;
   const at = (u, v, row) => ((Math.min(sh - 1, Math.round(v * (sh - 1))) + row) * sw + Math.min(sw - 1, Math.round(u * (sw - 1)))) * 4;
+  // 高さは、まわりの4点を混ぜてなめらかに読む（最寄りの1点だけだと、なだらかな面が段々になる）
+  const smooth = (data, u, v, channel) => {
+    const fx = u * (sw - 1), fy = v * (sh - 1);
+    const x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(sw - 1, x0 + 1), y1 = Math.min(sh - 1, y0 + 1);
+    const tx = fx - x0, ty = fy - y0;
+    const p = (x, y) => data[(y * sw + x) * 4 + channel];
+    return (p(x0, y0) * (1 - tx) + p(x1, y0) * tx) * (1 - ty) + (p(x0, y1) * (1 - tx) + p(x1, y1) * tx) * ty;
+  };
   const count = (nx + 1) * (ny + 1);
   const positions = new Float32Array(count * 3);
   const uvs = new Float32Array(count * 2);
@@ -199,7 +207,7 @@ function surfaceMesh(THREE, { reliefImg, raisedImg, place, uvAt, pick, glitter, 
     for (let i = 0; i <= nx; i++) {
       const k = j * (nx + 1) + i;
       const u = i / nx, v = j / ny;
-      const lift = relief[at(u, v, 0) + 2] / 255 * RELIEF_HEIGHT + raised[at(u, v, 0) + 3] / 255 * RAISED_HEIGHT;
+      const lift = smooth(relief, u, v, 2) / 255 * RELIEF_HEIGHT + smooth(raised, u, v, 3) / 255 * RAISED_HEIGHT;
       const [x, y] = place(u, v);
       positions.set([x, y, 0.0015 + lift], k * 3);
       uvs.set(uvAt(u, v), k * 2);
