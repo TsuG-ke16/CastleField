@@ -1,0 +1,29 @@
+/* 誤操作防止：まだできることがあるときの「ターン終了」の光、手札に戻したときの合図 */
+
+/* まだ出せるカード・買える強化・合成があるとき。押せばそのまま終われる（止めない） */
+#app #controls #end-turn.has-actions { position: relative; overflow: visible; animation: actions-left 1.6s ease-in-out infinite; }
+@keyframes actions-left {
+  0%, 100% { box-shadow: 0 2px 0 #a76d32, 0 0 0 0 #5fd0ff00; }
+  50% { box-shadow: 0 2px 0 #a76d32, 0 0 0 3px #5fd0ffb0, 0 0 14px 2px #5fd0ff80; }
+}
+#end-turn .actions-left {
+  position: absolute; top: -7px; right: -6px; z-index: 1;
+  min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #2a8fd6; color: #fff; border: 2px solid #fff;
+  font: 800 11px/1 var(--font, sans-serif); text-shadow: none; letter-spacing: 0;
+  box-shadow: 0 1px 3px #0005; pointer-events: none;
+}
+#end-turn.off .actions-left, #end-turn:disabled .actions-left { display: none; }
+
+/* 対象を選ぶのをやめて、カードを手札に戻したとき */
+#hand .card.returned { animation: card-returned .35s ease-out; }
+@keyframes card-returned { 0% { transform: translateY(-14px); } 100% { transform: none; } }
+
+.reduced-motion #app #controls #end-turn.has-actions,
+.reduced-motion #hand .card.returned { animation: none; }
+.reduced-motion #app #controls #end-turn.has-actions { box-shadow: 0 2px 0 #a76d32, 0 0 0 3px #5fd0ffb0; }
+@media (prefers-reduced-motion: reduce) {
+  #app #controls #end-turn.has-actions, #hand .card.returned { animation: none; }
+  #app #controls #end-turn.has-actions { box-shadow: 0 2px 0 #a76d32, 0 0 0 3px #5fd0ffb0; }
+}

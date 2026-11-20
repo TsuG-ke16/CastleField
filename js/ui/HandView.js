@@ -71,9 +71,17 @@ export class HandView {
     });
     this.el.hand.addEventListener('pointermove', (e) => { if (press && Math.hypot(e.clientX - press.x, e.clientY - press.y) > UI_CONFIG.input.dragStartDistance) stopPress(); });
     for (const event of ['pointerup', 'pointercancel', 'lostpointercapture']) this.el.hand.addEventListener(event, stopPress);
-    this.el.hand.addEventListener('contextmenu', (e) => e.preventDefault());
+    this.el.hand.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      // 右クリックで、選んでいるカードを手札に戻す（誤操作防止）
+      if (!this.drag && this.selectedId && !this.discardCount) this.select(null);
+    });
     const refill = $('hand-refill');
     if (refill) refill.textContent = rules.drawUntilHand > 0 ? `毎ターン${rules.drawUntilHand}枚まで補充` : '';
+    // Esc で、選んでいるカードを手札に戻す
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !this.drag && this.selectedId && !this.discardCount && !this.locked) this.select(null);
+    });
     this.el.hand.addEventListener('keydown', (e) => {
       if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.card')) {
         e.preventDefault();
@@ -432,17 +440,26 @@ export class HandView {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('contextmenu', cancel);
+      window.removeEventListener('keydown', cancel);
       this.handlePointerUp(ev);
     };
-    const cancel = () => {
+    const cancel = (ev) => {
+      if (ev?.type === 'keydown' && ev.key !== 'Escape') return;
+      if (ev?.type === 'contextmenu' || ev?.type === 'keydown') ev.preventDefault();
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', cancel);
+      window.removeEventListener('contextmenu', cancel);
+      window.removeEventListener('keydown', cancel);
       this.cancelDrag();
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', cancel);
+    // ドラッグ中に右クリック・Esc で、出さずに手札に戻す
+    window.addEventListener('contextmenu', cancel);
+    window.addEventListener('keydown', cancel);
   }
 
   handlePointerMove(e) {

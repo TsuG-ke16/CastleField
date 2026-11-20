@@ -270,7 +270,11 @@ async function boot() {
   anim = new Animations({ renderer, handView, cards, rules, monsters, upgrades, rarities });
   renderer.cosmetics = cosmetics; anim.cosmetics = cosmetics;
   if (stamps?.length) chat = new ChatView({ stamps, button: $('chat-open'), root: el.app, maxLength: CHAT_MAX_LENGTH });
-  targeting = new Targeting({ renderer, handView, onChoose: (cardId, target) => doPlay(cardId, target) });
+  targeting = new Targeting({
+    renderer, handView,
+    onChoose: (cardId, target) => doPlay(cardId, target),
+    onCancel: () => toast('手札に戻しました', 'info'),
+  });
   if (upgrades && Object.keys(upgrades).length) {
     upgradePanel = new UpgradePanel({ upgrades, rarities, onBuy: buyUpgrade, onOpen: refreshUpgrades, onDenied: (r) => toast(r, 'info') });
   } else {
@@ -1218,6 +1222,7 @@ function setBusy(value) {
     upgradePanel?.setEnabled(false, { reason: upgradeOffReason(session?.getState(viewerId)) });
     el.endTurn.disabled = true;
     el.endTurn.classList.remove('ready', 'off');
+    setEndTurnHint(0);
     setMessage('');
   }
 }
@@ -1324,6 +1329,7 @@ async function settle({ check = true } = {}) {
   if (spectating) {
     el.endTurn.disabled = true;
     el.endTurn.classList.add('off');
+    setEndTurnHint(0);
     handView.exitDiscard();
     setMessage('');
     return;
@@ -1371,8 +1377,13 @@ async function settle({ check = true } = {}) {
   }
   handView.exitDiscard();
   el.endTurn.disabled = false;
-  const anyPlayable = me.hand.some((c) => !blocked.has(c.cardId));
+  const playableCount = me.hand.filter((c) => !blocked.has(c.cardId)).length;
+  const anyPlayable = playableCount > 0;
   el.endTurn.classList.toggle('ready', !anyPlayable);
+  const extra = [];
+  if (canBuyAnyUpgrade()) extra.push('買える強化');
+  if (canFuseAny(me.hand)) extra.push('合成できるカード');
+  setEndTurnHint(playableCount, extra);
   setMessage(''); // 操作の案内は出さない（盤面を広く見せる）
   // 出せるカードも、買える強化も、合成できるカードもなければ、待たせずに自動でターンを終える
   if (!anyPlayable && !canBuyAnyUpgrade() && !canFuseAny(me.hand)) autoEndTurn(st.turn);
@@ -1510,6 +1521,32 @@ function cpuDefendIfNeeded() {
 /** 「ターン終了」ボタンは、攻撃を受けているあいだ「防御しない」になる */
 function setEndTurnLabel(defending) {
   el.endTurn.textContent = defending ? '防御しない' : 'ターン終了';
+  setEndTurnHint(0);
+}
+
+/**
+ * まだできることがあるとき、「ターン終了」ボタンを光らせて知らせる（押せばそのまま終われる。止めない）。
+ * @param {number} left 今出せるカードの枚数
+ * @param {string[]} [extra] カード以外にできること（強化・合成）
+ */
+function setEndTurnHint(left, extra = []) {
+  const on = left > 0 || extra.length > 0;
+  el.endTurn.classList.toggle('has-actions', on);
+  let badge = el.endTurn.querySelector('.actions-left');
+  if (!on) {
+    badge?.remove();
+    el.endTurn.removeAttribute('title');
+    return;
+  }
+  if (!badge) {
+    badge = document.createElement('span');
+    badge.className = 'actions-left';
+    badge.setAttribute('aria-hidden', 'true');
+    el.endTurn.append(badge);
+  }
+  badge.textContent = left > 0 ? String(left) : '!';
+  const parts = [left > 0 ? `出せるカードがあと${left}枚` : null, ...extra].filter(Boolean);
+  el.endTurn.title = `${parts.join('・')}あります（このまま終えることもできます）`;
 }
 
 function playCard(cardId) {
