@@ -1617,7 +1617,8 @@ function refreshUpgrades() {
   const myTurn = !busy && st.phase === 'main' && st.currentPlayer === viewerId;
   const why = upgradeOffReason(st);
   const status = {};
-  for (const id of Object.keys(upgrades)) status[id] = myTurn ? session.canBuyUpgrade(id) : { ok: false, reason: why };
+  // cost：今の値段（買うたびに上がる強化があるので、state の upgradeCosts を使う）
+  for (const id of Object.keys(upgrades)) status[id] = { ...(myTurn ? session.canBuyUpgrade(id) : { ok: false, reason: why }), cost: me?.upgradeCosts?.[id] };
   const anyOk = Object.values(status).some((x) => x.ok);
   upgradePanel.setEnabled(myTurn, { highlight: anyOk, reason: why });
   // オンラインでは、つなぎ直すと買った回数が分からないので、残りの回数は出さない

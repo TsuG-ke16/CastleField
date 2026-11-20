@@ -258,13 +258,13 @@ test('倒した魔物は、駒（兵士カード）としてとどめを刺し�
   assert.equal(defeated.pieceType, 'beast_bat');
   assert.equal(game.players.p1.hand.length, before + 2); // ごほうびのカード＋駒
   assert.equal(game.players.p1.hand.filter((c) => c.type === 'beast_bat').length, 1);
-  // 兵士カードとして出せる（魔物のHP・攻撃の兵士になる）
-  game.debugSetHand('p1', ['beast_bat']);
+  // 駒のままの魔物（ゴブリン）は、兵士カードとして出せる（魔物のHP・攻撃の兵士になる）。コウモリなどは効果のカード
+  game.debugSetHand('p1', ['beast_goblin']);
   const id = game.getState('p1').players.p1.hand[0].cardId;
   assert.equal(game.playCard(id, { playerId: 'p2', roadId: game.roads[0].roadId }).ok, true);
   const s = game.getState(null).players.p1.soldiers[0];
-  assert.equal(s.hp, monsters.bat.hp);
-  assert.equal(s.attack, monsters.bat.attack);
+  assert.equal(s.hp, monsters.goblin.hp);
+  assert.equal(s.attack, monsters.goblin.attack);
 });
 
 test('魔物の駒は合成できず、排出（山札・ごほうび）では出ない', () => {
@@ -287,7 +287,7 @@ test('魔物の駒は、出しても捨てても山札に戻らない（使い�
   const ex = pile.exhausted.length;
   const dis = pile.discard.length;
   // 出す
-  g.debugSetHand('p1', ['beast_bat', 'beast_slime']);
+  g.debugSetHand('p1', ['beast_goblin', 'beast_slime']);
   const [a] = g.getState('p1').players.p1.hand;
   assert.equal(g.playCard(a.cardId, { playerId: 'p2', roadId: g.roads[0].roadId }).ok, true);
   assert.equal(pile.exhausted.length, ex + 1);
