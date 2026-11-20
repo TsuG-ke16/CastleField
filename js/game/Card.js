@@ -38,6 +38,7 @@ export const EFFECTS = {
     healAndArmor: ['amount', 'armor'], // トレントのカード：自分の城HPを amount 回復し、城壁を armor 置く
     stealCoins: ['amount'], // ミミックのカード：相手のコインを amount 枚まで奪う
     damageEnemyAll: ['amount'], // 魔王のカード：相手の城と、相手の兵士全員に amount ダメージ
+    dice: [], // サイコロ：1〜6の目 × per の効果（dice で種類を決める。下の DICE_KINDS）
   },
   defense: {
     shieldSoldier: ['amount'],
@@ -54,6 +55,18 @@ export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers',
 export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison'];
 
 /** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
+/**
+ * サイコロの種類（cards.json の dice）。効果は「出た目 × per」（端数は切り上げ）。random は per を書かない
+ *   attack：相手の城にダメージ（MP を使う。メイン）／heal：自分の城を回復（メイン）／mana：MP 回復／coin：コイン
+ *   shield：城壁／buff：選んだ自分の兵士1体の攻撃力を上げる／random：ほかのサイコロのどれか（目は4〜6）（メイン）
+ *   god：1回振って、その目で6つのサイコロの効果が全部起きる（バフは兵士全員）（メイン）
+ */
+export const DICE_KINDS = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff', 'random', 'god'];
+/** 効果が1つのサイコロ（ランダム・ゴッドが使う種類） */
+export const BASIC_DICE = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff'];
+/** メインを使わず何枚でも出せるサイコロ（ほかはメイン） */
+export const SUPPORT_DICE = ['mana', 'coin', 'shield', 'buff'];
+
 export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers'];
 
 /**
@@ -86,6 +99,7 @@ export class Card {
   /** "soldier" | "main" | "addon" | "defense" | "support" */
   get slot() {
     if (this.def.kind === 'spell' && SUPPORT_EFFECTS.includes(this.def.effect)) return 'support';
+    if (this.def.effect === 'dice' && SUPPORT_DICE.includes(this.def.dice)) return 'support';
     return SLOT_OF_KIND[this.def.kind];
   }
 
@@ -146,6 +160,9 @@ export class Card {
           if (cards[def.fuseTo].rarity !== next) throw new Error(`${where}: fuseTo は1つ上のレアリティ（${next}）のカードにしてください`);
         }
       }
+      if (def.deckAs !== undefined && (typeof def.deckAs !== 'string' || (rarities && (!Object.hasOwn(rarities, def.deckAs) || rarities[def.deckAs].special)))) {
+        throw new Error(`${where}: deckAs（デッキ編成で数えるレアリティ）は、スペシャル以外のレアリティにしてください`);
+      }
       if (def.mpCost !== undefined && !isCount(def.mpCost)) throw new Error(`${where}: mpCost は0以上の整数にしてください（書かなければレアリティで決まる）`);
       if (def.exhaust !== undefined && typeof def.exhaust !== 'boolean') {
         throw new Error(`${where}: exhaust は true か false にしてください（書かなければ false）`);
@@ -155,6 +172,25 @@ export class Card {
       }
       if (def.element !== undefined && def.element !== null && !ELEMENTS.includes(def.element)) {
         throw new Error(`${where}: element は ${ELEMENTS.join(' / ')} のどれかにしてください（書かなければ属性なし）`);
+      }
+
+      if (def.effect === 'dice') {
+        if (!DICE_KINDS.includes(def.dice)) throw new Error(`${where}: dice は ${DICE_KINDS.join(' / ')} のどれかにしてください`);
+        if (def.dice === 'random' || def.dice === 'god') {
+          if (def.per !== undefined) throw new Error(`${where}: ランダム・ゴッドのサイコロに per は書けません`);
+          // randomCost：振る前に、このうち払えるものを1つランダムに払う（{ hp?, coins?, mp? }。省略するとコストなし）
+          if (def.randomCost !== undefined) {
+            const keys = Object.keys(def.randomCost ?? {});
+            if (!def.randomCost || typeof def.randomCost !== 'object' || keys.length === 0
+              || !keys.every((k) => ['hp', 'coins', 'mp'].includes(k) && Number.isInteger(def.randomCost[k]) && def.randomCost[k] > 0)) {
+              throw new Error(`${where}: randomCost は { hp, coins, mp } のうち1つ以上を、1以上の整数で書いてください`);
+            }
+          }
+        } else if (!(typeof def.per === 'number' && def.per > 0)) {
+          throw new Error(`${where}: per（出た目に掛ける数）は 0 より大きい数にしてください`);
+        }
+      } else if (def.dice !== undefined) {
+        throw new Error(`${where}: dice を書けるのは effect が dice の魔法だけです`);
       }
 
       if (def.effect === 'summonSpirit') {

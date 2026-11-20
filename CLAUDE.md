@@ -315,7 +315,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `monsterDefeated` | `{ monsterId, playerId, reward }` … `playerId` はとどめを刺した人 |
 | `coinsChanged` | `{ playerId, delta, coins, reason }` … `reason` は `"reward"` / `"upgrade"` / `"turn"` / `"card"` / `"weather"` / `"stolen"`（ミミックに奪われた）/ `"steal"`（奪った） |
 | `upgradeBought` | `{ playerId, upgradeId, cost }` … このあと効果のイベント（`castleHealed` / `cardDrawn` / `soldierBuffed`） |
-| `soldierBuffed` | `{ playerId, soldierId, attack }` … とぎ石で攻撃力が上がった |
+| `soldierBuffed` | `{ playerId, soldierId, attack }` … とぎ石・訓練・バフサイコロで攻撃力が上がった |
+| `diceRolled` | `{ playerId, type, dice, value, amount, rolls, cost? }` … サイコロのカードを振った（「サイコロのカード」の節） |
 | `playerEliminated` | `{ playerId, by }` … 城が落ちて抜けた（`lastStanding`）。`by` は落とした人 |
 | `defenseRequested` | `{ defenderId, attackerId, kind, amount, soldierIds? }` … 攻撃が当たる前に、受ける人に防御を聞く。`kind` は `"castle"`（城に当たる）か `"soldiers"`（兵士に当たる。`soldierIds` が当たる兵士）。このあと `defend()` / `passDefense()` が来るまで止まる |
 | `defenseEnded` | `{ defenderId }` … 防御が終わった。このあと攻撃が当たる（`castleDamaged` / `soldierDamaged` …） |
@@ -1247,6 +1248,27 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 - ヴァンパイアのカード：メイン（1ターン1枚）。城への攻撃は防御（城壁・土嚢・反射）を聞く。魔法の塔の `castleSpellBonus` は乗せない（10ちょうど）。**回復は、外れても・防がれても・反射されても起きる**。相手の城が落ちたら回復せずに決着。イベント：`spellCast` →（防御）→ `castleDamaged` → `castleHealed`
 - 確かめたこと：`node --test` 全部通る（`tests/drain-sacrifice.test.js` に4件）
+
+## サイコロのカード（仕様書7章。人間の指示。数値は仮）
+
+サイコロデッキを組めるように、サイコロのカードを8枚足した（どれも**スペシャル**。ゴッドサイコロだけデッキ編成ではレジェンド枠。合成しない。デッキ編成ではレアと同じ扱いで、1種類3枚まで）。排出率は1枚約0.33%（`weight` 1。ゴッドサイコロは下）。適応（約2.5%）・解毒薬・天候の呪文の排出率を変えないよう、スペシャルの枠を 3 → 5.301、コモンを 47.82 → 45.519 にした。攻撃サイコロの MP は `mpCost: 3`（スペシャルにはレアリティの MP がないため、カードに書く）。`effect: "dice"`、`dice` に種類、`per` に目に掛ける数を書く。効果の量は **出た目（1〜6）× `per`（端数は切り上げ）**。
+
+| カード | `dice` | 効果 | 出し方 | MP |
+|---|---|---|---|---|
+| 攻撃サイコロ `attackDice` | `attack` | 相手の城に 目×3.5（4〜21）。防御を聞く。魔法の塔のボーナスは乗せない | メイン | 3 |
+| ヒールサイコロ `healDice` | `heal` | 自分の城を 目×3（3〜18）回復。満タンなら出せない | メイン | なし |
+| マナサイコロ `manaDice` | `mana` | MP を 目×2（2〜12）回復。満タンなら出せない | 何枚でも | なし |
+| コインサイコロ `coinDice` | `coin` | 目×2（2〜12）コイン | 何枚でも（ただしコインのカードと合わせて1ターン `coinCardsPerTurn` 枚まで） | なし |
+| シールドサイコロ `shieldDice` | `shield` | 目×3（3〜18）の城壁（城壁のカードと同じ決まり。上限なら出せない） | 何枚でも | なし |
+| バフサイコロ `buffDice` | `buff` | 選んだ自分の兵士1体の攻撃力 +目×1（1〜6。ずっと） | 何枚でも | なし |
+| ランダムサイコロ `randomDice` | `random` | **振る前にコストを払う**：城HP4・コイン3・MP3 のうち払えるものを1つランダムに払う（`randomCost`。城HPは払っても城が落ちないとき＝HP5以上のときだけ。どれも払えなければ出せない：「払えるコストがありません」）。そのあと2回振る：1回目の目で、上の6つのうち今使えるサイコロのどれかを選ぶ（使えるものが6つなら 1=攻撃・2=ヒール・3=マナ・4=コイン・5=シールド・6=バフ）。2回目の目は必ず4〜6。対象はランダム | メイン | なし（コストは左） |
+
+- **ゴッドサイコロ** `godDice`（`dice: "god"`。人間の指示）：1回振って、その目で6つのサイコロの効果が**全部**起きる（倍率はそれぞれのサイコロのカードの `per`：相手の城に 目×3.5・自分の城 目×3 回復・MP 目×2・コイン 目×2・城壁 目×3・**自分の兵士全員**の攻撃+目）。使えない効果（城・MP が満タン、城壁が上限、兵士なし）は飛ばす。起きる順は ヒール → マナ → コイン → シールド → バフ → 攻撃（攻撃は防御を聞くので最後）。**コストなし**（MP も使わない）・メイン。`diceRolled` は1回で、`dice: "god"`・`amount` は種類ごとの量 `{ attack, heal, mana, coin, shield, buff }`。コインのカードの1ターン1枚には数えない
+  - **スペシャルだがレジェンド枠**：カードに `deckAs: "legendary"` を書いた（デッキ編成で、コスト5・レジェンドの合計枚数に数える。`deckRarityOf()` はカードの `deckAs` → レアリティの `deckAs` の順に見る）。排出率はレジェンドのカード1枚（`weight` 1）と同じくらいの約0.12%（`weight: 0.36`）。適応などの排出率を変えないよう、スペシャルの枠を 5.301 → 5.42、コモンを 45.519 → 45.4 にした
+- ランダムサイコロのコスト（「何も払わないと強い」ので人間の指示で足した）：城HPは城壁を通さず `castleDamaged`（`source: { kind: "sacrifice", type }`）、コインは `coinsChanged`（`reason: "cost"`）、MP は `mpChanged`（`reason: "cast"`）。`diceRolled` に `cost: { kind: "hp" | "coins" | "mp", amount }` が付く
+- イベント `diceRolled`：`{ playerId, type, dice, value, amount, rolls, cost? }`（`dice` は実際に起きた種類、`value` は効果に使った目、`amount` は効果の量、`rolls` は振った目の並び。ランダムサイコロは2つ）。カードを出した `cardPlayed` のあと、効果のイベント（`spellCast` → `castleDamaged`、`castleHealed`、`mpChanged`、`coinsChanged`、`castleArmored`、`soldierBuffed`）の前に出る。画面はこれでサイコロを振る演出を出す（UI担当）
+- `Card.slot`：マナ・コイン・シールド・バフのサイコロは `support`（`SUPPORT_DICE`）、ほかはメイン
+- 確かめたこと：`node --test` 全部通る（`tests/dice.test.js`）
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
