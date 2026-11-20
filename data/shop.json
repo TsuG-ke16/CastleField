@@ -1266,6 +1266,54 @@
       "desc": "ドーンブレイクを使うときの光が「曙」の色に。この魔法だけに効く。",
       "filter": "hue-rotate(20deg) saturate(1.3)"
     },
+    "fxskin_chainBlast": {
+      "slot": "spellSkin",
+      "target": "chainBlast",
+      "targetName": "チェーン・ブラスト",
+      "name": "チェーン・ブラスト・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "チェーン・ブラストを使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.3)"
+    },
+    "fxskin_ignitionBurst": {
+      "slot": "spellSkin",
+      "target": "ignitionBurst",
+      "targetName": "イグニッション・バースト",
+      "name": "イグニッション・バースト・蒼炎",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "イグニッション・バーストを使うときの光が「蒼炎」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(190deg)"
+    },
+    "fxskin_shieldBlast": {
+      "slot": "spellSkin",
+      "target": "shieldBlast",
+      "targetName": "シールド・ブラスト",
+      "name": "シールド・ブラスト・黄金",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "シールド・ブラストを使うときの光が「黄金」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(40deg) saturate(1.4)"
+    },
+    "fxskin_purifyFlare": {
+      "slot": "spellSkin",
+      "target": "purifyFlare",
+      "targetName": "ピュリファイ・フレア",
+      "name": "ピュリファイ・フレア・白光",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ピュリファイ・フレアを使うときの光が「白光」の色に。この魔法だけに効く。",
+      "filter": "brightness(1.2) saturate(.8)"
+    },
     "fxskin_bolt": {
       "slot": "spellSkin",
       "target": "bolt",

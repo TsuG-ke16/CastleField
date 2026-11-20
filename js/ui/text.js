@@ -59,6 +59,10 @@ const EFFECT_TEXT = {
   },
   curePoison: () => '自分の毒状態（兵士・城）をすべて治す。毒にかかっていないと出せない。何枚でも出せる',
   freezeEnemySoldiers: (c) => `相手の兵士全員を${c.turns}回休みにする`,
+  chainBlast: (c) => `相手の兵士1体に${c.amount}ダメージ。まわりの兵士にも${Math.ceil(c.amount / 2)}`,
+  ignitionBurst: (c) => `自分の城に${c.selfDamage}ダメージ。相手の兵士全員と城に${c.amount}ダメージ`,
+  armorBlast: () => '自分の城壁の値だけ相手の城にダメージ（城壁は0になる）',
+  purifyFlare: (c) => `自分の毒・やけど・凍結を治し、相手の兵士全員に${c.amount}ダメージ`,
   pushBackEnemySoldiers: (c) => `相手の兵士全員を${c.amount}マス押し戻す（城の前より後ろには下がらない）`,
   shieldSoldier: (c) => `自分の兵士に盾${c.amount}（ダメージを先に受ける）`,
   summonSpirit: (c) => {
@@ -142,6 +146,10 @@ export function cardShort(def) {
     case 'poisonEnemy': return [{ icon: 'skull', text: `毒 ${def.amount}/ターン` }];
     case 'curePoison': return [{ icon: 'heart', text: '毒を治す' }];
     case 'freezeEnemySoldiers': return [{ icon: 'snow', text: `${def.turns}回休み` }];
+    case 'chainBlast': return [{ icon: 'sword', text: `${def.amount}＋連鎖${Math.ceil(def.amount / 2)}` }];
+    case 'ignitionBurst': return [{ icon: 'fire', text: `全体 -${def.amount}` }, { icon: 'heart', text: `自城 -${def.selfDamage}` }];
+    case 'armorBlast': return [{ icon: 'wall', text: '城壁ぶん' }];
+    case 'purifyFlare': return [{ icon: 'heart', text: '浄化' }, { icon: 'sword', text: `-${def.amount}` }];
     case 'pushBackEnemySoldiers': return [{ icon: 'boot', text: `${def.amount}マス戻す` }];
     case 'shieldSoldier': return [{ icon: 'shield', text: `盾 +${def.amount}` }];
     case 'armorCastle': return [{ icon: 'wall', text: `城壁 ${def.amount}` }];
