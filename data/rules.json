@@ -45,5 +45,11 @@
   "armorMax": 40,
   "poisonTurns": 5,
   "poisonMax": 10,
-  "coinCardsPerTurn": 1
+  "coinCardsPerTurn": 1,
+  "nightChance": 0.15,
+  "nightFirstRound": 3,
+  "nightRounds": 2,
+  "nightBeastAttack": 2,
+  "nightStealthAttack": 2,
+  "nightMonsterAttack": 1
 }

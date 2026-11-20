@@ -338,6 +338,8 @@ export class Animations {
         return;
       case 'roundStarted': return this.roundStarted(p, model);
       case 'weatherChanged': return this.weatherChanged(p, model);
+      case 'timeChanged': return this.timeChanged(p, model);
+      case 'stageEruption': return this.stageEruption(p);
       case 'weatherLightning': return this.weatherLightning(p);
       case 'attackMissed': return this.attackMissed(p);
       case 'cardsFused': return this.cardsFused(p, model, ctx);
@@ -574,6 +576,25 @@ export class Animations {
     if (round <= 1) return;
     this.banner(`${ICON.round} ${round}周目`, UI_CONFIG.timing.round, 'small');
     await this.delay(UI_CONFIG.timing.round * 0.5);
+  }
+
+  /** 昼と夜が変わる：盤面を暗く（明るく）して、帯で知らせる */
+  async timeChanged({ time, rounds }, model) {
+    model.time = time;
+    model.nightRoundsLeft = rounds;
+    this.renderer.setTime(time, rounds);
+    if (this.skipping) return;
+    sound.play(time === 'night' ? 'freeze' : 'heal');
+    await this.banner(time === 'night' ? '🌙 夜になった！ 獣と暗殺者が強くなる' : '☀️ 夜が明けた', UI_CONFIG.timing.round, 'small');
+  }
+
+  /** 溶岩の噴火：その道のマスに炎を噴き上げる（このあと兵士の soldierDamaged・やけど） */
+  async stageEruption({ roadId }) {
+    if (this.skipping) return;
+    sound.play('fire');
+    this.screenShake('spell', 8);
+    this.mist(null, 'rgba(255, 96, 32, 0.55)', roadId === 'plaza' ? undefined : roadId);
+    await this.banner('🌋 噴火！', UI_CONFIG.timing.round * 0.8, 'small');
   }
 
   async weatherChanged({ weather, name, icon: glyph, description, rounds, cause, previous, previousName }, model) {
@@ -1337,6 +1358,10 @@ export class Animations {
     const enemy = typeof target === 'string' ? target : this.renderer.opponentOf(playerId);
     if (def.effect === 'damageEnemyCastle') return this.fireball(playerId, enemy, def.amount);
     if (def.effect === 'damageEnemySoldiers') return this.thunder(enemy, roadId, def.amount);
+    // チェーン・ブラスト：狙った道に雷のような爆発。イグニッション・バースト／シールド・ブラスト：相手の城へ大きな火の玉
+    if (def.effect === 'chainBlast') return this.thunder(enemy, roadId, def.amount);
+    if (def.effect === 'ignitionBurst') { this.screenShake('spell', 10); return this.fireball(playerId, enemy, def.amount); }
+    if (def.effect === 'armorBlast') { const armor = this.renderer.players?.[playerId]?.armor; return this.fireball(playerId, enemy, Math.max(8, armor ?? 12)); }
     if (SPELL_TINT[def.effect]) return this.mist(enemy, SPELL_TINT[def.effect], roadId);
     if (def.effect === 'redrawHand') return this.banner('手札を引き直す！', UI_CONFIG.timing.shuffle, 'small');
     if (def.effect === 'randomEffect') return this.banner('神頼み！', UI_CONFIG.timing.shuffle, 'small');
@@ -1414,11 +1439,14 @@ export class Animations {
   /** 毒の霧・氷の息：相手の兵士の列に色のついた霧をかける */
   async mist(_targetId, color, roadId) {
     if (this.skipping) return;
-    sound.play(color === SPELL_TINT.freezeEnemySoldiers ? 'freeze' : 'poison');
+    const gust = color === SPELL_TINT.pushBackEnemySoldiers;
+    const lava = color.startsWith('rgba(255, 96, 32');
+    const pure = color === SPELL_TINT.purifyFlare;
+    if (!lava) sound.play(pure ? 'heal' : gust ? 'gust' : color === SPELL_TINT.freezeEnemySoldiers ? 'freeze' : 'poison');
     const app = this.el.app.getBoundingClientRect();
     const r = this.renderer.laneEl(roadId).getBoundingClientRect(); // レーンを選んだ魔法は、その道だけに霧をかける
     const fog = this.fx('fx-mist');
-    fog.innerHTML = imageArt(`fx/${color === SPELL_TINT.freezeEnemySoldiers ? 'ice' : 'poison'}.png`, '', 'art');
+    fog.innerHTML = imageArt(`fx/${lava ? 'explosion' : pure ? 'heal' : gust ? 'dust' : color === SPELL_TINT.freezeEnemySoldiers ? 'ice' : 'poison'}.png`, '', 'art');
     fog.style.left = `${r.left - app.left}px`;
     fog.style.top = `${r.top - app.top}px`;
     fog.style.width = `${r.width}px`;
@@ -1746,6 +1774,8 @@ export class Animations {
         statuses.poison = { amount: a.amount ?? null, turns: a.turns };
       } else if (a.status === 'frozen') {
         statuses.frozen = a.turns;
+      } else if (a.status === 'burn') {
+        statuses.burn = { amount: a.amount ?? null, turns: a.turns };
       }
       if (s) s.statuses = statuses;
       this.renderer.updateSoldier(a.soldierId, { statuses });
@@ -1756,14 +1786,14 @@ export class Animations {
       const el = this.renderer.soldierEl(a.soldierId);
       if (!el) continue;
       const icon = STATUS_ICON[a.status] ?? '';
-      this.number(el, `${icon}${a.status === 'poison' ? '毒' : '凍結'}`, { size: small.size, duration: small.duration, kind: a.status });
+      this.number(el, `${icon}${{ poison: '毒', frozen: '凍結', burn: 'やけど' }[a.status] ?? ''}`, { size: small.size, duration: small.duration, kind: a.status });
       el.classList.add(`apply-${a.status}`);
       // 凍結：氷がパキッと閉じる。毒：毒のけむりが立ちのぼる
       const c = this.centerOf(el);
       const frozen = a.status === 'frozen';
       const stamp = this.fx('fx-status-stamp', c);
       stamp.style.width = stamp.style.height = `${el.getBoundingClientRect().width * 1.5}px`;
-      stamp.innerHTML = imageArt(`fx/${frozen ? 'ice' : 'poison'}.png`, '', 'art');
+      stamp.innerHTML = imageArt(`fx/${frozen ? 'ice' : a.status === 'burn' ? 'fireball' : 'poison'}.png`, '', 'art');
       this.animate(stamp, frozen ? [
         { transform: 'translate(-50%, -50%) scale(1.9)', opacity: 0 },
         { transform: 'translate(-50%, -50%) scale(.9)', opacity: 1, offset: 0.3, easing: UI_CONFIG.easing.enter },
@@ -1785,6 +1815,7 @@ export class Animations {
     const statuses = { ...(s?.statuses ?? this.renderer.soldier(soldierId)?.statuses ?? {}) };
     if (status === 'poison') statuses.poison = null;
     if (status === 'frozen') statuses.frozen = 0;
+    if (status === 'burn') statuses.burn = null;
     if (s) s.statuses = statuses;
     this.renderer.updateSoldier(soldierId, { statuses });
     // 凍結がとける：氷がくだけて、兵士がぶるっと動き出す

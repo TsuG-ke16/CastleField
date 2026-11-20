@@ -43,6 +43,7 @@ export const MONSTER_ICON_DEFAULT = '👾';
 export const STATUS_ICON = {
   poison: '☠️',
   frozen: '❄️',
+  burn: '🔥',
 };
 
 /** 強化の絵文字 */
@@ -77,6 +78,8 @@ export const SPELL_TINT = {
   poisonEnemySoldiers: 'rgba(132, 204, 22, 0.45)',
   poisonEnemy: 'rgba(132, 204, 22, 0.45)',
   freezeEnemySoldiers: 'rgba(125, 211, 252, 0.5)',
+  pushBackEnemySoldiers: 'rgba(226, 244, 236, 0.55)',
+  purifyFlare: 'rgba(255, 228, 140, 0.5)',
 };
 
 export function soldierMark(type, def) {

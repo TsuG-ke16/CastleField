@@ -100,6 +100,8 @@ export class Room {
         : Object.hasOwn(DECK_MODES, data.rules.deckMode) ? data.rules.deckMode : 'shared',
       teams: 'off',
       castleHp: data.rules.castleMaxHp,
+      // ステージ（data/stages.json）："random"（毎試合ランダム）かステージのID
+      stage: 'random',
     };
     this.game = null;
     /** 今の試合のチーム（席ごと。チームなしなら null） */
@@ -203,6 +205,7 @@ export class Room {
     const teams = this.teamsForGame();
     if (teams) setup.teams = teams;
     this.lastTeams = teams;
+    if (this.data.stages) setup.stage = this.settings.stage ?? 'random';
     if (this.data.castles) setup.castles = this.seats.map((s) => s.castle);
     if (this.data.decks && rules.deckMode === 'own') setup.decks = this.seats.map((s) => s.deck);
     if (rules.deckMode === 'cost') {
@@ -474,7 +477,7 @@ export class Room {
     return { ok: true };
   }
 
-  /** 部屋主がモードを選ぶ：{ winCondition?, deckMode?, teams?, castleHp? } */
+  /** 部屋主がモードを選ぶ：{ winCondition?, deckMode?, teams?, castleHp?, stage? } */
   setRules(seat, patch) {
     const bad = this.lobbyCheck(seat);
     if (bad) return bad;
@@ -490,6 +493,10 @@ export class Room {
           return { ok: false, reason: `城のHPは${CASTLE_HP_MIN}〜${CASTLE_HP_MAX}の整数で入力してください` };
         }
         next.castleHp = hp;
+      } else if (key === 'stage') {
+        if (!this.data.stages) return { ok: false, reason: 'このサーバーではステージを使いません' };
+        if (value !== 'random' && !Object.hasOwn(this.data.stages, value)) return { ok: false, reason: 'そのステージはありません' };
+        next.stage = value;
       } else if (key === 'teams') {
         if (!Object.hasOwn(TEAM_MODES, value)) return { ok: false, reason: 'そのチームの分け方はありません' };
         next.teams = value;
@@ -834,6 +841,8 @@ export class Room {
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),
         castleHpRange: { min: CASTLE_HP_MIN, max: CASTLE_HP_MAX },
         teamModes: Object.entries(TEAM_MODES).map(([id, name]) => ({ id, name })),
+        // ステージ（stages.json がなければ空）。最初は「ランダム」
+        stages: this.data.stages ? [{ id: 'random', name: 'ランダム' }, ...Object.entries(this.data.stages).map(([id, d]) => ({ id, name: d.name ?? id, icon: d.icon ?? null }))] : [],
         teams: TEAM_IDS.map((id) => ({ id, name: TEAM_NAMES[id] })),
       },
       rematchVotes: [...this.rematchVotes],
@@ -905,7 +914,7 @@ export class Lobby {
    */
   createRankedRoom(users, ranked) {
     const room = new Room(`r${this.nextRoom++}`, this.data, this.makeRng, { ...this.options, ranked });
-    room.settings = { winCondition: 'firstDestroy', deckMode: 'cost', teams: 'off', castleHp: this.data.rules.castleMaxHp };
+    room.settings = { winCondition: 'firstDestroy', deckMode: 'cost', teams: 'off', castleHp: this.data.rules.castleMaxHp, stage: 'random' };
     const seats = {};
     for (const u of users) {
       const r = room.join(u.name, u.userId);

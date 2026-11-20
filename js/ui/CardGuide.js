@@ -163,7 +163,7 @@ export class CardGuide {
     const family=soldierFamilies(this.cards).find(f=>f.types.includes(type));
     if(family)info.append(node('p','guide-family-info',`${family.name}：${family.note}`));
     const cost = this.getContext().session?.getState(this.getContext().viewerId)?.mpCosts?.[type]
-      ?? (this.rules.maxMp > 0 && ['damageEnemyCastle','damageEnemySoldiers','poisonEnemySoldiers','poisonEnemy','freezeEnemySoldiers','summonSpirit'].includes(def.effect) ? def.mpCost ?? rarity?.mpCost ?? 0 : 0);
+      ?? (this.rules.maxMp > 0 && ['damageEnemyCastle','damageEnemySoldiers','poisonEnemySoldiers','poisonEnemy','freezeEnemySoldiers','pushBackEnemySoldiers','chainBlast','ignitionBurst','armorBlast','purifyFlare','summonSpirit'].includes(def.effect) ? def.mpCost ?? rarity?.mpCost ?? 0 : 0);
     info.append(node('p', 'guide-mp', `MPコスト：${cost}。${def.effect === 'gainMp' ? `MPを${def.amount}回復。上限${this.rules.maxMp}、超過分は失われます。` : 'MPは自然回復しません。'} `));
     this.content.append(hero, node('p', 'guide-effect', cardDescription(def, this.rules, { monsters: Boolean(this.monsters), debug: this.debug })));
     const story = CARD_STORIES[type];

@@ -244,7 +244,7 @@ test('スキンは部屋の席に結びつき、相手にも見える。持っ�
   server.close();
 });
 
-test('キャラ・魔法のスキン：全キャラ（兵士20・魔物12）と全魔法（53）に1つずつ。対象ごとに1つ装備でき、別の対象には付けられない', async () => {
+test('キャラ・魔法のスキン：全キャラ（兵士21・魔物12）と全魔法（60）に1つずつ。対象ごとに1つ装備でき、別の対象には付けられない', async () => {
   const { economy, user, data } = setup();
   const cards = data.cards; const items = Object.values(data.shop.items);
   const chars = items.filter((i) => i.slot === 'charSkin'); const fx = items.filter((i) => i.slot === 'spellSkin');

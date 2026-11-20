@@ -401,6 +401,8 @@ export class Renderer {
   renderAll(model) {
     this.configureBoard(model);
     if (model.playerOrder) this.playerOrder = model.playerOrder;
+    this.setStage(model.stage ?? null);
+    this.setTime(model.time ?? 'day', model.nightRoundsLeft ?? 0);
     this.setTurnInfo(model.turn, model.round);
     this.setWeather(model.weather ?? null);
     this.setPiles(model.deckCount, model.discardCount);
@@ -422,8 +424,35 @@ export class Renderer {
   }
 
   setTurnInfo(turn, round) {
-    this.el.turnInfo.textContent = round ? `${round}周目` : (turn ? `ターン${turn}` : '');
-    this.el.turnInfo.title = `通算ターン ${turn}`;
+    this.lastTurnInfo = [turn, round];
+    // ステージのアイコンと、夜なら月を「○周目」の前に付ける（HUD に新しいバッジを増やさないため）
+    const stage = this.stage;
+    const night = this.time === 'night';
+    const marks = `${stage?.icon ?? ''}${night ? '🌙' : ''}`;
+    const base = round ? `${round}周目` : (turn ? `ターン${turn}` : '');
+    this.el.turnInfo.textContent = marks && base ? `${marks} ${base}` : base;
+    const lines = [`通算ターン ${turn}`];
+    if (stage) lines.push(`ステージ：${stage.name}${stage.description ? `（${stage.description}）` : ''}`);
+    if (night) lines.push(`夜（あと${this.nightLeft}周）`);
+    this.el.turnInfo.title = lines.join('\n');
+    this.el.turnInfo.setAttribute('aria-label', lines.slice(1).concat(base).join('、'));
+  }
+
+  /** ステージ（{ id, name, icon, description, element } か null）。盤面の色を変える */
+  setStage(stage) {
+    this.stage = stage;
+    if (stage) this.el.app.dataset.stage = stage.id;
+    else delete this.el.app.dataset.stage;
+    if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
+  }
+
+  /** 昼と夜（"day" か "night"）。夜は盤面を暗くする */
+  setTime(time, nightLeft = 0) {
+    this.time = time;
+    this.nightLeft = nightLeft;
+    if (time === 'night') this.el.app.dataset.time = 'night';
+    else delete this.el.app.dataset.time;
+    if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
   }
 
   /** 今の天候を、上のバッジと背景の効果に出す（w は { type, name, icon, description, roundsLeft } か null） */
@@ -691,7 +720,7 @@ export class Renderer {
       weapon: st.weapon ?? null,
       element: st.element ?? null,
       shield: st.shield ?? 0,
-      statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0 },
+      statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0, burn: st.statuses?.burn ?? null },
     };
     this.soldiers.set(st.soldierId, s);
     this.updateSoldierBadges(s);
@@ -735,9 +764,11 @@ export class Renderer {
     const poison = s.statuses?.poison;
     const frozen = s.statuses?.frozen > 0;
     const status = q('.soldier-status');
-    status.innerHTML = `${poison ? icon('skull') : ''}${frozen ? icon('snow') : ''}`;
-    status.hidden = !poison && !frozen;
+    const burn = s.statuses?.burn;
+    status.innerHTML = `${poison ? icon('skull') : ''}${frozen ? icon('snow') : ''}${burn ? icon('fire') : ''}`;
+    status.hidden = !poison && !frozen && !burn;
     s.el.classList.toggle('poisoned', Boolean(poison));
+    s.el.classList.toggle('burning', Boolean(burn));
     s.el.classList.toggle('frozen', frozen);
   }
 
@@ -831,7 +862,7 @@ export class Renderer {
           weapon: st.weapon ?? null,
           element: st.element ?? null,
           shield: st.shield ?? 0,
-          statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0 },
+          statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0, burn: st.statuses?.burn ?? null },
         });
         this.updateSoldierBadges(s);
         this.place(s);

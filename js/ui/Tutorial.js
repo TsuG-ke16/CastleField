@@ -54,7 +54,7 @@ export class Tutorial {
       this.show('wait', '相手の番', '画面をタップすると演出を早送りできます。');
       return;
     }
-    if (type === 'soldierMoved' && p.playerId === this.playerId && !this.moved) {
+    if (type === 'soldierMoved' && p.playerId === this.playerId && p.cause !== 'pushed' && !this.moved) {
       this.moved = true;
       this.show('march', '兵士が進軍した！', '相手の城に着くと大ダメージ。後続の兵士や魔法で援護しよう。');
       return;
