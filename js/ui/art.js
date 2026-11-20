@@ -256,6 +256,9 @@ const CARD_ART = {
     `<g ${S} stroke-width="6" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/><path d="M40 20 L50 30 L60 20 M40 80 L50 70 L60 80 M19 45 L32 40 L28 26 M81 55 L68 60 L72 74 M19 55 L32 60 L28 74 M81 45 L68 40 L72 26"/></g>` +
     `<g stroke="#8fdcff" stroke-width="2.5" stroke-linecap="round" fill="none"><path d="M50 12 V88 M17 31 L83 69 M17 69 L83 31"/></g>` +
     `<circle cx="50" cy="50" r="8" fill="#e9faff" ${S} stroke-width="3"/>`,
+  galeForce: () => bg('#d8f3e6', '#f1fbf6') +
+    `<g ${S} stroke-width="6" fill="none"><path d="M14 36 H62 Q78 36 78 24 Q78 14 68 14 Q60 14 60 22"/><path d="M10 54 H76 Q90 54 90 66 Q90 78 78 78 Q68 78 68 70"/><path d="M20 72 H48"/></g>` +
+    `<g stroke="#8fe0b8" stroke-width="2.5" stroke-linecap="round" fill="none"><path d="M14 36 H62 Q78 36 78 24 Q78 14 68 14 Q60 14 60 22"/><path d="M10 54 H76 Q90 54 90 66 Q90 78 78 78 Q68 78 68 70"/><path d="M20 72 H48"/></g>`,
   // 追加カード：もとの絵を使い回し、背景の色と一部の飾りで見分ける（専用の絵ができたら差しかえる）
   spearman: (c) => bg('#cfeeb0', '#eaf8d4') + `<g transform="translate(6 8) scale(.88)">${infantryBody(c)}</g>` +
     `<path d="M88 92 L72 14" ${S} stroke-width="8"/><path d="M88 92 L72 14" stroke="#c99a5b" stroke-width="4" stroke-linecap="round"/><path d="M72 4 L79 20 L65 20 Z" fill="${STEEL}" ${S} stroke-width="3"/>`,

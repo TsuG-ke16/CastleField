@@ -1414,11 +1414,12 @@ export class Animations {
   /** 毒の霧・氷の息：相手の兵士の列に色のついた霧をかける */
   async mist(_targetId, color, roadId) {
     if (this.skipping) return;
-    sound.play(color === SPELL_TINT.freezeEnemySoldiers ? 'freeze' : 'poison');
+    const gust = color === SPELL_TINT.pushBackEnemySoldiers;
+    sound.play(gust ? 'gust' : color === SPELL_TINT.freezeEnemySoldiers ? 'freeze' : 'poison');
     const app = this.el.app.getBoundingClientRect();
     const r = this.renderer.laneEl(roadId).getBoundingClientRect(); // レーンを選んだ魔法は、その道だけに霧をかける
     const fog = this.fx('fx-mist');
-    fog.innerHTML = imageArt(`fx/${color === SPELL_TINT.freezeEnemySoldiers ? 'ice' : 'poison'}.png`, '', 'art');
+    fog.innerHTML = imageArt(`fx/${gust ? 'dust' : color === SPELL_TINT.freezeEnemySoldiers ? 'ice' : 'poison'}.png`, '', 'art');
     fog.style.left = `${r.left - app.left}px`;
     fog.style.top = `${r.top - app.top}px`;
     fog.style.width = `${r.width}px`;

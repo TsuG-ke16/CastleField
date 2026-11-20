@@ -102,6 +102,7 @@
   "beast_mimic": {"name": "ミミック（魔物）", "kind": "soldier", "monster": "mimic", "hp": 8, "attack": 1, "speed": 2, "count": 0, "rarity": "rare", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
   "beast_vampire": {"name": "ヴァンパイア（魔物）", "kind": "soldier", "monster": "vampire", "hp": 11, "attack": 4, "speed": 2, "count": 0, "rarity": "epic", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
   "beast_demonKing": {"name": "魔王（魔物）", "kind": "soldier", "monster": "demonKing", "hp": 20, "attack": 6, "speed": 1, "count": 0, "rarity": "legendary", "weight": 0, "description": "倒した魔物が味方の兵士になったカード。魔物を倒した人の手札に入る（排出では出ない）"},
+  "galeForce": {"name": "ゲイルフォース", "kind": "spell", "effect": "pushBackEnemySoldiers", "amount": 2, "count": 2, "rarity": "uncommon", "fuseTo": "glacier", "weight": 1, "description": "突風で、相手の兵士全員を2マス押し戻す（城の前より後ろには下がらない）"},
   "antidote": {"name": "解毒薬", "kind": "spell", "effect": "curePoison", "count": 0, "rarity": "special", "weight": 1, "description": "自分の毒状態（兵士・城）をすべて治す。毒にかかっていないと出せない。メインを使わず何枚でも出せる"},
   "weatherCall": {"name": "天候の呪文", "kind": "spell", "effect": "changeWeather", "count": 0, "rarity": "special", "weight": 0.5, "description": "天候をランダムに変える（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨のどれか）。メインを使う"}
 }

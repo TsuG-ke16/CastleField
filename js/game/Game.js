@@ -1615,7 +1615,7 @@ export class Game {
       );
       const withSoldiers = pairs.filter((x) => x.on.length > 0);
       const targets = withSoldiers.filter((x) => x.on.some(changes)).map((x) => ({ playerId: x.p.id, roadId: x.r.roadId }));
-      return { targets, reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません' };
+      return { targets, reason: withSoldiers.length ? this.noChangeReason(def) : '道の上に相手の兵士がいません' };
     }
     switch (def.effect) {
       case 'wild':
@@ -1636,13 +1636,14 @@ export class Game {
           reason: '道の上に相手の兵士がいません',
         };
       case 'poisonEnemySoldiers':
-      case 'freezeEnemySoldiers': {
-        // 効き目が変わる兵士がいる相手だけ（全員もう同じかそれ以上の状態なら、出しても何も起きない）
+      case 'freezeEnemySoldiers':
+      case 'pushBackEnemySoldiers': {
+        // 効き目が変わる兵士がいる相手だけ（全員もう同じかそれ以上の状態・押し戻せないなら、出しても何も起きない）
         const changes = this.changesSoldier(def);
         const withSoldiers = this.opponentsOf(player.id).filter(hasSoldiers);
         return {
           targets: playerTargets(withSoldiers.filter((p) => p.visibleSoldiers.some(changes))),
-          reason: withSoldiers.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
+          reason: withSoldiers.length ? this.noChangeReason(def) : '道の上に相手の兵士がいません',
         };
       }
       case 'poisonEnemy': {
@@ -1712,7 +1713,15 @@ export class Game {
   changesSoldier(def) {
     if (def.effect === 'poisonEnemySoldiers') return (x) => !x.poison || x.poison.turns < def.turns || x.poison.amount < def.amount;
     if (def.effect === 'freezeEnemySoldiers') return (x) => x.frozen < def.turns;
+    // 押し戻し：自分の城の前（マス0）にいる兵士は、それより後ろに下がれない
+    if (def.effect === 'pushBackEnemySoldiers') return (x) => x.position > 0;
     return () => true;
+  }
+
+  /** 相手の兵士はいるが、出しても何も変わらないときの理由 */
+  noChangeReason(def) {
+    if (def.effect === 'pushBackEnemySoldiers') return '押し戻せる兵士がいません（みんな城の前にいます）';
+    return 'もう同じ状態になっています';
   }
 
   /** 手番・手札・枚数の決まりを確かめる。出せるならカードを返す */
@@ -1913,6 +1922,20 @@ export class Game {
             soldier.frozen = Math.max(card.def.turns, soldier.frozen);
             this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status, turns: soldier.frozen });
           }
+        }
+        break;
+      }
+
+      case 'pushBackEnemySoldiers': {
+        // ゲイルフォース：相手の兵士を amount マス押し戻す（出した順に。自分の城の前＝マス0で止まる）。
+        // ダメージではないので、霧でも外れず、防御も聞かない（凍結と同じ）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player', ...lane });
+        for (const soldier of victims()) {
+          const from = soldier.position;
+          const to = Math.max(0, from - amount);
+          if (to === from) continue;
+          soldier.position = to;
+          this.emit('soldierMoved', { playerId: enemy.id, soldierId: soldier.soldierId, roadId: soldier.roadId, from, to, cause: 'pushed' });
         }
         break;
       }

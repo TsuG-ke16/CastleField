@@ -20,6 +20,7 @@ export const EFFECTS = {
     poisonEnemy: ['amount'], // 毒：選んだ相手の兵士と城を、永続の毒状態にする（毎ターン amount ダメージ。盾・城壁は効かない）
     curePoison: [], // 解毒薬：自分の毒状態（兵士・城）をすべて治す
     freezeEnemySoldiers: ['turns'],
+    pushBackEnemySoldiers: ['amount'], // ゲイルフォース：相手の兵士を amount マス押し戻す（自分の城の前＝マス0より後ろには下がらない）
     redrawHand: [], // 天の恵み：手札を全部引き直す
     randomEffect: [], // 神頼み：山札の上の1枚を、タダで出す（対象はランダム）
     stealCard: [], // 盗賊：相手の手札から1枚ランダムに奪う
@@ -38,13 +39,13 @@ export const EFFECTS = {
 };
 
 /** scope（レーンを選ぶか）を書ける effect。lane なら選んだ1レーンの相手の兵士だけに効く */
-export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers'];
+export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers', 'pushBackEnemySoldiers'];
 
 /** 攻撃ではない魔法（精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
 export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison'];
 
 /** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'summonSpirit'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'summonSpirit'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、

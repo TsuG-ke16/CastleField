@@ -293,7 +293,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `discardRequired` | `{ playerId, count }` … 捨てる必要がある枚数 |
 | `cardDiscarded` | `{ playerId, cardIds }` |
 | `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack }` … `hp` / `attack` は出した時点の値 |
-| `soldierMoved` | `{ playerId, soldierId, roadId, from, to }` |
+| `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい） |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
 | `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
@@ -1180,6 +1180,18 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **王の財宝（レジェンドのコイン）はデッキ編成で1枚まで**：`cards.json` のカードに `maxCopies`（1以上の整数）を書くと、レアリティの `maxCopies` より厳しい上限になる（`checkCostDeck`）
 - 画面：`js/ui/text.js` の城壁・毒の説明文を `armorMax` / `poisonTurns` / `poisonMax` に合わせた。城の毒の残りターンのバッジ表示は未対応
 - 確かめたこと：`node --test` は全部通る。`node tests/sim/run.js --games 300`：全組み合わせが決着。smart 同士は平均38.7手番・p1 勝率49%、smart vs random 85%
+
+## ゲイルフォース（押し戻しの魔法。人間に確認して決めた。仮）
+
+- **ゲイルフォース**（`galeForce`・`kind: "spell"`・`effect: "pushBackEnemySoldiers"`・`amount: 2`・**アンコモン**・`weight` 1）：選んだ相手の兵士全員（**全レーン**）を `amount` マス押し戻す（`position` を減らす）。**自分の城の前（マス0）より後ろには下がらない**（マス1なら1マスだけ）。メインを使い、MP を使う（攻撃の魔法と同じ。アンコモンなので2）
+- 押し戻せる兵士（マス0より前にいる、見える兵士）がいないと出せない（「押し戻せる兵士がいません（みんな城の前にいます）」）。忍者には効かない（ほかの魔法と同じ）。ダメージではないので、霧でも外れず、防御も聞かない（凍結と同じ）
+- `scope: "lane"` を書くと、選んだ1レーンだけになる（今のカードは全レーン）
+- 合成：ゲイルフォース2枚 → **氷河**（レア。同じ「足止め」の系統に合流させた。仮）
+- イベント：`cardPlayed` → `spellCast` → 下がった兵士ごとに `soldierMoved`（出した順。`cause: "pushed"`）。マス0で動かない兵士には出さない
+- 長所と短所：城の前まで来た兵士を、凍結（1回休み）より大きく戻せる。ただしダメージはなく、兵士は次の進軍でまた進んでくる
+- CPU（`smart` 系）：次の進軍で城に着きそうな兵士がいるとき、凍結がなければ使う
+- 確かめたこと（`node tests/sim/run.js --games 300`）：全組み合わせが決着。smart 同士は平均39.7手番・p1 勝率49%（追加前とほぼ同じ）。CPU の弱い順は変わらない（`--games 200` で random に勝つ割合：defensive 10%・rush 16%・smart 89%。追加前は 8%・17%・84%）
+- 画面：説明文・札（`js/ui/text.js`）、道に土けむりと風の音の演出（`Animations.js` の `mist`・`Sound.js` の `gust`）、押し戻しは今の進軍の動きで後ろへ下がる。チュートリアルは押し戻しを「進軍した」と数えない。絵は仮の SVG（`js/ui/art.js`）、魔法のスキン `fxskin_galeForce`（`data/shop.json`）。専用の絵ができたら差しかえる
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
