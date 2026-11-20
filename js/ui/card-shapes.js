@@ -47,7 +47,6 @@ export const FRONT_SHAPES = {
   },
   'skin-iron': {
     gems: [{ x: 256, y: 53, w: 32, h: 35, cut: 'star4', gem: false }, { x: 256, y: 608, w: 16, h: 14, cut: 'diamond', gem: false }],
-    rings: [{ x: 256, y: 64, r: 51, w: 11 }],
   },
   'skin-bronze': { gems: [{ x: 256, y: 50, w: 42, h: 43, cut: 'star4' }, { x: 256, y: 608, w: 16, h: 14, cut: 'diamond', gem: false }] },
   'skin-silver': { gems: [{ x: 256, y: 56, w: 34, h: 40, cut: 'star4' }, { x: 256, y: 608, w: 24, h: 20, cut: 'diamond' }] },
@@ -67,7 +66,6 @@ export const FRONT_SHAPES = {
   },
   'skin-master': {
     gems: [{ x: 256, y: 60, w: 35, h: 47, cut: 'star4' }, { x: 256, y: 606, w: 24, h: 22, cut: 'diamond' }],
-    halos: [{ x: 254, y: 52, rx: 85, ry: 37, w: 5 }],
     domes: [{ x: 321, y: 24, r: 10 }],
   },
   'skin-champion': {
@@ -77,7 +75,6 @@ export const FRONT_SHAPES = {
       { x: 256, y: 606, w: 24, h: 24, cut: 'star4' },
       { x: 256, y: 735, w: 36, h: 34, cut: 'star4' },
     ],
-    halos: [{ x: 257, y: 37, rx: 95, ry: 20, w: 5 }],
   },
 };
 for (const shape of Object.values(FRONT_SHAPES)) {
@@ -89,48 +86,37 @@ for (const shape of Object.values(FRONT_SHAPES)) {
 const laurels = (y, rIn, rOut) => [{ x: 256, y, rIn, rOut, from: 115, to: 205 }, { x: 256, y, rIn, rOut, from: -25, to: 65 }];
 export const BACK_SHAPES = {
   iron: {
-    field: [38, 92, 472, 688], rings: [{ x: 256, y: 318, r: 75, w: 16 }], arcs: laurels(330, 95, 140), banners: [[220, 440, 292, 520]],
     gems: [{ x: 256, y: 322, w: 48, h: 60, cut: 'star4', gem: false }, { x: 256, y: 56, w: 22, h: 34, cut: 'star4', gem: false },
       ...mirror([{ x: 22, y: 384, w: 12, h: 20, cut: 'diamond', gem: false }]), { x: 256, y: 670, w: 18, h: 22, cut: 'diamond', gem: false }],
   },
   bronze: {
-    field: [52, 96, 460, 684], rings: [{ x: 256, y: 335, r: 80, w: 18 }], arcs: laurels(340, 100, 150), banners: [[215, 440, 297, 525]],
     gems: [{ x: 256, y: 330, w: 62, h: 78, cut: 'star4', gem: false }, { x: 256, y: 52, w: 22, h: 34, cut: 'star4' },
       ...mirror([{ x: 24, y: 370, w: 12, h: 18, cut: 'diamond', gem: false }]), { x: 256, y: 664, w: 16, h: 16, cut: 'diamond', gem: false }],
   },
   silver: {
-    field: [50, 96, 462, 684], rings: [{ x: 256, y: 320, r: 86, w: 14 }], arcs: laurels(340, 100, 150), banners: [[205, 450, 307, 520]],
     gems: [{ x: 256, y: 330, w: 75, h: 70, cut: 'star4', gem: false }, { x: 256, y: 212, w: 18, h: 30, cut: 'star4' }, { x: 256, y: 455, w: 18, h: 28, cut: 'star4' },
       { x: 256, y: 58, w: 20, h: 30, cut: 'star4' }, ...mirror([{ x: 28, y: 360, w: 16, h: 22, cut: 'diamond' }]), { x: 256, y: 670, w: 28, h: 34, cut: 'diamond' }],
   },
   gold: {
-    field: [54, 96, 458, 684], rings: [{ x: 256, y: 330, r: 96, w: 10 }], arcs: laurels(345, 105, 160), banners: [[215, 450, 297, 525]],
     gems: [{ x: 256, y: 335, w: 95, h: 85, cut: 'star8', gem: false }, { x: 256, y: 58, w: 22, h: 34, cut: 'star4' },
       ...mirror([{ x: 30, y: 365, w: 14, h: 20, cut: 'diamond' }]), { x: 256, y: 690, w: 30, h: 38, cut: 'star4' },
       { x: 256, y: 155, w: 14, h: 22, cut: 'star4', gem: false }, { x: 256, y: 575, w: 14, h: 22, cut: 'star4', gem: false }],
   },
   platinum: {
-    field: [52, 96, 460, 684], rings: [{ x: 256, y: 330, r: 89, w: 11 }], arcs: laurels(345, 100, 155), banners: [[205, 445, 307, 520]],
     gems: [{ x: 256, y: 330, w: 75, h: 70, cut: 'star4' }, { x: 256, y: 212, w: 16, h: 28, cut: 'star4' }, { x: 256, y: 440, w: 16, h: 28, cut: 'star4' },
       { x: 256, y: 58, w: 24, h: 36, cut: 'star4' }, ...mirror([{ x: 32, y: 360, w: 18, h: 24, cut: 'diamond' }]), { x: 256, y: 685, w: 28, h: 36, cut: 'star4' }],
   },
   diamond: {
-    field: [60, 100, 452, 690], rings: [{ x: 256, y: 300, r: 85, w: 10 }], arcs: laurels(340, 105, 160), banners: [[205, 450, 307, 525]],
     gems: [{ x: 256, y: 330, w: 95, h: 95, cut: 'star4' }, { x: 256, y: 210, w: 16, h: 30, cut: 'star4' }, { x: 256, y: 455, w: 18, h: 30, cut: 'star4' },
       ...mirror([{ x: 160, y: 215, w: 10, h: 18, cut: 'diamond' }, { x: 24, y: 355, w: 20, h: 30, cut: 'diamond' }]),
       { x: 256, y: 60, w: 26, h: 40, cut: 'star4' }, { x: 256, y: 690, w: 30, h: 40, cut: 'star4' }],
   },
   master: {
-    field: [66, 98, 446, 690], rings: [{ x: 256, y: 320, r: 75, w: 10 }], arcs: laurels(350, 85, 145), banners: [[215, 440, 297, 545]],
-    halos: [{ x: 258, y: 330, rx: 140, ry: 34, w: 6, tilt: -12 }],
     gems: [{ x: 256, y: 300, w: 45, h: 48, cut: 'star4' }, { x: 256, y: 205, w: 14, h: 24, cut: 'star4' }, { x: 256, y: 425, w: 16, h: 26, cut: 'star4' },
       ...mirror([{ x: 146, y: 475, w: 8, h: 14, cut: 'diamond' }, { x: 30, y: 385, w: 14, h: 18, cut: 'diamond' }]),
       { x: 256, y: 58, w: 22, h: 34, cut: 'star4' }, { x: 256, y: 672, w: 18, h: 20, cut: 'diamond' }],
   },
   champion: {
-    field: [60, 92, 452, 688], rings: [{ x: 256, y: 320, r: 80, w: 10 }], banners: [[210, 380, 302, 560]],
-    arcs: [{ x: 256, y: 300, rIn: 110, rOut: 205, from: 160, to: 250 }, { x: 256, y: 300, rIn: 110, rOut: 205, from: -70, to: 20 }, ...laurels(380, 100, 150)],
-    halos: [{ x: 256, y: 165, rx: 110, ry: 18, w: 5 }],
     gems: [{ x: 256, y: 320, w: 90, h: 100, cut: 'star4' }, { x: 256, y: 55, w: 22, h: 34, cut: 'star4' },
       ...mirror([{ x: 30, y: 380, w: 14, h: 18, cut: 'diamond' }]), { x: 256, y: 660, w: 20, h: 24, cut: 'star4' }],
   },
@@ -178,14 +164,8 @@ export function shapeHeight({ W, H, solid, big, shape, back }) {
       if (!solid[i]) continue;
       // 枠の板
       let h = .26 * (.35 + .65 * bevel(big[i] / (16 * s)));   // ふちも少し高さを残す（細い所が奥に沈まないように）
-      // はみ出す飾り：本体の四角の外へ行くほど持ち上げ、飾りの外形の中で丸くふくらませる
-      const out = Math.max(bx0 - x, x - bx1, by0 - y, y - by1, 0);
-      if (out > 0) {
-        const lift = Math.min(1, out / (12 * s));
-        // ふちまでほぼ同じ高さで持ち上げる（ふちを低くすると、細い葉先だけが奥に残って、離れて浮いて見える）
-        h += lift * (.17 + .09 * bevel(big[i] / (10 * s)));
-        raised[i] = Math.max(raised[i], lift);
-      }
+      // はみ出す飾り（王冠・羽）は、外形からの距離のふちの丸みだけで形になる。
+      // 本体の四角を基準に持ち上げると、飾りの途中にまっすぐな段ができて、ふちが裂けて見えたのでやめた
       // 地（裏の内側）：一段へこませる
       if (shape.field) {
         const d = rectInside(shape.field, x, y, 16);

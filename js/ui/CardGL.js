@@ -170,7 +170,7 @@ function pixels(image, w, h) {
 }
 
 const RELIEF_HEIGHT = 0.03;     // 凹凸の高さ（カードの幅を 1 として。地図の明るさ 1 のところ）
-const RAISED_HEIGHT = 0.03;     // 浮かせる部品（王冠・宝石）のさらに手前への持ち上げ
+const RAISED_HEIGHT = 0.015;     // 浮かせる部品（王冠・宝石）のさらに手前への持ち上げ
 const GRID = [256, 384];        // 凹凸のメッシュの分割数
 const MAX_SPARKS = 2600;        // 1面あたりのキラキラの粒の数の上限
 
@@ -448,14 +448,14 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
     scene.add(group);
 
     // 光（CSS の 3D と同じ向き。y と z は three.js の向きに直す）
-    const light = new THREE.DirectionalLight('#ffffff', 2.2);
+    const light = new THREE.DirectionalLight('#ffffff', 1.3);
     light.position.set(CARD_LIGHT[0] * 3, -CARD_LIGHT[1] * 3, CARD_LIGHT[2] * 3);
     light.castShadow = true;                       // 王冠や縁の影が、枠の上に落ちる
     light.shadow.mapSize.set(2048, 2048);
     Object.assign(light.shadow.camera, { left: -1.3, right: 1.3, top: 1.3, bottom: -1.3, near: 0.5, far: 8 });
     light.shadow.bias = -0.0004; light.shadow.normalBias = 0.003; light.shadow.radius = 3;
     light.shadow.autoUpdate = false;               // 影はカードが動いたときだけ描き直す（キラキラだけのコマでは描かない）
-    scene.add(light, new THREE.AmbientLight('#fff4e0', 0.9));
+    scene.add(light, new THREE.AmbientLight('#ffffff', 1.7));
     const environment = roomEnvironment(THREE, renderer);
     scene.environment = environment.texture;
 
@@ -511,12 +511,13 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
       const glowTexture = own(new THREE.CanvasTexture(maps.emissive));
       glowTexture.colorSpace = THREE.SRGBColorSpace;
       if (map.flipY === false) { ormTexture.flipY = false; glowTexture.flipY = false; }
+      // 色は絵のまま：絵にはもう光と影が描いてあるので、金属として光を当て直すと暗く濁る（金が銅色・白い羽が灰色になった）。
+      // 金属・宝石の所は、つや（あらさの地図）と上塗り（clearcoat）で映り込みだけを足す。虹色の膜は枠にはかけない（偏光は絵の窓だけ）
       const material = own(new THREE.MeshPhysicalMaterial({
-        map, metalnessMap: ormTexture, roughnessMap: ormTexture, metalness: 0.7, roughness: 1,
-        envMapIntensity: 0.6 + preset.env * 0.5, alphaTest: 0.4,
-        emissive: '#ffffff', emissiveMap: glowTexture, emissiveIntensity: 0.35 + 0.3 * preset.gem,   // 宝石は内側から光る
-        iridescence: Math.min(1, preset.iri * 1.4), iridescenceIOR: 1.6, iridescenceThicknessRange: [200, 600],
-        clearcoat: preset.gem > 1 ? 0.4 : 0, clearcoatRoughness: 0.2,
+        map, roughnessMap: ormTexture, metalness: 0, roughness: 1,
+        envMapIntensity: 0.35 + preset.env * 0.2, alphaTest: 0.4,
+        clearcoat: 0.35 + 0.25 * Math.min(1, preset.spec), clearcoatRoughness: 0.18,
+        emissive: '#ffffff', emissiveMap: glowTexture, emissiveIntensity: 0.25 + 0.2 * preset.gem,
       }));
       const mesh = new THREE.Mesh(geometry, material);
       mesh.castShadow = mesh.receiveShadow = true;
