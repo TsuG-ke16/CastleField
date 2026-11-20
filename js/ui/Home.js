@@ -5,7 +5,7 @@ import { profileArt } from './profileArt.js';
 // いつも入口になる。サーバーのアカウント機能がないとき（python の簡易サーバー・オフライン）は、
 // ひとりで遊ぶ・同じ端末・デッキ編成・図鑑・設定だけを使え、サーバーが要るメニューは押すと理由を出す。表示名などは textContent で入れる。
 import { account } from './Account.js';
-import { loadDecks, selectMyDeck, DECK_SLOTS } from './DeckStore.js';
+import { loadDecks, selectMyDeck, saveMyDeck, deleteMyDeck, DECK_SLOTS } from './DeckStore.js';
 import { deckCard } from './DeckPreview.js';
 import { checkCostDeck } from '../game/Setup.js';
 import { sound } from './Sound.js';
@@ -31,8 +31,8 @@ const TABS = [
 ];
 // タブごとのメニュー（タイル）。style：grid＝アイコンを並べる／list＝説明つきの行
 const GROUPS = {
-  account: [['アカウント', ['profile', 'friend'], 'list']],
-  deck: [['カード', ['deck', 'catalog', 'skin'], 'list']],
+  account: [['', ['profile', 'friend'], 'pair']],
+  deck: [['カードとスキン', ['deck', 'catalog', 'skin'], 'grid']],
   battle: [['ほかの対戦', ['rank', 'casual', 'ranking', 'mission'], 'grid']],
   shop: [['ガチャ・ショップ', ['gacha', 'shop'], 'list']],
   settings: [['設定', ['settings', 'help'], 'list']],
@@ -54,6 +54,8 @@ const MENU = {
   help: '遊び方',
   settings: '設定',
 };
+// タブの中だけで使う名前（アカウントのタブでは、何ができるかを名前にする）
+const MENU_IN_PAGE = { account: { profile: 'アイコン・称号を変更' } };
 // 行の説明（短く。何ができるかだけ）
 const MENU_NOTE = {
   friend: 'フレンドを招待して対戦',
@@ -72,6 +74,18 @@ const GACHA_SHOWCASE = [
   { src: 'assets/skins/castle-gold.png', name: '黄金の城', rarity: 'epic' },
   { src: 'assets/skins/unit-gold.png', name: '黄金の兵', rarity: 'epic' },
 ];
+// 排出されるアイテムの例（どれも gacha: true の景品）
+const GACHA_POOL = [
+  { src: 'assets/skins/castle-gold.png', name: '黄金の城', rarity: 'epic' },
+  { src: 'assets/skins/castle-shadow.png', name: '影の城', rarity: 'legendary' },
+  { src: 'assets/skins/unit-gold.png', name: '黄金の兵', rarity: 'epic' },
+  { src: 'assets/skins/back-gold.png', name: '金のカード裏', rarity: 'epic', back: true },
+];
+const SORTS = {
+  rarity: null, // currentDeck の並び（レアリティの高い順・枚数の多い順）
+  count: (a, b) => b[1] - a[1],
+  kind: (a, b, cards) => String(cards[a[0]].kind).localeCompare(String(cards[b[0]].kind)) || b[1] - a[1],
+};
 const PREVIEW_CARDS = 5; // デッキの代表カードの枚数
 
 export class Home {
@@ -83,14 +97,15 @@ export class Home {
    * @param {(type: string) => void} [o.onZoomCard] カードを大きく見せる（CardZoom）
    * @param {object} [o.cards] @param {object} [o.rarities] @param {object} [o.rules] @param {object} [o.decks] デッキの中身を見せるのに使う（data/ の中身）
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks });
+    this.deckSort = 'rarity';
     this.data = null;
     this.mode = 'solo';
     try { const m = localStorage.getItem(MODE_KEY); if (m in MODES) this.mode = m; } catch { /* 保存できなくても動く */ }
     const box = this.box = document.createElement('div');
     box.id = 'home'; box.className = 'screen'; box.hidden = true;
-    box.innerHTML = `<div class="home-sky" aria-hidden="true"></div><div class="home-wall" aria-hidden="true"></div>
+    box.innerHTML = `<div class="home-sky" aria-hidden="true"></div>
     <div class="home-wrap">
       <header class="home-top">
         <button type="button" class="home-player raw-btn" data-act="profile" aria-label="プロフィールを開く">
@@ -98,50 +113,76 @@ export class Home {
           <span class="home-who">
             <strong data-part="name">…</strong>
             <small data-part="title"></small>
-            <span class="home-level" data-part="lvWrap"><b data-part="lv">Lv.1</b><span class="home-xp" role="progressbar" aria-label="次のレベルまで" data-part="xpbar"><i data-part="xpfill"></i></span></span>
+            <span class="home-level" data-part="lvWrap"><b data-part="lv">Lv.1</b><span class="home-xp" role="progressbar" aria-label="次のレベルまで" data-part="xpbar"><i data-part="xpfill"></i><span class="home-xp-text" data-part="xptext"></span></span></span>
           </span>
         </button>
         <div class="home-side">
-          <span class="home-coins" title="ゲーム内通貨（無料）" data-part="coins"><img src="assets/ui/icon-coin.png" alt="コイン" width="22" height="22"><b>0</b></span>
-          <button type="button" class="home-icon-btn raw-btn" data-act="notice" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3.2c-3.3 0-5.6 2.5-5.6 5.8v3.6L4.6 15.4c-.4.6 0 1.4.8 1.4h13.2c.8 0 1.2-.8.8-1.4l-1.8-2.8V9c0-3.3-2.3-5.8-5.6-5.8Z" fill="#ffd36b" stroke="#3f2511" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 18.6a2.5 2.5 0 0 0 4.8 0" fill="#ffd36b" stroke="#3f2511" stroke-width="1.8" stroke-linecap="round"/><path d="M8.6 7.6c.5-1 1.3-1.6 2.3-1.9" fill="none" stroke="#fff6cf" stroke-width="1.6" stroke-linecap="round"/></svg><i class="home-dot" data-part="dot" hidden></i></button>
+          <span class="home-wallet-pill"><span class="home-coins" title="ゲーム内通貨（無料）" data-part="coins"><img src="assets/ui/icon-coin.png" alt="コイン" width="22" height="22"><b>0</b></span><button type="button" class="home-coin-add raw-btn" data-act="shop" data-part="coinAdd" aria-label="コインのショップを開く">+</button></span>
+          <button type="button" class="home-icon-btn raw-btn" data-act="notice" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 3.2c-3.3 0-5.6 2.5-5.6 5.8v3.6L4.6 15.4c-.4.6 0 1.4.8 1.4h13.2c.8 0 1.2-.8.8-1.4l-1.8-2.8V9c0-3.3-2.3-5.8-5.6-5.8Z" fill="#ffd36b" stroke="#4d3426" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 18.6a2.5 2.5 0 0 0 4.8 0" fill="#ffd36b" stroke="#4d3426" stroke-width="1.8" stroke-linecap="round"/><path d="M8.6 7.6c.5-1 1.3-1.6 2.3-1.9" fill="none" stroke="#fff6cf" stroke-width="1.6" stroke-linecap="round"/></svg><i class="home-dot" data-part="dot" hidden></i></button>
         </div>
       </header>
 
       <div class="home-page" data-page="account" role="tabpanel" aria-label="アカウント" hidden>
-        <section class="home-card home-rankcard" aria-label="ランク">
-          <span class="home-rankcard-emblem" data-part="accEmblem"></span>
-          <div class="home-rankcard-text"><span class="home-eyebrow">ランク</span><b data-part="accRank">—</b><small data-part="accSeason"></small></div>
+        <h1 class="home-pagehead home-pagehead-crest"><span>アカウント</span></h1>
+        <section class="home-card home-profilecard" aria-label="プロフィール">
+          <span class="home-bigavatar" data-part="avatar2"></span>
+          <div class="home-profilecard-text">
+            <b data-part="name2">—</b>
+            <span class="home-titlechip" data-part="title2"></span>
+          </div>
+          <button type="button" class="cf-btn cf-btn-secondary raw-btn home-profile-edit" data-act="profile"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M4 14.5 13.2 5.3l1.5 1.5L5.5 16H4Z" fill="#ffd36b" stroke="#4d3426" stroke-width="1.6" stroke-linejoin="round"/><path d="m12 6.5 1.5 1.5" stroke="#4d3426" stroke-width="1.6"/></svg>プロフィールを編集</button>
         </section>
+        <section class="home-card home-rankstats" aria-label="ランクと戦績">
+          <div class="home-rankstats-head">
+            <span class="home-rankcard-emblem" data-part="accEmblem"></span>
+            <div class="home-rankcard-text"><span class="home-eyebrow">ランク</span><b data-part="accRank">—</b></div>
+            <span class="home-ribbon" data-part="accSeason"></span>
+          </div>
+          <div class="home-stats" data-part="accStatsGrid"></div>
+        </section>
+        <p class="home-stats-text" data-part="accStats" hidden></p>
         <section class="home-card home-levelcard" aria-label="レベル" data-part="levelCard">
           <span class="home-levelcard-badge"><small>Lv.</small><b data-part="lv2">1</b></span>
           <div class="home-levelcard-text">
-            <span class="home-eyebrow">次のレベルまで</span>
-            <span class="home-xp home-xp-big" aria-hidden="true"><i data-part="xpfill2"></i></span>
-            <small data-part="xpNext"></small>
+            <span class="home-levelcard-next" data-part="xpNext"></span>
+            <span class="home-xp home-xp-big" aria-hidden="true"><i data-part="xpfill2"></i><span class="home-xp-text" data-part="xptext2"></span></span>
           </div>
           <button type="button" class="cf-btn cf-btn-primary cf-btn-sm raw-btn" data-act="profile" data-part="lvReward" hidden>報酬を受け取る</button>
         </section>
-        <section class="home-card home-stats" aria-label="戦績" data-part="accStatsGrid"></section>
-        <p class="home-stats-text" data-part="accStats" hidden></p>
-        <aside class="home-link" data-part="guest" hidden><span>アカウントを作成すると、別の端末でもデータを引き継げます。</span><button type="button" class="home-retry cf-btn cf-btn-secondary raw-btn" data-act="account">アカウント作成</button></aside>
-        <nav class="home-menu" aria-label="アカウント" data-menu="account"></nav>
+        <section class="home-card home-actions">
+          <nav class="home-menu" aria-label="アカウント" data-menu="account"></nav>
+          <button type="button" class="cf-btn cf-btn-primary raw-btn home-guest-btn" data-act="account" data-part="guest" hidden>アカウントを作成する</button>
+          <p class="home-guest-note" data-part="guestNote" hidden>アカウントを作成すると、別の端末でもデータを引き継げます。</p>
+        </section>
       </div>
 
       <div class="home-page" data-page="deck" role="tabpanel" aria-label="デッキ" hidden>
-        <section class="home-card home-deckhero" aria-labelledby="home-deck-name">
-          <div class="home-deckhero-head">
-            <div class="home-deckhero-title"><span class="home-eyebrow">使うデッキ</span><h2 id="home-deck-name" data-part="deck2">—</h2></div>
-            <span class="home-deck-state" data-part="deckState"></span>
-          </div>
-          <div class="home-deck-meta" data-part="deckMeta"></div>
-          <div class="home-deck-fan" data-part="deckFan" role="list" aria-label="デッキの代表カード（タップで拡大）"></div>
-          <div class="home-deck-actions">
-            <button type="button" class="cf-btn cf-btn-primary raw-btn" data-act="deck">デッキを編成する</button>
-          </div>
+        <h1 class="home-pagehead home-pagehead-cards"><span>デッキ編成</span></h1>
+        <div class="home-deck-tabsrow">
           <div class="home-deck-slots" role="radiogroup" aria-label="デッキを切りかえる" data-part="deckSlots"></div>
+          <button type="button" class="home-deck-pen raw-btn" data-act="deck" aria-label="デッキを編成する"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M4 14.5 13.2 5.3l1.5 1.5L5.5 16H4Z" fill="#fff" stroke="#4d3426" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+        </div>
+        <section class="home-deckhero" aria-labelledby="home-deck-name">
+          <div class="home-deckhero-head">
+            <h2 id="home-deck-name" data-part="deck2">—</h2>
+            <span class="home-deck-state" data-part="deckState"></span>
+            <div class="home-deck-meta" data-part="deckMeta"></div>
+          </div>
+          <div class="home-deck-warnbox" data-part="deckWarn" hidden></div>
+          <div class="home-deck-stage"><div class="home-deck-fan" data-part="deckFan" role="list" aria-label="デッキの代表カード（タップで拡大）"></div></div>
         </section>
+        <div class="home-deck-actions">
+          <button type="button" class="cf-btn cf-btn-secondary raw-btn" data-act="deckCopy">コピー</button>
+          <button type="button" class="cf-btn cf-btn-primary raw-btn home-deck-editbtn" data-act="deck">デッキを編集</button>
+          <button type="button" class="cf-btn cf-btn-secondary raw-btn" data-act="deckDelete">削除</button>
+        </div>
         <section class="home-card home-deck-cards" aria-label="デッキのカード" data-part="deckCardsWrap">
-          <h2 class="home-card-title">デッキのカード<small data-part="deckKinds"></small></h2>
+          <div class="home-deck-cards-head">
+            <h2 class="home-card-title">デッキのカード<small data-part="deckKinds"></small></h2>
+            <select class="home-deck-sort" data-part="deckSort" aria-label="並べ方">
+              <option value="rarity">レアリティ順</option><option value="count">枚数順</option><option value="kind">種類順</option>
+            </select>
+          </div>
           <div class="home-deck-strip" data-part="deckStrip"></div>
           <p class="home-hint">カードをタップすると大きく見られます</p>
         </section>
@@ -149,22 +190,36 @@ export class Home {
       </div>
 
       <div class="home-page" data-page="shop" role="tabpanel" aria-label="ガチャ" hidden>
-        <section class="home-card home-gacha" aria-label="ガチャ">
+        <h1 class="home-pagehead"><span>ガチャ</span></h1>
+        <section class="home-gacha" aria-label="ガチャの目玉">
           <div class="home-gacha-rays" aria-hidden="true"></div>
           <div class="home-gacha-show" data-part="gachaShow"></div>
-          <div class="home-gacha-copy"><span class="home-eyebrow">ふつうのガチャ</span><h2>見た目のアイテムを集めよう</h2><p>城・兵士・カード裏などの見た目が当たります。強さは変わりません。</p></div>
-          <div class="home-gacha-actions">
-            <span class="home-wallet"><img src="assets/ui/icon-coin.png" alt="" width="20" height="20"><b data-part="coins2">0</b><small>コイン</small></span>
-            <button type="button" class="cf-btn cf-btn-primary raw-btn" data-act="gacha">ガチャを引く</button>
-          </div>
+        </section>
+        <section class="home-gacha-banner">
+          <span class="home-eyebrow">ふつうのガチャ</span>
+          <h2>見た目のアイテムを集めよう</h2>
+          <p>城・兵士・カード裏などの見た目が当たります。強さは変わりません。</p>
+        </section>
+        <div class="home-gacha-buy">
+          <span class="home-wallet"><img src="assets/ui/icon-coin.png" alt="" width="22" height="22"><small>所持コイン</small><b data-part="coins2">0</b></span>
+          <button type="button" class="cf-btn cf-btn-primary raw-btn" data-act="gacha">ガチャを引く</button>
+        </div>
+        <div class="home-gacha-pulls" data-part="pulls" hidden>
+          <button type="button" class="cf-btn cf-btn-secondary raw-btn" data-act="pull" data-count="1"><span>1回</span><img src="assets/ui/icon-coin.png" alt="" width="20" height="20"><b data-part="cost1"></b><small>コイン</small></button>
+          <button type="button" class="cf-btn cf-btn-secondary raw-btn" data-act="pull" data-count="10"><span>10連</span><img src="assets/ui/icon-coin.png" alt="" width="20" height="20"><b data-part="cost10"></b><small>コイン</small><em class="home-deal" data-part="deal" hidden>10連でお得！</em></button>
+        </div>
+        <section class="home-card home-gacha-pool" aria-labelledby="home-pool-title">
+          <h2 class="home-plaque" id="home-pool-title">排出されるアイテムの例</h2>
+          <div class="home-pool-grid" data-part="gachaPool"></div>
         </section>
         <nav class="home-menu" aria-label="ガチャ・ショップ" data-menu="shop"></nav>
       </div>
 
       <div class="home-page" data-page="settings" role="tabpanel" aria-label="設定" hidden>
+        <h1 class="home-pagehead home-pagehead-gear"><span>設定</span></h1>
         <nav class="home-menu" aria-label="設定" data-menu="settings"></nav>
         <section class="home-card home-points" aria-labelledby="home-points-title">
-          <h2 class="home-card-title" id="home-points-title">遊び方のポイント</h2>
+          <h2 class="home-plaque" id="home-points-title">遊び方のポイント</h2>
           <ol>
             <li><img src="assets/castles/castle-orange.png" alt="" width="56" height="56"><span><b>相手の城を落とせば勝ち</b>城のHPを0にしよう</span></li>
             <li><img src="assets/units/knight-blue.png" alt="" width="56" height="56"><span><b>兵士は毎ターン進む</b>相手の城に着くと大ダメージ</span></li>
@@ -175,31 +230,34 @@ export class Home {
       </div>
 
       <div class="home-page" data-page="battle" role="tabpanel" aria-label="バトル">
-      <section class="home-hero" aria-label="対戦">
         <div class="home-worlds" role="tablist" aria-label="世界" data-part="worlds"></div>
-        <div class="home-landscape">
-          <span class="home-landscape-art" aria-hidden="true"></span>
-          <span class="home-sun" aria-hidden="true"></span>
-          <span class="home-glint" aria-hidden="true"></span>
-          <div class="home-landscape-info">
-            <span data-part="season" class="home-season"></span>
-            <span class="home-rank-chip" data-part="rank"><span class="home-rank-emblem" data-part="rankEmblem"></span><span data-part="rankText">—</span></span>
+        <section class="home-hero" aria-label="王国">
+          <div class="home-landscape">
+            <span class="home-landscape-art" aria-hidden="true"></span>
+            <span class="home-sun" aria-hidden="true"></span>
+            <span class="home-glint" aria-hidden="true"></span>
           </div>
-        </div>
-        <div class="home-controls">
-          <div class="home-modes" role="tablist" aria-label="ゲームモード" data-part="modes"></div>
-          <div class="home-deckrow">
-            <span class="home-deckrow-art" data-part="deckThumb" aria-hidden="true"></span>
-            <span class="home-deckrow-text"><span class="home-eyebrow">デッキ</span><b data-part="deck">—</b></span>
-            <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm raw-btn" data-act="deck">変更</button>
+          <div class="home-infobar">
+            <span data-part="season" class="home-season home-ribbon"></span>
+            <span class="home-infobar-world"><svg viewBox="0 0 24 18" width="26" height="20" aria-hidden="true"><path d="M2 15 1 4l6 5 5-8 5 8 6-5-1 11Z" fill="#ffc94f" stroke="#4d3426" stroke-width="1.6" stroke-linejoin="round"/></svg><b data-part="worldName">王国</b></span>
+            <span class="home-rank-chip" data-part="rank"><span class="home-rank-emblem" data-part="rankEmblem"></span><span><small>ランク</small><span data-part="rankText">—</span></span></span>
           </div>
-          <dl class="home-facts"><div><dt>戦績</dt><dd data-part="stats">—</dd></div></dl>
-          <button type="button" class="home-start raw-btn" data-act="start"><span class="home-start-icon" aria-hidden="true">${menuIcon('casual', 40)}</span><span data-part="startLabel">対戦開始</span></button>
-          <p class="home-note" data-part="note" role="status"></p>
-          <button type="button" class="home-retry cf-btn cf-btn-secondary raw-btn" data-act="retry" hidden>再読み込み</button>
-        </div>
-      </section>
-      <nav class="home-menu" aria-label="対戦" data-menu="battle"></nav>
+        </section>
+        <section class="home-card home-modes-card" aria-label="ゲームモード"><div class="home-modes" role="tablist" aria-label="ゲームモード" data-part="modes"></div></section>
+        <section class="home-card home-deckpanel" aria-label="使うデッキ">
+          <div class="home-deckpanel-text">
+            <span class="home-eyebrow">使うデッキ</span>
+            <b class="home-deckpanel-name" data-part="deck">—</b>
+            <div class="home-deck-meta home-deck-meta-light" data-part="deckMeta2"></div>
+            <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm raw-btn home-deckpanel-btn" data-act="deck"><img src="assets/ui/home/deck.png" alt="" width="24" height="24">デッキを編成する<span class="home-tile-chevron" aria-hidden="true"></span></button>
+          </div>
+          <div class="home-deck-fan home-deck-fan-mini" data-part="deckFan2" role="list" aria-label="デッキの代表カード（タップで拡大）"></div>
+        </section>
+        <button type="button" class="home-start raw-btn" data-act="start"><span class="home-laurel" aria-hidden="true"></span><span class="home-start-icon" aria-hidden="true">${menuIcon('casual', 40)}</span><span data-part="startLabel">対戦開始</span><span class="home-laurel home-laurel-r" aria-hidden="true"></span></button>
+        <p class="home-note" data-part="note" role="status"></p>
+        <button type="button" class="home-retry cf-btn cf-btn-secondary raw-btn" data-act="retry" hidden>再読み込み</button>
+        <dl class="home-facts" hidden><div><dt>戦績</dt><dd data-part="stats">—</dd></div></dl>
+        <nav class="home-menu" aria-label="対戦" data-menu="battle"></nav>
       </div>
       <nav class="home-tabbar" role="tablist" aria-label="メニュー" data-part="tabbar"></nav>
     </div>`;
@@ -212,6 +270,7 @@ export class Home {
     this.renderGachaShow();
     box.addEventListener('click', (e) => this.onClick(e));
     box.addEventListener('keydown', (e) => this.onKey(e));
+    this.part('deckSort').addEventListener('change', (e) => { this.deckSort = e.target.value; this.renderDeck(this.data?.deck?.name); });
     account.onChange(() => { if (!box.hidden) this.refresh(); });
   }
 
@@ -245,6 +304,11 @@ export class Home {
     this.box.querySelector('[data-act=retry]').hidden = true;
     if (!this.online()) { this.part('note').textContent = ''; return; }
     this.part('note').textContent = this.data ? '' : 'プレイヤー情報を読み込み中…';
+    account.api('GET', '/api/gacha/info').then(({ json }) => {
+      if (this.request !== request || !json?.ok) return;
+      this.gachaInfo = json;
+      this.renderPulls();
+    }).catch(() => { /* 値段が分からなければ、ガチャの画面から引く */ });
     account.api('GET', '/api/ranked/summary').then(({ json }) => {
       if (this.request !== request || !json?.ok) return;
       this.season = json.season;
@@ -268,6 +332,21 @@ export class Home {
     const text = this.season ? `シーズン ${this.season.id}` : '';
     this.part('season').textContent = text;
     this.part('accSeason').textContent = text;
+  }
+
+  /** 1回・10連のボタン（値段はサーバーのガチャの設定。分からないときは出さない） */
+  renderPulls() {
+    const b = this.gachaInfo?.banner;
+    const show = this.online() && Number.isFinite(b?.costSingle) && Number.isFinite(b?.costTen);
+    this.part('pulls').hidden = !show;
+    if (!show) return;
+    this.part('cost1').textContent = String(b.costSingle);
+    this.part('cost10').textContent = String(b.costTen);
+    this.part('deal').hidden = !(b.costTen < b.costSingle * 10);
+    for (const btn of this.part('pulls').querySelectorAll('[data-act=pull]')) {
+      const cost = btn.dataset.count === '10' ? b.costTen : b.costSingle;
+      btn.setAttribute('aria-label', `${btn.dataset.count === '10' ? '10連' : '1回'}　${cost} コインで引く`);
+    }
   }
 
   renderBadges() {
@@ -316,6 +395,9 @@ export class Home {
     const bar = this.part('xpbar');
     bar.setAttribute('aria-valuenow', String(pct)); bar.setAttribute('aria-valuemin', '0'); bar.setAttribute('aria-valuemax', '100');
     bar.title = lv ? (lv.maxed ? '最大レベル' : `次のレベルまで ${lv.xpForNext - lv.xpIntoLevel} 経験値`) : '';
+    const xpText = lv ? (lv.maxed ? 'MAX' : `EXP ${lv.xpIntoLevel} / ${lv.xpForNext}`) : '';
+    this.part('xptext').textContent = xpText;
+    this.part('xptext2').textContent = xpText;
     this.part('levelCard').hidden = false;
     this.part('lv2').textContent = String(lv?.level ?? 1);
     this.part('xpfill2').style.width = `${pct}%`;
@@ -328,11 +410,15 @@ export class Home {
     av.replaceChildren();
     if (d?.iconFrame) av.dataset.frame = d.iconFrame; else delete av.dataset.frame;
     if (iconSrc) { const img = new Image(); img.src = iconSrc; img.alt = ''; av.append(img); } else av.textContent = [...(u?.displayName ?? '?')][0];
+    this.syncProfileCard(av);
+    this.part('coinAdd').hidden = false;
     const coins = String(d?.coins ?? 0);
     this.part('coins').querySelector('b').textContent = coins;
     this.part('coins2').textContent = coins;
     this.part('guest').hidden = u?.kind !== 'guest';
+    this.part('guestNote').hidden = u?.kind !== 'guest';
     this.renderBadges();
+    this.renderPulls();
     this.renderSeason();
     // 世界（モード）：いまは王国だけ。ほかは準備中（アカウント・レベル・通貨・所持品は世界をこえて共通）
     const worlds = this.part('worlds'); worlds.replaceChildren();
@@ -343,16 +429,19 @@ export class Home {
       if (!w.available || w.name.includes('準備中')) { const tag = document.createElement('small'); tag.textContent = '準備中'; b.append(tag); }
       b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(w.id === (d?.defaultMode ?? 'kingdom'))); worlds.append(b);
     }
+    const world = (d?.modes ?? []).find((w) => w.id === (d?.defaultMode ?? 'kingdom'));
+    this.part('worldName').textContent = world?.name ?? '王国';
     const sum = d?.rank;
     const member = u?.kind === 'member';
     this.part('rankEmblem').innerHTML = member ? rankEmblem(sum?.rank ?? null, 26) : '';
     this.part('accEmblem').innerHTML = member ? rankEmblem(sum?.rank ?? null, 64) : '';
-    this.part('rankText').textContent = !member ? 'アカウントを作ると参加できます'
+    const rankFull = !member ? 'アカウントを作ると参加できます'
       : sum?.rank ? `${sum.rank.divisionLabel}（${sum.rank.rp} RP）` : sum ? `認定戦 ${sum.placementTotal - sum.placementLeft}/${sum.placementTotal}` : '—';
+    this.setRank(member ? rankFull : '未参加', rankFull);
     this.renderDeck(d?.deck?.name);
     const s = d?.stats;
     this.part('stats').textContent = s?.matches ? `${s.matches}戦 ${s.wins}勝 ${s.losses}敗（勝率 ${s.winRate}%）` : 'まだ対戦がありません';
-    this.renderStatsGrid(s?.matches ? [['対戦', s.matches], ['勝利', s.wins], ['敗北', s.losses], ['勝率', `${s.winRate}%`]] : null);
+    this.renderStatsGrid(s ? [['対戦数', s.matches ?? 0], ['勝利', s.wins ?? 0], ['敗北', s.losses ?? 0], ['勝率', s.matches ? `${s.winRate}%` : '—']] : null);
     this.syncSummary();
     this.renderFacts();
   }
@@ -369,14 +458,18 @@ export class Home {
     av.replaceChildren();
     delete av.dataset.frame;
     const img = new Image(); img.src = 'assets/profiles/knight.png'; img.alt = ''; av.append(img);
+    this.syncProfileCard(av);
+    this.part('coinAdd').hidden = true;
+    this.part('pulls').hidden = true;
     this.part('guest').hidden = true;
+    this.part('guestNote').hidden = true;
     this.part('season').textContent = '';
     this.part('accSeason').textContent = '';
     const worlds = this.part('worlds'); worlds.replaceChildren();
     const w = document.createElement('button'); w.type = 'button'; w.className = 'home-world raw-btn'; w.textContent = '王国'; w.setAttribute('role', 'tab'); w.setAttribute('aria-selected', 'true'); worlds.append(w);
     this.part('rankEmblem').innerHTML = '';
     this.part('accEmblem').innerHTML = '';
-    this.part('rankText').textContent = 'サーバーで遊ぶと参加できます';
+    this.setRank('未参加', 'サーバーで遊ぶと参加できます');
     this.renderDeck(null);
     this.part('stats').textContent = this.getRecord() || 'まだ対戦がありません';
     this.renderStatsGrid(null);
@@ -384,6 +477,17 @@ export class Home {
     for (const tile of this.box.querySelectorAll('.home-tile')) tile.querySelector('.home-badge')?.remove();
     this.part('dot').hidden = true;
     this.renderFacts();
+  }
+
+  /** アカウントのページの大きなプロフィール（上の帯と同じ値） */
+  syncProfileCard(av) {
+    const big = this.part('avatar2');
+    big.replaceChildren(...[...av.childNodes].map((n) => n.cloneNode(true)));
+    if (av.dataset.frame) big.dataset.frame = av.dataset.frame; else delete big.dataset.frame;
+    this.part('name2').textContent = this.part('name').textContent;
+    const title = this.part('title').textContent;
+    this.part('title2').textContent = title;
+    this.part('title2').hidden = !title;
   }
 
   /** 戦績の4マス（数がないときは1行の文） */
@@ -435,34 +539,37 @@ export class Home {
     state.title = deck.kind === 'invalid' ? `決まりに合わないため、対戦では「${deck.fallback ?? '見本のデッキ'}」を使います（${deck.check?.reason ?? ''}）`
       : deck.kind === 'sample' ? 'デッキを編成するまでは、この見本のデッキで対戦します' : '';
     // 枚数・コスト
-    const meta = this.part('deckMeta');
-    meta.replaceChildren();
-    if (deck.check) {
+    for (const metaName of ['deckMeta', 'deckMeta2']) {
+      const meta = this.part(metaName);
+      meta.replaceChildren();
+      if (!deck.check) continue;
       const max = this.rules?.deckCostMax ?? 100;
       for (const [label, value] of [['枚数', `${deck.check.total}枚`], ['コスト', `${deck.check.cost}/${max}`]]) {
         const s = document.createElement('span'); const b = document.createElement('b');
         s.textContent = label; b.textContent = value; s.append(b); meta.append(s);
       }
-      if (deck.kind === 'invalid') {
-        const warn = document.createElement('p'); warn.className = 'home-deck-warn';
-        warn.textContent = `${deck.check.reason}。対戦では見本のデッキを使います`;
-        meta.append(warn);
-      }
     }
+    const warn = this.part('deckWarn');
+    warn.hidden = deck.kind !== 'invalid';
+    warn.textContent = deck.kind === 'invalid' ? `${deck.check?.reason ?? '決まりに合いません'}。対戦では見本のデッキを使います` : '';
     // 代表のカード（レアリティの高い順・枚数の多い順）
     const entries = Object.entries(deck.list ?? {}).filter(([type]) => this.cards && Object.hasOwn(this.cards, type));
     const order = this.rarities ? Object.keys(this.rarities) : [];
     const rank = (type) => { const r = this.cards[type].rarity; return this.rarities?.[r]?.special ? 2.5 : order.indexOf(r); };
     const sorted = [...entries].sort((a, b) => rank(b[0]) - rank(a[0]) || b[1] - a[1]);
-    const fan = this.part('deckFan');
-    fan.replaceChildren();
     const picks = sorted.slice(0, PREVIEW_CARDS);
-    picks.forEach(([type], i) => fan.append(this.cardButton(type, 'home-fan-card', { index: i, total: picks.length })));
-    fan.hidden = !picks.length;
+    for (const fanName of ['deckFan', 'deckFan2']) {
+      const fan = this.part(fanName);
+      fan.replaceChildren();
+      picks.forEach(([type], i) => fan.append(this.cardButton(type, 'home-fan-card', { index: i, total: picks.length })));
+      fan.hidden = !picks.length;
+    }
     // カードの一覧（すべて。種類ごとに1枚、枚数つき）
     const strip = this.part('deckStrip');
     strip.replaceChildren();
-    for (const [type, count] of sorted) {
+    const sortFn = SORTS[this.deckSort];
+    const listed = sortFn ? [...sorted].sort((a, b) => sortFn(a, b, this.cards)) : sorted;
+    for (const [type, count] of listed) {
       const b = this.cardButton(type, 'home-strip-card');
       const c = document.createElement('span'); c.className = 'home-strip-count'; c.textContent = `×${count}`; c.setAttribute('aria-hidden', 'true');
       b.append(c);
@@ -471,10 +578,7 @@ export class Home {
     }
     this.part('deckKinds').textContent = sorted.length ? `${sorted.length}種類` : '';
     this.part('deckCardsWrap').hidden = !sorted.length;
-    // 小さな見本（バトルのページのデッキの行）
-    const thumb = this.part('deckThumb');
-    thumb.replaceChildren();
-    if (picks[0] && this.cards) thumb.append(deckCard(picks[0][0], this.cards, this.rarities, 'home-thumb-card'));
+    this.currentDeckInfo = deck;
     this.renderSlots(deck);
   }
 
@@ -513,9 +617,10 @@ export class Home {
       const on = !!s && deck.state.active === i;
       b.setAttribute('aria-checked', String(on));
       b.classList.toggle('is-empty', !s);
-      const n = document.createElement('b'); n.textContent = String(i + 1);
-      const t = document.createElement('span'); t.textContent = s ? s.name : '空き';
-      b.append(n, t);
+      const t = document.createElement('span'); t.textContent = `デッキ${i + 1}`;
+      b.append(t);
+      if (!s) { const plus = document.createElement('small'); plus.textContent = '＋'; plus.setAttribute('aria-hidden', 'true'); b.append(plus); }
+      b.title = s ? s.name : '空き枠（タップで新しく編成）';
       b.setAttribute('aria-label', s ? `デッキ${i + 1}「${s.name}」を使う` : `デッキ${i + 1}：空き枠。新しく編成する`);
       wrap.append(b);
     }
@@ -532,11 +637,29 @@ export class Home {
       const cap = document.createElement('figcaption'); cap.textContent = item.name;
       f.append(img, cap); show.append(f);
     }
+    const pool = this.part('gachaPool');
+    for (const item of GACHA_POOL) {
+      const f = document.createElement('figure');
+      f.className = `home-pool-item${item.back ? ' is-back' : ''}`;
+      f.dataset.rarity = item.rarity;
+      const img = new Image(); img.src = item.src; img.alt = ''; img.draggable = false;
+      const cap = document.createElement('figcaption'); cap.textContent = item.name;
+      f.append(img, cap); pool.append(f);
+    }
+    const more = document.createElement('p'); more.className = 'home-pool-more'; more.textContent = 'ほかにも多数！';
+    pool.append(more);
+  }
+
+  /** ランク：バトルのページは短く（城の絵の下の帯）、アカウントのページはくわしく出す */
+  setRank(short, full) {
+    this.part('rankText').textContent = short;
+    this.part('rank').title = full;
+    this.rankFull = full;
   }
 
   /** アカウント・デッキのページの見出し（バトルのページと同じ値） */
   syncSummary() {
-    this.part('accRank').textContent = this.part('rankText').textContent;
+    this.part('accRank').textContent = this.rankFull ?? this.part('rankText').textContent;
     this.part('accStats').textContent = this.part('stats').textContent;
   }
 
@@ -555,6 +678,7 @@ export class Home {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'home-mode raw-btn'; b.dataset.mode = id; b.setAttribute('role', 'tab');
       b.setAttribute('aria-selected', String(id === this.mode));
+      b.title = m.note;
       const ic = new Image(); ic.src = m.icon; ic.alt = ''; ic.width = 40; ic.height = 40; ic.draggable = false; ic.className = 'home-mode-icon';
       const s = document.createElement('strong'); s.textContent = m.chip;
       const n = document.createElement('small'); n.textContent = m.note;
@@ -580,12 +704,13 @@ export class Home {
           // 遊び方だけは専用の絵がまだないので、「？」の文字で出す（絵ができたら assets/ui/home/help.png を足して、ここを消す）
           const iconHtml = id === 'help' ? '<b class="home-tile-glyph" aria-hidden="true">？</b>' : menuIcon(id, style === 'list' ? 44 : 36);
           button.innerHTML = `<span class="home-tile-icon">${iconHtml}</span><span class="home-tile-text"><span class="home-tile-label"></span>${style === 'list' ? '<small class="home-tile-note"></small>' : ''}</span>${style === 'list' ? '<span class="home-tile-chevron" aria-hidden="true"></span>' : ''}`;
-          button.querySelector('.home-tile-label').textContent = MENU[id];
+          button.querySelector('.home-tile-label').textContent = MENU_IN_PAGE[tab]?.[id] ?? MENU[id];
           const note = button.querySelector('.home-tile-note');
           if (note) note.textContent = MENU_NOTE[id] ?? '';
           grid.append(button);
         }
-        group.append(heading, grid);
+        if (name) group.append(heading);
+        group.append(grid);
         nav.append(group);
       }
     }
@@ -614,6 +739,11 @@ export class Home {
     const order = TABS.map((t) => t.id);
     const dir = Math.sign(order.indexOf(tab) - order.indexOf(this.tab));
     this.tab = tab;
+    if (this.box.dataset.tab !== tab) {
+      this.box.dataset.tab = tab;
+      const sky = this.box.querySelector('.home-sky');
+      sky.classList.remove('home-sky-in'); void sky.offsetWidth; sky.classList.add('home-sky-in');
+    }
     for (const page of this.box.querySelectorAll('.home-page')) {
       const show = page.dataset.page === tab;
       const changed = page.hidden === show;
@@ -630,6 +760,28 @@ export class Home {
       if (on && focus) b.focus({ preventScroll: true });
     }
     this.box.scrollTop = 0;
+  }
+
+  /** 使うデッキを、空いている枠にコピーする（見本のデッキもコピーできる） */
+  copyDeck() {
+    const deck = this.currentDeckInfo;
+    if (!deck?.list) return this.toast('コピーできるデッキがありません', 'info');
+    const slot = loadDecks().slots.findIndex((d) => !d);
+    if (slot < 0) return this.toast(`空いているデッキ枠がありません（${DECK_SLOTS}つまで）。いらないデッキを削除してください`, 'info');
+    const name = `${deck.name}のコピー`.slice(0, 24);
+    if (!saveMyDeck(slot, name, deck.list)) return this.toast('この端末に保存できませんでした', 'info');
+    this.renderDeck(this.data?.deck?.name);
+    this.toast(`デッキ${slot + 1}にコピーしました`, 'info');
+  }
+
+  /** 使うデッキを削除する（自分で作ったデッキだけ。見本は消せない） */
+  deleteDeck() {
+    const deck = this.currentDeckInfo;
+    if (!deck || !['mine', 'invalid'].includes(deck.kind)) return this.toast('見本のデッキは削除できません', 'info');
+    if (!window.confirm(`「${deck.name}」を削除しますか？`)) return;
+    if (!deleteMyDeck(deck.slot)) return this.toast('この端末に保存できませんでした', 'info');
+    this.renderDeck(this.data?.deck?.name);
+    this.toast(`「${deck.name}」を削除しました`, 'info');
   }
 
   onKey(e) {
@@ -676,6 +828,9 @@ export class Home {
     if (act === 'retry') return this.refresh();
     if (!this.online() && (NEEDS_SERVER.has(act) || act === 'notice')) return this.toast(act === 'notice' ? '新しいお知らせはありません' : SERVER_REASON, 'info');
     if (act === 'start') return this.onPlay(this.mode);
+    if (act === 'deckCopy') return this.copyDeck();
+    if (act === 'deckDelete') return this.deleteDeck();
+    if (act === 'pull') return this.onGachaPull(Number(e.target.closest('[data-count]').dataset.count));
     if (act === 'casual') return this.onPlay('online');
     if (act === 'deck') return this.onDeck();
     if (act === 'catalog') return this.onCatalog();

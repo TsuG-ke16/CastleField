@@ -1,76 +1,96 @@
 /* ホームの画面下のタブ（js/ui/Home.js）。左から アカウント・デッキ・バトル・ガチャ・設定。
-   全部のタブで、アイコン（28px）・文字（11px）・押せる広さ（高さ56px以上）をそろえる。
-   選んでいるタブ：明るい札の上にアイコンが乗り、上に緑の印（選択中の色）。金色はバトルの丸い台だけに使い、「選択中」の意味には使わない。 */
+   ロイヤルブルーの台に金の縁。全部のタブで、アイコン（34px）・文字（12px）・押せる広さ（高さ62px以上）をそろえる。
+   選んでいるタブ：クリームの明るい札＋緑の印。真ん中のバトルは、いつも金の台（特別感）で、選択中は白い光の輪と緑の印で示す（金色＝選択中、にはしない）。 */
 #home { padding-bottom: calc(84px + max(8px, env(safe-area-inset-bottom))); }
 .home-page { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; min-width: 0; }
 .home-page > * { min-width: 0; }
 #home .home-page[hidden] { display: none; }
 .home-tabbar {
   position: fixed; z-index: 20; left: 0; right: 0; bottom: 0;
-  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end; gap: 2px;
+  display: grid; grid-template-columns: 1fr 1fr 1.25fr 1fr 1fr; align-items: end;
   width: min(100%, 520px); margin: 0 auto;
   padding: 6px max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
-  background: linear-gradient(180deg, #ffffff26 0%, #ffffff00 40%), linear-gradient(180deg, var(--royal), var(--royal-lo) 55%, #22449a);
-  border-top: var(--outline-w) solid var(--ink-royal); border-radius: 18px 18px 0 0;
-  box-shadow: inset 0 2px 0 var(--gold-main), inset 0 4px 0 #ffffff33, 0 -6px 18px #1f3f8f80;
+  background: linear-gradient(180deg, #ffffff30 0%, #ffffff00 40%), linear-gradient(180deg, var(--royal-hi), var(--royal) 50%, var(--royal-lo));
+  border: var(--outline-w) solid var(--ink-royal); border-bottom: 0; border-radius: 20px 20px 0 0;
+  box-shadow: inset 0 0 0 2px var(--gold-main), inset 0 4px 0 #ffffff33, 0 -6px 18px #1f3f8f66;
 }
 .home-tab {
-  position: relative; display: grid; justify-items: center; align-content: end; gap: 3px; min-width: 0; min-height: 58px; padding: 6px 2px 5px;
-  border: 0; border-radius: 14px; background: transparent; color: #e3efff; font: 800 var(--text-xs)/1.2 var(--font, sans-serif); cursor: pointer;
+  position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; min-width: 0; min-height: 58px; padding: 5px 0 4px; margin: 0 2px;
+  border: 0; border-radius: 14px; background: transparent; color: #fff; font: 800 12px/1.2 var(--font, sans-serif); text-shadow: 0 1px 0 #1f3f8f; cursor: pointer;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation;
   transition: color var(--motion-feedback), background-color var(--motion-feedback);
 }
-.home-tab-icon { display: grid; place-items: center; width: 34px; height: 30px; line-height: 0; transition: transform var(--motion-panel) var(--ease-badge); }
-.home-tab-icon img { width: 30px; height: 30px; object-fit: contain; opacity: .9; filter: drop-shadow(0 1px 0 #1f3f8f); transition: opacity var(--motion-feedback), filter var(--motion-feedback); }
+/* タブの区切り線 */
+.home-tab:not(.home-tab-main) + .home-tab:not(.home-tab-main)::after { content: ''; position: absolute; left: -3px; top: 12px; bottom: 12px; width: 1.5px; background: linear-gradient(transparent, #ffffff55, transparent); }
+.home-tab-icon { display: grid; place-items: center; width: 38px; height: 36px; line-height: 0; transition: transform var(--motion-panel) var(--ease-badge); }
+.home-tab-icon img { width: 34px; height: 34px; object-fit: contain; filter: drop-shadow(0 2px 0 #1f3f8f99); transition: filter var(--motion-feedback); }
 .home-tab-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* 選択中 */
-.home-tab[aria-selected=true] { color: var(--ink-royal); background: linear-gradient(#ffffff, #dff1ff); box-shadow: inset 0 0 0 1.5px #ffffff, 0 2px 0 #1f3f8f99, 0 0 12px #ffffff80; }
-.home-tab[aria-selected=true] .home-tab-icon { transform: translateY(-3px) scale(1.12); }
-.home-tab[aria-selected=true] .home-tab-icon img { opacity: 1; filter: drop-shadow(0 2px 0 #1f3f8f66); }
-.home-tab::before { content: ''; position: absolute; top: -6px; left: 50%; width: 0; height: 4px; translate: -50% 0; border-radius: 0 0 4px 4px; background: var(--selected); box-shadow: 0 0 8px #9be8adcc; transition: width var(--motion-panel) var(--ease-panel); }
-.home-tab[aria-selected=true]::before { width: 28px; }
+/* 選択中：クリームの札 */
+.home-tab[aria-selected=true]:not(.home-tab-main) { color: var(--ink-royal); text-shadow: none; background: linear-gradient(#fffdf6, #fbe8b8); box-shadow: inset 0 0 0 2px #fff, 0 0 0 1.5px var(--ink-royal), 0 3px 0 #1f3f8f99; }
+.home-tab[aria-selected=true] .home-tab-icon { transform: translateY(-2px) scale(1.08); }
+.home-tab::before { content: ''; position: absolute; bottom: 2px; left: 50%; width: 0; height: 4px; translate: -50% 0; border-radius: 4px; background: var(--selected); box-shadow: 0 0 6px #9be8adcc; transition: width var(--motion-panel) var(--ease-panel); z-index: 2; }
+.home-tab[aria-selected=true]::before { width: 26px; }
 .home-tab:not([aria-selected=true]):active .home-tab-icon { transform: scale(.88); transition-duration: var(--motion-press); }
-@media (hover: hover) { .home-tab:not([aria-selected=true]):hover { color: #fff; background: #ffffff1f; } .home-tab:not([aria-selected=true]):hover img { opacity: 1; } }
-/* 真ん中のバトル：いつも丸い金の台に乗って少し飛び出す（特別感）。選択中かどうかは、ほかのタブと同じ印で示す */
-.home-tab-main .home-tab-icon { width: 54px; height: 54px; margin-top: -26px; border-radius: 50%;
-  background: radial-gradient(circle at 50% 30%, #ffe08a, #e2a128 70%, #b97614); border: 3px solid var(--ink-royal); box-shadow: inset 0 2px 0 #fff3c0, inset 0 -3px 0 #a86a12, 0 4px 0 #0007; }
-.home-tab-main .home-tab-icon img { width: 36px; height: 36px; opacity: 1; filter: drop-shadow(0 1px 0 #0006); }
-.home-tab-main[aria-selected=true] { background: transparent; box-shadow: none; color: #fff; }
-.home-tab-main[aria-selected=true] .home-tab-icon { transform: translateY(-3px) scale(1.06); box-shadow: inset 0 2px 0 #fff3c0, inset 0 -3px 0 #a86a12, 0 4px 0 #0007, 0 0 0 3px #fff, 0 0 0 6px var(--selected); }
-.home-tab-main::before { top: auto; bottom: -1px; }
-.home-tab-main[aria-selected=true]::before { width: 0; }
-.home-tab-dot { position: absolute; top: 4px; right: calc(50% - 22px); width: 12px; height: 12px; border-radius: 50%; background: #e45b43; border: 2px solid #fff6d5; }
-.home-tab-main .home-tab-dot { top: -22px; right: calc(50% - 30px); }
+@media (hover: hover) { .home-tab:not([aria-selected=true]):not(.home-tab-main):hover { background: #ffffff22; } }
+/* 真ん中のバトル：上に飛び出す金の台（盾形に近い）。アイコンと文字はその中 */
+.home-tab-main { align-self: end; margin: -20px 0 0; min-height: 78px; padding: 6px 4px 5px; color: #3a1f08; text-shadow: 0 1px 0 #fff3c4; font-size: 14px;
+  border-radius: 22px 22px 14px 14px; background: linear-gradient(180deg, #fff3b8 0%, var(--gold-main) 45%, #f39528 100%);
+  box-shadow: inset 0 0 0 2px #fff3c0, inset 0 -4px 0 #d97b16, 0 0 0 2px var(--ink-royal), 0 4px 0 #1f3f8f, 0 6px 12px #1f3f8f66; }
+.home-tab-main .home-tab-icon { width: 50px; height: 46px; }
+.home-tab-main .home-tab-icon img { width: 46px; height: 46px; filter: drop-shadow(0 2px 0 #a8741c99); }
+.home-tab-main[aria-selected=true] { box-shadow: inset 0 0 0 2px #fff3c0, inset 0 -4px 0 #d97b16, 0 0 0 2px var(--ink-royal), 0 0 0 5px #ffffffcc, 0 4px 0 5px #1f3f8f55, 0 0 18px 6px #fff6c8aa; }
+.home-tab-dot { position: absolute; top: 4px; right: calc(50% - 22px); width: 12px; height: 12px; border-radius: 50%; background: #e8452f; border: 2px solid #fff; }
+.home-tab-main .home-tab-dot { top: 2px; right: 10px; }
+@media (max-height: 700px) {
+  #home { padding-bottom: calc(74px + max(6px, env(safe-area-inset-bottom))); }
+  .home-tab { min-height: 52px; }
+  .home-tab-main { min-height: 68px; margin-top: -16px; }
+  .home-tab-main .home-tab-icon { width: 42px; height: 38px; }
+  .home-tab-main .home-tab-icon img { width: 38px; height: 38px; }
+}
+@media (max-width: 380px) {
+  .home-tab { font-size: 11px; letter-spacing: -.04em; margin: 0 1px; }
+  .home-tab-icon img { width: 30px; height: 30px; }
+}
 @media (min-width: 740px) {
   .home-wrap { grid-template-columns: minmax(0, 1fr); width: min(100%, 520px); }
-  .home-page[data-page=battle] .home-menu { grid-column: auto; grid-row: auto; }
 }
 @media (prefers-reduced-motion: reduce) { .home-tab, .home-tab *, .home-tab::before { transition: none !important; } }
 .reduced-motion .home-tab, .reduced-motion .home-tab *, .reduced-motion .home-tab::before { transition: none !important; }
 /* 高さが低い画面（横向き・小さい端末）では、タブを細くする */
 @media (max-height: 600px) {
-  #home { padding-bottom: calc(56px + max(4px, env(safe-area-inset-bottom))); }
+  #home { padding-bottom: calc(60px + max(4px, env(safe-area-inset-bottom))); }
   .home-tabbar { padding-top: 3px; padding-bottom: max(3px, env(safe-area-inset-bottom)); }
   .home-tab { min-height: 44px; grid-auto-flow: column; align-items: center; align-content: center; gap: 4px; }
   .home-tab-icon { width: 26px; height: 26px; }
   .home-tab-icon img { width: 24px; height: 24px; }
-  .home-tab-main .home-tab-icon { width: 36px; height: 36px; margin-top: -8px; }
-  .home-tab-main .home-tab-icon img { width: 26px; height: 26px; }
-  .home-tab::before { top: -3px; }
+  .home-tab-main { margin-top: -10px; min-height: 50px; }
+  .home-tab-main .home-tab-icon { width: 32px; height: 32px; }
+  .home-tab-main .home-tab-icon img { width: 30px; height: 30px; }
 }
-/* 横向きの低い画面：城の絵と操作を左右に並べ、対戦開始ボタンまでスクロールせずに見せる */
+/* 横向きの低い画面：左に城の絵、右にモード・デッキ・対戦開始を並べ、スクロールせずに開始ボタンまで見せる */
 @media (orientation: landscape) and (max-height: 500px) {
-  .home-wrap { width: min(100%, 820px); }
-  .home-hero { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
-  #home .home-worlds { grid-column: 1 / -1; padding: 3px; }
-  #home .home-world { min-height: 32px; }
-  .home-landscape { aspect-ratio: auto; max-height: none; min-height: 0; height: 100%; border-bottom: 0; border-right: var(--outline-w) solid var(--home-line); }
+  .home-wrap { width: min(100%, 860px); }
+  .home-top { position: static; padding: 4px 6px; }
+  .home-avatar { flex-basis: 40px; height: 40px; }
+  .home-player { min-height: 42px; }
+  .home-who small { display: none; }
+  .home-wrap, .home-page { gap: 8px; }
+  #home .home-page[data-page=battle] { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; gap: 8px 12px; }
+  #home .home-page[data-page=battle] > * { grid-column: 2; }
+  #home .home-page[data-page=battle] > .home-hero { grid-column: 1; grid-row: 1 / span 3; }
+  #home .home-page[data-page=battle] > .home-worlds { display: none; }
+  #home .home-page[data-page=battle] > .home-menu { grid-column: 1 / -1; }
+  .home-landscape { aspect-ratio: 16 / 9; max-height: none; min-height: 0; }
   .home-sun, .home-glint { display: none; }
-  .home-controls { padding: 8px; gap: 6px; }
-  .home-mode { min-height: 52px; grid-auto-flow: column; align-items: center; align-content: center; gap: 4px; padding: 4px; }
-  .home-mode-icon { width: 28px; height: 28px; }
-  .home-mode small, .home-facts { display: none; }
-  #app #home .home-start { min-height: 50px; font-size: 18px !important; }
+  .home-modes-card { padding: 6px; }
+  .home-mode { min-height: 42px; grid-auto-flow: column; align-items: center; align-content: center; gap: 4px; padding: 4px; }
+  .home-mode-icon { width: 26px; height: 26px; }
+  .home-deckpanel { padding: 6px 8px 6px 12px; }
+  .home-deckpanel .home-eyebrow, .home-deckpanel .home-deck-meta { display: none; }
+  .home-deck-fan-mini { --w: 36px !important; }
+  #app #home .home-start { min-height: 48px; font-size: 18px !important; }
+  .home-start-icon img { width: 30px; height: 30px; }
+  .home-pagehead { min-height: 40px; font-size: 19px; }
   .home-deck-fan { --w: 70px; }
-  .home-top { position: static; }
 }

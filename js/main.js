@@ -338,6 +338,7 @@ async function boot() {
     onFriends: () => socialView.open(),
     onShop: () => collectionView.open('shop'),
     onGacha: () => collectionView.open('gacha'),
+    onGachaPull: (count) => collectionView.openAndPull(count),
     onSkin: () => collectionView.open('collection'),
     onMission: () => missionView.open(),
   });

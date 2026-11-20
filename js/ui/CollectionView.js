@@ -39,6 +39,12 @@ export class CollectionView {
     this.box.querySelector('.collection-close').focus({ preventScroll: true });
     await this.load();
   }
+  /** ホームの「1回・10連」から：ガチャの画面を開いて、そのまま同じ回数を引く（コインが足りなければ、画面に足りない数が出る） */
+  async openAndPull(count) {
+    await this.open('gacha');
+    const btn = this.box.querySelector(`[data-act=pull][data-count="${count}"]`);
+    if (btn && !btn.disabled) btn.click();
+  }
   close() { this.box.hidden = true; }
   say(t, bad = false) { const m = this.part('msg'); m.textContent = t; m.classList.toggle('bad', bad); }
 
