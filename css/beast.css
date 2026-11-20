@@ -3,7 +3,7 @@
   --card-window: url('../assets/cards/window-beast.png');
 }
 /* 魔物の枠は、ほかの枠と窓・文字枠の位置が違う（絵を引き伸ばさずに使うため、位置をこちらで合わせる。512×768 の絵に対する%） */
-#app :is(.card.has-frame, .mini-card)[data-beast] {
+#app:is(.card.has-frame, .mini-card)[data-beast] {
   --win-l: 15.53%; --win-t: 18.42%; --win-w: 68.85%; --win-h: 45.12%;
   --med-l: 19.2%; --med-y: 14.1%; --name-y: 75.2%;
 }
@@ -89,7 +89,7 @@
   background: repeating-conic-gradient(from 15deg, #ffd3da65 0 6deg, transparent 6deg 30deg);
   box-shadow: 0 0 24px #ff9aa8, inset 0 0 26px #e03a56ab;
 }
-#app.skipping :is(.recruit-stage, .recruit-sigil) { visibility: hidden; }
+#app.skipping:is(.recruit-stage, .recruit-sigil) { visibility: hidden; }
 @media (max-height: 500px) {
   #app .recruit-stage .effect-card.mini-card { width: 82px; }
   .recruit-stage { gap: 4px; }

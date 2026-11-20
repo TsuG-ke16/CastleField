@@ -86,7 +86,7 @@
 #app input[type=range] { accent-color: #e08a2c; height: 28px; }
 #app input[type=checkbox] { accent-color: #e08a2c; }
 
-.settings-box h2 { font-family: var(--head); color: #2f244f; font-size: 22px; letter-spacing: .06em; margin: 0 0 8px; }
+.settings-box h2 { font-family: var(--head); color: #161f5d; font-size: 22px; letter-spacing: .06em; margin: 0 0 8px; }
 .settings-box label { font-weight: 800; color: #3f4a37; margin: 16px 0; }
 .settings-box output { font-family: var(--head); color: #8a5a24; }
 .settings-box .check-label { flex-wrap: nowrap; align-items: flex-start; gap: 10px; padding: 12px; border-radius: 10px; background: #f4ecd8; }
@@ -105,7 +105,7 @@
 #board:not(.plaza-board) .castle-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; overflow-wrap: normal; max-width: 148px; }
 
 /* ---------- タイトル：遊び方の3つを木の看板に。下の小さいボタンは1列にまとめる ---------- */
-.title-choices { background: linear-gradient(#35295b, #241b3f); border: 3px solid #1c1432; box-shadow: inset 0 0 0 2px #513e89, 0 12px 26px #221a3b38; }
+.title-choices { background: linear-gradient(#5e6fe0, #3248d8); border: 3px solid #263cca; box-shadow: inset 0 0 0 2px #323f95, 0 12px 26px #151b4038; }
 #title-main { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; align-items: center; }
 #title-main > .mode-choice { grid-column: 1 / -1; }
 .plank-btn.mode-choice, .plank-btn.mode-choice.alt, .plank-btn.mode-choice.alt2 {
@@ -118,7 +118,7 @@
   border-image: url('../assets/ui/btn-orange.png') 118 150 fill / 24px 31px stretch;
   border-radius: 0;
   color: #4a2f17;
-  filter: drop-shadow(0 4px 0 #120c2280);
+  filter: drop-shadow(0 4px 0 #0c0f2280);
   transition: transform .08s, filter .12s;
 }
 .plank-btn.mode-choice.alt2 { border-image-source: url('../assets/ui/btn-green.png'); color: #f6ffe6; }
@@ -132,10 +132,10 @@
 #title-solo .mode-symbol { background-image: url('../assets/ui/icon-mode-solo.png'); }
 #title-local .mode-symbol { background-image: url('../assets/ui/icon-mode-local.png'); }
 #title-online .mode-symbol { background-image: url('../assets/ui/icon-mode-online.png'); }
-.mode-choice:hover { transform: translateY(-2px); filter: drop-shadow(0 6px 0 #120c2280) brightness(1.05); }
+.mode-choice:hover { transform: translateY(-2px); filter: drop-shadow(0 6px 0 #0c0f2280) brightness(1.05); }
 .plank-btn.mode-choice:active { transform: translateY(2px); filter: brightness(.92); }
 #title-solo { animation: title-invite 2.4s ease-in-out infinite; }
-@keyframes title-invite { 50% { filter: drop-shadow(0 4px 0 #120c2280) drop-shadow(0 0 10px #ffd66b) brightness(1.06); } }
+@keyframes title-invite { 50% { filter: drop-shadow(0 4px 0 #0c0f2280) drop-shadow(0 0 10px #ffd66b) brightness(1.06); } }
 .reduced-motion #title-solo { animation: none; }
 @media (prefers-reduced-motion: reduce) { #title-solo { animation: none; } }
 
@@ -150,7 +150,7 @@
   background: none; border: 1px solid transparent; border-radius: 0; box-shadow: none;
   border-image: url('../assets/ui/btn-cream.png') 106 150 fill / 14px 19px stretch;
   color: #4a2f17; font-family: var(--head); font-size: 12px; font-weight: 900; letter-spacing: 0; white-space: nowrap;
-  filter: drop-shadow(0 3px 0 #120c2266);
+  filter: drop-shadow(0 3px 0 #0c0f2266);
 }
 #title-main > * { min-width: 0; }
 .mode-choice > span { min-width: 0; }
@@ -202,7 +202,7 @@
 @media (max-width: 400px) { .shop-tabs { gap: 3px; } .shop-tabs > button { padding-inline: 11px; font-size: 12px; } }
 
 /* ---------- 強化を買う：買えるものを明るく、買えないものは静かに ---------- */
-.upgrade-head b { font-family: var(--head); font-size: 19px; color: #2f244f; letter-spacing: .04em; }
+.upgrade-head b { font-family: var(--head); font-size: 19px; color: #161f5d; letter-spacing: .04em; }
 .upgrade-coins { font-family: var(--head); font-size: 17px; color: #7a5312; padding: 3px 10px; border-radius: 999px; background: #fbe9b0; box-shadow: inset 0 0 0 2px #e2bb5c; }
 #upgrade-panel .upgrade-item:not(.blocked) { border: 2px solid #dcae45; background: linear-gradient(#fffdf3, #fff3cf); box-shadow: 0 3px 0 #c99a3a; transition: transform .07s; }
 #upgrade-panel .upgrade-item:not(.blocked):active { transform: translateY(2px); box-shadow: 0 1px 0 #c99a3a; }
@@ -237,7 +237,7 @@
 /* ---------- 部屋（ロビー）：席に城の絵、合言葉を看板に ---------- */
 #room-screen { background: radial-gradient(ellipse at 50% 0%, #fdf6dc, #f1e7c9 60%, #e6dab8); }
 .room-eyebrow { color: #8a5a24; }
-.room-box h1 { font-family: var(--head); color: #2f244f; letter-spacing: .04em; }
+.room-box h1 { font-family: var(--head); color: #161f5d; letter-spacing: .04em; }
 .room-box h2 { font-family: var(--head); color: #3f321f; letter-spacing: .03em; }
 .room-passphrase { border: 3px solid #c9a35a; border-radius: 14px; background: #fffaeb; box-shadow: inset 0 0 0 3px #fff3cf, 0 4px 0 #b4863a40; color: #5a3d10; font-family: var(--head); text-align: center; }
 .room-seat { position: relative; min-height: 96px; border: 2px solid #dccb9f; border-left: 6px solid var(--seat-color, #c9a35a); border-radius: 14px; background: #fffdf5; box-shadow: 0 3px 0 #cdbb8d55; }
@@ -278,7 +278,7 @@
 }
 #title-levels.parchment, #title-form.parchment { border: 4px solid #8f5a2a; box-shadow: 0 0 0 2px #3f2511, inset 0 0 0 2px #e0b06a; background: linear-gradient(#fff8e0, #f7e9c3); border-radius: 14px; }
 #card-detail, #discard-bar, #upgrade-panel { border-width: 4px; border-radius: 14px; }
-#target-bar { border: 4px solid #3f2f6f; box-shadow: 0 0 0 2px #20173a, inset 0 0 0 2px #a9d6cf, 0 6px 0 #120c224d; }
+#target-bar { border: 4px solid #7987e5; box-shadow: 0 0 0 2px #141a3d, inset 0 0 0 2px #a9d6cf, 0 6px 0 #0c0f224d; }
 .screen.dim { background: #1b120acc; backdrop-filter: blur(3px); }
 
 /* 見出しは木の帯 */
@@ -428,7 +428,7 @@ body { background: #2a1a0e; background-image: radial-gradient(ellipse at 20% 5%,
 /* ---------- 1b. HP表示：未使用だった木の看板（sign-hp.png）に ----------
    看板の画像は 512×270 で、まわりに透明の余白がある（見える絵は幅の約58%・高さの約69%）。
    そこで .castle-hp 自体は「見える絵」と同じ大きさ（元の白い箱と同じ幅110px）にして、
-   画像は ::before に余白ぶん大きく敷く（はみ出した余白は透明なので、城や道には重ならない）。
+   画像は::before に余白ぶん大きく敷く（はみ出した余白は透明なので、城や道には重ならない）。
    --k は大きさの倍率。小さい画面・横向きで下げる。数字は max(18px, …) で、どの大きさでも18px以上。
    ハートは看板の絵が持っているので、文字側のハート（.hp-heart）は出さない。 */
 .castle-hp {

@@ -243,4 +243,4 @@
 .weather-notice-caption { font-size: 10px; line-height: 1.4; }
 .weather-notice-title { font: 900 24px/1.2 var(--head); overflow-wrap: anywhere; }
 .weather-notice-description { margin-top: 3px; font-size: 12px; line-height: 1.5; }
-#app.skipping :is(.weather-alarm, .weather-notice) { visibility: hidden; }
+#app.skipping:is(.weather-alarm, .weather-notice) { visibility: hidden; }

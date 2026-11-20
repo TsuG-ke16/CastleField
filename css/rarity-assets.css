@@ -113,7 +113,7 @@
 
 /* 7種類の画像は同じ512×768の座標を使う。種類別の旧枠には従来の配置を残す。 */
 .card.has-frame, .mini-card { --win-l: 16%; --win-t: 17%; --win-w: 71%; --win-h: 46%; --med-y: 14%; --med-l: 19%; --med-r: 84%; --name-y: 74%; }
-#app :is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) {
+#app:is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) {
   --fy: 0%; --fh: 1; --fx: 50%; --bw: .6667;
   --win-l: 14.84%; --win-t: 15.36%; --win-w: 70.1%; --win-h: 47.8%;
   --med-l: 18.2%; --med-r: 83%; --med-y: 13.9%; --name-y: 72%;
@@ -125,13 +125,13 @@
 :is(.card.has-frame, .mini-card)[data-rarity=legendary] { --card-window: url('../assets/cards/window-legendary.png'); }
 :is(.card.has-frame, .mini-card)[data-rarity=special] { --card-window: url('../assets/cards/window-special.png'); }
 
-#app :is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) > :is(.card-art, .mini-card-image) {
+#app:is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) > :is(.card-art, .mini-card-image) {
   left: var(--win-l); top: var(--win-t);
   width: var(--win-w); height: var(--win-h);
   border-radius: 0;
   background: var(--card-window, none) center / cover no-repeat #fff1d3;
 }
-#app :is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) > :is(.card-kind, .card-rarity, .mini-card-kind, .mini-card-rarity) {
+#app:is(.card.has-frame, .mini-card):is([data-rarity], [data-beast]) > :is(.card-kind, .card-rarity, .mini-card-kind, .mini-card-rarity) {
   top: calc(var(--med-y) - 5.3333%);
   height: 10.6667%;
 }

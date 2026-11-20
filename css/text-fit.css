@@ -57,7 +57,7 @@
 #app .mini-card.wild, #app .card.has-frame.wild { background: none; box-shadow: none; }
 
 /* 偏光（キラ）：枠の絵の窓（イラストの部分）にぴったり重ねる。窓の外に光の四角がはみ出さないように */
-#app :is(.card.has-frame, .mini-card) > .foil-sheet {
+#app:is(.card.has-frame, .mini-card) > .foil-sheet {
   inset: auto;
   left: calc(50% + (var(--win-l) - var(--fx)) / var(--fh));
   top: calc((var(--win-t) - var(--fy)) / var(--fh));

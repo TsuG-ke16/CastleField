@@ -93,7 +93,7 @@
   background: var(--parch);
   text-align: center;
 }
-.room-launch :is(.room-note, .room-status) { margin: 0; }
+.room-launch:is(.room-note, .room-status) { margin: 0; }
 .room-launch .room-status:empty { display: none; }
 
 /* 図鑑の検索、魔物の駒、排出率。 */
@@ -132,9 +132,9 @@
 }
 #app #help .help-more summary { min-height: var(--touch-target); align-content: center; }
 #app #help-tutorial { min-height: var(--touch-target); }
-#app #tutorial { border-color: #bd9850; border-inline-start: 4px solid #554190; }
+#app #tutorial { border-color: #bd9850; border-inline-start: 4px solid #8794e8; }
 #app #tutorial > div { flex: 1; min-width: 0; }
-#app #tutorial strong { display: block; margin-bottom: 3px; color: #302552; font-size: 11px; }
+#app #tutorial strong { display: block; margin-bottom: 3px; color: #172060; font-size: 11px; }
 #app #tutorial p { font-size: clamp(12px, 3.35vw, var(--reading-size, 15px)); }
 #app #tutorial button { min-height: var(--touch-target); }
 #app #hand.tutorial-select .card.soldier:not(.dim) { outline: 2px solid #96d39d; outline-offset: -2px; }

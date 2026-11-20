@@ -153,12 +153,12 @@
 
 /* 勝敗・再戦・成績を、スクロールしなくても見渡せるようにする。 */
 #app #result {
-  background: radial-gradient(ellipse at 50% 32%, #63502eaa 0%, #231b3ce8 64%),
+  background: radial-gradient(ellipse at 50% 32%, #63502eaa 0%, #2e45d7e8 64%),
     url('../assets/bg/kingdom-valley.png') center / cover;
 }
 #app #result:not([hidden]) { animation: none; }
 #app #result.lost {
-  background: radial-gradient(ellipse at 50% 32%, #475d59aa 0%, #1e1732e8 66%),
+  background: radial-gradient(ellipse at 50% 32%, #475d59aa 0%, #273dcde8 66%),
     url('../assets/bg/kingdom-valley.png') center / cover;
 }
 #app #result .result-box {
@@ -194,7 +194,7 @@
   text-shadow: none;
   animation: none;
 }
-#app #result.lost .result-title { color: #2e234e; }
+#app #result.lost .result-title { color: #151f5c; }
 #app #result .result-sub { margin: 4px 0 0; color: #60482f; text-shadow: none; font-size: 12px; }
 #app #result .result-sub:empty { display: none; }
 #app #result .result-actions { display: grid; gap: 5px; }

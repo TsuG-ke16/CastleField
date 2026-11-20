@@ -7,8 +7,8 @@
   display: grid; grid-template-columns: repeat(5, 1fr); align-items: end;
   width: min(100%, 520px); margin: 0 auto;
   padding: 6px max(6px, env(safe-area-inset-right)) max(6px, env(safe-area-inset-bottom)) max(6px, env(safe-area-inset-left));
-  background: linear-gradient(#20173c, #160f2a); border-top: 2px solid #b8965a; border-radius: 16px 16px 0 0;
-  box-shadow: 0 -4px 14px #0f0a1c80;
+  background: linear-gradient(#3550e0, #2a3fc4); border-top: 2px solid #e2bb62; border-radius: 16px 16px 0 0;
+  box-shadow: 0 -4px 14px #0a0c1c80;
 }
 .home-tab {
   position: relative; display: grid; justify-items: center; gap: 2px; min-height: 56px; padding: 4px 2px;

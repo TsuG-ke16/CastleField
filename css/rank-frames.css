@@ -1,5 +1,5 @@
 /* ランク報酬のアイコンフレーム（assets/frames/rank-frame-<ランク>.png。階級が上がるほど飾りが豪華）。data-frame はフレームの景品ID（frame_iron …） */
-[data-frame] { --fill: #3b3270; position: relative; overflow: visible !important; border: 0 !important; border-radius: 22% !important;
+[data-frame] { --fill: #7d8be6; position: relative; overflow: visible !important; border: 0 !important; border-radius: 22% !important;
   background: var(--fill) !important; box-shadow: none; }
 [data-frame] > img { border-radius: inherit; }
 /* 枠の絵は正方形で、窓（透明）の外に飾りがはみ出す。アイコンの外側に重ねる */

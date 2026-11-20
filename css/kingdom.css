@@ -1,6 +1,6 @@
 /* 王国の作戦卓: honey oak, parchment, teal enamel, amber actions.
    Generated material assets carry decoration; HTML retains every label and number. */
-:root { --kingdom-ink:#422b18; --kingdom-paper:#fff2d3; --kingdom-gold:#d8aa51; --kingdom-teal:#332362; --kingdom-wood:#573421; }
+:root { --kingdom-ink:#422b18; --kingdom-paper:#fff2d3; --kingdom-gold:#d8aa51; --kingdom-teal:#5f70e0; --kingdom-wood:#573421; }
 html,body { background:#2c221b; }
 body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 #app { background:#c0cc85; border-color:#8b6841; box-shadow:0 12px 70px #0008,0 0 0 2px #b18b50; }
@@ -51,11 +51,11 @@ body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 #app .screen.dim { background:#211a15b5; backdrop-filter:blur(4px); }
 #app .settings-box .set-group, #app .local-options, #app .room-settings { background:#f1dfb9aa; border:1px solid #c6a46a; border-radius:9px; box-shadow:inset 0 1px #fff7; }
 #app .pill-group .pill { border:1px solid #c2a778; background:#fff5dc; border-radius:7px; color:#624725; box-shadow:0 2px 0 #b4925e66; min-height:36px; }
-#app .pill-group .pill.on { background:#3c2c6d; border-color:#271951; color:#fff0ce; box-shadow:inset 0 1px #81b2a977; }
-#app .guide-tabs button[aria-selected=true], #app .shop-tabs button[aria-selected=true] { background:#3c2c6d; color:#fff0ce; border-color:#271951; }
+#app .pill-group .pill.on { background:#7483e4; border-color:#4257db; color:#fff0ce; box-shadow:inset 0 1px #81b2a977; }
+#app .guide-tabs button[aria-selected=true], #app .shop-tabs button[aria-selected=true] { background:#7483e4; color:#fff0ce; border-color:#4257db; }
 #app .guide-filters select { color:#51391e; background:#fff5dc; border:1px solid #b99b64; border-radius:7px; }
 #app .guide-monster, #app .rate-group, #app .room-seat { background:#fff4d9c9; border:1px solid #cfaf78; box-shadow:0 2px 0 #b8965c33; border-radius:9px; }
-#app .room-seat.room-self { border-color:#554190; box-shadow:inset 4px 0 #554190; }
+#app .room-seat.room-self { border-color:#8794e8; box-shadow:inset 4px 0 #34429d; }
 #app #room-screen { background:linear-gradient(#fff1d5ee,#e4cfaaed),url('../assets/bg/kingdom-valley.png') center/cover; }
 #app .room-passphrase { background:#fff7e3; border:1px dashed #a27a3f; }
 /* Primary commands share the generated amber leather; alternate play modes use teal. */
@@ -143,7 +143,7 @@ body { background:radial-gradient(ellipse at 50% 15%,#73604a,#28251f 80%); }
 }
 /* Reference/shop tabs use quiet enamel; selected text must never sit on an old pale image. */
 #app .guide-tabs > button, #app .shop-tabs > button { border:1px solid #b7985d;  border-radius:7px; background:#fff1cf; color:#674523; opacity:1; filter:none; text-shadow:none; min-height:40px; padding:6px 10px; }
-#app .guide-tabs > button[aria-selected=true], #app .shop-tabs > button[aria-selected=true] { border-color:#2a1c55;  background:#3c2c6d; color:#fff2d4; filter:none; text-shadow:none; }
+#app .guide-tabs > button[aria-selected=true], #app .shop-tabs > button[aria-selected=true] { border-color:#4a5ddc;  background:#7483e4; color:#fff2d4; filter:none; text-shadow:none; }
 #app #upgrade-panel .shop-tabs { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); width:100%; gap:4px; overflow:visible; }
 #app #upgrade-panel .shop-tabs > button { min-width:0; padding:5px 2px; font-size:12px; }
 #app #upgrade-panel .upgrade-list { display:flex; flex-direction:column; gap:8px; }

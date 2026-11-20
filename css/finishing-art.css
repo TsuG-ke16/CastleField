@@ -1,4 +1,4 @@
-.seat-mark {position:absolute;right:0;top:10px;min-width:18px;height:18px;display:grid;place-items:center;border:2px solid var(--team-color);border-radius:50%;background:#fffbed;color:#1e1733;font:bold 11px sans-serif;z-index:3;}
+.seat-mark {position:absolute;right:0;top:10px;min-width:18px;height:18px;display:grid;place-items:center;border:2px solid var(--team-color);border-radius:50%;background:#fffbed;color:#0e143c;font:bold 11px sans-serif;z-index:3;}
 .spirit-symbol .spirit-art {width:40px;height:40px;display:block;}
 .castle-spirit {overflow:visible;}
 .team-spirit {display:inline-flex;align-items:center;gap:3px;white-space:nowrap;}

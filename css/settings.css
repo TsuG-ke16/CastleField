@@ -22,7 +22,7 @@ html[data-text-size=large] .castle-label { font-size:14px; }
 #title-levels {max-height:80dvh;overflow:auto;}
 
 #result .screen-box {max-height:calc(100dvh - 32px);overflow:auto;}
-#result-stats {max-width:340px;margin:8px auto;padding:8px 14px;border:1px solid #9f956d;border-radius:12px;background:#fff9e9;color:#2d234d;}
+#result-stats {max-width:340px;margin:8px auto;padding:8px 14px;border:1px solid #9f956d;border-radius:12px;background:#fff9e9;color:#151f5b;}
 #result-stats p {margin:0 0 6px;font-size:14px;}
 #result-stats dl {display:grid;grid-template-columns:1fr auto;gap:4px 16px;margin:0;text-align:left;font-size:14px;}
 #result-stats dd {margin:0;font-weight:bold;font-variant-numeric:tabular-nums;}
