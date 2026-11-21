@@ -183,6 +183,8 @@ const OPTIONAL_RULES = {
   overdriveAttack: 0,
   // 城への魔法（damageEnemyCastle）を、選んだレーンの相手の先頭の兵士に当てる（いなければ城に当たる）。false なら今までどおり城に当たる
   castleSpellHitsFront: false,
+  // 属性の付着（reactions を渡したゲームだけ）：true なら、自分のターンの始めに、敵の見える兵士1体にランダムな属性を付着させる（反応は起こさない）
+  randomAttachTurnStart: false,
   // 崩壊の刻：collapseStartRound（0 なら使わない）の周回から、周回の始めに全員の城に collapseDamage × (始まってからの周回の数) のダメージ。
   // collapseAnnounceRound（0 なら予告しない）の周回で予告する
   collapseStartRound: 0,
@@ -551,6 +553,7 @@ export class Game {
       throw new Error('rules.json の collapseAnnounceRound は collapseStartRound 以下にしてください');
     }
     if (rules.castleSpellHitsFront !== undefined && typeof rules.castleSpellHitsFront !== 'boolean') throw new Error('rules.json の castleSpellHitsFront は true か false にしてください');
+    if (rules.randomAttachTurnStart !== undefined && typeof rules.randomAttachTurnStart !== 'boolean') throw new Error('rules.json の randomAttachTurnStart は true か false にしてください（書かなければ false）');
     if (rules.mpAllCards !== undefined && typeof rules.mpAllCards !== 'boolean') throw new Error('rules.json の mpAllCards は true か false にしてください（書かなければ false）');
     for (const key of ['monsterLateBias', 'monsterEvolveMultiplier']) {
       const v = rules[key];
@@ -1025,6 +1028,10 @@ export class Game {
     const stageMp = this.stageDef()?.mpPerTurn ?? 0;
     if (stageMp > 0 && this.rules.maxMp > 0) this.changeMp(player, stageMp, 'stage');
 
+    // 属性のランダム付着：コイン・MP のあと、ドローの前（手札を引く前に盤面の状態が決まる）。
+    // 自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる
+    this.randomAttachAtTurnStart(player);
+
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
     const drawCount = Math.max(baseDraw, this.rules.drawUntilHand - player.hand.length, this.rules.drawPerPlayed ? playedLastTurn : 0);
@@ -1289,6 +1296,27 @@ export class Game {
     if (found) found.turns = turns; // 同じ属性がまた付いたら、残りを戻す
     else soldier.attachments.push({ element, turns });
     this.emit('elementAttached', { playerId: owner.id, soldierId: soldier.soldierId, element, turns });
+  }
+
+  /**
+   * 自分のターンの始め：敵の見える兵士（忍者は除く）からランダムに1体を選び、ランダムな属性を1つ付着させる（反応は起こさない）。
+   * rules.randomAttachTurnStart が true で reactions を渡したゲームだけ。敵の兵士がいなければ何もしない（乱数も使わない）。
+   * 将来スキルツリーが入ったら、ここの先頭の条件を「player がこの能力を持っているか」に変える
+   */
+  randomAttachAtTurnStart(player) {
+    const defs = this.reactionDefs;
+    if (!defs || !this.rules.randomAttachTurnStart) return;
+    const targets = [];
+    for (const enemy of this.opponentsOf(player.id)) for (const s of enemy.visibleSoldiers) targets.push({ enemy, s });
+    if (targets.length === 0) return;
+    const { enemy, s } = targets[Math.floor(this.rng() * targets.length)];
+    const ids = elementIds(this.elementDefs);
+    const element = ids[Math.floor(this.rng() * ids.length)];
+    const turns = defs.randomAttach?.turns ?? defs.attachTurns;
+    const found = s.attachments.find((a) => a.element === element);
+    if (found) found.turns = turns; // 同じ属性がまた付いたら、残りを戻す
+    else s.attachments.push({ element, turns });
+    this.emit('elementAttached', { playerId: enemy.id, soldierId: s.soldierId, element, turns, source: 'turnStart' });
   }
 
   /** 起こる反応（なければ null）。{ id, name, elements（反応した属性）, consumed（兵士から消える属性）, damage, def } */

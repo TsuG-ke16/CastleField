@@ -1510,6 +1510,26 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均105手番・先攻の勝率52%（PR3a は104手番・38%）。反応は smart 同士で1試合に平均1.8回（対消滅0.8・黒氷0.5・砕氷0.4・混沌反応0.15。直す前は混沌反応0.02）、反応が1回以上あった試合70%。smart vs random は1.5回、random 同士は1.4回。反応の回数は `node tests/sim/run.js --mode classic` の表の下に出る。通常モードのシミュレーションは変わらない（変更前と結果が完全に一致）
 - 画面（UI担当にお願いしたいこと）：兵士のそばに付着の表示（`attachments`・`elementAttached` / `elementCleared`）、`reactionTriggered` の演出（反応名を大きく。ヒットストップ・揺れ）、`soldierDamaged` の `cause: "reaction"`、武器の属性が外れたとき（`elementCleared.weapon`）の表示
 
+## クラシックの属性：ターン開始時のランダム付着（人間の指示。仮）
+
+`rules.randomAttachTurnStart: true`（省略すると `false`）で有効。`reactions` を渡したゲーム（クラシック）だけ。スキルツリーはまだないので、今は有効にすると全プレイヤーに効く。処理は `Game.js` の `randomAttachAtTurnStart(player)` の1か所（スキルツリーが入ったら、ここの先頭の条件を「そのプレイヤーが持っているか」に変える）。
+
+- **いつ**：自分のターンの始め。コイン・MP の回復のあと、ドローの前（自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる）
+- **何を**：敵（チーム戦なら相手チーム）の**見える兵士**（忍者・暗殺者は除く）からランダムに1体を選び、`elements` の表の全属性（混沌を含む）から等確率で1つ付着させる（`rng` を2回使う）。自分の兵士には付かない。**付着だけで、その場で反応は起こさない**。同じ属性がもう付いていれば残りを戻す
+- 敵の兵士がいなければ何も起きない（乱数も使わない）。キーが `false`/なしなら通常どおり（乱数も使わず、通常モードのシミュレーションは変わらない）
+- 付着が残る回数：`data/classic/reactions.json` の `randomAttach: { turns }`（仮：1。省略すると `attachTurns`）。1なら、付いたそのターンの自分の攻撃にだけ反応する（相手の進軍が終わると消える）
+- イベント：`elementAttached`（`{ playerId, soldierId, element, turns }`）に `source: "turnStart"` が付く（武器・魔法の付着には付かない）。反応したときは今までの `reactionTriggered`
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`。`--rules '{"randomAttachTurnStart":true}'`）：
+
+| | 反応/試合 | 混沌反応（100試合） | あり | 平均手番 | p1勝率 |
+|---|---|---|---|---|---|
+| なし | 1.79 | 15 | 70% | 105.0 | 52% |
+| 1ターン | 3.30 | 91 | 93% | 100.8 | 47% |
+| 5ターン | 4.61 | 193 | 95% | 105.1 | 46% |
+
+  1ターンを採用（5ターンは反応が増えすぎ）。1ターンでも目安（1〜3回）をやや超える。`data/classic/rules.json` にはまだ書いていない（スキルツリーで一部のプレイヤーだけに渡す想定のため。書くときは遊んで確かめる）
+- 画面（UI担当にお願いしたいこと）：`elementAttached.source: "turnStart"` のとき、付着の演出を目立たせるか（スキルの発動として見せる）
+
 ## 全体の設計（STEP 2〜5 の見通し）
 
 STEP 2 以降で作り直しにならないよう、Game をどう広げるかを先に決めておく。**ここに書いた形は「これから作るときの約束」で、各STEPの実装PRで少しずつ入る。** 入った時点で「ロジックとUIの約束」の表に移す。

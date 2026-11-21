@@ -51,6 +51,9 @@ export function validateReactions(data, ids) {
   const posInt = (v) => Number.isInteger(v) && v > 0;
   const nonNegInt = (v) => Number.isInteger(v) && v >= 0;
   if (!posInt(data.attachTurns)) throw new Error('reactions.json の attachTurns（付着が残る回数）は1以上の整数にしてください');
+  if (data.randomAttach !== undefined && (!data.randomAttach || !posInt(data.randomAttach.turns))) {
+    throw new Error('reactions.json の randomAttach は { turns: 1以上の整数 } にしてください（ターン開始時のランダム付着が残る回数）');
+  }
   const list = data.reactions;
   if (!list || typeof list !== 'object' || Array.isArray(list)) throw new Error('reactions.json の reactions に、反応IDをキーにした反応を書いてください（なければ {}）');
   for (const [id, r] of Object.entries(list)) {

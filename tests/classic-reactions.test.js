@@ -444,3 +444,90 @@ test('通常モードのデータでも、getState の兵士に attachments は�
   assert.equal(st.length, 1);
   assert.equal(Object.hasOwn(st[0], 'attachments'), false);
 });
+
+// ---- ターン開始時のランダム付着（rules.randomAttachTurnStart） ----
+
+/** p2 の兵士を出して p1 の番に戻したところ。attachRule で付着ルールを切り替える */
+function attachSetup({ rule = true, p2Soldiers = ['tank'], p1Soldiers = [], turns = 1 } = {}) {
+  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA };
+  const rules = { ...loadFixture('rules.json'), elementBonus: 0, maxHand: 12, soldiersPerTurn: 3, ...(rule ? { randomAttachTurnStart: true } : {}) };
+  let calls = 0;
+  const base = seededRng(5);
+  const rng = () => { calls += 1; return base(); };
+  const game = new Game({ cards, rules, rng, elements: readClassic('elements.json'), reactions: { ...REACTIONS, randomAttach: { turns } } });
+  game.debugSetHand('p1', p1Soldiers.length ? p1Soldiers : ['heal']);
+  game.debugSetHand('p2', p2Soldiers.length ? p2Soldiers : ['heal']);
+  game.debugSetDeck(Array(60).fill('heal'));
+  const log = recordEvents(game, EVENT_TYPES);
+  game.start();
+  const play = (pid, types) => {
+    for (const t of types) {
+      const c = game.getState(pid).players[pid].hand.find((h) => h.type === t);
+      assert.equal(game.playCard(c.cardId, { playerId: pid === 'p1' ? 'p2' : 'p1', roadId: undefined }).ok, true);
+    }
+  };
+  return { game, log, play, calls: () => calls };
+}
+
+test('ターン開始時の付着：敵の見える兵士1体にランダムな属性が付き、反応は起きない。自分の兵士には付かない', () => {
+  const { game, log, play } = attachSetup({ p1Soldiers: ['tank'], p2Soldiers: ['tank', 'tank'] });
+  play('p1', ['tank']);
+  game.endTurn();
+  play('p2', ['tank', 'tank']);
+  log.length = 0;
+  game.endTurn(); // p1 の番の始め
+  const ev = log.filter((e) => e.event === 'elementAttached');
+  assert.equal(ev.length, 1);
+  assert.equal(ev[0].source, 'turnStart');
+  assert.equal(ev[0].playerId, 'p2');
+  assert.ok(elementIds(readClassic('elements.json')).includes(ev[0].element));
+  assert.equal(game.players.p1.soldiers.every((s) => s.attachments.length === 0), true);
+  assert.equal(game.players.p2.soldiers.flatMap((s) => s.attachments).length, 1);
+  assert.equal(log.filter((e) => e.event === 'reactionTriggered').length, 0);
+});
+
+test('ターン開始時の付着：忍者は選ばれない。敵の兵士がいなければ何も起きず乱数も使わない', () => {
+  const { game, log, play, calls } = attachSetup({ p2Soldiers: ['ninjaT'] });
+  game.endTurn();
+  play('p2', ['ninjaT']);
+  game.endTurn();
+  assert.equal(log.filter((e) => e.event === 'elementAttached').length, 0);
+  assert.equal(game.players.p2.soldiers[0].attachments.length, 0);
+  // 敵の兵士がいない最初のターンは乱数を使わない（シャッフルのぶんは数えないため、付着の前後で比べる）
+  const a = attachSetup();
+  const before = a.calls();
+  a.game.endTurn();
+  assert.equal(a.log.filter((e) => e.event === 'elementAttached').length, 0);
+  assert.equal(a.calls(), before);
+  assert.ok(calls() >= 0);
+});
+
+test('ターン開始時の付着：キーなしなら何も起きず、乱数も使わない', () => {
+  const on = attachSetup({ p2Soldiers: ['tank'] });
+  const off = attachSetup({ rule: false, p2Soldiers: ['tank'] });
+  for (const t of [on, off]) { t.game.endTurn(); t.play('p2', ['tank']); t.game.endTurn(); }
+  assert.equal(off.log.filter((e) => e.event === 'elementAttached').length, 0);
+  assert.equal(off.game.players.p2.soldiers[0].attachments.length, 0);
+  assert.equal(on.game.players.p2.soldiers[0].attachments.length, 1);
+  assert.ok(off.calls() < on.calls());
+});
+
+test('ターン開始時の付着：持続ターン（randomAttach.turns）で消える', () => {
+  const { game, log, play } = attachSetup({ p2Soldiers: ['tank'], turns: 1 });
+  game.endTurn();
+  play('p2', ['tank']);
+  game.endTurn(); // p1 の始めに付く
+  const s = game.players.p2.soldiers[0];
+  assert.equal(s.attachments[0].turns, 1);
+  assert.equal(s.attachments.length, 1);
+  log.length = 0;
+  game.endTurn(); // p2 の進軍が終わると消える
+  assert.equal(log.filter((e) => e.event === 'elementCleared' && e.reason === 'expired').length, 1);
+});
+
+test('データ：randomAttach の形のチェックと、クラシックのデータ', () => {
+  const ids = elementIds(readClassic('elements.json'));
+  assert.throws(() => validateReactions({ ...REACTIONS, randomAttach: { turns: 0 } }, ids), /randomAttach/);
+  validateReactions(readClassic('reactions.json'), ids);
+  assert.equal(readClassic('reactions.json').randomAttach.turns, 1);
+});
