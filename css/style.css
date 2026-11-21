@@ -896,6 +896,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid #fff; outline-off
 .level[data-level="easy"] { background: linear-gradient(#c9f0a8, #7fcf5a); box-shadow: 0 4px 0 #3f8a2c, inset 0 2px 0 rgba(255, 255, 255, .5); }
 #title-form { display: flex; flex-direction: column; gap: 10px; text-align: left; }
 #title-form label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 900; }
+#title-form label[hidden] { display: none; }
 #title-form input {
   width: 100%;
   padding: 11px 12px;

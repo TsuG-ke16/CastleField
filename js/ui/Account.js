@@ -175,7 +175,7 @@ export class Account {
 
   async rename(name) {
     const r = await this.api('POST', '/api/profile/name', { name });
-    if (r.json?.ok) this.user = { ...this.user, displayName: r.json.displayName };
+    if (r.json?.ok) { this.user = { ...this.user, displayName: r.json.displayName }; this.emit(); }
     return r.json ?? { ok: false, reason: 'サーバーにつながりません' };
   }
 

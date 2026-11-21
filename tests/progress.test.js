@@ -66,6 +66,26 @@ test('レベルアップ：結果に leveledUp が出て、報酬は1レベル�
   assert.deepEqual(progress.availableRewards(a), []);
 });
 
+test('レベル報酬をまとめて受け取る：受け取っていないレベルを全部・1回だけ', () => {
+  const { progress, user, db } = setup();
+  const a = user();
+  assert.throws(() => progress.claimAllRewards(a), /受け取れる報酬がありません/);
+  db.run('INSERT INTO user_progress (user_id, xp) VALUES (?, ?)', a, 100000);
+  const lv = progress.levelInfo(progress.getXp(a)).level;
+  assert.ok(lv >= 4);
+  progress.claimReward(a, 3); // 1つだけ先に受け取っておく
+  const expected = progress.availableRewards(a);
+  const sum = expected.reduce((n, r) => n + r.coins, 0);
+  const r = progress.claimAllRewards(a);
+  assert.deepEqual(r.levels, expected.map((x) => x.level));
+  assert.equal(r.levels.includes(3), false);
+  assert.equal(r.coins, sum);
+  assert.equal(r.balance, progress.getCoins(a));
+  assert.deepEqual(progress.availableRewards(a), []);
+  assert.equal(db.get('SELECT COUNT(*) AS n FROM level_rewards WHERE user_id = ?', a).n, lv - 1);
+  assert.throws(() => progress.claimAllRewards(a), /受け取れる報酬がありません/);
+});
+
 test('プロフィール：公開設定の範囲だけ他人に見える。friends は Phase 4 まで本人だけ', () => {
   const { progress, user, accounts } = setup();
   const a = user(); const b = user();
@@ -109,9 +129,10 @@ test('部屋の対戦：ログイン中の2人が遊ぶと、サーバーが決�
   const base = `http://localhost:${server.address().port}`;
   const A = { cookie: '', csrf: null }; const B = { cookie: '', csrf: null }; const guest = { cookie: '', csrf: null };
   const [a, b, g] = [call(base, A), call(base, B), call(base, guest)];
-  for (const [c, j] of [[a, A], [b, B]]) { j.csrf = (await c('POST', '/api/auth/guest', {})).json.csrf; }
-  const joinA = await a('POST', '/api/join', { passphrase: 'room1', name: 'あ' });
-  const joinB = await b('POST', '/api/join', { passphrase: 'room1', name: 'い' });
+  for (const [c, j, n] of [[a, A, 'あ'], [b, B, 'い']]) { j.csrf = (await c('POST', '/api/auth/guest', {})).json.csrf; await c('POST', '/api/profile/name', { name: n }); }
+  // 名前は表示名の1つだけ：部屋に入るときに送った名前ではなく、アカウントの表示名で入る
+  const joinA = await a('POST', '/api/join', { passphrase: 'room1', name: '別の名前' });
+  const joinB = await b('POST', '/api/join', { passphrase: 'room1', name: '別の名前' });
   assert.equal(joinA.json.ok, true);
   const act = (token, method, args = []) => fetch(`${base}/api/action`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token, method, args }) }).then((r) => r.json());
   assert.equal((await act(joinA.json.token, 'start')).ok, true);
@@ -146,6 +167,7 @@ test('ホーム・レベル報酬・プロフィール設定の HTTP', async () 
   assert.equal(home.level.level, 1); assert.equal(home.coins, 0); assert.equal(home.rank, null);
   assert.equal(home.icons.length >= 1, true);
   assert.equal((await c('POST', '/api/level-rewards/claim', { level: 2 })).status, 400);
+  assert.equal((await c('POST', '/api/level-rewards/claim-all', {})).status, 400);
   assert.equal((await c('POST', '/api/profile/settings', { icon: 'knight', privacy: { history: 'public' } })).json.profile.icon, 'knight');
   assert.equal((await c('POST', '/api/profile/settings', { icon: 'evil' })).status, 400);
   assert.equal((await c('GET', '/api/profile/user/u_ffffffffffffffffffffffff')).status, 404);

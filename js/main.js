@@ -320,7 +320,7 @@ async function boot() {
       if (res && !res.ok) toast(reasonText(res.reason));
     },
   });
-  settings = new Settings((value) => { el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
+  settings = new Settings((value) => { if (!hasAccountName()) el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
   // アカウント：サーバーにアカウント機能があるときだけボタンを出す（なければ今までどおり）
   const accountPanel = new AccountPanel({ toast });
   const profileView = new ProfileView({ toast, onChanged: () => home.refresh() });
@@ -368,7 +368,6 @@ async function boot() {
     onJoinRoom: (passphrase) => {
       home.close();
       el.title.hidden = false; el.titleLevels.hidden = true; el.titleForm.hidden = false;
-      if (!el.titleName.value) el.titleName.value = account.user?.displayName ?? '';
       el.titlePass.value = passphrase;
       joinOnline();
     },
@@ -391,6 +390,9 @@ async function boot() {
     settings.setAccount(u ? (u.kind === 'guest'
       ? { label: 'アカウントを作成', note: 'アカウントを作ると、別の端末でも同じデータで遊べます。ランクマッチとフレンドも使えます。', onOpen: () => accountPanel.open() }
       : { label: 'アカウント', note: `${u.displayName} でログイン中`, onOpen: () => accountPanel.open() }) : null);
+    // 名前は1つだけ：アカウントがあれば表示名（プロフィールで変える）。合言葉の画面の名前の欄は出さない
+    el.titleName.closest('label').hidden = hasAccountName();
+    if (hasAccountName()) el.titleName.value = account.user.displayName;
   };
   account.onChange(() => {
     syncSettingsAccount();
@@ -477,11 +479,10 @@ function setupTitle(deckOptions) {
     el.titleLevels.hidden = true;
     el.titleForm.hidden = true;
     if (mode === 'online') {
-      if (!el.titleName.value && account.user) el.titleName.value = account.user.displayName;
       el.titleForm.hidden = false;
       setTitleWaiting(false);
       el.titleStatus.textContent = '同じ合言葉を入れた人と対戦します';
-      (el.titleName.value ? el.titlePass : el.titleName).focus({ preventScroll: true });
+      (el.titleName.value || hasAccountName() ? el.titlePass : el.titleName).focus({ preventScroll: true });
       return;
     }
     localSetup.open(mode);
@@ -505,7 +506,7 @@ function setupTitle(deckOptions) {
   });
   el.titleForm.addEventListener('submit', (e) => { e.preventDefault(); joinOnline(); });
   try {
-    el.titleName.value = localStorage.getItem('cf-name') ?? '';
+    el.titleName.value = hasAccountName() ? account.user.displayName : localStorage.getItem('cf-name') ?? '';
     el.titlePass.value = localStorage.getItem('cf-pass') ?? '';
   } catch { /* 覚えられなくても困らない */ }
 }
@@ -775,7 +776,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     const cpuIds = order.filter((id) => id !== humanId);
     const cpuId = cpuIds[0];
     cpu = { id: cpuId, ids: cpuIds, humanId, level: cpuLevel, strategy: STRATEGIES[CPU_LEVELS[cpuLevel].strategy], rng };
-    setPlayerNames({ [humanId]: settings.value.name || 'あなた', ...Object.fromEntries(cpuIds.map((id,i)=>[id,`CPU${cpuIds.length>1?i+1:''}（${CPU_LEVELS[cpuLevel].name}）`])) });
+    setPlayerNames({ [humanId]: myName() || 'あなた', ...Object.fromEntries(cpuIds.map((id,i)=>[id,`CPU${cpuIds.length>1?i+1:''}（${CPU_LEVELS[cpuLevel].name}）`])) });
   }
   tutorial.close();
   if (cpu && (replayTutorial || tutorial.pending())) {
@@ -850,9 +851,13 @@ function enqueue(ev) {
 
 // ---------- オンライン ----------
 
+/** 名前は1つだけ：アカウントがあればその表示名、なければ（アカウント機能のないサーバー）この端末で入れた名前 */
+function hasAccountName() { return !!(account.enabled && account.user?.displayName); }
+function myName() { return hasAccountName() ? account.user.displayName : el.titleName.value.trim() || (settings?.value.name ?? '').trim(); }
+
 async function joinOnline() {
   if (session?.online) return;
-  const name = el.titleName.value.trim();
+  const name = myName();
   const pass = el.titlePass.value.trim();
   if (!name || !pass) {
     el.titleStatus.textContent = '名前と合言葉を入れてください';
@@ -860,7 +865,7 @@ async function joinOnline() {
     return;
   }
   try {
-    localStorage.setItem('cf-name', name);
+    if (!hasAccountName()) localStorage.setItem('cf-name', name);
     localStorage.setItem('cf-pass', pass);
   } catch { /* 覚えられなくても困らない */ }
   stopLocal();

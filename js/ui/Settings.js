@@ -37,7 +37,7 @@ export class Settings {
         <p class="set-note set-account-note"></p>
         <button type="button" class="plank-btn set-account-btn"></button>
       </section>
-      <section class="set-group"><h3>なまえ</h3>
+      <section class="set-group set-name-group"><h3>なまえ</h3>
         <label class="set-row"><span class="set-name">あなたの名前</span><input name="name" maxlength="16" autocomplete="nickname" placeholder="なまえ"></label>
       </section>
       <section class="set-group"><h3>戦績</h3>
@@ -101,6 +101,8 @@ export class Settings {
   setAccount(info) {
     const sec=this.box.querySelector('.set-account');
     sec.hidden=!info;
+    // アカウントがあるときは、名前はアカウントの表示名だけ（プロフィールで変える）。ここの名前は出さない
+    this.box.querySelector('.set-name-group').hidden=!!info;
     if(!info)return;
     sec.querySelector('.set-account-note').textContent=info.note;
     sec.querySelector('.set-account-btn').textContent=info.label;
