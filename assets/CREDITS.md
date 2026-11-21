@@ -531,3 +531,17 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 | `bg/home-deck.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
 | `bg/home-account.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
 | `bg/home-settings.png` | OpenAI画像生成（ChatGPT）・開発者提供 | 同上 | 2026-11-20 受領 |
+
+## 3Dのカードの板・three.js（2026-11-20）
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `models/card-slab.glb` | Blender（bpy 5.3）で `models/make-card.py` を実行して作った（開発者の依頼で、この開発で作成）。角丸・厚み・縁の面取りの板。絵は含まない | 自作（このリポジトリのライセンスに従う） | 2026-11-20 |
+| `models/card-uncommon.glb` | Blender（bpy 5.3）で `models/make-card-uncommon.py` を実行して作った（開発者の依頼で、この開発で作成。スクリプトも自作）。アンコモンの枠の絵 `cards/frame-uncommon.png` を測って、板・木枠・葉・名前欄・下の欄・メダル・金の縁・宝石の台座と爪・カットした宝石を立体にした。絵（画像）は含まない（表の絵はゲームが貼る） | 自作（このリポジトリのライセンスに従う） | 2026-11-21 |
+| `js/vendor/three/`（three.module.min.js・GLTFLoader.js・BufferGeometryUtils.js） | three.js r170（https://github.com/mrdoob/three.js）。GLTFLoader・BufferGeometryUtils は import の行だけ相対パスに書きかえた | MIT（`js/vendor/three/LICENSE`） | 2026-11-20 取得 |
+
+## ランク報酬の裏の凹凸の地図（2026-11-20）
+
+- `skins/back-rank-{iron,bronze,silver,gold,platinum,diamond,master,champion}-relief.png` — 自作スクリプト（`node js/ui/build-card-relief.js`）で、同じ名前のランクの裏の絵（`skins/back-rank-*.png`）から自動生成（高さ・法線・材質の地図）。3Dの拡大表示（`js/ui/CardGL.js`）で裏を本物の凹凸のメッシュにするために使う。絵柄は含まない。利用条件は元の絵と同じ
+- 2026-11-20：`cards/relief/*` と `skins/back-rank-*-relief.png` を `node js/ui/build-card-relief.js` で作り直した（宝石を部品ごとに判定して穴・破片をなくし、カットした石の形に。部品を大きさに合わせてふくらませる。裏は地の模様を低く、紋章を高く）。絵柄は変えていない
+- 2026-11-20：`cards/relief/*` と `skins/back-rank-*-relief.png` を、色ではなく形の部品（`js/ui/card-shapes.js`：枠の外形・はみ出す飾り・名前の帯・メダル・宝石・紋章の輪と葉など）から作り直した。絵柄は変えていない

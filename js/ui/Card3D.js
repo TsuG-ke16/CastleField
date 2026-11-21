@@ -25,7 +25,7 @@ function layer(className) {
 }
 
 // CSS と同じ x 右・y 下・z 手前。列ベクトルは Rx(tiltX) · Ry(tiltY) · Q の各軸。
-function cardAxes([w, x, y, z], tiltX, tiltY) {
+export function cardAxes([w, x, y, z], tiltX, tiltY) {
   const cx = Math.cos(tiltX * rad), sx = Math.sin(tiltX * rad);
   const cy = Math.cos(tiltY * rad), sy = Math.sin(tiltY * rad);
   const tilt = ([a, b, c]) => {

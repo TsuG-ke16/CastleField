@@ -35,7 +35,7 @@ async function newPage({ viewport = { width: 390, height: 797 }, reducedMotion =
 
 // デッキ編成を開く。rarity を指定すると、そのレアリティで絞り込む
 async function openDeck(page, fx) {
-  await page.goto(new URL(`?fx=${fx}`, base).href);
+  await page.goto(new URL(`?fx=${fx}&card3d=css`, base).href);
   await page.click('#home .home-tab[data-tab=deck]'); await page.locator('#home .home-tile[data-id="deck"]').click();
   await page.locator('.deck-summary').waitFor();
 }
