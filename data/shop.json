@@ -1889,6 +1889,78 @@
       "world": "kingdom",
       "desc": "ゴッドサイコロを使うときの光が「黄金」の色に。この魔法だけに効く。",
       "filter": "sepia(.8) saturate(2.5) brightness(1.15)"
+    },
+    "fxskin_flameBolt": {
+      "slot": "spellSkin",
+      "target": "flameBolt",
+      "targetName": "火炎弾",
+      "name": "火炎弾・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "火炎弾を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "saturate(1.6) hue-rotate(-15deg)"
+    },
+    "fxskin_waterJet": {
+      "slot": "spellSkin",
+      "target": "waterJet",
+      "targetName": "水流",
+      "name": "水流・蒼流",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "水流を使うときの光が「蒼流」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(160deg) saturate(1.3)"
+    },
+    "fxskin_gust": {
+      "slot": "spellSkin",
+      "target": "gust",
+      "targetName": "突風",
+      "name": "突風・翠風",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "突風を使うときの光が「翠風」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(90deg) brightness(1.1)"
+    },
+    "fxskin_tremor": {
+      "slot": "spellSkin",
+      "target": "tremor",
+      "targetName": "地鳴り",
+      "name": "地鳴り・黄土",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "地鳴りを使うときの光が「黄土」の色に。この魔法だけに効く。",
+      "filter": "sepia(.8) saturate(1.5)"
+    },
+    "fxskin_iceShard": {
+      "slot": "spellSkin",
+      "target": "iceShard",
+      "targetName": "氷の礫",
+      "name": "氷の礫・氷青",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "氷の礫を使うときの光が「氷青」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(190deg) brightness(1.2)"
+    },
+    "fxskin_sparkBolt": {
+      "slot": "spellSkin",
+      "target": "sparkBolt",
+      "targetName": "雷撃",
+      "name": "雷撃・稲妻",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "雷撃を使うときの光が「稲妻」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(50deg) saturate(2)"
     }
   }
 }

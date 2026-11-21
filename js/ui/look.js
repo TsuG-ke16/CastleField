@@ -30,6 +30,8 @@ export const WEAPON_ICON = {
   windBow: '🏹',
   earthHammer: '🔨',
   ironSword: '⚔️',
+  iceBlade: '🗡️',
+  thunderAxe: '🪓',
 };
 
 /** 魔物の絵文字 */

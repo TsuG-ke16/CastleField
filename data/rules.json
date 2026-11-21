@@ -56,6 +56,6 @@
   "mulligan": true,
   "overdriveHpRatio": 0.3333,
   "overdriveAttack": 10,
-  "attachTurns": 2,
+  "attachTurns": 3,
   "reactionsPerTurn": 1
 }
