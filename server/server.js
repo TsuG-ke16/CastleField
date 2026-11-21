@@ -171,7 +171,10 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
       const body = await readJson(req);
       if (body?.tooLarge) return sendJson(res, 413, { ok: false, reason: '送る内容が大きすぎます' });
       if (!body || typeof body !== 'object') return sendJson(res, 400, { ok: false, reason: 'JSON で送ってください' });
-      return sendJson(res, 200, lobby.join(body.passphrase, body.name, account?.userIdOf(req) ?? null));
+      // ログイン中（ゲストも）は、アカウントの表示名で入る。名前は表示名の1つだけ
+      const userId = account?.userIdOf(req) ?? null;
+      const name = (userId && account.nameOf?.(userId)) || body.name;
+      return sendJson(res, 200, lobby.join(body.passphrase, name, userId));
     }
     if (req.method === 'POST' && url.pathname === '/api/action') {
       const body = await readJson(req);

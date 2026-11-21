@@ -254,4 +254,15 @@ export class Progress {
       return { level, coins, balance: this.getCoins(userId) };
     });
   }
+
+  /** 受け取れるレベル報酬を、まとめて全部受け取る。1つもなければ例外 */
+  claimAllRewards(userId) {
+    return this.db.tx(() => {
+      const list = this.availableRewards(userId);
+      if (!list.length) throw new AccountError('受け取れる報酬がありません');
+      let coins = 0;
+      for (const r of list) coins += this.claimReward(userId, r.level).coins;
+      return { levels: list.map((r) => r.level), coins, balance: this.getCoins(userId) };
+    });
+  }
 }

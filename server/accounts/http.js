@@ -219,6 +219,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
         return true;
       }
       if (req.method === 'GET' && path === '/api/level-rewards') { send(req, res, 200, { ok: true, rewards: progress.availableRewards(session.userId), coins: progress.getCoins(session.userId) }); return true; }
+      if (req.method === 'POST' && path === '/api/level-rewards/claim-all') { send(req, res, 200, { ok: true, ...progress.claimAllRewards(session.userId) }); return true; }
       if (req.method === 'POST' && path === '/api/level-rewards/claim') { send(req, res, 200, { ok: true, ...progress.claimReward(session.userId, body.level) }); return true; }
       if (path.startsWith('/api/ranked/') || path === '/api/ranking') {
         const out = await rankedRoutes(req, res, url, path, session, body);
@@ -403,7 +404,10 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     return r;
   });
 
-  return { handle, userIdOf, onMatchEnd, attachLobby, social, economy, missions, modes, modeIds, cosmeticsOf: (u) => economy?.cosmeticsOf(u) ?? {},
+  /** 部屋で使う名前：アカウントの表示名（名前はこれ1つだけ） */
+  const nameOf = (userId) => acc.publicUser(userId)?.displayName ?? null;
+
+  return { handle, userIdOf, nameOf, onMatchEnd, attachLobby, social, economy, missions, modes, modeIds, cosmeticsOf: (u) => economy?.cosmeticsOf(u) ?? {},
     /** チャットに添える、その人のアイコンとランク（相手にも見える公開の情報だけ）。ゲストはランクなし */
     profileOf: (u) => {
       try {

@@ -26,12 +26,14 @@ export class ProfileView {
       <div data-part="body" hidden>
         <div class="profile-head">
           <span class="profile-avatar" data-part="avatar"></span>
-          <div class="profile-who"><strong data-part="name"></strong><small data-part="title"></small>
+          <div class="profile-who"><span class="profile-name-row"><strong data-part="name"></strong><button type="button" class="small-btn profile-rename-btn" data-part="renameBtn" hidden aria-label="表示名を変える">✏ 変える</button></span>
+            <form class="profile-rename" data-part="renameForm" hidden><input data-part="nameInput" maxlength="16" autocomplete="nickname" placeholder="なまえ" aria-label="表示名"><button type="submit" class="small-btn">決定</button><button type="button" class="small-btn" data-part="renameCancel">やめる</button></form>
+            <small data-part="title"></small>
             <span class="profile-lv"><b data-part="lv"></b><span class="home-xp"><i data-part="xp"></i></span></span>
             <small data-part="xptext"></small></div>
         </div>
         <section class="profile-rewards" data-part="rewards" hidden>
-          <h3>レベル報酬</h3><div data-part="rewardList"></div>
+          <h3>レベル報酬</h3><button type="button" class="plank-btn profile-reward-all" data-part="claimAll" hidden></button><div data-part="rewardList"></div>
         </section>
         <section><h3>戦績</h3>
           <dl class="profile-stats" data-part="stats"></dl>
@@ -51,6 +53,23 @@ export class ProfileView {
     box.querySelector('.profile-close').addEventListener('click', () => this.close());
     box.addEventListener('keydown', (e) => { if (e.key === 'Escape') this.close(); });
     box.addEventListener('click', (e) => { if (e.target === box) this.close(); });
+    // 表示名（名前はこれ1つだけ。オンラインの部屋・チャット・ランキングにも出る）
+    const editing = (on) => { this.part('renameForm').hidden = !on; this.part('name').hidden = on; this.part('renameBtn').hidden = on; };
+    this.part('renameBtn').addEventListener('click', () => { this.part('nameInput').value = this.part('name').textContent; editing(true); this.part('nameInput').focus(); });
+    this.part('renameCancel').addEventListener('click', () => editing(false));
+    this.part('renameForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const r = await account.rename(this.part('nameInput').value);
+      if (!r.ok) { this.toast(r.reason ?? '名前を変えられませんでした'); return; }
+      this.part('name').textContent = r.displayName; editing(false);
+      this.toast('表示名を変えました', 'info'); this.onChanged();
+    });
+    this.part('claimAll').addEventListener('click', async () => {
+      const b = this.part('claimAll'); b.disabled = true;
+      const res = await account.api('POST', '/api/level-rewards/claim-all', {});
+      if (res.json?.ok) { this.toast(`${res.json.levels.length}レベル分の報酬　コイン ${res.json.coins} を受け取りました`, 'info'); this.onChanged(); this.open(); }
+      else { this.toast(res.json?.reason ?? '受け取れませんでした'); b.disabled = false; }
+    });
   }
 
   async open(userId = null) {
@@ -77,6 +96,8 @@ export class ProfileView {
     const p = this.part;
     p('state').hidden = true; p('body').hidden = false;
     p('name').textContent = pf.displayName;
+    p('name').hidden = false; p('renameForm').hidden = true;
+    p('renameBtn').hidden = !homeJson; // 自分のプロフィールのときだけ
     p('title').textContent = pf.title;
     p('lv').textContent = `Lv.${pf.level}`;
     if (homeJson?.icons) this.icons = homeJson.icons;
@@ -96,6 +117,9 @@ export class ProfileView {
     const rw = rewardsJson?.rewards ?? [];
     p('rewards').hidden = rw.length === 0;
     const list = p('rewardList'); list.replaceChildren();
+    const all = p('claimAll');
+    all.hidden = rw.length < 2; all.disabled = false;
+    all.textContent = `まとめて受け取る（${rw.length}件・コイン ${rw.reduce((n, r) => n + r.coins, 0)}）`;
     for (const r of rw) {
       const b = document.createElement('button');
       b.type = 'button'; b.className = 'plank-btn profile-reward';
