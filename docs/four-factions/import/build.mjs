@@ -114,8 +114,9 @@ export function buildAll({ ledger, cards: cardsIn, shop: shopIn }) {
       }
       continue;
     }
-    if (!Object.hasOwn(ELEMENT_IDS, row.attribute)) throw new Error(`「${row.name}」の属性「${row.attribute}」は1つの属性ではありません（複数属性は対応表で決める）`);
-    const element = ELEMENT_IDS[row.attribute];
+    // 複数の属性・属性以外の語（「火・水・風・土」「水・生命」「土・植物」）は、対応表の def に element を書かない行だけ許す（m.multiAttribute）。element は書かない
+    if (!m.multiAttribute && !Object.hasOwn(ELEMENT_IDS, row.attribute)) throw new Error(`「${row.name}」の属性「${row.attribute}」は1つの属性ではありません（複数属性は対応表で multiAttribute: true にする）`);
+    const element = m.multiAttribute ? null : ELEMENT_IDS[row.attribute];
     const { kind, ...rest } = m.def;
     const def = { name: row.name, faction, kind, ...rest };
     // 属性：武器・魔法だけ element に書ける（兵士の属性はスキーマにない。対応表の note に残す）
