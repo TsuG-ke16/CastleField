@@ -130,7 +130,7 @@ export class Card {
    * cards.json の中身をチェックする。書き間違いがあれば、どこが悪いかを書いた Error を投げる。
    * （不正な「操作」は例外にしない約束だが、データの書き間違いは起動時に気づけるよう例外にする）
    */
-  static validateDefinitions(cards, rarities = null) {
+  static validateDefinitions(cards, rarities = null, { factions = null, races = null } = {}) {
     if (!cards || typeof cards !== 'object' || Array.isArray(cards)) {
       throw new Error('cards.json はカード種類をキーにしたオブジェクトにしてください');
     }
@@ -168,6 +168,16 @@ export class Card {
       }
       if (def.deckAs !== undefined && (typeof def.deckAs !== 'string' || (rarities && (!Object.hasOwn(rarities, def.deckAs) || rarities[def.deckAs].special)))) {
         throw new Error(`${where}: deckAs（デッキ編成で数えるレアリティ）は、スペシャル以外のレアリティにしてください`);
+      }
+      // 陣営・種族・進化の系統（どれも任意。一覧を渡されたときだけ、キーが合っているか確かめる）
+      if (def.faction !== undefined && (typeof def.faction !== 'string' || (factions && !Object.hasOwn(factions, def.faction)))) {
+        throw new Error(`${where}: faction は ${factions ? Object.keys(factions).join(' / ') : '陣営のID（文字列）'} のどれかにしてください`);
+      }
+      if (def.race !== undefined && (typeof def.race !== 'string' || (races && !Object.hasOwn(races, def.race)))) {
+        throw new Error(`${where}: race は ${races ? Object.keys(races).join(' / ') : '種族のID（文字列）'} のどれかにしてください`);
+      }
+      if (def.evolutionLine !== undefined && (typeof def.evolutionLine !== 'string' || def.evolutionLine === '')) {
+        throw new Error(`${where}: evolutionLine は進化の系統ID（空でない文字列）にしてください`);
       }
       if (def.mpCost !== undefined && !isCount(def.mpCost)) throw new Error(`${where}: mpCost は0以上の整数にしてください（書かなければレアリティで決まる）`);
       if (def.exhaust !== undefined && typeof def.exhaust !== 'boolean') {

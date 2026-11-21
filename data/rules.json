@@ -33,7 +33,7 @@
   "teamTurns": "rotate",
   "teamCastleHpShare": 0.25,
   "initialMp": 10,
-  "maxMp": 20,
+  "maxMp": 30,
   "monsterLateBias": 0.15,
   "monsterEvolveEvery": 3,
   "monsterEvolveMultiplier": 1.2,

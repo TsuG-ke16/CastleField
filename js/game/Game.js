@@ -224,10 +224,10 @@ export class Game {
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, factions = null, races = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
     if (rarities !== null) validateRarities(rarities);
-    Card.validateDefinitions(cards, rarities);
+    Card.validateDefinitions(cards, rarities, { factions, races });
     Game.validateRules(rules);
     if (typeof rng !== 'function') throw new Error('rng は 0以上1未満の数を返す関数にしてください');
     if (monsters !== null) {
