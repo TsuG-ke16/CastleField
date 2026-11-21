@@ -244,6 +244,7 @@ const RAW_STRATEGIES = {
       playSupports(game, pid, ctx);
       playRepeat(game, pid, [
         ...typesWithEffect(ctx, 'healOwnCastle'),
+        ...typesWithEffect(ctx, 'healCastleAndSoldier'),
         ...typesWithEffect(ctx, 'damageEnemySoldiers'),
         ...soldierTypes(ctx),
         ...typesWithEffect(ctx, 'damageEnemyCastle'),
@@ -363,7 +364,9 @@ function smartStep(game, pid, ctx) {
   }
   // 毒にかかっていれば、解毒薬で治す（毒は永続なので、放っておくと削られ続ける）
   if (playFirst(game, playable, typesWithEffect(ctx, 'curePoison'))) return true;
-  if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, typesWithEffect(ctx, 'healOwnCastle'))) return true;
+  if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, [...typesWithEffect(ctx, 'healOwnCastle'), ...typesWithEffect(ctx, 'healCastleAndSoldier')])) return true;
+  // 傷ついた兵士がいれば、城と兵士を同時に回復（出せるのは、城か兵士のどちらかが傷ついているときだけ）
+  if (me.soldiers.some((s) => s.hp < s.maxHp) && playFirst(game, playable, typesWithEffect(ctx, 'healCastleAndSoldier'))) return true;
   // 永続の毒は早く入れるほど効く。強い毒から
   const toxins = typesWithEffect(ctx, 'poisonEnemy').sort((a, b) => ctx.cards[b].amount - ctx.cards[a].amount);
   if (enemy && playFirst(game, playable, toxins)) return true;
@@ -398,6 +401,7 @@ function smartStep(game, pid, ctx) {
     ...castleSpells,
     ...typesWithEffect(ctx, 'damageEnemySoldiers'),
     ...typesWithEffect(ctx, 'healOwnCastle'),
+    ...typesWithEffect(ctx, 'healCastleAndSoldier'),
   ]);
   if (played) return true;
   // 出すものがないとき、コインを増やすカード

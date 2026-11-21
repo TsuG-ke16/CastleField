@@ -130,11 +130,11 @@
 | 森の同盟 | 精霊召喚 | 土の大精霊 | 既存 | `greatEarthSpirit` | spell | summonSpirit amount 2 | 土 | earthKing | true | 既存カード（効果・数値・IDは今のまま） |
 | 森の同盟 | 精霊召喚 | 土の精霊王 | 既存 | `earthKing` | spell | summonSpirit amount 3 | 土 | — | true | 既存カード（効果・数値・IDは今のまま） |
 | 森の同盟 | 自然補助魔法 | ゲイルフォース | 既存 | `galeForce` | spell | pushBackEnemySoldiers amount 2 | 風 | （合成しない） | true | 既存カード（効果・数値・IDは今のまま） |
-| 森の同盟 | 回復魔法 | 若葉の癒やし | 新規案 | `forest_life_heal_common` | spell | （効果なし） | 水・生命 | forest_life_heal_uncommon | **false** | 傷ついた味方の兵士を回復するしくみがまだない（今の回復は城だけの healOwnCastle）。城だけ回復する既存効果で出すと「代用」になるので false（仕様 PR-B）。PR-C で作る |
-| 森の同盟 | 回復魔法 | 生命の雫 | 新規案 | `forest_life_heal_uncommon` | spell | （効果なし） | 水・生命 | forest_life_heal_rare | **false** | 傷ついた味方の兵士を回復するしくみがまだない（今の回復は城だけの healOwnCastle）。城だけ回復する既存効果で出すと「代用」になるので false（仕様 PR-B）。PR-C で作る |
-| 森の同盟 | 回復魔法 | 癒やしの泉 | 新規案 | `forest_life_heal_rare` | spell | （効果なし） | 水・生命 | forest_life_heal_epic | **false** | 傷ついた味方の兵士を回復するしくみがまだない（今の回復は城だけの healOwnCastle）。城だけ回復する既存効果で出すと「代用」になるので false（仕様 PR-B）。PR-C で作る |
-| 森の同盟 | 回復魔法 | 大樹の祝福 | 新規案 | `forest_life_heal_epic` | spell | （効果なし） | 水・生命 | forest_life_heal_legendary | **false** | 傷ついた味方の兵士を回復するしくみがまだない（今の回復は城だけの healOwnCastle）。城だけ回復する既存効果で出すと「代用」になるので false（仕様 PR-B）。PR-C で作る |
-| 森の同盟 | 回復魔法 | 世界樹の息吹 | 新規案 | `forest_life_heal_legendary` | spell | （効果なし） | 水・生命 | — | **false** | 傷ついた味方の兵士を回復するしくみがまだない（今の回復は城だけの healOwnCastle）。城だけ回復する既存効果で出すと「代用」になるので false（仕様 PR-B）。PR-C で作る |
+| 森の同盟 | 回復魔法 | 若葉の癒やし | 新規案 | `forest_life_heal_common` | spell | healCastleAndSoldier amount 4 | 水・生命 | forest_life_heal_uncommon | true | healCastleAndSoldier（城と、傷ついた自分の兵士のうちHPの割合がいちばん低い1体を同時に回復。値は仕様書の仮値 城4・兵士2）として実際に効く |
+| 森の同盟 | 回復魔法 | 生命の雫 | 新規案 | `forest_life_heal_uncommon` | spell | healCastleAndSoldier amount 8 | 水・生命 | forest_life_heal_rare | true | healCastleAndSoldier（城と、傷ついた自分の兵士のうちHPの割合がいちばん低い1体を同時に回復。値は仕様書の仮値 城8・兵士3）として実際に効く |
+| 森の同盟 | 回復魔法 | 癒やしの泉 | 新規案 | `forest_life_heal_rare` | spell | healCastleAndSoldier amount 14 | 水・生命 | forest_life_heal_epic | true | healCastleAndSoldier（城と、傷ついた自分の兵士のうちHPの割合がいちばん低い1体を同時に回復。値は仕様書の仮値 城14・兵士5）として実際に効く |
+| 森の同盟 | 回復魔法 | 大樹の祝福 | 新規案 | `forest_life_heal_epic` | spell | healCastleAndSoldier amount 24 | 水・生命 | forest_life_heal_legendary | true | healCastleAndSoldier（城と、傷ついた自分の兵士のうちHPの割合がいちばん低い1体を同時に回復。値は仕様書の仮値 城24・兵士8）として実際に効く |
+| 森の同盟 | 回復魔法 | 世界樹の息吹 | 新規案 | `forest_life_heal_legendary` | spell | healCastleAndSoldier amount 40 | 水・生命 | — | true | healCastleAndSoldier（城と、傷ついた自分の兵士のうちHPの割合がいちばん低い1体を同時に回復。値は仕様書の仮値 城40・兵士12）として実際に効く |
 | 森の同盟 | 城防御 | 蔦の防壁 | 新規案 | `forest_plant_wall_common` | defense | armorCastle amount 3 | 土・植物 | forest_plant_wall_uncommon | true | 既存の armorCastle（城壁。足し算で積む・上限あり・ダメージを先に受ける）として実際に効く。城壁の値 3 は仕様書の値 |
 | 森の同盟 | 城防御 | 根の城柵 | 新規案 | `forest_plant_wall_uncommon` | defense | armorCastle amount 5 | 土・植物 | forest_plant_wall_rare | true | 既存の armorCastle（城壁。足し算で積む・上限あり・ダメージを先に受ける）として実際に効く。城壁の値 5 は仕様書の値 |
 | 森の同盟 | 城防御 | 森の結界 | 新規案 | `forest_plant_wall_rare` | defense | armorCastle amount 9 | 土・植物 | forest_plant_wall_epic | true | 既存の armorCastle（城壁。足し算で積む・上限あり・ダメージを先に受ける）として実際に効く。城壁の値 9 は仕様書の値 |

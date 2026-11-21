@@ -378,7 +378,8 @@ function spiritArt(back, body, light, great = false) {
 
 /** カードの絵（知らない種類は、名前の1文字目を出す） */
 function svgCardArt(type, color = 'blue', name = '') {
-  const draw = CARD_ART[type];
+  // 森の生命回復（城と兵士の回復）は、小回復の絵を使い回す
+  const draw = CARD_ART[type] ?? (type.startsWith('forest_life_heal_') ? CARD_ART.minorHeal : undefined);
   const c = PLAYER_COLORS[color] ?? PLAYER_COLORS.blue;
   if (draw) return svg('0 0 100 100', draw(c), 'card-art-svg', 'xMidYMid slice');
   return svg('0 0 100 100', bg('#eadfc6', '#f8f1df') +

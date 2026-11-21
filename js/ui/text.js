@@ -49,6 +49,7 @@ const EFFECT_TEXT = {
   damageEnemyCastle: (c, rules, opts) => `相手の城に${c.amount}ダメージ${opts.monsters ? '（魔物も狙える）' : ''}`,
   damageEnemySoldiers: (c) => `相手の兵士全員に${c.amount}ダメージ`,
   healOwnCastle: (c) => `自分の城HP+${c.amount}（上限まで）`,
+  healCastleAndSoldier: (c) => `自分の城HP+${c.amount}、傷ついた兵士1体（HPの割合がいちばん低い）のHP+${c.soldierHeal}`,
   poisonEnemySoldiers: (c) => `相手の兵士全員に毒（${c.amount}ダメージ×${c.turns}回・盾が効かない）`,
   poisonEnemy: (c, rules) => {
     const term = rules?.poisonTurns ? `${rules.poisonTurns}ターン続く毒` : '永続の毒';
@@ -140,6 +141,7 @@ export function cardShort(def) {
     case 'damageEnemyCastle': return [{ icon: 'fire', text: `城 -${def.amount}` }];
     case 'damageEnemySoldiers': return [{ icon: 'sword', text: `兵士 -${def.amount}` }];
     case 'healOwnCastle': return [{ icon: 'heart', text: `城 +${def.amount}` }];
+    case 'healCastleAndSoldier': return [{ icon: 'heart', text: `城 +${def.amount}・兵士 +${def.soldierHeal}` }];
     case 'poisonEnemySoldiers': return [{ icon: 'skull', text: `毒 ${def.amount}×${def.turns}` }];
     case 'poisonEnemy': return [{ icon: 'skull', text: `毒 ${def.amount}/ターン` }];
     case 'curePoison': return [{ icon: 'heart', text: '毒を治す' }];
@@ -248,6 +250,7 @@ export function reasonText(reason) {
 // 魔法の効果ごとに、カードの角に出す数字の形
 const EFFECT_NUMBER = {
   healOwnCastle: (c) => `+${c.amount}`,
+  healCastleAndSoldier: (c) => `+${c.amount}`,
 };
 
 /**

@@ -137,17 +137,15 @@ const forestSpell = (name, el, i, story) => {
     story,
   };
 };
-// 回復（仕様：城と傷ついた味方兵士1体を同時回復。城/兵士 4/2, 8/3, 14/5, 24/8, 40/12）。兵士を回復するしくみがない
+// 回復（仕様：城と傷ついた味方兵士1体を同時回復。城/兵士 4/2, 8/3, 14/5, 24/8, 40/12）。healCastleAndSoldier で作った
 const HEAL = [[4, 2], [8, 3], [14, 5], [24, 8], [40, 12]];
 const forestHeal = (name, i, story) => ({
   name,
-  def: { kind: 'spell' },
+  def: { kind: 'spell', effect: 'healCastleAndSoldier', amount: HEAL[i][0], soldierHeal: HEAL[i][1] },
   multiAttribute: true,
-  implemented: false,
-  reason: '傷ついた味方の兵士を回復するしくみがまだない（今の回復は城だけの healOwnCastle）。城だけ回復する既存効果で出すと「代用」になるので false（仕様 PR-B）。PR-C で作る',
-  effectPlan: `城HP+${HEAL[i][0]} と、傷ついた味方兵士1体のHP+${HEAL[i][1]} を同時に回復（仮値。兵士がいなくても城は回復できる）`,
-  note: '台帳の属性は「水・生命」（複数。スキーマに書けない）',
-  description: `【準備中】城と傷ついた味方の兵士1体を同時に回復する（城+${HEAL[i][0]}・兵士+${HEAL[i][1]}）`,
+  implemented: true,
+  reason: `healCastleAndSoldier（城と、傷ついた自分の兵士のうちHPの割合がいちばん低い1体を同時に回復。値は仕様書の仮値 城${HEAL[i][0]}・兵士${HEAL[i][1]}）として実際に効く`,
+  note: '台帳の属性は「水・生命」（複数。スキーマに書けない）。兵士がいなくても城は回復できる。城も兵士も無傷なら出せない。メインを使い、MPは使わない',
   story,
 });
 // 城防御（仕様：コモンから 3/5/9/15/25）。armorCastle をそのまま使う。「破壊されたとき攻撃兵士の次の進軍を妨害する」は仕様が「案」としているだけなので含めない

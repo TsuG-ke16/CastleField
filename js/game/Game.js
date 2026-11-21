@@ -75,6 +75,7 @@ export const EVENT_TYPES = [
   'monsterEvolved',
   'upgradeBought',
   'soldierBuffed',
+  'soldierHealed',
   'diceRolled',
   'playerEliminated',
   'roadClosed',
@@ -216,7 +217,7 @@ const isCoinCard = (def) => def.effect === 'gainCoins' || (def.effect === 'dice'
 const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttackedCastle']);
 const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
-  'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed', 'attachmentChanged', 'reactionTriggered',
+  'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'soldierHealed', 'monsterClashed', 'attachmentChanged', 'reactionTriggered',
 ]);
 export class Game {
   /**
@@ -2503,6 +2504,11 @@ export class Game {
         return { targets: [], reason: '攻撃を受けたときにだけ使えます' };
       case 'healOwnCastle':
         return { targets: player.castle.isFull ? [] : [{ playerId: player.id }], reason: '城のHPが満タンです' };
+      case 'healCastleAndSoldier':
+        return {
+          targets: player.castle.isFull && !this.woundedSoldier(player) ? [] : [{ playerId: player.id }],
+          reason: '回復するものがありません',
+        };
       case 'shieldSoldier':
         return { targets: ownSoldiers(), reason: '道の上に自分の兵士がいません' };
       case 'armorCastle':
@@ -2513,6 +2519,16 @@ export class Game {
       default:
         return { targets: [], reason: 'このカードは出せません' };
     }
+  }
+
+  /** 傷ついた自分の兵士のうち、HPの割合がいちばん低い1体（忍者も含む。いなければ null） */
+  woundedSoldier(player) {
+    let best = null;
+    for (const s of player.soldiers) {
+      if (s.hp >= s.maxHp) continue;
+      if (!best || s.hp / s.maxHp < best.hp / best.maxHp) best = s;
+    }
+    return best;
   }
 
   /** その魔法で、兵士 x の状態が変わるか（毒・凍結：もう同じかそれ以上なら変わらない。サンダーはいつも変わる） */
@@ -2930,6 +2946,20 @@ export class Game {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         const healed = player.castle.heal(amount);
         this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        break;
+      }
+
+      case 'healCastleAndSoldier': {
+        // 城と、傷ついた自分の兵士1体（HPの割合がいちばん低い。同じなら先に出した方）を同時に回復
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        const healed = player.castle.heal(amount);
+        if (healed > 0) this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        const hurt = this.woundedSoldier(player);
+        if (hurt) {
+          const gain = Math.min(card.def.soldierHeal, hurt.maxHp - hurt.hp);
+          hurt.hp += gain;
+          this.emit('soldierHealed', { playerId: player.id, soldierId: hurt.soldierId, amount: gain, hp: hurt.hp });
+        }
         break;
       }
 

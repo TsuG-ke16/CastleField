@@ -13,7 +13,7 @@ const kinds = {
 };
 const effectKinds = {
   damageEnemyCastle: 'attack', damageEnemySoldiers: 'attack', poisonEnemySoldiers: 'attack', poisonEnemy: 'attack',
-  freezeEnemySoldiers: 'attack', pushBackEnemySoldiers: 'attack', chainBlast: 'attack', ignitionBurst: 'attack', armorBlast: 'attack', purifyFlare: 'heal', healOwnCastle: 'heal', curePoison: 'heal', summonSpirit: 'spirit',
+  freezeEnemySoldiers: 'attack', pushBackEnemySoldiers: 'attack', chainBlast: 'attack', ignitionBurst: 'attack', armorBlast: 'attack', purifyFlare: 'heal', healOwnCastle: 'heal', healCastleAndSoldier: 'heal', curePoison: 'heal', summonSpirit: 'spirit',
   gainCoins: 'resource', gainMp: 'resource',
 };
 const kindOf = def => effectKinds[def.effect] ?? (Object.hasOwn(kinds, def.kind) ? def.kind : 'special');

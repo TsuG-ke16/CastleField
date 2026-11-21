@@ -20,6 +20,7 @@ export const EFFECTS = {
     damageEnemyCastle: ['amount'],
     damageEnemySoldiers: ['amount'],
     healOwnCastle: ['amount'],
+    healCastleAndSoldier: ['amount', 'soldierHeal'], // 城を amount、傷ついた自分の兵士（HPの割合がいちばん低い1体）を soldierHeal 回復
     poisonEnemySoldiers: ['amount', 'turns'], // 毒（ターン数つき。兵士だけ。テスト・互換用）
     poisonEnemy: ['amount'], // 毒：選んだ相手の兵士と城を、永続の毒状態にする（毎ターン amount ダメージ。盾・城壁は効かない）
     curePoison: [], // 解毒薬：自分の毒状態（兵士・城）をすべて治す

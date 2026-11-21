@@ -29,7 +29,7 @@ const B2_NEW = B2.filter((r) => r.status === '新規案').map(idOfRow);
 const isB1Id = (id) => CARDS[id].faction === 'kingdom' || /^forest_(fire_sword|water_lance|wind_bow|earth_hammer)_/.test(id);
 
 const FALSES = [
-  ...ORDER.map((r) => `forest_druid_${r}`), ...ORDER.map((r) => `forest_life_heal_${r}`),
+  ...ORDER.map((r) => `forest_druid_${r}`),
   ...['water', 'wind', 'earth'].flatMap((e) => ORDER.map((r) => `forest_${e}_magic_${r}`)),
   ...['rare', 'epic', 'legendary'].map((r) => `forest_plant_armor_${r}`),
 ].sort();
@@ -106,7 +106,7 @@ test('ID・名前の衝突がない。新しいIDは chain_id_rarity。生成ス
   assert.equal(out.storiesJs, readFileSync(join(ROOT, 'js', 'ui', 'stories-factions.js'), 'utf8'));
   assert.equal(out.table, readFileSync(join(ROOT, 'docs', 'four-factions', 'import', 'table.md'), 'utf8'));
   assert.equal(out.newIds.length, 213); // B1〜B4 の合計（B2 の時点は 90。B3 で +64、B4 で +59）
-  assert.equal(out.newIds.filter((id) => out.cards[id].implemented === false).length, 122); // 同じく（B2 の時点は 38。B3 で +40、B4 で +44）
+  assert.equal(out.newIds.filter((id) => out.cards[id].implemented === false).length, 117); // 同じく（B2 の時点は 38。B3 で +40、B4 で +44。生命回復5枚を実装して −5）
   // 衝突したら止まる
   const clash = JSON.parse(cardsText);
   delete clash.forest_fire_magic_common;
@@ -114,14 +114,14 @@ test('ID・名前の衝突がない。新しいIDは chain_id_rarity。生成ス
   assert.throws(() => buildAll({ ledger: LEDGER, cards: clash, shop: JSON.parse(shopText) }), /ぶつかります/);
 });
 
-test('implemented：ドルイド5・回復5・水風土の攻撃魔法15・葉の衣のレア以上3＝28枚が false（理由・effectPlan つき）、ほかの新規22枚は true', () => {
+test('implemented：ドルイド5・水風土の攻撃魔法15・葉の衣のレア以上3＝23枚が false（理由・effectPlan つき）、ほかの新規27枚（生命回復5を含む）は true', () => {
   const falses = B2_NEW.filter((id) => CARDS[id].implemented === false).sort();
   assert.deepEqual(falses, FALSES);
-  assert.equal(B2_NEW.filter((id) => CARDS[id].implemented === true).length, 22);
-  assert.equal(falses.length, 28);
+  assert.equal(B2_NEW.filter((id) => CARDS[id].implemented === true).length, 27);
+  assert.equal(falses.length, 23);
   for (const id of falses) assert.equal(CARDS[id].effect, undefined, `${id} に効果はまだない`);
   const trues = B2_NEW.filter((id) => CARDS[id].implemented === true).sort();
-  assert.deepEqual(trues, [...ORDER.map((r) => `forest_beast_${r}`), ...ORDER.map((r) => `forest_elf_${r}`), ...ORDER.map((r) => `forest_fire_magic_${r}`), ...ORDER.map((r) => `forest_plant_wall_${r}`), 'forest_plant_armor_common', 'forest_plant_armor_uncommon'].sort());
+  assert.deepEqual(trues, [...ORDER.map((r) => `forest_beast_${r}`), ...ORDER.map((r) => `forest_elf_${r}`), ...ORDER.map((r) => `forest_fire_magic_${r}`), ...ORDER.map((r) => `forest_life_heal_${r}`), ...ORDER.map((r) => `forest_plant_wall_${r}`), 'forest_plant_armor_common', 'forest_plant_armor_uncommon'].sort());
   for (const id of falses) {
     assert.ok(CARDS[id].effectPlan, `${id} の effectPlan`);
     assert.ok(CARDS[id].implementationNote, `${id} の implementationNote`);
@@ -146,7 +146,7 @@ test('陣営なしのモード：B2 の新規カードは、山札・ドロー�
   // 陣営ありなら implemented: true の森のカードは引ける。false は引けない
   assert.equal(isDrawable(CARDS.forest_beast_common, true), true);
   assert.equal(isDrawable(CARDS.forest_druid_common, true), false);
-  assert.equal(isDrawable(CARDS.forest_life_heal_common, true), false);
+  assert.equal(isDrawable(CARDS.forest_life_heal_common, true), true); // 生命回復は実装済み
 });
 
 test('森の陣営モード：候補は 森＋共通 の implemented: true だけ。B2 の true の22枚が入り、false の28枚（水風土の魔法15・ドルイド・生命回復・葉の衣のレア以上3）は出ない（複数シード）', () => {
@@ -320,7 +320,7 @@ test('城防御（蔦の防壁〜世界樹の庇護）：城壁 3/5/9/15/25。�
 test('implemented: false（ドルイド・生命回復・水風土の魔法・葉の衣のレア以上）は、手札に来ても出せない・合成できない（実際の効果はまだない）', () => {
   const rules = { ...loadJson('rules.json'), ...PLAIN_START };
   const g = new Game({ cards: CARDS, rules, rarities, rng: seededRng(2) });
-  g.debugSetHand('p1', ['forest_druid_common', 'forest_druid_common', 'forest_life_heal_common', 'forest_water_magic_common', 'forest_plant_armor_rare']);
+  g.debugSetHand('p1', ['forest_druid_common', 'forest_druid_common', 'forest_earth_magic_common', 'forest_water_magic_common', 'forest_plant_armor_rare']);
   g.start();
   const [d1, d2, h, w, ar] = g.players.p1.hand.map((x) => x.cardId);
   for (const c of [w, ar]) assert.equal(g.canPlayCard(c).reason, 'このカードの効果はまだありません');

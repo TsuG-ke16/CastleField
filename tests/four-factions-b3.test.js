@@ -78,11 +78,11 @@ test('既存の12枚（氷5・毒5・命の簒奪・魔力強奪）は B3 で1�
 });
 
 test('取り込み前の226枚（B2 まで）は1文字も変わっていない（B3 は末尾に足しただけ）', () => {
-  const before = Object.fromEntries(Object.entries(CARDS).filter(([id, d]) => !B3_NEW.includes(id) && !(d.faction === 'dragon' && d.factionOnly)).map(([id, d]) => [id, { ...d }])); // B4 の新規（faction が dragon で factionOnly）も除く
-  assert.equal(Object.keys(before).length, 226);
+  const before = Object.fromEntries(Object.entries(CARDS).filter(([id, d]) => !B3_NEW.includes(id) && !id.startsWith('forest_life_heal_') && !(d.faction === 'dragon' && d.factionOnly)).map(([id, d]) => [id, { ...d }])); // B4 の新規（faction が dragon で factionOnly）と、のちに実装した森の生命回復5枚も除く
+  assert.equal(Object.keys(before).length, 221); // 226 − 生命回復5（のちに実装。「兵士回復の魔法」の節）
   assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic'); // 人間の決定で付けかえた（それ以前は null）
   before.lifeSteal.fuseTo = null;
-  assert.equal(createHash('sha256').update(JSON.stringify(before)).digest('hex'), '8bb784d37c2b69a87790c597c60be14ca961f87249ccb27753c0174578bf6054');
+  assert.equal(createHash('sha256').update(JSON.stringify(before)).digest('hex'), '648d632295cf25a5bf47fb1363013f874f7b9e4ccabb1ace49bc07dc6e7d234e');
   assert.equal(Object.keys(CARDS).length, 349); // B4 で 59 枚増えた（B3 の時点は 290）
 });
 

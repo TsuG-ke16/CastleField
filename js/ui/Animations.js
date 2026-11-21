@@ -403,6 +403,7 @@ export class Animations {
       case 'playerEliminated': return this.playerEliminated(p, model, ctx);
       case 'upgradeBought': return this.upgradeBought(p, model);
       case 'soldierBuffed': return this.soldiersBuffed(ev, queue, model);
+      case 'soldierHealed': return this.soldierHealed(p, model);
       case 'gameOver':
         model.phase = 'gameOver';
         model.winner = p.winner;
@@ -1775,6 +1776,20 @@ export class Animations {
       }));
     }
     await Promise.all(waits);
+  }
+
+  /** 兵士の回復：緑の「+N」が浮かび、体力ゲージが増える（ヒットストップ・揺れなし） */
+  async soldierHealed({ playerId, soldierId, amount, hp }, model) {
+    const s = this.modelSoldier(model, playerId, soldierId);
+    if (s) s.hp = hp;
+    this.renderer.updateSoldier(soldierId, { hp });
+    if (this.skipping || amount <= 0) return;
+    const el = this.renderer.soldierEl(soldierId);
+    if (!el) return;
+    sound.play('heal');
+    this.number(el, `+${amount}`, { kind: 'heal', size: UI_CONFIG.healNumber.size, duration: UI_CONFIG.healNumber.duration });
+    el.style.setProperty('--glow', '#5fe07a');
+    await this.flashClass(el, 'glow', UI_CONFIG.timing.heal);
   }
 
   async castleArmored({ playerId, armor }, model) {
