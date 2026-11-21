@@ -188,6 +188,14 @@ export class Card {
       if (def.implemented !== undefined && typeof def.implemented !== 'boolean') {
         throw new Error(`${where}: implemented は true か false にしてください（書かなければ true）`);
       }
+      // 四大陣営（PR-B）：effectPlan（まだない効果の説明）・implementationNote（実装のメモ）は文字列。Game は使わない
+      for (const key of ['effectPlan', 'implementationNote']) {
+        if (def[key] !== undefined && typeof def[key] !== 'string') throw new Error(`${where}: ${key} は文字列にしてください`);
+      }
+      // factionOnly：true なら陣営モードの候補でだけ引き当てる（陣営なしの山札・ドローの引き当て・入手券・魔物のごほうびには出ない）
+      if (def.factionOnly !== undefined && typeof def.factionOnly !== 'boolean') {
+        throw new Error(`${where}: factionOnly は true か false にしてください（書かなければ false）`);
+      }
       if (def.race !== undefined && (typeof def.race !== 'string' || (races && !Object.hasOwn(races, def.race)))) {
         throw new Error(`${where}: race は ${races ? Object.keys(races).join(' / ') : '種族のID（文字列）'} のどれかにしてください`);
       }
@@ -261,6 +269,8 @@ export class Card {
         if (!moving && def.speed !== undefined) throw new Error(`${where}: 弓兵・魔法使い（role: ${role}）は動かないので speed は書けません`);
       } else if (def.kind === 'weapon') {
         if (!isCount(def.attackBonus)) throw new Error(`${where}: attackBonus は0以上の整数にしてください`);
+      } else if (def.implemented === false && def.effect === undefined) {
+        // まだ効果がないカード（台帳だけ）：effect を省略して、effectPlan に将来の効果を書ける。手札から出せない（Game が止める）
       } else {
         const effects = EFFECTS[def.kind];
         if (!Object.hasOwn(effects, def.effect)) {

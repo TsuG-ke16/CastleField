@@ -21,7 +21,7 @@
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
 import { validateFactions, factionPool } from './Factions.js';
-import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
+import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds, isDrawable } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -652,6 +652,7 @@ export class Game {
     const types = [];
     for (const [type, def] of Object.entries(this.cardDefs)) {
       if (pool && !pool.has(type)) continue;
+      if (!isDrawable(def, Boolean(pool))) continue; // 効果がまだないカード・陣営モード専用のカード（今はどれも count 0）
       for (let i = 0; i < def.count; i++) types.push(type);
     }
     return types;
@@ -1912,7 +1913,7 @@ export class Game {
     if (def.effect === 'gainCard') {
       if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
       const pool = this.poolOf(player.id); // 陣営モードなら、その陣営の候補の中にそのレアリティがあるか
-      if (!Object.entries(this.cardDefs).some(([t, d]) => (!pool || pool.has(t)) && d.rarity === def.rarity && (d.weight ?? 1) > 0)) return fail('その強化はありません');
+      if (!Object.entries(this.cardDefs).some(([t, d]) => (!pool || pool.has(t)) && d.rarity === def.rarity && (d.weight ?? 1) > 0 && isDrawable(d, Boolean(pool)))) return fail('その強化はありません');
     }
     if (def.effect === 'permanentLuck') {
       if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
@@ -2019,6 +2020,10 @@ export class Game {
     // 適応は、どのカードとでも合成できる（相手のカードを2枚合成したのと同じ結果）
     const base = wildA ? b : a;
     if (!wildA && !wildB && a.type !== b.type) return fail('同じ種類のカードどうしでないと合成できません');
+    // 効果がまだないカード（implemented: false）は、合成の元にも、合成先にもしない
+    if (base.def.implemented === false || (base.def.fuseTo && this.cardDefs[base.def.fuseTo]?.implemented === false)) {
+      return fail('このカードの効果はまだありません');
+    }
     if (!base.def.fuseTo) {
       if (base.def.monster) return fail('魔物のカードは合成できません');
       // いちばん上のレアリティ（スペシャルを除く）だけ「これ以上」。ほかは合成しないカード（fuseTo: null・スペシャル）
@@ -2541,6 +2546,8 @@ export class Game {
     }
     // 適応は合成専用。枠の決まりより先に答える（「もうメインを出しました」だと、次のターンなら出せるように読めてしまう）
     if (card.def.effect === 'wild') return fail('適応は合成に使うカードです（出せません）');
+    // 台帳だけあって効果がまだないカード（implemented: false）。ふつうは引き当てないので手札に来ないが、念のため
+    if (card.def.implemented === false) return fail('このカードの効果はまだありません');
     // 兵士は1ターン soldiersPerTurn 枚、メイン（攻撃の魔法）は1枚。付加（武器）・防御・回復や精霊などは何枚でも
     if (card.slot === 'soldier' && player.soldiersPlayedThisTurn >= this.rules.soldiersPerTurn) {
       return fail(`このターンに出せる兵士は${this.rules.soldiersPerTurn}枚までです`);
@@ -3282,6 +3289,7 @@ export class Game {
     const def = card.def;
     const defender = this.players[pending.defenderId];
     if (def.kind !== 'defense') return { targets: [], reason: '防御カードだけ出せます' };
+    if (def.implemented === false) return { targets: [], reason: 'このカードの効果はまだありません' };
     if (pending.kind === 'castle') {
       if (def.effect === 'reflectSpell') {
         return pending.from === 'spell'

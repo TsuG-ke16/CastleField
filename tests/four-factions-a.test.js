@@ -69,18 +69,21 @@ test('台帳：295種類・陣営別 59/83/76/70・共通7・名前の重複な�
 test('台帳の既存78＋改名4＝82枚に cards.json の faction が付き、台帳にないカードには付かない', () => {
   const cards = loadJson('cards.json');
   const map = ledgerExisting(cards);
+  // PR-B で台帳の新規案から足したカード（ID は chain_id_rarity）も、台帳の陣営の faction を持つ
+  const added = new Map(LEDGER.cards.filter((r) => r.status === '新規案' && cards[`${r.chain_id}_${r.rarity}`]).map((r) => [`${r.chain_id}_${r.rarity}`, FACTION_IDS[r.faction]]));
   assert.equal(map.size, 82);
   assert.equal(LEDGER.cards.filter((r) => r.status === '既存').length, 78);
   assert.equal(LEDGER.cards.filter((r) => r.status.startsWith('改名')).length, 4);
   for (const [id, f] of map) assert.equal(cards[id].faction, f, `${id} の faction`);
   for (const [id, d] of Object.entries(cards)) {
-    if (!map.has(id)) assert.equal(d.faction, undefined, `${id} は台帳にないので faction を付けない`);
+    if (added.has(id)) assert.equal(d.faction, added.get(id), `${id} の faction（台帳の新規案）`);
+    else if (!map.has(id)) assert.equal(d.faction, undefined, `${id} は台帳にないので faction を付けない`);
   }
   // 共通7種
   const common = Object.keys(cards).filter((id) => cards[id].faction === COMMON_FACTION).sort();
   assert.deepEqual(common, ['adapt', 'blessing', 'manaCrystal', 'manaDrop', 'manaShard', 'manaSpring', 'worldTreeDew']);
-  // 改名の4枚は、名前はまだ変えない（PR-B 以降）
-  assert.equal(cards.flameSword.name, '炎の剣');
+  // 改名の4枚は、PR-B で名前だけ台帳の名前にした（ID は今のまま）
+  assert.equal(cards.flameSword.name, 'フレイムソード');
 });
 
 // ================= 検証 =================
@@ -116,21 +119,24 @@ test('合成先が別の陣営なら例外（両方に faction があるとき�
   // common → 陣営のカードも不可
   const common = buildData({ cards: { manaShard: { fuseTo: 'spearman' } } }).cards;
   assert.throws(() => Card.validateDefinitions(common, rarities, { factions }), /別の陣営/);
-  // 片方が旧カード（faction なし）なら確かめない：炎の剣（森）→ 鉄の剣（旧）
-  assert.equal(loadJson('cards.json').flameSword.fuseTo, 'ironSword');
+  // 片方が旧カード（faction なし）なら確かめない：魔剣（旧）→ 聖剣（王国）。森の武器→鉄の剣は PR-B で台帳の系統につないだ
+  assert.equal(loadJson('cards.json').magicSword.fuseTo, 'holySword');
   Card.validateDefinitions(loadJson('cards.json'), rarities, { factions });
+  const forestToLegacy = buildData({ cards: { flameSword: { fuseTo: 'ironSword' } } }).cards; // 森 → 旧
+  Card.validateDefinitions(forestToLegacy, rarities, { factions });
   const legacyToFaction = buildData({ cards: { apprenticeMage: { fuseTo: 'spearman' } } }).cards; // 旧 → 王国
   Card.validateDefinitions(legacyToFaction, rarities, { factions });
 });
 
 test('陣営をまたいでいた旧合成先は fuseTo: null（合成しない）', () => {
   const cards = loadJson('cards.json');
-  for (const id of ['shieldBlast', 'galeForce', 'blessing', 'paladin']) assert.equal(cards[id].fuseTo, null, id);
+  for (const id of ['shieldBlast', 'galeForce', 'blessing']) assert.equal(cards[id].fuseTo, null, id);
+  // 聖騎士は PR-B で台帳どおりグランドパラディン（王国）につないだ（人間の決定）
+  assert.equal(cards.paladin.fuseTo, 'king_cavalry_legendary');
   const g = factionGame({ rules: { deckMode: 'shared' } });
-  g.debugSetHand('p1', ['paladin', 'paladin', 'blessing', 'blessing']);
+  g.debugSetHand('p1', ['blessing', 'blessing']);
   g.start();
-  const [a, b, c, d] = g.getState('p1').players.p1.hand.map((x) => x.cardId);
-  assert.equal(g.canFuse(a, b).reason, 'このカードは合成できません');
+  const [c, d] = g.getState('p1').players.p1.hand.map((x) => x.cardId);
   assert.equal(g.canFuse(c, d).reason, 'このカードは合成できません');
 });
 
@@ -300,7 +306,7 @@ test('魔物のごほうびは例外：陣営モードでも候補で絞らな�
 
 // ================= 合成 =================
 
-test('合成：陣営のカードの合成先は同じ陣営か旧カード。旧カードへ行くのは森の4つの武器だけ（PR-B で直す）', () => {
+test('合成：陣営のカードの合成先は同じ陣営。旧カードへ行くものはない（森の4つの武器は PR-B で直した）', () => {
   const cards = loadJson('cards.json');
   const toLegacy = [];
   for (const [id, d] of Object.entries(cards)) {
@@ -309,7 +315,7 @@ test('合成：陣営のカードの合成先は同じ陣営か旧カード。�
     if (to.faction === undefined) toLegacy.push(id);
     else assert.equal(to.faction, d.faction, `${id} → ${d.fuseTo}`);
   }
-  assert.deepEqual(toLegacy.sort(), ['earthHammer', 'flameSword', 'waterSpear', 'windBow']);
+  assert.deepEqual(toLegacy, []);
 });
 
 test('合成：陣営内の系統が最上位まで辿れる（例：王国の歩兵→勇者、竜族のファイアボール→終末の炎）', () => {

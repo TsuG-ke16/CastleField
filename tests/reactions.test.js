@@ -520,7 +520,7 @@ test('忍者：反応・付着のイベントには stealth が付き、相手�
   assert.equal(game.getState('p1').players.p2.soldiers.length, 0);
 });
 
-test('本物のカード（火水風土の武器）で反応が起きる：炎の剣・水の槍・風の弓・土の槌', () => {
+test('本物のカード（火水風土の武器）で反応が起きる：フレイムソード・アクアスピア・ゲイルボウ・アースハンマー', () => {
   const cases = [
     ['flameSword', 'water', 'evaporate'],
     ['waterSpear', 'earth', 'mud'],

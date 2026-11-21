@@ -1,6 +1,8 @@
 // 図鑑で読むカードのストーリー（画面だけで使う文。ゲームのルール・数値には関係しない）。
 // キーは data/cards.json のカード種類。カードを増やしたら、ここにも1つ足す（ui-tests/stories.js が確かめる）。
 // 舞台：空色の国と夕焼けの国が、草原（キャッスルフィールド）をはさんで城を構える。真ん中の広場には、ときどき魔物があらわれる。
+import { FACTION_STORIES } from './stories-factions.js';
+
 export const CARD_STORIES = {
   // ---------- 普通の兵士：歩兵 → 槍兵 → 重装兵 → 巨人 → 勇者 ----------
   infantry: '村の畑から呼び出された若者たち。剣の持ち方は昨日おぼえたばかりだが、帰りを待つ家族の顔を思えば、足は自然と前に出る。',
@@ -179,4 +181,7 @@ export const CARD_STORIES = {
   darkScythe: '月のない夜に研がれた、黒い鎌。刃先が通ったあとには、深い闇が残る。',
   lightLance: '朝日を束ねて作った白い槍。穂先が触れると、まぶしい光が弾ける。',
   chaosStaff: '先端で七色の渦がうねる杖。持つ者にも、次に何が起きるか分からない。',
+
+  // ---------- 四大陣営の台帳から足したカード（自動生成。docs/four-factions/import/mapping.mjs の story） ----------
+  ...FACTION_STORIES,
 };
