@@ -36,6 +36,16 @@ function pickLane(game, pid, cardId, targets) {
   const st = game.getState(pid);
   const type = st.players[pid].hand.find((c) => c.cardId === cardId)?.type;
   const isSoldier = curCards[type]?.kind === 'soldier';
+  // 城への魔法が先頭の兵士に当たるルール（castleSpellHitsFront）：相手の兵士がいちばん先頭（自分の城の近く）まで来ている道へ。
+  // だれもいなければ最初の道（城に当たる）。ふつうのルールでは城への魔法に道はないので、ここには来ない
+  if (curCards[type]?.effect === 'damageEnemyCastle') {
+    const me = st.players[pid].castleOwner ?? pid;
+    const front = (roadId) => Math.max(-1, ...Object.entries(st.players)
+      .filter(([id, p]) => (p.castleOwner ?? id) !== me)
+      .flatMap(([, p]) => p.soldiers.filter((x) => x.roadId === roadId).map((x) => x.position)));
+    const best = Math.max(...withRoad.map((t) => front(t.roadId)));
+    return best < 0 ? withRoad[0] : withRoad.find((t) => front(t.roadId) === best);
+  }
   const enemyCount = (roadId) => Object.entries(st.players)
     .filter(([id, p]) => (p.castleOwner ?? id) !== (st.players[pid].castleOwner ?? pid))
     .reduce((n, [, p]) => n + p.soldiers.filter((x) => x.roadId === roadId).length, 0);

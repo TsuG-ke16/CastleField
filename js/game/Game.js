@@ -88,6 +88,8 @@ export const EVENT_TYPES = [
   'weatherChanged',
   'weatherLightning',
   'attackMissed',
+  'collapseAnnounced',
+  'collapseStarted',
   'gameOver',
 ];
 
@@ -166,6 +168,13 @@ const OPTIONAL_RULES = {
   mulligan: false,
   // 背水の陣：城HPが上限 × overdriveHpRatio（四捨五入）以下になると、その城の兵士全員の攻撃 +overdriveAttack（0 なら使わない）
   overdriveAttack: 0,
+  // 城への魔法（damageEnemyCastle）を、選んだレーンの相手の先頭の兵士に当てる（いなければ城に当たる）。false なら今までどおり城に当たる
+  castleSpellHitsFront: false,
+  // 崩壊の刻：collapseStartRound（0 なら使わない）の周回から、周回の始めに全員の城に collapseDamage × (始まってからの周回の数) のダメージ。
+  // collapseAnnounceRound（0 なら予告しない）の周回で予告する
+  collapseStartRound: 0,
+  collapseAnnounceRound: 0,
+  collapseDamage: 1,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -271,6 +280,11 @@ export class Game {
     /** 2人の組（道の pairId）→ この周回より前には魔物が出ない */
     this.monsterCooldown = new Map();
     this.round = 0;
+    /** 崩壊の刻（rules.collapseStartRound が 0 なら使わない）：予告したか・始まったか */
+    this.collapseAnnounced = false;
+    this.collapseActive = false;
+    /** 人ごとの「相手の城に与えたダメージの合計」（崩壊の刻で同時に城が落ちたときの決め手） */
+    this.castleDamageDealt = new Map();
     /** 攻撃を受けた人の防御を待っているとき（phase "defend"）：{ defenderId, attackerId, kind, amount, soldierIds, apply, after } */
     this.pending = null;
     /** @type {Map<string, Set<Function>>} */
@@ -484,7 +498,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor', 'overdriveAttack']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor', 'overdriveAttack', 'collapseStartRound', 'collapseAnnounceRound']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -504,6 +518,11 @@ export class Game {
       throw new Error('rules.json の seatCastleBonus は、人数ぶん以上の0以上の整数の配列にしてください');
     }
     if (rules.nightRounds !== undefined && (!Number.isInteger(rules.nightRounds) || rules.nightRounds < 1)) throw new Error('rules.json の nightRounds は 1 以上の整数にしてください');
+    if (rules.collapseDamage !== undefined && (!Number.isInteger(rules.collapseDamage) || rules.collapseDamage < 1)) throw new Error('rules.json の collapseDamage は 1 以上の整数にしてください（書かなければ 1）');
+    if (rules.collapseAnnounceRound > 0 && rules.collapseStartRound > 0 && rules.collapseAnnounceRound > rules.collapseStartRound) {
+      throw new Error('rules.json の collapseAnnounceRound は collapseStartRound 以下にしてください');
+    }
+    if (rules.castleSpellHitsFront !== undefined && typeof rules.castleSpellHitsFront !== 'boolean') throw new Error('rules.json の castleSpellHitsFront は true か false にしてください');
     for (const key of ['monsterLateBias', 'monsterEvolveMultiplier']) {
       const v = rules[key];
       if (v !== undefined && (typeof v !== 'number' || !(v >= 0))) throw new Error(`rules.json の ${key} は 0 以上の数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -576,8 +595,69 @@ export class Game {
         console.error(`イベント "${type}" の処理中にエラー:`, err);
       }
     }
+    // 崩壊の刻を使うときだけ、相手の城に与えたダメージを数える
+    if (type === 'castleDamaged' && this.rules.collapseStartRound > 0) this.countCastleDamage(payload);
     // 城HPが変わったら、背水の陣になったか（終わったか）を確かめる
     if (CASTLE_HP_EVENTS.has(type)) this.updateOverdrive();
+  }
+
+  /**
+   * castleDamaged の「実際に城HPに入った量（amount − blocked）」を、与えた人に数える。
+   * 数えないもの：自分で払うコスト（sacrifice / self）・崩壊・降参・天候・城の毒（だれのものか分からない）。
+   * 兵士はその兵士の持ち主、反射は反射した人（creditTo）、ほかは手番の人。自分の陣地の城に入ったぶんは数えない
+   */
+  countCastleDamage({ playerId, amount, blocked, source }) {
+    if (!source || ['sacrifice', 'self', 'collapse', 'surrender', 'weather', 'poison'].includes(source.kind)) return;
+    let by = this.creditTo ?? this.currentPlayer;
+    if (source.kind === 'soldier') by = this.playerOrder.find((id) => this.players[id].soldiers.some((x) => x.soldierId === source.soldierId)) ?? by;
+    if (!by || this.side(by) === this.side(playerId)) return;
+    const dealt = Math.max(0, amount - (blocked ?? 0));
+    this.castleDamageDealt.set(by, (this.castleDamageDealt.get(by) ?? 0) + dealt);
+  }
+
+  /**
+   * 崩壊の刻（周回の始め、天候のあと・魔物の城への攻撃の前）。予告 → 開始 → 全員の城に同じダメージ。
+   * ダメージは collapseDamage × (始まってからの周回の数。始まった周回が1)。城壁が先に受ける（土の精霊は効かない）。
+   * 城が落ちた人がいたら決着して true（reason "collapse"）
+   */
+  collapseRound() {
+    const start = this.rules.collapseStartRound;
+    if (!(start > 0)) return false;
+    const announce = this.rules.collapseAnnounceRound;
+    if (!this.collapseAnnounced && announce > 0 && this.round >= announce && this.round < start) {
+      this.collapseAnnounced = true;
+      this.emit('collapseAnnounced', { round: this.round, startRound: start });
+    }
+    if (this.round < start) return false;
+    if (!this.collapseActive) {
+      this.collapseActive = true;
+      this.collapseAnnounced = true;
+      this.emit('collapseStarted', { round: this.round });
+    }
+    const damage = this.rules.collapseDamage * (this.round - start + 1);
+    for (const id of this.aliveSides()) {
+      const owner = this.players[id];
+      const blocked = Math.min(owner.armor, damage);
+      owner.armor -= blocked;
+      owner.castle.takeDamage(damage - blocked);
+      this.emit('castleDamaged', { playerId: id, amount: damage, blocked, hp: owner.castle.hp, source: { kind: 'collapse' } });
+    }
+    const sides = this.aliveSides();
+    const fallen = sides.filter((id) => this.players[id].castle.isDestroyed);
+    if (fallen.length === 0) return false;
+    const standing = sides.filter((id) => !fallen.includes(id));
+    // バトルロイヤルで2つ以上の城が残っていれば、落ちた人だけ抜けて続ける
+    if (this.rules.winCondition === 'lastStanding' && standing.length >= 2) {
+      for (const id of this.alivePlayerIds().filter((x) => fallen.includes(this.side(x)))) this.eliminate(this.players[id], null);
+      return false;
+    }
+    // 残った城があれば、その中から。全部落ちたら全員の中から、相手の城に与えたダメージの合計が大きい陣地（同じなら席順が後ろ）
+    const pool = standing.length > 0 ? standing : fallen;
+    const dealtBy = (side) => this.playerOrder.filter((x) => this.side(x) === side).reduce((n, x) => n + (this.castleDamageDealt.get(x) ?? 0), 0);
+    const seat = (side) => this.playerOrder.indexOf(side);
+    const winner = [...pool].sort((a, b) => dealtBy(b) - dealtBy(a) || seat(b) - seat(a))[0];
+    this.finish(winner, 'collapse');
+    return true;
   }
 
   /** 背水の陣になる城HP（上限 × overdriveHpRatio を四捨五入）。使わないなら -1 */
@@ -872,6 +952,14 @@ export class Game {
       // 天候の雷・砂嵐で城が落ちたら、そこで止める
       if (this.weatherRoundEffects() && this.checkGameOver()) return;
       this.stageEruption();
+      // 崩壊の刻：全員の城にダメージ。城が落ちたら、そこで決着
+      if (this.collapseRound()) return;
+      // （バトルロイヤルで）手番の人が崩壊で抜けたら、次の人の番にする
+      if (this.rules.collapseStartRound > 0 && player.eliminated) {
+        this.spawnMonsters();
+        this.beginTurn(this.nextPlayerAfter(playerId), { continueRound: true });
+        return;
+      }
       this.monstersAttackCastles();
       // 魔物に城を落とされたら、そこで止める（魔物の出現・ドロー・進軍はしない）
       if (this.checkGameOver()) return;
@@ -2115,8 +2203,10 @@ export class Game {
       case 'damageEnemyCastle':
         return {
           targets: [
-            // 城は陣地ごとに1つ（チーム戦ならチームの代表）
-            ...playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id)),
+            // 城は陣地ごとに1つ（チーム戦ならチームの代表）。castleSpellHitsFront のときは、レーンが2本以上なら道ごと（{ playerId, roadId }）
+            ...(this.rules.castleSpellHitsFront
+              ? this.frontSpellTargets(player, this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id))
+              : playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id))),
             // 魔物は、自分の道（自分が両はしのどちらか）にいるものだけ。広場の魔物はだれからでも狙える
             ...this.monsters.filter((m) => m.roadId === PLAZA || this.findRoad(m.roadId).has(this.side(player.id))).map((m) => ({ monsterId: m.monsterId })),
           ],
@@ -2469,6 +2559,58 @@ export class Game {
     );
   }
 
+  /** castleSpellHitsFront の対象：相手ごとに、2人の間の道が2本以上なら { playerId, roadId }、そうでなければ { playerId } */
+  frontSpellTargets(player, foes) {
+    return foes.flatMap((p) => {
+      const roads = this.roadsBetween(player.id, p.id);
+      return roads.length > 1 ? roads.map((r) => ({ playerId: p.id, roadId: r.roadId })) : [{ playerId: p.id }];
+    });
+  }
+
+  /** 城への魔法が通る道（roadId を選んでいなければ、2人の間の道が1本のときだけその道）。なければ null */
+  frontRoad(player, enemy, roadId) {
+    if (roadId !== undefined) return this.findRoad(roadId);
+    const roads = this.roadsBetween(player.id, enemy.id);
+    return roads.length === 1 ? roads[0] : null;
+  }
+
+  /**
+   * 選んだ道の、相手の陣地の見える兵士のうち、撃った人の城にいちばん近い兵士（position がいちばん大きい。同じなら先に出された方）。
+   * 忍者は見えないので数えない。いなければ null。見つかったら { owner, soldier }
+   */
+  frontSoldier(player, enemy, road) {
+    const side = this.side(enemy.id);
+    const list = this.alivePlayerIds().filter((id) => this.side(id) === side).flatMap((id) =>
+      this.players[id].visibleSoldiers.filter((x) => x.roadId === road.roadId).map((soldier) => ({ owner: this.players[id], soldier })),
+    );
+    list.sort((a, b) => b.soldier.position - a.soldier.position || soldierNumber(a.soldier) - soldierNumber(b.soldier));
+    return list[0] ?? null;
+  }
+
+  /**
+   * 城への魔法を先頭の兵士に当てる（castleSpellHitsFront）。当てる兵士がいなければ何もせず false（城に当たる）。
+   * ダメージは魔法の量そのまま（魔法の塔のボーナスは城だけ）。盾が先に受ける。防御は兵士に当たる魔法と同じ（盾だけ）
+   */
+  castFrontSpell(player, card, enemy, roadId, amount) {
+    const road = this.frontRoad(player, enemy, roadId);
+    const front = road && this.frontSoldier(player, enemy, road);
+    if (!front) return false;
+    const { owner, soldier } = front;
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player', roadId: road.roadId, soldierId: soldier.soldierId });
+    if (this.rollMiss()) {
+      this.emitMiss(player.id, 'spell', { type: card.type });
+      return true;
+    }
+    this.requestDefense(
+      { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldier.soldierId] },
+      () => {
+        if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+      },
+      () => this.checkGameOver(),
+    );
+    return true;
+  }
+
   castSpell(player, card, targetPlayer, roadId) {
     const enemy = targetPlayer;
     const { effect } = card.def;
@@ -2480,7 +2622,12 @@ export class Game {
 
     switch (effect) {
       case 'damageEnemyCastle':
-        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        // castleSpellHitsFront：選んだレーンの相手の先頭の兵士に当てる（いなければ、下の城へのダメージ）
+        if (this.rules.castleSpellHitsFront && this.castFrontSpell(player, card, enemy, roadId, amount)) break;
+        this.emit('spellCast', {
+          playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player',
+          ...(this.rules.castleSpellHitsFront && this.frontRoad(player, enemy, roadId) ? { roadId: this.frontRoad(player, enemy, roadId).roadId } : {}),
+        });
         // 魔法の塔は城への魔法が強い
         {
           const damage = amount + (player.castleDef.castleSpellBonus ?? 0);
@@ -3089,7 +3236,9 @@ export class Game {
     if (p.outcome === 'reflect') {
       // 魔法を、撃った人の城にそのまま返す（撃った人の城壁は先に受ける）
       this.emit('spellReflected', { defenderId: p.defenderId, attackerId: p.attackerId, amount: p.amount });
+      this.creditTo = p.defenderId; // 反射したダメージは、反射した人が与えたものとして数える
       this.damageCastle(this.players[p.attackerId], p.amount, { kind: 'spell', type: p.spellType });
+      this.creditTo = null;
     } else if (p.outcome === 'nullify') {
       this.emit('soldierDecoyed', { defenderId: p.defenderId, attackerId: p.attackerId, soldierId: p.soldierId });
       p.onNullify();
@@ -3341,6 +3490,10 @@ export class Game {
       firstPlayer: this.firstPlayer,
       mulligan: this.phase === 'mulligan' ? { pending: this.playerOrder.filter((id) => this.mulliganPending.has(id)) } : null,
       round: this.round,
+      // 崩壊の刻（使わないルールなら null）：予告したか・始まったか・始まった周回（まだなら null）
+      collapse: this.rules.collapseStartRound > 0
+        ? { announced: this.collapseAnnounced, active: this.collapseActive, round: this.collapseActive ? this.rules.collapseStartRound : null }
+        : null,
       weather: this.weather ? { type: this.weather.type, name: this.weatherDef().name, icon: this.weatherDef().icon ?? null, description: this.weatherDef().description ?? null, roundsLeft: this.weather.roundsLeft } : null,
       weatherEnabled: Boolean(this.weatherDefs),
       // ステージ（stages を渡さなければ null）

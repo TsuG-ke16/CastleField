@@ -18,7 +18,7 @@
   "playerCount": 2,
   "winCondition": "firstDestroy",
   "castleSpellRange": "any",
-  "maxRounds": 60,
+  "maxRounds": 0,
   "deckMode": "shared",
   "defaultCastle": "standard",
   "defaultDeck": "balanced",
@@ -56,5 +56,9 @@
   "secondPlayerArmor": 5,
   "mulligan": true,
   "overdriveHpRatio": 0.3333,
-  "overdriveAttack": 10
+  "overdriveAttack": 10,
+  "castleSpellHitsFront": true,
+  "collapseAnnounceRound": 50,
+  "collapseStartRound": 60,
+  "collapseDamage": 1
 }

@@ -20,11 +20,14 @@ test('buildData: mode を省略すると今までと同じ。classic はクラ�
   assert.ok(loadOptionalData().rarities);
 });
 
-test('クラシックのルールは、決めた5つの値だけが通常モードと違う', () => {
+test('クラシックのルールは、決めた値だけが通常モードと違う', () => {
   const normal = loadJson('rules.json');
   const { rules } = buildData({ mode: 'classic' });
   const changed = Object.keys({ ...normal, ...rules }).filter((k) => normal[k] !== rules[k]).sort();
-  assert.deepEqual(changed, ['drawPerPlayed', 'drawPerTurn', 'drawUntilHand', 'firstTurnDraw', 'maxHand']);
+  assert.deepEqual(changed, [
+    'castleSpellHitsFront', 'collapseAnnounceRound', 'collapseDamage', 'collapseStartRound',
+    'drawPerPlayed', 'drawPerTurn', 'drawUntilHand', 'firstTurnDraw', 'maxHand', 'maxRounds',
+  ]);
 });
 
 test('クラシックのカードは、レアリティなしで Game が作れて、山札は count 枚ずつ（60〜80枚）', () => {

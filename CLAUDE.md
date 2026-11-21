@@ -191,7 +191,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 - 兵士ID（soldierId）：場に出た兵士につく一意のID。例：`"s03"`
 - カードIDは山札をシャッフルしたあとの順に振る。IDから種類は分からない
 - 道ID（roadId）：道のID。2人のIDを席順で `-` でつなぐ（3人以上の広場のときは、2人ずつの組の「通り道」。STEP 5 の「真ん中の広場を通る道」）。例：`"p1-p2"`。`rules.laneCount`（レーンの数）が2以上のときは、同じ2人の間に道が `laneCount` 本でき、`"p1-p2#1"`、`"p1-p2#2"` … のように番号がつく（1本のときは番号なし）
-- 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ playerId, roadId }`（レーンが2本以上のときの、兵士を出す道と、`scope: "lane"` の魔法で狙う道）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
+- 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ playerId, roadId }`（レーンが2本以上のときの、兵士を出す道と、`scope: "lane"` の魔法で狙う道。`castleSpellHitsFront` のときの城への魔法も）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
 
 ### UIから呼ぶもの
 
@@ -239,6 +239,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   deckMode: "shared",          // "shared"（全員共通の山札）| "own"（1人1つ）
   playerOrder: ["p1", "p2"],   // 席順（手番の順）。p1〜p8
   round: 2,                    // 周回（席順の最初の人のターンが始まるたびに1増える。start() の前は 0）
+  collapse: null,              // 崩壊の刻（rules.collapseStartRound が 0 か省略なら null）。使うときは { announced, active, round }（round は始まった周回。まだなら null）
   monsters: [{ monsterId: "m01", type: "slime", roadId: "p1-p2", square: 1, hp: 4, maxHp: 4, attack: 1, element: "water", attackIn: 3, reward: 2, castleAttack: 2 }],
   roads: [{ roadId: "p1-p2#1", players: ["p1", "p2"], length: 3, lane: 0 }, /* laneCount 本ぶん */],  // 道。length はいつも laneLength。lane は同じ2人の間の何本目か（0から）
   turn: 3,                     // 通算ターン数（1から）
@@ -309,8 +310,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
 | `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
-| `spellCast` | `{ playerId, type, target, targetKind, roadId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）のときだけ入る。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
-| `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }` |
+| `spellCast` | `{ playerId, type, target, targetKind, roadId?, soldierId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）と、`castleSpellHitsFront` の城への魔法（道が決まるとき）に入る。`soldierId` は、城への魔法が先頭の兵士に当たるとき（`castleSpellHitsFront`）とチェーン・ブラストのときだけ入る（このあと `soldierDamaged`（`cause: "spell"`））。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
+| `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。崩壊の刻のダメージは `source: { kind: "collapse" }`。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }` |
 | `castleHealed` | `{ playerId, amount, hp }` … `amount` は実際に増えた量（上限で止まったぶんは含まない） |
 | `weaponEquipped` | `{ playerId, soldierId, type, attack, element }` … 武器を持たせた。`attack` は持たせたあとの攻撃力（重ねると足し算。`element` は最後の武器の属性に上書き） |
 | `shieldAdded` | `{ playerId, soldierId, amount, shield }` … `shield` は足したあとの盾 |
@@ -341,7 +342,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
 | `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
-| `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
+| `collapseAnnounced` | `{ round, startRound }` … 崩壊の刻の予告（`rules.collapseAnnounceRound` の周回の始め。`roundStarted` のあと） |
+| `collapseStarted` | `{ round }` … 崩壊の刻が始まった（`rules.collapseStartRound` の周回の始め）。このあと全員の城の `castleDamaged`（`source: { kind: "collapse" }`） |
+| `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参）/ `"collapse"`（崩壊の刻のダメージで決着） |
 
 #### イベントの順番
 
@@ -418,6 +421,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - `advanceAfterWin`：`true` なら、戦いで相手だけが消えたとき、残りの歩数で進み続ける（`false` ならそのターンはその場で止まる）。省略すると `false`
 - `soldierCastleDamageMultiplier`：城に着いた兵士が与えるダメージ ＝ 攻撃力 × この値（1以上の整数）。省略すると 1
 - `firstTurnDraw`：先攻の最初のターンに引く枚数（2ターン目以降と後攻は `drawPerTurn`）
+- `castleSpellHitsFront`：`true` なら、城への魔法（`damageEnemyCastle`）は選んだレーンの相手の先頭の兵士に当たる（下の「クラシックの戦闘ルール」）。省略すると `false`（今までどおり城に当たる）
+- `collapseStartRound` / `collapseAnnounceRound` / `collapseDamage`：崩壊の刻（下の「クラシックの戦闘ルール」）。`collapseStartRound` が 0 か省略なら使わない。`collapseAnnounceRound` は 0 なら予告しない（`collapseStartRound` 以下）。`collapseDamage` は1以上（省略すると1）
 - `exhaust`：`true` のカードは使い切り。使うと使い切り置き場へ行き、山札に戻らない。省略すると `false`。手札の上限で捨てたときは、ふつうに捨て札置き場へ行く（山札に戻る）
 - カードの説明文は UI が `kind` / `effect` と数値から組み立てる。カードに `description` を書けば、そちらを優先する（Game は `description` を使わない）
 
@@ -1363,6 +1368,27 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ### まだ作っていないもの
 - **ワールドレイド**（ボスごとに専用ステージ：ドラゴン＝溶岩・古代竜＝古代遺跡・魔王＝闇の魔城）：遊び方（だれとだれが、どこで、何人で、何を倒すか）がまだ決まっていないので、人間に確認してから作る
+
+## クラシックの戦闘ルール（PR2a。人間の指示。仮）
+
+どちらも `rules` のキーで切り替える（書かなければ今までどおり。通常モードの `data/rules.json` には書いていない）。クラシック（`data/classic/rules.json`）だけで使う。
+
+### 城への魔法が先頭の兵士に当たる（`rules.castleSpellHitsFront: true`）
+- 対象：`effect: "damageEnemyCastle"` のカード。**対象は `{ playerId, roadId }`**（相手と、レーンの道）。2人の間の道が1本なら `{ playerId }`（省略できる）。魔物を狙う `{ monsterId }` は今までどおり
+- 当たる先：選んだ道の、相手の陣地の見える兵士のうち、**撃った人の城にいちばん近い兵士**（`position` がいちばん大きい。同じなら先に出された方）。忍者は見えないので数えない。いなければ、今までどおり相手の城に当たる（城壁・防御・魔法の塔のボーナスも今までどおり）
+- 兵士に当たるとき：ダメージはカードの `amount`（ステージの魔法の増加は乗る。**魔法の塔の `castleSpellBonus` は城への分なので乗せない**）。盾が先に受け、HPが0以下なら倒れる。霧で外れることがある。防御はサンダーと同じ（`defenseRequested` の `kind: "soldiers"`。盾だけ。反射・身代わりは出せない）。`defenderId` は当たる兵士の持ち主
+- イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`）→（防御）→ `soldierDamaged`（`cause: "spell"`）→（0なら）`soldierDestroyed`（`"killed"`）。城に当たるときは `spellCast`（道が決まれば `roadId`）→ `castleDamaged`
+- CPU（`js/game/strategies.js`）：道を選ぶとき、相手の兵士がいちばん先頭まで来ている道へ（いなければ最初の道）
+- 注意：今の `data/classic/cards.json` には `damageEnemyCastle` のカードがないので、カードを足すまでクラシックの試合では起きない
+
+### 崩壊の刻（`rules.collapseStartRound` など）
+- `collapseAnnounceRound`（クラシック：50）の周回の始めに予告（`collapseAnnounced`）。`collapseStartRound`（クラシック：60）の周回から崩壊（`collapseStarted`）
+- 崩壊中は、周回の始め（天候・噴火のあと、魔物の城への攻撃の前）に、**残っている全員の城に同じダメージ**：`collapseDamage` × (始まってからの周回の数。始まった周回が1)＝ 1, 2, 3 …。城壁が先に受け、残りが城HP（土の精霊・防御カードでは防げない）。`castleDamaged`（`source: { kind: "collapse" }`）
+- 城が落ちた人は負け。**同時に2つ以上落ちたら、ここまでに相手の城に与えたダメージの合計が大きい人の勝ち**（同じなら席順が後ろ）。城が残った人がいれば、その中で同じ決め方（2人なら残った人）。`gameOver` の `reason` は `"collapse"`。バトルロイヤル（`lastStanding`）で城が2つ以上残るなら、落ちた人だけ抜けて続ける
+- 「相手の城に与えたダメージ」：`castleDamaged` で相手の陣地の城HPに実際に入った量（`amount − blocked`）。兵士はその持ち主、反射は反射した人、ほかは手番の人に数える。自分で払うコスト（`sacrifice` / `self`）・崩壊・降参・天候・城の毒・魔物の城への攻撃は数えない。崩壊の刻を使うルールのときだけ数える
+- クラシックは周回の上限なし（`maxRounds: 0`）。崩壊の刻で必ず終わる
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着、平均126手番（周回の上限60のときは115手番・上限で終わる83%）、崩壊の刻で決着した試合49%
+- 画面（UI担当にお願いしたいこと）：崩壊の予告・開始の帯、`collapse` のバッジ、`castleDamaged` の `source.kind: "collapse"` の演出、`gameOver` の `reason: "collapse"` の表示。城への魔法でレーンを選ぶ操作（`getTargets` が `{ playerId, roadId }` を返す）と、`spellCast.soldierId` があるときに兵士へ当てる演出
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
