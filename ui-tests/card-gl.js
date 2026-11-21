@@ -58,7 +58,8 @@ async function scenario(name, { query = '?fx=full', glExpected = true, rank = nu
         const loaded = await page.evaluate((file) => performance.getEntriesByType('resource').some((entry) => entry.name.endsWith(file)), model);
         assert.ok(loaded, `${model} を読んでいる`);
         // 読めずに板へ戻ったときも記録は残るので、実際に立体のモデルで描いていることも確かめる
-        assert.equal(await page.locator('canvas.zoom-gl-canvas').getAttribute('data-model'), 'uncommon', '立体のモデルで描いている');
+        const expectedModelKey = rank ? `skin-${rank}` : rarity;
+        assert.equal(await page.locator('canvas.zoom-gl-canvas').getAttribute('data-model'), expectedModelKey, '立体のモデルで描いている');
       }
       // なぞると向きが変わる（描かれる絵が変わる）
       const before = await page.locator('canvas.zoom-gl-canvas').screenshot({ timeout: 40000 });
@@ -85,10 +86,18 @@ async function scenario(name, { query = '?fx=full', glExpected = true, rank = nu
   await context.close();
 }
 
-await scenario('Blender 製の板で出る・なぞって回る', {});
+await scenario('?card3d=slab では Blender 製の板で出る・なぞって回る', { query: '?fx=full&card3d=slab' });
+await scenario('コモンは Blender 製の立体の枠（card-common.glb）で出る・なぞって回る', { rarity: 'common', model: 'card-common.glb' });
 await scenario('アンコモンは Blender 製の立体の枠（card-uncommon.glb）で出る・なぞって回る', { rarity: 'uncommon', model: 'card-uncommon.glb' });
+await scenario('レアは Blender 製の立体の枠（card-rare.glb）で出る・なぞって回る', { rarity: 'rare', model: 'card-rare.glb' });
+await scenario('エピックは Blender 製の立体の枠（card-epic.glb）で出る・なぞって回る', { rarity: 'epic', model: 'card-epic.glb' });
+await scenario('レジェンダリーは Blender 製の立体の枠（card-legendary.glb）で出る・なぞって回る', { rarity: 'legendary', model: 'card-legendary.glb' });
+await scenario('スペシャルは Blender 製の立体の枠（card-special.glb）で出る・なぞって回る', { rarity: 'special', model: 'card-special.glb' });
 await scenario('ランクの裏（金）も3D・なぞって回る', { rank: 'gold', back: true });
-await scenario('ランクの表（チャンピオン）も3D', { rank: 'champion' });
+await scenario('ランク（プラチナ）は専用3Dモデル（card-skin-platinum.glb）で出る', { rank: 'platinum', model: 'card-skin-platinum.glb' });
+await scenario('ランク（ダイヤ）は専用3Dモデル（card-skin-diamond.glb）で出る', { rank: 'diamond', model: 'card-skin-diamond.glb' });
+await scenario('ランク（マスター）は専用3Dモデル（card-skin-master.glb）で出る', { rank: 'master', model: 'card-skin-master.glb' });
+await scenario('ランク（チャンピオン）は専用3Dモデル（card-skin-champion.glb）で出る', { rank: 'champion', model: 'card-skin-champion.glb' });
 await scenario('?card3d=css では CSS の 3D', { query: '?fx=full&card3d=css', glExpected: false });
 await browser.close();
 for (const e of errors) { failed++; console.log(`ERROR ${e}`); }
