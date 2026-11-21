@@ -133,8 +133,9 @@ export class Card {
   /**
    * cards.json の中身をチェックする。書き間違いがあれば、どこが悪いかを書いた Error を投げる。
    * （不正な「操作」は例外にしない約束だが、データの書き間違いは起動時に気づけるよう例外にする）
+   * @param {string[]} [elements] 使える属性ID（new Game({ elements }) の表のキー。省略すると今までの4つ）
    */
-  static validateDefinitions(cards, rarities = null) {
+  static validateDefinitions(cards, rarities = null, elements = ELEMENTS) {
     if (!cards || typeof cards !== 'object' || Array.isArray(cards)) {
       throw new Error('cards.json はカード種類をキーにしたオブジェクトにしてください');
     }
@@ -177,11 +178,12 @@ export class Card {
       if (def.exhaust !== undefined && typeof def.exhaust !== 'boolean') {
         throw new Error(`${where}: exhaust は true か false にしてください（書かなければ false）`);
       }
-      if (def.element !== undefined && def.kind !== 'weapon') {
-        throw new Error(`${where}: element を書けるのは武器（kind: "weapon"）だけです`);
+      // 魔法の element はデータとして持つだけ（効果・ダメージは変わらない。のちの付着・反応で使う）
+      if (def.element !== undefined && def.kind !== 'weapon' && def.kind !== 'spell') {
+        throw new Error(`${where}: element を書けるのは武器（kind: "weapon"）と魔法（kind: "spell"）だけです`);
       }
-      if (def.element !== undefined && def.element !== null && !ELEMENTS.includes(def.element)) {
-        throw new Error(`${where}: element は ${ELEMENTS.join(' / ')} のどれかにしてください（書かなければ属性なし）`);
+      if (def.element !== undefined && def.element !== null && !elements.includes(def.element)) {
+        throw new Error(`${where}: element は ${elements.join(' / ')} のどれかにしてください（書かなければ属性なし）`);
       }
 
       if (def.effect === 'dice') {

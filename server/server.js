@@ -49,6 +49,8 @@ export function loadData(dir = join(ROOT, 'data'), modeId = null) {
   if (entry) {
     // レアリティを使わないモード（カードの count 枚ずつで山札を作る）。レアリティとコスト制のデッキは、このモードでは使えない
     if (entry.useRarities === false) { data.rarities = null; data.decks = null; }
+    // 属性の強弱の表（elementsSet）。書いてあるモードだけ new Game({ elements }) に渡す。通常モードには渡さない（今までの4属性の輪）
+    if (entry.elementsSet) data.elements = JSON.parse(readFileSync(inDir(entry.elementsSet), 'utf8'));
   }
   return data;
 }

@@ -427,6 +427,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - `mpPerTurn`：自分のターンの始めに増える MP（0以上の整数。省略すると0）。`secondPlayerMp`：後攻（先攻以外の人）の最初の MP に足す量（0以上の整数。省略すると0。チーム戦では使わない）
 - 魔法の `effect` に `singleDamage`（`amount`。敵兵士1体にダメージ）と `weakenAttack`（`amount`・`turns`。呪い：敵兵士1体の攻撃力を下げる）が増えた（下の「クラシックの道具」）
 - 魔法の `effect` に `reviveFallen`（`amount`：0より大きく1以下の数。蘇生）と `randomElementDamage`（`amount`。ランダムな属性で敵兵士1体にダメージ）が増えた（下の「クラシックの道具：蘇生・ランダム属性ダメージ」）
+- カードの `element` は武器と魔法に書ける（魔法はデータだけ）。使える属性は `new Game({ elements })` の表のキー（渡さなければ fire / water / wind / earth。下の「クラシックの属性」）
 - `exhaust`：`true` のカードは使い切り。使うと使い切り置き場へ行き、山札に戻らない。省略すると `false`。手札の上限で捨てたときは、ふつうに捨て札置き場へ行く（山札に戻る）
 - カードの説明文は UI が `kind` / `effect` と数値から組み立てる。カードに `description` を書けば、そちらを優先する（Game は `description` を使わない）
 
@@ -1466,6 +1467,19 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - CPU（`smart` 系）：ランダム属性ダメージは1体へのダメージと同じ選び方。蘇生は、ほかに出す兵士・魔法がないときに出す
 - 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均104手番・先攻の勝率39%±10%（PR2b は51%）・崩壊の刻で決着19%（PR2b は25%）。smart が random に勝つ割合は先攻66%・後攻83%。通常モードのシミュレーションは変わらない
 - 画面（UI担当にお願いしたいこと）：2枚の絵、`soldierDeployed.revived` の演出、`spellCast.element` の色、`js/ui/text.js` の説明文・効果アイコン、`randomElementDamage` の対象選び（相手の兵士をタップ）
+
+## クラシックの属性（PR3a。人間に確認して決めた。仮）
+
+クラシックだけ、属性を9つにした（通常モードは今までの4属性の輪のまま）。付着・混沌反応は PR3b。
+
+- **表**：`data/classic/elements.json`（`{ elements: { <id>: { name, beats: [<id>, ...] } } }`。`beats` は「その属性が強い相手」）。`data/modes.json` のモードに `elementsSet` を書くと、画面（`js/main.js`）・サーバー（`server/server.js` の `loadData`）・テスト（`tests/helpers.js` の `loadOptionalData(mode)`）が読んで `new Game({ elements })` に渡す。書いていないモード（通常モード）には渡さない
+- **`new Game({ elements })`**（省略できる。チェックは `js/game/Elements.js`）：渡すと、兵士同士・兵士と魔物の戦い・射撃・ランダム属性ダメージの「強いか」を、この表の `beats` で決める。増え方は今までどおり `rules.elementBonus`（足し算。弱い側に当たっても減らない）。渡さなければ今までの輪（水→火→風→土→水）
+- 起動時のチェック：カード（武器・魔法）・魔物・ステージ・天候の属性が、表にない（表がなければ4つにない）とエラー
+- 強弱：火→氷／水→火・土／風→火／土→雷・風／氷→水／雷→水／闇→光／光→闇／混沌→なし（混沌に強い属性もない）
+- **魔法にも `element` を書ける**（武器と魔法だけ）。今は**データだけ**で、効果・ダメージ・イベントは変わらない（PR3b の付着で使う）
+- クラシックのカード：光＝聖鉄の剣・ルミナスランス・ルミナ・ホーリーレイ・聖なる火球／闇＝シャドウサイズ・シャドウ・闇の火球／氷＝フロストブレード・氷の息／混沌＝カオスロッド。カオスパルスは書かない（ランダム属性の仮の魔法。撃つ属性は今までどおり火・水・風・土から選び、強いかは表で決める）
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均104手番・先攻の勝率38%（属性を入れる前は104手番・39%）。通常モードのシミュレーションは変わらない
+- 画面（UI担当にお願いしたいこと）：`js/ui/look.js` の `ELEMENT_LOOK` に光・闇・氷・雷・混沌がないので、名前・色・アイコンが出ない（落ちはしない）。`js/ui/text.js`・`js/ui/Animations.js` の強弱（`ELEMENT_BEATS`）と `js/ui/HelpView.js` の説明は4属性の輪のまま
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

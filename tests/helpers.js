@@ -57,6 +57,7 @@ export const PLAIN_START = { mulligan: false, secondPlayerHandBonus: 0, secondPl
 /**
  * data/ の魔物と強化（STEP 3）。ファイルがなければ null
  * mode を渡して、そのモードがレアリティを使わない（useRarities: false）なら、rarities と decks は null にする
+ * そのモードに elementsSet（属性の表）があれば、elements に入れる
  */
 export function loadOptionalData(mode = null) {
   const read = (name) => {
@@ -67,7 +68,10 @@ export function loadOptionalData(mode = null) {
     }
   };
   const data = { monsters: read('monsters.json'), upgrades: read('upgrades.json'), castles: read('castles.json'), decks: read('decks.json'), rarities: read('rarities.json'), weather: read('weather.json'), stages: read('stages.json') };
-  if (modeEntry(mode)?.useRarities === false) { data.rarities = null; data.decks = null; }
+  const entry = modeEntry(mode);
+  if (entry?.useRarities === false) { data.rarities = null; data.decks = null; }
+  // 属性の強弱の表（elementsSet があるモードだけ。通常モードには渡さない）
+  if (entry?.elementsSet) data.elements = loadModeFile(entry.elementsSet);
   return data;
 }
 

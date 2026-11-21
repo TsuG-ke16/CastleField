@@ -31,6 +31,7 @@
       "world": "kingdom",
       "cardSet": "data/classic/cards.json",
       "rulesSet": "data/classic/rules.json",
+      "elementsSet": "data/classic/elements.json",
       "useRarities": false,
       "rank": {
         "enabled": false,

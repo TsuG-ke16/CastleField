@@ -54,7 +54,7 @@
     "name": "聖鉄の剣",
     "kind": "weapon",
     "attackBonus": 2,
-    "description": "兵士に持たせると攻撃+2（光の属性は PR3 で入れる。今は属性なし）",
+    "element": "light",
     "mpCost": 2,
     "count": 2
   },
@@ -62,7 +62,7 @@
     "name": "ルミナスランス",
     "kind": "weapon",
     "attackBonus": 1,
-    "description": "兵士に持たせると攻撃+1（光の属性は PR3 で入れる。今は属性なし）",
+    "element": "light",
     "mpCost": 1,
     "count": 2
   },
@@ -70,6 +70,7 @@
     "name": "ルミナ",
     "kind": "spell",
     "effect": "damageEnemySoldiers",
+    "element": "light",
     "amount": 2,
     "scope": "lane",
     "mpCost": 3,
@@ -128,6 +129,7 @@
     "name": "ホーリーレイ",
     "kind": "spell",
     "effect": "singleDamage",
+    "element": "light",
     "amount": 5,
     "mpCost": 4,
     "count": 2
@@ -136,6 +138,7 @@
     "name": "聖なる火球",
     "kind": "spell",
     "effect": "damageEnemyCastle",
+    "element": "light",
     "amount": 6,
     "mpCost": 4,
     "count": 2
@@ -174,7 +177,7 @@
     "name": "シャドウサイズ",
     "kind": "weapon",
     "attackBonus": 2,
-    "description": "兵士に持たせると攻撃+2（闇の属性は PR3 で入れる。今は属性なし）",
+    "element": "dark",
     "mpCost": 2,
     "count": 2
   },
@@ -182,7 +185,7 @@
     "name": "フロストブレード",
     "kind": "weapon",
     "attackBonus": 1,
-    "description": "兵士に持たせると攻撃+1（氷の属性は PR3 で入れる。今は属性なし）",
+    "element": "ice",
     "mpCost": 1,
     "count": 2
   },
@@ -190,7 +193,7 @@
     "name": "カオスロッド",
     "kind": "weapon",
     "attackBonus": 1,
-    "description": "兵士に持たせると攻撃+1（混沌の属性は PR3 で入れる。今は属性なし）",
+    "element": "chaos",
     "mpCost": 1,
     "count": 2
   },
@@ -198,6 +201,7 @@
     "name": "氷の息",
     "kind": "spell",
     "effect": "freezeEnemySoldiers",
+    "element": "ice",
     "turns": 1,
     "scope": "lane",
     "mpCost": 2,
@@ -241,6 +245,7 @@
     "name": "シャドウ",
     "kind": "spell",
     "effect": "singleDamage",
+    "element": "dark",
     "amount": 4,
     "mpCost": 3,
     "count": 3
@@ -258,6 +263,7 @@
     "name": "闇の火球",
     "kind": "spell",
     "effect": "damageEnemyCastle",
+    "element": "dark",
     "amount": 6,
     "mpCost": 4,
     "count": 2

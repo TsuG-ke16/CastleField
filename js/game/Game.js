@@ -19,6 +19,7 @@
 //   城HPが0以下になった瞬間に phase "gameOver"
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
+import { validateElements, elementIds, beatsElement } from './Elements.js';
 import { Monster, validateUpgrades } from './Monster.js';
 import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
@@ -93,7 +94,10 @@ export const EVENT_TYPES = [
   'gameOver',
 ];
 
-/** 属性の強い・弱い：キーの属性は、値の属性に強い（水は火に強い、火は風に強い、風は土に強い、土は水に強い） */
+/**
+ * 属性の強い・弱い：キーの属性は、値の属性に強い（水は火に強い、火は風に強い、風は土に強い、土は水に強い）。
+ * 表（new Game({ elements })）を渡さないときの決まり。Game の中の判定は Elements.js の beatsElement を使う（画面が読むので残す）
+ */
 export const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 /** rules.json に必要な項目と、許される最小値 */
@@ -237,25 +241,31 @@ export class Game {
    * @param {object} [options.upgrades] data/upgrades.json の中身。省略すると強化は買えない
    * @param {object} [options.castles] data/castles.json の中身。省略すると城の種類なし
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
+   * @param {object} [options.elements] 属性の強弱の表（data/classic/elements.json の中身）。省略すると今までの4属性の輪
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
+    // elements（data/classic/elements.json の中身）：属性の強弱の表。省略すると今までの4属性の輪
+    if (elements !== null) validateElements(elements);
+    const allowedElements = elementIds(elements);
     if (rarities !== null) validateRarities(rarities);
-    Card.validateDefinitions(cards, rarities);
+    Card.validateDefinitions(cards, rarities, allowedElements);
     Game.validateRules(rules);
     if (typeof rng !== 'function') throw new Error('rng は 0以上1未満の数を返す関数にしてください');
     if (monsters !== null) {
-      Monster.validateDefinitions(monsters, ELEMENTS);
+      Monster.validateDefinitions(monsters, allowedElements);
       if (rules.laneLength % 2 === 0) throw new Error('魔物を使うときは、真ん中のマスがひとつに決まるよう rules.json の laneLength を奇数にしてください');
     }
-    if (weather !== null) validateWeather(weather, ELEMENTS);
-    if (stages !== null) validateStages(stages, ELEMENTS);
+    if (weather !== null) validateWeather(weather, allowedElements);
+    if (stages !== null) validateStages(stages, allowedElements);
     if (upgrades !== null) validateUpgrades(upgrades);
     if (castles !== null) validateCastles(castles);
     if (decks !== null) validateDecks(decks, cards);
 
     this.cardDefs = cards;
+    /** 属性の強弱の表（null なら今までの4属性の輪） */
+    this.elementDefs = elements;
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
     this.weatherDefs = weather;
@@ -1927,7 +1937,7 @@ export class Game {
 
   /** a が b に与えるダメージ（攻撃力 ＋ 属性が強ければ elementBonus） */
   fightDamage(a, b) {
-    const strong = a.element && b.element && ELEMENT_BEATS[a.element] === b.element;
+    const strong = beatsElement(this.elementDefs, a.element, b.element);
     const attack = a instanceof Soldier ? this.attackOf(a) : a.attack;
     return this.stageBoost(a, attack + (strong ? this.rules.elementBonus : 0) + this.weatherElementBonus(a.element));
   }
@@ -2625,7 +2635,7 @@ export class Game {
     const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
     const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
     const element = ELEMENTS[Math.floor(this.rng() * ELEMENTS.length)];
-    const strong = soldier.element && ELEMENT_BEATS[element] === soldier.element;
+    const strong = beatsElement(this.elementDefs, element, soldier.element);
     const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + (strong ? this.rules.elementBonus : 0);
     this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId, element });
     if (this.rollMiss()) {
