@@ -20,6 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
+import { validateFactions, factionPool } from './Factions.js';
 import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
@@ -234,6 +235,7 @@ export class Game {
     if (rarities !== null) validateRarities(rarities);
     if (elements !== null) validateElements(elements);
     if (reactions !== null) validateReactions(reactions, elements ?? DEFAULT_ELEMENTS);
+    if (factions !== null) validateFactions(factions);
     Card.validateDefinitions(cards, rarities, { factions, races });
     Game.validateRules(rules);
     if (typeof rng !== 'function') throw new Error('rng は 0以上1未満の数を返す関数にしてください');
@@ -273,6 +275,24 @@ export class Game {
     this.castleDefs = castles;
     this.deckDefs = decks;
     this.rng = rng;
+    // 四大陣営（PR-A）：setup.faction で陣営を選ぶと、山札・ドローの引き当て・入手券・排出率の表示が
+    // 「その陣営のカード＋全陣営共通」の候補だけになる（Factions.js の isLegalForFaction）。省略すると今までどおり全カード
+    this.factionDefs = factions;
+    /** 選んだ陣営のID（陣営モードでなければ null） */
+    this.faction = null;
+    /** @type {Set<string>|null} 陣営モードの候補（カード種類）。陣営モードでなければ null */
+    this.factionPoolTypes = null;
+    if (setup.faction !== undefined && setup.faction !== null) {
+      if (!factions) throw new Error('setup.faction を使うときは factions（data/factions.json）を渡してください');
+      if (typeof setup.faction !== 'string' || !Object.hasOwn(factions, setup.faction)) {
+        throw new Error(`setup.faction は ${Object.keys(factions).join(' / ')} のどれかにしてください`);
+      }
+      // 今は全員が同じ陣営の共有山札だけ（異陣営戦は別のモードで作る予定）
+      if (this.rules.deckMode !== 'shared') throw new Error('陣営モードは共有山札（deckMode "shared"）だけです');
+      this.faction = setup.faction;
+      this.factionPoolTypes = factionPool(cards, setup.faction);
+      if (this.factionPoolTypes.size === 0) throw new Error(`陣営「${factions[setup.faction].name}」のカードがありません`);
+    }
     /** 反応を使うか（reactions を渡し、reactionsPerTurn が1以上） */
     this.reactionsOn = Boolean(reactions) && this.rules.reactionsPerTurn > 0;
 
@@ -626,12 +646,24 @@ export class Game {
    * 渡さないときは、count 枚ずつ。
    */
   buildDeckTypes() {
-    if (this.rarityDefs) return sampleDeckTypes(this.cardDefs, this.rarityDefs, this.rules.deckSize, this.rng);
+    // 共有山札は全員で1組なので、陣営モードでも全員が同じ候補（いちばん前の席の人の候補を使う）
+    const pool = this.poolOf(this.playerOrder[0]);
+    if (this.rarityDefs) return sampleDeckTypes(this.cardDefs, this.rarityDefs, this.rules.deckSize, this.rng, pool);
     const types = [];
     for (const [type, def] of Object.entries(this.cardDefs)) {
+      if (pool && !pool.has(type)) continue;
       for (let i = 0; i < def.count; i++) types.push(type);
     }
     return types;
+  }
+
+  /**
+   * その人がカードを引き当てるときの候補（カード種類の Set）。陣営モードでなければ null（＝全カード）。
+   * 今は全員が同じ陣営なので playerId は使わないが、異陣営戦（1人1つの陣営。PR-E）に広げられるよう、プレイヤーごとに聞く形にしてある
+   */
+  // eslint-disable-next-line no-unused-vars
+  poolOf(playerId) {
+    return this.factionPoolTypes;
   }
 
   /** Fisher-Yates シャッフル（rng を使うので、rng を固定すれば順番も固定できる） */
@@ -650,7 +682,7 @@ export class Game {
     for (let i = 0; i < count; i++) {
       // 運命の祈り：山札からではなく、排出率を上げて引き当てる
       if (player.luck && this.rarityDefs) {
-        const type = sampleType(this.cardDefs, this.rarityDefs, this.rng, { from: player.luck.from, multiplier: player.luck.boost });
+        const type = sampleType(this.cardDefs, this.rarityDefs, this.rng, { from: player.luck.from, multiplier: player.luck.boost }, this.poolOf(player.id));
         const lucky = this.createCard(type);
         player.hand.push(lucky);
         cardIds.push(lucky.cardId);
@@ -659,7 +691,7 @@ export class Game {
       }
       // 排出率の恒久強化：chance の確率で、山札からではなく、排出率を上げて引き当てる（山札は減らない）
       if (player.permLuck && this.rarityDefs && this.rng() < player.permLuck.chance) {
-        const type = sampleType(this.cardDefs, this.rarityDefs, this.rng, { from: player.permLuck.from, multiplier: player.permLuck.boost });
+        const type = sampleType(this.cardDefs, this.rarityDefs, this.rng, { from: player.permLuck.from, multiplier: player.permLuck.boost }, this.poolOf(player.id));
         const lucky = this.createCard(type);
         player.hand.push(lucky);
         cardIds.push(lucky.cardId);
@@ -1765,6 +1797,7 @@ export class Game {
     let rewardRarity = baseRarity;
     let lucky = false;
     if (baseRarity && this.rarityDefs && this.rules.rewardLuckyChance > 0) {
+      // 魔物のごほうびは、陣営モードでも候補で絞らない（仕様 5.1-4 の「魔物報酬は例外」。旧カード・ほかの陣営のカードも出うる）
       const next = nextRarityWithCards(this.cardDefs, this.rarityDefs, baseRarity);
       if (next && this.rng() < this.rules.rewardLuckyChance) {
         rewardRarity = next;
@@ -1782,7 +1815,7 @@ export class Game {
     if (reward) this.changeCoins(this.players[playerId], reward, 'reward');
     // ごほうびのカード：そのレアリティのカードが1枚、手札に入る（カードがなければ何も起きない）
     if (rewardRarity) {
-      const type = sampleTypeOfRarity(this.cardDefs, rewardRarity, this.rng);
+      const type = sampleTypeOfRarity(this.cardDefs, rewardRarity, this.rng); // 陣営モードでも絞らない（上の「例外」）
       if (type) {
         const card = this.createCard(type);
         this.players[playerId].hand.push(card);
@@ -1878,7 +1911,8 @@ export class Game {
     if (def.effect === 'drawCards' && pile.deck.length + pile.discard.length === 0) return fail('山札も捨て札もありません');
     if (def.effect === 'gainCard') {
       if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
-      if (!Object.values(this.cardDefs).some((d) => d.rarity === def.rarity && (d.weight ?? 1) > 0)) return fail('その強化はありません');
+      const pool = this.poolOf(player.id); // 陣営モードなら、その陣営の候補の中にそのレアリティがあるか
+      if (!Object.entries(this.cardDefs).some(([t, d]) => (!pool || pool.has(t)) && d.rarity === def.rarity && (d.weight ?? 1) > 0)) return fail('その強化はありません');
     }
     if (def.effect === 'permanentLuck') {
       if (!this.rarityDefs) return fail('レアリティを使っていないので買えません');
@@ -1924,7 +1958,7 @@ export class Game {
     } else if (def.effect === 'gainCard') {
       const cardIds = [];
       for (let i = 0; i < def.amount; i++) {
-        const card = this.createCard(sampleTypeOfRarity(this.cardDefs, def.rarity, this.rng));
+        const card = this.createCard(sampleTypeOfRarity(this.cardDefs, def.rarity, this.rng, this.poolOf(player.id)));
         player.hand.push(card);
         cardIds.push(card.cardId);
       }
@@ -1950,13 +1984,19 @@ export class Game {
    * 排出率の一覧（読むだけ。UI が「排出率を見る」画面に使う）
    * @returns {{rarities: object[], cards: object, monsters: object}|null} rarities を渡していなければ null
    */
-  getDropRates() {
+  getDropRates(viewerId = null) {
     if (!this.rarityDefs) return null;
-    const rates = dropRates(this.cardDefs, this.rarityDefs);
+    // 陣営モードなら、その陣営の候補の中での排出率（候補の外のカードは cards に入らない）
+    const pool = this.poolOf(viewerId);
+    const rates = dropRates(this.cardDefs, this.rarityDefs, null, pool);
     const rarities = Object.entries(this.rarityDefs).map(([id, r]) => ({ id, name: r.name, dropRate: r.dropRate }));
     const cards = {};
-    for (const [type, def] of Object.entries(this.cardDefs)) cards[type] = { name: def.name, rarity: def.rarity, rate: rates[type] };
+    for (const [type, def] of Object.entries(this.cardDefs)) {
+      if (pool && !pool.has(type)) continue;
+      cards[type] = { name: def.name, rarity: def.rarity, rate: rates[type] };
+    }
     const monsters = {};
+    // 魔物のごほうびは陣営で絞らない（defeatMonsterIfDead と同じ）
     for (const [type, def] of Object.entries(this.monsterDefs || {})) {
       if (def.rewardRarity) monsters[type] = { name: def.name, odds: rewardOdds(this.cardDefs, this.rarityDefs, def.rewardRarity, this.rules.rewardLuckyChance) };
     }
@@ -3537,6 +3577,8 @@ export class Game {
     const topPile = own ? (this.piles.has(viewerId) ? this.pileOf(viewerId) : null) : this.pileOf(this.playerOrder[0]);
     return {
       deckMode: this.rules.deckMode,
+      // 四大陣営：選んだ陣営のID（陣営モードでなければ null）
+      faction: this.faction,
       maxMp: this.rules.maxMp,
       // MP を使うカードの種類 → 必要な MP（UI が手札に表示する）
       mpCosts: Object.fromEntries(Object.entries(this.cardDefs).map(([t, d]) => [t, this.mpCostOf({ def: d })]).filter(([, c]) => c > 0)),

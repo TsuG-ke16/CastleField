@@ -29,7 +29,8 @@ test('faction / race / evolutionLine: 不正な値は例外', () => {
 });
 
 test('factions / races を渡さなければ、値の中身は確かめない（後方互換）', () => {
-  Card.validateDefinitions(cardsWith({ faction: 'whatever', race: 'whatever' }), rarities);
+  // 合成先も合成元も陣営なしのカード（賢者）で確かめる（合成先が別の陣営になる組み合わせは、四大陣営の検査で一覧なしでも弾くため）
+  Card.validateDefinitions(buildData({ cards: { sage: { faction: 'whatever', race: 'whatever' } } }).cards, rarities);
   const { rules, cards } = buildData();
   new Game({ cards, rules, rng: seededRng(1) });
   new Game({ cards: cardsWith({ faction: 'kingdom', race: 'human' }), rules, rarities, factions, races, rng: seededRng(1) });

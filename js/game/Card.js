@@ -8,6 +8,7 @@ export const SOLDIER_ROLES = ['melee', 'archer', 'mage', 'ninja', 'guard'];
 /** 進んで城を攻める役割（speed を書く）。ninja（忍者）は進むが、相手から見えず、相手の兵士とは戦わずにすり抜ける */
 export const MOVING_ROLES = ['melee', 'ninja'];
 import { ELEMENT_IDS } from './Elements.js';
+import { COMMON_FACTION, isValidFactionId } from './Factions.js';
 /** 属性は10種のうち「無」を除く9つ（無は element を書かないこと）。火水風土氷雷闇光混沌 */
 export const ELEMENTS = ELEMENT_IDS;
 /** 精霊の種類：fire=毎ターン敵の城を攻める／water=毎ターン城を回復／wind=兵士の速さの最低値／earth=受けるダメージを軽くする */
@@ -172,8 +173,20 @@ export class Card {
         throw new Error(`${where}: deckAs（デッキ編成で数えるレアリティ）は、スペシャル以外のレアリティにしてください`);
       }
       // 陣営・種族・進化の系統（どれも任意。一覧を渡されたときだけ、キーが合っているか確かめる）
-      if (def.faction !== undefined && (typeof def.faction !== 'string' || (factions && !Object.hasOwn(factions, def.faction)))) {
-        throw new Error(`${where}: faction は ${factions ? Object.keys(factions).join(' / ') : '陣営のID（文字列）'} のどれかにしてください`);
+      // faction：陣営のID（factions.json のキー）か、全陣営共通の "common"。書かなければ旧カード（陣営なし）
+      if (def.faction !== undefined && !isValidFactionId(def.faction, factions)) {
+        throw new Error(`${where}: faction は ${factions ? [...Object.keys(factions), COMMON_FACTION].join(' / ') : '陣営のID（文字列）'} のどれかにしてください`);
+      }
+      // 合成先が別の陣営のカードにならないように（両方に faction があるときだけ。旧カードは互換のため確かめない）
+      if (def.faction !== undefined && typeof def.fuseTo === 'string' && Object.hasOwn(cards, def.fuseTo)) {
+        const to = cards[def.fuseTo];
+        if (to && to.faction !== undefined && to.faction !== def.faction) {
+          throw new Error(`${where}: 合成先「${to.name}」（${def.fuseTo}）は別の陣営です（${def.faction} → ${to.faction}）`);
+        }
+      }
+      // implemented：false なら陣営モードの候補から外す（台帳だけあって効果がまだないカード）。書かなければ true
+      if (def.implemented !== undefined && typeof def.implemented !== 'boolean') {
+        throw new Error(`${where}: implemented は true か false にしてください（書かなければ true）`);
       }
       if (def.race !== undefined && (typeof def.race !== 'string' || (races && !Object.hasOwn(races, def.race)))) {
         throw new Error(`${where}: race は ${races ? Object.keys(races).join(' / ') : '種族のID（文字列）'} のどれかにしてください`);

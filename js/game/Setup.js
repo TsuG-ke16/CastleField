@@ -85,10 +85,22 @@ export function validateRarities(rarities) {
 }
 
 /**
+ * 候補（allowed）に入るカードだけにする。allowed は種類の Set か、(type, def) => boolean。省略（null）ならそのまま
+ * （陣営モードの候補。四大陣営 PR-A。cards.json 全体は絞らず、種類を選ぶところだけで使う）
+ */
+export function pickCards(cards, allowed = null) {
+  if (!allowed) return cards;
+  const has = typeof allowed === 'function' ? allowed : (type) => allowed.has(type);
+  return Object.fromEntries(Object.entries(cards).filter(([type, def]) => has(type, def)));
+}
+
+/**
  * カードごとの排出率（%）。レアリティの dropRate を、同じレアリティのカードの weight（省略すると1）で分ける。
  * そのレアリティのカードが1枚もなければ、その分は残りのレアリティに按分する。
+ * allowed（候補）を渡すと、候補の中だけで計算する（候補の外のカードは結果に入らない）。
  */
-export function dropRates(cards, rarities, boost = null) {
+export function dropRates(cards, rarities, boost = null, allowed = null) {
+  cards = pickCards(cards, allowed);
   const sums = {};
   for (const def of Object.values(cards)) sums[def.rarity] = (sums[def.rarity] ?? 0) + (def.weight ?? 1);
   // boost: { from: レアリティ, multiplier } … from 以上のレアリティの割合を multiplier 倍にして、全体を100%に直す
@@ -105,13 +117,17 @@ export function dropRates(cards, rarities, boost = null) {
 }
 
 /** 排出率どおりに size 枚を引き当てる（rng を使うので、シードで固定できる） */
-export function sampleDeckTypes(cards, rarities, size, rng) {
-  return Array.from({ length: size }, () => sampleType(cards, rarities, rng));
+export function sampleDeckTypes(cards, rarities, size, rng, allowed = null) {
+  const pool = pickCards(cards, allowed);
+  const types = Array.from({ length: size }, () => sampleType(pool, rarities, rng));
+  if (types.includes(null)) throw new Error('山札に入れられるカードがありません');
+  return types;
 }
 
 /** 排出率どおりに1種類を引き当てる（boost を渡すと、その分だけ高いレアリティが出やすい） */
-export function sampleType(cards, rarities, rng, boost = null) {
-  const entries = Object.entries(dropRates(cards, rarities, boost)).filter(([, v]) => v > 0);
+export function sampleType(cards, rarities, rng, boost = null, allowed = null) {
+  const entries = Object.entries(dropRates(cards, rarities, boost, allowed)).filter(([, v]) => v > 0);
+  if (entries.length === 0) return null; // 候補が空（引けるカードがない）
   const total = entries.reduce((n, [, v]) => n + v, 0);
   let x = rng() * total;
   for (const [type, v] of entries) {
@@ -120,9 +136,9 @@ export function sampleType(cards, rarities, rng, boost = null) {
   return entries[entries.length - 1][0];
 }
 
-/** 指定したレアリティのカードを、weight の重みで1種類引き当てる（そのレアリティのカードがなければ null） */
-export function sampleTypeOfRarity(cards, rarity, rng) {
-  const entries = Object.entries(cards).filter(([, d]) => d.rarity === rarity && (d.weight ?? 1) > 0);
+/** 指定したレアリティのカードを、weight の重みで1種類引き当てる（そのレアリティのカードがなければ null。allowed は候補） */
+export function sampleTypeOfRarity(cards, rarity, rng, allowed = null) {
+  const entries = Object.entries(pickCards(cards, allowed)).filter(([, d]) => d.rarity === rarity && (d.weight ?? 1) > 0);
   const total = entries.reduce((n, [, d]) => n + (d.weight ?? 1), 0);
   if (total <= 0) return null;
   let x = rng() * total;
@@ -133,7 +149,8 @@ export function sampleTypeOfRarity(cards, rarity, rng) {
 }
 
 /** base の1つ上のレアリティ（そのレアリティのカードがあるものだけ）。なければ null */
-export function nextRarityWithCards(cards, rarities, base) {
+export function nextRarityWithCards(cards, rarities, base, allowed = null) {
+  cards = pickCards(cards, allowed);
   const order = chainOrder(rarities);
   if (!order.includes(base)) return null;
   const next = order[order.indexOf(base) + 1];
@@ -145,8 +162,8 @@ export function nextRarityWithCards(cards, rarities, base) {
  * 魔物のごほうびの内訳（%）。ラッキー（chance の確率）で1つ上のレアリティになる。
  * @returns {{rarity: string, rate: number, lucky: boolean}[]}
  */
-export function rewardOdds(cards, rarities, base, chance = 0) {
-  const next = chance > 0 ? nextRarityWithCards(cards, rarities, base) : null;
+export function rewardOdds(cards, rarities, base, chance = 0, allowed = null) {
+  const next = chance > 0 ? nextRarityWithCards(cards, rarities, base, allowed) : null;
   if (!next) return [{ rarity: base, rate: 100, lucky: false }];
   return [
     { rarity: base, rate: (1 - chance) * 100, lucky: false },

@@ -106,7 +106,8 @@ js/
     Elements.js    … 属性の相性表のチェックと倍率
     Reactions.js   … 属性の反応のデータのチェックと、組から反応を探す
     Stage.js       … ステージ（マップ）のデータのチェックと選び方
-    Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
+    Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）。カードの引き当て（候補 allowed で絞れる）
+    Factions.js    … 四大陣営：factions.json のチェックと、陣営モードの候補（「四大陣営（PR-A）」の節）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
     strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
   ui/              … 画面表示と入力
@@ -194,13 +195,14 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 - 付着（attachment）：兵士に残っている属性（`"fire"` などの属性ID か、水霧 `"mist"`）。属性つきの攻撃が当たると付き、別の属性で攻撃されると「反応」が起きる（「属性の反応」の節）
 - 反応ID（reaction）：`data/reactions.json` の `reactions` のキー。例：`"evaporate"`（蒸発）
 - 道ID（roadId）：道のID。2人のIDを席順で `-` でつなぐ（3人以上の広場のときは、2人ずつの組の「通り道」。STEP 5 の「真ん中の広場を通る道」）。例：`"p1-p2"`。`rules.laneCount`（レーンの数）が2以上のときは、同じ2人の間に道が `laneCount` 本でき、`"p1-p2#1"`、`"p1-p2#2"` … のように番号がつく（1本のときは番号なし）
+- 陣営（faction）：カードの所属。`"kingdom"` / `"forest"` / `"demon"` / `"dragon"`（`data/factions.json` のキー）か、全陣営共通の `"common"`。書いていないカードは旧カード（陣営なし）。陣営モード（`setup.faction`）の山札は「選んだ陣営＋共通」だけ（「四大陣営（PR-A）」の節）
 - 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ playerId, roadId }`（レーンが2本以上のときの、兵士を出す道と、`scope: "lane"` の魔法で狙う道）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
 
 ### UIから呼ぶもの
 
 | メソッド | 説明 |
 |---|---|
-| `new Game({ cards, rules, rng, monsters, upgrades, castles, decks, stages, elements, reactions, setup })` | ゲームを作る。`reactions`（`data/reactions.json`）を渡すと属性の反応が起きる（省略すると反応も付着もない）。`stages`（`data/stages.json`）を渡すと、`setup.stage`（ステージのIDか `"random"`。省略すると `"random"`）のステージで遊ぶ。`cards` / `rules` / `monsters` / `upgrades` / `castles` / `decks` は `data/` の JSON の中身（Game はファイルを読まない）。`cards` / `rules` 以外は省略でき、省略すると魔物は出ず・強化は買えず・城の種類はなし。`setup` は席ごとの選択 `{ castles: [...], decks: [...] }`（省略すると `rules.defaultCastle` / `rules.defaultDeck`）。`rng` は 0以上1未満を返す乱数で、省略すると `Math.random`。作った時点で初期手札は配られていて、`phase` は `"ready"`。イベントは出さない |
+| `new Game({ cards, rules, rng, monsters, upgrades, castles, decks, stages, elements, reactions, factions, setup })` | ゲームを作る。`factions`（`data/factions.json`）を渡すと、カードの `faction` が陣営のIDか `"common"` かを確かめ、`setup.faction`（陣営のID。省略・`null` なら陣営なし＝今までどおり全カード）で陣営モード（共有山札だけ。「四大陣営（PR-A）」の節）になる。`reactions`（`data/reactions.json`）を渡すと属性の反応が起きる（省略すると反応も付着もない）。`stages`（`data/stages.json`）を渡すと、`setup.stage`（ステージのIDか `"random"`。省略すると `"random"`）のステージで遊ぶ。`cards` / `rules` / `monsters` / `upgrades` / `castles` / `decks` は `data/` の JSON の中身（Game はファイルを読まない）。`cards` / `rules` 以外は省略でき、省略すると魔物は出ず・強化は買えず・城の種類はなし。`setup` は席ごとの選択 `{ castles: [...], decks: [...] }`（省略すると `rules.defaultCastle` / `rules.defaultDeck`）。`rng` は 0以上1未満を返す乱数で、省略すると `Math.random`。作った時点で初期手札は配られていて、`phase` は `"ready"`。イベントは出さない |
 | `game.start()` | ゲームを始める。全イベントを `on()` で購読してから呼ぶと、先攻（`setup.firstPlayer`。省略すると p1）のターン1が始まる（`turnStarted` → ドロー → 進軍）。`rules.mulligan` が `true` なら、先に `phase` が `"mulligan"` になり、全員が `mulligan()` を選んでからターン1 |
 | `game.mulligan(playerId, cardIds)` | マリガン（`phase` が `"mulligan"` のときだけ。1人1回。自分の番でなくてよい）。`cardIds`（0枚でもよい）を山札に戻してシャッフルし、同じ枚数を引き直す。全員が選んだら先攻のターン1が始まる |
 | `game.getState(viewerId)` | 今の状態をただのオブジェクトで返す。`viewerId` の手札は中身まで、相手の手札は枚数だけ入る |
@@ -240,6 +242,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 ```js
 {
   deckMode: "shared",          // "shared"（全員共通の山札）| "own"（1人1つ）
+  faction: null,               // 陣営モードの陣営ID（"kingdom" など）か null（「四大陣営（PR-A）」）
   playerOrder: ["p1", "p2"],   // 席順（手番の順）。p1〜p8
   round: 2,                    // 周回（席順の最初の人のターンが始まるたびに1増える。start() の前は 0）
   monsters: [{ monsterId: "m01", type: "slime", roadId: "p1-p2", square: 1, hp: 4, maxHp: 4, attack: 1, element: "water", attackIn: 3, reward: 2, castleAttack: 2 }],
@@ -1464,6 +1467,31 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - テスト：`tests/attribute-cards2.test.js`（データ検証・闇↔光の相性1.5倍と混沌の等倍・付着・闇光は反応なし・混沌の反応の再現性とばらつき・混沌どうし／無属性は反応なし）
 - 確かめたこと（`node tests/sim/run.js --games 200`）：全組み合わせが決着。smart 同士は平均49.3手番・p1 勝率37%±7%・**反応 0.28回/試合（起きた試合25%）**（反応なし：48.8手番・39%）。smart vs random は45.0手番・63%（反応なし 45.3・62%）。CPU の弱い順は変わらない（random に勝つ割合：defensive 10%・rush 17%・smart 63%）。前回（氷・雷まで）は smart 同士 49.8手番・0.29回/試合で、ほぼ同じ。コモンが6枚増えたぶん、コモンの中の出る割合は薄まるだけ。**反応が多すぎ・少なすぎないかは遊んで確かめる**
 - まだ作っていない：闇・光・混沌の魔物・ステージ
+
+## 四大陣営（PR-A：基礎スキーマと陣営制限。人間に確認して決めた）
+
+人間が添付した「CASTLE FIELD 四大陣営統合仕様書 v1.0」と全295カードの台帳を `docs/four-factions/` に入れた（受け取ったまま。PR-B 以降とテストの基準）。**実装の判断はこの節を正とする**。仕様書と食い違ったら、実装を止めて人間に確認する。PR-A では、新カード（台帳の「新規案」213枚）・改名・戦闘効果・奥義は作っていない。
+
+- **陣営の印**：`data/cards.json` のカードに任意の `faction`。`kingdom`（王国軍）・`forest`（森の同盟）・`demon`（魔族軍）・`dragon`（竜族帝国）は `data/factions.json` のキー、`common`（全陣営共通）は `js/game/Factions.js` の `COMMON_FACTION`（factions.json には入れない）
+  - 台帳の「既存」78枚と「改名」4枚（炎の剣 `flameSword`・水の槍 `waterSpear`・風の弓 `windBow`・土の槌 `earthHammer`。森。**名前・IDは今のまま**。台帳の新しい名前に変えるのは PR-B）の計82枚に付けた。共通は7種（魔力のかけら〜世界樹のしずく・適応・天の恵み）
+  - **faction のないカード＝旧カード**（見習い魔法使い〜賢者・鉄の剣・魔剣・盗賊・財宝系・属性の魔法と武器・チェーン・ブラスト・サイコロ・解毒薬・天候の呪文・ムーンライズ・ドーンブレイク・暗殺者・魔物のカードなど）。陣営モードの候補にはならないが、今までのモード・デッキ編成・魔物のごほうびでは今までどおり使える
+- **`implemented`**（任意の true / false。省略は true）：`false` のカードは陣営モードの候補から外す（台帳を全部入れる PR-B で、効果がまだないカードに付ける。今の136枚には付けていない）
+- **チェック**（`Card.validateDefinitions`）：`factions` を渡すと `faction` は陣営のIDか `common` だけ（渡さなければ文字列かどうかだけ）。**合成先が別の陣営なら例外**（「○○の合成先は別の陣営です」。カードと `fuseTo` 先の両方に `faction` があって違うとき。`common` → 陣営のカードも不可。片方が旧カードなら確かめない）
+- **陣営をまたいでいた合成先は `fuseTo: null`（合成しない）にした**（人間の指示。新しいカードを作って付けかえない）：シールド・ブラスト（王国）→終末の炎（竜族）、ゲイルフォース（森）→氷河（魔族）、天の恵み（共通）→盗賊（旧カード）。**聖騎士（王国）→竜騎士（竜族）も陣営またぎ**なので `null` にした（仕様 5.3 が「撤去／再設計」としている。台帳では聖騎士→グランドパラディン。**PR-B でグランドパラディンへつなぐまで、聖騎士は合成しない**）。この4つは陣営なしの今までのモードでも合成できなくなった（smart 同士600試合：平均48.2→46.6手番・先攻46→47%）
+  - まだ残っている：森の4つの武器（炎の剣など）→鉄の剣（旧カード）。検査は「片方が旧カードなら確かめない」なので通るが、陣営モードでは合成すると候補の外（鉄の剣）が手に入る。直し方は人間に確認してから（PR-B で台帳の系統につなぐ予定）
+- **陣営モードの入り口**：`new Game({ ..., factions, setup: { faction: "kingdom" } })`。`deckMode` が `"shared"` のときだけ（`own` / `cost` で指定すると例外「陣営モードは共有山札（deckMode "shared"）だけです」）。全員が同じ陣営の共有山札。`factions` を渡していない・知らない陣営も例外。**省略・`null` なら今までと完全に同じ**（同じシードで山札の並びも同じ）。`getState().faction`
+  - デッキ編成（`cost`）・`own`・マイデッキは**陣営の制限なし**（今のまま）。異陣営戦（1人1つの陣営で、個別のランダム山札）は PR-E で別のモードとして作る
+- **候補（pool）**：`Factions.js` の `isLegalForFaction(def, factionId)`＝その陣営のカード＋`common`。ただし `weight` が0・`monster` のあるカード・`implemented: false` は入れない。faction のないスペシャル（サイコロ・解毒薬・天候の呪文・刻の魔法・暗殺者）は入らない（仕様の「特殊サイコロは別枠」）。共通の適応は入る
+  - Game は `poolOf(playerId)`（今は全員同じ候補。PR-E で席ごとにする）を、カードの種類を選ぶ経路に渡す：**共有山札を作る**（排出率で `deckSize` 枚。`rarities` なしの `count` 枚ずつでも候補の外は入れない）・**運命の祈り**・**幸運の加護**（ドローの引き当て）・**入手券**（`gainCard`。`canBuyUpgrade` も候補の中にそのレアリティがなければ「その強化はありません」）・**排出率の表示**（`getDropRates(viewerId)`。候補の中だけで100%）
+  - `js/game/Setup.js` の `dropRates` / `sampleType` / `sampleTypeOfRarity` / `nextRarityWithCards` / `rewardOdds` / `sampleDeckTypes` に任意の `allowed`（種類の Set か `(type, def) => boolean`。省略で今までと同じ）。`cards.json` 全体は絞らない（カードを作る・デッキ編成は全種類が前提）。候補が空なら `sampleType` などは `null`（山札を作るときは例外）
+  - **排出率は候補の中で按分される**：候補にないレアリティの割合は、ほかのレアリティに配られる。たとえばスペシャルは候補が適応だけなので、適応の排出率は約2.5% → 約5.9%になる（調整は PR-E）
+  - **魔物のごほうびは例外**（仕様 5.1-4）：陣営モードでも候補で絞らない（旧カード・ほかの陣営のカードも出うる。ラッキーで1つ上がるレアリティも全カードで決める）。魔物が育つときのレアリティの繰り上げも、魔物のレアリティの話なので絞らない。`getDropRates` の `monsters` も同じ
+  - 合成（`canFuse` / `fuse`）は `fuseTo` をたどるだけなので、上の合成先の検査で同じ陣営になる（適応＋カードX も、X の合成先）。ただし森の4つの武器は上のとおり
+- **部屋**（`server/rooms.js`）：`settings.faction`（`null`＝陣営なし／陣営ID）。部屋主が `setRules` の `faction` で選ぶ（始まる前だけ・ランク戦は不可）。山札が `shared` でないのに選ぶと「陣営モードは共有山札（みんな共通）だけです」、山札を `shared` 以外に変えると陣営は `null` に戻る。`choices.factions`（`[{ id, name }]`。「なし」は画面が先頭に足す）。試合を始めるときに `setup.faction` を Game に渡す（試合中は変わらない）。**画面の陣営の選び方は PR-E で作る**（今は部屋の画面に出ない）
+- データの読み込み：`server/server.js` の `loadData`・`js/main.js`・`tests/helpers.js` の `loadOptionalData` が `data/factions.json` を読んで Game に渡す
+- シミュレーション：`node tests/sim/run.js --faction kingdom`。PR-A の時点（今の82枚だけ）の smart 同士200試合：王国（候補42種類）平均94.8手番・決着200/200（40%が周回の上限。城への攻撃魔法がないため）／森（24種類）51.8手番・200/200（兵士がいないので72%が魔物で決着）／魔族（19種類）16.6手番・200/200（兵士なし・毒で速い）／竜族（18種類）14.4手番・200/200（兵士は竜騎士だけ）。**どの陣営もカードが足りないので、遊べる形になるのは PR-B 以降**
+- テスト：`tests/four-factions-a.test.js`（台帳の数・faction の対応・検査・候補・全経路・合成・部屋）
+- これからの PR（仕様書7章）：**B** 台帳の295種類をデータに入れる（改名・合成先の付けかえ・`implemented: false`）→ **C** 戦闘のしくみ（森の精霊反応・魔族の呪い／蘇生・竜族の飛行／轟雷爆炎・王国の浄化／カウンター）→ **D** 陣営奥義のゲージ・画面・演出 → **E** 対戦モード（異陣営戦の個別山札）・排出率の調整・バランス
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

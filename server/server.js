@@ -29,6 +29,7 @@ export function loadData(dir = join(ROOT, 'data')) {
     stages: optional('stages.json'),
     elements: optional('elements.json'),
     reactions: optional('reactions.json'),
+    factions: optional('factions.json'),
     stamps: optional('stamps.json'),
     progression: optional('progression.json'),
     profile: optional('profile.json'),
