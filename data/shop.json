@@ -1961,6 +1961,42 @@
       "world": "kingdom",
       "desc": "雷撃を使うときの光が「稲妻」の色に。この魔法だけに効く。",
       "filter": "hue-rotate(50deg) saturate(2)"
+    },
+    "fxskin_shadowBolt": {
+      "slot": "spellSkin",
+      "target": "shadowBolt",
+      "targetName": "闇弾",
+      "name": "闇弾・深淵",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "闇弾を使うときの光が「深淵」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(250deg) brightness(0.8)"
+    },
+    "fxskin_holyRay": {
+      "slot": "spellSkin",
+      "target": "holyRay",
+      "targetName": "聖光線",
+      "name": "聖光線・白金",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "聖光線を使うときの光が「白金」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(20deg) brightness(1.4)"
+    },
+    "fxskin_chaosVortex": {
+      "slot": "spellSkin",
+      "target": "chaosVortex",
+      "targetName": "混沌の渦",
+      "name": "混沌の渦・極彩",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "混沌の渦を使うときの光が「極彩」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(300deg) saturate(2.5)"
     }
   }
 }

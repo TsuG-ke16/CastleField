@@ -128,5 +128,11 @@
   "iceShard": {"name": "氷の礫", "kind": "spell", "effect": "damageEnemySoldiers", "amount": 2, "scope": "lane", "element": "ice", "description": "選んだ1レーンの相手の兵士全員に2ダメージ（氷属性）。サンダーより弱いが、氷属性が付着して反応のきっかけになる", "count": 1, "rarity": "common", "fuseTo": "thunder"},
   "sparkBolt": {"name": "雷撃", "kind": "spell", "effect": "damageEnemySoldiers", "amount": 2, "scope": "lane", "element": "thunder", "description": "選んだ1レーンの相手の兵士全員に2ダメージ（雷属性）。サンダーより弱いが、雷属性が付着して反応のきっかけになる", "count": 1, "rarity": "common", "fuseTo": "thunder"},
   "iceBlade": {"name": "氷の刃", "kind": "weapon", "attackBonus": 1, "element": "ice", "count": 1, "rarity": "common", "fuseTo": "ironSword"},
-  "thunderAxe": {"name": "雷の斧", "kind": "weapon", "attackBonus": 1, "element": "thunder", "count": 1, "rarity": "common", "fuseTo": "ironSword"}
+  "thunderAxe": {"name": "雷の斧", "kind": "weapon", "attackBonus": 1, "element": "thunder", "count": 1, "rarity": "common", "fuseTo": "ironSword"},
+  "darkScythe": {"name": "闇の鎌", "kind": "weapon", "attackBonus": 1, "element": "dark", "count": 1, "rarity": "common", "fuseTo": "ironSword"},
+  "lightLance": {"name": "光の槍", "kind": "weapon", "attackBonus": 1, "element": "light", "count": 1, "rarity": "common", "fuseTo": "ironSword"},
+  "chaosStaff": {"name": "混沌の杖", "kind": "weapon", "attackBonus": 1, "element": "chaos", "count": 1, "rarity": "common", "fuseTo": "ironSword"},
+  "shadowBolt": {"name": "闇弾", "kind": "spell", "effect": "damageEnemySoldiers", "amount": 2, "scope": "lane", "element": "dark", "description": "選んだ1レーンの相手の兵士全員に2ダメージ（闇属性）。サンダーより弱いが、闇属性が付着して反応のきっかけになる（光とは互いに有利で1.5倍）", "count": 1, "rarity": "common", "fuseTo": "thunder"},
+  "holyRay": {"name": "聖光線", "kind": "spell", "effect": "damageEnemySoldiers", "amount": 2, "scope": "lane", "element": "light", "description": "選んだ1レーンの相手の兵士全員に2ダメージ（光属性）。サンダーより弱いが、光属性が付着して反応のきっかけになる（闇とは互いに有利で1.5倍）", "count": 1, "rarity": "common", "fuseTo": "thunder"},
+  "chaosVortex": {"name": "混沌の渦", "kind": "spell", "effect": "damageEnemySoldiers", "amount": 2, "scope": "lane", "element": "chaos", "description": "選んだ1レーンの相手の兵士全員に2ダメージ（混沌属性）。サンダーより弱いが、付着や反応がランダムな反応になる", "count": 1, "rarity": "common", "fuseTo": "thunder"}
 }

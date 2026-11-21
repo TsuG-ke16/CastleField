@@ -32,6 +32,9 @@ export const WEAPON_ICON = {
   ironSword: '⚔️',
   iceBlade: '🗡️',
   thunderAxe: '🪓',
+  darkScythe: '🌙',
+  lightLance: '🔱',
+  chaosStaff: '🪄',
 };
 
 /** 魔物の絵文字 */
