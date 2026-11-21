@@ -103,6 +103,8 @@ js/
     Road.js        … 道（となりの席どうし・広場の通り道）
     Monster.js     … 魔物と、強化のデータのチェック
     Weather.js     … 天候のデータのチェック
+    Elements.js    … 属性の相性表のチェックと倍率
+    Reactions.js   … 属性の反応のデータのチェックと、組から反応を探す
     Stage.js       … ステージ（マップ）のデータのチェックと選び方
     Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
@@ -132,6 +134,8 @@ data/
   weather.json     … 天候（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨）
   stages.json      … ステージ（草原・溶岩・氷・古代遺跡・闇の森・砂漠）
   stamps.json      … チャットのスタンプの一覧
+  elements.json    … 属性の相性
+  reactions.json   … 属性の反応（「属性の反応」の節）
 ui-tests/          … 画面のスモークテスト（node ui-tests/smoke.js。Playwright は環境にあるものを使う。UI担当）
 docs/              … 設計メモ。archive/ は終わった依頼（Codex 向けのプロンプトなど）
 tests/             … 自動テスト（node --test）。Node.js だけで動く
@@ -187,6 +191,8 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 - カードID（cardId）：山札の1枚1枚につく一意のID。例：`"c07"`。同じ種類のカードでもIDは別
 - 兵士ID（soldierId）：場に出た兵士につく一意のID。例：`"s03"`
 - カードIDは山札をシャッフルしたあとの順に振る。IDから種類は分からない
+- 付着（attachment）：兵士に残っている属性（`"fire"` などの属性ID か、水霧 `"mist"`）。属性つきの攻撃が当たると付き、別の属性で攻撃されると「反応」が起きる（「属性の反応」の節）
+- 反応ID（reaction）：`data/reactions.json` の `reactions` のキー。例：`"evaporate"`（蒸発）
 - 道ID（roadId）：道のID。2人のIDを席順で `-` でつなぐ（3人以上の広場のときは、2人ずつの組の「通り道」。STEP 5 の「真ん中の広場を通る道」）。例：`"p1-p2"`。`rules.laneCount`（レーンの数）が2以上のときは、同じ2人の間に道が `laneCount` 本でき、`"p1-p2#1"`、`"p1-p2#2"` … のように番号がつく（1本のときは番号なし）
 - 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ playerId, roadId }`（レーンが2本以上のときの、兵士を出す道と、`scope: "lane"` の魔法で狙う道）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
 
@@ -194,7 +200,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 
 | メソッド | 説明 |
 |---|---|
-| `new Game({ cards, rules, rng, monsters, upgrades, castles, decks, stages, setup })` | ゲームを作る。`stages`（`data/stages.json`）を渡すと、`setup.stage`（ステージのIDか `"random"`。省略すると `"random"`）のステージで遊ぶ。`cards` / `rules` / `monsters` / `upgrades` / `castles` / `decks` は `data/` の JSON の中身（Game はファイルを読まない）。`cards` / `rules` 以外は省略でき、省略すると魔物は出ず・強化は買えず・城の種類はなし。`setup` は席ごとの選択 `{ castles: [...], decks: [...] }`（省略すると `rules.defaultCastle` / `rules.defaultDeck`）。`rng` は 0以上1未満を返す乱数で、省略すると `Math.random`。作った時点で初期手札は配られていて、`phase` は `"ready"`。イベントは出さない |
+| `new Game({ cards, rules, rng, monsters, upgrades, castles, decks, stages, elements, reactions, setup })` | ゲームを作る。`reactions`（`data/reactions.json`）を渡すと属性の反応が起きる（省略すると反応も付着もない）。`stages`（`data/stages.json`）を渡すと、`setup.stage`（ステージのIDか `"random"`。省略すると `"random"`）のステージで遊ぶ。`cards` / `rules` / `monsters` / `upgrades` / `castles` / `decks` は `data/` の JSON の中身（Game はファイルを読まない）。`cards` / `rules` 以外は省略でき、省略すると魔物は出ず・強化は買えず・城の種類はなし。`setup` は席ごとの選択 `{ castles: [...], decks: [...] }`（省略すると `rules.defaultCastle` / `rules.defaultDeck`）。`rng` は 0以上1未満を返す乱数で、省略すると `Math.random`。作った時点で初期手札は配られていて、`phase` は `"ready"`。イベントは出さない |
 | `game.start()` | ゲームを始める。全イベントを `on()` で購読してから呼ぶと、先攻（`setup.firstPlayer`。省略すると p1）のターン1が始まる（`turnStarted` → ドロー → 進軍）。`rules.mulligan` が `true` なら、先に `phase` が `"mulligan"` になり、全員が `mulligan()` を選んでからターン1 |
 | `game.mulligan(playerId, cardIds)` | マリガン（`phase` が `"mulligan"` のときだけ。1人1回。自分の番でなくてよい）。`cardIds`（0枚でもよい）を山札に戻してシャッフルし、同じ枚数を引き直す。全員が選んだら先攻のターン1が始まる |
 | `game.getState(viewerId)` | 今の状態をただのオブジェクトで返す。`viewerId` の手札は中身まで、相手の手札は枚数だけ入る |
@@ -253,6 +259,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
       hand: [{ cardId: "c07", type: "infantry" }],  // viewer 本人のみ。相手は null
       handCount: 7,
       playedThisTurn: false,   // このターンにメインのカードを出したか
+      reactionsThisTurn: 0,    // このターンに起こした属性の反応の回数（自分のターンの始めに0へ）
       eliminated: false,       // 負けて抜けたか（3人以上のときに使う。2人ならいつも false）
       cardsPlayedThisTurn: 2,  // このターンに出した枚数（メイン・付加・防御すべて）
       armor: 0,                // 城壁の残り
@@ -266,7 +273,12 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
         weapon: "waterSpear",  // 持っている武器のカード種類か null
         element: "water",      // "fire" | "water" | "wind" | "earth" | null
         shield: 0,             // 盾の残り
-        statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */ }
+        attachment: { element: "fire", turns: 2 },  // 付着（属性の反応）か null。水霧なら element は "mist"
+        statuses: {
+          poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */,
+          burn: null /* やけど { amount, turns } */, slow: 0 /* 鈍足の残り回数 */, blind: 0 /* 命中低下の残りターン */,
+          dot: null /* 継続ダメージ { amount, turns } */
+        }
       }]
     },
     p2: { /* 同じ形 */ }
@@ -303,7 +315,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack }` … `hp` / `attack` は出した時点の値 |
 | `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause?, slipped? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい）。`slipped: true` は氷のステージで滑って1マス余分に進んだとき |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
-| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
+| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）/ `"dot"`（反応の継続ダメージ）/ `"reaction"`（反応の巻き添え）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
 | `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
 | `spellCast` | `{ playerId, type, target, targetKind, roadId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）のときだけ入る。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
@@ -313,7 +325,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `shieldAdded` | `{ playerId, soldierId, amount, shield }` … `shield` は足したあとの盾 |
 | `castleArmored` | `{ playerId, armor }` … 城壁を置いた |
 | `armorExpired` | `{ playerId }` … 城壁が消えた（その人のターンの始め） |
-| `statusApplied` | `{ playerId, soldierId, status, turns }` … `status` は `"poison"` か `"frozen"` |
+| `statusApplied` | `{ playerId, soldierId, status, turns }` … `status` は `"poison"` / `"frozen"` / `"burn"`（やけど）/ `"slow"`（鈍足。`amount` 付き）/ `"blind"`（命中低下。`chance` 付き）/ `"dot"`（継続ダメージ。`amount` 付き） |
 | `statusCleared` | `{ playerId, soldierId, status }` |
 | `roundStarted` | `{ round }` … 周回の始め（`turnStarted` のすぐあと） |
 | `monsterAppeared` | `{ monsterId, type, roadId, square, hp, attack, element }` |
@@ -338,6 +350,8 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
 | `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
+| `attachmentChanged` | `{ playerId, soldierId, element, turns, cause }` … 兵士の付着が変わった。`element` が `null` なら消えた。`cause` は `"hit"`（属性つきの攻撃が当たった）／`"reaction"`（反応で変わった・消えた）／`"expired"`（期限で消えた） |
+| `reactionTriggered` | `{ attackerId, playerId, soldierId, reaction, name, attached, element, multiplier, chain?, chaos? }` … 属性の反応が起きた。`playerId` / `soldierId` は標的、`attached` は使った付着（凍結中は `"ice"`、やけど中は `"fire"`、水霧は `"mist"`）、`element` は攻撃の属性、`multiplier` は倍率（ないなら `null`）。`chain` は、反応で残った付着から続けて起きたとき、前の反応のID。`chaos: true` は混沌でランダムに選ばれた |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
 
 #### イベントの順番
@@ -350,6 +364,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
   - 戦いで相手だけが消えて進み続けるとき（`advanceAfterWin`）：上の戦いのイベントのあと、続きの `soldierMoved`（さっき止まったマスから）→（また相手に会えば）`soldiersClashed` …、城に着けば `castleDamaged` → `soldierDestroyed`（`"reachedCastle"`）。1体の兵士の `soldierMoved` が1回の進軍で2回以上出ることがある
   - 進軍の途中で城HPが0以下になったら、残りの兵士は動かさずにすぐ `gameOver` を出す
 - 進軍（STEP 2）：1体ずつ「毒の `soldierDamaged`（`cause: "poison"`）→（0なら `soldierDestroyed` で、動かない）→（凍結なら休んで、0回になったら `statusCleared`）→ 動く」
+  - 属性の反応があるとき：毒 → やけど → 継続ダメージ（`cause: "dot"`）→ 鈍足の残りが1減る → 凍結 → 動く
+- 属性の反応：攻撃の `reactionTriggered` → その攻撃の `soldierDamaged`（倍率を掛けたあと）→（0なら `soldierDestroyed`）→ 付着の `attachmentChanged`（`cause: "reaction"`）→ 特殊効果（`statusApplied`・巻き添えの `soldierDamaged`（`cause: "reaction"`）…）。兵士同士の戦いでは、`soldiersClashed` → `reactionTriggered` → `soldierDamaged`（守る側）→ `soldierDamaged`（攻める側）→ `soldierDestroyed` → 付着・特殊効果（守る側への攻撃 → 攻める側への攻撃の順）。反応が起きなければ、`soldierDamaged` のあとに付着の `attachmentChanged`（`cause: "hit"`）
+- ターンの終わり（属性の反応があるとき）：手番の人の兵士の命中低下・付着の残りが1減る（0なら `statusCleared`（`"blind"`）／`attachmentChanged`（`cause: "expired"`））→ 次の人の `turnStarted`
 - 強化を買ったとき：`coinsChanged`（`reason: "upgrade"`）→ `upgradeBought` → 効果のイベント
 - 周回の始め（席順の最初の人のターン）：`turnStarted` → `roundStarted` → 放置された魔物の `monsterAttackedCastle`（出た順）→ `monsterAppeared`（道の順）→ 城壁の `armorExpired` → ドロー → 進軍。魔物の攻撃で城HPが0以下になったら、`monsterAttackedCastle` → `gameOver` で止まる（落とされた方の負け）
 - 兵士と魔物の戦い：`soldierMoved`（動いたら）→ `monsterClashed` → `monsterDamaged` → `soldierDamaged`（兵士）→（魔物が0なら）`monsterDefeated` → `coinsChanged` →（兵士が0なら）`soldierDestroyed`。1マスごとに相手の兵士 → 魔物の順に確かめる
@@ -409,7 +426,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - カードの `scope`（`damageEnemySoldiers` / `poisonEnemySoldiers` / `freezeEnemySoldiers` の魔法だけ。省略すると `"all"`）：`"all"` は相手の全レーンの兵士に効く。`"lane"` は選んだ1レーンの相手の兵士だけに効く（対象は `{ playerId, roadId }`）。`laneCount` が1のときは `"lane"` でも `"all"` と同じ（対象を選ばない）
 - `monsterFirstRound`：魔物が出はじめる周回（省略すると3）。`monsterCooldownRounds`：魔物を倒した道に次の魔物が出ない周回の数（省略すると0）。`monsterSpawnChance`：周回の始めに、魔物がいない道ごとに魔物が出る確率（0〜1の数。省略すると0）
 - `elementBonus`：**使わなくなった**（属性の相性は `data/elements.json` の倍率。「属性を10種にした」）
-- カードの `kind`：`soldier` / `spell` / `weapon`（`attackBonus`、`element`）/ `defense`（`effect`: `shieldSoldier` / `armorCastle`、`amount`）。魔法の `effect` に `poisonEnemySoldiers`（`amount`, `turns`）と `freezeEnemySoldiers`（`turns`）が増えた。`element` は `fire` / `water` / `wind` / `earth`
+- カードの `kind`：`soldier` / `spell` / `weapon`（`attackBonus`、`element`）/ `defense`（`effect`: `shieldSoldier` / `armorCastle`、`amount`）。魔法の `effect` に `poisonEnemySoldiers`（`amount`, `turns`）と `freezeEnemySoldiers`（`turns`）が増えた。`element` は `fire` / `water` / `wind` / `earth`。魔法にも `element` を書ける（属性の反応の付着・反応だけに使う。「属性の反応」の節）
 - `secondPlayerCastleBonus`：後攻（p2）の城だけ、HPと上限がこのぶん多い（先攻有利をやわらげるため）。0以上の整数
 - `advanceAfterWin`：`true` なら、戦いで相手だけが消えたとき、残りの歩数で進み続ける（`false` ならそのターンはその場で止まる）。省略すると `false`
 - `soldierCastleDamageMultiplier`：城に着いた兵士が与えるダメージ ＝ 攻撃力 × この値（1以上の整数）。省略すると 1
@@ -1369,6 +1386,44 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ### まだ作っていないもの
 - **ワールドレイド**（ボスごとに専用ステージ：ドラゴン＝溶岩・古代竜＝古代遺跡・魔王＝闇の魔城）：遊び方（だれとだれが、どこで、何人で、何を倒すか）がまだ決まっていないので、人間に確認してから作る
+
+## 属性の反応（人間の指示。数値はすべて仮）
+
+兵士に属性が**付着**しているところへ**別の属性**で攻撃すると、その組が表にあれば**反応**が起きる。反応は**特殊効果＋追加ダメージ（倍率）**。反応のあと付着が別の属性に変わる・消えるので、続けて別の反応につながる（連鎖）。データは `data/reactions.json`、チェックと照合は `js/game/Reactions.js`（`validateReactions(data, elements)`）。`new Game({ reactions })` で受け取る（省略すると反応も付着もなく、今までと同じ）。
+
+- **付着**：属性つきの攻撃（属性を持つ兵士の戦い・射撃、`element` のある魔法）が**兵士に**当たると、標的にその属性が付く（`rules.attachTurns`、仮：2。上書き）。無属性の攻撃・外れた攻撃（天候の霧・命中低下）は付かない。城・魔物には付かない。魔物の攻撃も付けない
+  - 凍結中は**氷**、やけど中は**火**が付着しているものとして照合する（付着 `attachment` があればそちらが先）。それを反応で使ったときは、その凍結・やけどは治る（`statusCleared`）
+  - 減り方（決めた）：**持ち主のターンの終わりに1減り、0で消える**。相手のターンに付けた付着（2）は、持ち主の次のターン・相手の次のターンまで残る
+- **反応**：攻撃した人の**自分のターンに、`rules.reactionsPerTurn` 回まで**（仮：1。`players.pX.reactionsThisTurn`、自分のターンの始めに0へ）。相手のターンの反撃（守る側の兵士の攻撃）では反応せず、付着だけする。回数を使い切ったあとの攻撃は、反応せずに付着を上書きする。0 なら反応も付着もない
+- **ダメージの順番**：基本の攻撃（背水・夜を含む）→ ×属性相性（切り上げ）→ ＋天候 → ステージ倍率 → **×反応の倍率（切り上げ）** → 土の精霊で軽くする。魔法は「カードの値 → ×反応の倍率」。倍率のない反応は掛けない
+- **魔法の属性**：`cards.json` の魔法に `element` を書ける（今のカードには書いていない）。兵士に当たる魔法（`damageEnemySoldiers`・チェーン・ブラスト・火薬庫・イグニッション・バースト・ピュリファイ・フレア・魔王）だけが付着・反応の起点になる。ダメージのない魔法（毒・凍結・押し戻し）は付着させない（仮）
+- **今の武器は火・水・風・土だけ**なので、実際のカードで起きるのは 蒸発・泥・炎拡散・霧・砂嵐（と、やけど中の兵士に火以外）。氷・雷が絡む反応は、データと判定だけ作ってある（テストは固定のカードで確かめる）
+
+| 組 | id | 名前 | 倍率 | 特殊効果（仮） | 付着のその後 |
+|---|---|---|---|---|---|
+| 火+水 | `evaporate` | 蒸発 | ×1.5 | — | 消える |
+| 火+氷 | `melt` | 融解 | ×1.5 | — | 水に変わる |
+| 水+氷 | `freeze` | 凍結 | — | 凍結1 | 消える（凍結中なので、氷として照合される） |
+| 水+雷 | `shock` | 感電 | — | 継続ダメージ1×2（盾は効かない）＋隣のマスの兵士に半分（切り上げ） | 消える |
+| 水+土 | `mud` | 泥 | — | 鈍足（速さ−1・2回の進軍。最低1） | 消える |
+| 風+火 | `flameSpread` | 炎拡散 | — | 標的と隣のマスの兵士にやけど（1×2） | 消える |
+| 風+水 | `fog` | 霧 | — | 命中低下（30%・2ターン） | 水霧（`mist`）に変わる |
+| 風+土 | `sandstorm` | 砂嵐 | — | 継続ダメージ1×2＋命中低下（30%・2ターン） | 消える |
+| 風+氷 | `blizzard` | 吹雪 | — | 標的と隣のマスの兵士に鈍足（−1・2回） | 消える |
+| 風+雷 | `stormThunder` | 雷嵐 | — | 同じ道の兵士全員に半分（切り上げ） | 消える |
+| 水霧+氷 | `frozenMist` | 凍結霧 | — | 凍結1＋命中低下（30%・2ターン） | 消える |
+
+- 組の順番は関係ない。同じ属性どうしは反応せず、付着の残りが戻る
+- **水霧**（`mist`）は、`mist` の組（凍結霧）を先に探し、なければ**水として**照合する（水霧に火 → 蒸発、雷 → 感電）
+- **混沌**：攻撃か付着が混沌なら、`chaosPool` からランダムに1つ（`rng`。混沌どうしは起きない）。`reactionTriggered` に `chaos: true`
+- **範囲**（決めた）：「隣のマス」（`scope: "adjacent"`）は、標的と**同じ道**の、前後1マス（**同じマスも**）にいる**標的と同じ陣地**の兵士。「同じ道」（`"lane"`）は、同じ道の同じ陣地の兵士全員。となりのレーンには及ばない。忍者は巻き込まない。巻き添えのダメージは属性なし（`cause: "reaction"`。付着・反応は起きない）
+- **新しい状態**：鈍足（`slow`。持ち主の進軍のたびに1減る）・命中低下（`blind`。その兵士の戦い・射撃が、天候の霧と同じしくみ（`rollMiss`）でその確率で外れる。持ち主のターンの終わりに1減る）・継続ダメージ（`dot`。持ち主の進軍の前、やけどのあとに受ける。盾は効かない）。重ねがけは量・回数を大きい方にそろえる
+- **データの書き方**（`reactions.json`）：`reactions.<id>` に `name`・`elements`（2つ）・`multiplier`（省略・`null` で倍率なし）・`effects`・`attachment`（反応のあとの付着。省略・`null` で消える）。`effects` は `{ kind, ... }` の配列で、`kind` は `status`（`status: "frozen" | "burn"`・`turns`・やけどは `amount`）／`dot`（`amount`・`turns`）／`slow`（`amount`・`turns`）／`blind`（`chance`・`turns`）／`splash`（`ratio`・`scope: "adjacent" | "lane"`。標的は含まない）。`splash` 以外は `scope`（`"target"`（省略）／`"adjacent"`／`"lane"`。標的も含む）で範囲を広げられる
+- 忍者：`attachmentChanged` / `reactionTriggered` も忍者の陣地（`stealth`）を付けて隠す（ふつうは忍者に攻撃は当たらない）
+- CPU（`strategies.js`）は反応を狙わない（今回は変えていない）
+- シミュレーション：`node tests/sim/run.js` は反応ありで回す（`--no-reactions` で反応なし）。表の「反応/試合」は1試合あたりの反応の回数と、1回でも起きた試合の割合
+- 確かめたこと（`node tests/sim/run.js --games 200`）：smart 同士は平均42.6手番・p1 勝率49%（反応なし 42.8・49%）、smart vs random は40.7手番・66%（反応なしと同じ）。全試合決着。**反応は1試合あたり0.03〜0.04回（起きた試合は3〜5%）でとても少ない**（兵士同士がぶつかるのが1試合3回ほどで、属性の魔法もないため）。反応を遊びの中心にするなら、属性の魔法を足す・CPU に狙わせる・`attachTurns` を延ばす、などを人間と決める
+- 画面（UI担当にお願いしたいこと）：付着のアイコン、反応の名前と倍率の演出、鈍足・命中低下・継続ダメージの表示（今は `statusApplied` の汎用の表示が出るだけ）
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

@@ -185,8 +185,9 @@ export class Card {
       if (def.exhaust !== undefined && typeof def.exhaust !== 'boolean') {
         throw new Error(`${where}: exhaust は true か false にしてください（書かなければ false）`);
       }
-      if (def.element !== undefined && def.kind !== 'weapon') {
-        throw new Error(`${where}: element を書けるのは武器（kind: "weapon"）だけです`);
+      // 魔法の element は、兵士に当たったときの付着・反応（属性の反応）に使う
+      if (def.element !== undefined && def.kind !== 'weapon' && def.kind !== 'spell') {
+        throw new Error(`${where}: element を書けるのは武器（kind: "weapon"）と魔法（kind: "spell"）だけです`);
       }
       if (def.element !== undefined && def.element !== null && !ELEMENTS.includes(def.element)) {
         throw new Error(`${where}: element は ${ELEMENTS.join(' / ')} のどれかにしてください（書かなければ属性なし）`);

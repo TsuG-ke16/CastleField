@@ -55,5 +55,7 @@
   "secondPlayerArmor": 5,
   "mulligan": true,
   "overdriveHpRatio": 0.3333,
-  "overdriveAttack": 10
+  "overdriveAttack": 10,
+  "attachTurns": 2,
+  "reactionsPerTurn": 1
 }
