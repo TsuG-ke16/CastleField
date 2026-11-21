@@ -32,6 +32,7 @@
       "cardSet": "data/classic/cards.json",
       "rulesSet": "data/classic/rules.json",
       "elementsSet": "data/classic/elements.json",
+      "reactionsSet": "data/classic/reactions.json",
       "useRarities": false,
       "rank": {
         "enabled": false,

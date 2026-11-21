@@ -270,7 +270,8 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
         weapon: "waterSpear",  // 持っている武器のカード種類か null
         element: "water",      // "fire" | "water" | "wind" | "earth" | null
         shield: 0,             // 盾の残り
-        statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */, burn: null /* やけど */, weakened: null /* 呪い { amount, turns } か null */ }
+        statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */, burn: null /* やけど */, weakened: null /* 呪い { amount, turns } か null */ },
+        attachments: [{ element: "light", turns: 5 }]  // 付着（reactions を渡したゲームだけ。渡さなければこのキー自体がない）
       }]
     },
     p2: { /* 同じ形 */ }
@@ -307,7 +308,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack, revived? }` … `hp` / `attack` は出した時点の値。`revived: true` は蘇生（`reviveFallen`）で生き返った兵士 |
 | `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause?, slipped? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい）。`slipped: true` は氷のステージで滑って1マス余分に進んだとき |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
-| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
+| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）/ `"reaction"`（属性の反応の追加ダメージ。クラシック）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
 | `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
 | `spellCast` | `{ playerId, type, target, targetKind, roadId?, soldierId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）と、`castleSpellHitsFront` の城への魔法（道が決まるとき）に入る。`soldierId` は、城への魔法が先頭の兵士に当たるとき（`castleSpellHitsFront`）とチェーン・ブラストのときだけ入る（このあと `soldierDamaged`（`cause: "spell"`））。`element` は、ランダム属性ダメージ（`randomElementDamage`）で選ばれた属性（`"fire"` / `"water"` / `"wind"` / `"earth"`）。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
@@ -344,6 +345,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
 | `collapseAnnounced` | `{ round, startRound }` … 崩壊の刻の予告（`rules.collapseAnnounceRound` の周回の始め。`roundStarted` のあと） |
 | `collapseStarted` | `{ round }` … 崩壊の刻が始まった（`rules.collapseStartRound` の周回の始め）。このあと全員の城の `castleDamaged`（`source: { kind: "collapse" }`） |
+| `elementAttached` | `{ playerId, soldierId, element, turns }` … 兵士に属性が付着した（同じ属性がまた付いて残りが戻ったときも出る）。`reactions` を渡したゲームだけ（「クラシックの付着と反応」） |
+| `elementCleared` | `{ playerId, soldierId, element, reason, weapon? }` … 兵士の属性が消えた。`reason` は `"reaction"`（反応で使われた）か `"expired"`（付着の残りが0）。`weapon: true` は武器の属性が反応で外れたとき（武器の攻撃ボーナスは残る） |
+| `reactionTriggered` | `{ reaction, name, soldierId, playerId, elements, damage, consumed }` … 属性の反応が起きた。`reaction` は反応のID（`"chaos"` は混沌反応）、`elements` は反応した属性（当たった攻撃の属性も含む）、`consumed` は兵士から消える属性、`damage` は追加ダメージ（砕氷の凍結中の上乗せ込み）。このあと `elementCleared` …（`"reaction"`）→ 追加ダメージの `soldierDamaged`（`cause: "reaction"`） |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参）/ `"collapse"`（崩壊の刻のダメージで決着） |
 
 #### イベントの順番
@@ -427,7 +431,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - `mpPerTurn`：自分のターンの始めに増える MP（0以上の整数。省略すると0）。`secondPlayerMp`：後攻（先攻以外の人）の最初の MP に足す量（0以上の整数。省略すると0。チーム戦では使わない）
 - 魔法の `effect` に `singleDamage`（`amount`。敵兵士1体にダメージ）と `weakenAttack`（`amount`・`turns`。呪い：敵兵士1体の攻撃力を下げる）が増えた（下の「クラシックの道具」）
 - 魔法の `effect` に `reviveFallen`（`amount`：0より大きく1以下の数。蘇生）と `randomElementDamage`（`amount`。ランダムな属性で敵兵士1体にダメージ）が増えた（下の「クラシックの道具：蘇生・ランダム属性ダメージ」）
-- カードの `element` は武器と魔法に書ける（魔法はデータだけ）。使える属性は `new Game({ elements })` の表のキー（渡さなければ fire / water / wind / earth。下の「クラシックの属性」）
+- カードの `element` は武器と魔法に書ける（魔法の属性は、`reactions` を渡したゲームで兵士に当たったときの付着・反応だけに使う）。使える属性は `new Game({ elements })` の表のキー（渡さなければ fire / water / wind / earth。下の「クラシックの属性」）
 - `exhaust`：`true` のカードは使い切り。使うと使い切り置き場へ行き、山札に戻らない。省略すると `false`。手札の上限で捨てたときは、ふつうに捨て札置き場へ行く（山札に戻る）
 - カードの説明文は UI が `kind` / `effect` と数値から組み立てる。カードに `description` を書けば、そちらを優先する（Game は `description` を使わない）
 
@@ -1470,16 +1474,39 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ## クラシックの属性（PR3a。人間に確認して決めた。仮）
 
-クラシックだけ、属性を9つにした（通常モードは今までの4属性の輪のまま）。付着・混沌反応は PR3b。
+クラシックだけ、属性を9つにした（通常モードは今までの4属性の輪のまま）。付着・混沌反応は PR3b（下の「クラシックの付着と反応」）。
 
 - **表**：`data/classic/elements.json`（`{ elements: { <id>: { name, beats: [<id>, ...] } } }`。`beats` は「その属性が強い相手」）。`data/modes.json` のモードに `elementsSet` を書くと、画面（`js/main.js`）・サーバー（`server/server.js` の `loadData`）・テスト（`tests/helpers.js` の `loadOptionalData(mode)`）が読んで `new Game({ elements })` に渡す。書いていないモード（通常モード）には渡さない
 - **`new Game({ elements })`**（省略できる。チェックは `js/game/Elements.js`）：渡すと、兵士同士・兵士と魔物の戦い・射撃・ランダム属性ダメージの「強いか」を、この表の `beats` で決める。増え方は今までどおり `rules.elementBonus`（足し算。弱い側に当たっても減らない）。渡さなければ今までの輪（水→火→風→土→水）
 - 起動時のチェック：カード（武器・魔法）・魔物・ステージ・天候の属性が、表にない（表がなければ4つにない）とエラー
 - 強弱：火→氷／水→火・土／風→火／土→雷・風／氷→水／雷→水／闇→光／光→闇／混沌→なし（混沌に強い属性もない）
-- **魔法にも `element` を書ける**（武器と魔法だけ）。今は**データだけ**で、効果・ダメージ・イベントは変わらない（PR3b の付着で使う）
+- **魔法にも `element` を書ける**（武器と魔法だけ）。ダメージ・強弱には使わない。兵士に当たったときの付着・反応に使う（PR3b）
 - クラシックのカード：光＝聖鉄の剣・ルミナスランス・ルミナ・ホーリーレイ・聖なる火球／闇＝シャドウサイズ・シャドウ・闇の火球／氷＝フロストブレード・氷の息／混沌＝カオスロッド。カオスパルスは書かない（ランダム属性の仮の魔法。撃つ属性は今までどおり火・水・風・土から選び、強いかは表で決める）
 - 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均104手番・先攻の勝率38%（属性を入れる前は104手番・39%）。通常モードのシミュレーションは変わらない
 - 画面（UI担当にお願いしたいこと）：`js/ui/look.js` の `ELEMENT_LOOK` に光・闇・氷・雷・混沌がないので、名前・色・アイコンが出ない（落ちはしない）。`js/ui/text.js`・`js/ui/Animations.js` の強弱（`ELEMENT_BEATS`）と `js/ui/HelpView.js` の説明は4属性の輪のまま
+
+## クラシックの付着と反応（PR3b。人間に確認して決めた。数値は仮）
+
+クラシックだけ。`new Game({ reactions })`（`data/classic/reactions.json`。チェックは `js/game/Elements.js` の `validateReactions`）。**渡さなければ付着も反応も起きない**（通常モード。乱数も使わず、`getState()` の兵士に `attachments` のキーも付かない）。`data/modes.json` のモードに `reactionsSet` を書くと、画面（`js/main.js`）・サーバー（`server/server.js` の `loadData`）・テスト（`tests/helpers.js` の `loadOptionalData(mode)`）が読んで渡す。
+
+- **属性を持つのは武器を持った兵士だけ**（生まれつきの属性はない）。武器の属性（`element`）は、その兵士に最初から付いている属性として数える
+- **付着**：属性つきの攻撃が兵士に当たると、その属性が付く（`attachments`：`[{ element, turns }]`。種類ごとに1つ。同じ属性がまた付いたら残りが `attachTurns` に戻る）。付く攻撃：①属性つきの武器を持つ兵士の戦い（お互いに）・射撃（武器の属性）②`element` のある魔法が兵士に当たったとき（ダメージのない氷の息・毒・呪い・押し戻しも、当たれば付く）。城に当たる魔法・魔物の攻撃・魔物への攻撃・忍者には付かない。属性なしの武器・魔法は付かない。霧で外れた攻撃は付かない。当たって倒れた兵士には付かない
+- 付着の残りは、持ち主の進軍が終わったあとに1減り、0で消える（`elementCleared` の `reason: "expired"`。呪いと同じ。凍って動かなかった進軍も数える）
+- **反応**：属性 X の攻撃が当たったとき、兵士に付いている属性（武器の属性＋付着）に、表で X と組になる属性があれば反応する（1回の攻撃で1つ。**混沌反応が先**、次に表の順）。反応した属性は兵士から消える（**武器の属性も外れる。武器の攻撃ボーナスは残る**。同じ武器で何度も反応し続けないように）。当たった攻撃の属性は付かない。追加ダメージは元のダメージのあとに別に入る（盾が先に受ける。土の精霊は効く。城壁は関係ない）。属性の強弱の上乗せ（`elementBonus`）は今までどおり別に乗る
+
+| 反応（ID） | 組 | 効果（仮） |
+|---|---|---|
+| 対消滅（`annihilation`） | 光＋闇 | 追加8 |
+| 黒氷（`blackIce`） | 闇＋氷 | 追加3。生き残れば凍結1回 |
+| 砕氷（`shatter`） | 氷＋混沌 | 追加2。凍結中なら、さらに+6して凍結が解ける |
+| 混沌反応（`chaos`） | 混沌の攻撃が当たり、付いている属性の種類が混沌を数えて3以上（`minElements`） | 付いている属性が全部消えて、追加 4 × 種類の数（混沌を含む）。状態異常・盾・武器（攻撃ボーナス）は残る |
+
+- 混沌＋ほか1種だけのときは、2つの反応の表を見る（氷なら砕氷、光なら何も起きずに混沌が付く）。混沌反応は「混沌の攻撃」が当たったときだけ（混沌が付着していても、ほかの属性の攻撃では混沌反応にならない）
+- `reactions.json` の形：`{ attachTurns, reactions: { <id>: { name, elements: [a, b], damage, frozenTurns?, frozenBonus? } }, chaos: { element, name, damagePerElement, minElements } }`。反応した2つは必ず消える
+- イベントの順番：（元の攻撃の `soldierDamaged`）→ `reactionTriggered` → `elementCleared`（`"reaction"`。消える属性ごと）→（砕氷で凍結中なら `statusCleared`（`frozen`））→ `soldierDamaged`（`cause: "reaction"`）→（0なら `soldierDestroyed`（`"killed"`）、黒氷で生き残れば `statusApplied`（`frozen`））。反応しなければ `elementAttached`。兵士同士の戦いでは、両方の `soldierDamaged`・倒れた兵士の `soldierDestroyed` のあとに、守る側 → 攻める側の順
+- CPU（`smart` 系だけ）：武器を出すとき、反応を起こせる相手の兵士がいる武器を先に選び、その相手と同じ道の、まだ武器のない兵士に持たせる（`js/game/strategies.js` の `canReact`。`game.reactionDefs` を読む）
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均105手番・先攻の勝率50%（PR3a は104手番・38%）。反応は smart 同士で1試合に平均1.8回（対消滅0.9・黒氷0.5・砕氷0.4・混沌反応0.02）、反応が1回以上あった試合70%。smart vs random は1.5回、random 同士は1.4回。通常モードのシミュレーションは変わらない（変更前と結果が完全に一致）
+- 画面（UI担当にお願いしたいこと）：兵士のそばに付着の表示（`attachments`・`elementAttached` / `elementCleared`）、`reactionTriggered` の演出（反応名を大きく。ヒットストップ・揺れ）、`soldierDamaged` の `cause: "reaction"`、武器の属性が外れたとき（`elementCleared.weapon`）の表示
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

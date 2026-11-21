@@ -57,7 +57,7 @@ export const PLAIN_START = { mulligan: false, secondPlayerHandBonus: 0, secondPl
 /**
  * data/ の魔物と強化（STEP 3）。ファイルがなければ null
  * mode を渡して、そのモードがレアリティを使わない（useRarities: false）なら、rarities と decks は null にする
- * そのモードに elementsSet（属性の表）があれば、elements に入れる
+ * そのモードに elementsSet（属性の表）があれば、elements に入れる。reactionsSet（付着と反応）があれば、reactions に入れる
  */
 export function loadOptionalData(mode = null) {
   const read = (name) => {
@@ -72,6 +72,8 @@ export function loadOptionalData(mode = null) {
   if (entry?.useRarities === false) { data.rarities = null; data.decks = null; }
   // 属性の強弱の表（elementsSet があるモードだけ。通常モードには渡さない）
   if (entry?.elementsSet) data.elements = loadModeFile(entry.elementsSet);
+  // 属性の付着と反応（reactionsSet があるモードだけ。通常モードには渡さない）
+  if (entry?.reactionsSet) data.reactions = loadModeFile(entry.reactionsSet);
   return data;
 }
 

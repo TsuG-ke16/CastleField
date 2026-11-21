@@ -113,6 +113,7 @@ let deckEditor = null; // デッキ編成の画面（コスト制の見本のデ
 let chat = null;     // チャットとスタンプ（ChatView）
 let weather = null;  // data/weather.json（読めなければ null：天候なし）
 let elements = null; // 属性の強弱の表（モードの elementsSet。通常モードは null：今までの4属性の輪）
+let reactions = null; // 属性の付着と反応（モードの reactionsSet。通常モードは null：付着・反応なし）
 let stages = null;  // data/stages.json（読めなければ null：ステージなし）
 let progressPanel;
 let cardGuide;
@@ -225,6 +226,8 @@ async function boot() {
     if (modeEntry?.useRarities === false) { rarities = null; decks = null; }
     // 属性の強弱の表（modes.json の elementsSet があるモードだけ）
     if (modeEntry?.elementsSet) elements = await loadJson(modeEntry.elementsSet);
+    // 属性の付着と反応（modes.json の reactionsSet があるモードだけ）
+    if (modeEntry?.reactionsSet) reactions = await loadJson(modeEntry.reactionsSet);
   } catch (err) {
     console.error(err);
     hideLoading();
@@ -769,6 +772,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     if (upgrades) opts.upgrades = structuredClone(upgrades);
     if (weather) opts.weather = structuredClone(weather);
     if (elements) opts.elements = structuredClone(elements);
+    if (reactions) opts.reactions = structuredClone(reactions);
     // ステージ：詳細設定で選んだもの（選ばなければ毎試合ランダム）
     if (stages) {
       opts.stages = structuredClone(stages);

@@ -39,3 +39,40 @@ export function beatsElement(table, attacker, defender) {
   const beats = table ? table.elements[attacker]?.beats : DEFAULT_BEATS[attacker];
   return Boolean(beats?.includes(defender));
 }
+
+/**
+ * reactions.json（属性の付着と反応）の中身のチェック。間違っていれば、どこが悪いかを書いた Error を投げる。
+ * 形：{ attachTurns, reactions: { <id>: { name, elements: [a, b], damage, frozenTurns?, frozenBonus? } }, chaos?: { element, name, damagePerElement, minElements } }
+ * @param {object} data reactions.json の中身
+ * @param {string[]} ids 使える属性ID（elementIds の結果）
+ */
+export function validateReactions(data, ids) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error('reactions.json の中身（{ attachTurns, reactions, chaos }）を渡してください');
+  const posInt = (v) => Number.isInteger(v) && v > 0;
+  const nonNegInt = (v) => Number.isInteger(v) && v >= 0;
+  if (!posInt(data.attachTurns)) throw new Error('reactions.json の attachTurns（付着が残る回数）は1以上の整数にしてください');
+  const list = data.reactions;
+  if (!list || typeof list !== 'object' || Array.isArray(list)) throw new Error('reactions.json の reactions に、反応IDをキーにした反応を書いてください（なければ {}）');
+  for (const [id, r] of Object.entries(list)) {
+    const where = `reactions.json の "${id}"`;
+    if (!r || typeof r !== 'object') throw new Error(`${where}: { name, elements, damage } のオブジェクトにしてください`);
+    if (id === 'chaos') throw new Error(`${where}: "chaos" は混沌反応の名前なので、ほかの名前にしてください`);
+    if (typeof r.name !== 'string' || r.name === '') throw new Error(`${where}: name（表示名）を書いてください`);
+    if (!Array.isArray(r.elements) || r.elements.length !== 2 || r.elements[0] === r.elements[1]) {
+      throw new Error(`${where}: elements は、ちがう属性2つの配列にしてください`);
+    }
+    for (const e of r.elements) if (!ids.includes(e)) throw new Error(`${where}: elements の "${e}" は属性の表にありません`);
+    if (!nonNegInt(r.damage)) throw new Error(`${where}: damage（追加ダメージ）は0以上の整数にしてください`);
+    if (r.frozenTurns !== undefined && !posInt(r.frozenTurns)) throw new Error(`${where}: frozenTurns（凍結の回数）は1以上の整数にしてください`);
+    if (r.frozenBonus !== undefined && !nonNegInt(r.frozenBonus)) throw new Error(`${where}: frozenBonus（凍結中の追加ダメージ）は0以上の整数にしてください`);
+  }
+  if (data.chaos !== undefined) {
+    const c = data.chaos;
+    const where = 'reactions.json の chaos';
+    if (!c || typeof c !== 'object') throw new Error(`${where}: { element, name, damagePerElement, minElements } のオブジェクトにしてください`);
+    if (!ids.includes(c.element)) throw new Error(`${where}: element（混沌の属性ID）が属性の表にありません`);
+    if (typeof c.name !== 'string' || c.name === '') throw new Error(`${where}: name（表示名）を書いてください`);
+    if (!nonNegInt(c.damagePerElement)) throw new Error(`${where}: damagePerElement は0以上の整数にしてください`);
+    if (!Number.isInteger(c.minElements) || c.minElements < 2) throw new Error(`${where}: minElements は2以上の整数にしてください`);
+  }
+}

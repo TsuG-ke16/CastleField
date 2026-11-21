@@ -42,6 +42,8 @@ export class Soldier {
     this.burn = null;
     /** 呪い { amount, turns }（攻撃力が amount 下がる。最低1。なければ null） */
     this.weakened = null;
+    /** 付着している属性 [{ element, turns }]（種類ごとに1つ。reactions を渡したゲームだけで使う。武器の属性は element に別に持つ） */
+    this.attachments = [];
   }
 
   /** 弓兵・魔法使い（動かずに撃つ） */

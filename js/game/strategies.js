@@ -112,18 +112,35 @@ function playFirst(game, playable, typesInOrder) {
 const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 /**
+ * 属性 element の攻撃が、相手の兵士 s（getState の形）に当たったら反応するか（reactions は data/classic/reactions.json の中身）。
+ * s に付いている属性は、武器の属性と付着（attachments）
+ */
+function canReact(reactions, element, s) {
+  if (!element) return false;
+  const on = [...new Set([s.element, ...(s.attachments ?? []).map((a) => a.element)].filter(Boolean))];
+  const chaos = reactions.chaos;
+  if (chaos && element === chaos.element && new Set([...on, element]).size >= chaos.minElements) return true;
+  return Object.values(reactions.reactions).some((r) => r.elements.includes(element) && on.includes(r.elements.find((e) => e !== element)));
+}
+
+/**
  * メイン以外（付加・防御）のカードを、役に立つときに出す（ほどよく考える戦い方で使う）
  *   武器：まだ武器のない、いちばん前の兵士に。近くの相手の属性に強い属性を選ぶ
  *   盾：いちばん前の兵士に
  *   城壁：城HPが半分以下のときだけ（使い切りで、手札も1枚減るため）
  */
 function playSupports(game, pid, ctx) {
+  // 属性の付着と反応（クラシック）があるゲームだけ、反応を起こせる武器を先に選ぶ（ないゲームでは今までどおり）
+  const reactions = game.reactionDefs ?? null;
   for (let guard = 0; guard < 20; guard++) {
     const { me, enemies, playable } = view(game, pid);
-    const support = playable.filter((c) => ctx.cards[c.type].kind !== 'soldier' && ctx.cards[c.type].kind !== 'spell');
+    let support = playable.filter((c) => ctx.cards[c.type].kind !== 'soldier' && ctx.cards[c.type].kind !== 'spell');
     if (support.length === 0) return;
     const front = [...me.soldiers].sort((a, b) => b.position - a.position);
     const enemySoldiers = enemies.flatMap((e) => e.soldiers);
+    // 武器ごとに、反応を起こせる相手の兵士（いなければ null）
+    const reactTarget = (def) => (reactions && def.kind === 'weapon' ? enemySoldiers.find((s) => canReact(reactions, def.element, s)) ?? null : null);
+    if (reactions) support = [...support].sort((a, b) => Number(Boolean(reactTarget(ctx.cards[b.type]))) - Number(Boolean(reactTarget(ctx.cards[a.type]))));
     let played = false;
     for (const c of support) {
       const def = ctx.cards[c.type];
@@ -131,7 +148,9 @@ function playSupports(game, pid, ctx) {
         const nearElements = new Set(enemySoldiers.map((s) => s.element).filter(Boolean));
         // 近くの相手の属性に負ける属性は避ける
         const bad = [...nearElements].some((e) => ELEMENT_BEATS[e] === def.element);
-        const target = front.find((s) => !s.weapon);
+        // 反応を起こせる相手がいれば、その相手と同じ道の、まだ武器のない兵士に持たせる（いなければ、いちばん前の兵士）
+        const foe = reactTarget(def);
+        const target = (foe && front.find((s) => !s.weapon && s.roadId === foe.roadId)) || front.find((s) => !s.weapon);
         if (!bad && target) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === target.soldierId));
       } else if (def.effect === 'shieldSoldier') {
         if (front.length) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === front[0].soldierId));

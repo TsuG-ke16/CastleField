@@ -19,7 +19,7 @@
 //   城HPが0以下になった瞬間に phase "gameOver"
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
-import { validateElements, elementIds, beatsElement } from './Elements.js';
+import { validateElements, elementIds, beatsElement, validateReactions } from './Elements.js';
 import { Monster, validateUpgrades } from './Monster.js';
 import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
@@ -91,6 +91,9 @@ export const EVENT_TYPES = [
   'attackMissed',
   'collapseAnnounced',
   'collapseStarted',
+  'elementAttached',
+  'elementCleared',
+  'reactionTriggered',
   'gameOver',
 ];
 
@@ -242,13 +245,16 @@ export class Game {
    * @param {object} [options.castles] data/castles.json の中身。省略すると城の種類なし
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {object} [options.elements] 属性の強弱の表（data/classic/elements.json の中身）。省略すると今までの4属性の輪
+   * @param {object} [options.reactions] 属性の付着と反応（data/classic/reactions.json の中身）。省略すると付着・反応は起きない
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, reactions = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
     // elements（data/classic/elements.json の中身）：属性の強弱の表。省略すると今までの4属性の輪
     if (elements !== null) validateElements(elements);
     const allowedElements = elementIds(elements);
+    // reactions（data/classic/reactions.json の中身）：属性の付着と反応。省略すると付着・反応は起きない（通常モード）
+    if (reactions !== null) validateReactions(reactions, allowedElements);
     if (rarities !== null) validateRarities(rarities);
     Card.validateDefinitions(cards, rarities, allowedElements);
     Game.validateRules(rules);
@@ -266,6 +272,8 @@ export class Game {
     this.cardDefs = cards;
     /** 属性の強弱の表（null なら今までの4属性の輪） */
     this.elementDefs = elements;
+    /** 属性の付着と反応（null なら付着も反応もしない） */
+    this.reactionDefs = reactions;
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
     this.weatherDefs = weather;
@@ -1188,6 +1196,8 @@ export class Game {
     }
     // 呪い：進軍が終わったら残りを1減らす（防御待ちで止まったときは、続きの進軍が終わってから）
     this.tickWeakened(player);
+    // 付着も同じく、進軍が終わったら残りを1減らす
+    this.tickAttachments(player);
   }
 
   /** 毒の量を上限（poisonMax。0 は上限なし）でおさえる */
@@ -1240,6 +1250,110 @@ export class Game {
     if (!soldier.isDead) return false;
     this.removeSoldier(owner, soldier, 'killed');
     return true;
+  }
+
+  /**
+   * 魔法が兵士に当たった：ダメージ（damageSoldier）のあと、生きていれば魔法の属性（card.def.element）を付着させる（反応することもある）。
+   * reactions を渡していないゲームでは damageSoldier と同じ。消えたら true
+   */
+  spellHit(owner, soldier, amount, card) {
+    if (this.damageSoldier(owner, soldier, amount, 'spell')) return true;
+    this.elementHit(owner, soldier, card.def?.element ?? null);
+    return !owner.soldiers.includes(soldier);
+  }
+
+  // ================= 属性の付着と反応（reactions を渡したときだけ。CLAUDE.md「クラシックの付着と反応」） =================
+
+  /** 兵士に付いている属性（武器の属性 → 付着の順。重なりは1つ） */
+  elementsOn(soldier) {
+    const list = soldier.element ? [soldier.element] : [];
+    for (const a of soldier.attachments) if (!list.includes(a.element)) list.push(a.element);
+    return list;
+  }
+
+  /**
+   * 属性 element の攻撃が、owner の兵士 soldier に当たった（ダメージのあと。外れた攻撃では呼ばない）。
+   * 反応の表で組になる属性が付いていれば反応する（1回の攻撃で1つ。混沌反応が先、次に表の順）。反応しなければ付着する。
+   * reactions を渡していない・属性なし・忍者・もう場にいない兵士なら何もしない（乱数も使わない）
+   */
+  elementHit(owner, soldier, element) {
+    const defs = this.reactionDefs;
+    if (!defs || !element || soldier.stealth || !owner.soldiers.includes(soldier)) return;
+    const reaction = this.findReaction(soldier, element);
+    if (reaction) {
+      this.triggerReaction(owner, soldier, reaction);
+      return;
+    }
+    const turns = defs.attachTurns;
+    const found = soldier.attachments.find((a) => a.element === element);
+    if (found) found.turns = turns; // 同じ属性がまた付いたら、残りを戻す
+    else soldier.attachments.push({ element, turns });
+    this.emit('elementAttached', { playerId: owner.id, soldierId: soldier.soldierId, element, turns });
+  }
+
+  /** 起こる反応（なければ null）。{ id, name, elements（反応した属性）, consumed（兵士から消える属性）, damage, def } */
+  findReaction(soldier, element) {
+    const defs = this.reactionDefs;
+    const on = this.elementsOn(soldier);
+    const chaos = defs.chaos;
+    // 混沌反応：混沌の攻撃が当たり、付いている属性の種類が混沌を数えて minElements 以上（混沌が足りない属性の代わりになる）
+    if (chaos && element === chaos.element) {
+      const all = on.includes(element) ? on : [...on, element];
+      if (all.length >= chaos.minElements) {
+        return { id: 'chaos', name: chaos.name, elements: all, consumed: on, damage: chaos.damagePerElement * all.length, def: {} };
+      }
+    }
+    for (const [id, def] of Object.entries(defs.reactions)) {
+      if (!def.elements.includes(element)) continue;
+      const other = def.elements.find((e) => e !== element);
+      if (on.includes(other)) return { id, name: def.name, elements: [element, other], consumed: [other], damage: def.damage, def };
+    }
+    return null;
+  }
+
+  /**
+   * 反応を起こす：reactionTriggered → 消えた属性の elementCleared → 追加ダメージ（soldierDamaged、cause "reaction"。盾が先に受ける）。
+   * 反応した属性は兵士から消える（付着も、武器の属性も。武器の攻撃ボーナスは残る）。当たった攻撃の属性は付着しない。
+   * 砕氷（frozenBonus）：凍結中なら追加ダメージが増えて、凍結が解ける。黒氷（frozenTurns）：生き残れば凍結する
+   */
+  triggerReaction(owner, soldier, reaction) {
+    const { def } = reaction;
+    let damage = reaction.damage;
+    const shatter = def.frozenBonus !== undefined && soldier.frozen > 0;
+    if (shatter) damage += def.frozenBonus;
+    const playerId = owner.id;
+    const { soldierId } = soldier;
+    this.emit('reactionTriggered', {
+      reaction: reaction.id, name: reaction.name, soldierId, playerId, elements: [...reaction.elements], damage, consumed: [...reaction.consumed],
+    });
+    for (const element of reaction.consumed) {
+      const weapon = soldier.element === element;
+      if (weapon) soldier.element = null;
+      soldier.attachments = soldier.attachments.filter((a) => a.element !== element);
+      this.emit('elementCleared', { playerId, soldierId, element, reason: 'reaction', ...(weapon ? { weapon: true } : {}) });
+    }
+    if (shatter) {
+      soldier.frozen = 0;
+      this.emit('statusCleared', { playerId, soldierId, status: 'frozen' });
+    }
+    if (damage > 0 && this.damageSoldier(owner, soldier, damage, 'reaction')) return;
+    if (def.frozenTurns !== undefined && soldier.frozen < def.frozenTurns) {
+      soldier.frozen = def.frozenTurns;
+      this.emit('statusApplied', { playerId, soldierId, status: 'frozen', turns: soldier.frozen });
+    }
+  }
+
+  /** 付着：持ち主の進軍が終わったら、残りを1減らす（0で消える） */
+  tickAttachments(player) {
+    if (!this.reactionDefs) return;
+    for (const soldier of player.soldiers) {
+      for (const a of [...soldier.attachments]) {
+        a.turns -= 1;
+        if (a.turns > 0) continue;
+        soldier.attachments = soldier.attachments.filter((x) => x !== a);
+        this.emit('elementCleared', { playerId: player.id, soldierId: soldier.soldierId, element: a.element, reason: 'expired' });
+      }
+    }
   }
 
   removeSoldier(owner, soldier, reason) {
@@ -1324,7 +1438,7 @@ export class Game {
       const amount = miss ? 0 : this.fightDamage(soldier, victim);
       this.emit('soldierShot', { ...shot, target: { kind: 'soldier', playerId: owner.id, soldierId: victim.soldierId }, amount });
       if (miss) this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
-      else this.damageSoldier(owner, victim, amount, 'shot');
+      else if (!this.damageSoldier(owner, victim, amount, 'shot')) this.elementHit(owner, victim, soldier.element);
     } else {
       const road = this.findRoad(soldier.roadId);
       const monster = this.monsters.find((m) =>
@@ -2171,6 +2285,9 @@ export class Game {
     // 霧：攻撃が外れる（ダメージ0）
     const missD = this.rollMiss();
     const missA = this.rollMiss();
+    // 付着・反応に使う、ぶつかる前の属性（反応で武器の属性が外れることがあるので、先に覚えておく）
+    const elementA = attacker.element;
+    const elementD = defender.element;
     if (missD) this.emitMiss(player.id, 'fight', { soldierId: attacker.soldierId });
     if (missA) this.emitMiss(enemy.id, 'fight', { soldierId: defender.soldierId });
     const toDefender = missD ? 0 : this.reduceDamage(enemy, this.fightDamage(attacker, defender));
@@ -2188,6 +2305,9 @@ export class Game {
     for (const [owner, s] of [[enemy, defender], [player, attacker]]) {
       if (s.isDead) this.removeSoldier(owner, s, 'killed');
     }
+    // 付着・反応（reactions を渡したときだけ）：当たった攻撃の属性（武器の属性）。外れた攻撃は付かない。同じ順番（守る側 → 攻める側）
+    if (!missD) this.elementHit(enemy, defender, elementA);
+    if (!missA) this.elementHit(player, attacker, elementD);
   }
 
   // ================= カードを出す =================
@@ -2619,8 +2739,8 @@ export class Game {
     this.requestDefense(
       { kind: 'soldiers', defenderId: side, attackerId: player.id, amount, soldierIds: [soldierId, ...near.map((n) => n.soldier.soldierId)] },
       () => {
-        if (owner.soldiers.includes(center)) this.damageSoldier(owner, center, amount, 'spell');
-        for (const n of near) if (n.owner.soldiers.includes(n.soldier)) this.damageSoldier(n.owner, n.soldier, half, 'spell');
+        if (owner.soldiers.includes(center)) this.spellHit(owner, center, amount, card);
+        for (const n of near) if (n.owner.soldiers.includes(n.soldier)) this.spellHit(n.owner, n.soldier, half, card);
       },
       () => this.checkGameOver(),
     );
@@ -2645,7 +2765,7 @@ export class Game {
     this.requestDefense(
       { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldierId] },
       () => {
-        if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+        if (owner.soldiers.includes(soldier)) this.spellHit(owner, soldier, amount, card);
       },
       () => this.checkGameOver(),
     );
@@ -2699,7 +2819,7 @@ export class Game {
     this.requestDefense(
       { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldierId] },
       () => {
-        if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+        if (owner.soldiers.includes(soldier)) this.spellHit(owner, soldier, amount, card);
       },
       () => this.checkGameOver(),
     );
@@ -2717,6 +2837,7 @@ export class Game {
     const turns = Math.max(card.def.turns, soldier.weakened?.turns ?? 0);
     soldier.weakened = { amount, turns };
     this.emit('statusApplied', { playerId: owner.id, soldierId, status: 'weakened', turns, amount });
+    this.elementHit(owner, soldier, card.def.element);
   }
 
   /** 呪い：持ち主の進軍が終わったら、残りを1減らす（0で治る） */
@@ -2776,7 +2897,7 @@ export class Game {
     this.requestDefense(
       { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldier.soldierId] },
       () => {
-        if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+        if (owner.soldiers.includes(soldier)) this.spellHit(owner, soldier, amount, card);
       },
       () => this.checkGameOver(),
     );
@@ -2902,7 +3023,7 @@ export class Game {
         for (const id of this.alivePlayerIds()) {
           const owner = this.players[id];
           for (const soldier of [...owner.visibleSoldiers]) {
-            if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+            if (owner.soldiers.includes(soldier)) this.spellHit(owner, soldier, amount, card);
           }
         }
         this.checkGameOver();
@@ -2921,7 +3042,7 @@ export class Game {
           this.requestDefense(
             { kind: 'soldiers', defenderId: enemy.id, attackerId: player.id, amount, soldierIds: hit.map((x) => x.soldierId) },
             () => {
-              for (const soldier of hit) if (enemy.soldiers.includes(soldier)) this.damageSoldier(enemy, soldier, amount, 'spell');
+              for (const soldier of hit) if (enemy.soldiers.includes(soldier)) this.spellHit(enemy, soldier, amount, card);
             },
             () => this.checkGameOver(),
           );
@@ -2942,6 +3063,8 @@ export class Game {
             soldier.frozen = Math.max(card.def.turns + this.stageEffectBonus(effect), soldier.frozen);
             this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status, turns: soldier.frozen });
           }
+          // ダメージのない魔法でも、当たれば魔法の属性が付着する（反応することもある）
+          this.elementHit(enemy, soldier, card.def.element);
         }
         break;
       }
@@ -2956,6 +3079,7 @@ export class Game {
           if (to === from) continue;
           soldier.position = to;
           this.emit('soldierMoved', { playerId: enemy.id, soldierId: soldier.soldierId, roadId: soldier.roadId, from, to, cause: 'pushed' });
+          this.elementHit(enemy, soldier, card.def.element);
         }
         break;
       }
@@ -2968,6 +3092,7 @@ export class Game {
           const turns = this.rules.poisonTurns || null; // 重ねがけで残りターンも延びる（0 は永続）
           soldier.poison = { amount: total, turns };
           this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status: 'poison', turns, amount: soldier.poison.amount });
+          this.elementHit(enemy, soldier, card.def.element);
         }
         enemy.castle.poison = this.capPoison(amount + (enemy.castle.poison ?? 0));
         enemy.castle.poisonTurns = this.rules.poisonTurns || null;
@@ -3008,7 +3133,7 @@ export class Game {
         }
         for (const id of this.alivePlayerIds().filter((id) => this.side(id) === enemy.id)) {
           const owner = this.players[id];
-          for (const soldier of [...owner.visibleSoldiers]) this.damageSoldier(owner, soldier, amount, 'spell');
+          for (const soldier of [...owner.visibleSoldiers]) this.spellHit(owner, soldier, amount, card);
         }
         this.damageCastle(enemy, amount, { kind: 'spell', type: card.type });
         this.checkGameOver();
@@ -3049,7 +3174,7 @@ export class Game {
           this.emit('castleCured', { playerId: player.id });
         }
         for (const foe of this.opponentsOf(player.id)) {
-          for (const soldier of [...foe.visibleSoldiers]) this.damageSoldier(foe, soldier, amount, 'spell');
+          for (const soldier of [...foe.visibleSoldiers]) this.spellHit(foe, soldier, amount, card);
         }
         break;
       }
@@ -3155,7 +3280,7 @@ export class Game {
           break;
         }
         for (const soldier of [...enemy.visibleSoldiers]) {
-          if (enemy.soldiers.includes(soldier)) this.damageSoldier(enemy, soldier, amount, 'spell');
+          if (enemy.soldiers.includes(soldier)) this.spellHit(enemy, soldier, amount, card);
         }
         this.requestDefense(
           { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount, from: 'spell', spellType: card.type },
@@ -3632,6 +3757,8 @@ export class Game {
       for (const st of base.soldiers) {
         const soldier = p.soldiers.find((x) => x.soldierId === st.soldierId);
         st.place = this.plaza ? this.placeOf(id, soldier) : null;
+        // 付着（reactions を渡したゲームだけ。通常モードの getState にはキーを足さない）
+        if (this.reactionDefs) st.attachments = soldier.attachments.map((a) => ({ ...a }));
       }
       players[id] = {
         ...base,

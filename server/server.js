@@ -51,6 +51,8 @@ export function loadData(dir = join(ROOT, 'data'), modeId = null) {
     if (entry.useRarities === false) { data.rarities = null; data.decks = null; }
     // 属性の強弱の表（elementsSet）。書いてあるモードだけ new Game({ elements }) に渡す。通常モードには渡さない（今までの4属性の輪）
     if (entry.elementsSet) data.elements = JSON.parse(readFileSync(inDir(entry.elementsSet), 'utf8'));
+    // 属性の付着と反応（reactionsSet）。書いてあるモードだけ new Game({ reactions }) に渡す。通常モードには渡さない（付着・反応なし）
+    if (entry.reactionsSet) data.reactions = JSON.parse(readFileSync(inDir(entry.reactionsSet), 'utf8'));
   }
   return data;
 }
