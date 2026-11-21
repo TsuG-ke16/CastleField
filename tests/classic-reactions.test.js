@@ -448,13 +448,14 @@ test('通常モードのデータでも、getState の兵士に attachments は�
 // ---- ターン開始時のランダム付着（rules.randomAttachTurnStart） ----
 
 /** p2 の兵士を出して p1 の番に戻したところ。attachRule で付着ルールを切り替える */
-function attachSetup({ rule = true, p2Soldiers = ['tank'], p1Soldiers = [], turns = 1 } = {}) {
+function attachSetup({ rule = true, p2Soldiers = ['tank'], p1Soldiers = [], turns = 1, noTurns = false } = {}) {
   const cards = { ...loadFixture('cards-step2.json'), ...EXTRA };
   const rules = { ...loadFixture('rules.json'), elementBonus: 0, maxHand: 12, soldiersPerTurn: 3, ...(rule ? { randomAttachTurnStart: true } : {}) };
   let calls = 0;
   const base = seededRng(5);
-  const rng = () => { calls += 1; return base(); };
-  const game = new Game({ cards, rules, rng, elements: readClassic('elements.json'), reactions: { ...REACTIONS, randomAttach: { turns } } });
+  const queue = []; // 先に入れた値から順に返す乱数（テストで選ばれる兵士・属性を決める）
+  const rng = () => { calls += 1; return queue.length ? queue.shift() : base(); };
+  const game = new Game({ cards, rules, rng, elements: readClassic('elements.json'), reactions: noTurns ? REACTIONS : { ...REACTIONS, randomAttach: { turns } } });
   game.debugSetHand('p1', p1Soldiers.length ? p1Soldiers : ['heal']);
   game.debugSetHand('p2', p2Soldiers.length ? p2Soldiers : ['heal']);
   game.debugSetDeck(Array(60).fill('heal'));
@@ -466,7 +467,7 @@ function attachSetup({ rule = true, p2Soldiers = ['tank'], p1Soldiers = [], turn
       assert.equal(game.playCard(c.cardId, { playerId: pid === 'p1' ? 'p2' : 'p1', roadId: undefined }).ok, true);
     }
   };
-  return { game, log, play, calls: () => calls };
+  return { game, log, play, queue, calls: () => calls };
 }
 
 test('ターン開始時の付着：敵の見える兵士1体にランダムな属性が付き、反応は起きない。自分の兵士には付かない', () => {
@@ -499,7 +500,14 @@ test('ターン開始時の付着：忍者は選ばれない。敵の兵士が�
   a.game.endTurn();
   assert.equal(a.log.filter((e) => e.event === 'elementAttached').length, 0);
   assert.equal(a.calls(), before);
-  assert.ok(calls() >= 0);
+  // 忍者だけのときも、p1 の番の始めの前後で乱数を使わない
+  const n = attachSetup({ p2Soldiers: ['ninjaT'] });
+  n.game.endTurn();
+  n.play('p2', ['ninjaT']);
+  const c0 = n.calls();
+  n.game.endTurn();
+  assert.equal(n.calls(), c0);
+  assert.ok(calls() > 0);
 });
 
 test('ターン開始時の付着：キーなしなら何も起きず、乱数も使わない', () => {
@@ -530,4 +538,106 @@ test('データ：randomAttach の形のチェックと、クラシックのデ�
   assert.throws(() => validateReactions({ ...REACTIONS, randomAttach: { turns: 0 } }, ids), /randomAttach/);
   validateReactions(readClassic('reactions.json'), ids);
   assert.equal(readClassic('reactions.json').randomAttach.turns, 1);
+});
+
+const ELS = Object.keys(readClassic('elements.json').elements);
+/** 属性 id を選ぶ乱数の値 */
+const pickEl = (id) => (ELS.indexOf(id) + 0.5) / ELS.length;
+/** p1 が tank を1体、p2 が tank を n 体出して、p1 の番の始めの直前まで進める */
+function toP1Start(n = 1, opts = {}) {
+  const t = attachSetup({ p1Soldiers: [], p2Soldiers: Array(n).fill('tank'), ...opts });
+  t.game.endTurn();
+  t.play('p2', Array(n).fill('tank'));
+  return t;
+}
+
+test('ターン開始時の付着のあと、自分の属性の魔法・武器で反応が起きる（付いたターンに活かせる）', () => {
+  const t = toP1Start();
+  t.queue.push(0, pickEl('light')); // 1体目・光
+  t.game.endTurn();
+  const s = t.game.players.p2.soldiers[0];
+  assert.deepEqual(s.attachments.map((a) => a.element), ['light']);
+  t.log.length = 0;
+  t.game.debugSetHand('p1', ['darkBolt']);
+  const c = t.game.getState('p1').players.p1.hand[0];
+  assert.equal(t.game.playCard(c.cardId, { soldierId: s.soldierId }).ok, true);
+  assert.equal(t.log.filter((e) => e.event === 'reactionTriggered').length, 1);
+  assert.equal(s.attachments.length, 0);
+});
+
+test('ターン開始時の付着：チーム戦では味方の兵士に付かず、相手チームの兵士から選ばれる', () => {
+  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA };
+  const rules = { ...loadFixture('rules.json'), elementBonus: 0, maxHand: 12, playerCount: 4, randomAttachTurnStart: true };
+  const game = new Game({
+    cards, rules, rng: seededRng(5), elements: readClassic('elements.json'), reactions: REACTIONS,
+    setup: { teams: ['t1', 't2', 't1', 't2'] },
+  });
+  for (const id of ['p1', 'p2', 'p3', 'p4']) game.debugSetHand(id, ['tank']);
+  game.debugSetDeck(Array(80).fill('heal'));
+  const log = recordEvents(game, EVENT_TYPES);
+  game.start();
+  // 手番の順に、各自が tank を1体出す（p1 → p2 → p3 → p4 → p1 の始めに付着）
+  for (let i = 0; i < 4; i++) {
+    const pid = game.currentPlayer;
+    const c = game.getState(pid).players[pid].hand.find((h) => h.type === 'tank');
+    assert.equal(game.playCard(c.cardId, game.getTargets(c.cardId)[0]).ok, true, pid);
+    assert.equal(game.endTurn().ok, true);
+  }
+  // 付着は毎ターンの始めに起きる：付いた兵士の持ち主は、そのターンの人と別のチーム
+  let turnPlayer = null;
+  let n = 0;
+  for (const e of log) {
+    if (e.event === 'turnStarted') turnPlayer = e.playerId;
+    if (e.event === 'elementAttached') {
+      n += 1;
+      assert.equal(e.source, 'turnStart');
+      assert.notEqual(game.side(e.playerId), game.side(turnPlayer), `${turnPlayer} の番に ${e.playerId} の兵士`);
+    }
+  }
+  assert.ok(n >= 1);
+});
+
+test('ターン開始時の付着：先攻のターン1は、キーがあっても乱数を使わない（敵の兵士がいない）', () => {
+  const on = attachSetup({ rule: true });
+  const off = attachSetup({ rule: false });
+  assert.equal(on.calls(), off.calls());
+  assert.equal(on.log.filter((e) => e.event === 'elementAttached').length, 0);
+});
+
+test('ターン開始時の付着：兵士が複数のとき、乱数の値で兵士と属性が決まる', () => {
+  const last = toP1Start(3);
+  last.queue.push(0.99, 0.99); // 最後の兵士・最後の属性（混沌）
+  last.game.endTurn();
+  const ss = last.game.players.p2.soldiers;
+  assert.deepEqual(ss.map((s) => s.attachments.map((a) => a.element)), [[], [], ['chaos']]);
+  const first = toP1Start(3);
+  first.queue.push(0, 0); // 最初の兵士・最初の属性（火）
+  first.game.endTurn();
+  assert.deepEqual(first.game.players.p2.soldiers.map((s) => s.attachments.map((a) => a.element)), [['fire'], [], []]);
+});
+
+test('ターン開始時の付着：randomAttach を省略すると attachTurns の回数になる', () => {
+  const t = toP1Start(1, { noTurns: true });
+  t.queue.push(0, 0);
+  t.game.endTurn();
+  assert.equal(t.game.players.p2.soldiers[0].attachments[0].turns, REACTIONS.attachTurns);
+  assert.equal(t.log.filter((e) => e.event === 'elementAttached').at(-1).turns, REACTIONS.attachTurns);
+});
+
+test('ターン開始時の付着：同じ属性がもう付いていたら、残りは長い方にそろう', () => {
+  const t = toP1Start(1, { turns: 1 });
+  const s = t.game.players.p2.soldiers[0];
+  s.attachments.push({ element: 'fire', turns: 5 });
+  t.queue.push(0, pickEl('fire'));
+  t.game.endTurn();
+  assert.equal(s.attachments.length, 1);
+  assert.equal(s.attachments[0].turns, 5); // 短い付着で縮まない
+  assert.equal(t.log.filter((e) => e.event === 'elementAttached').at(-1).turns, 5);
+  // 逆に、残りが短ければ長い方（randomAttach.turns）に戻る
+  const u = toP1Start(1, { turns: 4 });
+  const s2 = u.game.players.p2.soldiers[0];
+  s2.attachments.push({ element: 'fire', turns: 1 });
+  u.queue.push(0, pickEl('fire'));
+  u.game.endTurn();
+  assert.equal(s2.attachments[0].turns, 4);
 });

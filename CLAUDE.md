@@ -345,14 +345,14 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
 | `collapseAnnounced` | `{ round, startRound }` … 崩壊の刻の予告（`rules.collapseAnnounceRound` の周回の始め。`roundStarted` のあと） |
 | `collapseStarted` | `{ round }` … 崩壊の刻が始まった（`rules.collapseStartRound` の周回の始め）。このあと全員の城の `castleDamaged`（`source: { kind: "collapse" }`） |
-| `elementAttached` | `{ playerId, soldierId, element, turns }` … 兵士に属性が付着した（同じ属性がまた付いて残りが戻ったときも出る）。`reactions` を渡したゲームだけ（「クラシックの付着と反応」） |
+| `elementAttached` | `{ playerId, soldierId, element, turns, source? }` … 兵士に属性が付着した（同じ属性がまた付いて残りが戻ったときも出る）。`source: "turnStart"` は自分のターンの始めのランダム付着（「クラシックの属性：ターン開始時のランダム付着」）。`reactions` を渡したゲームだけ（「クラシックの付着と反応」） |
 | `elementCleared` | `{ playerId, soldierId, element, reason, weapon? }` … 兵士の属性が消えた。`reason` は `"reaction"`（反応で使われた）か `"expired"`（付着の残りが0）。`weapon: true` は武器の属性が反応で外れたとき（武器の攻撃ボーナスは残る） |
 | `reactionTriggered` | `{ reaction, name, soldierId, playerId, elements, damage, consumed }` … 属性の反応が起きた。`reaction` は反応のID（`"chaos"` は混沌反応）、`elements` は反応した属性（当たった攻撃の属性も含む）、`consumed` は兵士から消える属性、`damage` は追加ダメージ（砕氷の凍結中の上乗せ込み）。このあと `elementCleared` …（`"reaction"`）→ 追加ダメージの `soldierDamaged`（`cause: "reaction"`） |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参）/ `"collapse"`（崩壊の刻のダメージで決着） |
 
 #### イベントの順番
 
-- ターンの始め：`turnStarted` → ドロー → 進軍
+- ターンの始め：`turnStarted` → ドロー → 進軍（`randomAttachTurnStart` のゲームでは、コイン・MP の回復のあと、ドローの前に `elementAttached`（`source: "turnStart"`））
   - ドロー：山札が途中で尽きたら `deckShuffled` → 残りを引く。`cardDrawn` は引いたぶんを1回にまとめて出す。1枚も引かなければ `cardDrawn` は出さない
   - 進軍：兵士は出した順に1体ずつ動く。城に着いた兵士は `soldierMoved` → `castleDamaged` → `soldierDestroyed`（`"reachedCastle"`）の順に出す
   - 城に着いた兵士の `soldierMoved.to` は `laneLength` にそろえる（`laneLength` 以上に進んでも `laneLength`）
@@ -1515,9 +1515,9 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 `rules.randomAttachTurnStart: true`（省略すると `false`）で有効。`reactions` を渡したゲーム（クラシック）だけ。スキルツリーはまだないので、今は有効にすると全プレイヤーに効く。処理は `Game.js` の `randomAttachAtTurnStart(player)` の1か所（スキルツリーが入ったら、ここの先頭の条件を「そのプレイヤーが持っているか」に変える）。
 
 - **いつ**：自分のターンの始め。コイン・MP の回復のあと、ドローの前（自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる）
-- **何を**：敵（チーム戦なら相手チーム）の**見える兵士**（忍者・暗殺者は除く）からランダムに1体を選び、`elements` の表の全属性（混沌を含む）から等確率で1つ付着させる（`rng` を2回使う）。自分の兵士には付かない。**付着だけで、その場で反応は起こさない**。同じ属性がもう付いていれば残りを戻す
+- **何を**：敵（チーム戦なら相手チーム）の**見える兵士**（忍者・暗殺者は除く）からランダムに1体を選び、`elements` の表の全属性（混沌を含む）から等確率で1つ付着させる（`rng` を2回使う）。自分の兵士には付かない。**付着だけで、その場で反応は起こさない**。同じ属性がもう付いていれば、残りは**長い方にそろえる**（武器・魔法で付いた長い残りが縮まない）
 - 敵の兵士がいなければ何も起きない（乱数も使わない）。キーが `false`/なしなら通常どおり（乱数も使わず、通常モードのシミュレーションは変わらない）
-- 付着が残る回数：`data/classic/reactions.json` の `randomAttach: { turns }`（仮：1。省略すると `attachTurns`）。1なら、付いたそのターンの自分の攻撃にだけ反応する（相手の進軍が終わると消える）
+- 付着が残る回数：`data/classic/reactions.json` の `randomAttach: { turns }`（仮：1。省略すると `attachTurns`）。付着の残りは**持ち主の進軍が終わるたびに1減る**ので、1なら「持ち主の次の進軍が終わるまで」残る。つまり、付いたそのターンの自分の攻撃のほか、その間の相手の守りの戦いでも、こちらの兵士の属性が当たれば反応する。3人以上では、間の席の人のターンでも残る。広場では、自分を狙っていない兵士にも付く（兵士同士は戦わないので、魔法でしか活かせない）
 - イベント：`elementAttached`（`{ playerId, soldierId, element, turns }`）に `source: "turnStart"` が付く（武器・魔法の付着には付かない）。反応したときは今までの `reactionTriggered`
 - 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`。`--rules '{"randomAttachTurnStart":true}'`）：
 

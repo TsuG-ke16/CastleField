@@ -1314,9 +1314,10 @@ export class Game {
     const element = ids[Math.floor(this.rng() * ids.length)];
     const turns = defs.randomAttach?.turns ?? defs.attachTurns;
     const found = s.attachments.find((a) => a.element === element);
-    if (found) found.turns = turns; // 同じ属性がまた付いたら、残りを戻す
+    // 同じ属性がもう付いていたら、残りは長い方にそろえる（武器・魔法で付いた長い残りを、短いランダム付着で縮めない）
+    if (found) found.turns = Math.max(found.turns, turns);
     else s.attachments.push({ element, turns });
-    this.emit('elementAttached', { playerId: enemy.id, soldierId: s.soldierId, element, turns, source: 'turnStart' });
+    this.emit('elementAttached', { playerId: enemy.id, soldierId: s.soldierId, element, turns: (found ?? s.attachments.at(-1)).turns, source: 'turnStart' });
   }
 
   /** 起こる反応（なければ null）。{ id, name, elements（反応した属性）, consumed（兵士から消える属性）, damage, def } */
