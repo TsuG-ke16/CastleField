@@ -82,6 +82,8 @@ export class Room {
     this.onMatchEnd = onMatchEnd;
     this.matchMeta = null;
     this.data = data;
+    /** この部屋のモードのID（既定のモードなら null。Lobby が決める） */
+    this.modeId = null;
     this.makeRng = makeRng;
     this.cpuDelayMs = cpuDelayMs;
     this.capacity = MAX_SEATS;
@@ -258,7 +260,7 @@ export class Room {
         return { seat: m.seat, userId: m.userId, name: m.name, cpu: m.cpu, won, left: !!this.seats[m.seat]?.left, deckName: m.deckName, stats: meta.stats?.[m.playerId] ?? { fuses: 0, monsters: 0 } };
       });
       this.onMatchEnd({
-        matchId: meta.matchId, modeId: this.ranked?.modeId ?? 'kingdom', roomId: this.roomId, startedAt: meta.startedAt, endedAt: Date.now(),
+        matchId: meta.matchId, modeId: this.ranked?.modeId ?? this.modeId ?? 'kingdom', roomId: this.roomId, startedAt: meta.startedAt, endedAt: Date.now(),
         turns: game.getState(null).turn, reason: payload.reason, ranked: !!this.ranked, deckMode: meta.deckMode, winCondition: meta.winCondition, seats,
       });
     } catch (err) {
@@ -895,10 +897,11 @@ export class Lobby {
   /**
    * @param {object} data
    * @param {() => () => number} makeRng
-   * @param {{ cpuDelayMs?: number }} [options] 部屋に渡す（Room の options）
+   * @param {{ cpuDelayMs?: number, modeData?: object }} [options] 部屋に渡す（Room の options）。modeData は既定以外のモードのデータ { モードのID: data }
    */
   constructor(data, makeRng, options = {}) {
     this.data = data;
+    this.modeData = options.modeData ?? {};
     this.makeRng = makeRng;
     this.options = options;
     /** @type {Map<string, Room>} 合言葉 → 部屋 */
@@ -906,7 +909,8 @@ export class Lobby {
     this.nextRoom = 1;
   }
 
-  join(passphrase, name, userId = null) {
+  /** modeId を省略すると、今までの（既定の）モード */
+  join(passphrase, name, userId = null, modeId = null) {
     if (typeof passphrase === 'string' && passphrase.startsWith('\u0000')) return { ok: false, reason: '合言葉が正しくありません' };
     if (typeof passphrase !== 'string' || passphrase.trim().length < 1 || passphrase.length > 32) {
       return { ok: false, reason: '合言葉は1〜32文字で入れてください' };
@@ -915,6 +919,7 @@ export class Lobby {
       return { ok: false, reason: '名前は1〜16文字で入れてください' };
     }
     const key = passphrase.trim();
+    if (modeId !== null && !Object.hasOwn(this.modeData, modeId)) return { ok: false, reason: 'そのモードは遊べません' };
     let room = this.rooms.get(key);
     const nobody = (r) => r.humanSeats.every((s) => s.clients.size === 0);
     // 始まる前に全員が帰ってしまった部屋（30秒以上だれもつないでいない）は作り直す
@@ -925,9 +930,12 @@ export class Lobby {
     // 試合が終わって誰もつないでいない部屋は作り直す
     if (room && room.started && room.game.phase === 'gameOver' && nobody(room)) room = this.drop(key);
     if (!room) {
-      room = new Room(`r${this.nextRoom++}`, this.data, this.makeRng, this.options);
+      room = new Room(`r${this.nextRoom++}`, modeId === null ? this.data : this.modeData[modeId], this.makeRng, this.options);
+      room.modeId = modeId;
       this.rooms.set(key, room);
     }
+    // 同じ合言葉の部屋が別のモードなら入れない（カードもルールも違うため）
+    if ((room.modeId ?? null) !== modeId) return { ok: false, reason: 'その合言葉の部屋は別のモードです' };
     return room.join(name.trim(), userId);
   }
 

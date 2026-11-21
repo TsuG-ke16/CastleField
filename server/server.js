@@ -14,12 +14,21 @@ import { Logger, Metrics, routeClass, startMaintenance } from './ops.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
-export function loadData(dir = join(ROOT, 'data')) {
+/**
+ * data/ を読む。modeId を渡すと、そのモード（data/modes.json）のカード・ルールに差しかえる。
+ * 省略するか、既定のモード（王国）なら、今までと同じ。
+ */
+export function loadData(dir = join(ROOT, 'data'), modeId = null) {
   const read = (name) => JSON.parse(readFileSync(join(dir, name), 'utf8'));
   const optional = (name) => (existsSync(join(dir, name)) ? read(name) : null);
-  return {
-    cards: read('cards.json'),
-    rules: read('rules.json'),
+  const modes = optional('modes.json');
+  const entry = modeId && modeId !== modes?.default ? modes?.modes?.[modeId] : null;
+  if (modeId && modeId !== modes?.default && !entry?.cardSet) throw new Error(`モード "${modeId}" は data/modes.json に cardSet がありません`);
+  // modes.json の "data/classic/cards.json" のような書き方を、dir の中の場所に直す
+  const inDir = (path) => join(dir, path.replace(/^data\//, ''));
+  const data = {
+    cards: entry ? JSON.parse(readFileSync(inDir(entry.cardSet), 'utf8')) : read('cards.json'),
+    rules: entry?.rulesSet ? JSON.parse(readFileSync(inDir(entry.rulesSet), 'utf8')) : read('rules.json'),
     monsters: optional('monsters.json'),
     upgrades: optional('upgrades.json'),
     castles: optional('castles.json'),
@@ -35,8 +44,19 @@ export function loadData(dir = join(ROOT, 'data')) {
     shop: optional('shop.json'),
     gacha: optional('gacha.json'),
     missions: optional('missions.json'),
-    modes: optional('modes.json'),
+    modes,
   };
+  if (entry) {
+    // レアリティを使わないモード（カードの count 枚ずつで山札を作る）。レアリティとコスト制のデッキは、このモードでは使えない
+    if (entry.useRarities === false) { data.rarities = null; data.decks = null; }
+  }
+  return data;
+}
+
+/** 既定以外のモード（modes.json に cardSet があるもの）のデータを、モードのIDごとに読む */
+export function loadModeData(dir = join(ROOT, 'data')) {
+  const modes = existsSync(join(dir, 'modes.json')) ? JSON.parse(readFileSync(join(dir, 'modes.json'), 'utf8')) : null;
+  return Object.fromEntries(Object.entries(modes?.modes ?? {}).filter(([id, m]) => id !== modes.default && m.cardSet).map(([id]) => [id, loadData(dir, id)]));
 }
 
 const MAX_BODY = 16 * 1024;
@@ -94,10 +114,11 @@ function sendJson(res, status, body) {
  * サーバーを作る（listen はしない）。
  * @param {object} [o]
  * @param {object} [o.data] { cards, rules, monsters, upgrades }。省略すると data/ を読む
+ * @param {object} [o.modeData] 既定以外のモードのデータ { モードのID: data }。部屋に入るとき body.mode で選ぶ
  * @param {() => () => number} [o.makeRng] 試合ごとの乱数を作る関数（テストでシードを固定するため）
  * @param {number} [o.cpuDelayMs] CPU が1手ごとに待つ時間（ミリ秒。0 ならすぐ動く。テスト用）
  */
-export function createGameServer({ data = loadData(), makeRng = () => Math.random, cpuDelayMs = 700, accounts = null, logger = null, maintenance = null } = {}) {
+export function createGameServer({ data = loadData(), modeData = {}, makeRng = () => Math.random, cpuDelayMs = 700, accounts = null, logger = null, maintenance = null } = {}) {
   const env = accounts?.env ?? process.env;
   const log = logger ?? new Logger({ level: env.CF_LOG_LEVEL ?? 'info', out: env.CF_LOG === 'off' || (!accounts && !maintenance) ? () => {} : undefined });
   const metrics = new Metrics();
@@ -106,8 +127,9 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
   const account = accounts ? createAccountRoutes({ db: new Db(accounts.dbPath ?? ':memory:'), cards: data.cards, progression: data.progression, profile: data.profile, ranks: data.ranks, seasons: data.seasons, shop: data.shop, gacha: data.gacha, missions: data.missions, modes: data.modes, data, metrics, log, readJson, ...accounts.routes, env: accounts.env ?? process.env }) : null;
   // data/ が間違っていたら、起動したときに分かるようにする（試合が始まってから落ちないように）
   new Game({ ...data, rng: makeRng() });
+  for (const d of Object.values(modeData)) new Game({ ...d, rng: makeRng() });
   // 試合の結果の記録（アカウント機能があるときだけ）。サーバーが決めた勝敗だけを使う
-  const lobby = new Lobby(data, makeRng, { cpuDelayMs, onMatchEnd: account ? (m) => account.onMatchEnd(m) : null, cosmeticsOf: account ? (u) => account.cosmeticsOf(u) : null, profileOf: account ? (u) => account.profileOf(u) : null });
+  const lobby = new Lobby(data, makeRng, { modeData, cpuDelayMs, onMatchEnd: account ? (m) => account.onMatchEnd(m) : null, cosmeticsOf: account ? (u) => account.cosmeticsOf(u) : null, profileOf: account ? (u) => account.profileOf(u) : null });
   account?.attachLobby(lobby);
   metrics.gauge('rooms', () => lobby.rooms.size);
   metrics.gauge('ranked_queue', () => account?.matchmaker?.queue.size ?? 0);
@@ -174,7 +196,7 @@ export function createGameServer({ data = loadData(), makeRng = () => Math.rando
       // ログイン中（ゲストも）は、アカウントの表示名で入る。名前は表示名の1つだけ
       const userId = account?.userIdOf(req) ?? null;
       const name = (userId && account.nameOf?.(userId)) || body.name;
-      return sendJson(res, 200, lobby.join(body.passphrase, name, userId));
+      return sendJson(res, 200, lobby.join(body.passphrase, name, userId, typeof body.mode === 'string' ? body.mode : null));
     }
     if (req.method === 'POST' && url.pathname === '/api/action') {
       const body = await readJson(req);
@@ -229,5 +251,5 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   if (envFile) console.log(`設定ファイル：${envFile}`);
   console.log(`アカウントのデータ：${dbPath}`);
   if (!process.env.CF_DB_PATH) console.warn('注意：CF_DB_PATH が未設定なので、データはゲームのフォルダの中（data-store/）に保存されます。フォルダを上書きすると消えます。.env.example を見てください');
-  createGameServer({ accounts: { dbPath } }).listen(port, () => console.log(`キャッスルフィールドのサーバー：http://localhost:${port}`));
+  createGameServer({ modeData: loadModeData(), accounts: { dbPath } }).listen(port, () => console.log(`キャッスルフィールドのサーバー：http://localhost:${port}`));
 }

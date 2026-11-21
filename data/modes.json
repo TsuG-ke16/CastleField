@@ -23,6 +23,20 @@
         "independent": true
       },
       "background": null
+    },
+    "classic": {
+      "name": "クラシック",
+      "available": false,
+      "hidden": true,
+      "world": "kingdom",
+      "cardSet": "data/classic/cards.json",
+      "rulesSet": "data/classic/rules.json",
+      "useRarities": false,
+      "rank": {
+        "enabled": false,
+        "independent": true
+      },
+      "background": "assets/bg/kingdom-meadow.png"
     }
   }
 }

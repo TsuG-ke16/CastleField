@@ -1,0 +1,203 @@
+{
+  "classic_king_infantry": {
+    "name": "歩兵",
+    "kind": "soldier",
+    "hp": 5,
+    "attack": 3,
+    "speed": 2,
+    "count": 4
+  },
+  "classic_king_cavalry": {
+    "name": "騎兵",
+    "kind": "soldier",
+    "hp": 4,
+    "attack": 4,
+    "speed": 3,
+    "count": 3
+  },
+  "classic_king_archer": {
+    "name": "弓兵",
+    "kind": "soldier",
+    "role": "archer",
+    "hp": 3,
+    "attack": 3,
+    "range": 2,
+    "stay": 2,
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ（反撃を受けない）。2ターンで帰る",
+    "count": 3
+  },
+  "classic_king_heavy": {
+    "name": "重装兵",
+    "kind": "soldier",
+    "hp": 9,
+    "attack": 2,
+    "speed": 1,
+    "count": 2
+  },
+  "classic_king_priest": {
+    "name": "聖術師",
+    "kind": "soldier",
+    "role": "mage",
+    "hp": 4,
+    "attack": 2,
+    "range": 2,
+    "stay": 2,
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る",
+    "count": 2
+  },
+  "classic_king_holy_sword": {
+    "name": "聖鉄の剣",
+    "kind": "weapon",
+    "attackBonus": 2,
+    "description": "兵士に持たせると攻撃+2（光の属性は PR3 で入れる。今は属性なし）",
+    "count": 2
+  },
+  "classic_king_lumina_lance": {
+    "name": "ルミナスランス",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "description": "兵士に持たせると攻撃+1（光の属性は PR3 で入れる。今は属性なし）",
+    "count": 2
+  },
+  "classic_king_lumina": {
+    "name": "ルミナ",
+    "kind": "spell",
+    "effect": "damageEnemySoldiers",
+    "amount": 2,
+    "scope": "lane",
+    "mpCost": 3,
+    "count": 3
+  },
+  "classic_king_minor_heal": {
+    "name": "小回復",
+    "kind": "spell",
+    "effect": "healOwnCastle",
+    "amount": 5,
+    "count": 3
+  },
+  "classic_king_heal": {
+    "name": "ヒール",
+    "kind": "spell",
+    "effect": "healOwnCastle",
+    "amount": 10,
+    "count": 2
+  },
+  "classic_king_shield": {
+    "name": "盾",
+    "kind": "defense",
+    "effect": "shieldSoldier",
+    "amount": 3,
+    "count": 3
+  },
+  "classic_king_wall": {
+    "name": "城壁",
+    "kind": "defense",
+    "effect": "armorCastle",
+    "amount": 5,
+    "count": 3
+  },
+  "classic_king_decoy": {
+    "name": "身代わり",
+    "kind": "defense",
+    "effect": "nullifySoldier",
+    "count": 2,
+    "description": "城に着いた兵士1体のダメージを無効にする（魔法には使えない）"
+  },
+  "classic_king_purify": {
+    "name": "浄化",
+    "kind": "spell",
+    "effect": "purifyFlare",
+    "amount": 1,
+    "mpCost": 2,
+    "count": 2,
+    "description": "自分の兵士と城の毒・やけど・凍結をすべて治し、相手の兵士全員に1ダメージ"
+  },
+  "classic_demon_skeleton": {
+    "name": "骸骨兵",
+    "kind": "soldier",
+    "hp": 5,
+    "attack": 3,
+    "speed": 2,
+    "count": 4
+  },
+  "classic_demon_imp": {
+    "name": "小悪魔",
+    "kind": "soldier",
+    "hp": 3,
+    "attack": 4,
+    "speed": 3,
+    "count": 3
+  },
+  "classic_demon_curser": {
+    "name": "呪術師",
+    "kind": "soldier",
+    "role": "mage",
+    "hp": 3,
+    "attack": 2,
+    "range": 2,
+    "stay": 2,
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る",
+    "count": 2
+  },
+  "classic_demon_shadow_scythe": {
+    "name": "シャドウサイズ",
+    "kind": "weapon",
+    "attackBonus": 2,
+    "description": "兵士に持たせると攻撃+2（闇の属性は PR3 で入れる。今は属性なし）",
+    "count": 2
+  },
+  "classic_demon_frost_blade": {
+    "name": "フロストブレード",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "description": "兵士に持たせると攻撃+1（氷の属性は PR3 で入れる。今は属性なし）",
+    "count": 2
+  },
+  "classic_demon_chaos_rod": {
+    "name": "カオスロッド",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "description": "兵士に持たせると攻撃+1（混沌の属性は PR3 で入れる。今は属性なし）",
+    "count": 2
+  },
+  "classic_demon_frost_breath": {
+    "name": "氷の息",
+    "kind": "spell",
+    "effect": "freezeEnemySoldiers",
+    "turns": 1,
+    "scope": "lane",
+    "mpCost": 2,
+    "count": 2
+  },
+  "classic_demon_poison_mist": {
+    "name": "毒の霧",
+    "kind": "spell",
+    "effect": "poisonEnemy",
+    "amount": 1,
+    "mpCost": 1,
+    "count": 3
+  },
+  "classic_demon_soul_shard": {
+    "name": "魂の欠片",
+    "kind": "spell",
+    "effect": "damageCastleAndHeal",
+    "amount": 3,
+    "heal": 3,
+    "count": 3,
+    "description": "相手の城に3ダメージ、自分の城を3回復する"
+  },
+  "classic_demon_blood_veil": {
+    "name": "血の膜",
+    "kind": "defense",
+    "effect": "armorCastle",
+    "amount": 4,
+    "count": 3
+  },
+  "classic_demon_bone_shield": {
+    "name": "骨の盾",
+    "kind": "defense",
+    "effect": "shieldSoldier",
+    "amount": 3,
+    "count": 3
+  }
+}

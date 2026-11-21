@@ -10,6 +10,21 @@ export function loadJson(name) {
   return JSON.parse(readFileSync(join(ROOT, 'data', name), 'utf8'));
 }
 
+/** data/modes.json の1モードぶん（既定のモードや、cardSet のないモードは null） */
+function modeEntry(mode) {
+  if (!mode) return null;
+  const modes = loadJson('modes.json');
+  if (mode === modes.default) return null;
+  const entry = modes.modes[mode];
+  if (!entry?.cardSet) throw new Error(`モード "${mode}" は data/modes.json にないか、cardSet がありません`);
+  return entry;
+}
+
+/** modes.json の "data/classic/cards.json" のような書き方で JSON を読む */
+function loadModeFile(path) {
+  return JSON.parse(readFileSync(join(ROOT, path), 'utf8'));
+}
+
 /** tests/fixtures/ の固定データを読む（data/ の調整でテストが落ちないように） */
 export function loadFixture(name) {
   return JSON.parse(readFileSync(join(ROOT, 'tests', 'fixtures', name), 'utf8'));
@@ -18,12 +33,14 @@ export function loadFixture(name) {
 /**
  * data/ の rules / cards に、一部だけ上書きしたものを返す。
  * cards はカードごとに中身をまぜる（null を渡したカードは消す）。
- * @param {{rules?: object, cards?: object, source?: 'data' | 'fixture'}} [patch]
+ * mode を渡すと、そのモード（data/modes.json）のカード・ルールを土台にする（省略すると今まで通り）。
+ * @param {{rules?: object, cards?: object, source?: 'data' | 'fixture', mode?: string|null}} [patch]
  */
-export function buildData({ rules: rulesPatch = {}, cards: cardsPatch = {}, source = 'data' } = {}) {
+export function buildData({ rules: rulesPatch = {}, cards: cardsPatch = {}, source = 'data', mode = null } = {}) {
   const load = source === 'fixture' ? loadFixture : loadJson;
-  const rules = { ...load('rules.json'), ...rulesPatch };
-  const cards = load('cards.json');
+  const entry = source === 'fixture' ? null : modeEntry(mode);
+  const rules = { ...(entry?.rulesSet ? loadModeFile(entry.rulesSet) : load('rules.json')), ...rulesPatch };
+  const cards = entry ? loadModeFile(entry.cardSet) : load('cards.json');
   for (const [k, v] of Object.entries(cardsPatch)) {
     if (v === null) delete cards[k];
     else cards[k] = { ...(cards[k] || {}), ...v };
@@ -37,8 +54,11 @@ export function buildData({ rules: rulesPatch = {}, cards: cardsPatch = {}, sour
  */
 export const PLAIN_START = { mulligan: false, secondPlayerHandBonus: 0, secondPlayerArmor: 0 };
 
-/** data/ の魔物と強化（STEP 3）。ファイルがなければ null */
-export function loadOptionalData() {
+/**
+ * data/ の魔物と強化（STEP 3）。ファイルがなければ null
+ * mode を渡して、そのモードがレアリティを使わない（useRarities: false）なら、rarities と decks は null にする
+ */
+export function loadOptionalData(mode = null) {
   const read = (name) => {
     try {
       return loadJson(name);
@@ -46,7 +66,9 @@ export function loadOptionalData() {
       return null;
     }
   };
-  return { monsters: read('monsters.json'), upgrades: read('upgrades.json'), castles: read('castles.json'), decks: read('decks.json'), rarities: read('rarities.json'), weather: read('weather.json'), stages: read('stages.json') };
+  const data = { monsters: read('monsters.json'), upgrades: read('upgrades.json'), castles: read('castles.json'), decks: read('decks.json'), rarities: read('rarities.json'), weather: read('weather.json'), stages: read('stages.json') };
+  if (modeEntry(mode)?.useRarities === false) { data.rarities = null; data.decks = null; }
+  return data;
 }
 
 /** シード付きの乱数（mulberry32）。同じシードなら同じ並びになる */

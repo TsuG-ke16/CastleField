@@ -7,6 +7,7 @@
 //       … data/ の値を一部だけ上書きして試す（cards はカードごとに中身をまぜる）
 //   node tests/sim/run.js --json                … 結果を JSON で出す
 //   node tests/sim/run.js --no-monsters         … 魔物と強化なしで回す
+//   node tests/sim/run.js --mode classic        … クラシックモードのカード・ルールで回す（省略すると通常モード）
 // 同じ引数なら、誰が回しても同じ結果になる。
 import { buildData, loadOptionalData } from '../helpers.js';
 import { runMany } from './sim.js';
@@ -39,8 +40,14 @@ const DEFAULT_MATCHES = [
 ];
 
 const matches = opt('match', null) ? [opt('match')] : DEFAULT_MATCHES;
-const { rules, cards } = buildData({ rules: rulesPatch, cards: cardsPatch });
-const gameOptions = args.includes('--no-monsters') ? {} : loadOptionalData();
+const mode = opt('mode', null);
+let rules, cards, gameOptions;
+try {
+  ({ rules, cards } = buildData({ rules: rulesPatch, cards: cardsPatch, mode }));
+  gameOptions = args.includes('--no-monsters') ? {} : loadOptionalData(mode);
+} catch (err) {
+  die(err.message);
+}
 // --stage lava：ステージを1つに決める（省略すると毎試合ランダム。--no-stages でステージなし）
 if (args.includes('--no-stages')) delete gameOptions.stages;
 else if (opt('stage', null)) gameOptions.setup = { ...(gameOptions.setup ?? {}), stage: opt('stage') };

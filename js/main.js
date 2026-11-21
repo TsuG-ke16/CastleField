@@ -208,10 +208,20 @@ function hideLoading() {
 
 async function boot() {
   try {
+    // URL の ?mode=classic で、そのモード（data/modes.json）のカード・ルールを使う。省略すると今まで通り
+    let cardsPath = 'data/cards.json', rulesPath = 'data/rules.json', modeEntry = null;
+    if (params.has('mode')) {
+      const modes = await loadJson('data/modes.json');
+      modeEntry = params.get('mode') === modes.default ? null : modes.modes?.[params.get('mode')];
+      if (params.get('mode') !== modes.default && !modeEntry?.cardSet) throw new Error(`モード "${params.get('mode')}" はありません`);
+      if (modeEntry) { cardsPath = modeEntry.cardSet; rulesPath = modeEntry.rulesSet ?? rulesPath; }
+    }
     [cards, rules, monsters, upgrades, rarities, castles, decks, weather, stamps, stages] = await Promise.all([
-      loadJson('data/cards.json'), loadJson('data/rules.json'),
+      loadJson(cardsPath), loadJson(rulesPath),
       loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'), loadOptionalJson('data/stages.json'),
     ]);
+    // レアリティを使わないモード（クラシック）：rarities とコスト制のデッキは使わない
+    if (modeEntry?.useRarities === false) { rarities = null; decks = null; }
   } catch (err) {
     console.error(err);
     hideLoading();
