@@ -1234,6 +1234,11 @@ export class Game {
 
   removeSoldier(owner, soldier, reason) {
     owner.removeSoldier(soldier.soldierId);
+    // 蘇生（reviveFallen）のために、HPが0になって倒れた（killed）兵士を持ち主ごとに1体だけ覚えておく（getState には出さない）。
+    // 魔物のカードの駒は山札に戻らない特別なカードなので、生き返らせない
+    if (reason === 'killed' && this.cardDefs[soldier.type]?.monster === undefined) {
+      owner.lastFallen = { type: soldier.type, roadId: soldier.roadId, targetId: soldier.targetId, maxHp: soldier.maxHp };
+    }
     this.emit('soldierDestroyed', { playerId: owner.id, soldierId: soldier.soldierId, reason });
   }
 
@@ -2304,6 +2309,18 @@ export class Game {
           targets: this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers.map((x) => ({ soldierId: x.soldierId }))),
           reason: '道の上に相手の兵士がいません',
         };
+      case 'randomElementDamage':
+        // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
+        return {
+          targets: this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers.map((x) => ({ soldierId: x.soldierId }))),
+          reason: '道の上に相手の兵士がいません',
+        };
+      case 'reviveFallen': {
+        // 蘇生：最後に倒れた自分の兵士がいて、その道がまだあるときだけ（対象は自分）
+        const fallen = player.lastFallen;
+        if (!fallen) return { targets: [], reason: '生き返らせる兵士がいません' };
+        return { targets: this.findRoad(fallen.roadId) ? [{ playerId: player.id }] : [], reason: '倒れた兵士の道がもうありません' };
+      }
       case 'weakenAttack': {
         // 呪い：相手の兵士1体。もう同じか強い呪いがかかっている兵士は選べない（出しても何も変わらないため）
         const all = this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers);
@@ -2538,6 +2555,7 @@ export class Game {
       });
     } else if (card.isSpell && target.soldierId) {
       if (card.def.effect === 'singleDamage') this.singleDamage(player, card, target.soldierId);
+      else if (card.def.effect === 'randomElementDamage') this.randomElementDamage(player, card, target.soldierId);
       else if (card.def.effect === 'weakenAttack') this.weakenAttack(player, card, target.soldierId);
       else this.chainBlast(player, card, target.soldierId);
     } else if (card.isSpell && target.monsterId) {
@@ -2549,6 +2567,8 @@ export class Game {
         this.damageMonster(monster, card.def.amount + this.stageEffectBonus(card.def.effect), { playerId: player.id, type: card.type });
         this.defeatMonsterIfDead(monster, player.id);
       }
+    } else if (card.isSpell && card.def.effect === 'reviveFallen') {
+      this.reviveFallen(player, card);
     } else if (card.isSpell) {
       this.castSpell(player, card, this.players[target.playerId], target.roadId);
     } else {
@@ -2594,6 +2614,63 @@ export class Game {
       },
       () => this.checkGameOver(),
     );
+  }
+
+  /**
+   * ランダム属性ダメージ（randomElementDamage）：敵兵士1体に amount（ステージの魔法の増加は乗る）。
+   * 火・水・風・土のうちランダムな1つの属性で撃ち、その属性が相手の兵士の属性に強ければ elementBonus 増える
+   * （属性なしの相手・弱い側に当たったときは増減なし）。盾が先に受ける。霧で外れる。相手は盾を出せる
+   */
+  randomElementDamage(player, card, soldierId) {
+    const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
+    const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
+    const element = ELEMENTS[Math.floor(this.rng() * ELEMENTS.length)];
+    const strong = soldier.element && ELEMENT_BEATS[element] === soldier.element;
+    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + (strong ? this.rules.elementBonus : 0);
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId, element });
+    if (this.rollMiss()) {
+      this.emitMiss(player.id, 'spell', { type: card.type });
+      return;
+    }
+    this.requestDefense(
+      { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldierId] },
+      () => {
+        if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+      },
+      () => this.checkGameOver(),
+    );
+  }
+
+  /**
+   * 蘇生（reviveFallen）：最後に倒れた自分の兵士1体を、倒れた道の自分の城の前（マス0）に生き返らせる。
+   * HP は倒れたときの最大HPの amount 倍（切り上げ・最低1）。武器・盾・状態異常はなし。攻撃は新しく出した兵士と同じ決まり
+   * （種類の値＋兵舎＋訓練）。出したターンには動かない
+   */
+  reviveFallen(player, card) {
+    const fallen = player.lastFallen;
+    player.lastFallen = null;
+    // 忍者は相手から見えないので、どの道に生き返ったか（roadId）は spellCast に入れない（soldierDeployed は stealth 付きで出る）
+    const hidden = this.cardDefs[fallen.type].role === 'ninja';
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player', ...(hidden ? {} : { roadId: fallen.roadId }) });
+    const soldierId = `s${String(this.nextSoldierNumber++).padStart(2, '0')}`;
+    const soldier = new Soldier(soldierId, { type: fallen.type, def: this.cardDefs[fallen.type] }, fallen.roadId, fallen.targetId);
+    soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
+    soldier.baseAttack += player.armyAttack; // 訓練（コインで買う）
+    soldier.maxHp = fallen.maxHp;
+    soldier.hp = Math.max(1, Math.ceil(fallen.maxHp * card.def.amount));
+    player.soldiers.push(soldier);
+    if (soldier.stealth) (this.stealthSides ??= new Map()).set(soldierId, this.side(player.id));
+    this.emit('soldierDeployed', {
+      playerId: player.id,
+      soldierId,
+      type: fallen.type,
+      roadId: fallen.roadId,
+      targetId: fallen.targetId,
+      position: soldier.position,
+      hp: soldier.hp,
+      attack: soldier.attack,
+      revived: true,
+    });
   }
 
   /**

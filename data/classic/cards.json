@@ -261,5 +261,21 @@
     "amount": 6,
     "mpCost": 4,
     "count": 2
+  },
+  "classic_demon_echo_soul": {
+    "name": "残響の魂",
+    "kind": "spell",
+    "effect": "reviveFallen",
+    "amount": 0.5,
+    "mpCost": 3,
+    "count": 2
+  },
+  "classic_demon_chaos_pulse": {
+    "name": "カオスパルス",
+    "kind": "spell",
+    "effect": "randomElementDamage",
+    "amount": 3,
+    "mpCost": 3,
+    "count": 2
   }
 }

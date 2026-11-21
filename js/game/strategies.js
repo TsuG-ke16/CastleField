@@ -399,7 +399,8 @@ function smartStep(game, pid, ctx) {
   // 呪い（weakenAttack）：攻撃力がいちばん高い兵士（同じなら前の兵士）
   if (enemy && enemy.soldiers.length > 0) {
     const byId = new Map(enemies.flatMap((e) => e.soldiers).map((s) => [s.soldierId, s]));
-    for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'singleDamage')) {
+    // ランダム属性ダメージ（randomElementDamage）も同じ選び方（属性の上乗せは数えない）
+    for (const c of playable.filter((x) => ['singleDamage', 'randomElementDamage'].includes(ctx.cards[x.type].effect))) {
       const amount = ctx.cards[c.type].amount;
       const pickFront = (targets) => {
         const list = targets.map((t) => ({ t, s: byId.get(t.soldierId) })).filter((x) => x.s);
@@ -431,6 +432,8 @@ function smartStep(game, pid, ctx) {
     ...typesWithEffect(ctx, 'healOwnCastle'),
   ]);
   if (played) return true;
+  // 蘇生：ほかに出す兵士がないとき、最後に倒れた兵士を生き返らせる（出せないときは playable に入らない）
+  if (playFirst(game, playable, typesWithEffect(ctx, 'reviveFallen'))) return true;
   // 出すものがないとき、コインを増やすカード
   if (playFirst(game, playable, typesWithEffect(ctx, 'gainCoins'))) return true;
   // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み

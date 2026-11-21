@@ -23,6 +23,8 @@ export const EFFECTS = {
     freezeEnemySoldiers: ['turns'],
     singleDamage: ['amount'], // 敵兵士1体に amount ダメージ（対象 { soldierId }。盾が先に受ける）
     weakenAttack: ['amount', 'turns'], // 呪い：敵兵士1体の攻撃力を amount 下げる（最低1）。持ち主の進軍 turns 回ぶん続く
+    randomElementDamage: ['amount'], // 敵兵士1体に amount ダメージ。火・水・風・土のうちランダムな属性で撃ち、強い属性なら elementBonus 増える
+    reviveFallen: [], // 蘇生：最後に倒れた自分の兵士1体を、HP を最大HPの amount 倍（0より大きく1以下の数。下でチェック）で生き返らせる
     chainBlast: ['amount'], // チェーン・ブラスト：相手の兵士1体に amount、まわり（同じ道の前後1マス・となりの道の同じマス）に半分（切り上げ）
     ignitionBurst: ['amount', 'selfDamage'], // イグニッション・バースト：自分の城に selfDamage、相手の兵士全員と城に amount
     armorBlast: [], // シールド・ブラスト：自分の城壁の値ぶん相手の城にダメージ。城壁は0になる
@@ -75,7 +77,7 @@ export const BASIC_DICE = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff'];
 /** メインを使わず何枚でも出せるサイコロ（ほかはメイン） */
 export const SUPPORT_DICE = ['mana', 'coin', 'shield', 'buff'];
 
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
@@ -205,6 +207,11 @@ export class Card {
         if (!SPIRIT_KINDS.includes(def.spirit)) throw new Error(`${where}: spirit は ${SPIRIT_KINDS.join(' / ')} のどれかにしてください`);
       } else if (def.spirit !== undefined) {
         throw new Error(`${where}: spirit を書けるのは effect が summonSpirit の魔法だけです`);
+      }
+
+      // 蘇生：amount は割合（0より大きく1以下の数。整数でなくてよい）
+      if (def.effect === 'reviveFallen' && !(typeof def.amount === 'number' && def.amount > 0 && def.amount <= 1)) {
+        throw new Error(`${where}: amount（生き返ったときのHPの割合）は 0 より大きく 1 以下の数にしてください（例：0.5）`);
       }
 
       if (def.effect === 'setTime' && def.time !== 'night' && def.time !== 'day') {

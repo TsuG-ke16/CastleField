@@ -304,13 +304,13 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `cardsFused` | `{ playerId, cardIds: [a, b], cardId, from, to }` … 手札の2枚（`from` の種類）が、1枚（`to` の種類）になった。オンラインでは本人以外に `{ playerId }` だけ送る |
 | `discardRequired` | `{ playerId, count }` … 捨てる必要がある枚数 |
 | `cardDiscarded` | `{ playerId, cardIds }` |
-| `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack }` … `hp` / `attack` は出した時点の値 |
+| `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack, revived? }` … `hp` / `attack` は出した時点の値。`revived: true` は蘇生（`reviveFallen`）で生き返った兵士 |
 | `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause?, slipped? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい）。`slipped: true` は氷のステージで滑って1マス余分に進んだとき |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
 | `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
 | `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
-| `spellCast` | `{ playerId, type, target, targetKind, roadId?, soldierId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）と、`castleSpellHitsFront` の城への魔法（道が決まるとき）に入る。`soldierId` は、城への魔法が先頭の兵士に当たるとき（`castleSpellHitsFront`）とチェーン・ブラストのときだけ入る（このあと `soldierDamaged`（`cause: "spell"`））。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
+| `spellCast` | `{ playerId, type, target, targetKind, roadId?, soldierId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）と、`castleSpellHitsFront` の城への魔法（道が決まるとき）に入る。`soldierId` は、城への魔法が先頭の兵士に当たるとき（`castleSpellHitsFront`）とチェーン・ブラストのときだけ入る（このあと `soldierDamaged`（`cause: "spell"`））。`element` は、ランダム属性ダメージ（`randomElementDamage`）で選ばれた属性（`"fire"` / `"water"` / `"wind"` / `"earth"`）。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
 | `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。崩壊の刻のダメージは `source: { kind: "collapse" }`。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }` |
 | `castleHealed` | `{ playerId, amount, hp }` … `amount` は実際に増えた量（上限で止まったぶんは含まない） |
 | `weaponEquipped` | `{ playerId, soldierId, type, attack, element }` … 武器を持たせた。`attack` は持たせたあとの攻撃力（重ねると足し算。`element` は最後の武器の属性に上書き） |
@@ -426,6 +426,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - `mpAllCards`：`true` なら、兵士・武器・防御・回復などのカードも、カードの `mpCost`（書かなければ0）だけ MP を使う（下の「クラシックの道具」）。省略すると `false`（今までどおり、攻撃の魔法と精霊だけ）
 - `mpPerTurn`：自分のターンの始めに増える MP（0以上の整数。省略すると0）。`secondPlayerMp`：後攻（先攻以外の人）の最初の MP に足す量（0以上の整数。省略すると0。チーム戦では使わない）
 - 魔法の `effect` に `singleDamage`（`amount`。敵兵士1体にダメージ）と `weakenAttack`（`amount`・`turns`。呪い：敵兵士1体の攻撃力を下げる）が増えた（下の「クラシックの道具」）
+- 魔法の `effect` に `reviveFallen`（`amount`：0より大きく1以下の数。蘇生）と `randomElementDamage`（`amount`。ランダムな属性で敵兵士1体にダメージ）が増えた（下の「クラシックの道具：蘇生・ランダム属性ダメージ」）
 - `exhaust`：`true` のカードは使い切り。使うと使い切り置き場へ行き、山札に戻らない。省略すると `false`。手札の上限で捨てたときは、ふつうに捨て札置き場へ行く（山札に戻る）
 - カードの説明文は UI が `kind` / `effect` と数値から組み立てる。カードに `description` を書けば、そちらを優先する（Game は `description` を使わない）
 
@@ -1434,6 +1435,37 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - CPU（`smart` 系）：1体への魔法は、倒せる兵士のうちいちばん前の兵士（いなければいちばん前の兵士）。呪いは攻撃力がいちばん高い兵士。MP が足りないカードは `canPlayCard` で出せないので選ばない
 - 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1`）：smart 同士 100/100 決着・平均106手番・先攻の勝率51%・崩壊の刻で決着25%（PR2a のときは126手番・49%）。smart が random に勝つ割合は、先攻73%・後攻74%（PR2a のときは先攻81%）。通常モードのシミュレーションは変わらない（変更前と結果が完全に一致）
 - 画面（UI担当にお願いしたいこと）：新しい5枚の絵、`weakened` の表示（兵士のそば）と `statusApplied` / `statusCleared` の演出、兵士・武器・防御の札に必要な MP を出す（`getState().mpCosts`）、`singleDamage` / `weakenAttack` の対象選び（相手の兵士をタップ）と命中の演出、`js/ui/text.js` の説明文・効果アイコン
+
+## クラシックの道具：蘇生・ランダム属性ダメージ（PR2c。人間の指示。仮）
+
+どちらもカードの `effect` で切り替える（通常モードの `data/cards.json` には書いていない）。
+
+### 蘇生（`effect: "reviveFallen"`、`amount`）
+- 自分の兵士のうち**最後に倒れた1体**を、倒れた道の自分の城の前（マス0）に生き返らせる。対象は自分 `{ playerId }`（省略できる）
+- 「倒れた」＝ `soldierDestroyed` の `reason` が `"killed"`。城に着いた・帰った・抜けた・道がなくなった兵士は数えない。魔物のカードの駒（`monster`）は生き返らせない
+- 記録は持ち主ごとに1体だけ（新しく倒れると上書き。生き返らせたら消える）。`getState()` には出さない
+- HP は倒れたときの最大HP（鍛錬を含む）× `amount`（切り上げ・最低1）。最大HPは元のまま。武器・盾・状態異常はなし。攻撃は新しく出した兵士と同じ（種類の値＋兵舎＋訓練）。出したターンは動かない
+- メインの1枚を使う。兵士の枠（`soldiersPerTurn`）には数えない。攻撃の魔法ではないので、MP は `mpAllCards` のときだけ（カードの `mpCost`）
+- 出せない：倒れた兵士がいない（「生き返らせる兵士がいません」）／その道がもうない（「倒れた兵士の道がもうありません」）
+- 忍者も生き返る（`soldierDeployed` は `stealth` 付き。`spellCast` には `roadId` を入れない）
+- イベント：`cardPlayed` → `spellCast`（`target` は自分、`roadId`）→ `soldierDeployed`（`revived: true`）
+
+### ランダム属性ダメージ（`effect: "randomElementDamage"`、`amount`）
+- 対象は相手の見える兵士1体 `{ soldierId }`（忍者は選べない）。火・水・風・土のうちランダムな1つ（`rng`）の属性で撃つ
+- ダメージは `amount`（ステージの魔法の増加は乗る）＋、その属性が兵士の属性に強いとき `rules.elementBonus`。属性なしの相手・弱い側に当たったときは増減なし。盾が先に受ける。霧で外れる。相手は盾を出せる（`kind: "soldiers"`、`amount` は上乗せ込み）
+- 攻撃の魔法（メインの1枚・MP を使う。`MP_EFFECTS`）
+- イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`・`element`）→（防御）→ `soldierDamaged`（`cause: "spell"`）→（0なら）`soldierDestroyed`（`"killed"`）
+
+### クラシックのカード
+| 陣営 | カード（type） | 効果 | MP | 枚数 |
+|---|---|---|---|---|
+| 魔族 | 残響の魂（`classic_demon_echo_soul`） | 蘇生（HP半分） | 3 | 2 |
+| 魔族 | カオスパルス（`classic_demon_chaos_pulse`） | ランダム属性で敵兵士1体に3 | 3 | 2 |
+
+- 山札は 80 枚（`tests/classic-mode.test.js` の上限）。王国の蘇生（聖なる祈り）は、入れると上限を超えるので入れていない
+- CPU（`smart` 系）：ランダム属性ダメージは1体へのダメージと同じ選び方。蘇生は、ほかに出す兵士・魔法がないときに出す
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均104手番・先攻の勝率39%±10%（PR2b は51%）・崩壊の刻で決着19%（PR2b は25%）。smart が random に勝つ割合は先攻66%・後攻83%。通常モードのシミュレーションは変わらない
+- 画面（UI担当にお願いしたいこと）：2枚の絵、`soldierDeployed.revived` の演出、`spellCast.element` の色、`js/ui/text.js` の説明文・効果アイコン、`randomElementDamage` の対象選び（相手の兵士をタップ）
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
