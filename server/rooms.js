@@ -721,7 +721,7 @@ export class Room {
   }
 
   cpuCtx() {
-    const ctx = { cards: this.data.cards, rules: this.game.rules ?? this.data.rules, upgrades: this.data.upgrades ?? {}, discardCount: 0 };
+    const ctx = { cards: this.game.cardDefs ?? this.data.cards, rules: this.game.rules ?? this.data.rules, upgrades: this.data.upgrades ?? {}, discardCount: 0 };
     // CPU の攻撃で CPU が防御を選ぶ場面は、その場で返事をして、攻めた CPU の続きを進める（人なら止まって待つ）
     ctx.onDefense = (game) => {
       for (let i = 0; i < 50; i++) {

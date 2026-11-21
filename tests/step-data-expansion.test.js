@@ -87,5 +87,7 @@ test('本物のデータが検証を通る', () => {
   }
   validateSynergies(syn, factions, races);
   validateEvolutions(evo, loadJson('cards.json'));
-  assert.equal(loadJson('rules.json').maxMp, 30);
+  // モードの分離：通常モードの MP 上限は 20 のまま。30 は四大陣営モードだけ（data/faction-rules.json）
+  assert.equal(loadJson('rules.json').maxMp, 20);
+  assert.equal(loadJson('faction-rules.json').maxMp, 30);
 });

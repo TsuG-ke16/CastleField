@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game } from '../js/game/Game.js';
 import { DEFAULT_ELEMENTS, ELEMENT_IDS, validateElements, elementMultiplier, applyElementMultiplier } from '../js/game/Elements.js';
-import { loadJson, loadFixture, seededRng } from './helpers.js';
+import { loadJson, loadFixture, seededRng, inFactionMode } from './helpers.js';
 
 const table = DEFAULT_ELEMENTS;
 const mult = (a, d) => elementMultiplier(table, a, d);
@@ -84,7 +84,7 @@ test('applyElementMultiplier：切り上げ・最低1。浮動小数の誤差で
 function makeGame(extra = {}, rulesPatch = {}) {
   const cards = loadFixture('cards-step2.json');
   const rules = { ...loadFixture('rules.json'), ...rulesPatch };
-  return new Game({ cards, rules, rng: seededRng(1), ...extra });
+  return new Game(inFactionMode({ cards, rules, rng: seededRng(1), ...extra }));
 }
 const unit = (attack, element) => ({ attack, element });
 

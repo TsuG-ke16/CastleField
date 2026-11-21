@@ -8,7 +8,7 @@ export const SOLDIER_ROLES = ['melee', 'archer', 'mage', 'ninja', 'guard'];
 /** 進んで城を攻める役割（speed を書く）。ninja（忍者）は進むが、相手から見えず、相手の兵士とは戦わずにすり抜ける */
 export const MOVING_ROLES = ['melee', 'ninja'];
 import { ELEMENT_IDS } from './Elements.js';
-import { COMMON_FACTION, isValidFactionId } from './Factions.js';
+import { COMMON_FACTION, FACTION_OVERRIDE_KEYS, isValidFactionId } from './Factions.js';
 /** 属性は10種のうち「無」を除く9つ（無は element を書かないこと）。火水風土氷雷闇光混沌 */
 export const ELEMENTS = ELEMENT_IDS;
 /** 精霊の種類：fire=毎ターン敵の城を攻める／water=毎ターン城を回復／wind=兵士の速さの最低値／earth=受けるダメージを軽くする */
@@ -169,6 +169,11 @@ export class Card {
           if (typeof def.fuseTo !== 'string' || !Object.hasOwn(cards, def.fuseTo)) throw new Error(`${where}: fuseTo に、合成してできるカード種類を書いてください`);
           if (cards[def.fuseTo].rarity !== next) throw new Error(`${where}: fuseTo は1つ上のレアリティ（${next}）のカードにしてください`);
         }
+        // 陣営モードで差しかえる合成先も、1つ上のレアリティのカードだけ
+        const ovTo = def.factionOverride?.fuseTo;
+        if (typeof ovTo === 'string' && Object.hasOwn(cards, ovTo) && cards[ovTo].rarity !== next) {
+          throw new Error(`${where}: factionOverride.fuseTo は1つ上のレアリティ（${next}）のカードにしてください`);
+        }
       }
       if (def.deckAs !== undefined && (typeof def.deckAs !== 'string' || (rarities && (!Object.hasOwn(rarities, def.deckAs) || rarities[def.deckAs].special)))) {
         throw new Error(`${where}: deckAs（デッキ編成で数えるレアリティ）は、スペシャル以外のレアリティにしてください`);
@@ -178,11 +183,30 @@ export class Card {
       if (def.faction !== undefined && !isValidFactionId(def.faction, factions)) {
         throw new Error(`${where}: faction は ${factions ? [...Object.keys(factions), COMMON_FACTION].join(' / ') : '陣営のID（文字列）'} のどれかにしてください`);
       }
-      // 合成先が別の陣営のカードにならないように（両方に faction があるときだけ。旧カードは互換のため確かめない）
-      if (def.faction !== undefined && typeof def.fuseTo === 'string' && Object.hasOwn(cards, def.fuseTo)) {
-        const to = cards[def.fuseTo];
+      // factionOverride：陣営モードのときだけ、名前・合成先・属性を差しかえる（通常モードの定義は変えない）。
+      // 書けるのは FACTION_OVERRIDE_KEYS だけ。faction のあるカードにだけ書ける
+      if (def.factionOverride !== undefined) {
+        const ov = def.factionOverride;
+        if (!ov || typeof ov !== 'object' || Array.isArray(ov)) throw new Error(`${where}: factionOverride はオブジェクトにしてください`);
+        if (def.faction === undefined) throw new Error(`${where}: factionOverride は faction のあるカードにだけ書けます`);
+        for (const key of Object.keys(ov)) {
+          if (!FACTION_OVERRIDE_KEYS.includes(key)) throw new Error(`${where}: factionOverride に書けるのは ${FACTION_OVERRIDE_KEYS.join(' / ')} だけです（${key}）`);
+        }
+        if (ov.name !== undefined && (typeof ov.name !== 'string' || ov.name === '')) throw new Error(`${where}: factionOverride.name は空でない文字列にしてください`);
+        if (ov.element !== undefined && ov.element !== null && !ELEMENTS.includes(ov.element)) {
+          throw new Error(`${where}: factionOverride.element は ${ELEMENTS.join(' / ')} のどれかにしてください`);
+        }
+        if (ov.fuseTo !== undefined && ov.fuseTo !== null) {
+          if (typeof ov.fuseTo !== 'string' || !Object.hasOwn(cards, ov.fuseTo)) throw new Error(`${where}: factionOverride.fuseTo は cards.json にあるカード種類にしてください`);
+        }
+      }
+      // 合成先が別の陣営のカードにならないように（両方に faction があるときだけ。旧カードは互換のため確かめない）。
+      // 陣営モードで使われる合成先で確かめる（factionOverride があればそちら。通常モードの合成先は陣営をまたいでよい）
+      const fuseToInFaction = def.factionOverride && Object.hasOwn(def.factionOverride, 'fuseTo') ? def.factionOverride.fuseTo : def.fuseTo;
+      if (def.faction !== undefined && typeof fuseToInFaction === 'string' && Object.hasOwn(cards, fuseToInFaction)) {
+        const to = cards[fuseToInFaction];
         if (to && to.faction !== undefined && to.faction !== def.faction) {
-          throw new Error(`${where}: 合成先「${to.name}」（${def.fuseTo}）は別の陣営です（${def.faction} → ${to.faction}）`);
+          throw new Error(`${where}: 合成先「${to.name}」（${fuseToInFaction}）は別の陣営です（${def.faction} → ${to.faction}）`);
         }
       }
       // implemented：false なら陣営モードの候補から外す（台帳だけあって効果がまだないカード）。書かなければ true

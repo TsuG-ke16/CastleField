@@ -7,15 +7,16 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
-import { factionPool, isLegalForFaction } from '../js/game/Factions.js';
+import { factionPool, isLegalForFaction, applyFactionOverrides } from '../js/game/Factions.js';
 import { sampleDeckTypes, sampleType, sampleTypeOfRarity, dropRates, isDeckable, isDrawable } from '../js/game/Setup.js';
-import { loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
+import { loadJson, seededRng, recordEvents, PLAIN_START, inFactionMode } from './helpers.js';
 import { buildAll, formatCards, newCardId, FACTION_IDS, ELEMENT_IDS } from '../docs/four-factions/import/build.mjs';
 import { ROWS } from '../docs/four-factions/import/mapping.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LEDGER = JSON.parse(readFileSync(join(ROOT, 'docs', 'four-factions', 'CASTLE_FIELD_4陣営_全295カード台帳_v1.0.json'), 'utf8'));
-const CARDS = loadJson('cards.json');
+const RAW_CARDS = loadJson('cards.json'); // cards.json そのまま（通常モードの定義）
+const CARDS = applyFactionOverrides(RAW_CARDS); // 陣営モードで有効な定義（名前・合成先・属性の差しかえ後）
 const rarities = loadJson('rarities.json');
 const factions = loadJson('factions.json');
 const reactions = loadJson('reactions.json');
@@ -80,7 +81,7 @@ test('既存の11枚（竜騎士・火の魔法5・雷の魔法5）は、台帳�
 test('取り込み前の290枚（B3 まで）は1文字も変わっていない（B4 は末尾に足しただけ。付けかえなし）', () => {
   const before = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B4_NEW.includes(id) && !id.startsWith('forest_life_heal_')).map(([id, d]) => [id, { ...d }])); // のちに実装した森の生命回復5枚は除く
   assert.equal(Object.keys(before).length, 285);
-  assert.equal(createHash('sha256').update(JSON.stringify(before)).digest('hex'), 'b434fe4bd981d34145c5d79cfa9b8685220642b3a7a09d95c09cfbbcf7c3f9c3');
+  assert.equal(createHash('sha256').update(JSON.stringify(before)).digest('hex'), '98315630abad56c640e44560867d489499d03328d51da624fe93aa4714a74421');
   assert.equal(Object.keys(CARDS).length, 349);
   // 人間が決めた過去の付けかえは、そのまま
   assert.equal(CARDS.paladin.fuseTo, 'king_cavalry_legendary');
@@ -145,7 +146,7 @@ test('陣営なしのモード：B4 の新規カードは、山札・ドロー�
   for (const r of ORDER) for (let i = 0; i < 300; i++) assert.ok(!B4_NEW.includes(sampleTypeOfRarity(CARDS, r, rng)));
   const rates = dropRates(CARDS, rarities);
   for (const id of B4_NEW) assert.equal(rates[id], 0, id);
-  for (const id of B4_NEW) assert.equal(isDeckable(CARDS[id]), CARDS[id].implemented !== false, id);
+  for (const id of B4_NEW) assert.equal(isDeckable(CARDS[id]), false, id); // implemented: false も陣営専用（factionOnly）も、通常モードのマイデッキには入れられない
   for (const id of B4_NEW) assert.equal(isDrawable(CARDS[id]), false, id);
   assert.equal(isDrawable(CARDS.dragonborn_common, true), true);
   assert.equal(isDrawable(CARDS.fire_dragon_common, true), false);
@@ -190,7 +191,7 @@ test('B4 は王国・森・魔族の陣営モードの候補を変えない', ()
 
 function newGame(rules = {}) {
   const cards = { ...CARDS, post: { name: '杭', kind: 'soldier', hp: 100, attack: 1, speed: 1, count: 1, rarity: 'common', fuseTo: null, weight: 0 } };
-  const game = new Game({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 3, defenseReaction: false, ...rules }, reactions, rarities, rng: seededRng(1) });
+  const game = new Game(inFactionMode({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 3, defenseReaction: false, ...rules }, factionRules: loadJson('faction-rules.json'), reactions, rarities, rng: seededRng(1) }));
   const log = recordEvents(game, EVENT_TYPES);
   game.debugSetDeck(Array(60).fill('heal'));
   game.start();

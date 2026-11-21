@@ -7,15 +7,16 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { Card } from '../js/game/Card.js';
-import { factionPool, isLegalForFaction } from '../js/game/Factions.js';
+import { factionPool, isLegalForFaction, applyFactionOverrides } from '../js/game/Factions.js';
 import { sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, isDeckable, checkCostDeck, isDrawable } from '../js/game/Setup.js';
-import { loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
+import { loadJson, loadFixture, seededRng, recordEvents, PLAIN_START, inFactionMode } from './helpers.js';
 import { buildAll, formatCards, newCardId, FACTION_IDS, ELEMENT_IDS } from '../docs/four-factions/import/build.mjs';
 import { ROWS } from '../docs/four-factions/import/mapping.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LEDGER = JSON.parse(readFileSync(join(ROOT, 'docs', 'four-factions', 'CASTLE_FIELD_4陣営_全295カード台帳_v1.0.json'), 'utf8'));
-const CARDS = loadJson('cards.json');
+const RAW_CARDS = loadJson('cards.json'); // cards.json そのまま（通常モードの定義）
+const CARDS = applyFactionOverrides(RAW_CARDS); // 陣営モードで有効な定義（名前・合成先・属性の差しかえ後）
 const rarities = loadJson('rarities.json');
 const factions = loadJson('factions.json');
 const reactions = loadJson('reactions.json');
@@ -57,28 +58,29 @@ test('B1 の範囲は 王国59＋共通7＋森の武器20＝86行。すべてが
   assert.deepEqual(byFaction, { kingdom: 24, forest: 16 });
 });
 
-test('既存の136枚（取り込み前の全カード）は、人間が決めた改名4件と合成先6件（聖騎士・命の簒奪を含む）のほかは1文字も変わっていない', () => {
-  const before = Object.fromEntries(Object.entries(CARDS).filter(([, d]) => !d.factionOnly).map(([id, d]) => [id, { ...d }]));
-  assert.equal(Object.keys(before).length, 136);
-  // 人間が決めた変更を戻すと、取り込み前（PR-A のあと）と同じになる
-  const OLD_NAMES = { flameSword: '炎の剣', waterSpear: '水の槍', windBow: '風の弓', earthHammer: '土の槌' };
-  for (const [id, name] of Object.entries(OLD_NAMES)) {
-    assert.equal(before[id].fuseTo, `${{ flameSword: 'forest_fire_sword', waterSpear: 'forest_water_lance', windBow: 'forest_wind_bow', earthHammer: 'forest_earth_hammer' }[id]}_uncommon`);
-    before[id].name = name;
-    before[id].fuseTo = 'ironSword';
+test('既存の122枚（通常モードのカード）は、cards.json の定義が main（陣営より前）と1文字も変わらない。陣営モードの差分は factionOverride だけ', () => {
+  // 通常モードの定義：faction と factionOverride（陣営モードだけで効く印・差しかえ）を除くと、固定資料（main の cards.json）と同じ
+  const MAIN = loadFixture('normal-mode-cards.json');
+  const normal = Object.entries(RAW_CARDS).filter(([, d]) => !d.factionOnly);
+  const strip = ({ faction, factionOverride, ...rest }) => rest;
+  const ids = Object.keys(MAIN);
+  assert.equal(ids.length, 122);
+  for (const id of ids) assert.deepEqual(strip(RAW_CARDS[id]), strip(MAIN[id]), `${id} は通常モードの定義が変わってはいけない`);
+  // 通常モードの山札に入るカードは、main の122枚だけ（陣営専用は factionOnly で外れる）
+  assert.deepEqual(normal.map(([id]) => id).sort(), [...ids].sort());
+  // 陣営モードで違う所（人間が決めた）：改名4件・属性2件（聖剣・神剣）・合成先（聖騎士・命の簒奪・森の武器4・天の恵み・ゲイルフォース・シールド・ブラスト）
+  const diffs = {};
+  for (const id of ids) {
+    const d = CARDS[id];
+    for (const k of ['name', 'fuseTo', 'element']) if (JSON.stringify(d[k]) !== JSON.stringify(MAIN[id][k])) (diffs[id] ??= []).push(k);
   }
-  // 聖剣・神剣は人間の決定で光属性（攻撃力は変えない）
-  for (const id of ['holySword', 'godSword']) {
-    assert.equal(before[id].element, 'light', id);
-    delete before[id].element;
-  }
-  assert.equal(before.paladin.fuseTo, 'king_cavalry_legendary');
-  before.paladin.fuseTo = null;
-  // 命の簒奪の合成先は人間の決定（B3）で、台帳どおり魂喰らいに付けかえた（それ以前は null）
-  assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic');
-  before.lifeSteal.fuseTo = null;
-  const hash = createHash('sha256').update(JSON.stringify(before)).digest('hex');
-  assert.equal(hash, 'a37dd30f0626b7a9dc72de2581beb04880f2c6ed31621a2975c2119a60ecfa71');
+  assert.deepEqual(diffs, {
+    flameSword: ['name', 'fuseTo'], waterSpear: ['name', 'fuseTo'], windBow: ['name', 'fuseTo'], earthHammer: ['name', 'fuseTo'],
+    paladin: ['fuseTo'], lifeSteal: ['fuseTo'], blessing: ['fuseTo'], galeForce: ['fuseTo'], shieldBlast: ['fuseTo'],
+    holySword: ['element'], godSword: ['element'],
+  });
+  // factionOverride を持つカードは、その11枚だけ
+  assert.deepEqual(Object.keys(RAW_CARDS).filter((id) => RAW_CARDS[id].factionOverride).sort(), Object.keys(diffs).sort());
 });
 
 test('ID・名前の衝突がない。新しいIDは chain_id_rarity', () => {
@@ -148,25 +150,26 @@ test('陣営なしのモード：implemented: false と陣営専用（factionOnl
   }
   const rates = dropRates(CARDS, rarities);
   for (const id of NEW_IDS) assert.equal(rates[id], 0, id);
-  // デッキ編成：implemented: false は入れられない。陣営専用でも、効果のあるカードはカスタムデッキに入れられる（陣営の制限なし）
-  for (const id of NEW_IDS) assert.equal(isDeckable(CARDS[id]), CARDS[id].implemented !== false, id);
+  // デッキ編成（コスト制のマイデッキ。通常モードの機能）：implemented: false も、陣営専用（factionOnly）も入れられない
+  for (const id of NEW_IDS) assert.equal(isDeckable(CARDS[id]), false, id);
   const rules = loadJson('rules.json');
   const bad = checkCostDeck({ king_counter_common: 1 }, CARDS, rarities, rules);
   assert.ok(bad.problems.some((p) => p.includes('パリィ') && p.includes('入れられません')));
+  const bad2 = checkCostDeck({ king_light_spell_common: 1 }, CARDS, rarities, rules);
+  assert.ok(bad2.problems.some((p) => p.includes('入れられません')), '効果のある陣営専用カードも、通常モードのマイデッキには入れられない');
   assert.equal(isDrawable(CARDS.king_light_spell_common), false);
   assert.equal(isDrawable(CARDS.king_light_spell_common, true), true);
   assert.equal(isDrawable(CARDS.king_counter_common, true), false);
 });
 
-test('陣営なしの山札（rarities・count）は取り込み前と同じ並び（新しいカードの重みが入らない）', () => {
-  // 取り込み前と同じカードの集合（新しいカードを消し、それを指す合成先も外す。山札の引き当ては合成先を見ない）
-  const legacy = Object.fromEntries(Object.entries(CARDS).filter(([, d]) => !d.factionOnly)
-    .map(([id, d]) => [id, CARDS[d.fuseTo]?.factionOnly ? { ...d, fuseTo: null } : d]));
+test('陣営なしの山札（rarities・count）は取り込み前（main）と同じ並び（陣営専用のカードの重みが入らない）', () => {
+  // 取り込み前のカード（固定資料 tests/fixtures/normal-mode-cards.json = main の cards.json）と、同じシードで同じ山札・同じ初期手札
+  const legacy = loadFixture('normal-mode-cards.json');
   for (const seed of [1, 9]) {
-    assert.deepEqual(sampleDeckTypes(CARDS, rarities, 200, seededRng(seed)), sampleDeckTypes(legacy, rarities, 200, seededRng(seed)));
+    assert.deepEqual(sampleDeckTypes(RAW_CARDS, rarities, 200, seededRng(seed)), sampleDeckTypes(legacy, rarities, 200, seededRng(seed)));
   }
   const rules = { ...loadJson('rules.json'), ...PLAIN_START };
-  const g1 = new Game({ cards: CARDS, rules, rarities, rng: seededRng(5) });
+  const g1 = new Game({ cards: RAW_CARDS, rules, rarities, rng: seededRng(5) });
   const g2 = new Game({ cards: legacy, rules, rarities, rng: seededRng(5) });
   const ids = (g) => [...g.pileOf('p1').deck, ...g.players.p1.hand, ...g.players.p2.hand].map((c) => `${c.cardId}:${c.type}`);
   assert.deepEqual(ids(g1), ids(g2));
@@ -224,7 +227,7 @@ test('森の陣営モード：新しい森の武器（4属性×アンコモン�
 
 function newGame(rules = {}) {
   const cards = { ...CARDS, post: { name: '杭', kind: 'soldier', hp: 100, attack: 1, speed: 1, count: 1, rarity: 'common', fuseTo: null, weight: 0 } };
-  const game = new Game({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 3, defenseReaction: false, ...rules }, reactions, rarities, rng: seededRng(1) });
+  const game = new Game(inFactionMode({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 3, defenseReaction: false, ...rules }, factionRules: loadJson('faction-rules.json'), reactions, rarities, rng: seededRng(1) }));
   const log = recordEvents(game, EVENT_TYPES);
   game.debugSetDeck(Array(60).fill('heal'));
   game.start();

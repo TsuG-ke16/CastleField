@@ -46,7 +46,7 @@ export function loadOptionalData() {
       return null;
     }
   };
-  return { monsters: read('monsters.json'), upgrades: read('upgrades.json'), castles: read('castles.json'), decks: read('decks.json'), rarities: read('rarities.json'), weather: read('weather.json'), stages: read('stages.json'), elements: read('elements.json'), reactions: read('reactions.json'), factions: read('factions.json') };
+  return { monsters: read('monsters.json'), upgrades: read('upgrades.json'), castles: read('castles.json'), decks: read('decks.json'), rarities: read('rarities.json'), weather: read('weather.json'), stages: read('stages.json'), elements: read('elements.json'), reactions: read('reactions.json'), factions: read('factions.json'), factionRules: read('faction-rules.json') };
 }
 
 /** シード付きの乱数（mulberry32）。同じシードなら同じ並びになる */
@@ -66,4 +66,19 @@ export function recordEvents(game, types) {
   const log = [];
   for (const type of types) game.on(type, (payload) => log.push({ ...payload, event: type }));
   return log;
+}
+
+/**
+ * 四大陣営モードで動かす Game の引数にする（テスト用）。
+ * モードの分離：属性の相性の倍率・属性の反応は陣営モード（setup.faction）だけで効く。通常モードは旧来の決まり
+ * （強い属性なら rules.elementBonus、反応・付着なし）。それらを試すテストは、これで包んだ引数で Game を作る。
+ * 固定データ（faction が1枚もない）なら全カードに faction を付け、factions と setup.faction を足す。faction-rules（MP上限30・付着3ターンなど）は
+ * 足さない（要るテストは options に factionRules: loadJson('faction-rules.json') を書く）。
+ */
+export function inFactionMode(options, factionId = 'kingdom') {
+  // faction が1枚もない固定データ（tests/fixtures）のときだけ、全カードに faction を付ける。
+  // 本物の cards.json は、陣営なしの旧カードもあるので、そのまま渡す
+  const tagAll = !Object.values(options.cards).some((def) => def.faction !== undefined);
+  const cards = tagAll ? Object.fromEntries(Object.entries(options.cards).map(([type, def]) => [type, { ...def, faction: factionId }])) : options.cards;
+  return { ...options, cards, factions: loadJson('factions.json'), setup: { ...(options.setup ?? {}), faction: factionId } };
 }

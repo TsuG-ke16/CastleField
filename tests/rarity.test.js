@@ -46,7 +46,7 @@ test('山札：rules.deckSize 枚を排出率で作る（rarities なしなら c
   assert.equal(pile.deck.length + 10, 100); // 初期手札5枚ずつ
   const { cards, rules } = buildData({ rules: PLAIN_START });
   const old = new Game({ cards, rules, rng: seededRng(3) });
-  assert.equal(old.pileOf('p1').deck.length + 10, Object.values(cards).reduce((n, d) => n + d.count, 0));
+  assert.equal(old.pileOf('p1').deck.length + 10, Object.values(cards).filter((d) => d.factionOnly !== true).reduce((n, d) => n + d.count, 0)); // 陣営モード専用（factionOnly）は通常の山札に入らない
 });
 
 test('合成：手札の同じカード2枚が、1つ上のレアリティの1枚になる', () => {

@@ -30,6 +30,7 @@ export function loadData(dir = join(ROOT, 'data')) {
     elements: optional('elements.json'),
     reactions: optional('reactions.json'),
     factions: optional('factions.json'),
+    factionRules: optional('faction-rules.json'), // 四大陣営モードのときだけ rules に重ねる（通常モードは rules.json のまま）
     stamps: optional('stamps.json'),
     progression: optional('progression.json'),
     profile: optional('profile.json'),

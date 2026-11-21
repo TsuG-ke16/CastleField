@@ -203,8 +203,9 @@ export function deckCostOf(def, rarities) {
 
 /** デッキに入れられるカードか（魔物の駒は倒したごほうび専用なので入れられない。implemented: false も入れられない） */
 export function isDeckable(def) {
-  // 効果がまだないカード（implemented: false）も入れられない（出せないカードが山札に入らないように）
-  return def.monster === undefined && def.implemented !== false;
+  // 効果がまだないカード（implemented: false）も入れられない（出せないカードが山札に入らないように）。
+  // factionOnly（四大陣営モード専用）も入れられない：デッキ編成（コスト制）は通常モードの仕組みで、陣営モードは共有山札だけ
+  return def.monster === undefined && def.implemented !== false && def.factionOnly !== true;
 }
 
 /**

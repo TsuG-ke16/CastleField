@@ -6,7 +6,7 @@ import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { validateReactions, findReaction, buildReactionIndex, applyReactionMultiplier } from '../js/game/Reactions.js';
 import { DEFAULT_ELEMENTS } from '../js/game/Elements.js';
 import { filterEventFor } from '../js/game/visibility.js';
-import { loadJson, loadFixture, seededRng, recordEvents, buildData, loadOptionalData, PLAIN_START } from './helpers.js';
+import { loadJson, loadFixture, seededRng, recordEvents, buildData, loadOptionalData, PLAIN_START, inFactionMode } from './helpers.js';
 
 const REACTIONS = loadJson('reactions.json');
 
@@ -24,13 +24,13 @@ const EXTRA = {
 };
 
 function newGame({ reactions = REACTIONS, rules = {}, weather = null, seed = 1 } = {}) {
-  const game = new Game({
+  const game = new Game(inFactionMode({
     cards: { ...loadFixture('cards.json'), ...EXTRA },
     rules: { ...loadFixture('rules.json'), laneLength: 5, ...rules },
     reactions,
     weather,
     rng: seededRng(seed),
-  });
+  }));
   const log = recordEvents(game, EVENT_TYPES);
   game.debugSetDeck(Array(60).fill('heal'));
   game.start();
@@ -483,7 +483,7 @@ test('本物のデータ：reactions を渡さない試合と reactionsPerTurn 0
   const extra = loadOptionalData();
   const run = (opts) => {
     const { rules, cards } = buildData();
-    const game = new Game({ cards, rules: { ...rules, ...opts.rules }, rng: seededRng(5), ...extra, reactions: opts.reactions });
+    const game = new Game(inFactionMode({ cards, rules: { ...rules, ...opts.rules }, rng: seededRng(5), ...extra, reactions: opts.reactions }));
     const log = recordEvents(game, EVENT_TYPES);
     game.start();
     // 決まった手順で何ターンか回す（出せる最初のカードを出す）
@@ -532,7 +532,7 @@ test('本物のカード（火水風土の武器）で反応が起きる：フ�
   ];
   for (const [weapon, attached, want] of cases) {
     const { rules, cards } = buildData({ rules: { ...PLAIN_START, laneCount: 1, maxMp: 0, defenseReaction: false, drawUntilHand: 0 } });
-    const game = new Game({ cards, rules, rng: seededRng(3), elements: loadJson('elements.json'), reactions: REACTIONS });
+    const game = new Game(inFactionMode({ cards, rules, rng: seededRng(3), elements: loadJson('elements.json'), reactions: REACTIONS }));
     const log = recordEvents(game, EVENT_TYPES);
     game.debugSetDeck(Array(60).fill('heal'));
     game.start();

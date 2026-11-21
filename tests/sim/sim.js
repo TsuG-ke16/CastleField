@@ -60,7 +60,7 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
     return s;
   });
   const strategyOf = (pid) => players[Number(pid.slice(1)) - 1];
-  const ctx = { cards, rules, discardCount: 0, upgrades: gameOptions.upgrades || {} };
+  const ctx = { cards: game.cardDefs ?? cards, rules: game.rules ?? rules, discardCount: 0, upgrades: gameOptions.upgrades || {} };
   game.on('discardRequired', (e) => { ctx.discardCount = e.count; });
   // 攻撃を受けた人の防御：その人の戦い方が返事をする
   const settleDefense = () => {

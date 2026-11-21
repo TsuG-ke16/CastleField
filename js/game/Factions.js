@@ -7,6 +7,36 @@
 /** 全陣営共通のカードの印（factions.json には入れない） */
 export const COMMON_FACTION = 'common';
 
+/**
+ * モードの分離（人間の指示）：通常モードと四大陣営モードは、ルール上も完全に分けて管理する。
+ *   - cards.json の定義そのものは「通常モード」のもの（既存の合成ルート・名前・属性）。陣営モードで違うところだけ、
+ *     カードの factionOverride（FACTION_OVERRIDE_KEYS の項目）に書く。陣営モード（setup.faction）のときだけ Game が重ねる
+ *   - ルールの数値の違い（MP上限・付着・反応）は data/faction-rules.json。陣営モードのときだけ rules に重ねる
+ *   - 属性の相性（elements.json の倍率）・属性の反応（reactions.json）は、陣営モードのときだけ有効
+ *   - factionOnly のカードは、陣営モードの候補でだけ引き当てる。デッキ編成（コスト制）にも入れられない
+ */
+export const FACTION_OVERRIDE_KEYS = ['name', 'fuseTo', 'element'];
+
+/**
+ * 陣営モード用のカード定義を作る（cards は変えない）。factionOverride のあるカードに、その項目を重ねる。
+ * 値が null のもの（fuseTo: null：合成しない）はそのまま入れる。factionOverride のキー自体は残す（どこが違うか分かるように）
+ */
+export function applyFactionOverrides(cards) {
+  const out = {};
+  for (const [type, def] of Object.entries(cards)) {
+    out[type] = def.factionOverride ? { ...def, ...def.factionOverride } : def;
+  }
+  return out;
+}
+
+/**
+ * 通常モードのカード（factionOnly を除く）。図鑑・遊び方・デッキ編成など、通常モードの画面が一覧にするときに使う。
+ * 通常モードの合成の系統は、この中で閉じている（陣営専用のカードへつながらない）
+ */
+export function normalModeCards(cards) {
+  return Object.fromEntries(Object.entries(cards).filter(([, def]) => def.factionOnly !== true));
+}
+
 /** factions.json の中身をチェックする（間違いは例外） */
 export function validateFactions(factions) {
   if (!factions || typeof factions !== 'object' || Array.isArray(factions)) {

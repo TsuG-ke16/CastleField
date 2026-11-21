@@ -1,13 +1,14 @@
 // 四大陣営 PR-B：台帳と対応表（mapping.mjs）から、カードのデータを書き出す。
 //   node docs/four-factions/import/build.mjs          … 書き出す（何度実行しても同じ結果）
 //   node docs/four-factions/import/build.mjs --check  … 書き出さずに、今のファイルと一致するかだけ確かめる（違えば終了コード1）
-// 書き出すもの：data/cards.json（新規行の追加・更新と、対応表で決めた既存カードの名前・合成先だけ）、
+// 書き出すもの：data/cards.json（新規行の追加・更新と、対応表で決めた既存カードの factionOverride だけ）、
 //   data/shop.json（新しい兵士・魔法のスキン）、js/ui/stories-factions.js（図鑑のストーリー）、docs/four-factions/import/table.md（対応表の一覧）
-// 既存カードの効果・数値・IDは変えない（対応表の rename / relink だけ）。
+// 既存カードの効果・数値・ID・通常モードの定義は変えない。対応表の rename / reelement / relink は、そのカードの factionOverride（陣営モードだけで効く差しかえ）に書く。
 import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { ROWS, SCOPE } from './mapping.mjs';
+import { applyFactionOverrides } from '../../../js/game/Factions.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, '..', '..', '..');
@@ -102,15 +103,18 @@ export function buildAll({ ledger, cards: cardsIn, shop: shopIn }) {
     if (!isNew) {
       const def = cards[id];
       if (def.faction !== faction) throw new Error(`既存の「${row.name}」（${id}）の faction が ${def.faction}（台帳は ${faction}）`);
-      if (m.rename) def.name = row.name;
+      // モードの分離：既存カードの定義（名前・属性・合成先）は通常モードのものなので変えない。
+      // 台帳に合わせる分は factionOverride に書く（陣営モードのときだけ Game が重ねる）
+      const override = (key, value) => { def.factionOverride = { ...(def.factionOverride ?? {}), [key]: value }; };
+      if (m.rename) override('name', row.name);
       if (m.reelement) {
         const el = ELEMENT_IDS[row.attribute];
         if (!el) throw new Error(`「${row.name}」：reelement だが台帳の属性「${row.attribute}」が1つの属性ではありません`);
-        def.element = el;
+        override('element', el);
       }
       if (m.relink) {
         if (!next) throw new Error(`「${row.name}」：relink だが台帳に合成先がありません`);
-        def.fuseTo = next;
+        override('fuseTo', next);
       }
       continue;
     }
@@ -178,8 +182,9 @@ export function buildAll({ ledger, cards: cardsIn, shop: shopIn }) {
     '',
     '| 陣営 | 区分 | 台帳の名前 | 状態 | ID | 種類 | 効果・数値 | 属性 | 合成先 | implemented | 理由 |',
     '|---|---|---|---|---|---|---|---|---|---|---|',
+    // 一覧は、陣営モードで有効な定義（factionOverride を重ねたあと）で出す
     ...plan.map(({ row, m, id }) => {
-      const d = cards[id];
+      const d = applyFactionOverrides(cards)[id];
       return `| ${row.faction} | ${row.section} | ${row.name} | ${row.status} | \`${id}\` | ${d.kind} | ${show(d)} | ${d.element ?? (row.attribute || '—')} | ${d.fuseTo ?? (d.fuseTo === null ? '（合成しない）' : '—')} | ${d.implemented === false ? '**false**' : 'true'} | ${m.reason} |`;
     }),
     '',

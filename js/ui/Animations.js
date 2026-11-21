@@ -12,6 +12,7 @@ import { playerName } from './text.js';
 import { mountMiniCard } from './cardView.js';
 import { attackOf, attackFrames, impactSvg } from './motion.js';
 import { hasAdvantage } from '../game/Elements.js';
+import { ELEMENT_BEATS } from '../game/Game.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -365,7 +366,9 @@ export class Animations {
       case 'soldierDeployed': return this.soldierDeployed(p, model);
       case 'soldierShot': return this.soldierShot(p, model);
       case 'soldierMoved': return this.soldiersMoved(ev, queue, model);
-      case 'soldiersClashed': return this.soldiersClashed(p);
+      case 'soldiersClashed':
+        this.factionMode = Boolean(model?.faction); // 弱点の判定は、通常モードと陣営モードで相性表が違う
+        return this.soldiersClashed(p);
       case 'soldierDamaged': return this.soldiersDamaged(ev, queue, model);
       case 'soldierDestroyed': return this.soldiersDestroyed(ev, queue, model);
       case 'spellCast': return this.spellCast(p);
@@ -445,8 +448,9 @@ export class Animations {
     const dist = Math.hypot(b.x - a.x, b.y - a.y) || 1;
     const ux = (b.x - a.x) / dist;
     const uy = (b.y - a.y) / dist;
-    // 属性が強い側の攻撃は「弱点」として大きく見せる（相性が有利：倍率>1）
-    const weak = (x, y) => hasAdvantage(x.element, y.element);
+    // 属性が強い側の攻撃は「弱点」として大きく見せる。通常モードは旧来の4つの輪（rules.elementBonus と同じ組み合わせ）、
+    // 陣営モードは elements.json の相性（倍率>1）
+    const weak = (x, y) => (this.factionMode ? hasAdvantage(x.element, y.element) : Boolean(x.element && ELEMENT_BEATS[x.element] === y.element));
     this.hitDir.set(bEl, { x: ux, y: uy, weight: ua.attack.weight, weak: weak(ua, ub) });
     this.hitDir.set(aEl, { x: -ux, y: -uy, weight: ub.attack.weight, weak: weak(ub, ua) });
     const at = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };

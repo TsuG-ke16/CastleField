@@ -4,8 +4,10 @@
 //
 // 行の形
 //   既存（status＝既存）：{ name, id, existing: true, reason }
-//     rename: true   … 名前を台帳の名前に変える（人間が決めた4件だけ）
-//     relink: true   … fuseTo を台帳の next_name に付けかえる（人間が決めたものだけ）
+//     rename: true   … 陣営モードでの名前を台帳の名前にする（人間が決めた4件だけ。cards.json の factionOverride.name）
+//     reelement: true … 陣営モードでの属性を台帳の属性にする（factionOverride.element）
+//     relink: true   … 陣営モードでの fuseTo を台帳の next_name にする（人間が決めたものだけ。factionOverride.fuseTo）
+//     どれも通常モードの定義（cards.json の name / element / fuseTo）は変えない
 //   新規（status＝新規案）：{ name, def: { kind, ...効果の数値 }, implemented, reason, story, effectPlan?, note?, description? }
 //     ID は `${chain_id}_${rarity}`（build.mjs が決める）。faction・rarity・element・fuseTo・weight・count は台帳と規則から機械的に付ける
 

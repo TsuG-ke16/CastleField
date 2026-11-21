@@ -13,7 +13,7 @@ PR-B は陣営ごとに分けて進める：**B1＝王国軍・全陣営共通�
 
 書き出すもの（`node docs/four-factions/import/build.mjs`）：
 
-- `data/cards.json`：新規カードの追加・更新（末尾に台帳の順で並ぶ）。既存カードは、対応表で `rename`（名前を台帳の名前にする）・`relink`（合成先を台帳の `next_name` にする）を付けた行だけ変える。**既存カードの効果・数値・IDは変えない**
+- `data/cards.json`：新規カードの追加・更新（末尾に台帳の順で並ぶ）。既存カードは、対応表で `rename`（名前を台帳の名前にする）・`reelement`（属性を台帳の属性にする）・`relink`（合成先を台帳の `next_name` にする）を付けた行だけ、そのカードの **`factionOverride`**（陣営モードだけで効く差しかえ）に書く。**既存カードの効果・数値・ID・通常モードの定義（`name` / `fuseTo` / `element`）は変えない**（通常モードと四大陣営モードの分離。CLAUDE.md の「モードの分離」）。新しく足すカードは `factionOnly: true`
 - `data/shop.json`：新しい兵士（`skin_<ID>`）・魔法（`fxskin_<ID>`）のスキン（`tests/economy.test.js` の「全キャラ・全魔法に1つずつ」）
 - `js/ui/stories-factions.js`：新しいカードの図鑑のストーリー（`js/ui/stories.js` の `CARD_STORIES` に混ぜる）
 - `table.md`

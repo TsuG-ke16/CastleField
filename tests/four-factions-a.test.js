@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path';
 import { buildData, loadJson, loadOptionalData, seededRng, PLAIN_START } from './helpers.js';
 import { Game } from '../js/game/Game.js';
 import { Card } from '../js/game/Card.js';
-import { COMMON_FACTION, validateFactions, isLegalForFaction, factionPool } from '../js/game/Factions.js';
+import { COMMON_FACTION, validateFactions, isLegalForFaction, factionPool, applyFactionOverrides } from '../js/game/Factions.js';
 import { sampleDeckTypes, sampleType, sampleTypeOfRarity, dropRates, nextRarityWithCards } from '../js/game/Setup.js';
 import { Room, Lobby } from '../server/rooms.js';
 import { loadData } from '../server/server.js';
@@ -82,8 +82,9 @@ test('台帳の既存78＋改名4＝82枚に cards.json の faction が付き、
   // 共通7種
   const common = Object.keys(cards).filter((id) => cards[id].faction === COMMON_FACTION).sort();
   assert.deepEqual(common, ['adapt', 'blessing', 'manaCrystal', 'manaDrop', 'manaShard', 'manaSpring', 'worldTreeDew']);
-  // 改名の4枚は、PR-B で名前だけ台帳の名前にした（ID は今のまま）
-  assert.equal(cards.flameSword.name, 'フレイムソード');
+  // 改名の4枚は、陣営モードでだけ台帳の名前になる（factionOverride。ID は今のまま。通常モードの名前は変えない）
+  assert.equal(cards.flameSword.name, '炎の剣');
+  assert.equal(applyFactionOverrides(cards).flameSword.name, 'フレイムソード');
 });
 
 // ================= 検証 =================
@@ -113,9 +114,14 @@ test('implemented：true / false だけ書ける', () => {
 
 test('合成先が別の陣営なら例外（両方に faction があるとき）。旧カードは確かめない', () => {
   // 陣営どうし：王国 → 竜族
-  const cross = buildData({ cards: { paladin: { fuseTo: 'dragonKnight' } } }).cards;
+  const cross = buildData({ cards: { paladin: { fuseTo: 'dragonKnight', factionOverride: undefined } } }).cards;
   assert.throws(() => Card.validateDefinitions(cross, rarities), /合成先「竜騎士」（dragonKnight）は別の陣営です/);
   assert.throws(() => Card.validateDefinitions(cross, rarities, { factions }), /別の陣営/);
+  // 陣営モードで使う合成先（factionOverride.fuseTo）が別の陣営でも例外。通常モードの合成先（fuseTo）は陣営をまたいでよい
+  const crossOverride = buildData({ cards: { paladin: { factionOverride: { fuseTo: 'dragonKnight' } } } }).cards;
+  assert.throws(() => Card.validateDefinitions(crossOverride, rarities, { factions }), /別の陣営/);
+  assert.equal(loadJson('cards.json').paladin.fuseTo, 'dragonKnight'); // 通常モード：聖騎士→竜騎士（昔のまま）
+  Card.validateDefinitions(loadJson('cards.json'), rarities, { factions });
   // common → 陣営のカードも不可
   const common = buildData({ cards: { manaShard: { fuseTo: 'spearman' } } }).cards;
   assert.throws(() => Card.validateDefinitions(common, rarities, { factions }), /別の陣営/);
@@ -128,12 +134,16 @@ test('合成先が別の陣営なら例外（両方に faction があるとき�
   Card.validateDefinitions(legacyToFaction, rarities, { factions });
 });
 
-test('陣営をまたいでいた旧合成先は fuseTo: null（合成しない）', () => {
-  const cards = loadJson('cards.json');
+test('陣営をまたいでいた旧合成先は、陣営モードでだけ fuseTo: null（合成しない）。通常モードの合成ルートは変えない', () => {
+  const raw = loadJson('cards.json');
+  const cards = applyFactionOverrides(raw);
   for (const id of ['shieldBlast', 'galeForce', 'blessing']) assert.equal(cards[id].fuseTo, null, id);
-  // 聖騎士は PR-B で台帳どおりグランドパラディン（王国）につないだ（人間の決定）
+  // 通常モード：昔の合成ルートのまま
+  assert.deepEqual([raw.shieldBlast.fuseTo, raw.galeForce.fuseTo, raw.blessing.fuseTo], ['apocalypse', 'glacier', 'thief']);
+  // 聖騎士は台帳どおりグランドパラディン（王国）につなぐ（人間の決定）。陣営モードだけ
   assert.equal(cards.paladin.fuseTo, 'king_cavalry_legendary');
-  const g = factionGame({ rules: { deckMode: 'shared' } });
+  assert.equal(raw.paladin.fuseTo, 'dragonKnight');
+  const g = factionGame({ faction: 'kingdom', rules: { deckMode: 'shared' } });
   g.debugSetHand('p1', ['blessing', 'blessing']);
   g.start();
   const [c, d] = g.getState('p1').players.p1.hand.map((x) => x.cardId);
@@ -306,8 +316,8 @@ test('魔物のごほうびは例外：陣営モードでも候補で絞らな�
 
 // ================= 合成 =================
 
-test('合成：陣営のカードの合成先は同じ陣営。旧カードへ行くものはない（森の4つの武器は PR-B で直した）', () => {
-  const cards = loadJson('cards.json');
+test('合成：陣営モードでは、陣営のカードの合成先は同じ陣営。旧カードへ行くものはない（森の4つの武器は PR-B で直した）', () => {
+  const cards = applyFactionOverrides(loadJson('cards.json'));
   const toLegacy = [];
   for (const [id, d] of Object.entries(cards)) {
     if (!d.faction || typeof d.fuseTo !== 'string') continue;

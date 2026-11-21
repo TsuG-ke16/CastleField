@@ -7,15 +7,16 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
-import { factionPool, isLegalForFaction } from '../js/game/Factions.js';
+import { factionPool, isLegalForFaction, applyFactionOverrides } from '../js/game/Factions.js';
 import { sampleDeckTypes, sampleType, sampleTypeOfRarity, dropRates, isDeckable, isDrawable } from '../js/game/Setup.js';
-import { loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
+import { loadJson, seededRng, recordEvents, PLAIN_START, inFactionMode, loadFixture } from './helpers.js';
 import { buildAll, formatCards, newCardId, FACTION_IDS, ELEMENT_IDS } from '../docs/four-factions/import/build.mjs';
 import { ROWS } from '../docs/four-factions/import/mapping.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LEDGER = JSON.parse(readFileSync(join(ROOT, 'docs', 'four-factions', 'CASTLE_FIELD_4陣営_全295カード台帳_v1.0.json'), 'utf8'));
-const CARDS = loadJson('cards.json');
+const RAW_CARDS = loadJson('cards.json'); // cards.json そのまま（通常モードの定義）
+const CARDS = applyFactionOverrides(RAW_CARDS); // 陣営モードで有効な定義（名前・合成先・属性の差しかえ後）
 const rarities = loadJson('rarities.json');
 const factions = loadJson('factions.json');
 const reactions = loadJson('reactions.json');
@@ -80,21 +81,20 @@ test('既存の12枚（氷5・毒5・命の簒奪・魔力強奪）は B3 で1�
 test('取り込み前の226枚（B2 まで）は1文字も変わっていない（B3 は末尾に足しただけ）', () => {
   const before = Object.fromEntries(Object.entries(CARDS).filter(([id, d]) => !B3_NEW.includes(id) && !id.startsWith('forest_life_heal_') && !(d.faction === 'dragon' && d.factionOnly)).map(([id, d]) => [id, { ...d }])); // B4 の新規（faction が dragon で factionOnly）と、のちに実装した森の生命回復5枚も除く
   assert.equal(Object.keys(before).length, 221); // 226 − 生命回復5（のちに実装。「兵士回復の魔法」の節）
-  assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic'); // 人間の決定で付けかえた（それ以前は null）
-  before.lifeSteal.fuseTo = null;
-  assert.equal(createHash('sha256').update(JSON.stringify(before)).digest('hex'), '648d632295cf25a5bf47fb1363013f874f7b9e4ccabb1ace49bc07dc6e7d234e');
+  assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic'); // 人間の決定で付けかえた（陣営モードだけ。通常モードは null のまま）
+  assert.equal(createHash('sha256').update(JSON.stringify(before)).digest('hex'), '95ddfd1ab0b9181c0b47f7f5497bb55f4608e63b654365a64eaaa276a9fddc24');
   assert.equal(Object.keys(CARDS).length, 349); // B4 で 59 枚増えた（B3 の時点は 290）
 });
 
 test('陣営なしの山札は B3 の前後で同じシードなら同じ並び（B3 の新規64枚を取り除いても変わらない）。ゲーム開始時の手札・山札も同じ', () => {
-  // 命の簒奪の合成先（魂喰らい）は B3 の新規なので、取り除いた側では null にする（引き当てには関係しない）
-  const legacy = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B3_NEW.includes(id)).map(([id, d]) => [id, id === 'lifeSteal' ? { ...d, fuseTo: null } : d]));
+  // 通常モード（cards.json そのまま）の山札は、陣営の取り込みの前（main。固定資料）と同じ並び
+  const legacy = loadFixture('normal-mode-cards.json');
   for (const seed of [1, 2, 9, 33]) {
-    assert.deepEqual(sampleDeckTypes(CARDS, rarities, 300, seededRng(seed)), sampleDeckTypes(legacy, rarities, 300, seededRng(seed)));
+    assert.deepEqual(sampleDeckTypes(RAW_CARDS, rarities, 300, seededRng(seed)), sampleDeckTypes(legacy, rarities, 300, seededRng(seed)));
   }
   const rules = { ...loadJson('rules.json'), ...PLAIN_START };
   for (const seed of [5, 6]) {
-    const g1 = new Game({ cards: CARDS, rules, rarities, rng: seededRng(seed) });
+    const g1 = new Game({ cards: RAW_CARDS, rules, rarities, rng: seededRng(seed) });
     const g2 = new Game({ cards: legacy, rules, rarities, rng: seededRng(seed) });
     const ids = (g) => [...g.pileOf('p1').deck, ...g.players.p1.hand, ...g.players.p2.hand].map((c) => `${c.cardId}:${c.type}`);
     assert.deepEqual(ids(g1), ids(g2));
@@ -143,7 +143,7 @@ test('陣営なしのモード：B3 の新規カードは、山札・ドロー�
   for (const r of ORDER) for (let i = 0; i < 300; i++) assert.ok(!B3_NEW.includes(sampleTypeOfRarity(CARDS, r, rng)));
   const rates = dropRates(CARDS, rarities);
   for (const id of B3_NEW) assert.equal(rates[id], 0, id);
-  for (const id of B3_NEW) assert.equal(isDeckable(CARDS[id]), CARDS[id].implemented !== false, id);
+  for (const id of B3_NEW) assert.equal(isDeckable(CARDS[id]), false, id); // implemented: false も陣営専用（factionOnly）も、通常モードのマイデッキには入れられない
   for (const id of B3_NEW) assert.equal(isDrawable(CARDS[id]), false, id);
   assert.equal(isDrawable(CARDS.demon_undead_common, true), true);
   assert.equal(isDrawable(CARDS.demon_curse_common, true), false);
@@ -188,7 +188,7 @@ test('B3 は王国・森の陣営モードの候補を変えない', () => {
 
 function newGame(rules = {}) {
   const cards = { ...CARDS, post: { name: '杭', kind: 'soldier', hp: 100, attack: 1, speed: 1, count: 1, rarity: 'common', fuseTo: null, weight: 0 } };
-  const game = new Game({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 3, defenseReaction: false, ...rules }, reactions, rarities, rng: seededRng(1) });
+  const game = new Game(inFactionMode({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 3, defenseReaction: false, ...rules }, factionRules: loadJson('faction-rules.json'), reactions, rarities, rng: seededRng(1) }));
   const log = recordEvents(game, EVENT_TYPES);
   game.debugSetDeck(Array(60).fill('heal'));
   game.start();

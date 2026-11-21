@@ -6,8 +6,6 @@
 //   takeTurn(game, pid, rng, ctx)      … メインでカードを出す（出さなくてもよい）
 //   chooseDiscard(game, pid, rng, ctx) … ctx.discardCount 枚の cardId を返す
 
-import { hasAdvantage } from './Elements.js';
-
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 
 function view(game, pid) {
@@ -120,7 +118,7 @@ function playSupports(game, pid, ctx) {
       if (def.kind === 'weapon') {
         const nearElements = new Set(enemySoldiers.map((s) => s.element).filter(Boolean));
         // 近くの相手の属性に負ける属性は避ける
-        const bad = [...nearElements].some((e) => hasAdvantage(e, def.element));
+        const bad = [...nearElements].some((e) => game.hasElementAdvantage(e, def.element));
         const target = front.find((s) => !s.weapon);
         if (!bad && target) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === target.soldierId));
       } else if (def.effect === 'shieldSoldier') {

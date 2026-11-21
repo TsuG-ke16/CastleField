@@ -20,7 +20,7 @@
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { validateFactions, factionPool } from './Factions.js';
+import { validateFactions, factionPool, applyFactionOverrides } from './Factions.js';
 import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds, isDrawable } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
@@ -97,6 +97,12 @@ export const EVENT_TYPES = [
   'gameOver',
 ];
 
+/**
+ * 通常モードの属性の強い・弱い：キーの属性は、値の属性に強い（水は火に強い、火は風に強い、風は土に強い、土は水に強い）。
+ * 与えるダメージは rules.elementBonus だけ増える。四大陣営モードだけは data/elements.json の倍率（elementTable）を使う
+ */
+export const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
+
 /** rules.json に必要な項目と、許される最小値 */
 const RULE_KEYS = {
   castleMaxHp: 1,
@@ -110,7 +116,7 @@ const RULE_KEYS = {
 
 /** rules.json の省略できる項目と、省略したときの値 */
 const OPTIONAL_RULES = {
-  elementBonus: 0, // （使わなくなった）属性の相性は data/elements.json の倍率で決まる
+  elementBonus: 0, // 通常モードで、属性が強いときに増えるダメージ（陣営モードは elements.json の倍率で、これは使わない）
   monsterFirstRound: 3, // 魔物が出はじめる周回
   monsterCooldownRounds: 0, // 魔物を倒した道に、次の魔物が出ない周回の数
   maxRounds: 0, // 周回の上限（0 なら上限なし）
@@ -231,8 +237,12 @@ export class Game {
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, reactions = null, factions = null, races = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, reactions = null, factions = null, races = null, factionRules = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
+    // モードの分離：陣営モード（setup.faction）のときだけ、陣営用のルール（data/faction-rules.json）を rules に重ねる。
+    // 通常モードは rules.json のまま（factionRules・elements・reactions を渡されても使わない）
+    const factionMode = setup.faction !== undefined && setup.faction !== null;
+    if (factionMode && factionRules) rules = { ...rules, ...factionRules };
     if (rarities !== null) validateRarities(rarities);
     if (elements !== null) validateElements(elements);
     if (reactions !== null) validateReactions(reactions, elements ?? DEFAULT_ELEMENTS);
@@ -250,11 +260,13 @@ export class Game {
     if (castles !== null) validateCastles(castles);
     if (decks !== null) validateDecks(decks, cards);
 
-    this.elementTable = elements ?? DEFAULT_ELEMENTS;
-    this.cardDefs = cards;
-    /** 属性の反応（reactions.json。渡さなければ null＝反応も付着もない） */
-    this.reactionDefs = reactions;
-    this.reactionIndex = reactions ? buildReactionIndex(reactions) : null;
+    /** 属性の相性表（elements.json）。陣営モードだけ。通常モードは null（ELEMENT_BEATS と rules.elementBonus） */
+    this.elementTable = factionMode ? (elements ?? DEFAULT_ELEMENTS) : null;
+    // 陣営モードだけ、陣営用の名前・合成先・属性（factionOverride）を重ねる。通常モードは cards.json のまま
+    this.cardDefs = factionMode ? applyFactionOverrides(cards) : cards;
+    /** 属性の反応（reactions.json。陣営モードで渡したときだけ。通常モードは null＝反応も付着もない） */
+    this.reactionDefs = factionMode ? reactions : null;
+    this.reactionIndex = this.reactionDefs ? buildReactionIndex(this.reactionDefs) : null;
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
     this.weatherDefs = weather;
@@ -291,11 +303,11 @@ export class Game {
       // 今は全員が同じ陣営の共有山札だけ（異陣営戦は別のモードで作る予定）
       if (this.rules.deckMode !== 'shared') throw new Error('陣営モードは共有山札（deckMode "shared"）だけです');
       this.faction = setup.faction;
-      this.factionPoolTypes = factionPool(cards, setup.faction);
+      this.factionPoolTypes = factionPool(this.cardDefs, setup.faction);
       if (this.factionPoolTypes.size === 0) throw new Error(`陣営「${factions[setup.faction].name}」のカードがありません`);
     }
     /** 反応を使うか（reactions を渡し、reactionsPerTurn が1以上） */
-    this.reactionsOn = Boolean(reactions) && this.rules.reactionsPerTurn > 0;
+    this.reactionsOn = this.faction !== null && Boolean(this.reactionDefs) && this.rules.reactionsPerTurn > 0;
 
     this.nextCardNumber = 1;
     this.nextSoldierNumber = 1;
@@ -2047,12 +2059,27 @@ export class Game {
   }
 
   /**
-   * a が b に与えるダメージ。順番：基本の攻撃力 → ×属性倍率（切り上げ・最低1）→ ＋天候の属性ボーナス → ステージ倍率
+   * a が b に与えるダメージ。
+   *   通常モード：基本の攻撃力 → ＋elementBonus（強い属性のとき）→ ＋天候の属性ボーナス → ステージ倍率
+   *   陣営モード：基本の攻撃力 → ×属性倍率（切り上げ・最低1）→ ＋天候の属性ボーナス → ステージ倍率
    */
   fightDamage(a, b) {
     const attack = a instanceof Soldier ? this.attackOf(a) : a.attack;
-    const scaled = applyElementMultiplier(attack, elementMultiplier(this.elementTable, a.element, b.element));
-    return this.stageBoost(a, scaled + this.weatherElementBonus(a.element));
+    if (this.elementTable) {
+      // 陣営モード：elements.json の倍率
+      const scaled = applyElementMultiplier(attack, elementMultiplier(this.elementTable, a.element, b.element));
+      return this.stageBoost(a, scaled + this.weatherElementBonus(a.element));
+    }
+    // 通常モード：強い属性なら rules.elementBonus を足す（昔からの決まり）
+    const strong = a.element && b.element && ELEMENT_BEATS[a.element] === b.element;
+    return this.stageBoost(a, attack + (strong ? this.rules.elementBonus : 0) + this.weatherElementBonus(a.element));
+  }
+
+  /** 属性 a が b に有利か（今のモードの相性。CPU の武器選びと画面の「弱点」の演出が使う） */
+  hasElementAdvantage(a, b) {
+    if (!a || !b) return false;
+    if (this.elementTable) return elementMultiplier(this.elementTable, a, b) > 1;
+    return ELEMENT_BEATS[a] === b;
   }
 
   /** 兵士の今の攻撃力（夜は、獣＝魔物の駒と、暗殺者・忍者が強くなる） */

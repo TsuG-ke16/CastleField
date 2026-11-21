@@ -6,15 +6,16 @@ import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
-import { factionPool, isLegalForFaction } from '../js/game/Factions.js';
+import { factionPool, isLegalForFaction, applyFactionOverrides } from '../js/game/Factions.js';
 import { sampleDeckTypes, sampleType, sampleTypeOfRarity, dropRates, isDeckable, isDrawable } from '../js/game/Setup.js';
-import { loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
+import { loadJson, seededRng, recordEvents, PLAIN_START, inFactionMode } from './helpers.js';
 import { buildAll, formatCards, newCardId, FACTION_IDS, ELEMENT_IDS } from '../docs/four-factions/import/build.mjs';
 import { ROWS } from '../docs/four-factions/import/mapping.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LEDGER = JSON.parse(readFileSync(join(ROOT, 'docs', 'four-factions', 'CASTLE_FIELD_4陣営_全295カード台帳_v1.0.json'), 'utf8'));
-const CARDS = loadJson('cards.json');
+const RAW_CARDS = loadJson('cards.json'); // cards.json そのまま（通常モードの定義）
+const CARDS = applyFactionOverrides(RAW_CARDS); // 陣営モードで有効な定義（名前・合成先・属性の差しかえ後）
 const rarities = loadJson('rarities.json');
 const factions = loadJson('factions.json');
 const reactions = loadJson('reactions.json');
@@ -84,13 +85,13 @@ test('既存の13枚（精霊召喚12・ゲイルフォース）は台帳と名�
   assert.equal(CARDS.fireSpirit.effect, 'summonSpirit');
 });
 
+// （モードの分離で、既存カードの陣営モード用の差分を factionOverride に移したので、固定値を取り直した。通常モードの定義が main と同じことは four-factions-b1 と mode-separation が固定している）
 test('取り込み前の176枚（B1 まで）は1文字も変わっていない（B2 は末尾に足しただけ）', () => {
   const before = Object.fromEntries(Object.entries(CARDS).filter(([id, d]) => !B2_NEW.includes(id) && !/^demon_/.test(id) && !(d.faction === 'dragon' && d.factionOnly)).map(([id, d]) => [id, { ...d }])); // B3 の新規（demon_*）と B4 の新規（faction が dragon で factionOnly）も除く
-  assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic'); // 人間の決定（B3）で魂喰らいへ付けかえた。それ以前は null
-  before.lifeSteal.fuseTo = null;
+  assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic'); // 人間の決定（B3）で魂喰らいへ付けかえた（陣営モードだけ。通常モードは null のまま）
   assert.equal(Object.keys(before).length, 176);
   const hash = createHash('sha256').update(JSON.stringify(before)).digest('hex');
-  assert.equal(hash, 'd6851743d79c9afbe41d04ffc4819ae95f5935d578dc741b464090abdb7079f9');
+  assert.equal(hash, '8641d7f9afff34b9436757184b5afbaba2de2846bef1bac6060475549e3c88b6');
   assert.equal(Object.keys(CARDS).length, 349); // B3 で 64 枚、B4 で 59 枚増えた（B2 の時点は 226）
 });
 
@@ -141,7 +142,7 @@ test('陣営なしのモード：B2 の新規カードは、山札・ドロー�
   for (const r of ORDER) for (let i = 0; i < 300; i++) assert.ok(!B2_NEW.includes(sampleTypeOfRarity(CARDS, r, rng)));
   const rates = dropRates(CARDS, rarities);
   for (const id of B2_NEW) assert.equal(rates[id], 0, id);
-  for (const id of B2_NEW) assert.equal(isDeckable(CARDS[id]), CARDS[id].implemented !== false, id);
+  for (const id of B2_NEW) assert.equal(isDeckable(CARDS[id]), false, id); // implemented: false も陣営専用（factionOnly）も、通常モードのマイデッキには入れられない
   for (const id of B2_NEW) assert.equal(isDrawable(CARDS[id]), false, id);
   // 陣営ありなら implemented: true の森のカードは引ける。false は引けない
   assert.equal(isDrawable(CARDS.forest_beast_common, true), true);
@@ -187,7 +188,7 @@ test('森の陣営モード：候補は 森＋共通 の implemented: true だ�
 
 function newGame(rules = {}) {
   const cards = { ...CARDS, post: { name: '杭', kind: 'soldier', hp: 100, attack: 1, speed: 1, count: 1, rarity: 'common', fuseTo: null, weight: 0 } };
-  const game = new Game({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 3, defenseReaction: false, ...rules }, reactions, rarities, rng: seededRng(1) });
+  const game = new Game(inFactionMode({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 3, defenseReaction: false, ...rules }, factionRules: loadJson('faction-rules.json'), reactions, rarities, rng: seededRng(1) }));
   const log = recordEvents(game, EVENT_TYPES);
   game.debugSetDeck(Array(60).fill('heal'));
   game.start();

@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
-import { loadJson, seededRng, recordEvents, PLAIN_START } from './helpers.js';
+import { loadJson, seededRng, recordEvents, PLAIN_START, inFactionMode } from './helpers.js';
 
 const CARDS = loadJson('cards.json');
 const REACTIONS = loadJson('reactions.json');
@@ -13,7 +13,7 @@ const WEAPONS = { darkScythe: 'dark', lightLance: 'light', chaosStaff: 'chaos' }
 function newGame(seed = 1) {
   const cards = { ...CARDS, post: { name: '杭', kind: 'soldier', hp: 100, attack: 1, speed: 1, count: 1 },
     dummy: { name: '木人', kind: 'soldier', hp: 100, attack: 1, speed: 3, count: 1 } };
-  const game = new Game({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 1, defenseReaction: false }, reactions: REACTIONS, rng: seededRng(seed) });
+  const game = new Game(inFactionMode({ cards, rules: { ...loadJson('rules.json'), ...PLAIN_START, laneLength: 5, laneCount: 1, defenseReaction: false }, factionRules: loadJson('faction-rules.json'), reactions: REACTIONS, rng: seededRng(seed) }));
   const log = recordEvents(game, EVENT_TYPES);
   game.debugSetDeck(Array(60).fill('heal'));
   game.start();

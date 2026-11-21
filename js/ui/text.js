@@ -41,6 +41,9 @@ export function elementName(element) {
   return ELEMENT_LOOK[element]?.name ?? '';
 }
 
+/** 通常モードで、その属性が強い相手の属性（水は火に強い、火は風に強い、風は土に強い、土は水に強い） */
+const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
+
 // 効果（cards.json の effect）ごとの説明文の型
 const missingDescriptions = new Set();
 const EFFECT_TEXT = {
@@ -95,11 +98,15 @@ export function cardDescription(def, rules, opts = {}) {
       : `HP${def.hp}・攻撃${def.attack}・1ターンに${def.speed}マス進む`;
   } else if (def.kind === 'weapon') {
     const el = def.element ? elementName(def.element) : '';
-    const weak = def.element ? elementsBeatenBy(def.element).map(elementName).join('・') : '';
+    // 通常モード：旧来の4つの輪（水→火→風→土→水）と rules.elementBonus。陣営モード（opts.faction）だけ elements.json の倍率の相性
+    const weak = def.element
+      ? (opts.faction ? elementsBeatenBy(def.element).map(elementName).join('・') : elementName(ELEMENT_BEATS[def.element]))
+      : '';
     text = `自分の兵士に持たせる：攻撃+${def.attackBonus}`;
     if (el) {
       text += `・${el}属性`;
-      text += weak ? `（${weak}に強い。攻撃×${DEFAULT_ELEMENTS.multipliers.advantage}）` : '';
+      if (opts.faction) text += weak ? `（${weak}に強い。攻撃×${DEFAULT_ELEMENTS.multipliers.advantage}）` : '';
+      else text += rules?.elementBonus ? `（${weak}の相手に+${rules.elementBonus}）` : `（${weak}に強い）`;
     }
   } else {
     const make = EFFECT_TEXT[def.effect];

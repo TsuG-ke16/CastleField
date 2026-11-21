@@ -43,6 +43,7 @@ import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
 import { initCardZoom } from './ui/CardZoom.js';
 import { checkCostDeck } from './game/Setup.js';
+import { normalModeCards } from './game/Factions.js';
 import { musicScene } from './ui/musicScene.js';
 import { STRATEGIES, mulliganChoice } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
@@ -115,6 +116,7 @@ let weather = null;  // data/weather.json（読めなければ null：天候な�
 let elements = null; // data/elements.json（読めなければ null：組み込みの相性表を使う）
 let reactions = null; // data/reactions.json（読めなければ null：属性の反応なし）
 let factions = null; // data/factions.json（読めなければ null：陣営の一覧なし。カードの faction は形だけ確かめる）
+let factionRules = null; // data/faction-rules.json（四大陣営モードのときだけ rules に重ねる。通常モードでは使わない）
 let stages = null;  // data/stages.json（読めなければ null：ステージなし）
 let progressPanel;
 let cardGuide;
@@ -211,9 +213,9 @@ function hideLoading() {
 
 async function boot() {
   try {
-    [cards, rules, monsters, upgrades, rarities, castles, decks, weather, stamps, stages, elements, reactions, factions] = await Promise.all([
+    [cards, rules, monsters, upgrades, rarities, castles, decks, weather, stamps, stages, elements, reactions, factions, factionRules] = await Promise.all([
       loadJson('data/cards.json'), loadJson('data/rules.json'),
-      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'), loadOptionalJson('data/stages.json'), loadOptionalJson('data/elements.json'), loadOptionalJson('data/reactions.json'), loadOptionalJson('data/factions.json'),
+      loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'), loadOptionalJson('data/stages.json'), loadOptionalJson('data/elements.json'), loadOptionalJson('data/reactions.json'), loadOptionalJson('data/factions.json'), loadOptionalJson('data/faction-rules.json'),
     ]);
   } catch (err) {
     console.error(err);
@@ -313,7 +315,7 @@ async function boot() {
     });
     refresh();
   }
-  cardGuide = new CardGuide({ cards, rarities, rules, monsters, getContext: uiContext, debug: DEBUG });
+  cardGuide = new CardGuide({ cards: normalModeCards(cards), rarities, rules, monsters, getContext: uiContext, debug: DEBUG }); // 図鑑は通常モードのカードだけ（陣営専用は出さない）
   progressPanel = new ProgressPanel({ cards, rarities, rules, monsters,
     getContext: uiContext, onRates: () => cardGuide.open('rates'),
     onFuse: async (a, b) => {
@@ -406,7 +408,7 @@ async function boot() {
   account.init().then(() => accountPanel.handleReturn());
   setupMenu();
   setupTitle({ savedDecks, presetDeck, previewDeck, openDeckEditor });
-  renderHelp({cards,rules,monsters,rarities});
+  renderHelp({cards: normalModeCards(cards),rules,monsters,rarities});
   setupAccessibility();
 
   if (DEBUG) {
@@ -761,6 +763,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     if (elements) opts.elements = structuredClone(elements);
     if (reactions) opts.reactions = structuredClone(reactions);
     if (factions) opts.factions = structuredClone(factions);
+    if (factionRules) opts.factionRules = structuredClone(factionRules);
     // ステージ：詳細設定で選んだもの（選ばなければ毎試合ランダム）
     if (stages) {
       opts.stages = structuredClone(stages);
@@ -1498,7 +1501,7 @@ async function cpuTurn() {
   await new Promise((r) => setTimeout(r, UI_CONFIG.cpuThink / Math.max(1, me.ids.length) * UI_CONFIG.speed));
   if (g !== gen || cpu !== group || !game) return; // 待っているあいだに、やめた・やり直した
   try {
-    const ctx = { cards, rules:game.rules, upgrades: upgrades ?? {}, discardCount: 0 };
+    const ctx = { cards: game.cardDefs ?? cards, rules:game.rules, upgrades: upgrades ?? {}, discardCount: 0 };
     const discardIfNeeded = () => {
       const st = game.getState(me.id);
       if (st.phase !== 'discard' || st.currentPlayer !== me.id) return;
@@ -1560,7 +1563,7 @@ async function act(send) {
 /** CPU が攻撃を受けるところ（phase "defend"）なら、戦い方に防御を決めてもらう */
 function cpuDefendIfNeeded() {
   if (!cpu || !game) return;
-  const ctx = { cards, rules:game.rules, upgrades: upgrades ?? {}, discardCount: 0 };
+  const ctx = { cards: game.cardDefs ?? cards, rules:game.rules, upgrades: upgrades ?? {}, discardCount: 0 };
   for (let i = 0; i < 50; i++) {
     const st = game.getState(null);
     if (st.phase !== 'defend' || !cpu.ids.includes(st.defense.defenderId)) return;

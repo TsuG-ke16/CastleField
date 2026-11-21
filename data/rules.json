@@ -11,6 +11,7 @@
   "defenseReaction": true,
   "advanceAfterWin": false,
   "soldierCastleDamageMultiplier": 2,
+  "elementBonus": 2,
   "monsterFirstRound": 3,
   "monsterCooldownRounds": 2,
   "monsterSpawnChance": 0.35,
@@ -32,7 +33,7 @@
   "teamTurns": "rotate",
   "teamCastleHpShare": 0.25,
   "initialMp": 10,
-  "maxMp": 30,
+  "maxMp": 20,
   "monsterLateBias": 0.15,
   "monsterEvolveEvery": 3,
   "monsterEvolveMultiplier": 1.2,
@@ -55,7 +56,5 @@
   "secondPlayerArmor": 5,
   "mulligan": true,
   "overdriveHpRatio": 0.3333,
-  "overdriveAttack": 10,
-  "attachTurns": 3,
-  "reactionsPerTurn": 1
+  "overdriveAttack": 10
 }

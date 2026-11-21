@@ -24,7 +24,7 @@ test('どの戦い方の組み合わせでも、全試合が決着する（各20
 });
 
 test('カードの総数は変わらない（山札＋捨て札＋使い切り＋手札。合成する smart は除く：合成で2枚が1枚になる）', () => {
-  const total = Object.values(cards).reduce((a, c) => a + c.count, 0);
+  const total = Object.values(cards).filter((c) => c.factionOnly !== true).reduce((a, c) => a + c.count, 0); // 陣営モード専用（factionOnly）は通常の山札に入らない
   for (let seed = 1; seed <= 30; seed++) {
     const r = runMatch({ cards, rules, strategies: ['aggro', 'random'], seed });
     const s = r.finalState;
