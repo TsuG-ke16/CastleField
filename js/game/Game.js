@@ -27,6 +27,7 @@ import { Road } from './Road.js';
 import { Castle } from './Castle.js';
 import { validateWeather } from './Weather.js';
 import { validateStages, pickStage } from './Stage.js';
+import { DEFAULT_ELEMENTS, validateElements, elementMultiplier, applyElementMultiplier } from './Elements.js';
 
 /** 2人のときのプレイヤーID（人数は rules.playerCount。3人以上は p3〜p8 が続く） */
 export const PLAYER_IDS = ['p1', 'p2'];
@@ -91,9 +92,6 @@ export const EVENT_TYPES = [
   'gameOver',
 ];
 
-/** 属性の強い・弱い：キーの属性は、値の属性に強い（水は火に強い、火は風に強い、風は土に強い、土は水に強い） */
-export const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
-
 /** rules.json に必要な項目と、許される最小値 */
 const RULE_KEYS = {
   castleMaxHp: 1,
@@ -107,7 +105,7 @@ const RULE_KEYS = {
 
 /** rules.json の省略できる項目と、省略したときの値 */
 const OPTIONAL_RULES = {
-  elementBonus: 0, // 属性が強いときに増えるダメージ
+  elementBonus: 0, // （使わなくなった）属性の相性は data/elements.json の倍率で決まる
   monsterFirstRound: 3, // 魔物が出はじめる周回
   monsterCooldownRounds: 0, // 魔物を倒した道に、次の魔物が出ない周回の数
   maxRounds: 0, // 周回の上限（0 なら上限なし）
@@ -224,9 +222,10 @@ export class Game {
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, factions = null, races = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, factions = null, races = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
     if (rarities !== null) validateRarities(rarities);
+    if (elements !== null) validateElements(elements);
     Card.validateDefinitions(cards, rarities, { factions, races });
     Game.validateRules(rules);
     if (typeof rng !== 'function') throw new Error('rng は 0以上1未満の数を返す関数にしてください');
@@ -240,6 +239,7 @@ export class Game {
     if (castles !== null) validateCastles(castles);
     if (decks !== null) validateDecks(decks, cards);
 
+    this.elementTable = elements ?? DEFAULT_ELEMENTS;
     this.cardDefs = cards;
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
@@ -1814,11 +1814,13 @@ export class Game {
     return ok();
   }
 
-  /** a が b に与えるダメージ（攻撃力 ＋ 属性が強ければ elementBonus） */
+  /**
+   * a が b に与えるダメージ。順番：基本の攻撃力 → ×属性倍率（切り上げ・最低1）→ ＋天候の属性ボーナス → ステージ倍率
+   */
   fightDamage(a, b) {
-    const strong = a.element && b.element && ELEMENT_BEATS[a.element] === b.element;
     const attack = a instanceof Soldier ? this.attackOf(a) : a.attack;
-    return this.stageBoost(a, attack + (strong ? this.rules.elementBonus : 0) + this.weatherElementBonus(a.element));
+    const scaled = applyElementMultiplier(attack, elementMultiplier(this.elementTable, a.element, b.element));
+    return this.stageBoost(a, scaled + this.weatherElementBonus(a.element));
   }
 
   /** 兵士の今の攻撃力（夜は、獣＝魔物の駒と、暗殺者・忍者が強くなる） */

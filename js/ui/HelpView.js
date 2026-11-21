@@ -17,7 +17,7 @@ export function renderHelp({cards,rules,monsters,rarities}){
   const note=box.querySelector('.help-note');
   const details=(title)=>{const section=el('details','help-more');section.append(el('summary','',title));note.before(section);return section;};
   const elements=box.querySelector('.element-guide');
-  const attributes=details('属性の強弱を見る');attributes.append(elements,el('p','','水→火→風→土→水。矢印の先の属性に強い。武器で兵士の属性を変えられる。'));
+  const attributes=details('属性の強弱を見る');attributes.append(elements,el('p','','矢印の先の属性に強い（ダメージ1.2倍）：水→火、火→氷・風、氷→雷、雷→水、風→土、土→水、光⇄闇。混沌は全属性に強く、全属性に弱い（弱い側は0.8倍）。武器で兵士の属性を変えられる。'));
   const monster=details('魔物の駒とごほうび');
   monster.append(el('p','',monsters?`放置すると城を繰り返し攻める${rules.monsterEvolveEvery>0?`。${rules.monsterEvolveEvery}周ごとにレアリティが上がって強くなる`:''}${rules.monsterAttackGrowth>0?`。攻めるたびにダメージがさらに+${rules.monsterAttackGrowth}`:''}。兵士や城への魔法で倒そう。`:'魔物はこの対戦では出現しません。'),el('p','','とどめを刺すと、倒した魔物が兵士カードとして手札に入ります。魔物によっては、ごほうびのカードももう1枚もらえます。'));
   if(rules.rewardLuckyChance>0)monster.append(el('p','',`ラッキーは${Math.round(rules.rewardLuckyChance*100)}%。当たると1つ上のレアリティ（${Object.values(rarities??{}).at(-1)?.name??'最高レアリティ'}はそのまま）。`));

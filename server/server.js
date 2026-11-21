@@ -27,6 +27,7 @@ export function loadData(dir = join(ROOT, 'data')) {
     rarities: optional('rarities.json'),
     weather: optional('weather.json'),
     stages: optional('stages.json'),
+    elements: optional('elements.json'),
     stamps: optional('stamps.json'),
     progression: optional('progression.json'),
     profile: optional('profile.json'),

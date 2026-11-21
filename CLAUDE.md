@@ -384,7 +384,6 @@ UIはこれを受けてアニメーションする。イベントを増やすと
   "laneCount": 3,
   "advanceAfterWin": false,
   "soldierCastleDamageMultiplier": 2,
-  "elementBonus": 2,
   "monsterFirstRound": 3,
   "monsterCooldownRounds": 2,
   "monsterSpawnChance": 0.35
@@ -409,7 +408,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - `laneCount`：同じ2人の間の道（レーン）の本数（1〜5。省略すると1）。兵士は出すときにどのレーンに出すかを選び、**兵士同士が戦うのは同じレーンの上だけ**。**魔物は2人の間に1体だけ**（どのレーンに出るかはランダム）。魔物のいないレーンの兵士は、魔物に止められず城へ進める。魔物を倒したあとの `monsterCooldownRounds` は、2人の間全体にかかる
 - カードの `scope`（`damageEnemySoldiers` / `poisonEnemySoldiers` / `freezeEnemySoldiers` の魔法だけ。省略すると `"all"`）：`"all"` は相手の全レーンの兵士に効く。`"lane"` は選んだ1レーンの相手の兵士だけに効く（対象は `{ playerId, roadId }`）。`laneCount` が1のときは `"lane"` でも `"all"` と同じ（対象を選ばない）
 - `monsterFirstRound`：魔物が出はじめる周回（省略すると3）。`monsterCooldownRounds`：魔物を倒した道に次の魔物が出ない周回の数（省略すると0）。`monsterSpawnChance`：周回の始めに、魔物がいない道ごとに魔物が出る確率（0〜1の数。省略すると0）
-- `elementBonus`：属性が強いときに増えるダメージ（省略すると0）
+- `elementBonus`：**使わなくなった**（属性の相性は `data/elements.json` の倍率。「属性を10種にした」）
 - カードの `kind`：`soldier` / `spell` / `weapon`（`attackBonus`、`element`）/ `defense`（`effect`: `shieldSoldier` / `armorCastle`、`amount`）。魔法の `effect` に `poisonEnemySoldiers`（`amount`, `turns`）と `freezeEnemySoldiers`（`turns`）が増えた。`element` は `fire` / `water` / `wind` / `earth`
 - `secondPlayerCastleBonus`：後攻（p2）の城だけ、HPと上限がこのぶん多い（先攻有利をやわらげるため）。0以上の整数
 - `advanceAfterWin`：`true` なら、戦いで相手だけが消えたとき、残りの歩数で進み続ける（`false` ならそのターンはその場で止まる）。省略すると `false`
@@ -530,7 +529,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 ### 属性
 - 属性は 火（`fire`）・水（`water`）・風（`wind`）・土（`earth`）の4つ（人間に確認して、木をなくして風・土にした）。**水は火に強い、火は風に強い、風は土に強い、土は水に強い**（4つの輪。火と土・水と風は、どちらも強くも弱くもない。**強弱の組み合わせは仮**）
 - 兵士は、属性つきの武器を持つとその属性になる（持っていなければ属性なし）
-- 兵士同士の戦いで、自分の属性が相手の属性に強いとき、与えるダメージが `rules.elementBonus`（仮：2）増える。属性なしの相手には増えない
+- 兵士同士の戦いで、自分の属性が相手の属性に強いとき、与えるダメージが倍率で増える（今は `data/elements.json` の1.2倍。「属性を10種にした」）。属性なしの相手には増えない
 - 理由：武器で強くすると、相手が「強い属性」の武器で返せる。強くするほど狙われるので、出す順番と読み合いが生まれる（大きな見返りには、大きなリスク）
 
 ### 状態異常
@@ -957,6 +956,15 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - デッキ（`data/decks.json`）：木の斧を風の弓に置きかえた（土の槌は入れていない）
 - 確かめたこと：`node --test` は全部通る。`node tests/sim/run.js --games 400` は全組み合わせが決着し、CPU の強さの順は変わらない。デッキ対戦の勝率は、いったん突撃61%・籠城58%（A1 の5枚補充から）とずれていたが、下の「デッキ対戦の再調整」で直した
 - 画面：属性のアイコン・武器の絵・説明文を風・土に直した（`js/ui/look.js`・`art.js`・`text.js`）。絵は仮
+
+### 属性を10種にした（火水風土氷雷闇光無混沌）。固定+2は乗算に変えた（人間の指示。仮）
+- 属性：火・水・風・土・氷（`ice`）・雷（`thunder`）・闇（`dark`）・光（`light`）・無（属性なし。`element` を書かない／`null`）・混沌（`chaos`）。今の火水風土はそのまま。精霊（`SPIRIT_KINDS`）は火水風土のまま別扱い
+- 相性（`data/elements.json`。「A→B」＝AはBに有利）：水→火、火→氷、火→風、氷→雷、雷→水、風→土、土→水、光⇄闇（互いに有利）。混沌は無を除く全属性に有利、かつ全属性から不利（混沌自身は含めない）。混沌どうし・無・上に書いていない組み合わせは1.0
+- 書き方：`multipliers`（`advantage` 1.2・`disadvantage` 0.8）と、`elements` の各属性に `name`・`beats`（有利を取れる相手）・`weakAgainst`（その相手を攻撃すると不利になる）。JSON を直すだけで相性を変えられる。検証は `validateElements()`（`js/game/Elements.js`）。`new Game({ elements })` は省略でき、省略すると組み込みの `DEFAULT_ELEMENTS`（`data/elements.json` と同じ中身）
+- ダメージの順番（`Game.fightDamage`の1か所だけ）：基本の攻撃力（背水・夜を含む）→ ×属性倍率（**切り上げ**。結果は最低1）→ ＋天候の属性ボーナス → ステージ倍率。城に着く兵士・魔法には属性補正を入れない（今まで通り）
+- **`rules.elementBonus`（有利なら+2）は使わなくなった**（`data/rules.json` から消した。書いても効かない）
+- 画面：新属性の色・アイコン・説明は仮（`js/ui/look.js`・`art.js` の仮の SVG・`HelpView.js`）。氷・雷・闇・光・混沌の武器・魔物・ステージはまだ作っていない（データは足していない）
+- 確かめたこと：`node --test` 全部通る（`tests/elements.test.js`）。`node tests/sim/run.js --games 200 --match smart,smart`：平均42.3手番・p1 勝率47%（固定+2のときは42.6・46%）
 
 ### デッキ対戦の再調整（`data/decks.json`）
 `node tests/sim/castles.js --games 800`（smart 同士、席を入れかえ）で、バランスに勝つ割合が 突撃59%・籠城66% だったので、データだけ直した（仮）。

@@ -7,7 +7,9 @@ export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense'];
 export const SOLDIER_ROLES = ['melee', 'archer', 'mage', 'ninja', 'guard'];
 /** 進んで城を攻める役割（speed を書く）。ninja（忍者）は進むが、相手から見えず、相手の兵士とは戦わずにすり抜ける */
 export const MOVING_ROLES = ['melee', 'ninja'];
-export const ELEMENTS = ['fire', 'water', 'wind', 'earth'];
+import { ELEMENT_IDS } from './Elements.js';
+/** 属性は10種のうち「無」を除く9つ（無は element を書かないこと）。火水風土氷雷闇光混沌 */
+export const ELEMENTS = ELEMENT_IDS;
 /** 精霊の種類：fire=毎ターン敵の城を攻める／water=毎ターン城を回復／wind=兵士の速さの最低値／earth=受けるダメージを軽くする */
 export const SPIRIT_KINDS = ['fire', 'water', 'wind', 'earth'];
 

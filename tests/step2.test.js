@@ -7,7 +7,7 @@ import { loadFixture, seededRng, recordEvents } from './helpers.js';
 // tests/fixtures/cards-step2.json（STEP 2 のカードを足した固定データ）と、rules は STEP 1 の固定データ＋STEP 2 の値
 function setup({ p1 = [], p2 = [], deck = Array(30).fill('heal'), rules = {} } = {}) {
   const cards = loadFixture('cards-step2.json');
-  const r = { ...loadFixture('rules.json'), elementBonus: 2, ...rules };
+  const r = { ...loadFixture('rules.json'), ...rules };
   const game = new Game({ cards, rules: r, rng: seededRng(1) });
   game.debugSetHand('p1', p1);
   game.debugSetHand('p2', p2);
@@ -67,8 +67,8 @@ test('武器：攻撃力が上がり属性がつく。重ねると攻撃力は�
   assert.deepEqual([s.weapon, s.attack, s.element], ['waterSpear', 5, 'water']); // 3 + 1 + 1。属性は水に上書き
 });
 
-test('属性：強い属性の兵士は elementBonus 多く与える。属性なしには増えない', () => {
-  // p1 騎士（攻5）＋水 → 攻6、p2 騎士＋火 → 攻6。水は火に強いので p1 は 6+2=8 を与える
+test('属性：強い属性の兵士は与えるダメージが1.2倍（切り上げ）。属性なしには増えない', () => {
+  // p1 騎士（攻5）＋水 → 攻6、p2 騎士＋火 → 攻6。水は火に強いので p1 は 6×1.2=7.2→8 を与える
   const { game, log } = setup({ p1: ['knight', 'waterSpear'], p2: ['knight', 'flameSword'] });
   play(game, 'knight');
   play(game, 'waterSpear');
@@ -167,7 +167,7 @@ test('cards.json の間違いは例外', () => {
   const cards = loadFixture('cards-step2.json');
   const rules = loadFixture('rules.json');
   assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'weapon', count: 1 } }, rules }), /attackBonus/);
-  assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'weapon', attackBonus: 1, element: 'ice', count: 1 } }, rules }), /element/);
+  assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'weapon', attackBonus: 1, element: 'wood', count: 1 } }, rules }), /element/);
   assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'defense', effect: 'boom', count: 1 } }, rules }), /effect/);
   assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'trap', effect: 'pit', amount: 3, count: 1 } }, rules }), /kind/);
   assert.throws(() => new Game({ cards, rules: { ...rules, elementBonus: -1 } }), /elementBonus/);
@@ -199,12 +199,12 @@ test('毒の最後の1回で消えるときは statusCleared を出さない', (
   assert.equal(log[k - 1].cause, 'poison');
   assert.ok(!log.some((e) => e.event === 'statusCleared'));
 });
-test('属性：水は火に、火は風に、風は土に、土は水に強い。城へのダメージには属性が乗らない', () => {
+test('属性：水は火に、火は風に、風は土に、土は水に強い（×1.2切り上げ）。城へのダメージには属性が乗らない', () => {
   const { game } = setup();
   const e = (element) => ({ attack: 3, element });
   const ring = [['water', 'fire'], ['fire', 'wind'], ['wind', 'earth'], ['earth', 'water']];
   for (const [strong, weak] of ring) {
-    assert.equal(game.fightDamage(e(strong), e(weak)), 5, `${strong} は ${weak} に強い`);
+    assert.equal(game.fightDamage(e(strong), e(weak)), 4, `${strong} は ${weak} に強い（3×1.2=3.6→4）`);
     assert.equal(game.fightDamage(e(weak), e(strong)), 3, `${weak} は ${strong} に弱い（増えない）`);
   }
   // 向かい合う属性（火と土・水と風）は、どちらも増えない
