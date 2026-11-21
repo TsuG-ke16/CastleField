@@ -67,8 +67,8 @@ test('武器：攻撃力が上がり属性がつく。重ねると攻撃力は�
   assert.deepEqual([s.weapon, s.attack, s.element], ['waterSpear', 5, 'water']); // 3 + 1 + 1。属性は水に上書き
 });
 
-test('属性：強い属性の兵士は与えるダメージが1.2倍（切り上げ）。属性なしには増えない', () => {
-  // p1 騎士（攻5）＋水 → 攻6、p2 騎士＋火 → 攻6。水は火に強いので p1 は 6×1.2=7.2→8 を与える
+test('属性：強い属性の兵士は与えるダメージが1.5倍・不利は0.75倍（切り上げ）。属性なしには増えない', () => {
+  // p1 騎士（攻5）＋水 → 攻6、p2 騎士＋火 → 攻6。水は火に強いので p1 は 6×1.5=9 を与え、火は水に不利なので p2 は 6×0.75=4.5→5
   const { game, log } = setup({ p1: ['knight', 'waterSpear'], p2: ['knight', 'flameSword'] });
   play(game, 'knight');
   play(game, 'waterSpear');
@@ -77,7 +77,7 @@ test('属性：強い属性の兵士は与えるダメージが1.2倍（切り�
   play(game, 'flameSword');
   game.endTurn(); // p1 騎士 0→3、1つ先に p2 騎士 → 戦う
   const dmg = log.filter((e) => e.event === 'soldierDamaged');
-  assert.deepEqual(dmg.map((e) => [e.playerId, e.amount, e.cause]), [['p2', 8, 'fight'], ['p1', 6, 'fight']]);
+  assert.deepEqual(dmg.map((e) => [e.playerId, e.amount, e.cause]), [['p2', 9, 'fight'], ['p1', 5, 'fight']]);
 });
 
 test('盾：ダメージを先に受ける。重なる。blocked に入る', () => {
@@ -199,15 +199,15 @@ test('毒の最後の1回で消えるときは statusCleared を出さない', (
   assert.equal(log[k - 1].cause, 'poison');
   assert.ok(!log.some((e) => e.event === 'statusCleared'));
 });
-test('属性：水は火に、火は風に、風は土に、土は水に強い（×1.2切り上げ）。城へのダメージには属性が乗らない', () => {
+test('属性：水は火・土に、風は火に、土は風に強い（×1.5切り上げ、不利は×0.75切り上げ）。城へのダメージには属性が乗らない', () => {
   const { game } = setup();
   const e = (element) => ({ attack: 3, element });
-  const ring = [['water', 'fire'], ['fire', 'wind'], ['wind', 'earth'], ['earth', 'water']];
-  for (const [strong, weak] of ring) {
-    assert.equal(game.fightDamage(e(strong), e(weak)), 4, `${strong} は ${weak} に強い（3×1.2=3.6→4）`);
-    assert.equal(game.fightDamage(e(weak), e(strong)), 3, `${weak} は ${strong} に弱い（増えない）`);
+  const pairs = [['water', 'fire'], ['wind', 'fire'], ['water', 'earth'], ['earth', 'wind']];
+  for (const [strong, weak] of pairs) {
+    assert.equal(game.fightDamage(e(strong), e(weak)), 5, `${strong} は ${weak} に強い（3×1.5=4.5→5）`);
+    assert.equal(game.fightDamage(e(weak), e(strong)), 3, `${weak} は ${strong} に不利（3×0.75=2.25→3）`);
   }
-  // 向かい合う属性（火と土・水と風）は、どちらも増えない
+  // 相性のない組み合わせ（火と土・水と風）は、どちらも増えない
   assert.equal(game.fightDamage(e('fire'), e('earth')), 3);
   assert.equal(game.fightDamage(e('water'), e('wind')), 3);
   assert.equal(game.fightDamage(e('fire'), e(null)), 3);

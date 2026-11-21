@@ -1,20 +1,21 @@
 // 属性の相性表（data/elements.json）。DOM は使わない。
-// beats：その属性が「有利」を取れる相手（攻撃するとき 1.2倍）。
-// weakAgainst：その属性が攻撃すると「不利」になる相手（0.8倍）。混沌に攻撃すると全属性が不利、がこれで表せる。
-// 属性なし（無）は element が null / 書かないこと。相性なし（1.0）。
+// beats：その属性が「有利」を取れる相手（攻撃するとき advantage 倍＝1.5）。
+// 不利（disadvantage 倍＝0.75）は beats の逆向きから決まる（相手が自分に有利を取れるなら不利）。JSON の二重管理を避けるため。
+// weakAgainst は任意（beats から出ない不利を足したいとき用。今のデータでは使わない）。
+// 属性なし（無）は element が null / 書かないこと、混沌は beats も不利もなし。相性なし（1.0）。
 
 export const DEFAULT_ELEMENTS = {
-  multipliers: { advantage: 1.2, disadvantage: 0.8 },
+  multipliers: { advantage: 1.5, disadvantage: 0.75 },
   elements: {
-    fire: { name: '火', beats: ['ice', 'wind'], weakAgainst: ['chaos'] },
-    water: { name: '水', beats: ['fire'], weakAgainst: ['chaos'] },
-    wind: { name: '風', beats: ['earth'], weakAgainst: ['chaos'] },
-    earth: { name: '土', beats: ['water'], weakAgainst: ['chaos'] },
-    ice: { name: '氷', beats: ['thunder'], weakAgainst: ['chaos'] },
-    thunder: { name: '雷', beats: ['water'], weakAgainst: ['chaos'] },
-    dark: { name: '闇', beats: ['light'], weakAgainst: ['chaos'] },
-    light: { name: '光', beats: ['dark'], weakAgainst: ['chaos'] },
-    chaos: { name: '混沌', beats: ['fire', 'water', 'wind', 'earth', 'ice', 'thunder', 'dark', 'light'], weakAgainst: [] },
+    fire: { name: '火', beats: ['ice'] },
+    water: { name: '水', beats: ['fire', 'earth'] },
+    wind: { name: '風', beats: ['fire'] },
+    earth: { name: '土', beats: ['thunder', 'wind'] },
+    ice: { name: '氷', beats: ['water'] },
+    thunder: { name: '雷', beats: ['water'] },
+    dark: { name: '闇', beats: ['light'] },
+    light: { name: '光', beats: ['dark'] },
+    chaos: { name: '混沌', beats: [] },
   },
 };
 
@@ -45,14 +46,14 @@ export function validateElements(data) {
   }
 }
 
-/** 攻撃する属性 → 守る属性の倍率。有利 advantage（優先）／不利 disadvantage／それ以外 1.0。無（null）は 1.0 */
+/** 攻撃する属性 → 守る属性の倍率。有利 advantage（優先）／不利 disadvantage（相手が自分に有利、または weakAgainst）／それ以外 1.0。無（null）は 1.0 */
 export function elementMultiplier(table, attacker, defender) {
   if (!attacker || !defender) return 1;
   const t = table ?? DEFAULT_ELEMENTS;
   const a = t.elements[attacker];
   if (!a) return 1;
   if (a.beats?.includes(defender)) return t.multipliers.advantage;
-  if (a.weakAgainst?.includes(defender)) return t.multipliers.disadvantage;
+  if (t.elements[defender]?.beats?.includes(attacker) || a.weakAgainst?.includes(defender)) return t.multipliers.disadvantage;
   return 1;
 }
 

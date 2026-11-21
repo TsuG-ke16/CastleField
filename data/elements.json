@@ -1,95 +1,62 @@
 {
   "multipliers": {
-    "advantage": 1.2,
-    "disadvantage": 0.8
+    "advantage": 1.5,
+    "disadvantage": 0.75
   },
   "elements": {
     "fire": {
       "name": "火",
       "beats": [
-        "ice",
-        "wind"
-      ],
-      "weakAgainst": [
-        "chaos"
+        "ice"
       ]
     },
     "water": {
       "name": "水",
       "beats": [
-        "fire"
-      ],
-      "weakAgainst": [
-        "chaos"
+        "fire",
+        "earth"
       ]
     },
     "wind": {
       "name": "風",
       "beats": [
-        "earth"
-      ],
-      "weakAgainst": [
-        "chaos"
+        "fire"
       ]
     },
     "earth": {
       "name": "土",
       "beats": [
-        "water"
-      ],
-      "weakAgainst": [
-        "chaos"
+        "thunder",
+        "wind"
       ]
     },
     "ice": {
       "name": "氷",
       "beats": [
-        "thunder"
-      ],
-      "weakAgainst": [
-        "chaos"
+        "water"
       ]
     },
     "thunder": {
       "name": "雷",
       "beats": [
         "water"
-      ],
-      "weakAgainst": [
-        "chaos"
       ]
     },
     "dark": {
       "name": "闇",
       "beats": [
         "light"
-      ],
-      "weakAgainst": [
-        "chaos"
       ]
     },
     "light": {
       "name": "光",
       "beats": [
         "dark"
-      ],
-      "weakAgainst": [
-        "chaos"
       ]
     },
     "chaos": {
       "name": "混沌",
-      "beats": [
-        "fire",
-        "water",
-        "wind",
-        "earth",
-        "ice",
-        "thunder",
-        "dark",
-        "light"
-      ],
-      "weakAgainst": []
+      "beats": []
     }
   }
 }
