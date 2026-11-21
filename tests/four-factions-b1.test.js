@@ -65,6 +65,11 @@ test('既存の136枚（取り込み前の全カード）は、人間が決め�
     before[id].name = name;
     before[id].fuseTo = 'ironSword';
   }
+  // 聖剣・神剣は人間の決定で光属性（攻撃力は変えない）
+  for (const id of ['holySword', 'godSword']) {
+    assert.equal(before[id].element, 'light', id);
+    delete before[id].element;
+  }
   assert.equal(before.paladin.fuseTo, 'king_cavalry_legendary');
   before.paladin.fuseTo = null;
   const hash = createHash('sha256').update(JSON.stringify(before)).digest('hex');
@@ -273,6 +278,8 @@ test('光の武器（ルミナスランス系・聖鉄の剣系）：攻撃補�
   // 聖剣・神剣は既存の数値のまま（光の剣系の上位）
   assert.equal(CARDS.king_light_sword_rare.fuseTo, 'holySword');
   assert.equal(CARDS.holySword.attackBonus, 6);
+  assert.equal(CARDS.holySword.element, 'light');
+  assert.equal(CARDS.godSword.element, 'light');
   assert.equal(CARDS.godSword.attackBonus, 9);
 });
 

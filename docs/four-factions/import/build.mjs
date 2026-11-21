@@ -103,6 +103,11 @@ export function buildAll({ ledger, cards: cardsIn, shop: shopIn }) {
       const def = cards[id];
       if (def.faction !== faction) throw new Error(`既存の「${row.name}」（${id}）の faction が ${def.faction}（台帳は ${faction}）`);
       if (m.rename) def.name = row.name;
+      if (m.reelement) {
+        const el = ELEMENT_IDS[row.attribute];
+        if (!el) throw new Error(`「${row.name}」：reelement だが台帳の属性「${row.attribute}」が1つの属性ではありません`);
+        def.element = el;
+      }
       if (m.relink) {
         if (!next) throw new Error(`「${row.name}」：relink だが台帳に合成先がありません`);
         def.fuseTo = next;

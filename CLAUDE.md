@@ -1511,7 +1511,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - 判定は `Setup.js` の `isDrawable(def, hasPool)`（`dropRates` / `sampleType` / `sampleTypeOfRarity` / `nextRarityWithCards` / `sampleDeckTypes`、Game の `count` 枚ずつの山札・入手券の可否が使う）
 - **王国軍**（新規24枚）：
   - グランドパラディン（`king_cavalry_legendary`）：騎兵系の最上位（レジェンド）。HP10・攻撃10・速さ5（竜騎士と同格の仮値）。**聖騎士の合成先**にした（人間の決定。PR-A では null）。`implemented: true`
-  - 光の武器：ルミナスランス系5枚（`king_light_lance_*`）・聖鉄の剣・祝福の剣・光輝の剣（`king_light_sword_common/uncommon/rare`。光輝の剣→既存の聖剣→神剣）。攻撃+1/+2/+4/+6/+9・光。`true`。**既存の聖剣・神剣は属性なしのまま**（台帳は光だが、属性を足すと既存カードの効果が変わるため。報告事項）
+  - 光の武器：ルミナスランス系5枚（`king_light_lance_*`）・聖鉄の剣・祝福の剣・光輝の剣（`king_light_sword_common/uncommon/rare`。光輝の剣→既存の聖剣→神剣）。攻撃+1/+2/+4/+6/+9・光。`true`。**既存の聖剣・神剣には光属性を付けた**（人間の決定。攻撃+6・+9は変えない。`mapping.mjs` の `reelement`）
   - 光の攻撃魔法：ルミナ〜ディヴァインノヴァ（`king_light_spell_*`）。`damageEnemySoldiers`・光・2/3/5/7/12。コモン〜レアは選んだ1レーン（`scope: "lane"`）、エピック以上は全レーン（仕様の案）。MP はレアリティの標準。`true`
   - 聖術師系5枚（`king_priest_*`。見習い聖術師〜セラフィム）：**`implemented: false`**。浄化・守護の効果も、兵士に光属性を持たせるスキーマもないので、ふつうの魔法使いとして出すと「既存効果の代用」になるため。データは魔法使い型（動かず撃つ。HP4〜10・攻撃2〜9・射程2・2ターン。仮）
   - カウンター5枚（`king_counter_*`。パリィ〜ディヴァインリベンジ）：**`implemented: false`**（防御の場面で軽減・無効・反撃を起こすしくみがない）。`effectPlan` に仕様の仮値

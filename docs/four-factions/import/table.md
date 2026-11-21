@@ -31,8 +31,8 @@
 | 王国軍 | 武器 | 聖鉄の剣 | 新規案 | `king_light_sword_common` | weapon | 攻撃+1 | light | king_light_sword_uncommon | true | 既存の武器のしくみ（攻撃補正の足し算・最後の武器の属性）で実際に効く。攻撃補正+1は仕様書の値 |
 | 王国軍 | 武器 | 祝福の剣 | 新規案 | `king_light_sword_uncommon` | weapon | 攻撃+2 | light | king_light_sword_rare | true | 既存の武器のしくみ（攻撃補正の足し算・最後の武器の属性）で実際に効く。攻撃補正+2は仕様書の値 |
 | 王国軍 | 武器 | 光輝の剣 | 新規案 | `king_light_sword_rare` | weapon | 攻撃+4 | light | holySword | true | 既存の武器のしくみ（攻撃補正の足し算・最後の武器の属性）で実際に効く。攻撃補正+4は仕様書の値 |
-| 王国軍 | 武器 | 聖剣 | 既存 | `holySword` | weapon | 攻撃+6 | 光 | godSword | true | 既存カード（効果・数値・IDは今のまま）。台帳は光の剣系（光）だが、今の聖剣は属性なし。属性を足すと既存カードの効果が変わるので、今のまま（報告事項） |
-| 王国軍 | 武器 | 神剣 | 既存 | `godSword` | weapon | 攻撃+9 | 光 | — | true | 既存カード（効果・数値・IDは今のまま） |
+| 王国軍 | 武器 | 聖剣 | 既存 | `holySword` | weapon | 攻撃+6 | light | godSword | true | 既存カード（効果・数値・IDは今のまま）。台帳は光の剣系（光）。人間の決定で、光属性を付けた（攻撃+6は変えない） |
+| 王国軍 | 武器 | 神剣 | 既存 | `godSword` | weapon | 攻撃+9 | light | — | true | 既存カード（効果・数値・IDは今のまま）。台帳は光の剣系（光）。人間の決定で、光属性を付けた（攻撃+9は変えない） |
 | 王国軍 | 攻撃魔法 | ルミナ | 新規案 | `king_light_spell_common` | spell | damageEnemySoldiers amount 2 scope lane | light | king_light_spell_uncommon | true | 既存の damageEnemySoldiers（兵士へのダメージ）に光属性を付けたもの。光の付着・反応（今の実装）まで実際に効く。選んだ1レーン・2ダメージは仕様書の仮値 |
 | 王国軍 | 攻撃魔法 | ホーリーレイ | 新規案 | `king_light_spell_uncommon` | spell | damageEnemySoldiers amount 3 scope lane | light | king_light_spell_rare | true | 既存の damageEnemySoldiers（兵士へのダメージ）に光属性を付けたもの。光の付着・反応（今の実装）まで実際に効く。選んだ1レーン・3ダメージは仕様書の仮値 |
 | 王国軍 | 攻撃魔法 | プリズムバースト | 新規案 | `king_light_spell_rare` | spell | damageEnemySoldiers amount 5 scope lane | light | king_light_spell_epic | true | 既存の damageEnemySoldiers（兵士へのダメージ）に光属性を付けたもの。光の付着・反応（今の実装）まで実際に効く。選んだ1レーン・5ダメージは仕様書の仮値 |
