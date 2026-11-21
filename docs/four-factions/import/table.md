@@ -202,7 +202,7 @@
 | 魔族軍 | 呪い魔法 | 永劫の呪い | 新規案 | `demon_curse_legendary` | spell | （効果なし） | dark | — | **false** | 呪い（攻撃力低下・回復力低下・進軍妨害・継続弱体）の状態がまだない。呪い重複上限と持続も未決定。毒や凍結で代用すると別の効果になるため false（仕様 PR-B）。PR-C で作る |
 | 魔族軍 | 生命吸収 | 魂の欠片 | 新規案 | `demon_drain_common` | spell | drainCastle amount 3 | dark | demon_drain_uncommon | true | 既存の drainCastle（相手の城に 3 ダメージ。城HPを実際に減らしたぶんだけ自分の城を回復。城壁が受けたぶんは回復しない）が仕様どおり。基準ダメージ 3 は仕様書の値（命の簒奪＝レアの 8 と同じ系統） |
 | 魔族軍 | 生命吸収 | 生命吸収 | 新規案 | `demon_drain_uncommon` | spell | drainCastle amount 5 | dark | lifeSteal | true | 既存の drainCastle（相手の城に 5 ダメージ。城HPを実際に減らしたぶんだけ自分の城を回復。城壁が受けたぶんは回復しない）が仕様どおり。基準ダメージ 5 は仕様書の値（命の簒奪＝レアの 8 と同じ系統） |
-| 魔族軍 | 生命吸収 | 命の簒奪 | 既存 | `lifeSteal` | spell | drainCastle amount 8 | 闇 | （合成しない） | true | 既存カード（効果・数値・IDは今のまま） |
+| 魔族軍 | 生命吸収 | 命の簒奪 | 既存 | `lifeSteal` | spell | drainCastle amount 8 | 闇 | demon_drain_epic | true | 既存カード（効果・数値・IDは今のまま）。台帳の合成先は魂喰らい（同じ魔族）。人間の決定で付けかえた |
 | 魔族軍 | 生命吸収 | 魂喰らい | 新規案 | `demon_drain_epic` | spell | drainCastle amount 12 | dark | demon_drain_legendary | true | 既存の drainCastle（相手の城に 12 ダメージ。城HPを実際に減らしたぶんだけ自分の城を回復。城壁が受けたぶんは回復しない）が仕様どおり。基準ダメージ 12 は仕様書の値（命の簒奪＝レアの 8 と同じ系統） |
 | 魔族軍 | 生命吸収 | 冥府の収穫 | 新規案 | `demon_drain_legendary` | spell | drainCastle amount 18 | dark | — | true | 既存の drainCastle（相手の城に 18 ダメージ。城HPを実際に減らしたぶんだけ自分の城を回復。城壁が受けたぶんは回復しない）が仕様どおり。基準ダメージ 18 は仕様書の値（命の簒奪＝レアの 8 と同じ系統） |
 | 魔族軍 | 死者蘇生 | 残響の魂 | 新規案 | `demon_revive_common` | spell | （効果なし） | dark | demon_revive_uncommon | **false** | その試合で倒れた自軍兵士の履歴（墓地・死亡履歴）がなく、倒れた兵士を戻すしくみがない。復活ターンの攻撃禁止・同じ兵士の無限蘇生の禁止も要る。代用できる既存効果はないため false（仕様 PR-B）。PR-C で作る |

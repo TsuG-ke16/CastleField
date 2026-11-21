@@ -58,11 +58,8 @@ test('魔族軍は台帳で76行（新規64・既存12）。区分ごとの件�
     // 属性：新規の武器・魔法で台帳の属性が1つのものは element が一致（兵士・複数属性は書かない）
     if (row.status === '新規案' && (def.kind === 'weapon' || def.kind === 'spell') && Object.hasOwn(ELEMENT_IDS, row.attribute)) assert.equal(def.element ?? null, ELEMENT_IDS[row.attribute], `${id} の属性`);
     if (row.status === '新規案' && (def.kind === 'soldier' || row.attribute.includes('・'))) assert.equal(def.element, undefined, `${id} は属性を持たない`);
-    // 合成先：台帳の next_name と一致。例外は命の簒奪だけ（既存カードで、台帳は魂喰らいだが今は null。人間に確認してから付けかえる）
-    if (row.name === '命の簒奪') {
-      assert.equal(def.fuseTo, null);
-      assert.equal(row.next_name, '魂喰らい');
-    } else if (row.next_name) {
+    // 合成先：台帳の next_name と一致（命の簒奪→魂喰らいは人間の決定で付けかえた）
+    if (row.next_name) {
       assert.equal(def.fuseTo, idOfRow(DEMON.find((r) => r.name === row.next_name)), `${id} の合成先（台帳：${row.next_name}）`);
     } else assert.ok(def.fuseTo == null, `${id} は合成先なし`);
   }
@@ -81,14 +78,17 @@ test('既存の12枚（氷5・毒5・命の簒奪・魔力強奪）は B3 で1�
 });
 
 test('取り込み前の226枚（B2 まで）は1文字も変わっていない（B3 は末尾に足しただけ）', () => {
-  const before = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B3_NEW.includes(id)));
+  const before = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B3_NEW.includes(id)).map(([id, d]) => [id, { ...d }]));
   assert.equal(Object.keys(before).length, 226);
+  assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic'); // 人間の決定で付けかえた（それ以前は null）
+  before.lifeSteal.fuseTo = null;
   assert.equal(createHash('sha256').update(JSON.stringify(before)).digest('hex'), '8bb784d37c2b69a87790c597c60be14ca961f87249ccb27753c0174578bf6054');
   assert.equal(Object.keys(CARDS).length, 290);
 });
 
 test('陣営なしの山札は B3 の前後で同じシードなら同じ並び（B3 の新規64枚を取り除いても変わらない）。ゲーム開始時の手札・山札も同じ', () => {
-  const legacy = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B3_NEW.includes(id)));
+  // 命の簒奪の合成先（魂喰らい）は B3 の新規なので、取り除いた側では null にする（引き当てには関係しない）
+  const legacy = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B3_NEW.includes(id)).map(([id, d]) => [id, id === 'lifeSteal' ? { ...d, fuseTo: null } : d]));
   for (const seed of [1, 2, 9, 33]) {
     assert.deepEqual(sampleDeckTypes(CARDS, rarities, 300, seededRng(seed)), sampleDeckTypes(legacy, rarities, 300, seededRng(seed)));
   }
@@ -325,8 +325,8 @@ test('合成の系統：B3 の各系統が コモンから レジェンドまで
     assert.deepEqual(c.map((id) => CARDS[id].rarity), ORDER, `${s}: ${c.join(' → ')}`);
     for (const id of c) assert.equal(CARDS[id].faction, 'demon', `${s} の系統の ${id}`);
   }
-  // 生命吸収：コモン → アンコモン → 命の簒奪（レア）で止まる（台帳の「魂喰らい」への付けかえは人間に確認してから）
-  assert.deepEqual(chain('demon_drain_common'), ['demon_drain_common', 'demon_drain_uncommon', 'lifeSteal']);
+  // 生命吸収：コモン → アンコモン → 命の簒奪 → 魂喰らい → 冥府の収穫（命の簒奪→魂喰らいは人間の決定で付けかえた）
+  assert.deepEqual(chain('demon_drain_common'), ['demon_drain_common', 'demon_drain_uncommon', 'lifeSteal', 'demon_drain_epic', 'demon_drain_legendary']);
   assert.equal(CARDS.manaRaid.fuseTo, null);
   // 実際の合成（implemented: true の系統）
   assert.equal(fuseOnce('demon_undead_common'), 'demon_undead_uncommon');

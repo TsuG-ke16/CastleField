@@ -110,7 +110,7 @@
   "antidote": {"name": "解毒薬", "kind": "spell", "effect": "curePoison", "count": 0, "rarity": "special", "weight": 1, "description": "自分の毒状態（兵士・城）をすべて治す。毒にかかっていないと出せない。メインを使わず何枚でも出せる"},
   "weatherCall": {"name": "天候の呪文", "kind": "spell", "effect": "changeWeather", "count": 0, "rarity": "special", "weight": 0.5, "description": "天候をランダムに変える（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨のどれか）。メインを使う"},
   "manaRaid": {"name": "魔力強奪", "faction": "demon", "kind": "spell", "effect": "drainMp", "amount": 4, "description": "相手のMPを4奪って、自分のMPにする（自分の上限を超えたぶんは捨てる）。MPは使わない。相手のMPが0なら出せない", "count": 0, "rarity": "rare", "fuseTo": null},
-  "lifeSteal": {"name": "命の簒奪", "faction": "demon", "kind": "spell", "effect": "drainCastle", "amount": 8, "description": "相手の城に8ダメージ。城HPを実際に減らしたぶん、自分の城を回復する（城壁が受けたぶんは回復しない）", "count": 0, "rarity": "rare", "fuseTo": null},
+  "lifeSteal": {"name": "命の簒奪", "faction": "demon", "kind": "spell", "effect": "drainCastle", "amount": 8, "description": "相手の城に8ダメージ。城HPを実際に減らしたぶん、自分の城を回復する（城壁が受けたぶんは回復しない）", "count": 0, "rarity": "rare", "fuseTo": "demon_drain_epic"},
   "desperateShot": {"name": "決死の砲撃", "kind": "spell", "effect": "sacrificeAttack", "amount": 20, "selfDamage": 6, "description": "自分の城HPを6払って、相手の城に20ダメージ（払うのは城壁を通さない。外れても払う）。城HPが6以下なら出せない", "count": 0, "rarity": "rare", "fuseTo": null},
   "powderKeg": {"name": "火薬庫", "kind": "spell", "effect": "damageAllSoldiers", "amount": 8, "description": "場にいる兵士全員に8ダメージ。自分の兵士も巻き込む（忍者には当たらない）", "count": 0, "rarity": "rare", "fuseTo": null},
   "attackDice": {"name": "攻撃サイコロ", "kind": "spell", "effect": "dice", "dice": "attack", "per": 3.5, "count": 0, "rarity": "special", "description": "サイコロを振り、出た目×3.5（端数切り上げ：4〜21）のダメージを相手の城に与える。MPを使う", "mpCost": 3},

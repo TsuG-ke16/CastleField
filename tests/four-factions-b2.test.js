@@ -85,7 +85,9 @@ test('既存の13枚（精霊召喚12・ゲイルフォース）は台帳と名�
 });
 
 test('取り込み前の176枚（B1 まで）は1文字も変わっていない（B2 は末尾に足しただけ）', () => {
-  const before = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B2_NEW.includes(id) && !/^demon_/.test(id))); // B3 の新規（demon_*）も除く
+  const before = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B2_NEW.includes(id) && !/^demon_/.test(id)).map(([id, d]) => [id, { ...d }])); // B3 の新規（demon_*）も除く
+  assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic'); // 人間の決定（B3）で魂喰らいへ付けかえた。それ以前は null
+  before.lifeSteal.fuseTo = null;
   assert.equal(Object.keys(before).length, 176);
   const hash = createHash('sha256').update(JSON.stringify(before)).digest('hex');
   assert.equal(hash, 'd6851743d79c9afbe41d04ffc4819ae95f5935d578dc741b464090abdb7079f9');
