@@ -5,6 +5,7 @@
     "hp": 5,
     "attack": 3,
     "speed": 2,
+    "mpCost": 1,
     "count": 4
   },
   "classic_king_cavalry": {
@@ -13,6 +14,7 @@
     "hp": 4,
     "attack": 4,
     "speed": 3,
+    "mpCost": 2,
     "count": 3
   },
   "classic_king_archer": {
@@ -24,6 +26,7 @@
     "range": 2,
     "stay": 2,
     "description": "動かずに、2マス先までの相手の兵士1体を撃つ（反撃を受けない）。2ターンで帰る",
+    "mpCost": 2,
     "count": 3
   },
   "classic_king_heavy": {
@@ -32,6 +35,7 @@
     "hp": 9,
     "attack": 2,
     "speed": 1,
+    "mpCost": 2,
     "count": 2
   },
   "classic_king_priest": {
@@ -43,6 +47,7 @@
     "range": 2,
     "stay": 2,
     "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る",
+    "mpCost": 2,
     "count": 2
   },
   "classic_king_holy_sword": {
@@ -50,6 +55,7 @@
     "kind": "weapon",
     "attackBonus": 2,
     "description": "兵士に持たせると攻撃+2（光の属性は PR3 で入れる。今は属性なし）",
+    "mpCost": 2,
     "count": 2
   },
   "classic_king_lumina_lance": {
@@ -57,6 +63,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "description": "兵士に持たせると攻撃+1（光の属性は PR3 で入れる。今は属性なし）",
+    "mpCost": 1,
     "count": 2
   },
   "classic_king_lumina": {
@@ -73,6 +80,7 @@
     "kind": "spell",
     "effect": "healOwnCastle",
     "amount": 5,
+    "mpCost": 1,
     "count": 3
   },
   "classic_king_heal": {
@@ -80,6 +88,7 @@
     "kind": "spell",
     "effect": "healOwnCastle",
     "amount": 10,
+    "mpCost": 3,
     "count": 2
   },
   "classic_king_shield": {
@@ -87,6 +96,7 @@
     "kind": "defense",
     "effect": "shieldSoldier",
     "amount": 3,
+    "mpCost": 1,
     "count": 3
   },
   "classic_king_wall": {
@@ -94,12 +104,14 @@
     "kind": "defense",
     "effect": "armorCastle",
     "amount": 5,
+    "mpCost": 2,
     "count": 3
   },
   "classic_king_decoy": {
     "name": "身代わり",
     "kind": "defense",
     "effect": "nullifySoldier",
+    "mpCost": 2,
     "count": 2,
     "description": "城に着いた兵士1体のダメージを無効にする（魔法には使えない）"
   },
@@ -112,12 +124,29 @@
     "count": 2,
     "description": "自分の兵士と城の毒・やけど・凍結をすべて治し、相手の兵士全員に1ダメージ"
   },
+  "classic_king_holy_ray": {
+    "name": "ホーリーレイ",
+    "kind": "spell",
+    "effect": "singleDamage",
+    "amount": 5,
+    "mpCost": 4,
+    "count": 2
+  },
+  "classic_king_holy_fireball": {
+    "name": "聖なる火球",
+    "kind": "spell",
+    "effect": "damageEnemyCastle",
+    "amount": 6,
+    "mpCost": 4,
+    "count": 2
+  },
   "classic_demon_skeleton": {
     "name": "骸骨兵",
     "kind": "soldier",
     "hp": 5,
     "attack": 3,
     "speed": 2,
+    "mpCost": 1,
     "count": 4
   },
   "classic_demon_imp": {
@@ -126,6 +155,7 @@
     "hp": 3,
     "attack": 4,
     "speed": 3,
+    "mpCost": 2,
     "count": 3
   },
   "classic_demon_curser": {
@@ -137,6 +167,7 @@
     "range": 2,
     "stay": 2,
     "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る",
+    "mpCost": 2,
     "count": 2
   },
   "classic_demon_shadow_scythe": {
@@ -144,6 +175,7 @@
     "kind": "weapon",
     "attackBonus": 2,
     "description": "兵士に持たせると攻撃+2（闇の属性は PR3 で入れる。今は属性なし）",
+    "mpCost": 2,
     "count": 2
   },
   "classic_demon_frost_blade": {
@@ -151,6 +183,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "description": "兵士に持たせると攻撃+1（氷の属性は PR3 で入れる。今は属性なし）",
+    "mpCost": 1,
     "count": 2
   },
   "classic_demon_chaos_rod": {
@@ -158,6 +191,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "description": "兵士に持たせると攻撃+1（混沌の属性は PR3 で入れる。今は属性なし）",
+    "mpCost": 1,
     "count": 2
   },
   "classic_demon_frost_breath": {
@@ -183,6 +217,7 @@
     "effect": "damageCastleAndHeal",
     "amount": 3,
     "heal": 3,
+    "mpCost": 2,
     "count": 3,
     "description": "相手の城に3ダメージ、自分の城を3回復する"
   },
@@ -191,6 +226,7 @@
     "kind": "defense",
     "effect": "armorCastle",
     "amount": 4,
+    "mpCost": 1,
     "count": 3
   },
   "classic_demon_bone_shield": {
@@ -198,6 +234,32 @@
     "kind": "defense",
     "effect": "shieldSoldier",
     "amount": 3,
+    "mpCost": 1,
     "count": 3
+  },
+  "classic_demon_shadow": {
+    "name": "シャドウ",
+    "kind": "spell",
+    "effect": "singleDamage",
+    "amount": 4,
+    "mpCost": 3,
+    "count": 3
+  },
+  "classic_demon_curse_mark": {
+    "name": "呪いの印",
+    "kind": "spell",
+    "effect": "weakenAttack",
+    "amount": 2,
+    "turns": 3,
+    "mpCost": 2,
+    "count": 2
+  },
+  "classic_demon_dark_fireball": {
+    "name": "闇の火球",
+    "kind": "spell",
+    "effect": "damageEnemyCastle",
+    "amount": 6,
+    "mpCost": 4,
+    "count": 2
   }
 }

@@ -144,6 +144,12 @@ const OPTIONAL_RULES = {
   // MP：試合の最初に持っている量と上限（maxMp が 0 のときは MP を使わない＝コストなし）
   initialMp: 0,
   maxMp: 0,
+  // MP：true なら、兵士・武器・防御・回復などのカードも、カードの mpCost（書かなければ0）だけ MP を使う。false なら攻撃の魔法と精霊だけ
+  mpAllCards: false,
+  // MP：自分のターンの始めに増える量（0 なら自然には増えない）
+  mpPerTurn: 0,
+  // 後攻（先攻以外の人）の補正：最初の MP がこれだけ多い（チーム戦では使わない）
+  secondPlayerMp: 0,
   // 後半ほど強い魔物が出やすくなる：魔物の重み × (1 + この値 × ごほうびの段階 × 出はじめてからの周回の数)。0 なら重みは変わらない
   monsterLateBias: 0,
   // 魔物を放置すると、この周回ごとにレアリティが1つ上がって強くなる（0 なら強くならない）。強くなる倍率は monsterEvolveMultiplier
@@ -405,6 +411,10 @@ export class Game {
         if (this.rules.secondPlayerArmor > 0) {
           this.players[id].armor = this.rules.armorMax ? Math.min(this.rules.armorMax, this.rules.secondPlayerArmor) : this.rules.secondPlayerArmor;
         }
+        // 後攻のマナ：最初の MP が secondPlayerMp だけ多い（上限まで。イベントは出さない）
+        if (this.rules.secondPlayerMp > 0) {
+          this.players[id].mp = Math.min(this.rules.maxMp, this.players[id].mp + this.rules.secondPlayerMp);
+        }
       }
     }
     /** 背水の陣になっている城（城の持ち主のID） */
@@ -498,7 +508,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor', 'overdriveAttack', 'collapseStartRound', 'collapseAnnounceRound']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor', 'overdriveAttack', 'collapseStartRound', 'collapseAnnounceRound', 'mpPerTurn', 'secondPlayerMp']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -523,6 +533,7 @@ export class Game {
       throw new Error('rules.json の collapseAnnounceRound は collapseStartRound 以下にしてください');
     }
     if (rules.castleSpellHitsFront !== undefined && typeof rules.castleSpellHitsFront !== 'boolean') throw new Error('rules.json の castleSpellHitsFront は true か false にしてください');
+    if (rules.mpAllCards !== undefined && typeof rules.mpAllCards !== 'boolean') throw new Error('rules.json の mpAllCards は true か false にしてください（書かなければ false）');
     for (const key of ['monsterLateBias', 'monsterEvolveMultiplier']) {
       const v = rules[key];
       if (v !== undefined && (typeof v !== 'number' || !(v >= 0))) throw new Error(`rules.json の ${key} は 0 以上の数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -990,6 +1001,8 @@ export class Game {
     // コインの雨：自分のターンの始めにコインがもらえる
     const rainCoins = this.weatherDef()?.coinPerTurn ?? 0;
     if (rainCoins > 0) this.changeCoins(player, rainCoins, 'weather');
+    // MP の自然回復：自分のターンの始めに mpPerTurn 増える（上限まで）
+    if (this.rules.mpPerTurn > 0 && this.rules.maxMp > 0) this.changeMp(player, this.rules.mpPerTurn, 'turn');
     // 古代遺跡：自分のターンの始めに MP が増える
     const stageMp = this.stageDef()?.mpPerTurn ?? 0;
     if (stageMp > 0 && this.rules.maxMp > 0) this.changeMp(player, stageMp, 'stage');
@@ -1163,6 +1176,8 @@ export class Game {
       // 城が落ちた瞬間にゲームを止める（残りの兵士は動かさない）
       if (this.checkGameOver()) return;
     }
+    // 呪い：進軍が終わったら残りを1減らす（防御待ちで止まったときは、続きの進軍が終わってから）
+    this.tickWeakened(player);
   }
 
   /** 毒の量を上限（poisonMax。0 は上限なし）でおさえる */
@@ -1711,7 +1726,10 @@ export class Game {
     const def = card.def;
     if (def.monster !== undefined) return 0; // 魔物のカード（倒したごほうび）は MP を使わない
     const attackDice = def.effect === 'dice' && def.dice === 'attack'; // 攻撃サイコロは攻撃の魔法と同じく MP を使う
-    if (def.kind !== 'spell' || (!MP_EFFECTS.includes(def.effect) && !attackDice)) return 0;
+    const mpSpell = def.kind === 'spell' && (MP_EFFECTS.includes(def.effect) || attackDice);
+    // mpAllCards：兵士・武器・防御・回復なども、カードの mpCost だけ MP を使う（サイコロ・マナ回復は今までどおり）
+    if (this.rules.mpAllCards && !mpSpell && def.effect !== 'dice' && def.effect !== 'gainMp') return def.mpCost ?? 0;
+    if (!mpSpell) return 0;
     return def.mpCost ?? this.rarityDefs?.[def.rarity]?.mpCost ?? 0;
   }
 
@@ -1922,6 +1940,8 @@ export class Game {
       if (def.monster !== undefined || def.beast) bonus += this.rules.nightBeastAttack;
       if (soldier.stealth) bonus += this.rules.nightStealthAttack;
     }
+    // 呪い：攻撃力が下がる（最低1）
+    if (soldier.weakened) return Math.max(1, soldier.attack + bonus - soldier.weakened.amount);
     return soldier.attack + bonus;
   }
 
@@ -2278,6 +2298,21 @@ export class Game {
           targets: player.castle.poison || player.soldiers.some((x) => x.poison) ? [{ playerId: player.id }] : [],
           reason: '毒にかかっているものがありません',
         };
+      case 'singleDamage':
+        // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
+        return {
+          targets: this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers.map((x) => ({ soldierId: x.soldierId }))),
+          reason: '道の上に相手の兵士がいません',
+        };
+      case 'weakenAttack': {
+        // 呪い：相手の兵士1体。もう同じか強い呪いがかかっている兵士は選べない（出しても何も変わらないため）
+        const all = this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers);
+        const changes = (x) => !x.weakened || x.weakened.amount < def.amount || x.weakened.turns < def.turns;
+        return {
+          targets: all.filter(changes).map((x) => ({ soldierId: x.soldierId })),
+          reason: all.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
+        };
+      }
       case 'chainBlast':
         // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
         return {
@@ -2502,7 +2537,9 @@ export class Game {
         attack: soldier.attack,
       });
     } else if (card.isSpell && target.soldierId) {
-      this.chainBlast(player, card, target.soldierId);
+      if (card.def.effect === 'singleDamage') this.singleDamage(player, card, target.soldierId);
+      else if (card.def.effect === 'weakenAttack') this.weakenAttack(player, card, target.soldierId);
+      else this.chainBlast(player, card, target.soldierId);
     } else if (card.isSpell && target.monsterId) {
       const monster = this.findMonster(target.monsterId);
       this.emit('spellCast', { playerId: player.id, type: card.type, target: monster.monsterId, targetKind: 'monster' });
@@ -2557,6 +2594,54 @@ export class Game {
       },
       () => this.checkGameOver(),
     );
+  }
+
+  /**
+   * 敵兵士1体にダメージ（singleDamage）：amount（ステージの魔法の増加は乗る）。盾が先に受ける。霧で外れる。
+   * 兵士に当たる魔法なので、相手は盾を出せる
+   */
+  singleDamage(player, card, soldierId) {
+    const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
+    const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
+    const amount = card.def.amount + this.stageEffectBonus(card.def.effect);
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId });
+    if (this.rollMiss()) {
+      this.emitMiss(player.id, 'spell', { type: card.type });
+      return;
+    }
+    this.requestDefense(
+      { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldierId] },
+      () => {
+        if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+      },
+      () => this.checkGameOver(),
+    );
+  }
+
+  /**
+   * 呪い（weakenAttack）：敵兵士1体の攻撃力を amount 下げる（最低1）。turns 回、持ち主の進軍が終わるたびに1減って0で治る。
+   * 重ねがけは、量・回数を大きい方にそろえる。ダメージではないので、霧でも外れず、防御も聞かない（凍結と同じ）
+   */
+  weakenAttack(player, card, soldierId) {
+    const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
+    const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId });
+    const amount = Math.max(card.def.amount, soldier.weakened?.amount ?? 0);
+    const turns = Math.max(card.def.turns, soldier.weakened?.turns ?? 0);
+    soldier.weakened = { amount, turns };
+    this.emit('statusApplied', { playerId: owner.id, soldierId, status: 'weakened', turns, amount });
+  }
+
+  /** 呪い：持ち主の進軍が終わったら、残りを1減らす（0で治る） */
+  tickWeakened(player) {
+    for (const soldier of player.soldiers) {
+      if (!soldier.weakened) continue;
+      soldier.weakened.turns -= 1;
+      if (soldier.weakened.turns <= 0) {
+        soldier.weakened = null;
+        this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'weakened' });
+      }
+    }
   }
 
   /** castleSpellHitsFront の対象：相手ごとに、2人の間の道が2本以上なら { playerId, roadId }、そうでなければ { playerId } */
@@ -3180,6 +3265,9 @@ export class Game {
     const def = card.def;
     const defender = this.players[pending.defenderId];
     if (def.kind !== 'defense') return { targets: [], reason: '防御カードだけ出せます' };
+    // mpAllCards のときは、防御カードも MP を使う（ふつうのルールでは防御カードの MP は0）
+    const cost = this.mpCostOf(card);
+    if (cost > defender.mp) return { targets: [], reason: `MPが足りません（${cost}必要・あと${cost - defender.mp}）` };
     if (pending.kind === 'castle') {
       if (def.effect === 'reflectSpell') {
         return pending.from === 'spell'
@@ -3279,6 +3367,8 @@ export class Game {
     const chosen = target ? targets.find((t) => Object.keys(target).every((k) => target[k] === undefined || t[k] === target[k])) : targets[0];
 
     defender.takeFromHand(cardId);
+    const mpCost = this.mpCostOf(card);
+    if (mpCost > 0) this.changeMp(defender, -mpCost, 'cast');
     this.throwAway(defender.id, card);
     this.emit('cardPlayed', { playerId: defender.id, cardId: card.cardId, type: card.type });
     if (card.def.effect === 'reflectSpell' || card.def.effect === 'nullifySoldier') {

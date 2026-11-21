@@ -395,6 +395,27 @@ function smartStep(game, pid, ctx) {
     };
     for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'chainBlast')) if (playWith(game, c.cardId, front)) return true;
   }
+  // 敵兵士1体へのダメージ（singleDamage）：倒せる兵士のうちいちばん前の兵士、倒せなければいちばん前の兵士
+  // 呪い（weakenAttack）：攻撃力がいちばん高い兵士（同じなら前の兵士）
+  if (enemy && enemy.soldiers.length > 0) {
+    const byId = new Map(enemies.flatMap((e) => e.soldiers).map((s) => [s.soldierId, s]));
+    for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'singleDamage')) {
+      const amount = ctx.cards[c.type].amount;
+      const pickFront = (targets) => {
+        const list = targets.map((t) => ({ t, s: byId.get(t.soldierId) })).filter((x) => x.s);
+        const kills = list.filter((x) => x.s.hp + x.s.shield <= amount);
+        const pool = kills.length ? kills : list;
+        return pool.sort((a, b) => b.s.position - a.s.position)[0]?.t;
+      };
+      if (playWith(game, c.cardId, pickFront)) return true;
+    }
+    for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'weakenAttack')) {
+      const strongest = (targets) => targets
+        .map((t) => ({ t, s: byId.get(t.soldierId) })).filter((x) => x.s)
+        .sort((a, b) => b.s.attack - a.s.attack || b.s.position - a.s.position)[0]?.t;
+      if (playWith(game, c.cardId, strongest)) return true;
+    }
+  }
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;

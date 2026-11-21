@@ -270,7 +270,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
         weapon: "waterSpear",  // 持っている武器のカード種類か null
         element: "water",      // "fire" | "water" | "wind" | "earth" | null
         shield: 0,             // 盾の残り
-        statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */ }
+        statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */, burn: null /* やけど */, weakened: null /* 呪い { amount, turns } か null */ }
       }]
     },
     p2: { /* 同じ形 */ }
@@ -317,7 +317,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `shieldAdded` | `{ playerId, soldierId, amount, shield }` … `shield` は足したあとの盾 |
 | `castleArmored` | `{ playerId, armor }` … 城壁を置いた |
 | `armorExpired` | `{ playerId }` … 城壁が消えた（その人のターンの始め） |
-| `statusApplied` | `{ playerId, soldierId, status, turns }` … `status` は `"poison"` か `"frozen"` |
+| `statusApplied` | `{ playerId, soldierId, status, turns }` … `status` は `"poison"` / `"frozen"` / `"burn"` / `"weakened"`（呪い。`amount` も付く） |
 | `statusCleared` | `{ playerId, soldierId, status }` |
 | `roundStarted` | `{ round }` … 周回の始め（`turnStarted` のすぐあと） |
 | `monsterAppeared` | `{ monsterId, type, roadId, square, hp, attack, element }` |
@@ -340,7 +340,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
 | `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
-| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
+| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った。`mpAllCards` なら兵士・武器・防御なども）／`"turn"`（ターンの始めの自然回復 `mpPerTurn`）／`"stage"`（古代遺跡）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
 | `collapseAnnounced` | `{ round, startRound }` … 崩壊の刻の予告（`rules.collapseAnnounceRound` の周回の始め。`roundStarted` のあと） |
 | `collapseStarted` | `{ round }` … 崩壊の刻が始まった（`rules.collapseStartRound` の周回の始め）。このあと全員の城の `castleDamaged`（`source: { kind: "collapse" }`） |
@@ -423,6 +423,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - `firstTurnDraw`：先攻の最初のターンに引く枚数（2ターン目以降と後攻は `drawPerTurn`）
 - `castleSpellHitsFront`：`true` なら、城への魔法（`damageEnemyCastle`）は選んだレーンの相手の先頭の兵士に当たる（下の「クラシックの戦闘ルール」）。省略すると `false`（今までどおり城に当たる）
 - `collapseStartRound` / `collapseAnnounceRound` / `collapseDamage`：崩壊の刻（下の「クラシックの戦闘ルール」）。`collapseStartRound` が 0 か省略なら使わない。`collapseAnnounceRound` は 0 なら予告しない（`collapseStartRound` 以下）。`collapseDamage` は1以上（省略すると1）
+- `mpAllCards`：`true` なら、兵士・武器・防御・回復などのカードも、カードの `mpCost`（書かなければ0）だけ MP を使う（下の「クラシックの道具」）。省略すると `false`（今までどおり、攻撃の魔法と精霊だけ）
+- `mpPerTurn`：自分のターンの始めに増える MP（0以上の整数。省略すると0）。`secondPlayerMp`：後攻（先攻以外の人）の最初の MP に足す量（0以上の整数。省略すると0。チーム戦では使わない）
+- 魔法の `effect` に `singleDamage`（`amount`。敵兵士1体にダメージ）と `weakenAttack`（`amount`・`turns`。呪い：敵兵士1体の攻撃力を下げる）が増えた（下の「クラシックの道具」）
 - `exhaust`：`true` のカードは使い切り。使うと使い切り置き場へ行き、山札に戻らない。省略すると `false`。手札の上限で捨てたときは、ふつうに捨て札置き場へ行く（山札に戻る）
 - カードの説明文は UI が `kind` / `effect` と数値から組み立てる。カードに `description` を書けば、そちらを優先する（Game は `description` を使わない）
 
@@ -1379,7 +1382,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 兵士に当たるとき：ダメージはカードの `amount`（ステージの魔法の増加は乗る。**魔法の塔の `castleSpellBonus` は城への分なので乗せない**）。盾が先に受け、HPが0以下なら倒れる。霧で外れることがある。防御はサンダーと同じ（`defenseRequested` の `kind: "soldiers"`。盾だけ。反射・身代わりは出せない）。`defenderId` は当たる兵士の持ち主
 - イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`）→（防御）→ `soldierDamaged`（`cause: "spell"`）→（0なら）`soldierDestroyed`（`"killed"`）。城に当たるときは `spellCast`（道が決まれば `roadId`）→ `castleDamaged`
 - CPU（`js/game/strategies.js`）：道を選ぶとき、相手の兵士がいちばん先頭まで来ている道へ（いなければ最初の道）
-- 注意：今の `data/classic/cards.json` には `damageEnemyCastle` のカードがないので、カードを足すまでクラシックの試合では起きない
+- クラシックのカード：聖なる火球・闇の火球（PR2b で足した）
 
 ### 崩壊の刻（`rules.collapseStartRound` など）
 - `collapseAnnounceRound`（クラシック：50）の周回の始めに予告（`collapseAnnounced`）。`collapseStartRound`（クラシック：60）の周回から崩壊（`collapseStarted`）
@@ -1389,6 +1392,48 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - クラシックは周回の上限なし（`maxRounds: 0`）。崩壊の刻で必ず終わる
 - 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着、平均126手番（周回の上限60のときは115手番・上限で終わる83%）、崩壊の刻で決着した試合49%
 - 画面（UI担当にお願いしたいこと）：崩壊の予告・開始の帯、`collapse` のバッジ、`castleDamaged` の `source.kind: "collapse"` の演出、`gameOver` の `reason: "collapse"` の表示。城への魔法でレーンを選ぶ操作（`getTargets` が `{ playerId, roadId }` を返す）と、`spellCast.soldierId` があるときに兵士へ当てる演出
+
+## クラシックの道具：MP・1体への魔法・呪い（PR2b。人間の指示。仮）
+
+どれも `rules` のキー・カードの `effect` で切り替える（書かなければ今までどおり。通常モードの `data/rules.json`・`data/cards.json` には書いていない）。
+
+### MP をすべてのカードに（`rules.mpAllCards: true`）
+- 兵士・武器・防御・回復なども、カードの `mpCost` だけ MP を使う（書かなければ0）。攻撃の魔法・精霊は今までどおり（`mpCost` か、レアリティの `mpCost`）。足りなければ出せない（理由は「MPが足りません（○必要・あと○）」）
+- 魔物のカード・サイコロ（攻撃サイコロ以外）・マナ回復のカードは、今までどおり MP を使わない
+- 攻撃を受けたときの防御カード（`defend()`）も MP を使う。MP が足りない防御カードは、出せるカードに数えない（ほかに出せるカードがなければ防御を聞かない）
+- `getState().mpCosts` に、MP を使う兵士・武器・防御なども入る
+- **MP の自然回復**（`rules.mpPerTurn`）：自分のターンの始め（コインのあと、ドローの前）に増える（`mpChanged` の `reason: "turn"`。上限まで）
+- **後攻のマナ**（`rules.secondPlayerMp`）：先攻以外の人の最初の MP がこれだけ多い（上限まで。イベントは出さない）
+- クラシック（仮）：`initialMp` 10・`maxMp` 20・`mpPerTurn` 3・`secondPlayerMp` 3。`data/classic/cards.json` の全カードに `mpCost` を書いた（兵士1〜2・武器1〜2・防御1〜2・回復1〜3・攻撃の魔法2〜4）
+
+### 敵兵士1体にダメージ（`effect: "singleDamage"`、`amount`）
+- 対象は相手の見える兵士1体 `{ soldierId }`（忍者・暗殺者は選べない）。ダメージは `amount`（ステージの魔法の増加は乗る）。盾が先に受ける。霧で外れる。属性なし
+- 兵士に当たる魔法なので、相手は盾を出せる（`defenseRequested` の `kind: "soldiers"`）
+- 攻撃の魔法（メインの1枚・MP を使う）
+- イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`）→（防御）→ `soldierDamaged`（`cause: "spell"`）→（0なら）`soldierDestroyed`（`"killed"`）
+
+### 呪い（`effect: "weakenAttack"`、`amount`・`turns`）
+- 対象は相手の見える兵士1体 `{ soldierId }`。状態 `weakened`（`getState()` の兵士の `statuses.weakened` は `{ amount, turns }` か `null`）
+- 攻撃力が `amount` 下がる（最低1）。戦い・射撃・城へのダメージの攻撃力に効く（背水の陣・夜と同じところで引く。`getState()` の `attack` は変わらない）
+- **持ち主の進軍が終わるたびに**残りが1減り、0で治る（`statusCleared`）。凍っていて動かなかった進軍も数える。呪いは自分のターンにしか出せないので、`turns: 3` なら相手の進軍3回ぶん（そのあいだの守りの戦いも）効く
+- 重ねがけは、量・回数を大きい方にそろえる。もう同じか強い呪いがかかっている兵士は選べない（「もう同じ状態になっています」）
+- ダメージではないので、霧でも外れず、防御も聞かない（凍結と同じ）。浄化（`purifyFlare`）では治らない
+- 攻撃の魔法（メインの1枚・MP を使う）
+- イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`）→ `statusApplied`（`status: "weakened"`、`amount`・`turns`）
+
+### クラシックのカードを足した（`data/classic/cards.json`）
+| 陣営 | カード（type） | 効果 | MP | 枚数 |
+|---|---|---|---|---|
+| 王国 | ホーリーレイ（`classic_king_holy_ray`） | 敵兵士1体に5 | 4 | 2 |
+| 王国 | 聖なる火球（`classic_king_holy_fireball`） | 城への魔法6（先頭の兵士に当たる） | 4 | 2 |
+| 魔族 | シャドウ（`classic_demon_shadow`） | 敵兵士1体に4 | 3 | 3 |
+| 魔族 | 呪いの印（`classic_demon_curse_mark`） | 敵兵士1体の攻撃−2・3回 | 2 | 2 |
+| 魔族 | 闇の火球（`classic_demon_dark_fireball`） | 城への魔法6（先頭の兵士に当たる） | 4 | 2 |
+
+- 山札は 76 枚
+- CPU（`smart` 系）：1体への魔法は、倒せる兵士のうちいちばん前の兵士（いなければいちばん前の兵士）。呪いは攻撃力がいちばん高い兵士。MP が足りないカードは `canPlayCard` で出せないので選ばない
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1`）：smart 同士 100/100 決着・平均106手番・先攻の勝率51%・崩壊の刻で決着25%（PR2a のときは126手番・49%）。smart が random に勝つ割合は、先攻73%・後攻74%（PR2a のときは先攻81%）。通常モードのシミュレーションは変わらない（変更前と結果が完全に一致）
+- 画面（UI担当にお願いしたいこと）：新しい5枚の絵、`weakened` の表示（兵士のそば）と `statusApplied` / `statusCleared` の演出、兵士・武器・防御の札に必要な MP を出す（`getState().mpCosts`）、`singleDamage` / `weakenAttack` の対象選び（相手の兵士をタップ）と命中の演出、`js/ui/text.js` の説明文・効果アイコン
 
 ## 全体の設計（STEP 2〜5 の見通し）
 
