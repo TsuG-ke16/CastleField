@@ -3185,6 +3185,546 @@
       "world": "kingdom",
       "desc": "冥界の門を使うときの光が「紫紺」の色に。この魔法だけに効く。",
       "filter": "hue-rotate(250deg) brightness(0.8)"
+    },
+    "skin_dragonborn_common": {
+      "slot": "charSkin",
+      "target": "dragonborn_common",
+      "targetName": "竜人の新兵",
+      "name": "竜人の新兵・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜人の新兵の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragonborn_uncommon": {
+      "slot": "charSkin",
+      "target": "dragonborn_uncommon",
+      "targetName": "竜鱗戦士",
+      "name": "竜鱗戦士・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜鱗戦士の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragonborn_rare": {
+      "slot": "charSkin",
+      "target": "dragonborn_rare",
+      "targetName": "竜槍兵",
+      "name": "竜槍兵・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜槍兵の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragonborn_epic": {
+      "slot": "charSkin",
+      "target": "dragonborn_epic",
+      "targetName": "竜将",
+      "name": "竜将・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜将の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragonborn_legendary": {
+      "slot": "charSkin",
+      "target": "dragonborn_legendary",
+      "targetName": "竜帝近衛",
+      "name": "竜帝近衛・紅蓮",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜帝近衛の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_rider_common": {
+      "slot": "charSkin",
+      "target": "dragon_rider_common",
+      "targetName": "竜騎兵見習い",
+      "name": "竜騎兵見習い・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜騎兵見習いの見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_rider_uncommon": {
+      "slot": "charSkin",
+      "target": "dragon_rider_uncommon",
+      "targetName": "竜騎兵",
+      "name": "竜騎兵・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜騎兵の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_rider_rare": {
+      "slot": "charSkin",
+      "target": "dragon_rider_rare",
+      "targetName": "飛竜騎兵",
+      "name": "飛竜騎兵・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "飛竜騎兵の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_rider_epic": {
+      "slot": "charSkin",
+      "target": "dragon_rider_epic",
+      "targetName": "竜騎将",
+      "name": "竜騎将・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜騎将の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_mage_common": {
+      "slot": "charSkin",
+      "target": "dragon_mage_common",
+      "targetName": "見習い竜術師",
+      "name": "見習い竜術師・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "見習い竜術師の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_mage_uncommon": {
+      "slot": "charSkin",
+      "target": "dragon_mage_uncommon",
+      "targetName": "竜術師",
+      "name": "竜術師・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜術師の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_mage_rare": {
+      "slot": "charSkin",
+      "target": "dragon_mage_rare",
+      "targetName": "ドラゴンメイジ",
+      "name": "ドラゴンメイジ・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "ドラゴンメイジの見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_mage_epic": {
+      "slot": "charSkin",
+      "target": "dragon_mage_epic",
+      "targetName": "竜王術師",
+      "name": "竜王術師・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜王術師の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_dragon_mage_legendary": {
+      "slot": "charSkin",
+      "target": "dragon_mage_legendary",
+      "targetName": "竜帝の賢者",
+      "name": "竜帝の賢者・紅蓮",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜帝の賢者の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_fire_dragon_common": {
+      "slot": "charSkin",
+      "target": "fire_dragon_common",
+      "targetName": "幼炎竜",
+      "name": "幼炎竜・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "幼炎竜の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_fire_dragon_uncommon": {
+      "slot": "charSkin",
+      "target": "fire_dragon_uncommon",
+      "targetName": "若炎竜",
+      "name": "若炎竜・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "若炎竜の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_fire_dragon_rare": {
+      "slot": "charSkin",
+      "target": "fire_dragon_rare",
+      "targetName": "業炎竜",
+      "name": "業炎竜・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "業炎竜の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_fire_dragon_epic": {
+      "slot": "charSkin",
+      "target": "fire_dragon_epic",
+      "targetName": "古炎竜",
+      "name": "古炎竜・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "古炎竜の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_fire_dragon_legendary": {
+      "slot": "charSkin",
+      "target": "fire_dragon_legendary",
+      "targetName": "紅蓮竜王",
+      "name": "紅蓮竜王・紅蓮",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "紅蓮竜王の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_lightning_dragon_common": {
+      "slot": "charSkin",
+      "target": "lightning_dragon_common",
+      "targetName": "幼雷竜",
+      "name": "幼雷竜・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "幼雷竜の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_lightning_dragon_uncommon": {
+      "slot": "charSkin",
+      "target": "lightning_dragon_uncommon",
+      "targetName": "若雷竜",
+      "name": "若雷竜・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "若雷竜の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_lightning_dragon_rare": {
+      "slot": "charSkin",
+      "target": "lightning_dragon_rare",
+      "targetName": "雷鳴竜",
+      "name": "雷鳴竜・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "雷鳴竜の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_lightning_dragon_epic": {
+      "slot": "charSkin",
+      "target": "lightning_dragon_epic",
+      "targetName": "古雷竜",
+      "name": "古雷竜・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "古雷竜の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "skin_lightning_dragon_legendary": {
+      "slot": "charSkin",
+      "target": "lightning_dragon_legendary",
+      "targetName": "雷霆竜王",
+      "name": "雷霆竜王・紅蓮",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "雷霆竜王の見た目が「紅蓮」の色に。このキャラだけに効く。",
+      "filters": {
+        "blue": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #4da3e8) drop-shadow(0 0 1px #4da3e8)",
+        "orange": "grayscale(1) sepia(1) hue-rotate(330deg) saturate(2.6) brightness(.95) drop-shadow(0 0 2px #f5923e) drop-shadow(0 0 1px #f5923e)"
+      }
+    },
+    "fxskin_dragon_breath_common": {
+      "slot": "spellSkin",
+      "target": "dragon_breath_common",
+      "targetName": "火炎の吐息",
+      "name": "火炎の吐息・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "火炎の吐息を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_breath_uncommon": {
+      "slot": "spellSkin",
+      "target": "dragon_breath_uncommon",
+      "targetName": "灼熱の息吹",
+      "name": "灼熱の息吹・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "灼熱の息吹を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_breath_rare": {
+      "slot": "spellSkin",
+      "target": "dragon_breath_rare",
+      "targetName": "竜炎の咆哮",
+      "name": "竜炎の咆哮・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜炎の咆哮を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_breath_epic": {
+      "slot": "spellSkin",
+      "target": "dragon_breath_epic",
+      "targetName": "天焦がすブレス",
+      "name": "天焦がすブレス・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "天焦がすブレスを使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_breath_legendary": {
+      "slot": "spellSkin",
+      "target": "dragon_breath_legendary",
+      "targetName": "終焉の竜息",
+      "name": "終焉の竜息・紅蓮",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "終焉の竜息を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_awakening_common": {
+      "slot": "spellSkin",
+      "target": "dragon_awakening_common",
+      "targetName": "竜の鼓動",
+      "name": "竜の鼓動・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜の鼓動を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_awakening_uncommon": {
+      "slot": "spellSkin",
+      "target": "dragon_awakening_uncommon",
+      "targetName": "竜血の鼓舞",
+      "name": "竜血の鼓舞・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜血の鼓舞を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_awakening_rare": {
+      "slot": "spellSkin",
+      "target": "dragon_awakening_rare",
+      "targetName": "竜血覚醒",
+      "name": "竜血覚醒・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜血覚醒を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_awakening_epic": {
+      "slot": "spellSkin",
+      "target": "dragon_awakening_epic",
+      "targetName": "竜王の号令",
+      "name": "竜王の号令・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜王の号令を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_awakening_legendary": {
+      "slot": "spellSkin",
+      "target": "dragon_awakening_legendary",
+      "targetName": "竜帝の勅令",
+      "name": "竜帝の勅令・紅蓮",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜帝の勅令を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_regen_common": {
+      "slot": "spellSkin",
+      "target": "dragon_regen_common",
+      "targetName": "竜血の雫",
+      "name": "竜血の雫・紅蓮",
+      "rarity": "common",
+      "price": 300,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜血の雫を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_regen_uncommon": {
+      "slot": "spellSkin",
+      "target": "dragon_regen_uncommon",
+      "targetName": "竜血の再生",
+      "name": "竜血の再生・紅蓮",
+      "rarity": "uncommon",
+      "price": 600,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜血の再生を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_regen_rare": {
+      "slot": "spellSkin",
+      "target": "dragon_regen_rare",
+      "targetName": "竜骨の活力",
+      "name": "竜骨の活力・紅蓮",
+      "rarity": "rare",
+      "price": 1200,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "竜骨の活力を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_regen_epic": {
+      "slot": "spellSkin",
+      "target": "dragon_regen_epic",
+      "targetName": "古竜の生命",
+      "name": "古竜の生命・紅蓮",
+      "rarity": "epic",
+      "price": 2400,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "古竜の生命を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
+    },
+    "fxskin_dragon_regen_legendary": {
+      "slot": "spellSkin",
+      "target": "dragon_regen_legendary",
+      "targetName": "不滅の竜心",
+      "name": "不滅の竜心・紅蓮",
+      "rarity": "legendary",
+      "price": 4800,
+      "gacha": false,
+      "world": "kingdom",
+      "desc": "不滅の竜心を使うときの光が「紅蓮」の色に。この魔法だけに効く。",
+      "filter": "hue-rotate(330deg) saturate(1.6)"
     }
   }
 }

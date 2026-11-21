@@ -78,12 +78,12 @@ test('既存の12枚（氷5・毒5・命の簒奪・魔力強奪）は B3 で1�
 });
 
 test('取り込み前の226枚（B2 まで）は1文字も変わっていない（B3 は末尾に足しただけ）', () => {
-  const before = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B3_NEW.includes(id)).map(([id, d]) => [id, { ...d }]));
+  const before = Object.fromEntries(Object.entries(CARDS).filter(([id, d]) => !B3_NEW.includes(id) && !(d.faction === 'dragon' && d.factionOnly)).map(([id, d]) => [id, { ...d }])); // B4 の新規（faction が dragon で factionOnly）も除く
   assert.equal(Object.keys(before).length, 226);
   assert.equal(before.lifeSteal.fuseTo, 'demon_drain_epic'); // 人間の決定で付けかえた（それ以前は null）
   before.lifeSteal.fuseTo = null;
   assert.equal(createHash('sha256').update(JSON.stringify(before)).digest('hex'), '8bb784d37c2b69a87790c597c60be14ca961f87249ccb27753c0174578bf6054');
-  assert.equal(Object.keys(CARDS).length, 290);
+  assert.equal(Object.keys(CARDS).length, 349); // B4 で 59 枚増えた（B3 の時点は 290）
 });
 
 test('陣営なしの山札は B3 の前後で同じシードなら同じ並び（B3 の新規64枚を取り除いても変わらない）。ゲーム開始時の手札・山札も同じ', () => {
