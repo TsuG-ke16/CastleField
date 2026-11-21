@@ -109,15 +109,29 @@ const FOREST_DMG = {
   earth: [2, 3, 5, 7, 10],
 };
 const FOREST_SPELL_FX = { fire: '直接火力', water: '属性連鎖', wind: '拡散', earth: '拘束' };
+const EL_JA = { fire: '火', water: '水', wind: '風', earth: '土' };
 const forestSpell = (name, el, i, story) => {
   const amount = FOREST_DMG[el][i];
   const lane = i <= 2;
+  const range = lane ? '選んだ1レーン' : '全レーン';
+  if (el === 'fire') {
+    return {
+      name,
+      def: { kind: 'spell', effect: 'damageEnemySoldiers', amount, ...(lane ? { scope: 'lane' } : {}) },
+      implemented: true,
+      reason: `既存の damageEnemySoldiers（兵士へのダメージ）に火属性を付けたもの。仕様の火は「直接火力」（追加効果なし）なので、今のしくみで仕様どおりに効く。属性の付着・反応も実際に効く。${range}・${amount}ダメージは仕様書の仮値`,
+      note: '仕様の火は「直接火力」＝ダメージが本体で、追加効果はない（今の効果で仕様どおり）',
+      story,
+    };
+  }
   return {
     name,
-    def: { kind: 'spell', effect: 'damageEnemySoldiers', amount, ...(lane ? { scope: 'lane' } : {}) },
-    implemented: true,
-    reason: `既存の damageEnemySoldiers（兵士へのダメージ）に${{ fire: '火', water: '水', wind: '風', earth: '土' }[el]}属性を付けたもの。属性の付着・反応（今の実装）まで実際に効く。${lane ? '選んだ1レーン' : '全レーン'}・${amount}ダメージは仕様書の仮値`,
-    note: `仕様の「${FOREST_SPELL_FX[el]}」の追加効果は PR-C 以降（ダメージと属性の付着・反応だけが今の効果）`,
+    def: { kind: 'spell' },
+    implemented: false,
+    reason: `仕様の追加効果（${FOREST_SPELL_FX[el]}）を起こすしくみがまだなく、ダメージと属性だけで出すと追加効果がなく火より弱いだけになるため false（既存効果の代用にしない。仕様 PR-B）。PR-C で作る`,
+    effectPlan: `${EL_JA[el]}属性の攻撃魔法。${range}の相手の兵士に${amount}ダメージ（仮値）に加えて、追加効果「${FOREST_SPELL_FX[el]}」を起こす（内容は未決定。PR-C）`,
+    note: `今の既存効果だけなら damageEnemySoldiers ${amount}（${EL_JA[el]}属性・${range}）`,
+    description: `【準備中】${EL_JA[el]}の攻撃魔法。「${FOREST_SPELL_FX[el]}」の追加効果はまだ使えない（予定：${range}・${amount}ダメージ）`,
     story,
   };
 };
@@ -142,18 +156,28 @@ const plantWall = (name, i, story) => ({
   multiAttribute: true,
   implemented: true,
   reason: `既存の armorCastle（城壁。足し算で積む・上限あり・ダメージを先に受ける）として実際に効く。城壁の値 ${WALL[i]} は仕様書の値`,
-  note: '台帳の属性は「土・植物」。仕様の「壁が破壊されたとき攻撃した兵士の次の進軍を1回妨害」は「案」で未決定のため入れていない（PR-C で決める）',
+  note: `王国の城壁系（城壁 5・石壁 9・城門 15・神の結界 25）と同じ数値帯の仮カード（王国の城壁系とは別カード。数値は仕様書の値）。台帳の属性は「土・植物」。仕様の「壁が破壊されたとき攻撃した兵士の次の進軍を1回妨害」は「案」で未決定のため入れていない（PR-C で決める）`,
   story,
 });
 // 兵士防御（仕様：防御値案 3/5/8/13/22。レア以上は棘の反撃（反撃量は未決定））。shieldSoldier をそのまま使う
 const ARMOR = [3, 5, 8, 13, 22];
-const plantArmor = (name, i, story) => ({
+const plantArmor = (name, i, story) => (i < 2 ? {
   name,
   def: { kind: 'defense', effect: 'shieldSoldier', amount: ARMOR[i] },
   multiAttribute: true,
   implemented: true,
-  reason: `既存の shieldSoldier（兵士の盾。先にダメージを受ける）として実際に効く。盾の値 ${ARMOR[i]} は仕様書の案`,
-  note: `台帳の属性は「土・植物」。${i >= 2 ? 'レア以上の「近接防御成功時の棘の反撃」は反撃量が未決定のため入れていない（PR-C で決める）' : '盾の値だけ'}`,
+  reason: `既存の shieldSoldier（兵士の盾。先にダメージを受ける）として実際に効く。盾の値 ${ARMOR[i]} は仕様書の案。コモン・アンコモンは「棘の反撃」を持たない`,
+  note: '台帳の属性は「土・植物」',
+  story,
+} : {
+  name,
+  def: { kind: 'defense' },
+  multiAttribute: true,
+  implemented: false,
+  reason: '仕様の「近接防御成功時の棘の反撃」を起こすしくみがまだない（反撃量も未決定）。盾だけで出すと棘のないただの盾（代用）になるため false。PR-C で作る',
+  effectPlan: `兵士に防御値 ${ARMOR[i]}（仮）を付け、近接攻撃を防いだときに攻撃した兵士へ棘の反撃（反撃量は未決定）`,
+  note: '台帳の属性は「土・植物」',
+  description: `【準備中】兵士に防御値${ARMOR[i]}を付ける。防いだときの棘の反撃はまだ使えない`,
   story,
 });
 
@@ -238,10 +262,10 @@ export const ROWS = [
   // ================= 森の同盟：残り（B2。50新規＋既存13の確認） =================
   // 兵士（15）
   beast('森の獣兵', 'common', 4, 5, 3, '森で生まれ育った獣人の若い戦士。牙と爪だけを頼りに、仲間の先頭を駆ける。'),
-  beast('ウルフファイター', 'uncommon', 5, 6, 3, '狼の群れとともに戦う獣人。吠え声ひとつで、群れが敵の足もとを囲む。'),
+  beast('ウルフファイター', 'uncommon', 4, 6, 3, '狼の群れとともに戦う獣人。吠え声ひとつで、群れが敵の足もとを囲む。'),
   beast('ビーストウォリアー', 'rare', 8, 7, 3, '傷だらけの体で、いつも一番前に立つ獣人の戦士。退くことだけを知らない。'),
-  beast('フェンリルナイト', 'epic', 10, 9, 4, '巨狼フェンリルにまたがる、森の騎士。霧のように現れ、風のように城壁へ迫る。'),
-  beast('フェンリルロード', 'legendary', 12, 12, 4, '狼たちの王フェンリルそのもの。その遠吠えを聞いた城では、兵士の手が止まるという。'),
+  beast('フェンリルナイト', 'epic', 9, 10, 3, '巨狼フェンリルにまたがる、森の騎士。霧のように現れ、風のように城壁へ迫る。'),
+  beast('フェンリルロード', 'legendary', 12, 12, 3, '狼たちの王フェンリルそのもの。その遠吠えを聞いた城では、兵士の手が止まるという。'),
   elf('エルフの斥候', 3, 3, '木の上から戦場を見渡すエルフの若者。最初の矢は、いつも敵が気づく前に放たれる。'),
   elf('エルフの射手', 4, 5, '森の弓術を受け継ぐエルフ。枝の間を縫う矢は、ねらった者の肩だけを正確に射抜く。'),
   elf('エルフの狙撃手', 5, 7, '三日三晩ひとつの枝に潜み、ただ一射のために息を整える狙撃手。'),

@@ -28,9 +28,27 @@ const idOfRow = (row) => (row.status === '新規案' ? newCardId(row) : ROWS.fin
 const B2_NEW = B2.filter((r) => r.status === '新規案').map(idOfRow);
 const isB1Id = (id) => CARDS[id].faction === 'kingdom' || /^forest_(fire_sword|water_lance|wind_bow|earth_hammer)_/.test(id);
 
-const FALSES = [...ORDER.map((r) => `forest_druid_${r}`), ...ORDER.map((r) => `forest_life_heal_${r}`)].sort();
+const FALSES = [
+  ...ORDER.map((r) => `forest_druid_${r}`), ...ORDER.map((r) => `forest_life_heal_${r}`),
+  ...['water', 'wind', 'earth'].flatMap((e) => ORDER.map((r) => `forest_${e}_magic_${r}`)),
+  ...['rare', 'epic', 'legendary'].map((r) => `forest_plant_armor_${r}`),
+].sort();
 
 // ================= 台帳との一致 =================
+
+test('陣営なしの山札は B2 の前後で同じシードなら同じ並び（B2 の新規50枚を取り除いても変わらない）。ゲーム開始時の手札・山札も同じ', () => {
+  const legacy = Object.fromEntries(Object.entries(CARDS).filter(([id]) => !B2_NEW.includes(id)));
+  for (const seed of [1, 2, 9, 33]) {
+    assert.deepEqual(sampleDeckTypes(CARDS, rarities, 300, seededRng(seed)), sampleDeckTypes(legacy, rarities, 300, seededRng(seed)));
+  }
+  const rules = { ...loadJson('rules.json'), ...PLAIN_START };
+  for (const seed of [5, 6]) {
+    const g1 = new Game({ cards: CARDS, rules, rarities, rng: seededRng(seed) });
+    const g2 = new Game({ cards: legacy, rules, rarities, rng: seededRng(seed) });
+    const ids = (g) => [...g.pileOf('p1').deck, ...g.players.p1.hand, ...g.players.p2.hand].map((c) => `${c.cardId}:${c.type}`);
+    assert.deepEqual(ids(g1), ids(g2));
+  }
+});
 
 test('森の同盟は台帳で83行（武器20＋B2の63）。B2 は新規50＋既存13。すべて cards.json に、名前・レアリティ・faction・合成先・属性で入っている', () => {
   assert.equal(FOREST.length, 83);
@@ -86,6 +104,7 @@ test('ID・名前の衝突がない。新しいIDは chain_id_rarity。生成ス
   assert.equal(out.storiesJs, readFileSync(join(ROOT, 'js', 'ui', 'stories-factions.js'), 'utf8'));
   assert.equal(out.table, readFileSync(join(ROOT, 'docs', 'four-factions', 'import', 'table.md'), 'utf8'));
   assert.equal(out.newIds.length, 90);
+  assert.equal(out.newIds.filter((id) => out.cards[id].implemented === false).length, 38);
   // 衝突したら止まる
   const clash = JSON.parse(cardsText);
   delete clash.forest_fire_magic_common;
@@ -93,17 +112,20 @@ test('ID・名前の衝突がない。新しいIDは chain_id_rarity。生成ス
   assert.throws(() => buildAll({ ledger: LEDGER, cards: clash, shop: JSON.parse(shopText) }), /ぶつかります/);
 });
 
-test('implemented：兵士のドルイド5・回復5が false（理由・effectPlan つき）、ほかの新規40枚は true', () => {
+test('implemented：ドルイド5・回復5・水風土の攻撃魔法15・葉の衣のレア以上3＝28枚が false（理由・effectPlan つき）、ほかの新規22枚は true', () => {
   const falses = B2_NEW.filter((id) => CARDS[id].implemented === false).sort();
   assert.deepEqual(falses, FALSES);
-  assert.equal(B2_NEW.filter((id) => CARDS[id].implemented === true).length, 40);
+  assert.equal(B2_NEW.filter((id) => CARDS[id].implemented === true).length, 22);
+  assert.equal(falses.length, 28);
+  for (const id of falses) assert.equal(CARDS[id].effect, undefined, `${id} に効果はまだない`);
+  const trues = B2_NEW.filter((id) => CARDS[id].implemented === true).sort();
+  assert.deepEqual(trues, [...ORDER.map((r) => `forest_beast_${r}`), ...ORDER.map((r) => `forest_elf_${r}`), ...ORDER.map((r) => `forest_fire_magic_${r}`), ...ORDER.map((r) => `forest_plant_wall_${r}`), 'forest_plant_armor_common', 'forest_plant_armor_uncommon'].sort());
   for (const id of falses) {
     assert.ok(CARDS[id].effectPlan, `${id} の effectPlan`);
     assert.ok(CARDS[id].implementationNote, `${id} の implementationNote`);
     assert.ok(CARDS[id].description.startsWith('【準備中】'), id);
   }
-  for (const id of ORDER.map((r) => `forest_life_heal_${r}`)) assert.equal(CARDS[id].effect, undefined);
-  for (const id of B2_NEW) assert.equal(CARDS[id].factionOnly, true);
+    for (const id of B2_NEW) assert.equal(CARDS[id].factionOnly, true);
   for (const id of B2_NEW) assert.equal(CARDS[id].count, 0);
 });
 
@@ -125,7 +147,7 @@ test('陣営なしのモード：B2 の新規カードは、山札・ドロー�
   assert.equal(isDrawable(CARDS.forest_life_heal_common, true), false);
 });
 
-test('森の陣営モード：候補は 森＋共通 の implemented: true だけ。B2 の true の40枚が入り、false の10枚は入らない（複数シード）', () => {
+test('森の陣営モード：候補は 森＋共通 の implemented: true だけ。B2 の true の22枚が入り、false の28枚（水風土の魔法15・ドルイド・生命回復・葉の衣のレア以上3）は出ない（複数シード）', () => {
   const pool = factionPool(CARDS, 'forest');
   for (const id of B2_NEW) assert.equal(pool.has(id), CARDS[id].implemented !== false, id);
   for (const t of pool) {
@@ -144,6 +166,14 @@ test('森の陣営モード：候補は 森＋共通 の implemented: true だ�
     }
   }
   for (const t of ['forest_beast_common', 'forest_elf_common', 'forest_fire_magic_common', 'forest_plant_wall_common', 'forest_plant_armor_common']) assert.ok(seen.has(t), `${t} が山札に入る`);
+  for (const id of FALSES) {
+    assert.equal(pool.has(id), false, `${id} は候補に出ない`);
+    assert.equal(isDrawable(CARDS[id], true), false, id);
+  }
+  for (let seed = 1; seed <= 20; seed++) {
+    const types = sampleDeckTypes(CARDS, rarities, 300, seededRng(seed), pool);
+    for (const t of types) assert.equal(FALSES.includes(t), false, `${seed}: ${t}`);
+  }
   // 兵士がいない森ではなくなった：兵士のカードが候補にある
   assert.ok([...pool].some((t) => CARDS[t].kind === 'soldier'));
   // 入手券・繰り上げ（候補あり）も false を出さない
@@ -177,8 +207,8 @@ function foesOnAllLanes(game) {
   return foes;
 }
 
-test('森の攻撃魔法（4属性×5段階）：仕様の仮値のダメージ・属性が付着。コモン〜レアは選んだ1レーン、エピック・レジェンドは全レーン。MP はレアリティの標準', () => {
-  const DMG = { fire: [2, 3, 5, 7, 12], water: [2, 3, 4, 6, 9], wind: [2, 3, 4, 6, 9], earth: [2, 3, 5, 7, 10] };
+test('森の火の攻撃魔法（5段階。水・風・土は false）：仕様の仮値のダメージ・火が付着。コモン〜レアは選んだ1レーン、エピック・レジェンドは全レーン。MP はレアリティの標準', () => {
+  const DMG = { fire: [2, 3, 5, 7, 12] };
   for (const [el, list] of Object.entries(DMG)) {
     ORDER.forEach((r, i) => {
       const id = `forest_${el}_magic_${r}`;
@@ -200,23 +230,18 @@ test('森の攻撃魔法（4属性×5段階）：仕様の仮値のダメージ�
   }
 });
 
-test('森の魔法の属性反応：水流（既存）の付着に森の火魔法 → 蒸発。森の水魔法の付着に森の風魔法 → 霧', () => {
-  let { game, log } = newGame({ reactionsPerTurn: 3 });
-  let foes = foesOnAllLanes(game);
+test('森の火の魔法の属性反応：水流（既存）の付着に森の火魔法 → 蒸発', () => {
+  const { game, log } = newGame({ reactionsPerTurn: 3 });
+  const foes = foesOnAllLanes(game);
   const road = lanes(game)[0];
-  play(game, 'forest_water_magic_common', { playerId: 'p2', roadId: road });
+  play(game, 'waterJet', { playerId: 'p2', roadId: road });
   play(game, 'forest_fire_magic_common', { playerId: 'p2', roadId: road });
   assert.equal(ofType(log, 'reactionTriggered').at(-1).reaction, 'evaporate');
-  ({ game, log } = newGame({ reactionsPerTurn: 3 }));
-  foes = foesOnAllLanes(game);
-  play(game, 'forest_water_magic_uncommon', { playerId: 'p2', roadId: lanes(game)[0] });
-  play(game, 'forest_wind_magic_uncommon', { playerId: 'p2', roadId: lanes(game)[0] });
-  assert.equal(ofType(log, 'reactionTriggered').at(-1).reaction, 'fog');
   assert.ok(foes[0].hp < 100);
 });
 
 test('獣人（森の獣兵〜フェンリルロード）：進む近接兵士。出して進軍し、相手の城に 攻撃力×2 のダメージ', () => {
-  const STATS = { common: [4, 5, 3], uncommon: [5, 6, 3], rare: [8, 7, 3], epic: [10, 9, 4], legendary: [12, 12, 4] };
+  const STATS = { common: [4, 5, 3], uncommon: [4, 6, 3], rare: [8, 7, 3], epic: [9, 10, 3], legendary: [12, 12, 3] };
   for (const [r, [hp, atk, speed]] of Object.entries(STATS)) {
     const id = `forest_beast_${r}`;
     assert.equal(CARDS[id].role, undefined, '進む兵士');
@@ -252,26 +277,51 @@ test('エルフ（斥候〜森の守護者）：弓兵として動かずに撃�
   }
 });
 
-test('城防御（蔦の防壁〜世界樹の庇護）：城壁 3/5/9/15/25。兵士防御（葉の衣〜森神の守護）：盾 3/5/8/13/22', () => {
+test('城防御（蔦の防壁〜世界樹の庇護）：城壁 3/5/9/15/25。兵士防御（葉の衣・樹皮の鎧）：盾 3/5。実際にダメージを受け止める', () => {
   const WALL = [3, 5, 9, 15, 25];
-  const ARMOR = [3, 5, 8, 13, 22];
   ORDER.forEach((r, i) => {
-    let { game, log } = newGame();
+    const { game, log } = newGame();
     play(game, `forest_plant_wall_${r}`, { playerId: 'p1' });
     assert.equal(ofType(log, 'castleArmored').at(-1).armor, WALL[i], `蔦系 ${r}`);
-    ({ game, log } = newGame());
+  });
+  ['common', 'uncommon'].forEach((r, i) => {
+    const { game, log } = newGame();
     const mine = play(game, 'post', { playerId: 'p2', roadId: lanes(game)[0] });
     play(game, `forest_plant_armor_${r}`, { soldierId: mine.soldierId });
-    assert.equal(ofType(log, 'shieldAdded').at(-1).shield, ARMOR[i], `葉系 ${r}`);
+    assert.equal(ofType(log, 'shieldAdded').at(-1).shield, [3, 5][i], `葉系 ${r}`);
   });
+  // 城壁が城へのダメージを受け止める：p1 が蔦の防壁（3）を置くと、p2 の兵士が城に着いても 3 ぶん減る
+  {
+    const { game, log } = newGame({ laneLength: 3 });
+    play(game, 'forest_plant_wall_common', { playerId: 'p1' });
+    game.endTurn();
+    const s = play(game, 'knight', { playerId: 'p1', roadId: lanes(game)[2] });
+    game.endTurn(); game.endTurn();
+    const dmg = ofType(log, 'castleDamaged').find((e) => e.source?.soldierId === s.soldierId);
+    assert.ok(dmg, '兵士が城に着いた');
+    assert.equal(dmg.blocked, 3, '城壁が3受け止めた');
+    assert.equal(game.players.p1.castle.hp, game.players.p1.castle.maxHp - (dmg.amount - 3));
+  }
+  // 盾が兵士のダメージを受け止める：葉の衣（3）をつけた兵士に、相手のサンダー系の魔法
+  {
+    const { game, log } = newGame();
+    const mine = play(game, 'post', { playerId: 'p2', roadId: lanes(game)[0] });
+    play(game, 'forest_plant_armor_common', { soldierId: mine.soldierId });
+    game.endTurn();
+    play(game, 'thunder', { playerId: 'p1', roadId: lanes(game)[0] });
+    const hit = ofType(log, 'soldierDamaged').find((e) => e.soldierId === mine.soldierId);
+    assert.equal(hit.blocked, 3, '盾が3受け止めた');
+    assert.equal(mine.hp, 100 - (hit.amount - 3));
+  }
 });
 
-test('implemented: false（ドルイド・生命回復）は、手札に来ても出せない・合成できない（実際の効果はまだない）', () => {
+test('implemented: false（ドルイド・生命回復・水風土の魔法・葉の衣のレア以上）は、手札に来ても出せない・合成できない（実際の効果はまだない）', () => {
   const rules = { ...loadJson('rules.json'), ...PLAIN_START };
   const g = new Game({ cards: CARDS, rules, rarities, rng: seededRng(2) });
-  g.debugSetHand('p1', ['forest_druid_common', 'forest_druid_common', 'forest_life_heal_common']);
+  g.debugSetHand('p1', ['forest_druid_common', 'forest_druid_common', 'forest_life_heal_common', 'forest_water_magic_common', 'forest_plant_armor_rare']);
   g.start();
-  const [d1, d2, h] = g.players.p1.hand.map((x) => x.cardId);
+  const [d1, d2, h, w, ar] = g.players.p1.hand.map((x) => x.cardId);
+  for (const c of [w, ar]) assert.equal(g.canPlayCard(c).reason, 'このカードの効果はまだありません');
   assert.equal(g.canPlayCard(d1).reason, 'このカードの効果はまだありません');
   assert.equal(g.canPlayCard(h).reason, 'このカードの効果はまだありません');
   assert.equal(g.canFuse(d1, d2).reason, 'このカードの効果はまだありません');
@@ -302,9 +352,9 @@ test('合成の系統：B2 の各系統が コモン（起点）から レジェ
   // 実際の合成（implemented: true の系統）
   assert.equal(fuseOnce('forest_beast_common'), 'forest_beast_uncommon');
   assert.equal(fuseOnce('forest_elf_epic'), 'forest_elf_legendary');
-  assert.equal(fuseOnce('forest_water_magic_rare'), 'forest_water_magic_epic');
+  assert.equal(fuseOnce('forest_fire_magic_rare'), 'forest_fire_magic_epic');
   assert.equal(fuseOnce('forest_plant_wall_common'), 'forest_plant_wall_uncommon');
-  assert.equal(fuseOnce('adapt', 'forest_earth_magic_uncommon'), 'forest_earth_magic_rare');
+  assert.equal(fuseOnce('adapt', 'forest_fire_magic_uncommon'), 'forest_fire_magic_rare');
 });
 
 test('スキン・ストーリー：新しい兵士・魔法にはスキン、B2 の新規50枚すべてにストーリー', async () => {
@@ -322,4 +372,16 @@ test('B1 以前のカードとの境界：王国の陣営モードの候補は B
   const pool = factionPool(CARDS, 'kingdom');
   assert.equal([...pool].filter((t) => !isB1Id(t) && CARDS[t].faction !== 'common' && CARDS[t].faction !== 'kingdom').length, 0);
   for (const id of B2_NEW) assert.equal(pool.has(id), false, id);
+});
+
+test('build.mjs の multiAttribute：単一属性の行に付けたら止まる。multiAttribute の行の def に element があれば止まる', () => {
+  const shopText = readFileSync(join(ROOT, 'data', 'shop.json'), 'utf8');
+  const args = { ledger: LEDGER, cards: JSON.parse(readFileSync(join(ROOT, 'data', 'cards.json'), 'utf8')), shop: JSON.parse(shopText) };
+  const fire = ROWS.find((r) => r.name === 'フレイム');
+  const druid = ROWS.find((r) => r.name === 'ドルイド');
+  fire.multiAttribute = true;
+  try { assert.throws(() => buildAll(args), /multiAttribute は付けられません/); } finally { delete fire.multiAttribute; }
+  druid.def.element = 'fire';
+  try { assert.throws(() => buildAll(args), /element は書けません/); } finally { delete druid.def.element; }
+  buildAll(args); // 戻したら通る
 });
