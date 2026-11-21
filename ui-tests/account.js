@@ -43,7 +43,17 @@ try {
   await page.selectOption('#profile .profile-privacy select >> nth=1', 'public');
   await page.waitForFunction(() => document.querySelector('#profile .profile-privacy:nth-of-type(2) select')?.value === 'public');
   await page.screenshot({ path: resolve(artifacts, 'profile.png') });
+  // プロフィールから表示名を変えられる（名前はこれ1つだけ）
+  await page.click('#profile [data-part=renameBtn]');
+  await page.fill('#profile [data-part=nameInput]', 'プロフさん');
+  await page.click('#profile [data-part=renameForm] button[type=submit]');
+  await page.locator('#profile [data-part=name]', { hasText: 'プロフさん' }).waitFor();
+  assert.equal(await page.evaluate(async () => (await (await fetch('/api/me', { credentials: 'same-origin' })).json()).user?.displayName), 'プロフさん');
   await page.click('#profile .profile-close');
+  // 設定には別の名前の欄を出さない（アカウントの表示名だけ）
+  await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]');
+  assert.equal(await page.locator('#settings .set-name-group').isVisible(), false);
+  await page.keyboard.press('Escape');
   // 「ひとりで遊ぶ」で遊べる画面（既存のタイトル）に進める
   await page.click('#home .home-tab[data-tab=battle]'); await page.click('#home [data-act=start]');
   await page.locator('#title-levels:not([hidden])').waitFor();
@@ -58,7 +68,7 @@ try {
   await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]');
   await page.click('.set-account-btn');
   await page.locator('#account:not([hidden])').waitFor();
-  assert.match(await page.locator('#account [data-part=name]').textContent(), /^ゲスト\d{4}$/);
+  assert.equal(await page.locator('#account [data-part=name]').textContent(), 'プロフさん'); // プロフィールで変えた表示名
   assert.match(await page.locator('#account [data-part=kind]').textContent(), /ゲスト/);
   assert.equal(await page.locator('#account [data-part=oauth]').isVisible(), false); // Google の設定がないサーバーでは、Google のボタンを出さない
   assert.match(await page.locator('#account [data-part=linkTitle]').textContent(), /アカウントを作成/);
