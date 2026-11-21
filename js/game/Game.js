@@ -1273,7 +1273,7 @@ export class Game {
 
   /**
    * 属性 element の攻撃が、owner の兵士 soldier に当たった（ダメージのあと。外れた攻撃では呼ばない）。
-   * 反応の表で組になる属性が付いていれば反応する（1回の攻撃で1つ。混沌反応が先、次に表の順）。反応しなければ付着する。
+   * 反応の表で組になる属性が付いていれば反応する（1回の攻撃で1つ。3種類以上で混沌が入っていれば混沌反応が先、次に表の順）。反応しなければ付着する。
    * reactions を渡していない・属性なし・忍者・もう場にいない兵士なら何もしない（乱数も使わない）
    */
   elementHit(owner, soldier, element) {
@@ -1296,12 +1296,12 @@ export class Game {
     const defs = this.reactionDefs;
     const on = this.elementsOn(soldier);
     const chaos = defs.chaos;
-    // 混沌反応：混沌の攻撃が当たり、付いている属性の種類が混沌を数えて minElements 以上（混沌が足りない属性の代わりになる）
-    if (chaos && element === chaos.element) {
-      const all = on.includes(element) ? on : [...on, element];
-      if (all.length >= chaos.minElements) {
-        return { id: 'chaos', name: chaos.name, elements: all, consumed: on, damage: chaos.damagePerElement * all.length, def: {} };
-      }
+    // 混沌反応：この攻撃のあと、付いている属性（当たった攻撃の属性も数える）に混沌が入っていて、種類が minElements 以上。
+    // 当たったのが混沌でなくてもよい（混沌が付いている・武器が混沌の兵士に、別の属性が当たって3種になったときも）。
+    // 2種類のときはここに入らず、下の表の反応（砕氷など）を見る（2種類で表の反応が成り立つなら表が優先）
+    const all = on.includes(element) ? on : [...on, element];
+    if (chaos && all.includes(chaos.element) && all.length >= chaos.minElements) {
+      return { id: 'chaos', name: chaos.name, elements: all, consumed: on, damage: chaos.damagePerElement * all.length, def: {} };
     }
     for (const [id, def] of Object.entries(defs.reactions)) {
       if (!def.elements.includes(element)) continue;
@@ -3783,6 +3783,8 @@ export class Game {
       maxMp: this.rules.maxMp,
       // MP を使うカードの種類 → 必要な MP（UI が手札に表示する）
       mpCosts: Object.fromEntries(Object.entries(this.cardDefs).map(([t, d]) => [t, this.mpCostOf({ def: d })]).filter(([, c]) => c > 0)),
+      // 属性の反応の定義（reactions を渡したゲームだけ。キーごと足さない）。CPU・画面が、ゲームの内部を読まずに反応を調べるため
+      ...(this.reactionDefs ? { reactions: structuredClone(this.reactionDefs) } : {}),
       layout: this.plaza ? 'plaza' : 'lanes',
       // チーム戦のとき { t1: { members, castleOwner, size } … }（チームの順）。チーム戦でなければ null
       teams: this.teamOrder

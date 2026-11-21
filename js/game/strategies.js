@@ -112,14 +112,16 @@ function playFirst(game, playable, typesInOrder) {
 const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 /**
- * 属性 element の攻撃が、相手の兵士 s（getState の形）に当たったら反応するか（reactions は data/classic/reactions.json の中身）。
- * s に付いている属性は、武器の属性と付着（attachments）
+ * 属性 element の攻撃が、相手の兵士 s（getState の形）に当たったら反応するか。
+ * reactions は getState().reactions（反応の定義。ゲームの内部は読まない）。Game.findReaction と同じ決まり：
+ *   当たったあとの属性（武器の属性＋付着＋element）に混沌が入っていて3種以上 → 混沌反応／表で element と組になる属性が付いている → その反応
  */
-function canReact(reactions, element, s) {
-  if (!element) return false;
+export function canReact(reactions, element, s) {
+  if (!element || !reactions) return false;
   const on = [...new Set([s.element, ...(s.attachments ?? []).map((a) => a.element)].filter(Boolean))];
+  const all = on.includes(element) ? on : [...on, element];
   const chaos = reactions.chaos;
-  if (chaos && element === chaos.element && new Set([...on, element]).size >= chaos.minElements) return true;
+  if (chaos && all.includes(chaos.element) && all.length >= chaos.minElements) return true;
   return Object.values(reactions.reactions).some((r) => r.elements.includes(element) && on.includes(r.elements.find((e) => e !== element)));
 }
 
@@ -131,9 +133,9 @@ function canReact(reactions, element, s) {
  */
 function playSupports(game, pid, ctx) {
   // 属性の付着と反応（クラシック）があるゲームだけ、反応を起こせる武器を先に選ぶ（ないゲームでは今までどおり）
-  const reactions = game.reactionDefs ?? null;
   for (let guard = 0; guard < 20; guard++) {
-    const { me, enemies, playable } = view(game, pid);
+    const { state, me, enemies, playable } = view(game, pid);
+    const reactions = state.reactions ?? null; // getState の公開データ（付着と反応のないゲームでは null）
     let support = playable.filter((c) => ctx.cards[c.type].kind !== 'soldier' && ctx.cards[c.type].kind !== 'spell');
     if (support.length === 0) return;
     const front = [...me.soldiers].sort((a, b) => b.position - a.position);

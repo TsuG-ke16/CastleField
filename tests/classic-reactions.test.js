@@ -6,6 +6,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { validateReactions, elementIds } from '../js/game/Elements.js';
+import { canReact, STRATEGIES } from '../js/game/strategies.js';
 import { loadFixture, seededRng, recordEvents, buildData, loadOptionalData, PLAIN_START } from './helpers.js';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -37,6 +38,7 @@ const EXTRA = {
   darkBolt: { name: '闇の矢', kind: 'spell', effect: 'singleDamage', element: 'dark', amount: 1, count: 1 },
   iceBolt: { name: '氷の矢', kind: 'spell', effect: 'singleDamage', element: 'ice', amount: 1, count: 1 },
   chaosBolt: { name: '混沌の矢', kind: 'spell', effect: 'singleDamage', element: 'chaos', amount: 1, count: 1 },
+  windBolt: { name: '風の矢', kind: 'spell', effect: 'singleDamage', element: 'wind', amount: 1, count: 1 },
   plainBolt: { name: 'ただの矢', kind: 'spell', effect: 'singleDamage', amount: 1, count: 1 },
   iceBreath: { name: '氷の息', kind: 'spell', effect: 'freezeEnemySoldiers', element: 'ice', turns: 1, count: 1 },
   lightRain: { name: '光の雨', kind: 'spell', effect: 'damageEnemySoldiers', element: 'light', amount: 1, count: 1 },
@@ -51,12 +53,12 @@ const FOG = { fog: { name: '霧', weight: 1, rounds: [9, 9], missChance: 1 } };
  */
 function setup({ reactions = REACTIONS, p2Weapon = null, p2Soldier = 'tank', weather = null } = {}) {
   const cards = { ...loadFixture('cards-step2.json'), ...EXTRA };
-  const rules = { ...loadFixture('rules.json'), elementBonus: 0 };
+  const rules = { ...loadFixture('rules.json'), elementBonus: 0, maxHand: 12 };
   const game = new Game({
     cards, rules, rng: seededRng(3), elements: readClassic('elements.json'),
     ...(reactions ? { reactions } : {}), ...(weather ? { weather } : {}),
   });
-  game.debugSetHand('p1', ['lightBolt', 'darkBolt', 'iceBolt', 'chaosBolt', 'plainBolt', 'iceBreath', 'lightBall']);
+  game.debugSetHand('p1', ['lightBolt', 'darkBolt', 'iceBolt', 'chaosBolt', 'windBolt', 'plainBolt', 'iceBreath', 'lightBall']);
   game.debugSetHand('p2', [p2Soldier, ...(p2Weapon ? [p2Weapon] : [])]);
   game.debugSetDeck(Array(40).fill('heal'));
   const log = recordEvents(game, EVENT_TYPES);
@@ -316,6 +318,88 @@ test('混沌＋1種だけのときは、2属性の表（砕氷）を見る。混
   b.cast('chaosBolt');
   assert.equal(b.events('reactionTriggered').length, 0);
   assert.deepEqual(b.attached(), ['chaos:3']);
+});
+
+test('混沌反応：混沌が付いている兵士に別の属性が当たって3種になっても起きる（混沌の攻撃でなくてよい）', () => {
+  const { soldier, cast, attached, events } = setup({ p2Weapon: 'lightBlade' });
+  cast('chaosBolt'); // 光（武器）＋混沌 = 2種。表に組がないので、混沌が付くだけ
+  assert.deepEqual(attached(), ['chaos:3']);
+  assert.equal(events('reactionTriggered').length, 0);
+  cast('windBolt'); // 風が当たって 光・混沌・風 = 3種（表の組はない）
+  const r = events('reactionTriggered');
+  assert.equal(r.length, 1);
+  assert.equal(r[0].reaction, 'chaos');
+  assert.deepEqual([...r[0].elements].sort(), ['chaos', 'light', 'wind']);
+  assert.equal(r[0].damage, 12);
+  assert.deepEqual(r[0].consumed.sort(), ['chaos', 'light']); // 当たった風は付かない
+  assert.deepEqual(attached(), []);
+  assert.equal(soldier.element, null);
+});
+
+test('混沌反応：武器が混沌の兵士でも、別の属性が2種当たれば起きる', () => {
+  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA, chaosBlade: { name: '混沌の剣', kind: 'weapon', attackBonus: 1, element: 'chaos', count: 1 } };
+  const g = new Game({ cards, rules: { ...loadFixture('rules.json'), elementBonus: 0 }, rng: seededRng(3), elements: readClassic('elements.json'), reactions: REACTIONS });
+  const soldier = { attachments: [{ element: 'light', turns: 3 }], element: 'chaos' };
+  // Game の判定を直接調べる（武器の属性が混沌）
+  assert.equal(g.findReaction(soldier, 'wind')?.id, 'chaos');
+  assert.equal(g.findReaction({ attachments: [], element: 'chaos' }, 'wind'), null); // 2種だけ（表の組もない）
+});
+
+test('混沌反応と表の反応の優先：2種類なら表（砕氷）、3種類以上なら混沌反応（表の組が成り立っても）', () => {
+  // 2種類：混沌が付いていて氷が当たる → 砕氷
+  const a = setup();
+  a.cast('chaosBolt');
+  a.cast('iceBolt');
+  assert.deepEqual(a.events('reactionTriggered').map((e) => e.reaction), ['shatter']);
+  // 3種類：光（武器）＋混沌が付いていて、闇が当たる（光＋闇の対消滅も成り立つが、混沌反応が先）
+  const b = setup({ p2Weapon: 'lightBlade' });
+  b.cast('chaosBolt');
+  b.cast('darkBolt');
+  assert.deepEqual(b.events('reactionTriggered').map((e) => [e.reaction, e.damage]), [['chaos', 12]]);
+});
+
+test('混沌が入っていない3種類は混沌反応にならない（表の組があればその反応）', () => {
+  const { soldier, cast, events } = setup({ p2Weapon: 'lightBlade' });
+  soldier.attachments.push({ element: 'wind', turns: 3 });
+  cast('darkBolt'); // 光・風・闇：混沌なし → 光＋闇の対消滅
+  assert.deepEqual(events('reactionTriggered').map((e) => e.reaction), ['annihilation']);
+});
+
+test('getState().reactions：反応の定義が入る（コピー）。reactions を渡さないゲームにはキーがない', () => {
+  const { game } = setup();
+  const st = game.getState('p1');
+  assert.deepEqual(st.reactions, REACTIONS);
+  st.reactions.chaos.minElements = 99; // 書き換えても、ゲームの中身は変わらない
+  assert.equal(game.getState('p1').reactions.chaos.minElements, 3);
+  assert.equal(game.reactionDefs.chaos.minElements, 3);
+  assert.equal(Object.hasOwn(setup({ reactions: null }).game.getState('p1'), 'reactions'), false);
+});
+
+test('CPU の canReact は Game.findReaction と、属性の組み合わせすべてで一致する', () => {
+  const { game } = setup();
+  const reactions = game.getState('p1').reactions;
+  const ids = elementIds(readClassic('elements.json'));
+  const subsets = [[]];
+  for (const e of ids) for (const sub of [...subsets]) if (sub.length < 3) subsets.push([...sub, e]);
+  let checked = 0;
+  for (const weapon of [null, ...ids]) {
+    for (const attach of subsets) {
+      for (const element of ids) {
+        const gameSoldier = { element: weapon, attachments: attach.map((e) => ({ element: e, turns: 3 })) };
+        const stateSoldier = { element: weapon, attachments: attach.map((e) => ({ element: e, turns: 3 })) };
+        assert.equal(canReact(reactions, element, stateSoldier), game.findReaction(gameSoldier, element) !== null, `武器${weapon} 付着${attach} 攻撃${element}`);
+        checked++;
+      }
+    }
+  }
+  assert.ok(checked > 1000);
+  assert.equal(canReact(null, 'light', { element: 'dark', attachments: [] }), false); // 反応のないゲーム
+});
+
+test('CPU（strategies.js）はゲームの内部（reactionDefs）を読まず、getState の公開データだけを使う', () => {
+  const src = readFileSync(join(ROOT, 'js', 'game', 'strategies.js'), 'utf8');
+  assert.equal(/reactionDefs/.test(src), false);
+  assert.ok(STRATEGIES.smart);
 });
 
 test('霧で外れた攻撃は、反応も付着もしない', () => {
