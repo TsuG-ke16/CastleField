@@ -315,7 +315,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
 | `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
 | `spellCast` | `{ playerId, type, target, targetKind, roadId?, soldierId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）と、`castleSpellHitsFront` の城への魔法（道が決まるとき）に入る。`soldierId` は、城への魔法が先頭の兵士に当たるとき（`castleSpellHitsFront`）とチェーン・ブラストのときだけ入る（このあと `soldierDamaged`（`cause: "spell"`））。`element` は、ランダム属性ダメージ（`randomElementDamage`）で選ばれた属性（`"fire"` / `"water"` / `"wind"` / `"earth"`）。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
-| `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。崩壊の刻のダメージは `source: { kind: "collapse" }`。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }`（4陣営：反応の城へのダメージは `{ kind: "reaction", reaction }`、森の常時の精霊は `{ kind: "passiveSpirit", spirit }`）。`ignoreArmor: true` は城壁を通さなかったとき（4陣営の火炎の吐息・タイタン。`blocked` は0） |
+| `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。崩壊の刻のダメージは `source: { kind: "collapse" }`。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }`（4陣営：反応の城へのダメージは `{ kind: "reaction", reaction }`、森の常時の精霊は `{ kind: "passiveSpirit", spirit }`）。`ignoreArmor: true` は城壁を通さなかったとき（4陣営の火炎の吐息。`blocked` は0） |
 | `castleHealed` | `{ playerId, amount, hp, source? }` … `amount` は実際に増えた量（上限で止まったぶんは含まない。回復量減少のときは減らしたあと）。`source: { kind: "bloodArmor" }` は血の膜で回復したとき（4陣営） |
 | `weaponEquipped` | `{ playerId, soldierId, type, attack, element }` … 武器を持たせた。`attack` は持たせたあとの攻撃力（重ねると足し算。`element` は最後の武器の属性に上書き） |
 | `shieldAdded` | `{ playerId, soldierId, amount, shield }` … `shield` は足したあとの盾 |
@@ -343,7 +343,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `cardStolen` | `{ playerId, victimId, cardId }` … 盗賊。`cardId` から種類は分からない（奪った本人だけが `state` で種類を見られる） |
 | `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
 | `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
-| `passiveSpiritActed` | `{ playerId, spirit, name, element, effect, amount, targetId, soldierIds, push? }` … 4陣営の森の常時の精霊が動いた（自分のターンの始め。コイン・MP の回復のあと、ドローの前）。`effect` は `"castleDamage"`（`targetId` の城に。このあと `castleDamaged`（`source: { kind: "passiveSpirit", spirit }`。タイタンは `ignoreArmor: true`））／`"soldiersDamage"`（`soldierIds` の兵士に `soldierDamaged`（`cause: "spirit"`））／`"pushFront"`（`soldierIds` の先頭の兵士を `push` マス押し戻す `soldierMoved`（`cause: "pushed"`。マス0なら出ない）→ `soldierDamaged`（`cause: "spirit"`））。敵の兵士がいなければ `soldierIds` は空で、何も起きない。そのあと、敵の見える兵士全員に `elementAttached`（`source: "passiveSpirit"`。`reactions` を渡したゲームだけ） |
+| `passiveSpiritActed` | `{ playerId, spirit, name, element, effect, amount, targetId, soldierIds, push? }` … 4陣営の森の常時の精霊が動いた（自分のターンの始め。コイン・MP の回復のあと、ドローの前）。`effect` は `"castleDamage"`（`targetId` の城に。このあと `castleDamaged`（`source: { kind: "passiveSpirit", spirit }`。精霊に `ignoreArmor` を書けば `ignoreArmor: true`。今の森の精霊は書いていない））／`"soldiersDamage"`（`soldierIds` の兵士に `soldierDamaged`（`cause: "spirit"`））／`"pushFront"`（`soldierIds` の先頭の兵士を `push` マス押し戻す `soldierMoved`（`cause: "pushed"`。マス0なら出ない）→ `soldierDamaged`（`cause: "spirit"`））。敵の兵士がいなければ `soldierIds` は空で、何も起きない。そのあと、敵の見える兵士全員に `elementAttached`（`source: "passiveSpirit"`。`reactions` を渡したゲームだけ） |
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
 | `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った。`mpAllCards` なら兵士・武器・防御なども）／`"turn"`（ターンの始めの自然回復 `mpPerTurn`）／`"stage"`（古代遺跡）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
@@ -1669,7 +1669,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 ### 森の常時の精霊（人間の指示。元の案・統合仕様書から変えた。数値は仮）
 元の案は「精霊4種を召喚するカード（火 城に1×3・水 城+1×3・風 速さ+1×3・土 ダメージ−1×3）」で、統合仕様書は「召喚中の精霊の属性は先行付着属性の代用」だった。**人間の指示で、精霊はカードではなく、森の陣営にいつもいる特性に変えた**（精霊のカード4枚はなくし、属性の武器4枚に入れかえた。森は14種のまま）。
 
-- **置き場**：`data/factions/factions.json` の森の `passiveSpirits`（`{ attachTurns, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }`）。`factionDecks` がデッキに写し、Game は席のデッキの `passiveSpirits` を読む（チェックは `js/game/Setup.js` の `validatePassiveSpirits`）。書かない陣営・モードは今までどおり
+- **置き場**：`data/factions/factions.json` の森の `passiveSpirits`（`{ attachTurns, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }`。`ignoreArmor: true` は城壁を無視する（仕組みは残してあるが、今の精霊は使っていない））。`factionDecks` がデッキに写し、Game は席のデッキの `passiveSpirits` を読む（チェックは `js/game/Setup.js` の `validatePassiveSpirits`）。書かない陣営・モードは今までどおり
 - **いつ**：自分のターンの始め（コイン・MP の回復のあと、ドローの前。`randomAttachTurnStart` と同じ位置）に、`spirits` の順（火 → 水 → 風 → 土 → 火 …）に1体ずつ動く。自分のターンごとに1つ進む（1ターン目は火）
 
 | 精霊 | 属性 | 効果（`effect`） |
@@ -1677,7 +1677,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | イフリート | 火 | 敵城に3（`castleDamage`。城壁が先に受ける） |
 | ウンディーネ | 水 | 敵の見える兵士全員に1（`soldiersDamage`。盾が先に受ける） |
 | シルフ | 風 | 敵の先頭の見える兵士（自分の城にいちばん近い。同じなら先に出された方）を1マス押し戻し（マス0より後ろには下がらない）、2（`pushFront`。盾が先に受ける） |
-| タイタン | 土 | 敵城に10（`castleDamage`・`ignoreArmor`。城壁を無視） |
+| タイタン | 土 | 敵城に7（`castleDamage`。城壁が先に受ける。最初は10・城壁を無視だったが、森が全勝したので人間の指示で変えた） |
 
 - 城を攻める相手は、まだ負けていない相手の陣地のうち席順で最初の陣地（2人なら相手。3人以上の選び方は仮）。**防御は聞かない**。身代わりは受ける（`source.kind: "passiveSpirit"`）。霧で外れない。土の精霊のカードのような軽減は、城の持ち主のものが効く（今の4陣営にはない）
 - **付着**：動いた精霊の属性が、**敵の見える兵士全員**に `attachTurns`（1）回付く（クラシックの `randomAttach.turns: 1` と同じ考え方。持ち主の進軍が終わると消える。同じ属性がもう付いていれば、残りは長い方）。**付いたときには反応しない**。そこに森の別属性の魔法・武器が当たれば反応する。`reactions` を渡さないゲームでは付着しない

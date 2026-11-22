@@ -712,9 +712,9 @@ test('本物のカード：森には精霊のカード（summonSpirit）がな�
   }
   const decks = loadOptionalData(MODE).decks;
   assert.deepEqual(decks.forest.passiveSpirits.spirits.map((x) => [x.name, x.element, x.effect, x.amount]), [
-    ['イフリート', 'fire', 'castleDamage', 3], ['ウンディーネ', 'water', 'soldiersDamage', 1], ['シルフ', 'wind', 'pushFront', 2], ['タイタン', 'earth', 'castleDamage', 10],
+    ['イフリート', 'fire', 'castleDamage', 3], ['ウンディーネ', 'water', 'soldiersDamage', 1], ['シルフ', 'wind', 'pushFront', 2], ['タイタン', 'earth', 'castleDamage', 7],
   ]);
-  assert.equal(decks.forest.passiveSpirits.spirits[3].ignoreArmor, true);
+  assert.equal(decks.forest.passiveSpirits.spirits[3].ignoreArmor, undefined, 'タイタンは城壁を無視しない（人間の指示）');
   assert.equal(decks.forest.passiveSpirits.spirits[2].push, 1);
   assert.equal(decks.forest.passiveSpirits.attachTurns, 1);
   for (const f of ['kingdom', 'demon', 'dragon']) assert.equal(decks[f].passiveSpirits, undefined, f);

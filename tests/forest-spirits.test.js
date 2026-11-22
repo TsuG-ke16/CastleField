@@ -15,7 +15,7 @@ const SPIRITS = {
     { spirit: 'fire', name: 'イフリート', element: 'fire', effect: 'castleDamage', amount: 3 },
     { spirit: 'water', name: 'ウンディーネ', element: 'water', effect: 'soldiersDamage', amount: 1 },
     { spirit: 'wind', name: 'シルフ', element: 'wind', effect: 'pushFront', push: 1, amount: 2 },
-    { spirit: 'earth', name: 'タイタン', element: 'earth', effect: 'castleDamage', amount: 10, ignoreArmor: true },
+    { spirit: 'earth', name: 'タイタン', element: 'earth', effect: 'castleDamage', amount: 7 },
   ],
 };
 
@@ -118,17 +118,30 @@ test('イフリート（火）：敵城に3（城壁が先に受ける）。敵�
   assert.equal(events('defenseRequested').length, 0, '防御は聞かない');
 });
 
-test('タイタン（土）：敵城に10。城壁を無視する（城壁は減らない）', () => {
+test('タイタン（土）：敵城に7。城壁が先に受ける（イフリートと同じ）', () => {
   const { game, act, events } = setup();
   game.start();
   const p2 = game.players.p2;
   p2.armor = 5;
   const hp = p2.castle.hp;
   act('earth');
-  assert.equal(p2.castle.hp, hp - 10);
+  assert.equal(p2.castle.hp, hp - 2);
+  assert.equal(p2.armor, 0);
+  assert.equal(events('castleDamaged')[0].blocked, 5);
+  assert.equal(Object.hasOwn(events('castleDamaged')[0], 'ignoreArmor'), false);
+});
+
+test('ignoreArmor（仕組みは残す）：書いた精霊は城壁を無視する', () => {
+  const spirits = { ...SPIRITS, spirits: SPIRITS.spirits.map((x) => (x.spirit === 'earth' ? { ...x, ignoreArmor: true } : x)) };
+  const { game, act, events } = setup({ spirits });
+  game.start();
+  const p2 = game.players.p2;
+  p2.armor = 5;
+  const hp = p2.castle.hp;
+  act('earth');
+  assert.equal(p2.castle.hp, hp - 7);
   assert.equal(p2.armor, 5);
   assert.equal(events('castleDamaged')[0].ignoreArmor, true);
-  assert.equal(events('castleDamaged')[0].blocked, 0);
 });
 
 test('城の精霊で城が落ちたら、そのターンはそこで決着（ドローしない）', () => {
@@ -260,7 +273,7 @@ test('身代わりがいれば、城への精霊の攻撃は身代わりの兵�
   game.players.p1.passiveSpiritIndex = 3;
   game.actPassiveSpirit(game.players.p1);
   assert.equal(game.players.p2.castle.hp, hp);
-  assert.equal(t.hp, 20);
+  assert.equal(t.hp, 23);
 });
 
 test('データのチェック：passiveSpirits の書き間違いは new Game() でエラー。factionDecks は passiveSpirits をデッキに写す', () => {

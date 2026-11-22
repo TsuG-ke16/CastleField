@@ -37,8 +37,7 @@
           "name": "タイタン",
           "element": "earth",
           "effect": "castleDamage",
-          "amount": 10,
-          "ignoreArmor": true
+          "amount": 7
         }
       ]
     }
