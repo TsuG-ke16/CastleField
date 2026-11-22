@@ -247,6 +247,8 @@ const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttac
 const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
   'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
+  // 4陣営
+  'soldierHealed', 'castleGuardSet', 'castleGuarded',
 ]);
 export class Game {
   /**
@@ -1423,8 +1425,9 @@ export class Game {
       reaction: reaction.id, name: reaction.name, soldierId, playerId, elements: [...reaction.elements], damage, consumed: [...reaction.consumed],
     });
     for (const element of reaction.consumed) {
-      const weapon = soldier.element === element;
-      if (weapon) soldier.element = null;
+      // 武器の属性が反応で消えたときだけ weapon: true（生まれつきの属性＝武器を持っていない兵士の属性には付けない）
+      const weapon = soldier.element === element && soldier.weapon !== null;
+      if (soldier.element === element) soldier.element = null;
       soldier.attachments = soldier.attachments.filter((a) => a.element !== element);
       this.emit('elementCleared', { playerId, soldierId, element, reason: 'reaction', ...(weapon ? { weapon: true } : {}) });
     }
@@ -1565,7 +1568,8 @@ export class Game {
   findClashTarget(soldier, owner) {
     const here = soldier.position;
     // 4陣営：射程+の武器（rangeBonus）を持つ進む兵士は、もっと先の相手も突ける（近い相手が先）
-    const reach = 1 + soldier.rangeBonus;
+    // ただし、すぐ前（同じマスか1つ先）に魔物がいるときは、魔物を飛び越えて突けない
+    const reach = soldier.rangeBonus > 0 && !this.findMonsterInRange(soldier, owner) ? 1 + soldier.rangeBonus : 1;
     let best = null;
     for (const c of this.foesOf(soldier, owner)) {
       if (c.q < here || c.q > here + reach) continue;
@@ -2992,7 +2996,8 @@ export class Game {
     const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
     const element = ELEMENTS[Math.floor(this.rng() * ELEMENTS.length)];
     const strong = beatsElement(this.elementDefs, element, soldier.element);
-    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + (strong ? this.rules.elementBonus : 0);
+    // 4陣営：呪術師（混沌）などの属性魔法の強化は、カードの属性で乗る（撃つランダムな属性ではない）
+    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + (strong ? this.rules.elementBonus : 0) + this.spellBonus(player, card.def.element);
     this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId, element });
     if (this.rollMiss()) {
       this.emitMiss(player.id, 'spell', { type: card.type });

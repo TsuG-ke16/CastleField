@@ -574,3 +574,67 @@ test('土の精霊（spiritScope "soldiers"）：兵士が受けるダメージ�
   assert.equal(t.hp, 60 - 2, '兵士は3→2');
   assert.throws(() => new Game({ cards: { ...cards, earth: { ...earth, spirit: 'fire' } }, rules: loadFixture('rules.json'), elements: ELEMENTS }), /spiritScope/);
 });
+
+test('属性魔法の強化：カオスパルス（randomElementDamage）にもカードの属性で乗る', () => {
+  const pulse = { name: 'カオスパルス', kind: 'spell', effect: 'randomElementDamage', element: 'chaos', amount: 3, count: 1 };
+  const curser = { name: '呪術師', kind: 'soldier', role: 'mage', hp: 3, attack: 1, range: 1, stay: 5, spellBoost: { elements: ['chaos'], amount: 1 }, count: 1 };
+  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA, pulse, curser };
+  const game = new Game({ cards, rules: { ...loadFixture('rules.json'), maxHand: 30, elementBonus: 0 }, rng: seededRng(3), elements: ELEMENTS });
+  game.debugSetHand('p1', ['pulse', 'pulse', 'curser']);
+  game.debugSetHand('p2', ['tank']);
+  game.debugSetDeck(Array(60).fill('heal'));
+  game.start();
+  game.currentPlayer = 'p2';
+  game.playCard(game.players.p2.hand[0].cardId);
+  const t = game.players.p2.soldiers[0];
+  game.currentPlayer = 'p1';
+  const cast = () => {
+    game.players.p1.playedThisTurn = false;
+    assert.equal(game.playCard(game.players.p1.hand.find((c) => c.type === 'pulse').cardId, { soldierId: t.soldierId }).ok, true);
+  };
+  cast();
+  assert.equal(t.hp, 57);
+  game.playCard(game.players.p1.hand.find((c) => c.type === 'curser').cardId);
+  cast();
+  assert.equal(t.hp, 53);
+});
+
+test('射程+の突きは、すぐ前の魔物を飛び越えない（魔物と戦う）', () => {
+  const { game, play, events } = setup({ hands: { p1: ['hitter', 'reachSpear'], p2: ['tank'] } });
+  const h = play('p1', 'hitter');
+  play('p1', 'reachSpear', { soldierId: h.soldierId });
+  const t = play('p2', 'tank');
+  t.position = 2; // 剣士から2マス先
+  const road = game.findRoad(h.roadId);
+  game.monsters.push({ monsterId: 'm99', type: 'x', roadId: road.roadId, square: road.toSquare('p1', 1), hp: 50, maxHp: 50, attack: 1, element: null, attackIn: 9, reward: 0, castleAttack: 1, toState() { return {}; } });
+  game.fightMonster = (player, soldier, monster) => { game.emit('monsterClashed', { attacker: { playerId: player.id, soldierId: soldier.soldierId }, monsterId: monster.monsterId, roadId: road.roadId, square: 1 }); };
+  march(game, 'p1');
+  assert.equal(t.hp, 60, '魔物の向こうの兵士は突けない');
+  assert.equal(events('monsterClashed').length, 1);
+});
+
+test('生まれつきの属性が反応で消えるときは、elementCleared に weapon を付けない。身代わりのイベントは忍者なら隠す', () => {
+  const r = { attachTurns: 3, reactions: { evaporate: { name: '蒸発', elements: ['fire', 'water'], damage: 0 } } };
+  const { play, events } = setup({ hands: { p1: ['waterTap'], p2: ['fireWhelp'] }, reactions: r });
+  const w = play('p2', 'fireWhelp');
+  play('p1', 'waterTap', { soldierId: w.soldierId });
+  const cleared = events('elementCleared')[0];
+  assert.equal(cleared.element, 'fire');
+  assert.equal(Object.hasOwn(cleared, 'weapon'), false);
+  assert.equal(w.element, null);
+  // 忍者を身代わりにすると、castleGuardSet・castleGuarded に stealth が付く
+  const ninja = { name: '忍者', kind: 'soldier', role: 'ninja', hp: 30, attack: 1, speed: 1, count: 1 };
+  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA, ninja };
+  const game = new Game({ cards, rules: { ...loadFixture('rules.json'), maxHand: 30 }, rng: seededRng(3), elements: ELEMENTS });
+  game.debugSetHand('p1', ['ninja', 'decoy']);
+  game.debugSetHand('p2', ['fireball']);
+  game.debugSetDeck(Array(60).fill('heal'));
+  const log = recordEvents(game, EVENT_TYPES);
+  game.start();
+  game.playCard(game.players.p1.hand.find((c) => c.type === 'ninja').cardId);
+  const n = game.players.p1.soldiers[0];
+  assert.equal(game.playCard(game.players.p1.hand.find((c) => c.type === 'decoy').cardId, { soldierId: n.soldierId }).ok, true);
+  game.currentPlayer = 'p2';
+  game.playCard(game.players.p2.hand[0].cardId);
+  for (const type of ['castleGuardSet', 'castleGuarded']) assert.equal(log.find((e) => e.event === type).stealth, 'p1', type);
+});
