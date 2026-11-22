@@ -555,3 +555,66 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 - `skins/back-rank-{iron,bronze,silver,gold,platinum,diamond,master,champion}-relief.png` — 自作スクリプト（`node js/ui/build-card-relief.js`）で、同じ名前のランクの裏の絵（`skins/back-rank-*.png`）から自動生成（高さ・法線・材質の地図）。3Dの拡大表示（`js/ui/CardGL.js`）で裏を本物の凹凸のメッシュにするために使う。絵柄は含まない。利用条件は元の絵と同じ
 - 2026-11-20：`cards/relief/*` と `skins/back-rank-*-relief.png` を `node js/ui/build-card-relief.js` で作り直した（宝石を部品ごとに判定して穴・破片をなくし、カットした石の形に。部品を大きさに合わせてふくらませる。裏は地の模様を低く、紋章を高く）。絵柄は変えていない
 - 2026-11-20：`cards/relief/*` と `skins/back-rank-*-relief.png` を、色ではなく形の部品（`js/ui/card-shapes.js`：枠の外形・はみ出す飾り・名前の帯・メダル・宝石・紋章の輪と葉など）から作り直した。絵柄は変えていない
+
+## 4陣営モード専用カード56種（2026-11-22）
+
+`assets/style-reference.png` と `assets/STYLE.md` の共通指示文を用い、各カードを個別に生成。配信用の512×512に縮小・圧縮。原本の対応は `asset-manifest.json`。
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `cards/card-fac-king-infantry.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-cavalry.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-archer.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-heavy.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-priest.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-holy-sword.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-lumina-lance.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-lumina.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-holy-ray.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-minor-heal.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-heal.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-shield.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-wall.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-decoy.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-king-purify.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-beastman.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-elf.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-druid.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-fire-bolt.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-water-stream.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-gust.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-fissure.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-fire-spirit.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-water-spirit.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-wind-spirit.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-earth-spirit.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-life-drop.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-thorn-wall.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-forest-bark-shield.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-skeleton.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-imp.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-curser.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-shadow-scythe.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-frost-blade.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-chaos-rod.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-shadow.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-frost-breath.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-chaos-pulse.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-poison-mist.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-curse-mark.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-soul-shard.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-echo-soul.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-blood-veil.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-demon-bone-shield.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-recruit.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-dragoon.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-flame-whelp.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-thunder-whelp.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-fang-sword.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-thunder-spear.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-fireball.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-bolt.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-flame-breath.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-blood-drop.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-ash-veil.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-fac-dragon-whelp-scale.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |

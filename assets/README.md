@@ -3,6 +3,7 @@
 `STYLE.md` の共通指示文を先頭に付け、`style-reference.png` を参照してOpenAIの画像生成ツールで作成した画像を使用する。城・兵士などは透過PNG。追加ファイルは1枚300KB以下。作成日・出どころ・利用条件は `CREDITS.md`、生成原本と個別画像の対応は `asset-manifest.json` を参照する。
 
 - `cards/card-*.png`：**カード85種**。カードキーの大文字をハイフンと小文字にする（`greatWaterSpirit` → `card-great-water-spirit.png`）。
+- `cards/card-fac-*.png`：**4陣営56種**（王国15・森14・魔族15・竜12）。カードIDの `_` を `-` にした専用画像。兵士15種は盤面でも同じ透過画像を使う。対応は `js/ui/factionArt.js`、[確認一覧](review/factions-card-art/README.md)。
 - `units/`：**兵士20体×青・オレンジ**、魔物12種、盤面用の精霊8種。兵士は普通の兵士・騎兵・弓兵・魔法使いの4系統、各5レアリティ。
 - `castles/`：ふつうの城・とりで・魔法の塔・兵舎。各青／オレンジ×破損4段階。HP割合からUIが段階を選ぶ。チームの人数による塔・城壁の追加はUIで重ねる。
 - `cards/frame-*.png`：兵士・魔法・武器・防御などのカード枠。レアリティ別の割り当てとメダル位置は `js/ui/cardFrame.js` と `css/rarity-assets.css`。

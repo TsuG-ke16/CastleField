@@ -3,6 +3,8 @@
 // - どの種類にどの絵を使うかは、ここで決める（data/ には画像の情報を入れない）
 // - カード・魔物を増やしたら、CARD_ART / MONSTER_ART に同じキーで足す。なければ仮の絵（名前の1文字目）になる
 
+import { factionCardPath, factionUnitPath } from './factionArt.js';
+
 const INK = '#4a2e1a';
 const SKIN = '#ffe2c4';
 const STEEL = '#cfd8e0';
@@ -491,6 +493,8 @@ function beastArt(beast, name, cls) {
 }
 
 export function cardArt(type, color = 'blue', name = '') {
+  const factionPath = factionCardPath(type);
+  if (factionPath) return imageArt(factionPath, '', 'art card-art-svg');
   if (beastOf(type)) return beastArt(beastOf(type), name, 'card-art-svg');
   if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`cards/card-${kebab(type)}.png`, 'art card-art-svg', name);
   const fallback = svgCardArt(type, color, name);
@@ -502,6 +506,8 @@ export function cardArt(type, color = 'blue', name = '') {
   return CARD_TYPES.has(type) ? imageArt(`cards/card-${kebab(type)}.png`, fallback, 'art card-art-svg') : fallback;
 }
 export function unitArt(type, color, name = '') {
+  const factionPath = factionUnitPath(type);
+  if (factionPath) return imageArt(factionPath, '', 'art unit-art');
   if (beastOf(type)) return beastArt(beastOf(type), name, 'unit-art');
   if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`units/${kebab(type)}-${color === 'orange' ? 'orange' : 'blue'}.png`, 'art unit-art', name);
   const fallback = svgUnitArt(type, color, name);
