@@ -59,5 +59,6 @@
   "castleSpellHitsFront": true,
   "collapseAnnounceRound": 50,
   "collapseStartRound": 60,
-  "collapseDamage": 1
+  "collapseDamage": 1,
+  "lightFirstStrike": true
 }

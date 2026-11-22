@@ -1,6 +1,9 @@
 // 4陣営モード（data/factions/）のシミュレーション。陣営の組み合わせごとに、席を入れかえて回す（先攻・後攻の差を消すため）。
 //   node tests/sim/factions.js [--games 100] [--seed 1] [--strategy smart] [--json]
 //   … 陣営A × 陣営B（同じ陣営どうしも）を games 試合ずつ、席を入れかえてもう games 試合。陣営A の勝率・平均手番・決着の理由・反応の回数を出す
+//   --with kingdom：その陣営と、ほかの陣営との組み合わせだけ（同じ陣営どうしは回さない）
+//   --rules '{"lightFirstStrike":false}'・--cards '{"fac_king_god_sword":{"attackBonus":6}}'：data/ を書き換えずに一部の値だけ試す（run.js と同じ）
+//   --decks '{"kingdom":{"fac_king_hero":0}}'：陣営のデッキの枚数だけ変える（0 で抜く）
 // 同じ引数なら、誰が回しても同じ結果になる。
 import { buildData, loadOptionalData } from '../helpers.js';
 import { runMatch } from './sim.js';
@@ -14,9 +17,19 @@ const games = Number(opt('games', 100));
 const seed = Number(opt('seed', 1));
 const strategy = opt('strategy', 'smart');
 const MODE = 'factions';
-const { rules, cards } = buildData({ mode: MODE });
+const json = (name) => JSON.parse(opt(name, '{}'));
+const { rules, cards } = buildData({ mode: MODE, rules: json('rules'), cards: json('cards') });
 const opts = loadOptionalData(MODE);
+for (const [f, patch] of Object.entries(json('decks'))) {
+  const deck = { ...opts.decks[f].cards };
+  for (const [t, n] of Object.entries(patch)) {
+    if (n > 0) deck[t] = n;
+    else delete deck[t];
+  }
+  opts.decks = { ...opts.decks, [f]: { ...opts.decks[f], cards: deck } };
+}
 const factions = Object.keys(opts.decks);
+const only = opt('with', null);
 
 /** a（席1）と b（席2）で games 試合。結果の一覧 */
 function play(a, b, s) {
@@ -32,6 +45,7 @@ for (let i = 0; i < factions.length; i++) {
   for (let j = i; j < factions.length; j++) {
     const a = factions[i];
     const b = factions[j];
+    if (only && (a === b || (a !== only && b !== only))) continue;
     const ab = play(a, b, seed);
     const ba = play(b, a, seed + 1);
     const all = [...ab, ...ba];

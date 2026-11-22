@@ -45,6 +45,8 @@ export class Soldier {
     this.frostbite = null;
     /** 盾の残り。ダメージは先に盾が受ける */
     this.shield = 0;
+    /** 4陣営の神盾：true なら、盾が残っている間は状態異常を受けない */
+    this.statusWard = false;
     /** 毒 { amount, turns }（なければ null） */
     this.poison = null;
     /** 凍結の残り回数（0 なら凍結していない） */

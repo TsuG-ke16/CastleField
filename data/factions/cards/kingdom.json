@@ -38,6 +38,19 @@
     "mpCost": 4,
     "count": 2
   },
+  "fac_king_hero": {
+    "name": "勇者",
+    "kind": "soldier",
+    "hp": 14,
+    "attack": 10,
+    "speed": 2,
+    "innateElement": "light",
+    "noRevive": true,
+    "description": "切り札（デッキに1枚まで）。光の兵士。HP14・攻撃10・速さ2（遅い）。生き返らない",
+    "mpCost": 5,
+    "count": 1,
+    "maxCopies": 1
+  },
   "fac_king_priest": {
     "name": "聖術師",
     "kind": "soldier",
@@ -69,6 +82,16 @@
     "mpCost": 2,
     "count": 2
   },
+  "fac_king_god_sword": {
+    "name": "神剣",
+    "kind": "weapon",
+    "attackBonus": 9,
+    "element": "light",
+    "description": "切り札（デッキに1枚まで）。攻撃+9・光",
+    "mpCost": 5,
+    "count": 1,
+    "maxCopies": 1
+  },
   "fac_king_lumina": {
     "name": "ルミナ",
     "kind": "spell",
@@ -88,14 +111,6 @@
     "mpCost": 4,
     "count": 2
   },
-  "fac_king_minor_heal": {
-    "name": "小回復",
-    "kind": "spell",
-    "effect": "healOwnCastle",
-    "amount": 5,
-    "mpCost": 2,
-    "count": 2
-  },
   "fac_king_heal": {
     "name": "ヒール",
     "kind": "spell",
@@ -111,6 +126,17 @@
     "amount": 3,
     "mpCost": 1,
     "count": 2
+  },
+  "fac_king_god_shield": {
+    "name": "神盾",
+    "kind": "defense",
+    "effect": "shieldSoldier",
+    "amount": 15,
+    "statusWard": true,
+    "description": "切り札（デッキに1枚まで）。兵士に盾15。盾が残っている間、その兵士は状態異常（毒・凍結・やけど・呪い・鈍足・目くらまし・砂・凍傷）を受けない",
+    "mpCost": 5,
+    "count": 1,
+    "maxCopies": 1
   },
   "fac_king_wall": {
     "name": "城壁",
