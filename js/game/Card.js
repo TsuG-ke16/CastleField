@@ -256,6 +256,9 @@ export class Card {
       if (def.target !== undefined && (def.target !== 'front' || !['singleDamage', 'randomElementDamage'].includes(def.effect))) {
         throw new Error(`${where}: target は singleDamage / randomElementDamage の魔法にだけ "front"（先頭の兵士に当たる）と書けます`);
       }
+      if (def.spiritScope !== undefined && (def.spirit !== 'earth' || (def.spiritScope !== 'all' && def.spiritScope !== 'soldiers'))) {
+        throw new Error(`${where}: spiritScope は土の精霊にだけ、"all"（城と兵士）か "soldiers"（兵士だけ）で書けます`);
+      }
       if (def.spiritMode !== undefined && (def.spirit !== 'wind' || (def.spiritMode !== 'min' && def.spiritMode !== 'add'))) {
         throw new Error(`${where}: spiritMode は風の精霊にだけ、"min"（速さの最低値）か "add"（速さに足す）で書けます`);
       }

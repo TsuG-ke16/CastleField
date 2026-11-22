@@ -121,6 +121,8 @@
     "spirit": "earth",
     "amount": 1,
     "turns": 3,
+    "spiritScope": "soldiers",
+    "description": "3ターンのあいだ、自分の兵士が受けるダメージ-1（最低1）。城は軽くならない",
     "mpCost": 4,
     "count": 2
   },

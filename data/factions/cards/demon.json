@@ -100,10 +100,10 @@
   "fac_demon_poison_mist": {
     "name": "毒の霧",
     "kind": "spell",
-    "effect": "poisonEnemy",
+    "effect": "poisonEnemySoldiers",
     "amount": 1,
     "turns": 3,
-    "description": "選んだ相手の兵士全員と城を毒にする（毎ターン1・3ターン）。盾・城壁は効かない",
+    "description": "相手の兵士全員を毒にする（毎ターン1・3ターン）。盾は効かない。城は毒にしない",
     "mpCost": 3,
     "count": 2
   },

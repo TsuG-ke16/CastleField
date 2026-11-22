@@ -549,3 +549,28 @@ test('先頭に当たる1体への魔法（target "front"）：選んだ道の�
   assert.ok(c.hp <= 57, '道2の兵士に当たる');
   assert.throws(() => new Game({ cards: { ...cards, x: { ...EXTRA.fireBolt, target: 'back' } }, rules, elements: ELEMENTS }), /target/);
 });
+
+test('土の精霊（spiritScope "soldiers"）：兵士が受けるダメージだけ軽くする。城は軽くしない', () => {
+  const earth = { name: '土の精霊', kind: 'spell', effect: 'summonSpirit', spirit: 'earth', amount: 1, turns: 3, spiritScope: 'soldiers', count: 1 };
+  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA, earth };
+  const game = new Game({ cards, rules: { ...loadFixture('rules.json'), maxHand: 30 }, rng: seededRng(3), elements: ELEMENTS });
+  game.debugSetHand('p1', ['earth', 'tank']);
+  game.debugSetHand('p2', ['fireball', 'fireBolt']);
+  game.debugSetDeck(Array(60).fill('heal'));
+  game.start();
+  const play = (pid, type, target) => {
+    game.currentPlayer = pid;
+    game.players[pid].playedThisTurn = false;
+    const r = game.playCard(game.players[pid].hand.find((c) => c.type === type).cardId, target);
+    assert.equal(r.ok, true, r.reason);
+  };
+  play('p1', 'earth');
+  play('p1', 'tank');
+  const t = game.players.p1.soldiers[0];
+  const hp = game.players.p1.castle.hp;
+  play('p2', 'fireball');
+  assert.equal(game.players.p1.castle.hp, hp - 8, '城は軽くならない');
+  play('p2', 'fireBolt', { soldierId: t.soldierId });
+  assert.equal(t.hp, 60 - 2, '兵士は3→2');
+  assert.throws(() => new Game({ cards: { ...cards, earth: { ...earth, spirit: 'fire' } }, rules: loadFixture('rules.json'), elements: ELEMENTS }), /spiritScope/);
+});

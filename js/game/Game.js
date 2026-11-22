@@ -1251,7 +1251,7 @@ export class Game {
    */
   damageCastle(owner, amount, source, { ignoreArmor = false } = {}) {
     if (owner.castle.guard && GUARDED_SOURCES.includes(source?.kind) && this.guardCastleHit(owner, amount)) return;
-    amount = this.reduceDamage(owner, amount);
+    amount = this.reduceDamage(owner, amount, 'castle');
     const castle = owner.castle;
     const armorBefore = owner.armor;
     const blocked = ignoreArmor ? 0 : Math.min(owner.armor, amount);
@@ -3638,7 +3638,8 @@ export class Game {
       amount: def.amount,
       turns: def.turns,
       targetId: def.spirit === 'fire' ? target.id : null,
-      mode: def.spiritMode ?? 'min', // 風の精霊：min（速さの最低値）か add（速さに足す。4陣営）
+      mode: def.spiritMode ?? 'min',
+      soldiersOnly: def.spiritScope === 'soldiers', // 土の精霊：兵士だけ軽くする（4陣営） // 風の精霊：min（速さの最低値）か add（速さに足す。4陣営）
       fresh: true, // 呼んだターンの終わりには減らさない
     };
     this.emit('spiritSummoned', {
@@ -3694,9 +3695,10 @@ export class Game {
   }
 
   /** 土の精霊：owner が受けるダメージを軽くする（0のダメージはそのまま。1より小さくはならない） */
-  reduceDamage(owner, amount) {
+  reduceDamage(owner, amount, target = 'soldier') {
     const sp = owner.spirit;
     if (!sp || sp.spirit !== 'earth' || amount <= 0) return amount;
+    if (sp.soldiersOnly && target === 'castle') return amount; // 4陣営の土の精霊は城を軽くしない
     return Math.max(1, amount - sp.amount);
   }
 
