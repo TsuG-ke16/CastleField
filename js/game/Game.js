@@ -2628,23 +2628,16 @@ export class Game {
     if (missA && !reach) this.emitMiss(enemy.id, 'fight', { soldierId: defender.soldierId });
     let toDefender = missD ? 0 : this.reduceDamage(enemy, this.fightDamage(attacker, defender));
     let toAttacker = missA ? 0 : this.reduceDamage(player, this.fightDamage(defender, attacker));
-    // 4陣営：光の先制（rules.lightFirstStrike）。光の兵士の攻撃が当たり、相手の HP＋盾 以上なら、相手の反撃を受けない。
-    // 両方が先制できるとき（光どうしで互いに倒せる）は、今までどおり同時
-    const firstA = !missD && this.firstStrikes(attacker, defender, toDefender);
-    const firstD = !missA && !reach && this.firstStrikes(defender, attacker, toAttacker);
-    const noCounterA = firstA && !firstD; // 攻める側が先に倒す：守る側の攻撃は当たらない
-    const noCounterD = firstD && !firstA; // 守る側が先に倒す：攻める側の攻撃は当たらない
+    // 4陣営：光の先制（rules.lightFirstStrike）。攻める側（進軍している側）の光の兵士の攻撃が当たり、相手の HP＋盾 以上なら、相手の反撃を受けない。
+    // 守る側では効かない（人間の指示）
+    const noCounterA = !missD && this.firstStrikes(attacker, defender, toDefender); // 攻める側が先に倒す：守る側の攻撃は当たらない
     if (noCounterA) toAttacker = 0;
-    if (noCounterD) toDefender = 0;
     const blockedD = defender.takeDamage(toDefender);
     const blockedA = attacker.takeDamage(toAttacker);
-    // 先制で倒された側の攻撃は当たらないので、当たらなかった側の soldierDamaged は出さない
-    if (!noCounterD) {
-      this.emit('soldierDamaged', {
-        playerId: enemy.id, soldierId: defender.soldierId, amount: toDefender, hp: defender.hp, cause: 'fight', blocked: blockedD,
-      });
-    }
-    // 突き（reach）：守る側の攻撃は届かないので、攻める側の soldierDamaged は出さない
+    this.emit('soldierDamaged', {
+      playerId: enemy.id, soldierId: defender.soldierId, amount: toDefender, hp: defender.hp, cause: 'fight', blocked: blockedD,
+    });
+    // 突き（reach）・光の先制：守る側の攻撃は当たらないので、攻める側の soldierDamaged は出さない
     if (!reach && !noCounterA) {
       this.emit('soldierDamaged', {
         playerId: player.id, soldierId: attacker.soldierId, amount: toAttacker, hp: attacker.hp, cause: 'fight', blocked: blockedA,
@@ -2656,7 +2649,7 @@ export class Game {
       if (s.isDead) this.removeSoldier(owner, s, 'killed');
     }
     // 付着・反応（reactions を渡したときだけ）：当たった攻撃の属性（武器の属性）。外れた攻撃は付かない。同じ順番（守る側 → 攻める側）
-    const hitD = !missD && !noCounterD;
+    const hitD = !missD;
     const hitA = !missA && !noCounterA;
     if (hitD) this.elementHit(enemy, defender, elementA, { damage: toDefender });
     if (hitA) this.elementHit(player, attacker, elementD, { damage: toAttacker });

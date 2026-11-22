@@ -49,7 +49,8 @@
     "description": "切り札（デッキに1枚まで）。光の兵士。HP14・攻撃10・速さ2（遅い）。生き返らない",
     "mpCost": 5,
     "count": 1,
-    "maxCopies": 1
+    "maxCopies": 1,
+    "trump": true
   },
   "fac_king_priest": {
     "name": "聖術師",
@@ -90,7 +91,8 @@
     "description": "切り札（デッキに1枚まで）。攻撃+9・光",
     "mpCost": 5,
     "count": 1,
-    "maxCopies": 1
+    "maxCopies": 1,
+    "trump": true
   },
   "fac_king_lumina": {
     "name": "ルミナ",
@@ -136,7 +138,8 @@
     "description": "切り札（デッキに1枚まで）。兵士に盾15。盾が残っている間、その兵士は状態異常（毒・凍結・やけど・呪い・鈍足・目くらまし・砂・凍傷）を受けない",
     "mpCost": 5,
     "count": 1,
-    "maxCopies": 1
+    "maxCopies": 1,
+    "trump": true
   },
   "fac_king_wall": {
     "name": "城壁",

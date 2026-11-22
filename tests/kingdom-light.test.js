@@ -4,6 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
 import { factionDecks } from '../js/game/Setup.js';
+import { STRATEGIES } from '../js/game/strategies.js';
 import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptionalData, loadFactionCards } from './helpers.js';
 
 const MODE = 'factions';
@@ -95,11 +96,11 @@ test('光の先制：倒せないとき（HPが高い・盾で耐える）は、
   assert.equal(shielded.b.hp, 1);
 });
 
-test('光の先制：守る側でも効く（攻めてきた相手を倒せるなら、守る側は無傷）', () => {
+test('光の先制：守る側では効かない（攻められて戦うときは、ふつうに同時。人間の指示）', () => {
   const { a, b, damaged, game } = clash('foe', 'lightKnight', { attacker: 'p1' });
   assert.equal(game.players.p1.soldiers.includes(a), false, '攻めてきた兵士は倒れる');
-  assert.equal(b.hp, 5, '守る側の光の兵士は無傷');
-  assert.deepEqual(damaged, [a.soldierId], '守る側の soldierDamaged は出ない');
+  assert.equal(b.hp, 2, '守る側の光の兵士は反撃を受ける（無傷にならない）');
+  assert.deepEqual(damaged, [b.soldierId, a.soldierId]);
 });
 
 test('光の先制：目くらまし・霧で光の側の攻撃が外れたら、ふつうの戦い（無傷にならない）', () => {
@@ -108,13 +109,13 @@ test('光の先制：目くらまし・霧で光の側の攻撃が外れたら�
   assert.equal(a.hp, 2, '反撃を受ける');
 });
 
-test('光の先制：両方が光で互いに倒せるなら同時。片方だけ倒せるなら、その側が先制', () => {
+test('光の先制：両方が光でも、先制するのは攻める側だけ', () => {
   const both = clash('lightKnight', 'lightKnight');
-  assert.equal(both.game.players.p1.soldiers.length, 0);
+  assert.equal(both.a.hp, 5, '攻める側は無傷');
   assert.equal(both.game.players.p2.soldiers.length, 0);
-  const one = clash('lightKnight', 'lightWeak');
-  assert.equal(one.a.hp, 5, '倒せる側は無傷');
-  assert.equal(one.game.players.p2.soldiers.length, 0);
+  const one = clash('lightWeak', 'lightKnight');
+  assert.equal(one.game.players.p1.soldiers.length, 0, '倒せない攻める側は、守る側の光の兵士に倒される（同時）');
+  assert.equal(one.b.hp, 3, '守る側は先制しないので、攻める側の攻撃も当たる');
 });
 
 test('光の先制：光以外の兵士には効かない。ルールに lightFirstStrike がなければ効かない', () => {
@@ -232,4 +233,33 @@ test('光の触媒：ルールに書かなければ起きない（光が付着�
   assert.equal(t.hp, 7);
   assert.equal(t.element, 'fire');
   assert.deepEqual(t.attachments.map((a) => a.element), ['light']);
+});
+
+// ================= CPU（smart 系）が切り札を使う =================
+
+test('CPU（smart・guard）：勇者を先に出し、神剣は武器を持った兵士にも重ねて持たせる。神盾は倒されそうな兵士に', () => {
+  for (const name of ['smart', 'guard']) {
+    const { game, play } = setup({ hands: { p1: ['foe', 'lightBlade'], p2: ['bruiser'] } });
+    const s = play('p1', 'foe');
+    play('p1', 'lightBlade', { soldierId: s.soldierId }); // もう武器を持っている
+    game.debugSetHand('p1', ['fac_king_hero', 'fac_king_god_sword']);
+    game.currentPlayer = 'p1';
+    game.players.p1.mp = 20;
+    game.players.p1.playedThisTurn = false;
+    game.players.p1.soldiersPlayedThisTurn = 0;
+    const cards = { ...game.cardDefs };
+    STRATEGIES[name].takeTurn(game, 'p1', seededRng(2), { cards, rules: game.rules, upgrades: {}, discardCount: 0 });
+    const hero = game.players.p1.soldiers.find((x) => x.type === 'fac_king_hero');
+    assert.ok(hero, `${name}：勇者を出す`);
+    assert.equal(hero.weapon, 'fac_king_god_sword', `${name}：神剣は勇者に`);
+  }
+  // 神盾：相手の強い兵士がすぐ前にいて、倒されそうな兵士に
+  const { game, play } = setup({ hands: { p1: ['foe'], p2: ['bruiser'] } });
+  const s = play('p1', 'foe');
+  play('p2', 'bruiser').position = 3;
+  game.debugSetHand('p1', ['fac_king_god_shield']);
+  game.currentPlayer = 'p1';
+  game.players.p1.mp = 20;
+  STRATEGIES.smart.takeTurn(game, 'p1', seededRng(2), { cards: { ...game.cardDefs }, rules: game.rules, upgrades: {}, discardCount: 0 });
+  assert.equal(s.shield, 15);
 });
