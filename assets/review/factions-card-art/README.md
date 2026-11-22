@@ -8,9 +8,9 @@
 
 ## 画像と表示
 
-画像は `assets/style-reference.png` を参照してOpenAI画像生成（ChatGPT）で個別に作成。透過PNG、512×512、各300KB以下。原本を保持したまま配信用に縮小・圧縮。画像ごとの原本ファイル名は `assets/asset-manifest.json`、出典は `assets/CREDITS.md`。
+兵士15種は既存の兵士の絵柄を参照してOpenAI画像生成（ChatGPT）で作成。兵士以外の41種は、14種に既存カードの絵を再利用し、27種を対応する既存の道具・魔法カードを直接参照して修正。術者・竜や、陣営を示すためだけの紋章・装飾枠を加えず、道具・現象そのものを主役にした。精霊は既存の精霊カードを使う。透過PNG、512×512、各300KB以下。原本を保持したまま配信用に縮小・圧縮。画像ごとの原本ファイル名は `assets/asset-manifest.json`、出典は `assets/CREDITS.md`。
 
-カードIDと画像の対応は `js/ui/factionArt.js` に明示し、`art.js` のカードと兵士の両方から参照する。陣営の識別色は王国が青・銀・金、森が緑・木、魔族が紫・骨・魂、竜が赤橙・銅金・雷の青。兵士はカードと同じ透過画像を使い、席の識別は既存のUIに従う。
+カードIDと画像の対応は `js/ui/factionArt.js` に明示し、`art.js` のカードと兵士の両方から参照する。色や構図は対応する既存カードに合わせ、陣営の違いを示すためだけに装飾を足さない。兵士はカードと同じ透過画像を使い、席の識別は既存のUIに従う。
 
 ## モード本体との接続
 
@@ -92,12 +92,16 @@
 | 火山灰の幕 | `fac_dragon_ash_veil` | [画像](../../cards/card-fac-dragon-ash-veil.png) |
 | 幼竜の鱗 | `fac_dragon_whelp_scale` | [画像](../../cards/card-fac-dragon-whelp-scale.png) |
 
+## デザインの基準
+
+武器は武器、魔法は現象、防御は防御手段を主役にする。人物は兵士カード、精霊は精霊カードで描く。既存カードと新カードを同じ大きさで並べる比較は `gallery.html?compare=1` と `comparison.png`。
+
 ## 検証結果
 
 - 全56カードのIDと画像参照、兵士15種の両席の参照、未知のIDが既存処理を使うことを確認。
-- 全56画像: 正方形512×512、透明部分あり、1枚300KB以下、重複画像なし、manifest登録済み。
+- 全56画像: 正方形512×512、透明部分あり、1枚300KB以下、既存絵14種は元画像とバイト一致、manifest登録済み。
 - Chromium: カード56＋兵士15×2席＝86画像を読み込み、画像エラーなし。1100pxで陣営別一覧、390×844で横はみ出しなし・陣営リンクの移動を確認。結果は `validation.json`。
 - 通常モードの画面スモークテスト（`UI_TEST_CHROMIUM=/usr/bin/chromium node ui-tests/smoke.js`）: 兵士配置→51手番・41枚使用で決着→再戦。エラー・警告なし。
 - `node --check js/ui/art.js`・`node --check js/ui/factionArt.js`・`git diff --check` 成功。
 
-確認画像: [王国](kingdom.png)・[森の同盟](forest.png)・[魔族軍](demon.png)・[竜族帝国](dragon.png)・[スマホ](mobile.png)。
+確認画像: [既存カードとの比較](comparison.png)・[王国](kingdom.png)・[森の同盟](forest.png)・[魔族軍](demon.png)・[竜族帝国](dragon.png)・[スマホ](mobile.png)。

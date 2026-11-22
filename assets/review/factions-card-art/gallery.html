@@ -23,7 +23,7 @@
   @media (max-width: 600px) { body { padding: 12px; } .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } }
 </style>
 <h1>4陣営 カードイラスト一覧</h1>
-<nav><a href="?">すべて</a><a href="?faction=kingdom">王国</a><a href="?faction=forest">森の同盟</a><a href="?faction=demon">魔族軍</a><a href="?faction=dragon">竜族帝国</a></nav>
+<nav><a href="?">すべて</a><a href="?faction=kingdom">王国</a><a href="?faction=forest">森の同盟</a><a href="?faction=demon">魔族軍</a><a href="?faction=dragon">竜族帝国</a><a href="?compare=1">既存絵との比較</a></nav>
 <main id="gallery"></main>
 <script type="module">
   const root = new URL('../../../', location.href);
@@ -32,7 +32,9 @@
   const { cardArt, unitArt } = await import(new URL('js/ui/art.js', root));
   const groups = { kingdom: ['王国', '#4d98ce'], forest: ['森の同盟', '#6e9441'], demon: ['魔族軍', '#9466aa'], dragon: ['竜族帝国', '#cc6b3f'] };
   const selected = new URLSearchParams(location.search).get('faction');
+  const compare = new URLSearchParams(location.search).has('compare');
   for (const [faction, [name, accent]] of Object.entries(groups)) {
+    if (compare) continue;
     if (selected && selected !== faction) continue;
     const cards = await (await fetch(new URL(`data/factions/cards/${faction}.json`, root))).json();
     const section = document.createElement('section'); section.style.setProperty('--accent', accent);
@@ -52,6 +54,23 @@
       grid.append(item);
     }
     section.append(title, grid); document.getElementById('gallery').append(section);
+  }
+  if (compare) {
+    document.querySelector('h1').textContent = '既存カードとの構図・絵柄の比較';
+    const pairs = [
+      ['ironSword', '既存：鉄の剣', 'fac_king_lumina_lance', '修正：ルミナスランス'],
+      ['bolt', '既存：雷光', 'fac_king_lumina', '修正：ルミナ'],
+      ['frostBreath', '既存：氷の息', 'fac_forest_water_stream', '修正：水流'],
+      ['heal', '既存：ヒール', 'fac_king_purify', '修正：浄化'],
+      ['minorHeal', '既存：小回復', 'fac_forest_life_drop', '修正：生命の雫'],
+      ['barrier', '既存：結界', 'fac_demon_blood_veil', '修正：血の膜'],
+    ];
+    const grid = document.createElement('div'); grid.className = 'grid'; grid.style.setProperty('--accent', '#ad8959');
+    for (const pair of pairs) for (let i = 0; i < pair.length; i += 2) {
+      const item = document.createElement('article'); item.innerHTML = cardArt(pair[i], 'blue', pair[i + 1]);
+      const label = document.createElement('h3'); label.textContent = pair[i + 1]; item.append(label); grid.append(item);
+    }
+    document.getElementById('gallery').append(grid);
   }
   const images = [...document.images];
   await Promise.all(images.map(image => image.decode()));
