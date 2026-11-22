@@ -768,7 +768,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 | `type` | 中身 | いつ |
 |---|---|---|
-| `room` | `{ roomId, you, hostId, players: [{ playerId, name, connected, left, cpu, castle, deck }], capacity, minPlayers, started, settings, choices, rematchVotes }` … `you` は受け取った人の今の `playerId`（始まる前に誰かが出ると席が詰まって変わる。自分が出たときは `null`）。`hostId` は部屋主。`left` は試合中に自分から部屋を出たか。`cpu` は CPU の強さ（人なら `null`。CPU の `connected` はいつも `true`）。`castle` / `deck` は席の城・デッキ。`settings` は `{ winCondition, deckMode }`。`choices` は選べるもの `{ winConditions, deckModes, castles, decks, cpuLevels }`（どれも `[{ id, name }]`）。`rematchVotes` は「もう1回」を送った人のIDの配列（新しい試合が始まると空に戻る） | 入ったとき・誰かが入った／抜けたとき・設定が変わったとき・始まったとき |
+| `room` | `{ roomId, you, hostId, players: [{ playerId, name, connected, left, cpu, castle, deck, faction }], capacity, minPlayers, started, settings, choices, rematchVotes }` … `you` は受け取った人の今の `playerId`（始まる前に誰かが出ると席が詰まって変わる。自分が出たときは `null`）。`hostId` は部屋主。`left` は試合中に自分から部屋を出たか。`cpu` は CPU の強さ（人なら `null`。CPU の `connected` はいつも `true`）。`castle` / `deck` は席の城・デッキ。`faction` は4陣営モードの席の陣営（ほかのモードは `null`）。`settings` は `{ winCondition, deckMode }`。`choices` は選べるもの `{ winConditions, deckModes, castles, decks, factions, cpuLevels }`（`factions` は4陣営モードの部屋だけ中身が入り、ほかは空。`decks` は4陣営では空）（どれも `[{ id, name }]`）。`rematchVotes` は「もう1回」を送った人のIDの配列（新しい試合が始まると空に戻る） | 入ったとき・誰かが入った／抜けたとき・設定が変わったとき・始まったとき |
 | `event` | `{ event, payload }` … Game のイベント（「Gameが出すイベント」の表）を、その人向けに隠したもの | 起きた順に |
 | `state` | `{ state, playable, upgrades }` … `state` は `getState(自分)`。`playable` は自分の手札の各カードの `{ cardId, ok, reason, needsTarget, targets }`（自分の番でないときは全部 `ok: false`）。`upgrades` は `{ upgradeId: { ok, reason } }` | 操作のたび（その操作のイベントを全部送ったあと）・つないだとき |
 
@@ -793,7 +793,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **始まる前**（`started: false`）
   - `start`：部屋主だけ。CPU を含めて `minPlayers`（2）人以上で始まる。始まったら、その部屋には入れない
   - `setRules`、`args: [{ winCondition?, deckMode?, teams? }]`：部屋主だけ。勝ち方（`"firstDestroy"`：最初に城を落とした人の勝ち／`"lastStanding"`：バトルロイヤル）と山札（`"shared"`：共通の山札／`"own"`：1人1つのデッキ）とチームの分け方（`"off"`：個人戦／`"auto"`：自動で2チーム／`"choose"`：各自で選ぶ。下の「チーム」）
-  - `setSeat`、`args: [{ castle?, deck?, team? }, playerId?]`：席の城の種類・デッキ（`castles.json` / `decks.json` のキー）・チーム（`"t1"`〜`"t4"`。各自で選ぶときに使う）。自分の席は自分で、CPU の席は部屋主が `playerId` を付けて選ぶ。デッキは `deckMode` が `"own"` のときに使われる
+  - `setSeat`、`args: [{ castle?, deck?, faction?, team? }, playerId?]`：席の城の種類・デッキ（`castles.json` / `decks.json` のキー）・**陣営**（`faction`。4陣営モードの部屋だけ。`data.decks` のキー＝`kingdom` / `forest` / `demon` / `dragon`。始まる前だけ。省略すると王国。ほかのモードや、ない陣営は `{ ok: false, reason }`）・チーム（`"t1"`〜`"t4"`。各自で選ぶときに使う）。自分の席は自分で、CPU の席は部屋主が `playerId` を付けて選ぶ。デッキは `deckMode` が `"own"` のときに使われる
   - `addCpu`、`args: [level?]`：部屋主だけ。`level` は `"easy"` / `"normal"`（省略したとき）/ `"hard"`（戦い方は `js/main.js` の `CPU_LEVELS` と同じ：defensive / rush / smart）。名前は「CPU1（つよい）」など。返り値に `playerId`
   - `removeCpu`、`args: [playerId]`：部屋主だけ。CPU を外す（席が詰まる）
   - `leave`：始まる前に出た人は席ごと消え、うしろの席が詰まる（`playerId` が変わるので、画面は `room` の `you` を見る）。人が全員出たら CPU も消える
@@ -1629,7 +1629,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 四大陣営のPR（#163〜#166。まだ main にない。349種）は、カードを取り込みすぎて多すぎたので、**クラシックと同じ作りで組み直した**（人間の指示）。レアリティを使わず、属性の付着と反応を楽しむ。カード表は人間が確定した案（王国15・森14・魔族15・竜13種）のとおり。ただし竜の「竜の鼓動」（竜威）は、竜威のルールが決まっていないので外した（竜は12種）。王国の防御は案どおり身代わり（3MP）で、聖壁の号砲（#176）は入れない。
 
 - **置き場**：`data/factions/`（`factions.json` 陣営の名前・`cards/<陣営>.json` 陣営ごとのカード表・`rules.json`・`elements.json`・`reactions.json`）。`data/modes.json` の `factions`（`hidden`・`available: false`）。`cardSet` はなく、`factionCardSets` を全部合わせたものがカード定義、`factionDecks: true` で**各陣営のカード表がその陣営のデッキ**になる（`js/game/Setup.js` の `factionDecks(factions, cardSets)` → decks.json と同じ形）
-- **遊び方**：1人1つのデッキ（`rules.deckMode: "own"`）。`new Game({ ..., decks: factionDecks(...), setup: { decks: ["kingdom", "dragon"] } })` で席ごとに陣営を選ぶ（省略すると `rules.defaultDeck` の王国）。今は**テスト・シミュレーションだけが読む**（`tests/helpers.js` の `buildData({ mode: "factions" })`・`loadOptionalData("factions")`）。画面（`js/main.js`）・サーバー（`server/server.js`）は `cardSet` のないモードを読まないので、遊べるのは陣営を選ぶ画面ができてから
+- **遊び方**：1人1つのデッキ（`rules.deckMode: "own"`）。`new Game({ ..., decks: factionDecks(...), setup: { decks: ["kingdom", "dragon"] } })` で席ごとに陣営を選ぶ（省略すると `rules.defaultDeck` の王国）。テスト・シミュレーションは `tests/helpers.js` の `buildData({ mode: "factions" })`・`loadOptionalData("factions")` で読む。**サーバー対応済み・画面は未対応**：`server/server.js` の `loadData(dir, "factions")` が陣営ごとのカード表を合わせたカード・`decks`（陣営）・`factions`（陣営IDの配列）・属性・反応を読み、`loadModeData()` に `factions` が入る（部屋に入るとき `body.mode: "factions"`）。部屋（`server/rooms.js`）は席ごとに `setSeat` の `faction` で陣営を選び、始まると `setup.decks` に各席の陣営を渡す（2〜8人・CPU を含む）。**チーム戦（`teams`）と、`deckMode` を `own` 以外にすることは `setRules` で断る**（「4陣営ではチーム戦は使えません」）。忍者のイベントを隠す `stealth` は `shieldBroken` にも付く。テストは `tests/factions-server.test.js`。画面で陣営を選んで遊べるのは UI 側の対応（`factionDecks` を使う試合の読み込み・部屋の陣営選び）のあと
 - **枚数**：案に枚数がないので、**どのカードも2枚**（`count: 2`。王国30・森28・魔族30・竜24枚）にした（仮）
 - **ルール**（`data/factions/rules.json`。全モード共通の `data/rules.json` は変えていない）：クラシックのルールのまま（毎ターン2枚ドロー固定 `drawPerTurn` 2・`drawUntilHand` 0・`drawPerPlayed` false、手札上限6、全カードで MP を使う `mpAllCards`、MP 10/20・毎ターン+3、城HP60、城への魔法は先頭の兵士に当たる、崩壊の刻）に、`deckMode: "own"`・`defaultDeck: "kingdom"` を足し、使わないデッキ編成の数値を外した
 - 属性の強弱の表はクラシックと同じ9属性（`data/factions/elements.json`。写し）

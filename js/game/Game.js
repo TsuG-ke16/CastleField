@@ -248,7 +248,7 @@ const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
   'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
   // 4陣営
-  'soldierHealed', 'castleGuardSet', 'castleGuarded',
+  'soldierHealed', 'castleGuardSet', 'castleGuarded', 'shieldBroken',
 ]);
 export class Game {
   /**
