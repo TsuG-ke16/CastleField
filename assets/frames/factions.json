@@ -1,0 +1,186 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Design reference for later Blender modeling; numeric geometry is authoritative. PNGs are not final seamless UV textures.",
+  "units": "mm",
+  "geometry": {
+    "width": 64,
+    "height": 96,
+    "bodyDepth": 3.52,
+    "cornerRadius": 3,
+    "bevel": 0.6,
+    "frontZ": 1.76,
+    "backZ": -1.76,
+    "frontReliefMax": 0.9,
+    "backReliefMax": 0.8,
+    "clamp": {
+      "centersXY": [
+        [
+          -27,
+          43
+        ],
+        [
+          27,
+          43
+        ],
+        [
+          -27,
+          -43
+        ],
+        [
+          27,
+          -43
+        ]
+      ],
+      "sizeXY": [
+        10,
+        10
+      ],
+      "zRange": [
+        -2.1,
+        2.1
+      ]
+    },
+    "edgeBands": [
+      {
+        "name": "backRail",
+        "zRange": [
+          -1.76,
+          -1.36
+        ]
+      },
+      {
+        "name": "core",
+        "zRange": [
+          -1.36,
+          1.36
+        ]
+      },
+      {
+        "name": "frontRail",
+        "zRange": [
+          1.36,
+          1.76
+        ]
+      }
+    ],
+    "frontInsets": {
+      "illustration": {
+        "left": 11,
+        "top": 15.5,
+        "width": 42,
+        "height": 42,
+        "z": 1.0
+      },
+      "namePanel": {
+        "left": 10.667,
+        "top": 64.267,
+        "width": 42.933,
+        "height": 7.733
+      },
+      "descriptionPanel": {
+        "left": 10.667,
+        "top": 77.467,
+        "width": 42.933,
+        "height": 7.2
+      },
+      "mpMedallion": {
+        "centerPx": [
+          108,
+          121
+        ],
+        "radiusPx": 37
+      }
+    }
+  },
+  "canvas": {
+    "frontAndBack": [
+      512,
+      768
+    ],
+    "edge": [
+      64,
+      768
+    ],
+    "bodyRect": [
+      16,
+      24,
+      480,
+      720
+    ],
+    "edgeBodyRect": [
+      19,
+      24,
+      26,
+      720
+    ],
+    "pixelsPerMm": 7.5
+  },
+  "orientation": {
+    "front": "Look along -Z, screen right = local +X, screen up = local +Y",
+    "back": "Look along +Z, screen right = local -X, screen up = local +Y",
+    "rightEdge": "local +X; front right joins back left",
+    "flip": "Rotate around local Y by 180 degrees; keep +Y upward"
+  },
+  "factions": {
+    "dragon": {
+      "label": "Dragon empire",
+      "source": "exec-08afd176-8361-4680-8e5a-a0c0fe7bee2e.png",
+      "views": {
+        "front": "cards/frame-faction-dragon.png",
+        "edge": "frames/edge-faction-dragon.png",
+        "back": "skins/back-faction-dragon.png"
+      },
+      "front_window_bbox_px": [
+        85,
+        123,
+        428,
+        468
+      ]
+    },
+    "kingdom": {
+      "label": "Kingdom",
+      "source": "exec-03ce3587-d0c6-48f9-b223-811f140a823f.png",
+      "views": {
+        "front": "cards/frame-faction-kingdom.png",
+        "edge": "frames/edge-faction-kingdom.png",
+        "back": "skins/back-faction-kingdom.png"
+      },
+      "front_window_bbox_px": [
+        79,
+        119,
+        435,
+        464
+      ]
+    },
+    "demon": {
+      "label": "Demon army",
+      "source": "exec-1f6ffed3-2cc9-4295-9c9d-92c6f31ff91d.png",
+      "views": {
+        "front": "cards/frame-faction-demon.png",
+        "edge": "frames/edge-faction-demon.png",
+        "back": "skins/back-faction-demon.png"
+      },
+      "front_window_bbox_px": [
+        86,
+        113,
+        433,
+        481
+      ]
+    },
+    "forest": {
+      "label": "Forest alliance",
+      "source": "exec-af1406d2-425a-40c2-b367-9195f9dbdcc2.png",
+      "views": {
+        "front": "cards/frame-faction-forest.png",
+        "edge": "frames/edge-faction-forest.png",
+        "back": "skins/back-faction-forest.png"
+      },
+      "front_window_bbox_px": [
+        88,
+        131,
+        426,
+        473
+      ]
+    }
+  }
+}

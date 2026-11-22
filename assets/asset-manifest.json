@@ -400,5 +400,17 @@
   "cards/card-fac-dragon-fang-sword.png": "exec-f00f2f36-0825-4873-bd01-a58932c2a472.png",
   "cards/card-fac-dragon-flame-breath.png": "exec-e21bd88b-f41f-4474-bc5b-0e2bbf5768d7.png",
   "cards/card-fac-king-holy-ray.png": "exec-982ab9b3-7841-4acb-9a7f-0abff0e49eb6.png",
-  "cards/card-fac-king-infantry.png": "exec-348e8ea9-79e7-4f03-93c8-a9b892e37c13.png"
+  "cards/card-fac-king-infantry.png": "exec-348e8ea9-79e7-4f03-93c8-a9b892e37c13.png",
+  "cards/frame-faction-dragon.png": "exec-08afd176-8361-4680-8e5a-a0c0fe7bee2e.png",
+  "frames/edge-faction-dragon.png": "exec-08afd176-8361-4680-8e5a-a0c0fe7bee2e.png",
+  "skins/back-faction-dragon.png": "exec-08afd176-8361-4680-8e5a-a0c0fe7bee2e.png",
+  "cards/frame-faction-kingdom.png": "exec-03ce3587-d0c6-48f9-b223-811f140a823f.png",
+  "frames/edge-faction-kingdom.png": "exec-03ce3587-d0c6-48f9-b223-811f140a823f.png",
+  "skins/back-faction-kingdom.png": "exec-03ce3587-d0c6-48f9-b223-811f140a823f.png",
+  "cards/frame-faction-demon.png": "exec-1f6ffed3-2cc9-4295-9c9d-92c6f31ff91d.png",
+  "frames/edge-faction-demon.png": "exec-1f6ffed3-2cc9-4295-9c9d-92c6f31ff91d.png",
+  "skins/back-faction-demon.png": "exec-1f6ffed3-2cc9-4295-9c9d-92c6f31ff91d.png",
+  "cards/frame-faction-forest.png": "exec-af1406d2-425a-40c2-b367-9195f9dbdcc2.png",
+  "frames/edge-faction-forest.png": "exec-af1406d2-425a-40c2-b367-9195f9dbdcc2.png",
+  "skins/back-faction-forest.png": "exec-af1406d2-425a-40c2-b367-9195f9dbdcc2.png"
 }

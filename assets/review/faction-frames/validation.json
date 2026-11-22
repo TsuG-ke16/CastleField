@@ -1,0 +1,17 @@
+{
+  "images": 12,
+  "loaded": true,
+  "frontBack": [
+    512,
+    768
+  ],
+  "edge": [
+    64,
+    768
+  ],
+  "desktopWidth": 1200,
+  "mobileWidth": 390,
+  "horizontalOverflow": false,
+  "guide": "SVG loaded and rendered in HTML",
+  "errors": []
+}

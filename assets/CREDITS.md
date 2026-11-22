@@ -618,3 +618,28 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 | `cards/card-fac-dragon-blood-drop.png` | OpenAI画像生成（ChatGPT）。既存の道具・魔法カードを直接参照して修正 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
 | `cards/card-fac-dragon-ash-veil.png` | OpenAI画像生成（ChatGPT）。既存の道具・魔法カードを直接参照して修正 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
 | `cards/card-fac-dragon-whelp-scale.png` | OpenAI画像生成（ChatGPT）。既存の道具・魔法カードを直接参照して修正 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+
+## 4陣営のカードフレーム・裏・側面（2026-11-22）
+
+既存のframe-common/rareを参照してOpenAI画像生成（ChatGPT）で表・側面・裏を同時に作成。王国は上部紋章が外形から出ないよう画像生成で修正。個別PNGは原画の各ビューを切り出して共通キャンバスへ縮小したもの。原本の対応はasset-manifest.json。
+
+| ファイル | 道具・配布元 | 利用条件 | 作成日 |
+|---|---|---|---|
+| `cards/frame-faction-kingdom.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `skins/back-faction-kingdom.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `frames/edge-faction-kingdom.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/faction-frames/kingdom-turnaround.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/frame-faction-forest.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `skins/back-faction-forest.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `frames/edge-faction-forest.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/faction-frames/forest-turnaround.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/frame-faction-demon.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `skins/back-faction-demon.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `frames/edge-faction-demon.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/faction-frames/demon-turnaround.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/frame-faction-dragon.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `skins/back-faction-dragon.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `frames/edge-faction-dragon.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/faction-frames/dragon-turnaround.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+
+`frames/factions.json`・`review/faction-frames/construction.svg` は、この依頼向けに数値で作成した造形ガイド。生成原画を高さ・法線マップへ変換したものではない。
