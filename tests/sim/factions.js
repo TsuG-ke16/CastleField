@@ -1,6 +1,8 @@
 // 4陣営モード（data/factions/）のシミュレーション。陣営の組み合わせごとに、席を入れかえて回す（先攻・後攻の差を消すため）。
 //   node tests/sim/factions.js [--games 100] [--seed 1] [--strategy smart] [--json]
+//     [--rules '{"castleAttach":true}'] [--spirit-every 2] [--spirit-attach-to castle]
 //   … 陣営A × 陣営B（同じ陣営どうしも）を games 試合ずつ、席を入れかえてもう games 試合。陣営A の勝率・平均手番・決着の理由・反応の回数を出す
+//   --rules は data/factions/rules.json の一部を上書き、--spirit-every / --spirit-attach-to は森の常時の精霊の everyTurns / spiritAttachTo を上書き（data/ は書き換えない）
 // 同じ引数なら、誰が回しても同じ結果になる。
 import { buildData, loadOptionalData } from '../helpers.js';
 import { runMatch } from './sim.js';
@@ -14,8 +16,21 @@ const games = Number(opt('games', 100));
 const seed = Number(opt('seed', 1));
 const strategy = opt('strategy', 'smart');
 const MODE = 'factions';
-const { rules, cards } = buildData({ mode: MODE });
+const built = buildData({ mode: MODE });
+const cards = built.cards;
+const rules = { ...built.rules, ...JSON.parse(opt('rules', '{}')) };
 const opts = loadOptionalData(MODE);
+// 森の常時の精霊の上書き（試すだけ。data/ は変えない）
+const spiritEvery = opt('spirit-every', null);
+const spiritAttachTo = opt('spirit-attach-to', null);
+if (spiritEvery !== null || spiritAttachTo !== null) {
+  opts.decks = structuredClone(opts.decks);
+  for (const d of Object.values(opts.decks)) {
+    if (!d.passiveSpirits) continue;
+    if (spiritEvery !== null) d.passiveSpirits.everyTurns = Number(spiritEvery);
+    if (spiritAttachTo !== null) d.passiveSpirits.spiritAttachTo = spiritAttachTo;
+  }
+}
 const factions = Object.keys(opts.decks);
 
 /** a（席1）と b（席2）で games 試合。結果の一覧 */
@@ -44,6 +59,16 @@ for (let i = 0; i < factions.length; i++) {
     const reactions = {};
     for (const r of all) for (const [k, v] of Object.entries(r.reactions)) reactions[k] = (reactions[k] || 0) + v;
     const turns = decided.map((r) => r.turns);
+    // 城の付着と反応（試作）
+    const castleReactions = {};
+    for (const r of all) for (const [k, v] of Object.entries(r.castleReactions)) castleReactions[k] = (castleReactions[k] || 0) + v;
+    const hpDamage = all.reduce((x, r) => x + r.castleHpDamage, 0);
+    const reactionDamage = all.reduce((x, r) => x + r.castleReactionDamage, 0);
+    // 先に反応を起こした側が勝つ割合（反応が1回以上あった試合のうち。勝者がいる試合だけ）
+    const firstWin = (key) => {
+      const list = all.filter((r) => r[key] && r.winner);
+      return list.length ? { games: list.length, rate: list.filter((r) => r.winner === r[key]).length / list.length } : null;
+    };
     rows.push({
       a, b, games: all.length, decided: decided.length,
       aWinRate: aWins / (decided.length || 1),
@@ -53,6 +78,11 @@ for (let i = 0; i < factions.length; i++) {
       reasons,
       reactionsPerGame: Object.values(reactions).reduce((x, y) => x + y, 0) / all.length,
       reactions,
+      castleReactionsPerGame: Object.values(castleReactions).reduce((x, y) => x + y, 0) / all.length,
+      castleReactions,
+      castleReactionDamageShare: hpDamage ? reactionDamage / hpDamage : 0,
+      firstReactorWin: firstWin('firstReactionBy'),
+      firstCastleReactorWin: firstWin('firstCastleReactionBy'),
     });
   }
 }
@@ -62,13 +92,16 @@ if (args.includes('--json')) {
   console.log(JSON.stringify(rows, null, 2));
 } else {
   console.log(`4陣営モード・${strategy} 同士・各組み合わせ ${games}×2 試合（席を入れかえ）・シード ${seed}`);
-  console.log('| 陣営A × 陣営B | 決着 | A の勝率 | 先攻の勝率 | 平均手番（最大） | 決着の理由 | 反応/試合 |');
-  console.log('|---|---|---|---|---|---|---|');
+  console.log('| 陣営A × 陣営B | 決着 | A の勝率 | 先攻の勝率 | 平均手番（最大） | 決着の理由 | 反応/試合 | 城の反応/試合 | 城の反応のダメージの割合 | 先に反応した側の勝率 | 先に城で反応した側の勝率 |');
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|');
+  const fw = (x) => (x ? `${pct(x.rate)}（${x.games}）` : '—');
   const name = (f) => opts.decks[f].name;
   for (const r of rows) {
     const reasons = Object.entries(r.reasons).map(([k, v]) => `${k} ${v}`).join('・');
-    console.log(`| ${name(r.a)} × ${name(r.b)} | ${r.decided}/${r.games} | ${r.a === r.b ? '—' : pct(r.aWinRate)} | ${pct(r.firstPlayerWinRate)} | ${r.avgTurns?.toFixed(1)}（${r.maxTurns}） | ${reasons} | ${r.reactionsPerGame.toFixed(2)} |`);
+    console.log(`| ${name(r.a)} × ${name(r.b)} | ${r.decided}/${r.games} | ${r.a === r.b ? '—' : pct(r.aWinRate)} | ${pct(r.firstPlayerWinRate)} | ${r.avgTurns?.toFixed(1)}（${r.maxTurns}） | ${reasons} | ${r.reactionsPerGame.toFixed(2)} | ${r.castleReactionsPerGame.toFixed(2)} | ${pct(r.castleReactionDamageShare)} | ${fw(r.firstReactorWin)} | ${fw(r.firstCastleReactorWin)} |`);
   }
   console.log('\n反応の回数（全試合）');
   for (const r of rows) console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.reactions).map(([k, v]) => `${k} ${v}`).join('・') || 'なし'}`);
+  console.log('\n城に起きた反応の回数（全試合）');
+  for (const r of rows) console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.castleReactions).map(([k, v]) => `${k} ${v}`).join('・') || 'なし'}`);
 }
