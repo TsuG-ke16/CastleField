@@ -1,12 +1,13 @@
 import { cardArt, icon } from './art.js';
 import { KIND_LABEL } from './text.js';
-import { cardSkinNow, frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
+import { cardSkinNow, FACTION_IDS, factionFrameFront, factionFromCard, frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
 import { rankSkinFront } from './skinArt.js';
 
-/** skin：ランク報酬のカードスキン（ランクの id。省略すると装備中のランクカード）。枠が変わるだけで、レアリティの色・光は出さない（common と同じ扱い） */
-export function mountMiniCard(root, type, def, rarities, { showName = true, skin = cardSkinNow() } = {}) {
-  const skinPath = skin && !def?.monster ? rankSkinFront(skin) : null;
-  const path = skinPath ?? frameAsset(def, rarities, null);
+/** skin：ランク報酬のカードスキン（ランクの id。省略すると装備中のランクカード）。4陣営カードは専用陣営フレームを優先する */
+export function mountMiniCard(root, type, def, rarities, { showName = true, skin = cardSkinNow(), faction = null } = {}) {
+  const resolvedFaction = def?.monster ? null : (faction && FACTION_IDS.includes(faction) ? faction : factionFromCard(type, def));
+  const skinPath = !resolvedFaction && skin && !def?.monster ? rankSkinFront(skin) : null;
+  const path = (resolvedFaction ? factionFrameFront(resolvedFaction) : null) ?? skinPath ?? frameAsset(def, rarities, null, type);
   if (!path) {
     root.innerHTML = cardArt(type, 'blue', def?.name ?? '');
     return root;
@@ -14,7 +15,8 @@ export function mountMiniCard(root, type, def, rarities, { showName = true, skin
   root.classList.add('mini-card');
   if (def?.monster) root.dataset.beast = def.monster;
   if (def?.effect === 'wild') root.classList.add('wild');
-  if (skinPath) { root.dataset.rarity = 'common'; root.dataset.skin = skin; }
+  if (resolvedFaction) { root.dataset.faction = resolvedFaction; }
+  else if (skinPath) { root.dataset.rarity = 'common'; root.dataset.skin = skin; }
   else if (def?.rarity && rarities?.[def.rarity]) root.dataset.rarity = def.rarity;
   const frame = document.createElement('img');
   frame.className = 'mini-card-frame';

@@ -10,7 +10,7 @@ import { groupStarts, sortHand } from './handOrder.js';
 import { KIND_LABEL, cardDescription, cardShort, slotNote } from './text.js';
 import { cardArt, icon, isAssetReady } from './art.js';
 import { sound } from './Sound.js';
-import { cardSkinNow, frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
+import { cardSkinNow, factionFromCard, frameAsset, kindIcon, rarityIcon, rarityMark } from './cardFrame.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -189,10 +189,12 @@ export class HandView {
     const mpCost = this.mpCosts?.[card.type] ?? 0;
     el.innerHTML = '<span class="card-kind"></span><div class="card-art"></div><span class="card-name"></span>' +
       '<span class="card-short"></span><span class="card-exhaust">使い切り</span>';
-    // ランクカード（表の枠）を装備しているときは、レアリティの色・光を出さない（common と同じ扱い）
-    const skin = def.monster ? null : cardSkinNow();
+    // 4陣営カードは専用フレームを優先。通常モードでランクカードを装備しているときはレアリティの色・光を出さない
+    const faction = def.monster ? null : factionFromCard(card.type, def);
+    const skin = (def.monster || faction) ? null : cardSkinNow();
+    if (faction) el.dataset.faction = faction;
     if (skin) el.dataset.skin = skin;
-    if (def.rarity && this.rarities?.[def.rarity]) {
+    if (!faction && def.rarity && this.rarities?.[def.rarity]) {
       el.dataset.rarity = skin ? 'common' : def.rarity;
       el.style.setProperty('--rarity', this.rarities[def.rarity].color);
       const badge = document.createElement('span');
@@ -203,7 +205,7 @@ export class HandView {
       badge.setAttribute('aria-label', badge.title);
       el.appendChild(badge);
     }
-    const framePath = frameAsset(def, this.rarities);
+    const framePath = frameAsset(def, this.rarities, undefined, card.type);
     if (framePath) {
       const frame = document.createElement('img');
       frame.className = 'card-frame';

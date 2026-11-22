@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>4陣営 3Dカードフレーム 実機検証</title>
+<base href="../">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/card-base.css">
+<link rel="stylesheet" href="css/rarity-assets.css">
+<link rel="stylesheet" href="css/card-zoom.css">
+<style>
+  body { margin: 0; background: #161922; color: #f3f4f6; font-family: system-ui, sans-serif; padding: 24px; }
+  h1 { font-size: 18px; margin: 0 0 16px; }
+  #app { display: grid; grid-template-columns: repeat(4, 240px); gap: 36px; justify-content: center; padding: 28px 0; }
+  .slot { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .stage { position: relative; width: 220px; height: 330px; }
+  .zoom-card { position: relative; width: 220px; height: 330px; }
+  .meta { font-size: 12px; color: #cbd5e1; text-align: center; }
+</style>
+</head>
+<body>
+<h1 id="status">Loading 4 faction 3D card frames...</h1>
+<div id="app"></div>
+<script type="module">
+import { mountMiniCard } from './js/ui/cardView.js';
+import { createCardGL, preloadCardGL } from './js/ui/CardGL.js';
+
+const params = new URLSearchParams(location.search);
+const angleDeg = Number(params.get('angle') ?? 0);
+const tiltX = Number(params.get('tiltX') ?? 0);
+
+const SAMPLES = [
+  { faction: 'kingdom', file: 'data/factions/cards/kingdom.json', type: 'fac_king_infantry' },
+  { faction: 'forest', file: 'data/factions/cards/forest.json', type: 'fac_forest_bark_shield' },
+  { faction: 'demon', file: 'data/factions/cards/demon.json', type: 'fac_demon_imp' },
+  { faction: 'dragon', file: 'data/factions/cards/dragon.json', type: 'fac_dragon_flame_breath' },
+];
+
+function yQuat(deg) {
+  const half = (deg * Math.PI) / 360;
+  return [Math.cos(half), 0, Math.sin(half), 0];
+}
+
+const app = document.getElementById('app');
+const controllers = [];
+const results = [];
+
+for (const s of SAMPLES) {
+  const defs = await (await fetch(s.file)).json();
+  const def = defs[s.type] ?? Object.values(defs)[0];
+  const slot = document.createElement('div');
+  slot.className = 'slot';
+  const stage = document.createElement('div');
+  stage.className = 'stage';
+  const card = document.createElement('div');
+  card.className = 'zoom-card';
+  stage.append(card);
+  const meta = document.createElement('div');
+  meta.className = 'meta';
+  meta.textContent = `${s.faction}: ${def.name}`;
+  slot.append(stage, meta);
+  app.append(slot);
+
+  mountMiniCard(card, s.type, def, null);
+  // 画像読み込み待ち
+  await Promise.all([...card.querySelectorAll('img')].map((img) =>
+    img.complete ? null : new Promise((r) => { img.onload = img.onerror = r; })
+  ));
+
+  let gl = null;
+  try {
+    await preloadCardGL(card);
+    gl = await createCardGL(card, { stage });
+  } catch (err) {
+    console.warn(err);
+  }
+  const modelKey = stage.querySelector('canvas.zoom-gl-canvas')?.dataset.model ?? '2d-fallback';
+  meta.textContent = `${s.faction} (${def.name}) — ${modelKey}`;
+  if (gl) {
+    gl.render({ quaternion: yQuat(angleDeg), tiltX, tiltY: 0 });
+    controllers.push(gl);
+  }
+  results.push({ faction: s.faction, type: s.type, modelKey, hasGL: Boolean(gl) });
+}
+
+window.__FACTION_VERIFY__ = {
+  results,
+  setAngle(deg, tx = 0) {
+    const q = yQuat(deg);
+    for (const c of controllers) c.render({ quaternion: q, tiltX: tx, tiltY: 0 });
+  },
+};
+document.getElementById('status').textContent = `Ready (angle=${angleDeg}°): ` + results.map((r) => `${r.faction}=${r.modelKey}`).join(' | ');
+</script>
+</body>
+</html>
