@@ -69,7 +69,8 @@
         "top": 15.5,
         "width": 42,
         "height": 42,
-        "z": 1.0
+        "z": 1.0,
+        "note": "Artwork mount beneath the decorated aperture; border and MP medallion can overlap it."
       },
       "namePanel": {
         "left": 10.667,
@@ -89,6 +90,18 @@
           121
         ],
         "radiusPx": 37
+      },
+      "illustrationSafeSubject": {
+        "left": 14.933,
+        "top": 23.333,
+        "width": 34.133,
+        "height": 34.133,
+        "canvasRectPx": [
+          128,
+          199,
+          256,
+          256
+        ]
       }
     }
   },
@@ -124,63 +137,72 @@
   "factions": {
     "dragon": {
       "label": "Dragon empire",
-      "source": "exec-08afd176-8361-4680-8e5a-a0c0fe7bee2e.png",
+      "source": "exec-06a8c8cc-266b-4e80-a48f-245fc05ec237.png",
       "views": {
         "front": "cards/frame-faction-dragon.png",
         "edge": "frames/edge-faction-dragon.png",
         "back": "skins/back-faction-dragon.png"
       },
       "front_window_bbox_px": [
-        85,
-        123,
-        428,
-        468
-      ]
+        97,
+        157,
+        417,
+        472
+      ],
+      "motif": "重なった鱗・爪・紅玉",
+      "modelingNotes": "Gold-edged red scales on a continuous red core. Ivory claws wrap all four corners. Scale rows are separately fitted to each face and end on the shared edge rail."
     },
     "kingdom": {
       "label": "Kingdom",
-      "source": "exec-03ce3587-d0c6-48f9-b223-811f140a823f.png",
+      "source": "exec-9d802aff-625e-45c8-b6fd-d8af0042457e.png",
       "views": {
         "front": "cards/frame-faction-kingdom.png",
         "edge": "frames/edge-faction-kingdom.png",
         "back": "skins/back-faction-kingdom.png"
       },
       "front_window_bbox_px": [
-        79,
+        92,
         119,
-        435,
+        425,
         464
-      ]
+      ],
+      "motif": "銀の翼・王冠・青い宝石",
+      "modelingNotes": "Cobalt enamel core, silver feather rails and gold trim; four corner gem brackets plus matching mid-height gem collars. Mirror front-right collar onto back-left collar."
     },
     "demon": {
       "label": "Demon army",
-      "source": "exec-1f6ffed3-2cc9-4295-9c9d-92c6f31ff91d.png",
+      "source": "exec-17f70fed-9004-455a-8c53-506620f6df4b.png",
       "views": {
         "front": "cards/frame-faction-demon.png",
         "edge": "frames/edge-faction-demon.png",
         "back": "skins/back-faction-demon.png"
       },
       "front_window_bbox_px": [
-        86,
-        113,
-        433,
-        481
-      ]
+        96,
+        143,
+        419,
+        466
+      ],
+      "motif": "黒鉄・骨の角・紫水晶",
+      "modelingNotes": "Obsidian corner brackets wrap the purple iron core. Ivory rib relief terminates on common metal rails; back ribs may have a different pattern without requiring a seam match."
     },
     "forest": {
       "label": "Forest alliance",
-      "source": "exec-af1406d2-425a-40c2-b367-9195f9dbdcc2.png",
+      "source": "exec-8366a03b-a92a-419c-b4a9-0d9bdfb4a4ec.png",
       "views": {
         "front": "cards/frame-faction-forest.png",
         "edge": "frames/edge-faction-forest.png",
         "back": "skins/back-faction-forest.png"
       },
       "front_window_bbox_px": [
-        88,
-        131,
-        426,
-        473
-      ]
+        105,
+        154,
+        413,
+        468
+      ],
+      "motif": "編み根・琥珀・生命樹",
+      "modelingNotes": "Braided wood roots and brass rails; amber root knots wrap all four corners, with shared brass collars at local Y=0. Continue the two root strands around the side before adding leaves."
     }
-  }
+  },
+  "designRevision": 2
 }
