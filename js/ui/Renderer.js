@@ -107,31 +107,23 @@ export class Renderer {
     for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = icon(el.dataset.icon);
     this.buildScenery();
     this.fieldGL = new FieldGL($('app'), $('scenery'));
+    this.fieldGL.onProjectOverlay = () => this.update3DOverlay();
+    this.fieldGL.onCameraStateChange = (st) => this.syncCameraUI(st);
     this.buildRoad();
 
-    // 盤面のタップ：対象を選んでいるときは対象を、そうでなければ兵士・魔物の情報を出す
-    this.el.board.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.targetable,.soldier,.monster,.castle')) { e.preventDefault(); e.target.click(); } });
-    this.el.board.addEventListener('click', (e) => {
-      if (this.targets) {
-        this.onTargetTap?.(this.targetFromEl(e.target));
-        return;
-      }
-      const castle=e.target.closest('.castle');
-      if(castle){const id=castle.dataset.playerId;this.onCastleTap?.({playerId:id,...this.players[id]});return;}
-      const sEl = e.target.closest('.soldier');
-      if (sEl) {
-        const s = this.soldiers.get(sEl.dataset.id);
-        if (s) this.onSoldierTap?.({ ...s, el: undefined });
-        return;
-      }
-      const mEl = e.target.closest('.monster');
-      if (mEl) {
-        const m = this.monsters.get(mEl.dataset.id);
-        if (m) this.onMonsterTap?.({ ...m, el: undefined });
+    // 盤面のタップ＆3Dレイキャスト＆カメラジェスチャー操作
+    this._suppressBoardClick = false;
+    this.el.board.addEventListener('keydown', (e) => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.closest('.targetable,.soldier,.monster,.castle,.cell')) {
+        e.preventDefault();
+        e.target.click();
       }
     });
-    window.addEventListener('resize', () => { this.layoutStacks(); this.fitPlaza(); });
+    this.el.board.addEventListener('click', (e) => this.handleBoardClick(e));
+    window.addEventListener('resize', () => { this.layoutStacks(); this.fitPlaza(); this.update3DOverlay(); });
     this.buildPlazaControls();
+    this.buildCameraControls();
+    this.setupCameraGestures();
   }
 
   get laneLength() {
@@ -214,6 +206,8 @@ export class Renderer {
         const cell = cells.appendChild(document.createElement('div'));
         // 真ん中のマス（魔物・ワールドボスの居場所）は、作るときから印を付ける（道のマスの数が奇数なら上下どちらから見ても同じ行）
         cell.className = L % 2 === 1 && i === (L - 1) / 2 ? 'cell mid' : 'cell';
+        cell.dataset.lane = String(n);
+        cell.dataset.row = String(i);
         cell.innerHTML = '<span class="stone"></span>';
       }
     }
@@ -287,6 +281,8 @@ export class Renderer {
       this.el.castle.me.hidden = this.el.castle.opp.hidden = this.isPlaza;
       this.el.field.hidden = this.isPlaza;
       this.fieldGL?.setHidden(this.isPlaza);
+      if (this.cameraBar) this.cameraBar.hidden = this.isPlaza || Boolean(this.fieldGL?.disabled);
+      if (this.isPlaza) this.clear3DOverlay();
       if (this.isPlaza) {
         this.zoom = 1;
     this.monsterBirths = new Map();
@@ -1138,10 +1134,11 @@ export class Renderer {
 
   /** タップされた要素 → 対象（光っている対象でなければ null） */
   targetFromEl(node) {
-    if (!this.targets) return null;
+    if (!this.targets || !node?.closest) return null;
     const sEl = node.closest('.soldier');
     const mEl = node.closest('.monster');
     const cEl = node.closest('.castle');
+    const cellEl = node.closest('.cell');
     const lEl = node.closest('.lane');
     if (sEl) return this.targets.find(x => x.soldierId === sEl.dataset.id) ?? (!this.isPlaza ? this.targets.find(x => x.roadId && this.laneOf(x.roadId) === this.laneOf(this.soldier(sEl.dataset.id)?.roadId)) : null) ?? null;
     if (mEl) return this.targets.find(x => x.monsterId === mEl.dataset.id) ?? (!this.isPlaza ? this.targets.find(x => x.roadId && this.laneOf(x.roadId) === this.laneOf(this.monster(mEl.dataset.id)?.roadId)) : null) ?? null;
@@ -1150,7 +1147,411 @@ export class Renderer {
       const options = this.targets.filter(x => this.ownerOf(x.playerId) === playerId && !x.roadId && !x.soldierId && !x.monsterId);
       return options.length > 1 ? {options} : options[0] ?? null;
     }
+    if (cellEl && cellEl.dataset.lane !== undefined) {
+      const laneIdx = Number(cellEl.dataset.lane);
+      const laneMatch = this.targets.find((x) => x.roadId && this.laneOf(x.roadId) === laneIdx);
+      if (laneMatch) return laneMatch;
+    }
     if (lEl) return this.targets.find((x) => x.roadId && this.laneOf(x.roadId) === Number(lEl.dataset.lane)) ?? null;
     return null;
+  }
+
+  /** 3D Raycaster のヒット結果 → 対象（光っている対象でなければ null） */
+  targetFrom3DPick(pick) {
+    if (!this.targets || !pick?.hits?.length) return null;
+    // 1. Direct soldier / monster / castle target match
+    for (const h of pick.hits) {
+      if (h.kind === 'soldier' && h.soldierId) {
+        const direct = this.targets.find((x) => x.soldierId === h.soldierId);
+        if (direct) return direct;
+      }
+      if (h.kind === 'monster' && h.monsterId) {
+        const direct = this.targets.find((x) => x.monsterId === h.monsterId);
+        if (direct) return direct;
+      }
+      if (h.kind === 'castle' && h.side) {
+        const playerId = h.side === 'me' ? this.viewerId : this.opponentOf(this.viewerId);
+        const options = this.targets.filter((x) => this.ownerOf(x.playerId) === playerId && !x.roadId && !x.soldierId && !x.monsterId);
+        if (options.length) return options.length > 1 ? { options } : options[0];
+      }
+    }
+    // 2. Lane target match (from hitting any of the 5 stepping stones, soldier, or monster in that lane)
+    if (!this.isPlaza) {
+      for (const h of pick.hits) {
+        if (typeof h.lane === 'number') {
+          const laneMatch = this.targets.find((x) => x.roadId && this.laneOf(x.roadId) === h.lane);
+          if (laneMatch) return laneMatch;
+        }
+      }
+    }
+    return null;
+  }
+
+  /** 盤面クリック処理：3D Raycaster と 3D投影DOM の両方を統合して解決する */
+  handleBoardClick(e) {
+    if (e.target.closest('#camera-bar, .plaza-zoom')) return;
+    if (this._suppressBoardClick) {
+      this._suppressBoardClick = false;
+      return;
+    }
+
+    const isKeyboardActivate = e.detail === 0;
+    const is3DActive = Boolean(!this.isPlaza && this.fieldGL && !this.fieldGL.hidden && !this.fieldGL.disabled && this.fieldGL.stageGroup);
+    const pick = (!isKeyboardActivate && is3DActive) ? this.fieldGL.pickAtScreen(e.clientX, e.clientY) : { hits: [], primary: null };
+
+    if (this.targets) {
+      const target = this.targetFrom3DPick(pick) ?? this.targetFromEl(e.target);
+      this.onTargetTap?.(target);
+      return;
+    }
+
+    // Standard inspection / appreciation focus tap
+    const domSoldier = e.target.closest('.soldier');
+    const domMonster = e.target.closest('.monster');
+    const domCastle = e.target.closest('.castle');
+
+    // Priority 1: Soldier (either direct badge click or 3D raycast hit)
+    const soldierId = domSoldier?.dataset?.id ?? (pick.primary?.kind === 'soldier' ? pick.primary.soldierId : null);
+    if (soldierId) {
+      const s = this.soldiers.get(soldierId);
+      if (s) {
+        if (is3DActive && this.fieldGL.cameraMode === 'appreciation') {
+          this.fieldGL.focusOnTarget({ kind: 'soldier', id: soldierId });
+        }
+        this.onSoldierTap?.({ ...s, el: undefined });
+        return;
+      }
+    }
+
+    // Priority 2: Monster
+    const monsterId = domMonster?.dataset?.id ?? (pick.primary?.kind === 'monster' ? pick.primary.monsterId : null);
+    if (monsterId) {
+      const m = this.monsters.get(monsterId);
+      if (m) {
+        if (is3DActive && this.fieldGL.cameraMode === 'appreciation') {
+          this.fieldGL.focusOnTarget({ kind: 'monster', id: monsterId });
+        }
+        this.onMonsterTap?.({ ...m, el: undefined });
+        return;
+      }
+    }
+
+    // Priority 3: Castle
+    const castleSide = domCastle?.dataset?.side ?? (pick.primary?.kind === 'castle' ? pick.primary.side : null);
+    if (domCastle || castleSide) {
+      const id = domCastle?.dataset?.playerId ?? (castleSide === 'me' ? this.viewerId : this.opponentOf(this.viewerId));
+      if (is3DActive && this.fieldGL.cameraMode === 'appreciation' && castleSide) {
+        this.fieldGL.focusOnTarget({ kind: 'castle', side: castleSide });
+      }
+      this.onCastleTap?.({ playerId: id, ...this.players[id] });
+      return;
+    }
+
+    // Priority 4: Stepping stone in Appreciation Mode focuses camera on that stone
+    if (is3DActive && this.fieldGL.cameraMode === 'appreciation' && pick.primary?.kind === 'stone') {
+      this.fieldGL.focusOnTarget({ kind: 'stone', lane: pick.primary.lane, row: pick.primary.row });
+    }
+  }
+
+  /** 3D カメラモード切替・注目・リセット UI バー */
+  buildCameraControls() {
+    const bar = document.createElement('div');
+    bar.id = 'camera-bar';
+    bar.className = 'camera-bar';
+    bar.setAttribute('role', 'toolbar');
+    bar.setAttribute('aria-label', '3Dカメラ視点操作');
+    bar.innerHTML = `
+      <button type="button" class="cam-btn active" data-cam-mode="battle" aria-pressed="true" title="戦闘3Dカメラ（標準）">3D</button>
+      <button type="button" class="cam-btn" data-cam-mode="overhead" aria-pressed="false" title="俯瞰カメラ">俯瞰</button>
+      <button type="button" class="cam-btn" data-cam-mode="appreciation" aria-pressed="false" title="低角度の鑑賞カメラ">鑑賞</button>
+      <button type="button" class="cam-btn cam-act" data-cam-act="focus" title="注目対象を順番にフォーカス" aria-label="注目対象を切り替え">🎯</button>
+      <button type="button" class="cam-btn cam-act" data-cam-act="reset" title="元の視点へ即時リセット (R)" aria-label="元の視点へ戻す">⟲</button>
+    `;
+    for (const evType of ['pointerdown', 'click', 'dblclick']) {
+      bar.addEventListener(evType, (e) => e.stopPropagation());
+    }
+    bar.addEventListener('click', (e) => {
+      const modeBtn = e.target.closest('[data-cam-mode]');
+      if (modeBtn) {
+        this.fieldGL?.setCameraMode(modeBtn.dataset.camMode);
+        return;
+      }
+      const actBtn = e.target.closest('[data-cam-act]');
+      if (!actBtn) return;
+      if (actBtn.dataset.camAct === 'focus') {
+        this.fieldGL?.cycleFocusTarget();
+      } else if (actBtn.dataset.camAct === 'reset') {
+        this.fieldGL?.resetCamera({ instant: true });
+      }
+    });
+    this.el.board.appendChild(bar);
+    this.cameraBar = bar;
+  }
+
+  syncCameraUI(camState) {
+    if (!this.cameraBar || !camState) return;
+    for (const btn of this.cameraBar.querySelectorAll('[data-cam-mode]')) {
+      const on = btn.dataset.camMode === camState.mode && !camState.focusTarget;
+      btn.classList.toggle('active', btn.dataset.camMode === camState.mode);
+      btn.setAttribute('aria-pressed', String(on));
+    }
+    const focusBtn = this.cameraBar.querySelector('[data-cam-act="focus"]');
+    if (focusBtn) {
+      focusBtn.classList.toggle('active', Boolean(camState.focusTarget));
+      focusBtn.title = camState.focusTarget ? `注目中：${camState.focusTarget.label}（押すと次へ）` : '注目対象を順番にフォーカス';
+    }
+  }
+
+  /** PCマウス（ドラッグ回転・ホイールズーム・ダブルクリック注目）＆スマホタッチ（1本指回転・2本指ピンチズーム） */
+  setupCameraGestures() {
+    const board = this.el.board;
+    let dragState = null;
+    let pinchState = null;
+    let lastTapTime = 0;
+    let lastTapX = 0;
+    let lastTapY = 0;
+
+    const is3DReady = () => Boolean(!this.isPlaza && this.fieldGL && !this.fieldGL.hidden && !this.fieldGL.disabled && this.fieldGL.stageGroup);
+
+    board.addEventListener('pointerdown', (e) => {
+      if (!is3DReady()) return;
+      if (e.target.closest('#camera-bar, .plaza-zoom')) return;
+      if (e.pointerType === 'touch' && pinchState) return;
+      dragState = {
+        pointerId: e.pointerId,
+        startX: e.clientX,
+        startY: e.clientY,
+        lastX: e.clientX,
+        lastY: e.clientY,
+        button: e.button ?? 0,
+        shiftKey: e.shiftKey,
+        moved: false,
+      };
+    });
+
+    window.addEventListener('pointermove', (e) => {
+      if (!dragState || e.pointerId !== dragState.pointerId || pinchState) return;
+      if (!is3DReady()) { dragState = null; return; }
+      const totalDist = Math.hypot(e.clientX - dragState.startX, e.clientY - dragState.startY);
+      if (!dragState.moved) {
+        if (totalDist < 7) return;
+        dragState.moved = true;
+        this._suppressBoardClick = true;
+      }
+      const dx = e.clientX - dragState.lastX;
+      const dy = e.clientY - dragState.lastY;
+      dragState.lastX = e.clientX;
+      dragState.lastY = e.clientY;
+
+      if (dragState.shiftKey || e.shiftKey || dragState.button === 1 || dragState.button === 2) {
+        this.fieldGL.panBy(-dx * 0.016, -dy * 0.016);
+      } else {
+        this.fieldGL.orbitBy(-dx * 0.0075, dy * 0.0058);
+      }
+    });
+
+    const endPointer = (e) => {
+      if (!dragState || e.pointerId !== dragState.pointerId) return;
+      const wasMoved = dragState.moved;
+      dragState = null;
+      if (wasMoved) {
+        setTimeout(() => { this._suppressBoardClick = false; }, 60);
+        return;
+      }
+      // Mobile double-tap to focus target
+      if (e.pointerType === 'touch' && is3DReady() && !this.targets) {
+        const now = performance.now();
+        if (now - lastTapTime < 320 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 28) {
+          lastTapTime = 0;
+          const pick = this.fieldGL.pickAtScreen(e.clientX, e.clientY);
+          if (pick.primary) {
+            this.fieldGL.focusOnTarget(pick.primary);
+          } else {
+            this.fieldGL.resetCamera();
+          }
+        } else {
+          lastTapTime = now;
+          lastTapX = e.clientX;
+          lastTapY = e.clientY;
+        }
+      }
+    };
+    window.addEventListener('pointerup', endPointer);
+    window.addEventListener('pointercancel', () => { dragState = null; });
+
+    board.addEventListener('contextmenu', (e) => {
+      if (is3DReady()) e.preventDefault();
+    });
+
+    // PC Mouse Wheel Zoom
+    board.addEventListener('wheel', (e) => {
+      if (!is3DReady()) return;
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 1.085 : 0.92;
+      this.fieldGL.zoomBy(factor);
+    }, { passive: false });
+
+    // PC Double-click to focus 3D target (or reset if empty space)
+    board.addEventListener('dblclick', (e) => {
+      if (!is3DReady() || this.targets || e.target.closest('#camera-bar')) return;
+      const pick = this.fieldGL.pickAtScreen(e.clientX, e.clientY);
+      if (pick.primary) {
+        this.fieldGL.focusOnTarget(pick.primary);
+      } else {
+        this.fieldGL.resetCamera();
+      }
+    });
+
+    // Mobile 2-finger pinch zoom & pan
+    board.addEventListener('touchstart', (e) => {
+      if (!is3DReady() || e.touches.length !== 2) return;
+      dragState = null;
+      this._suppressBoardClick = true;
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      pinchState = {
+        dist: Math.max(10, Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY)),
+        midX: (t0.clientX + t1.clientX) * 0.5,
+        midY: (t0.clientY + t1.clientY) * 0.5,
+      };
+    }, { passive: true });
+
+    board.addEventListener('touchmove', (e) => {
+      if (!is3DReady() || e.touches.length !== 2 || !pinchState) return;
+      e.preventDefault();
+      const t0 = e.touches[0];
+      const t1 = e.touches[1];
+      const curDist = Math.max(10, Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY));
+      const curMidX = (t0.clientX + t1.clientX) * 0.5;
+      const curMidY = (t0.clientY + t1.clientY) * 0.5;
+
+      const ratio = pinchState.dist / curDist;
+      if (Math.abs(ratio - 1) > 0.004) {
+        this.fieldGL.zoomBy(ratio);
+        pinchState.dist = curDist;
+      }
+      const mdx = curMidX - pinchState.midX;
+      const mdy = curMidY - pinchState.midY;
+      if (Math.hypot(mdx, mdy) > 1) {
+        this.fieldGL.panBy(-mdx * 0.015, -mdy * 0.015);
+        pinchState.midX = curMidX;
+        pinchState.midY = curMidY;
+      }
+    }, { passive: false });
+
+    const endPinch = (e) => {
+      if (pinchState && e.touches.length < 2) {
+        pinchState = null;
+        setTimeout(() => { this._suppressBoardClick = false; }, 80);
+      }
+    };
+    board.addEventListener('touchend', endPinch);
+    board.addEventListener('touchcancel', endPinch);
+
+    // Keyboard shortcut 'R' to reset camera viewpoint
+    window.addEventListener('keydown', (e) => {
+      if (!is3DReady()) return;
+      if (e.target.matches?.('input, textarea, select')) return;
+      if (e.key === 'r' || e.key === 'R') {
+        this.fieldGL.resetCamera({ instant: true });
+      }
+    });
+  }
+
+  /** 3D ワールド座標から 2D スクリーン座標へのリアルタイム射影（兵士・魔物・踏み石15マス・城UI） */
+  update3DOverlay() {
+    if (this.isPlaza || !this.fieldGL || this.fieldGL.hidden || this.fieldGL.disabled || !this.fieldGL.stageGroup) {
+      return;
+    }
+
+    // 1. Soldiers & Monsters in #unit-layer
+    const unitRect = this.el.units?.getBoundingClientRect?.();
+    if (unitRect && unitRect.width > 0 && unitRect.height > 0) {
+      for (const [id, s] of this.soldiers) {
+        const entry = this.fieldGL.soldierEntries.get(id);
+        if (!entry || !s.el) continue;
+        const pt = this.fieldGL.projectWorldToScreen({
+          x: entry.group.position.x,
+          y: entry.group.position.y + 0.55,
+          z: entry.group.position.z,
+        }, unitRect);
+        if (!pt) continue;
+        s.el.dataset.proj3d = '1';
+        s.el.style.left = `${pt.x.toFixed(1)}px`;
+        s.el.style.top = `${pt.y.toFixed(1)}px`;
+        s.el.style.zIndex = String(Math.max(5, Math.min(95, Math.round(60 - pt.camDist * 2))));
+      }
+
+      for (const [id, m] of this.monsters) {
+        const entry = this.fieldGL.monsterEntries.get(id);
+        if (!entry || !m.el) continue;
+        const pt = this.fieldGL.projectWorldToScreen({
+          x: entry.group.position.x,
+          y: entry.group.position.y + 0.72,
+          z: entry.group.position.z,
+        }, unitRect);
+        if (!pt) continue;
+        m.el.dataset.proj3d = '1';
+        m.el.style.left = `${pt.x.toFixed(1)}px`;
+        m.el.style.top = `${pt.y.toFixed(1)}px`;
+        m.el.style.zIndex = String(Math.max(5, Math.min(95, Math.round(62 - pt.camDist * 2))));
+      }
+    }
+
+    // 2. 15 Stepping Stones (.cell) in #road
+    const roadRect = this.el.road?.getBoundingClientRect?.();
+    if (roadRect && roadRect.width > 0 && roadRect.height > 0) {
+      for (const cell of this.el.road.querySelectorAll('.cell')) {
+        const lane = Number(cell.dataset.lane);
+        const row = Number(cell.dataset.row);
+        if (!Number.isFinite(lane) || !Number.isFinite(row)) continue;
+        const wPos = this.fieldGL.cellWorldPos(lane, row);
+        const pt = this.fieldGL.projectWorldToScreen({ x: wPos.x, y: 0.05, z: wPos.z }, roadRect);
+        if (!pt) continue;
+        const isMid = cell.classList.contains('mid');
+        const sz = Math.round((isMid ? 68 : 54) * pt.scale);
+        cell.dataset.proj3d = '1';
+        cell.style.left = `${pt.x.toFixed(1)}px`;
+        cell.style.top = `${pt.y.toFixed(1)}px`;
+        cell.style.width = `${sz}px`;
+        cell.style.height = `${Math.round(sz * 0.82)}px`;
+      }
+    }
+
+    // 3. Castles (#castle-me & #castle-opp) horizontal tracking
+    const boardRect = this.el.board?.getBoundingClientRect?.();
+    if (boardRect && boardRect.width > 0 && boardRect.height > 0) {
+      for (const side of ['me', 'opp']) {
+        const cEl = this.el.castle[side];
+        if (!cEl) continue;
+        const cPos = this.fieldGL.castleWorldPos(side);
+        const pt = this.fieldGL.projectWorldToScreen({ x: cPos.x, y: 1.4, z: cPos.z }, boardRect);
+        if (!pt) continue;
+        const maxShift = boardRect.width * 0.22;
+        const dx = Math.max(-maxShift, Math.min(maxShift, pt.x - boardRect.width * 0.5));
+        cEl.style.setProperty('--castle-3d-dx', `${dx.toFixed(1)}px`);
+      }
+    }
+  }
+
+  clear3DOverlay() {
+    for (const s of this.soldiers.values()) {
+      delete s.el.dataset.proj3d;
+      s.el.style.removeProperty('left');
+      this.place(s);
+    }
+    for (const m of this.monsters.values()) {
+      delete m.el.dataset.proj3d;
+    }
+    for (const cell of this.el.road.querySelectorAll('.cell')) {
+      delete cell.dataset.proj3d;
+      cell.style.removeProperty('left');
+      cell.style.removeProperty('top');
+      cell.style.removeProperty('width');
+      cell.style.removeProperty('height');
+    }
+    for (const side of ['me', 'opp']) {
+      this.el.castle[side]?.style.removeProperty('--castle-3d-dx');
+    }
   }
 }

@@ -310,7 +310,7 @@ async function boot() {
   el.app.addEventListener('keydown', e => { if(['Enter',' '].includes(e.key)) sound.unlock(); });
   el.app.addEventListener('pointerdown', (e) => {
     sound.unlock();
-    if (busy && !e.target.closest('.screen, #debug-panel, #debug-toggle, #menu-open')) anim.skip();
+    if (busy && !e.target.closest('.screen, #debug-panel, #debug-toggle, #menu-open, #camera-bar')) anim.skip();
   }, true);
 
   if (rarities && Object.values(decks ?? {}).some((d) => d.costDeck)) {
@@ -1858,6 +1858,7 @@ function introBoard() {
   app.classList.remove('match-intro');
   void app.offsetWidth;
   app.classList.add('match-intro');
+  renderer?.fieldGL?.playBattleIntro();
   setTimeout(() => app.classList.remove('match-intro'), 1400);
 }
 

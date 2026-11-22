@@ -80,6 +80,102 @@
 #app[data-stage3d] #board:not(.plaza-board) .castle .castle-pic { opacity: 0; }
 #app[data-stage3d] #board:not(.plaza-board) .soldier .soldier-pic { opacity: 0; }
 #app[data-stage3d] #board:not(.plaza-board) .monster .monster-pic { opacity: 0; }
+/* 3D カメラ回転時も違和感が出ないよう 2D の固定縦枠を消し、対象レーン選択時は 3D 射影された踏み石を光らせる */
+#app[data-stage3d] #board:not(.plaza-board) #road,
+#app[data-stage3d] #board:not(.plaza-board) #road .lane {
+  border-color: transparent !important;
+  background: none !important;
+  box-shadow: none !important;
+}
+#app[data-stage3d] #board:not(.plaza-board) #road .cells {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#app[data-stage3d] #board:not(.plaza-board) #road .cell[data-proj3d="1"] {
+  position: absolute;
+  width: 68px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  border-top: none;
+  pointer-events: auto;
+}
+#app[data-stage3d] #board:not(.plaza-board) #road .lane.targetable .cell .stone {
+  opacity: 0.9 !important;
+  width: 72%;
+  height: 60%;
+  border: 2px solid #ffe869;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 245, 150, 0.72), rgba(255, 195, 45, 0.18));
+  box-shadow: 0 0 12px #ffd93b, inset 0 0 6px #fff8c4;
+  filter: none;
+}
+#app[data-stage3d] #board:not(.plaza-board) #unit-layer .soldier[data-proj3d="1"],
+#app[data-stage3d] #board:not(.plaza-board) .monster[data-proj3d="1"] {
+  transition: none !important;
+}
+#app[data-stage3d] #board:not(.plaza-board) .castle .castle-side,
+#app[data-stage3d] #board:not(.plaza-board) .castle .castle-hp {
+  transform: translateX(var(--castle-3d-dx, 0px));
+}
+
+/* ---------- 3D カメラ操作バー（#camera-bar） ---------- */
+.camera-bar {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 24;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 5px;
+  border: 2px solid #5a3c1e;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 245, 218, 0.94), rgba(235, 210, 162, 0.94));
+  box-shadow: 0 3px 8px rgba(24, 14, 6, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  pointer-events: auto;
+  user-select: none;
+}
+.camera-bar[hidden] { display: none !important; }
+.camera-bar .cam-btn {
+  min-width: 32px;
+  min-height: 28px;
+  padding: 2px 8px;
+  border: 1.5px solid #8c6638;
+  border-radius: 999px;
+  background: #fff7e2;
+  color: #4a2e14;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+  cursor: pointer;
+  box-shadow: 0 1px 0 rgba(90, 60, 30, 0.35);
+  transition: transform 0.1s, background-color 0.15s, color 0.15s;
+}
+.camera-bar .cam-btn:hover { background: #ffefc2; }
+.camera-bar .cam-btn:active { transform: translateY(1px); }
+.camera-bar .cam-btn.active,
+.camera-bar .cam-btn[aria-pressed="true"] {
+  border-color: #1c5455;
+  background: linear-gradient(180deg, #357e7e, #245c5c);
+  color: #fff6dc;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+@media (max-width: 480px) {
+  .camera-bar {
+    top: 4px;
+    right: 4px;
+    gap: 2px;
+    padding: 2px 4px;
+  }
+  .camera-bar .cam-btn {
+    min-width: 28px;
+    min-height: 26px;
+    padding: 2px 6px;
+    font-size: 10px;
+  }
+}
 #app[data-stage][data-stage-art] #road .lane:not(.targetable) { border-color: transparent; background: none; box-shadow: none; }
 /* 飛び石は、道にぴったり合う画面側のもの（砂漠と同じ石）を、地面の絵の上に並べる（絵の飛び石は道とずれるため） */
 #app[data-stage][data-stage-art] #road .stone { display: block; width: 48%; height: 34%; opacity: .95; filter: sepia(.4) saturate(1.2) brightness(1.05); }
