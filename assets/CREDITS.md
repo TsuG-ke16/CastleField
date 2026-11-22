@@ -555,3 +555,16 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 - `skins/back-rank-{iron,bronze,silver,gold,platinum,diamond,master,champion}-relief.png` — 自作スクリプト（`node js/ui/build-card-relief.js`）で、同じ名前のランクの裏の絵（`skins/back-rank-*.png`）から自動生成（高さ・法線・材質の地図）。3Dの拡大表示（`js/ui/CardGL.js`）で裏を本物の凹凸のメッシュにするために使う。絵柄は含まない。利用条件は元の絵と同じ
 - 2026-11-20：`cards/relief/*` と `skins/back-rank-*-relief.png` を `node js/ui/build-card-relief.js` で作り直した（宝石を部品ごとに判定して穴・破片をなくし、カットした石の形に。部品を大きさに合わせてふくらませる。裏は地の模様を低く、紋章を高く）。絵柄は変えていない
 - 2026-11-20：`cards/relief/*` と `skins/back-rank-*-relief.png` を、色ではなく形の部品（`js/ui/card-shapes.js`：枠の外形・はみ出す飾り・名前の帯・メダル・宝石・紋章の輪と葉など）から作り直した。絵柄は変えていない
+
+## 追加カード8種（2026-11-22）
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `cards/card-gale-force.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-chain-blast.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-ignition-burst.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-shield-blast.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-purify-flare.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-moonrise.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-dawnbreak.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-assassin.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
