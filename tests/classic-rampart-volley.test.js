@@ -2,7 +2,8 @@
 //   (1) 城壁を積んで撃つと、城壁ぶんのダメージが相手の城に入り、自分の城壁は0になる（先頭の兵士には止められない）
 //   (2) 城壁がないと出せない
 //   (3) 相手の防御（城壁・反射）は聞く
-//   (4) CPU が城壁を貯めるのは castleSpellHitsFront のルールで号砲を持っているときだけ（通常モードは変わらない）
+//   (4) 霧で外れても城壁は0になる
+//   (5) CPU：城壁を貯めるのは smart・guard が castleSpellHitsFront のルールで号砲を持っているときだけ（defensive・rush・通常モードは変わらない）。貯まれば撃つ
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
@@ -118,21 +119,57 @@ test('相手の防御を聞く：反射されると、自分の城に返る（�
   assert.equal(game.getState(null).players.p1.castleHp, 60 - 10);
 });
 
-test('CPU：城壁を貯めるのは castleSpellHitsFront のルールで号砲を持っているときだけ（城HPが満タンでも）', () => {
-  const run = (rules, hand) => {
-    const { game, cards } = newGame(rules);
-    setupP1(game, hand);
-    game.players.p1.mp = 10;
-    const ctx = { cards, rules: game.rules, upgrades: {}, discardCount: 0 };
-    STRATEGIES.smart.takeTurn(game, 'p1', seededRng(2), ctx);
-    return game.players.p1;
-  };
-  // クラシック（castleSpellHitsFront）：号砲があれば、満タンでも城壁を置く（15まで）
-  const charged = run({}, [WALL, WALL, WALL, WALL, VOLLEY]);
-  assert.equal(charged.armor, 15);
-  assert.ok(charged.hand.some((c) => c.type === WALL)); // 15で止める
-  // 号砲がなければ、今までどおり満タンのときは置かない
-  assert.equal(run({}, [WALL, WALL]).armor, 0);
-  // castleSpellHitsFront のないルール（通常モードと同じ）では、号砲があっても置かない
-  assert.equal(run({ castleSpellHitsFront: false }, [WALL, WALL, VOLLEY]).armor, 0);
+test('霧で外れても、自分の城壁は0になる（相手の城は減らない）', () => {
+  const { game, log } = newGame();
+  setupP1(game, [WALL, WALL, VOLLEY]);
+  stackWalls(game, 2);
+  game.rollMiss = () => true;
+  assert.equal(game.playCard(ids(game, 'p1', VOLLEY)[0]).ok, true);
+  assert.equal(game.players.p1.armor, 0);
+  assert.equal(game.getState(null).players.p2.castleHp, 60);
+  assert.ok(log.some((e) => e.event === 'attackMissed' && e.kind === 'spell'));
+  assert.ok(!log.some((e) => e.event === 'castleDamaged'));
+});
+
+/** p1 の番に、戦い方 name で1ターン動かす（p1 の手札は hand、MP は mp） */
+function cpuTurn(name, hand, { rules = {}, mp = 10, armor = 0 } = {}) {
+  const { game, cards } = newGame(rules);
+  setupP1(game, hand);
+  game.players.p1.mp = mp;
+  game.players.p1.armor = armor;
+  const ctx = { cards, rules: game.rules, upgrades: {}, discardCount: 0 };
+  STRATEGIES[name].takeTurn(game, 'p1', seededRng(2), ctx);
+  return game;
+}
+
+test('CPU（smart・guard）：クラシックで号砲を持っていれば、城HPが満タンでも城壁をちょうど15まで貯めて止める', () => {
+  for (const name of ['smart', 'guard']) {
+    const p1 = cpuTurn(name, [WALL, WALL, WALL, WALL, VOLLEY]).players.p1;
+    assert.equal(p1.armor, 15, name);
+    assert.equal(p1.hand.filter((c) => c.type === WALL).length, 1, name); // 4枚目は置かない
+  }
+});
+
+test('CPU（smart）：城壁が10以上で MP が足りれば号砲を撃ち、相手の城HPが減る', () => {
+  const game = cpuTurn('smart', [VOLLEY], { armor: 10, mp: 10 });
+  assert.equal(game.players.p1.armor, 0);
+  assert.equal(game.getState(null).players.p2.castleHp, 60 - 10);
+});
+
+test('CPU：号砲がない・castleSpellHitsFront のないルール・defensive と rush では、満タンなら城壁を置かない', () => {
+  assert.equal(cpuTurn('smart', [WALL, WALL]).players.p1.armor, 0);
+  assert.equal(cpuTurn('smart', [WALL, WALL, VOLLEY], { rules: { castleSpellHitsFront: false } }).players.p1.armor, 0);
+  for (const name of ['defensive', 'rush']) assert.equal(cpuTurn(name, [WALL, WALL, VOLLEY]).players.p1.armor, 0, name);
+});
+
+test('CPU：本物の通常モードのデータでは、シールド・ブラストを持っていても満タンなら城壁を置かない', () => {
+  const { cards, rules } = buildData();
+  const game = new Game({ cards, rules: { ...rules, ...PLAIN_START }, rng: seededRng(1) });
+  assert.ok(!game.rules.castleSpellHitsFront);
+  game.start();
+  game.debugSetHand('p1', ['wall', 'shieldBlast']); // 同じカード2枚だと smart が合成するので1枚
+  const ctx = { cards, rules: game.rules, upgrades: {}, discardCount: 0 };
+  for (const name of ['smart', 'guard']) STRATEGIES[name].takeTurn(game, 'p1', seededRng(2), ctx);
+  assert.equal(game.players.p1.armor, 0);
+  assert.equal(game.players.p1.hand.filter((c) => c.type === 'wall').length, 1);
 });

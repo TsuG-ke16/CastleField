@@ -132,9 +132,10 @@ const ARMOR_CHARGE = 15;
  * メイン以外（付加・防御）のカードを、役に立つときに出す（ほどよく考える戦い方で使う）
  *   武器：まだ武器のない、いちばん前の兵士に。近くの相手の属性に強い属性を選ぶ
  *   盾：いちばん前の兵士に
- *   城壁：城HPが半分以下のときだけ（使い切りで、手札も1枚減るため）。castleSpellHitsFront のルールで城壁をぶつける魔法を持っていれば、ARMOR_CHARGE まで貯める
+ *   城壁：城HPが半分以下のときだけ（手札が1枚減り、MP を使うルールでは MP も使うため）。
+ *         chargeArmor が true なら、castleSpellHitsFront のルールで城壁をぶつける魔法を持っているとき、ARMOR_CHARGE まで貯める（smart・guard だけ）
  */
-function playSupports(game, pid, ctx) {
+function playSupports(game, pid, ctx, { chargeArmor = false } = {}) {
   // 属性の付着と反応（クラシック）があるゲームだけ、反応を起こせる武器を先に選ぶ（ないゲームでは今までどおり）
   for (let guard = 0; guard < 20; guard++) {
     const { state, me, enemies, playable } = view(game, pid);
@@ -160,10 +161,10 @@ function playSupports(game, pid, ctx) {
       } else if (def.effect === 'shieldSoldier') {
         if (front.length) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === front[0].soldierId));
       } else if (def.effect === 'armorCastle') {
-        // 城壁は使い切りで手札も1枚減るので、城HPが半分以下のときだけ出す。
-        // ただし、城への魔法が兵士に止められるルール（castleSpellHitsFront）で、城壁をぶつける魔法（armorBlast）を持っているときは、
+        // 城壁は手札が1枚減る（MP を使うルールでは MP も使う）ので、城HPが半分以下のときだけ出す。
+        // ただし chargeArmor（smart・guard）で、城への魔法が兵士に止められるルール（castleSpellHitsFront）のとき、城壁をぶつける魔法（armorBlast）を持っていれば、
         // 城壁を弾として貯める（ARMOR_CHARGE まで。ぶつけるのは smartStep：城壁10以上か、相手の城を落とせるとき）
-        const charging = Boolean(ctx.rules?.castleSpellHitsFront) && me.armor < ARMOR_CHARGE && me.hand.some((h) => ctx.cards[h.type]?.effect === 'armorBlast');
+        const charging = chargeArmor && Boolean(ctx.rules?.castleSpellHitsFront) && me.armor < ARMOR_CHARGE && me.hand.some((h) => ctx.cards[h.type]?.effect === 'armorBlast');
         if (me.castleHp * 2 <= me.castleMaxHp || charging) played = playWith(game, c.cardId);
       }
       if (played) break;
@@ -267,7 +268,7 @@ const RAW_STRATEGIES = {
     takeTurn(game, pid, rng, ctx) {
       buyUpgrades(game, pid, ctx);
       smartTurn(game, pid, ctx);
-      playSupports(game, pid, ctx);
+      playSupports(game, pid, ctx, { chargeArmor: true });
     },
     respond(game, pid, rng, ctx) {
       respondDefense(game, pid, rng, ctx, 'smart');
@@ -322,7 +323,7 @@ const RAW_STRATEGIES = {
       const near = enemies.some((e) => e.soldiers.some((s) => s.position >= L - 3));
       buyUpgrades(game, pid, ctx);
       if (!(near && playFirst(game, playable, soldierTypes(ctx)))) smartTurn(game, pid, ctx);
-      playSupports(game, pid, ctx);
+      playSupports(game, pid, ctx, { chargeArmor: true });
     },
     respond(game, pid, rng, ctx) {
       respondDefense(game, pid, rng, ctx, 'smart');
