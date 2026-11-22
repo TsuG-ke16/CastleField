@@ -451,6 +451,7 @@ export class Renderer {
     this.syncSoldiers(model);
     this.syncMonsters(model);
     this.updateThreatWarnings();
+    this.sync3D();
   }
 
   setTurnInfo(turn, round) {
@@ -472,6 +473,8 @@ export class Renderer {
   setOverdrive(playerId, on) {
     const castle = this.castleEl(playerId);
     if (castle) castle.classList.toggle('overdrive', Boolean(on));
+    if (this.players[playerId]) this.players[playerId].overdrive = Boolean(on);
+    this.sync3D();
   }
 
   /** ステージ（{ id, name, icon, description, element } か null）。盤面の色を変える */
@@ -774,6 +777,7 @@ export class Renderer {
     void el.offsetWidth; // 位置を確定させてからアニメーションを有効にする
     el.classList.remove('no-anim');
     this.layoutStacks();
+    this.sync3D();
     return el;
   }
 
@@ -832,6 +836,7 @@ export class Renderer {
     if (!s) return;
     Object.assign(s, patch);
     this.updateSoldierBadges(s);
+    this.sync3D();
   }
 
   moveSoldier(soldierId, position) {
@@ -840,6 +845,7 @@ export class Renderer {
     s.position = position;
     s.place = null;
     this.place(s);
+    this.sync3D();
   }
 
   setSoldierHp(soldierId, hp) {
@@ -853,11 +859,13 @@ export class Renderer {
     this.soldiers.delete(soldierId);
     s.el.remove();
     this.layoutStacks();
+    this.sync3D();
   }
 
   clearSoldiers() {
     for (const s of this.soldiers.values()) s.el.remove();
     this.soldiers.clear();
+    this.sync3D();
   }
 
   /** 同じマスにいる同じ人の兵士を、横に少しずつずらす（道の外側へ広げる） */
@@ -944,6 +952,7 @@ export class Renderer {
     const m = { ...st, el };
     this.monsters.set(st.monsterId, m);
     this.updateMonster(st.monsterId, {}, { instant: true });
+    this.sync3D();
     return el;
   }
 
@@ -1021,6 +1030,7 @@ export class Renderer {
     if (!m) return;
     this.monsters.delete(monsterId);
     m.el.remove();
+    this.sync3D();
   }
 
   clearMonsters() {
@@ -1052,13 +1062,70 @@ export class Renderer {
     this.targetRestore=[];
     this.targets=targets?.length?targets:null;
     this.el.app.classList.toggle('targeting',Boolean(this.targets));
-    if(!this.targets)return;
+    if(!this.targets){this.sync3D();return;}
     for(const t of this.targets){const el=this.elOfTarget(t);if(!el||this.targetRestore.some(x=>x.el===el))continue;
       this.targetRestore.push({el,tab:el.getAttribute('tabindex'),role:el.getAttribute('role'),label:el.getAttribute('aria-label')});
       el.classList.add('targetable');el.tabIndex=0;el.setAttribute('role','button');
       el.setAttribute('aria-label',t.roadId?`道${this.laneOf(t.roadId)+1}、${playerName(t.playerId)}`:t.monsterId?'魔物を狙う':t.soldierId?'兵士を選ぶ':`${playerName(t.playerId)}の城を選ぶ`);
     }
     this.targetRestore[0]?.el.focus({preventScroll:true});
+    this.sync3D();
+  }
+
+  /** 3D 盤面（FieldGL）へ現在の城・兵士・魔物・選択可能レーンを同期する */
+  sync3D() {
+    if (!this.fieldGL || this.isPlaza) return;
+    const opp = this.opponentOf(this.viewerId);
+    const makeCastle = (id) => {
+      const p = this.players?.[id] ?? {};
+      const el = this.castleEl(id);
+      return {
+        hp: Number(el?.dataset.hp ?? p.castleHp ?? 40),
+        maxHp: p.castleMaxHp ?? 40,
+        armor: p.armor ?? 0,
+        overdrive: Boolean(p.overdrive || el?.classList.contains('overdrive')),
+        spirit: p.spirit?.spirit ?? null,
+        castleType: p.castleType ?? 'standard',
+        color: colorOf(id),
+      };
+    };
+    const soldiers = [];
+    for (const [id, s] of this.soldiers) {
+      const side = this.sideOf(s.playerId);
+      const row = side === 'me' ? this.laneLength - 1 - s.position : s.position;
+      soldiers.push({
+        id,
+        type: s.type,
+        side,
+        color: colorOf(s.playerId),
+        lane: this.laneOf(s.roadId),
+        row,
+        shield: s.shield ?? 0,
+        element: s.element ?? null,
+        statuses: s.statuses ?? {},
+      });
+    }
+    const monsters = [];
+    for (const [id, m] of this.monsters) {
+      monsters.push({
+        id,
+        type: m.type,
+        lane: this.laneOf(m.roadId),
+        row: this.rowOfSquare(m.square),
+      });
+    }
+    const targetLanes = [];
+    for (const t of this.targets ?? []) {
+      if (t.roadId) targetLanes.push(this.laneOf(t.roadId));
+    }
+    this.fieldGL.syncBoard({
+      laneCount: this.laneCount,
+      laneLength: this.laneLength,
+      castles: { me: makeCastle(this.viewerId), opp: makeCastle(opp) },
+      soldiers,
+      monsters,
+      targetLanes,
+    });
   }
 
   elOfTarget(t) {

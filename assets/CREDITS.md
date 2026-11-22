@@ -789,3 +789,7 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `models/field-dark-forest.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/field-desert.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/make-fields.py` | 手書き Python（bpy / bmesh） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/castle-{standard,fortress,tower,barracks}.glb` | Blender 5.3 プロシージャル生成（城4種） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-stone.glb` | Blender 5.3 プロシージャル生成（踏み石） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/unit-{infantry,knight,spearman,heavy,archer,mage,assassin,dragon,hero}.glb` | Blender 5.3 プロシージャル生成（兵士9種） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/monster-{slime,goblin,dragon,golem,demon,mimic}.glb` | Blender 5.3 プロシージャル生成（魔物6種） | 本リポジトリのコードと同一 | 2026-11-23 |
