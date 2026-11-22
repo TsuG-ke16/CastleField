@@ -125,11 +125,14 @@ export function canReact(reactions, element, s) {
   return Object.values(reactions.reactions).some((r) => r.elements.includes(element) && on.includes(r.elements.find((e) => e !== element)));
 }
 
+/** 城壁をぶつける魔法（armorBlast）を持っているとき、CPU が城壁を貯める目安（castleSpellHitsFront のルールだけ） */
+const ARMOR_CHARGE = 15;
+
 /**
  * メイン以外（付加・防御）のカードを、役に立つときに出す（ほどよく考える戦い方で使う）
  *   武器：まだ武器のない、いちばん前の兵士に。近くの相手の属性に強い属性を選ぶ
  *   盾：いちばん前の兵士に
- *   城壁：城HPが半分以下のときだけ（使い切りで、手札も1枚減るため）
+ *   城壁：城HPが半分以下のときだけ（使い切りで、手札も1枚減るため）。castleSpellHitsFront のルールで城壁をぶつける魔法を持っていれば、ARMOR_CHARGE まで貯める
  */
 function playSupports(game, pid, ctx) {
   // 属性の付着と反応（クラシック）があるゲームだけ、反応を起こせる武器を先に選ぶ（ないゲームでは今までどおり）
@@ -157,8 +160,11 @@ function playSupports(game, pid, ctx) {
       } else if (def.effect === 'shieldSoldier') {
         if (front.length) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === front[0].soldierId));
       } else if (def.effect === 'armorCastle') {
-        // 城壁は使い切りで手札も1枚減るので、城HPが半分以下のときだけ出す
-        if (me.castleHp * 2 <= me.castleMaxHp) played = playWith(game, c.cardId);
+        // 城壁は使い切りで手札も1枚減るので、城HPが半分以下のときだけ出す。
+        // ただし、城への魔法が兵士に止められるルール（castleSpellHitsFront）で、城壁をぶつける魔法（armorBlast）を持っているときは、
+        // 城壁を弾として貯める（ARMOR_CHARGE まで。ぶつけるのは smartStep：城壁10以上か、相手の城を落とせるとき）
+        const charging = Boolean(ctx.rules?.castleSpellHitsFront) && me.armor < ARMOR_CHARGE && me.hand.some((h) => ctx.cards[h.type]?.effect === 'armorBlast');
+        if (me.castleHp * 2 <= me.castleMaxHp || charging) played = playWith(game, c.cardId);
       }
       if (played) break;
     }

@@ -108,14 +108,6 @@
     "mpCost": 2,
     "count": 3
   },
-  "classic_king_decoy": {
-    "name": "身代わり",
-    "kind": "defense",
-    "effect": "nullifySoldier",
-    "mpCost": 2,
-    "count": 2,
-    "description": "城に着いた兵士1体のダメージを無効にする（魔法には使えない）"
-  },
   "classic_king_purify": {
     "name": "浄化",
     "kind": "spell",
@@ -142,6 +134,15 @@
     "amount": 6,
     "mpCost": 4,
     "count": 2
+  },
+  "classic_king_rampart_volley": {
+    "name": "聖壁の号砲",
+    "kind": "spell",
+    "effect": "armorBlast",
+    "element": "light",
+    "mpCost": 3,
+    "count": 2,
+    "description": "自分の城壁の値と同じダメージを、相手の城に撃ち込む（兵士には止められない。相手の城壁・反射などの防御は受ける）。撃つと自分の城壁は0になる。城壁がないと出せない"
   },
   "classic_demon_skeleton": {
     "name": "骸骨兵",
