@@ -25,6 +25,13 @@ function loadModeFile(path) {
   return JSON.parse(readFileSync(join(ROOT, path), 'utf8'));
 }
 
+/** そのモードの陣営ごとの別のカード表（data/modes.json の factionCardSets）。ないときは例外 */
+export function loadFactionCards(mode, faction) {
+  const path = modeEntry(mode)?.factionCardSets?.[faction];
+  if (typeof path !== 'string') throw new Error(`モード "${mode}" に陣営 "${faction}" のカード表（factionCardSets）がありません`);
+  return loadModeFile(path);
+}
+
 /** tests/fixtures/ の固定データを読む（data/ の調整でテストが落ちないように） */
 export function loadFixture(name) {
   return JSON.parse(readFileSync(join(ROOT, 'tests', 'fixtures', name), 'utf8'));
@@ -34,13 +41,15 @@ export function loadFixture(name) {
  * data/ の rules / cards に、一部だけ上書きしたものを返す。
  * cards はカードごとに中身をまぜる（null を渡したカードは消す）。
  * mode を渡すと、そのモード（data/modes.json）のカード・ルールを土台にする（省略すると今まで通り）。
- * @param {{rules?: object, cards?: object, source?: 'data' | 'fixture', mode?: string|null}} [patch]
+ * factions を渡すと、そのモードの陣営ごとの別のカード表（modes.json の factionCardSets）も足す（山札の枚数は増える。陣営の山札を作るとき用）。
+ * @param {{rules?: object, cards?: object, source?: 'data' | 'fixture', mode?: string|null, factions?: string[]}} [patch]
  */
-export function buildData({ rules: rulesPatch = {}, cards: cardsPatch = {}, source = 'data', mode = null } = {}) {
+export function buildData({ rules: rulesPatch = {}, cards: cardsPatch = {}, source = 'data', mode = null, factions = [] } = {}) {
   const load = source === 'fixture' ? loadFixture : loadJson;
   const entry = source === 'fixture' ? null : modeEntry(mode);
   const rules = { ...(entry?.rulesSet ? loadModeFile(entry.rulesSet) : load('rules.json')), ...rulesPatch };
   const cards = entry ? loadModeFile(entry.cardSet) : load('cards.json');
+  for (const f of factions) Object.assign(cards, loadFactionCards(mode, f));
   for (const [k, v] of Object.entries(cardsPatch)) {
     if (v === null) delete cards[k];
     else cards[k] = { ...(cards[k] || {}), ...v };

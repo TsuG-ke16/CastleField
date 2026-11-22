@@ -1,0 +1,182 @@
+{
+  "classic_forest_beast": {
+    "name": "森の獣兵",
+    "kind": "soldier",
+    "beast": true,
+    "hp": 2,
+    "attack": 5,
+    "speed": 3,
+    "mpCost": 1,
+    "count": 5,
+    "description": "速くて攻撃が高く、MPが軽い獣人。夜は攻撃+2（ビースト覚醒）。とても打たれ弱い"
+  },
+  "classic_forest_wolf": {
+    "name": "ウルフファイター",
+    "kind": "soldier",
+    "beast": true,
+    "hp": 5,
+    "attack": 6,
+    "speed": 3,
+    "mpCost": 3,
+    "count": 3,
+    "description": "打たれ強い獣人の戦士。夜は攻撃+2（ビースト覚醒）。MPが重い"
+  },
+  "classic_forest_elf_scout": {
+    "name": "エルフの斥候",
+    "kind": "soldier",
+    "role": "archer",
+    "hp": 2,
+    "attack": 3,
+    "range": 3,
+    "stay": 2,
+    "mpCost": 1,
+    "count": 3,
+    "description": "動かずに、3マス先までの相手の兵士1体を撃つ（反撃を受けない）。弓兵より遠くまで届き、MPも軽いが、とても打たれ弱い。2ターンで帰る"
+  },
+  "classic_forest_elf_archer": {
+    "name": "エルフの射手",
+    "kind": "soldier",
+    "role": "archer",
+    "hp": 4,
+    "attack": 5,
+    "range": 2,
+    "stay": 2,
+    "mpCost": 3,
+    "count": 2,
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ（反撃を受けない）。弓兵より強いがMPが重い。2ターンで帰る"
+  },
+  "classic_forest_flame_sword": {
+    "name": "フレイムソード",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "fire",
+    "mpCost": 1,
+    "count": 1
+  },
+  "classic_forest_aqua_spear": {
+    "name": "アクアスピア",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "water",
+    "mpCost": 1,
+    "count": 1
+  },
+  "classic_forest_gale_bow": {
+    "name": "ゲイルボウ",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "wind",
+    "mpCost": 1,
+    "count": 1
+  },
+  "classic_forest_earth_hammer": {
+    "name": "アースハンマー",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "earth",
+    "mpCost": 1,
+    "count": 1
+  },
+  "classic_forest_fire_spirit": {
+    "name": "火の精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "fire",
+    "amount": 3,
+    "turns": 3,
+    "mpCost": 3,
+    "count": 2,
+    "description": "次の自分のターンから3ターン、選んだ相手の城に3ダメージずつ（メインを使わない）。精霊は1人1体まで"
+  },
+  "classic_forest_water_spirit": {
+    "name": "水の精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "water",
+    "amount": 2,
+    "turns": 4,
+    "mpCost": 2,
+    "count": 3,
+    "description": "次の自分のターンから4ターン、自分の城を2ずつ回復（メインを使わない）。精霊は1人1体まで"
+  },
+  "classic_forest_great_water_spirit": {
+    "name": "水の大精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "water",
+    "amount": 3,
+    "turns": 4,
+    "mpCost": 4,
+    "count": 1,
+    "description": "次の自分のターンから4ターン、自分の城を3ずつ回復（メインを使わない）。精霊は1人1体まで"
+  },
+  "classic_forest_wind_spirit": {
+    "name": "風の精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "wind",
+    "amount": 2,
+    "turns": 3,
+    "mpCost": 2,
+    "count": 2,
+    "description": "次の自分のターンから3ターン、自分の兵士の速さが最低でも2になる（メインを使わない）。精霊は1人1体まで"
+  },
+  "classic_forest_earth_spirit": {
+    "name": "土の精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "earth",
+    "amount": 1,
+    "turns": 3,
+    "mpCost": 3,
+    "count": 2,
+    "description": "次の自分のターンから3ターン、自分の城と兵士が受けるダメージが1軽くなる（最低1。メインを使わない）。精霊は1人1体まで"
+  },
+  "classic_forest_gale_force": {
+    "name": "ゲイルフォース",
+    "kind": "spell",
+    "effect": "pushBackEnemySoldiers",
+    "amount": 2,
+    "mpCost": 2,
+    "count": 2,
+    "description": "突風で、相手の兵士全員を2マス押し戻す（城の前より後ろには下がらない）。ダメージはない"
+  },
+  "classic_forest_ivy_wall": {
+    "name": "蔦の防壁",
+    "kind": "defense",
+    "effect": "armorCastle",
+    "amount": 3,
+    "mpCost": 0,
+    "count": 4,
+    "description": "自分の城を3守る（城壁）。MPを使わないが、薄い"
+  },
+  "classic_forest_bark_armor": {
+    "name": "樹皮の鎧",
+    "kind": "defense",
+    "effect": "shieldSoldier",
+    "amount": 5,
+    "mpCost": 2,
+    "count": 3,
+    "description": "兵士に盾5をつける。盾より厚いが、MPが重い"
+  },
+  "classic_forest_blaze": {
+    "name": "ブレイズ",
+    "kind": "spell",
+    "effect": "damageEnemySoldiers",
+    "element": "fire",
+    "amount": 3,
+    "scope": "lane",
+    "mpCost": 4,
+    "count": 2,
+    "description": "選んだ1レーンの相手の兵士全員に3ダメージ。ルミナより強いがMPが重い"
+  },
+  "classic_forest_grove_barrier": {
+    "name": "森の結界",
+    "kind": "defense",
+    "effect": "armorCastle",
+    "amount": 9,
+    "mpCost": 4,
+    "count": 2,
+    "description": "自分の城を9守る（城壁）。厚いが、MPが重い"
+  }
+}
