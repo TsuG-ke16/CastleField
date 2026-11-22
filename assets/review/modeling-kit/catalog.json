@@ -2388,11 +2388,11 @@
   },
   "background": {
     "path": "bg/stage-desert.png",
-    "source": "review/modeling-kit/sources/stage-desert.webp",
-    "originalSource": "exec-0d5d9859-2237-4151-b222-87185b5a73a6.png",
+    "source": "review/field-backgrounds-v2/sources/desert.webp",
+    "originalSource": "exec-8110da6b-6698-486a-b298-135bbabe1229.png",
     "size": [
-      1080,
-      1920
+      576,
+      1024
     ]
   }
 }

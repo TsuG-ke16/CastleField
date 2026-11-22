@@ -748,3 +748,30 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 | `review/modeling-kit/sources/stage-desert.webp` | `exec-0d5d9859-2237-4151-b222-87185b5a73a6.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
 
 `review/modeling-kit/catalog.json`・`field-layout.svg`・Blenderスクリプト・仮形状・説明・確認ページはこの依頼向けに作成。Blenderファイルに内蔵した参照画像の出典は上表。仮形状は数値から作った配置見本で、完成モデルではない。原画から法線・高さマップを作成したものではない。
+
+## 軽量フィールド背景の改訂（2026-11-22）
+
+既存のstyle-referenceと城の絵柄を参照してOpenAI画像生成（ChatGPT）で草原の基準図を作り、中央の見やすさを調整。同じ基準図から他5ステージを生成。平らな地面と外周の少数の部品で構成する案を採用。配信用PNGは原画を機械的に縮小・減色・圧縮。高解像度の原画と変更前の比較はWebPで保存。
+
+| ファイル | 出典・生成原本 | 作成ツール | 利用条件 | 作成日 |
+|---|---|---|---|---|
+| `bg/stage-meadow.png` | `exec-26f21f59-348f-4e0d-aede-201a7ff53a83.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/sources/meadow.webp` | `exec-26f21f59-348f-4e0d-aede-201a7ff53a83.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/before/meadow.webp` | `変更前の bg/stage-meadow.png / IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `bg/stage-lava.png` | `exec-6de53884-afb8-4b66-946a-a2ded6ddb812.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/sources/lava.webp` | `exec-6de53884-afb8-4b66-946a-a2ded6ddb812.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/before/lava.webp` | `変更前の bg/stage-lava.png / IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `bg/stage-ice.png` | `exec-efdd47b2-50f0-41b9-9e8d-f7b59bbfa46d.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/sources/ice.webp` | `exec-efdd47b2-50f0-41b9-9e8d-f7b59bbfa46d.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/before/ice.webp` | `変更前の bg/stage-ice.png / IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `bg/stage-ruins.png` | `exec-a0878f15-3f19-462f-b7f9-0fea834567ee.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/sources/ruins.webp` | `exec-a0878f15-3f19-462f-b7f9-0fea834567ee.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/before/ruins.webp` | `変更前の bg/stage-ruins.png / IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `bg/stage-dark-forest.png` | `exec-42265495-d520-499d-bab0-fda7f75549d9.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/sources/dark-forest.webp` | `exec-42265495-d520-499d-bab0-fda7f75549d9.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/before/dark-forest.webp` | `変更前の bg/stage-dark-forest.png / IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `bg/stage-desert.png` | `exec-8110da6b-6698-486a-b298-135bbabe1229.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/sources/desert.webp` | `exec-8110da6b-6698-486a-b298-135bbabe1229.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/field-backgrounds-v2/before/desert.webp` | `変更前の bg/stage-desert.png / exec-0d5d9859-2237-4151-b222-87185b5a73a6.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+
+`review/field-backgrounds-v2/catalog.json`・説明・確認ページはこの依頼向けに作成した素材管理とモデリング用の資料。部品数・ポリゴン数は制作目標で、生成画像に対応する完成3Dモデルの計測値ではない。

@@ -1,0 +1,152 @@
+{
+  "schemaVersion": 1,
+  "direction": "simple modular terrain, open center, low-poly modeling reference",
+  "runtimeSize": [
+    576,
+    1024
+  ],
+  "maxPngBytes": 150000,
+  "stages": [
+    {
+      "id": "meadow",
+      "slug": "meadow",
+      "label": "草原・王都",
+      "path": "bg/stage-meadow.png",
+      "source": "review/field-backgrounds-v2/sources/meadow.webp",
+      "before": "review/field-backgrounds-v2/before/meadow.webp",
+      "originalSource": "exec-26f21f59-348f-4e0d-aede-201a7ff53a83.png",
+      "size": [
+        576,
+        1024
+      ],
+      "bytes": 147746,
+      "paletteColors": 96,
+      "groundColor": "#a9af0f",
+      "modelingParts": [
+        "ground",
+        "bank",
+        "stone-wall",
+        "boulder",
+        "tree"
+      ]
+    },
+    {
+      "id": "lava",
+      "slug": "lava",
+      "label": "溶岩",
+      "path": "bg/stage-lava.png",
+      "source": "review/field-backgrounds-v2/sources/lava.webp",
+      "before": "review/field-backgrounds-v2/before/lava.webp",
+      "originalSource": "exec-6de53884-afb8-4b66-946a-a2ded6ddb812.png",
+      "size": [
+        576,
+        1024
+      ],
+      "bytes": 130358,
+      "paletteColors": 256,
+      "groundColor": "#533a3e",
+      "modelingParts": [
+        "ground",
+        "bank",
+        "boulder",
+        "crystal",
+        "lava-strip"
+      ]
+    },
+    {
+      "id": "ice",
+      "slug": "ice",
+      "label": "氷",
+      "path": "bg/stage-ice.png",
+      "source": "review/field-backgrounds-v2/sources/ice.webp",
+      "before": "review/field-backgrounds-v2/before/ice.webp",
+      "originalSource": "exec-efdd47b2-50f0-41b9-9e8d-f7b59bbfa46d.png",
+      "size": [
+        576,
+        1024
+      ],
+      "bytes": 141849,
+      "paletteColors": 256,
+      "groundColor": "#80c9ec",
+      "modelingParts": [
+        "ground",
+        "bank",
+        "boulder",
+        "crystal",
+        "pine"
+      ]
+    },
+    {
+      "id": "ruins",
+      "slug": "ruins",
+      "label": "古代遺跡",
+      "path": "bg/stage-ruins.png",
+      "source": "review/field-backgrounds-v2/sources/ruins.webp",
+      "before": "review/field-backgrounds-v2/before/ruins.webp",
+      "originalSource": "exec-a0878f15-3f19-462f-b7f9-0fea834567ee.png",
+      "size": [
+        576,
+        1024
+      ],
+      "bytes": 141670,
+      "paletteColors": 64,
+      "groundColor": "#ecb25f",
+      "modelingParts": [
+        "ground",
+        "bank",
+        "stone-wall",
+        "boulder",
+        "column",
+        "arch"
+      ]
+    },
+    {
+      "id": "darkForest",
+      "slug": "dark-forest",
+      "label": "闇の森",
+      "path": "bg/stage-dark-forest.png",
+      "source": "review/field-backgrounds-v2/sources/dark-forest.webp",
+      "before": "review/field-backgrounds-v2/before/dark-forest.webp",
+      "originalSource": "exec-42265495-d520-499d-bab0-fda7f75549d9.png",
+      "size": [
+        576,
+        1024
+      ],
+      "bytes": 137297,
+      "paletteColors": 128,
+      "groundColor": "#15644d",
+      "modelingParts": [
+        "ground",
+        "bank",
+        "boulder",
+        "tree",
+        "mushroom",
+        "lantern"
+      ]
+    },
+    {
+      "id": "desert",
+      "slug": "desert",
+      "label": "砂漠・荒野",
+      "path": "bg/stage-desert.png",
+      "source": "review/field-backgrounds-v2/sources/desert.webp",
+      "before": "review/field-backgrounds-v2/before/desert.webp",
+      "originalSource": "exec-8110da6b-6698-486a-b298-135bbabe1229.png",
+      "size": [
+        576,
+        1024
+      ],
+      "bytes": 138452,
+      "paletteColors": 256,
+      "groundColor": "#f6a139",
+      "modelingParts": [
+        "ground",
+        "bank",
+        "boulder",
+        "column",
+        "cactus"
+      ]
+    }
+  ],
+  "totalRuntimeBytes": 837372
+}

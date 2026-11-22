@@ -247,9 +247,11 @@ Fantasy mobile game UI element, [内容], cartoon style, transparent background,
 
 ## ステージの背景（`bg/stage-<ステージ>.png`、9:16）
 
-ステージ（`data/stages.json`）ごとの盤面の背景。`stage-meadow.png`・`stage-lava.png`・`stage-ice.png`・`stage-ruins.png`・`stage-dark-forest.png`・`stage-desert.png`（砂漠以外はある）。いちばん上（奥）に相手の城の側の景色、その下に飛び石が並ぶ広場。
+ステージ（`data/stages.json`）ごとの盤面の背景。`stage-meadow.png`・`stage-lava.png`・`stage-ice.png`・`stage-ruins.png`・`stage-dark-forest.png`・`stage-desert.png` の6種類。いちばん上（奥）に相手の城の側の景色、その下に飛び石が並ぶ広場。
 置いて `assets/asset-manifest.json` に足せば、`js/ui/Renderer.js` の `setStage` が自動で使う（ないあいだは `css/stage.css` のグラデーションで描く）。
-1080×1920、不透明、300KB 以下。真ん中を縦に3本の道が通り、上下に城が立つ前提で、**城・飛び石・文字は描かない**（画面側で重ねる）。左右の端に景色の飾りを寄せ、真ん中は落ち着いた色にする。
+軽量表示用は576×1024、不透明、1枚150KB以下。制作原画は `assets/review/field-backgrounds-v2/sources/` に分けて保存する。真ん中を縦に3本の道が通り、上下に城が立つ前提で、**城・飛び石・文字は描かない**（画面側で重ねる）。左右の端に景色の飾りを寄せ、真ん中は落ち着いた色にする。
+
+Blenderで作りやすい、平らな地面と外周の段丘・石・木などの少数の部品で構成する。地形を上下に反復させず、一続きの戦場として描く。細かな草や岩の模様はテクスチャで表現できる描き方にする。部品の構成と軽量化の目安は `assets/review/field-backgrounds-v2/README.md` を参照。
 
 共通の指示文のあとに：
 

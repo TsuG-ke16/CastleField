@@ -4,7 +4,7 @@
   "unitCount": 15,
   "castleCount": 4,
   "sourceSheets": 22,
-  "largestPngBytes": 281827,
+  "largestPngBytes": 279299,
   "allPngsUnder300KB": true,
   "alphaAndDimensionsPassed": true,
   "runtimeImagesRegistered": 17,
@@ -39,7 +39,8 @@
       "backgroundLoaded": true,
       "visibleStones": 15,
       "groundColor": "rgb(233, 188, 113)",
-      "fixture": "Renderer.setStage visual fixture; game rules untouched"
+      "fixture": "Renderer.setStage visual fixture; game rules untouched",
+      "supersededBy": "../field-backgrounds-v2/validation.json"
     }
   },
   "existingGameSmoke": {
@@ -51,5 +52,6 @@
     "errors": [],
     "warnings": [],
     "rematch": true
-  }
+  },
+  "backgroundRevision": "field-backgrounds-v2: 576x1024 lightweight runtime"
 }

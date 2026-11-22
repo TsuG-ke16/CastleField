@@ -335,11 +335,11 @@
   "cards/card-buff-dice.png": "chatgpt-2026-11-20-dice.png",
   "cards/card-random-dice.png": "chatgpt-2026-11-20-dice.png",
   "cards/card-god-dice.png": "chatgpt-2026-11-20-dice.png",
-  "bg/stage-meadow.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
-  "bg/stage-ruins.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
-  "bg/stage-dark-forest.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
-  "bg/stage-ice.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
-  "bg/stage-lava.png": "IMG_7371.jpeg（ChatGPT で作ったステージの背景のシート）",
+  "bg/stage-meadow.png": "exec-26f21f59-348f-4e0d-aede-201a7ff53a83.png",
+  "bg/stage-ruins.png": "exec-a0878f15-3f19-462f-b7f9-0fea834567ee.png",
+  "bg/stage-dark-forest.png": "exec-42265495-d520-499d-bab0-fda7f75549d9.png",
+  "bg/stage-ice.png": "exec-efdd47b2-50f0-41b9-9e8d-f7b59bbfa46d.png",
+  "bg/stage-lava.png": "exec-6de53884-afb8-4b66-946a-a2ded6ddb812.png",
   "bg/home-sky.png": "ChatGPT で作った開発者提供の背景（縮小・256色、2026-11-20、CREDITS.md参照）",
   "bg/home-gacha.png": "ChatGPT で作った開発者提供の背景（縮小・256色、2026-11-20、CREDITS.md参照）",
   "bg/home-deck.png": "ChatGPT で作った開発者提供の背景（縮小・256色、2026-11-20、CREDITS.md参照）",
@@ -429,5 +429,5 @@
   "props/field-amethyst.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
   "props/field-brazier.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
   "props/field-wall.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
-  "bg/stage-desert.png": "exec-0d5d9859-2237-4151-b222-87185b5a73a6.png"
+  "bg/stage-desert.png": "exec-8110da6b-6698-486a-b298-135bbabe1229.png"
 }

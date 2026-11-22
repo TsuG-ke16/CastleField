@@ -66,12 +66,12 @@
   background-size: 100% auto; background-position: center top; background-repeat: no-repeat;
   background-color: var(--stage-ground, #5d8d51); filter: saturate(1.05); opacity: 1;
 }
-#app[data-stage="meadow"] { --stage-ground: #5d8d51; }
-#app[data-stage="ruins"] { --stage-ground: #7e7e63; }
-#app[data-stage="darkForest"] { --stage-ground: #418280; }
-#app[data-stage="ice"] { --stage-ground: #b5cbf2; }
-#app[data-stage="lava"] { --stage-ground: #904a45; }
-#app[data-stage="desert"] { --stage-ground: #e9bc71; }
+#app[data-stage="meadow"] { --stage-ground: #a9af0f; }
+#app[data-stage="ruins"] { --stage-ground: #ecb25f; }
+#app[data-stage="darkForest"] { --stage-ground: #15644d; }
+#app[data-stage="ice"] { --stage-ground: #80c9ec; }
+#app[data-stage="lava"] { --stage-ground: #533a3e; }
+#app[data-stage="desert"] { --stage-ground: #f6a139; }
 #app[data-stage][data-stage-art] #scenery .tree { display: none; }
 #app[data-stage][data-stage-art] #road .lane:not(.targetable) { border-color: transparent; background: none; box-shadow: none; }
 /* 飛び石は、道にぴったり合う画面側のもの（砂漠と同じ石）を、地面の絵の上に並べる（絵の飛び石は道とずれるため） */
