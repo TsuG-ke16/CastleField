@@ -114,6 +114,8 @@ const EXTRA = {
   earthTap: { name: '土の粉', kind: 'spell', effect: 'singleDamage', element: 'earth', amount: 1, count: 1 },
   thunderTap: { name: '雷の粉', kind: 'spell', effect: 'singleDamage', element: 'thunder', amount: 1, count: 1 },
   darkTap: { name: '闇の粉', kind: 'spell', effect: 'singleDamage', element: 'dark', amount: 1, count: 1 },
+  iceTap: { name: '氷の粉', kind: 'spell', effect: 'singleDamage', element: 'ice', amount: 1, count: 1 },
+  lightTap: { name: '光の粉', kind: 'spell', effect: 'singleDamage', element: 'light', amount: 1, count: 1 },
   chaosTap: { name: '混沌の粉', kind: 'spell', effect: 'singleDamage', element: 'chaos', amount: 1, count: 1 },
   waterStream: { name: '水流', kind: 'spell', effect: 'singleDamage', element: 'water', amount: 1, attachTurns: 8, count: 1 },
   quake: { name: '地割れ', kind: 'spell', effect: 'singleDamage', element: 'earth', amount: 2, freezeTurns: 1, count: 1 },
@@ -146,8 +148,8 @@ const REACTIONS = {
  * p1 の番（ターン1）で始める。hands で手札を決める（山札はヒールだけ）。reactions を渡すと付着と反応あり
  * 返す play(pid, type, target) は、そのプレイヤーの手札から出す（メインの枠と兵士の枠は戻す。手番も pid にする）
  */
-function setup({ hands = {}, reactions = null, rules: rulesPatch = {} } = {}) {
-  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA };
+function setup({ hands = {}, reactions = null, rules: rulesPatch = {}, real = false } = {}) {
+  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA, ...(real ? buildData({ mode: MODE }).cards : {}) };
   const rules = { ...loadFixture('rules.json'), elementBonus: 0, maxHand: 30, ...rulesPatch };
   const game = new Game({ cards, rules, rng: seededRng(3), elements: ELEMENTS, ...(reactions ? { reactions } : {}) });
   game.debugSetHand('p1', hands.p1 ?? []);
@@ -637,4 +639,205 @@ test('生まれつきの属性が反応で消えるときは、elementCleared �
   game.currentPlayer = 'p2';
   game.playCard(game.players.p2.hand[0].cardId);
   for (const type of ['castleGuardSet', 'castleGuarded']) assert.equal(log.find((e) => e.event === type).stealth, 'p1', type);
+});
+
+// ================= カード表を案（人間が確定した表）と突き合わせる =================
+
+// [名前, MP, 中身（書いたキーだけ比べる）]。兵士は 攻撃・HP・足（弓兵・魔法使いは足なし）
+const S = (attack, hp, speed, extra = {}) => ({ kind: 'soldier', attack, hp, ...(speed ? { speed } : {}), ...extra });
+const PLAN = {
+  kingdom: [
+    ['歩兵', 2, S(3, 5, 2)], ['騎兵', 3, S(4, 4, 3)], ['弓兵', 3, S(3, 3, 0, { role: 'archer' })], ['重装兵', 4, S(2, 9, 1)],
+    ['聖術師', 4, S(2, 4, 0, { role: 'mage', innateElement: 'light' })],
+    ['聖鉄の剣', 2, { kind: 'weapon', attackBonus: 2, element: 'light' }], ['ルミナスランス', 2, { kind: 'weapon', attackBonus: 1, element: 'light', rangeBonus: 1 }],
+    ['ルミナ', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'light', scope: 'lane' }], ['ホーリーレイ', 4, { effect: 'singleDamage', amount: 5, element: 'light' }],
+    ['小回復', 2, { effect: 'healOwnCastle', amount: 5 }], ['ヒール', 4, { effect: 'healOwnCastle', amount: 10 }],
+    ['盾', 1, { effect: 'shieldSoldier', amount: 3 }], ['城壁', 2, { effect: 'armorCastle', amount: 5 }], ['身代わり', 3, { effect: 'guardCastle' }],
+    ['浄化', 2, { effect: 'purifyFlare', amount: 0, clearEnemyAttachments: true }],
+  ],
+  forest: [
+    ['獣人', 2, S(4, 5, 2)], ['エルフ', 3, S(3, 3, 0, { role: 'archer' })], ['ドルイド', 4, S(2, 4, 0, { role: 'mage', spellBoost: { elements: ['fire', 'water', 'wind', 'earth'], amount: 1 } })],
+    ['火炎弾', 3, { effect: 'singleDamage', amount: 4, element: 'fire' }], ['水流', 3, { effect: 'singleDamage', amount: 3, element: 'water', attachTurns: 8 }],
+    ['突風', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'wind', scope: 'lane' }], ['地割れ', 3, { effect: 'singleDamage', amount: 3, element: 'earth', freezeTurns: 1 }],
+    ['火の精霊', 4, { spirit: 'fire', amount: 1, turns: 3 }], ['水の精霊', 4, { spirit: 'water', amount: 1, turns: 3 }],
+    ['風の精霊', 4, { spirit: 'wind', amount: 1, turns: 3, spiritMode: 'add' }], ['土の精霊', 4, { spirit: 'earth', amount: 1, turns: 3, spiritScope: 'soldiers' }],
+    ['生命の雫', 3, { effect: 'healCastleAndSoldiers' }], ['茨の壁', 2, { effect: 'armorCastle', amount: 4 }], ['樹皮の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
+  ],
+  demon: [
+    ['骸骨兵', 2, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 2, S(4, 3, 3, { innateElement: 'dark' })],
+    ['呪術師', 3, S(2, 3, 0, { role: 'mage', spellBoost: { elements: ['dark', 'ice', 'chaos'], amount: 1 } })],
+    ['シャドウサイズ', 2, { kind: 'weapon', attackBonus: 2, element: 'dark' }], ['フロストブレード', 2, { kind: 'weapon', attackBonus: 1, element: 'ice', freezeOnHit: 1 }],
+    ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos' }],
+    ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
+    ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
+    ['毒の霧', 3, { effect: 'poisonEnemySoldiers', amount: 1, turns: 3 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 3 }],
+    ['魂の欠片', 3, { effect: 'damageCastleAndHeal', amount: 3, heal: 3 }], ['残響の魂', 4, { effect: 'reviveFallen', amount: 0.5 }],
+    ['血の膜', 2, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
+  ],
+  dragon: [
+    ['竜人の新兵', 3, S(4, 5, 2)], ['竜騎兵', 3, S(5, 3, 3)], ['幼炎竜', 4, S(5, 5, 2, { innateElement: 'fire' })], ['幼雷竜', 4, S(4, 4, 3, { innateElement: 'thunder' })],
+    ['竜牙剣', 2, { kind: 'weapon', attackBonus: 2, element: 'fire' }], ['雷牙槍', 2, { kind: 'weapon', attackBonus: 2, element: 'thunder', rangeBonus: 1 }],
+    ['ファイアボール', 3, { effect: 'damageEnemyCastle', amount: 5, element: 'fire' }], ['雷光', 3, { effect: 'damageEnemySoldiers', amount: 3, element: 'thunder', scope: 'lane' }],
+    ['火炎の吐息', 4, { effect: 'breathAttack', amount: 4, castleAmount: 4, element: 'fire' }], ['竜血の雫', 2, { effect: 'healSoldier' }],
+    ['火山灰の幕', 2, { effect: 'armorCastle', amount: 3 }], ['幼竜の鱗', 1, { effect: 'shieldSoldier', amount: 2 }],
+  ],
+};
+
+test('カード表：56枚の名前・攻撃・HP・足・MP・効果量・属性が案の表と同じ', () => {
+  for (const [f, rows] of Object.entries(PLAN)) {
+    const set = Object.values(loadFactionCards(MODE, f));
+    assert.deepEqual(set.map((d) => d.name), rows.map((r) => r[0]), `${f} のカードの並び`);
+    for (const [name, mp, want] of rows) {
+      const d = set.find((x) => x.name === name);
+      assert.equal(d.mpCost, mp, `${name} の MP`);
+      for (const [k, v] of Object.entries(want)) assert.deepEqual(d[k], v, `${name}.${k}`);
+      if (d.kind === 'soldier' && d.role) assert.equal(d.speed, undefined, `${name} は動かない`);
+    }
+  }
+});
+
+/** 4陣営の本物のカード（とテスト用のカード）と、本物の反応で遊ぶ */
+function setupReal(opts = {}) {
+  return setup({ ...opts, reactions: opts.reactions === undefined ? loadOptionalData(MODE).reactions : opts.reactions, real: true });
+}
+
+test('本物のカード：精霊（火：城に1・水：城+1・風：速さ+1・土：兵士だけ−1）は次の自分のターンから効く', () => {
+  const { game, play, events } = setupReal({ hands: { p1: ['fac_forest_fire_spirit', 'fac_forest_water_spirit', 'fac_forest_wind_spirit', 'fac_forest_earth_spirit', 'hitter'] } });
+  play('p1', 'fac_forest_fire_spirit');
+  game.players.p1.spirit.fresh = false;
+  const hp2 = game.players.p2.castle.hp;
+  game.triggerSpirit(game.players.p1);
+  assert.equal(game.players.p2.castle.hp, hp2 - 1);
+  play('p1', 'fac_forest_water_spirit');
+  assert.ok(events('spiritEnded').some((e) => e.reason === 'replaced'));
+  game.players.p1.spirit.fresh = false;
+  game.debugSetCastleHp('p1', 10);
+  game.triggerSpirit(game.players.p1);
+  assert.equal(game.players.p1.castle.hp, 11);
+  const h = play('p1', 'hitter');
+  play('p1', 'fac_forest_wind_spirit');
+  assert.equal(game.speedOf(game.players.p1, h), 2);
+  play('p1', 'fac_forest_earth_spirit');
+  assert.equal(game.reduceDamage(game.players.p1, 3, 'soldier'), 2);
+  assert.equal(game.reduceDamage(game.players.p1, 3, 'castle'), 3, '土の精霊は城を軽くしない');
+});
+
+test('本物のカード：魂の欠片・残響の魂・カオスパルス・氷の息・呪いの印・毒の霧（兵士だけ・3ターン・城は毒にしない）', () => {
+  const { game, play } = setupReal({ hands: { p1: ['fac_demon_soul_shard', 'fac_demon_echo_soul', 'fac_demon_chaos_pulse', 'fac_demon_frost_breath', 'fac_demon_curse_mark', 'fac_demon_poison_mist', 'fragile'], p2: ['tank', 'fireTap'] }, reactions: null });
+  game.debugSetCastleHp('p1', 10);
+  const hp2 = game.players.p2.castle.hp;
+  play('p1', 'fac_demon_soul_shard');
+  assert.equal(game.players.p2.castle.hp, hp2 - 3);
+  assert.equal(game.players.p1.castle.hp, 13);
+  const f = play('p1', 'fragile');
+  play('p2', 'fireTap', { soldierId: f.soldierId }); // 1 → 倒れない
+  f.hp = 1;
+  game.players.p2.hand.push(game.createCard('fireTap'));
+  play('p2', 'fireTap', { soldierId: f.soldierId });
+  play('p1', 'fac_demon_echo_soul');
+  const back = game.players.p1.soldiers.at(-1);
+  assert.equal(back.type, 'fragile');
+  assert.equal(back.hp, 1); // 最大HP2の半分
+  const t = play('p2', 'tank');
+  play('p1', 'fac_demon_chaos_pulse'); // 先頭の兵士（大盾兵）に当たる
+  assert.ok(t.hp <= 57);
+  play('p1', 'fac_demon_frost_breath');
+  assert.equal(t.frozen, 1);
+  play('p1', 'fac_demon_curse_mark', { soldierId: t.soldierId });
+  assert.deepEqual(t.weakened, { amount: 2, turns: 3 });
+  play('p1', 'fac_demon_poison_mist');
+  assert.deepEqual(t.poison, { amount: 1, turns: 3 });
+  assert.equal(game.players.p2.castle.poison, null, '城は毒にしない');
+});
+
+test('本物のカード：竜のファイアボールは先頭の兵士に当たり、兵士がいなければ城に当たる', () => {
+  const { game, play } = setupReal({ hands: { p1: ['fac_dragon_fireball', 'fac_dragon_fireball'], p2: ['tank'] }, rules: { castleSpellHitsFront: true } });
+  const hp = game.players.p2.castle.hp;
+  play('p1', 'fac_dragon_fireball');
+  assert.equal(game.players.p2.castle.hp, hp - 5);
+  const t = play('p2', 'tank');
+  play('p1', 'fac_dragon_fireball');
+  assert.equal(t.hp, 55);
+  assert.equal(game.players.p2.castle.hp, hp - 5);
+});
+
+/** 本物の反応：p2 の大盾兵（盾つき）に、p1 が粉の魔法で属性を2つ当てる */
+function react(first, second, { shield = 0, others = 0, frozen = 0 } = {}) {
+  const ctx = setupReal({ hands: { p1: [first, second], p2: ['tank', ...Array(others).fill('tank')] } });
+  const t = ctx.play('p2', 'tank');
+  const rest = Array.from({ length: others }, () => ctx.play('p2', 'tank'));
+  t.shield = shield;
+  t.frozen = frozen;
+  ctx.play('p1', first, { soldierId: t.soldierId });
+  ctx.play('p1', second, { soldierId: t.soldierId });
+  return { ...ctx, t, rest, r: ctx.events('reactionTriggered')[0] };
+}
+
+test('本物の反応：全部の組で起きて、それぞれの効果が出る', () => {
+  let x = react('waterTap', 'fireBolt'); // 蒸発：3×0.5 → +2
+  assert.equal(x.r.reaction, 'evaporate'); assert.equal(x.r.damage, 2);
+  x = react('waterTap', 'earthTap'); // 泥
+  assert.equal(x.r.reaction, 'mud'); assert.deepEqual(x.t.slowed, { amount: 1, turns: 2 });
+  x = react('windTap', 'fireTap', { others: 1 }); // 炎拡散：同じマスのほかの兵士にも
+  assert.equal(x.r.reaction, 'flameSpread'); assert.deepEqual(x.t.burn, { amount: 1, turns: 2 }); assert.deepEqual(x.rest[0].burn, { amount: 1, turns: 2 });
+  x = react('windTap', 'earthTap'); // 砂嵐：やけど＋目くらまし
+  assert.equal(x.r.reaction, 'sandstorm'); assert.deepEqual(x.t.burn, { amount: 1, turns: 2 }); assert.deepEqual(x.t.blinded, { chance: 0.3, turns: 2 });
+  x = react('windTap', 'waterTap'); // 霧
+  assert.equal(x.r.reaction, 'fog'); assert.deepEqual(x.t.blinded, { chance: 0.3, turns: 2 }); assert.equal(x.t.burn, null);
+  x = react('earthTap', 'fireTap', { shield: 5 }); // 溶岩：盾5−1(土)=4 → 火で3 → 壊すのは3、+2
+  assert.equal(x.r.reaction, 'lava'); assert.equal(x.r.damage, 5); assert.equal(x.t.shield, 0);
+  x = react('thunderTap', 'fireTap', { others: 1 }); // 轟雷爆炎
+  assert.equal(x.r.reaction, 'thunderBlaze'); assert.equal(x.rest[0].hp, 58); assert.equal(x.game.players.p2.castle.hp, x.game.players.p2.castle.maxHp - 3);
+  x = react('darkTap', 'chaosTap'); // 深淵侵食
+  assert.equal(x.r.reaction, 'abyss'); assert.deepEqual(x.game.players.p2.castle.healCut, { ratio: 0.5, turns: 2 });
+  x = react('darkTap', 'iceTap'); // 黒氷：凍結＋やけど
+  assert.equal(x.r.reaction, 'blackIce'); assert.equal(x.t.frozen, 1); assert.deepEqual(x.t.burn, { amount: 1, turns: 2 });
+  x = react('chaosTap', 'iceTap', { frozen: 1 }); // 砕氷：凍結中は+6
+  assert.equal(x.r.reaction, 'shatter'); assert.equal(x.r.damage, 8); assert.equal(x.t.frozen, 0);
+  x = react('darkTap', 'lightTap'); // 対消滅
+  assert.equal(x.r.reaction, 'annihilation'); assert.equal(x.r.damage, 8);
+  // 混沌反応：混沌＋2種（光・闇は表では組になるが、3種以上は混沌反応が先）
+  const c = setupReal({ hands: { p1: ['chaosTap', 'fireTap', 'thunderTap'], p2: ['tank'] } });
+  const t = c.play('p2', 'tank');
+  t.attachments = [{ element: 'chaos', turns: 5 }, { element: 'water', turns: 5 }];
+  c.play('p1', 'thunderTap', { soldierId: t.soldierId });
+  assert.equal(c.events('reactionTriggered')[0].reaction, 'chaos');
+  assert.equal(c.events('reactionTriggered')[0].damage, 12);
+});
+
+test('身代わり：兵士の突入・精霊・反応からの城への攻撃を受ける。攻撃を受けたときの防御（defend）には出せない', () => {
+  // 兵士の突入：城壁があるので防御を聞かれるが、身代わりは defend で出せない。兵士が代わりに受け、印は消える
+  const a = setupReal({ hands: { p1: ['tank', 'decoy', 'decoy', 'fac_king_wall'], p2: ['hitter'] }, reactions: null, rules: { defenseReaction: true } });
+  const g = a.play('p1', 'tank');
+  a.play('p1', 'decoy', { soldierId: g.soldierId });
+  g.position = 4; // 相手の城の前（突っ込んでくる兵士とはすれちがっている）
+  const h = a.play('p2', 'hitter');
+  h.position = 4;
+  march(a.game, 'p2');
+  assert.equal(a.game.phase, 'defend');
+  const decoyCard = a.game.players.p1.hand.find((c) => c.type === 'decoy');
+  assert.equal(a.game.canDefend(decoyCard.cardId).ok, false);
+  assert.equal(a.game.passDefense().ok, true);
+  assert.equal(g.hp, 60 - 3);
+  assert.equal(a.game.players.p1.castle.guard, null);
+  // 精霊
+  const b = setupReal({ hands: { p1: ['tank', 'decoy'], p2: ['fac_forest_fire_spirit'] }, reactions: null });
+  const g2 = b.play('p1', 'tank');
+  b.play('p1', 'decoy', { soldierId: g2.soldierId });
+  b.play('p2', 'fac_forest_fire_spirit');
+  b.game.players.p2.spirit.fresh = false;
+  b.game.triggerSpirit(b.game.players.p2);
+  assert.equal(g2.hp, 59);
+  assert.equal(b.events('castleGuarded').length, 1);
+  // 反応（轟雷爆炎の城へのダメージ）
+  const c = setupReal({ hands: { p1: ['thunderTap', 'fireTap'], p2: ['tank', 'tank', 'decoy'] } });
+  const v = c.play('p2', 'tank');
+  const g3 = c.play('p2', 'tank');
+  c.play('p2', 'decoy', { soldierId: g3.soldierId });
+  const hp = c.game.players.p2.castle.hp;
+  c.play('p1', 'thunderTap', { soldierId: v.soldierId });
+  c.play('p1', 'fireTap', { soldierId: v.soldierId });
+  assert.equal(c.game.players.p2.castle.hp, hp);
+  assert.equal(c.events('castleGuarded')[0].amount, 3);
+  assert.equal(c.game.players.p2.castle.guard, null);
 });
