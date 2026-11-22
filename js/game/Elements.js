@@ -42,7 +42,7 @@ export function beatsElement(table, attacker, defender) {
 
 /**
  * reactions.json（属性の付着と反応）の中身のチェック。間違っていれば、どこが悪いかを書いた Error を投げる。
- * 形：{ attachTurns, reactions: { <id>: { name, elements: [a, b], damage, frozenTurns?, frozenBonus? } }, chaos?: { element, name, damagePerElement, minElements } }
+ * 形：{ attachTurns, reactions: { <id>: { name, elements: [a, b], damage, frozenTurns?, frozenBonus?, (4陣営) multiplier?, burn?, slow?, blind?, splash?, castleDamage?, shieldBreak?, healCut? } }, chaos?: { element, name, damagePerElement, minElements } }
  * @param {object} data reactions.json の中身
  * @param {string[]} ids 使える属性ID（elementIds の結果）
  */
@@ -68,6 +68,19 @@ export function validateReactions(data, ids) {
     if (!nonNegInt(r.damage)) throw new Error(`${where}: damage（追加ダメージ）は0以上の整数にしてください`);
     if (r.frozenTurns !== undefined && !posInt(r.frozenTurns)) throw new Error(`${where}: frozenTurns（凍結の回数）は1以上の整数にしてください`);
     if (r.frozenBonus !== undefined && !nonNegInt(r.frozenBonus)) throw new Error(`${where}: frozenBonus（凍結中の追加ダメージ）は0以上の整数にしてください`);
+    // 4陣営モードの追加の効果（どれも省略できる）
+    const obj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+    const rate = (v) => typeof v === 'number' && v > 0 && v <= 1;
+    if (r.multiplier !== undefined && !(typeof r.multiplier === 'number' && r.multiplier > 1)) throw new Error(`${where}: multiplier（当たった攻撃のダメージの倍率）は1より大きい数にしてください`);
+    if (r.burn !== undefined && !(obj(r.burn) && posInt(r.burn.amount) && posInt(r.burn.turns) && [undefined, 'target', 'adjacent'].includes(r.burn.scope))) {
+      throw new Error(`${where}: burn（やけど）は { amount, turns, scope?: "target" | "adjacent" }（1以上の整数）にしてください`);
+    }
+    if (r.slow !== undefined && !(obj(r.slow) && posInt(r.slow.amount) && posInt(r.slow.turns))) throw new Error(`${where}: slow（鈍足）は { amount, turns }（1以上の整数）にしてください`);
+    if (r.blind !== undefined && !(obj(r.blind) && rate(r.blind.chance) && posInt(r.blind.turns))) throw new Error(`${where}: blind（目くらまし）は { chance: 0より大きく1以下, turns: 1以上の整数 } にしてください`);
+    if (r.splash !== undefined && !(obj(r.splash) && posInt(r.splash.amount) && [undefined, 'lane'].includes(r.splash.scope))) throw new Error(`${where}: splash（同じ道のほかの兵士へのダメージ）は { amount: 1以上の整数, scope?: "lane" } にしてください`);
+    if (r.castleDamage !== undefined && !posInt(r.castleDamage)) throw new Error(`${where}: castleDamage（城へのダメージ）は1以上の整数にしてください`);
+    if (r.shieldBreak !== undefined && !(obj(r.shieldBreak) && nonNegInt(r.shieldBreak.bonus))) throw new Error(`${where}: shieldBreak（盾を壊す）は { bonus: 0以上の整数 } にしてください`);
+    if (r.healCut !== undefined && !(obj(r.healCut) && rate(r.healCut.ratio) && posInt(r.healCut.turns))) throw new Error(`${where}: healCut（回復量減少）は { ratio: 0より大きく1以下, turns: 1以上の整数 } にしてください`);
   }
   if (data.chaos !== undefined) {
     const c = data.chaos;

@@ -30,8 +30,16 @@ export class Soldier {
     /** 持っている武器のカード種類（なければ null） */
     this.weapon = null;
     this.weaponBonus = 0;
-    /** 属性（武器でつく。なければ null） */
-    this.element = null;
+    /** 属性（武器でつく。4陣営モードでは兵士のカードの innateElement＝生まれつきの属性。なければ null） */
+    this.element = card.def.innateElement ?? null;
+    /** 武器の射程+（rangeBonus の合計。弓兵・魔法使いは撃てる距離がのび、進む兵士は離れた相手を突ける） */
+    this.rangeBonus = 0;
+    /** 武器の「当たった相手を休ませる」回数（freezeOnHit。いちばん大きいもの。0 ならなし） */
+    this.freezeOnHit = 0;
+    /** 鈍足 { amount, turns }（泥の反応。速さが amount 下がる。最低1）か null */
+    this.slowed = null;
+    /** 目くらまし { chance, turns }（霧・砂嵐の反応。攻撃が chance の確率で外れる）か null */
+    this.blinded = null;
     /** 盾の残り。ダメージは先に盾が受ける */
     this.shield = 0;
     /** 毒 { amount, turns }（なければ null） */
