@@ -12,7 +12,7 @@ const STAGE_SLUGS = {
 };
 
 const STAGE_LOOK = {
-  meadow:     { bg: '#9eb018', sun: '#fff8e2', sunInt: 2.45, hemiSky: '#d8f0ff', hemiGnd: '#7a8e22', hemiInt: 1.25 },
+  meadow:     { bg: '#8fa816', sun: '#fff7dc', sunInt: 2.55, hemiSky: '#e2f4ff', hemiGnd: '#6b8718', hemiInt: 1.30 },
   lava:       { bg: '#533a3e', sun: '#ffd8b8', sunInt: 2.25, hemiSky: '#b58a8c', hemiGnd: '#4d322e', hemiInt: 1.35 },
   ice:        { bg: '#80c9ec', sun: '#f5fbff', sunInt: 2.35, hemiSky: '#e8f7ff', hemiGnd: '#4e9ad4', hemiInt: 1.30 },
   ruins:      { bg: '#ecb25f', sun: '#fff2d0', sunInt: 2.45, hemiSky: '#fff0cc', hemiGnd: '#ad7c42', hemiInt: 1.25 },
@@ -159,6 +159,11 @@ export class FieldGL {
     this.rafId = 0;
     this.startTime = performance.now();
     this.lastFrameTime = this.startTime;
+    this.fpsFrames = 0;
+    this.fpsWindowStart = this.startTime;
+    this.currentFps = 60;
+    this.currentFrameMs = 16.7;
+    this.lastLoadMs = 0;
 
     this._onResize = () => this.resize();
     this._onVisibility = () => {
@@ -270,6 +275,7 @@ export class FieldGL {
     if (!ok || seq !== this.loadSeq || this.disposed) return;
 
     const slug = STAGE_SLUGS[this.stageId];
+    const tLoad0 = performance.now();
     try {
       const gltf = await loadGlb(this.GLTFLoader, `assets/models/field-${slug}.glb`);
       if (seq !== this.loadSeq || this.disposed) return;
@@ -280,6 +286,7 @@ export class FieldGL {
       this.setVisible(!this.hidden);
       if (this.lastSync) this.syncBoard(this.lastSync);
       this.renderFrame(performance.now());
+      this.lastLoadMs = Math.round(performance.now() - tLoad0);
       this.maybeStartLoop();
     } catch {
       if (seq === this.loadSeq) this.setVisible(false);
@@ -1148,6 +1155,31 @@ export class FieldGL {
     }
 
     this.renderer.render(this.scene, this.camera);
+    this.fpsFrames++;
+    const winElapsed = now - this.fpsWindowStart;
+    if (winElapsed >= 500) {
+      this.currentFps = Number(((this.fpsFrames * 1000) / winElapsed).toFixed(1));
+      this.currentFrameMs = Number((winElapsed / this.fpsFrames).toFixed(2));
+      this.fpsFrames = 0;
+      this.fpsWindowStart = now;
+    }
+  }
+
+  getPerfStats() {
+    const info = this.renderer?.info;
+    const mem = typeof performance !== 'undefined' ? performance.memory : null;
+    return {
+      active3d: Boolean(this.renderer && !this.hidden && !this.disabled && this.stageGroup),
+      stageId: this.stageId,
+      fps: this.currentFps,
+      frameMs: this.currentFrameMs,
+      loadMs: this.lastLoadMs,
+      drawCalls: info?.render?.calls ?? 0,
+      triangles: info?.render?.triangles ?? 0,
+      geometries: info?.memory?.geometries ?? 0,
+      textures: info?.memory?.textures ?? 0,
+      jsHeapMB: mem ? Number((mem.usedJSHeapSize / (1024 * 1024)).toFixed(1)) : null,
+    };
   }
 
   destroy() {

@@ -430,6 +430,7 @@ async function boot() {
         standIns: [],
       }),
       getGame: () => game,
+      getRenderer: () => renderer,
       getSeed: () => seed,
       getViewerId: () => viewerId,
       onRestart: (s) => startLocal(s),

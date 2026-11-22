@@ -78,7 +78,10 @@ export class DebugPanel {
 
     const ph = this.getPlaceholders();
     const showSquares = document.getElementById('app').classList.contains('show-squares');
+    const glStats = this.getRenderer?.()?.fieldGL?.getPerfStats?.() ?? null;
     p.innerHTML = `
+      <h3>3D盤面・性能計測</h3>
+      <div class="note" id="debug-3d-stats">${glStats ? `3D表示: <b>${glStats.active3d ? '有効' : '2Dフォールバック'}</b> / ステージ: <b>${glStats.stageId ?? '-'}</b> / 読込: <b>${glStats.loadMs}ms</b> / FPS: <b>${glStats.fps}</b> (${glStats.frameMs}ms) / DrawCalls: <b>${glStats.drawCalls}</b> / Triangles: <b>${glStats.triangles}</b> / Geometries: <b>${glStats.geometries}</b> / Textures: <b>${glStats.textures}</b>${glStats.jsHeapMB != null ? ` / JS Heap: <b>${glStats.jsHeapMB}MB</b>` : ''}` : '未初期化'}</div>
       <h3>見た目の確認</h3>
       <div class="row"><button type="button" class="test-clash">ぶつかる演出を試す</button></div>
       <div class="note">兵士同士の戦い（soldiersClashed）の演出だけを流します。ゲームの状態は変わりません</div>

@@ -782,7 +782,7 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 
 | ファイル | 作成ツール | 利用条件 | 作成日 |
 |---|---|---|---|
-| `models/field-meadow.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-meadow.glb` | Blender 5.3 / `assets/models/make-fields.py`（本格造形版：切石積み擁壁・2層段丘・板根付き大木・5弁野花・ファセット岩・768×1024プロシージャル手描き風地面テクスチャ内蔵） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/field-lava.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/field-ice.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/field-ruins.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
