@@ -67,6 +67,8 @@ export class Player {
 
   removeSoldier(soldierId) {
     this.soldiers = this.soldiers.filter((s) => s.soldierId !== soldierId);
+    // 身代わり（4陣営）：城を守っていた兵士が場からいなくなったら（倒れた・城に着いた・帰った…）、身代わりも消える
+    if (this.castle.guard === soldierId) this.castle.guard = null;
   }
 
   /**

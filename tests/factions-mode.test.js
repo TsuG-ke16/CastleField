@@ -496,3 +496,22 @@ test('クラシックの getState は変わらない（鈍足・目くらまし�
   }
   assert.equal(Object.hasOwn(game.getState('p1').players.p1, 'castleHealCut'), false);
 });
+
+test('身代わり：守る兵士が倒れた・城に着いて消えたら、身代わりの印も消える（CPU が消えた兵士のIDを見て詰まらない）', () => {
+  // 倒れた
+  const a = setup({ hands: { p1: ['fragile', 'decoy', 'decoy'], p2: ['fireTap'] }, reactions: { attachTurns: 3, reactions: {} } });
+  const f = a.play('p1', 'fragile');
+  a.play('p1', 'decoy', { soldierId: f.soldierId });
+  f.hp = 1;
+  a.play('p2', 'fireTap', { soldierId: f.soldierId });
+  assert.equal(a.game.players.p1.soldiers.includes(f), false);
+  assert.equal(a.game.getState('p1').players.p1.castleGuard, null);
+  // 城に着いて消えた
+  const b = setup({ hands: { p1: ['hitter', 'decoy'] } });
+  const h = b.play('p1', 'hitter');
+  b.play('p1', 'decoy', { soldierId: h.soldierId });
+  h.position = 4;
+  march(b.game, 'p1');
+  assert.equal(b.game.players.p1.soldiers.includes(h), false);
+  assert.equal(b.game.getState('p1').players.p1.castleGuard, null);
+});
