@@ -775,3 +775,17 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 | `review/field-backgrounds-v2/before/desert.webp` | `変更前の bg/stage-desert.png / exec-0d5d9859-2237-4151-b222-87185b5a73a6.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
 
 `review/field-backgrounds-v2/catalog.json`・説明・確認ページはこの依頼向けに作成した素材管理とモデリング用の資料。部品数・ポリゴン数は制作目標で、生成画像に対応する完成3Dモデルの計測値ではない。
+
+## 3Dフィールドモデル6種（2026-11-23）
+
+PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）および `field-layout.svg` の寸法（幅12m×奥行20m・中央 `|X| < 4.2` フラット・外周小物）に基づき、Blender 5.3 の Python スクリプト（`assets/models/make-fields.py`）でプロシージャル生成・glTF 2.0（GLB）書き出し。外部3Dアセットや外部テクスチャは不使用。地面の色むらは頂点カラー（`COLOR_0`）で表現。
+
+| ファイル | 作成ツール | 利用条件 | 作成日 |
+|---|---|---|---|
+| `models/field-meadow.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-lava.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-ice.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-ruins.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-dark-forest.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-desert.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/make-fields.py` | 手書き Python（bpy / bmesh） | 本リポジトリのコードと同一 | 2026-11-23 |

@@ -73,6 +73,8 @@
 #app[data-stage="lava"] { --stage-ground: #533a3e; }
 #app[data-stage="desert"] { --stage-ground: #f6a139; }
 #app[data-stage][data-stage-art] #scenery .tree { display: none; }
+#scenery .field-gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; z-index: 0; }
+#app[data-stage3d] #scenery .tree { display: none; }
 #app[data-stage][data-stage-art] #road .lane:not(.targetable) { border-color: transparent; background: none; box-shadow: none; }
 /* 飛び石は、道にぴったり合う画面側のもの（砂漠と同じ石）を、地面の絵の上に並べる（絵の飛び石は道とずれるため） */
 #app[data-stage][data-stage-art] #road .stone { display: block; width: 48%; height: 34%; opacity: .95; filter: sepia(.4) saturate(1.2) brightness(1.05); }

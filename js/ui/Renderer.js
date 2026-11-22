@@ -13,6 +13,7 @@ import { ELEMENT_LOOK } from './look.js';
 import { castleArt, unitArt, monsterArt, treeArt, icon, colorOf, spiritSprite, imageArt, isAssetReady } from './art.js';
 import { soldierMotion, monsterMotion } from './motion.js';
 import { WeatherView } from './WeatherView.js';
+import { FieldGL } from './FieldGL.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -105,6 +106,7 @@ export class Renderer {
     // HTML に data-icon="heart" のように書いた所へ、小さな記号を入れる
     for (const el of document.querySelectorAll('[data-icon]')) el.innerHTML = icon(el.dataset.icon);
     this.buildScenery();
+    this.fieldGL = new FieldGL($('app'), $('scenery'));
     this.buildRoad();
 
     // 盤面のタップ：対象を選んでいるときは対象を、そうでなければ兵士・魔物の情報を出す
@@ -284,6 +286,7 @@ export class Renderer {
       this.zoomBar.hidden = !this.isPlaza;
       this.el.castle.me.hidden = this.el.castle.opp.hidden = this.isPlaza;
       this.el.field.hidden = this.isPlaza;
+      this.fieldGL?.setHidden(this.isPlaza);
       if (this.isPlaza) {
         this.zoom = 1;
     this.monsterBirths = new Map();
@@ -484,6 +487,7 @@ export class Renderer {
     // 絵があるときは、絵の飛び石を使う（画面側の飛び石を消す。css/stage.css の [data-stage-art]）
     if (ready) this.el.app.dataset.stageArt = '1';
     else delete this.el.app.dataset.stageArt;
+    this.fieldGL?.setStage(stage?.id ?? null);
     if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
   }
 
@@ -493,6 +497,7 @@ export class Renderer {
     this.nightLeft = nightLeft;
     if (time === 'night') this.el.app.dataset.time = 'night';
     else delete this.el.app.dataset.time;
+    this.fieldGL?.setTime(time);
     if (this.lastTurnInfo) this.setTurnInfo(...this.lastTurnInfo);
   }
 
