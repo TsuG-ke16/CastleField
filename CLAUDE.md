@@ -1410,7 +1410,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - `getState().mpCosts` に、MP を使う兵士・武器・防御なども入る
 - **MP の自然回復**（`rules.mpPerTurn`）：自分のターンの始め（コインのあと、ドローの前）に増える（`mpChanged` の `reason: "turn"`。上限まで）
 - **後攻のマナ**（`rules.secondPlayerMp`）：先攻以外の人の最初の MP がこれだけ多い（上限まで。イベントは出さない）
-- クラシック（仮）：`initialMp` 10・`maxMp` 20・`mpPerTurn` 3・`secondPlayerMp` 3。`data/classic/cards.json` の全カードに `mpCost` を書いた（兵士1〜2・武器1〜2・防御1〜2・回復1〜3・攻撃の魔法2〜4）
+- クラシック（仮）：`initialMp` 10・`maxMp` 20・`mpPerTurn` 3・`secondPlayerMp` 2（後攻の優遇は少し弱めた：城壁5→3・MP3→2。手札+1はそのまま）。`data/classic/cards.json` の全カードに `mpCost` を書いた（兵士1〜2・武器1〜2・防御1〜2・回復1〜3・攻撃の魔法2〜4）
 
 ### 敵兵士1体にダメージ（`effect: "singleDamage"`、`amount`）
 - 対象は相手の見える兵士1体 `{ soldierId }`（忍者・暗殺者は選べない）。ダメージは `amount`（ステージの魔法の増加は乗る）。盾が先に受ける。霧で外れる。属性なし
