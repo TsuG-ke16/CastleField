@@ -245,7 +245,7 @@ export const PASSIVE_SPIRIT_EFFECTS = ['castleDamage', 'soldiersDamage', 'pushFr
 
 /**
  * 常時の精霊（デッキの passiveSpirits。4陣営の森）のチェック。間違っていれば Error を投げる。
- * 形：{ attachTurns, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }
+ * 形：{ attachTurns, everyTurns?, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }
  * @param {object} data passiveSpirits
  * @param {string[]} elementIds 使える属性ID
  * @param {string} where エラーの文の頭
@@ -254,6 +254,7 @@ export function validatePassiveSpirits(data, elementIds, where) {
   const posInt = (v) => Number.isInteger(v) && v > 0;
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(`${where}: passiveSpirits は { attachTurns, spirits } にしてください`);
   if (!posInt(data.attachTurns)) throw new Error(`${where}: passiveSpirits.attachTurns（付着が残る回数）は1以上の整数にしてください`);
+  if (data.everyTurns !== undefined && !posInt(data.everyTurns)) throw new Error(`${where}: passiveSpirits.everyTurns（自分の何ターンに1回動くか）は1以上の整数にしてください`);
   if (!Array.isArray(data.spirits) || data.spirits.length === 0) throw new Error(`${where}: passiveSpirits.spirits に、動く順に精霊を1体以上書いてください`);
   const seen = new Set();
   data.spirits.forEach((sp, i) => {

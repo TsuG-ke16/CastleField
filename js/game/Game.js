@@ -1419,6 +1419,7 @@ export class Game {
 
   /**
    * 4陣営の森：常時の精霊（席のデッキの passiveSpirits）。自分のターンの始めに、spirits の精霊が順に1体ずつ動く（1ターン目は先頭）。
+   * everyTurns（省略すると1）なら、自分の everyTurns ターンに1回だけ動く（1ターン目に動き、間のターンは休む。順番は動いたときだけ進む）。
    * passiveSpiritActed → 効果（castleDamaged / soldierMoved（"pushed"）・soldierDamaged（cause "spirit"））→ 動いた精霊の属性を
    * 敵の見える兵士全員に付着（elementAttached。反応は起こさない。reactions を渡したゲームだけ）。
    * 城を攻める相手は、まだ負けていない相手の陣地のうち席順で最初の陣地。防御は聞かない（身代わりは受ける）。霧で外れない。
@@ -1427,6 +1428,12 @@ export class Game {
   actPassiveSpirit(player) {
     const def = player.passiveSpirits;
     if (!def) return false;
+    // 動く間隔（everyTurns。省略すると1＝毎ターン）：休むターンは何もしない（順番も進まない）
+    if (player.passiveSpiritWait > 0) {
+      player.passiveSpiritWait -= 1;
+      return false;
+    }
+    player.passiveSpiritWait = (def.everyTurns ?? 1) - 1;
     const sp = def.spirits[player.passiveSpiritIndex % def.spirits.length];
     player.passiveSpiritIndex = (player.passiveSpiritIndex + 1) % def.spirits.length;
     const mySide = this.side(player.id);
@@ -1471,12 +1478,15 @@ export class Game {
     return false;
   }
 
-  /** getState の常時の精霊：{ next, name, element, effect, amount, order } か null */
+  /** getState の常時の精霊：{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct } か null。turnsUntilAct は、自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン） */
   passiveSpiritState(player) {
     const def = player.passiveSpirits;
     if (!def) return null;
     const sp = def.spirits[player.passiveSpiritIndex % def.spirits.length];
-    return { next: sp.spirit, name: sp.name, element: sp.element, effect: sp.effect, amount: sp.amount, order: def.spirits.map((x) => x.spirit) };
+    return {
+      next: sp.spirit, name: sp.name, element: sp.element, effect: sp.effect, amount: sp.amount, order: def.spirits.map((x) => x.spirit),
+      everyTurns: def.everyTurns ?? 1, turnsUntilAct: player.passiveSpiritWait + 1,
+    };
   }
 
   /** 起こる反応（なければ null）。{ id, name, elements（反応した属性）, consumed（兵士から消える属性）, damage, def } */

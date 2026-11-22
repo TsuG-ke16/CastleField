@@ -288,7 +288,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   - 道の `players[0]` の兵士：道のマス番号 = `position`
   - 道の `players[1]` の兵士：道のマス番号 = `laneLength - 1 - position`
 - 兵士の `targetId` は、その兵士が向かっている相手（道の向こうの人）
-- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order }` か null。だれかが常時の精霊を持つゲームだけ）。くわしくは「4陣営モード」
+- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）。くわしくは「4陣営モード」
 
 ### Gameが出すイベント
 
@@ -343,7 +343,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `cardStolen` | `{ playerId, victimId, cardId }` … 盗賊。`cardId` から種類は分からない（奪った本人だけが `state` で種類を見られる） |
 | `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
 | `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
-| `passiveSpiritActed` | `{ playerId, spirit, name, element, effect, amount, targetId, soldierIds, push? }` … 4陣営の森の常時の精霊が動いた（自分のターンの始め。コイン・MP の回復のあと、ドローの前）。`effect` は `"castleDamage"`（`targetId` の城に。このあと `castleDamaged`（`source: { kind: "passiveSpirit", spirit }`。精霊に `ignoreArmor` を書けば `ignoreArmor: true`。今の森の精霊は書いていない））／`"soldiersDamage"`（`soldierIds` の兵士に `soldierDamaged`（`cause: "spirit"`））／`"pushFront"`（`soldierIds` の先頭の兵士を `push` マス押し戻す `soldierMoved`（`cause: "pushed"`。マス0なら出ない）→ `soldierDamaged`（`cause: "spirit"`））。敵の兵士がいなければ `soldierIds` は空で、何も起きない。そのあと、敵の見える兵士全員に `elementAttached`（`source: "passiveSpirit"`。`reactions` を渡したゲームだけ） |
+| `passiveSpiritActed` | `{ playerId, spirit, name, element, effect, amount, targetId, soldierIds, push? }` … 4陣営の森の常時の精霊が動いた（自分のターンの始め。コイン・MP の回復のあと、ドローの前。`everyTurns` で休むターンには出ない）。`effect` は `"castleDamage"`（`targetId` の城に。このあと `castleDamaged`（`source: { kind: "passiveSpirit", spirit }`。精霊に `ignoreArmor` を書けば `ignoreArmor: true`。今の森の精霊は書いていない））／`"soldiersDamage"`（`soldierIds` の兵士に `soldierDamaged`（`cause: "spirit"`））／`"pushFront"`（`soldierIds` の先頭の兵士を `push` マス押し戻す `soldierMoved`（`cause: "pushed"`。マス0なら出ない）→ `soldierDamaged`（`cause: "spirit"`））。敵の兵士がいなければ `soldierIds` は空で、何も起きない。そのあと、敵の見える兵士全員に `elementAttached`（`source: "passiveSpirit"`。`reactions` を渡したゲームだけ） |
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
 | `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った。`mpAllCards` なら兵士・武器・防御なども）／`"turn"`（ターンの始めの自然回復 `mpPerTurn`）／`"stage"`（古代遺跡）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
@@ -1669,8 +1669,9 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 ### 森の常時の精霊（人間の指示。元の案・統合仕様書から変えた。数値は仮）
 元の案は「精霊4種を召喚するカード（火 城に1×3・水 城+1×3・風 速さ+1×3・土 ダメージ−1×3）」で、統合仕様書は「召喚中の精霊の属性は先行付着属性の代用」だった。**人間の指示で、精霊はカードではなく、森の陣営にいつもいる特性に変えた**（精霊のカード4枚はなくし、属性の武器4枚に入れかえた。森は14種のまま）。
 
-- **置き場**：`data/factions/factions.json` の森の `passiveSpirits`（`{ attachTurns, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }`。`ignoreArmor: true` は城壁を無視する（仕組みは残してあるが、今の精霊は使っていない））。`factionDecks` がデッキに写し、Game は席のデッキの `passiveSpirits` を読む（チェックは `js/game/Setup.js` の `validatePassiveSpirits`）。書かない陣営・モードは今までどおり
-- **いつ**：自分のターンの始め（コイン・MP の回復のあと、ドローの前。`randomAttachTurnStart` と同じ位置）に、`spirits` の順（火 → 水 → 風 → 土 → 火 …）に1体ずつ動く。自分のターンごとに1つ進む（1ターン目は火）
+- **置き場**：`data/factions/factions.json` の森の `passiveSpirits`（`{ attachTurns, everyTurns?, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }`。`ignoreArmor: true` は城壁を無視する（仕組みは残してあるが、今の精霊は使っていない））。`factionDecks` がデッキに写し、Game は席のデッキの `passiveSpirits` を読む（チェックは `js/game/Setup.js` の `validatePassiveSpirits`）。書かない陣営・モードは今までどおり
+- **いつ**：自分のターンの始め（コイン・MP の回復のあと、ドローの前。`randomAttachTurnStart` と同じ位置）に、`spirits` の順（火 → 水 → 風 → 土 → 火 …）に1体ずつ動く（1ターン目は火）
+- **動く間隔**（`everyTurns`。省略すると1＝毎ターン。今のデータも1）：自分の `everyTurns` ターンに1回だけ動く。1ターン目に動き、間の自分のターンは休む（イベントなし）。順番は動いたときだけ1つ進む。`getState()` の `passiveSpirit.turnsUntilAct` で、次に動くまでの自分のターンの数が分かる
 
 | 精霊 | 属性 | 効果（`effect`） |
 |---|---|---|

@@ -81,7 +81,7 @@ function setup({ hands = {}, reactions = REACTIONS, spirits = SPIRITS, rules: pa
 test('常時の精霊：自分のターンの始めに 火 → 水 → 風 → 土 → 火 の順に1体ずつ動く（コイン・MP のあと、ドローの前）。getState に次の精霊', () => {
   const { game, log } = setup({ rules: { coinPerTurn: 1 } });
   const st0 = game.getState('p1');
-  assert.deepEqual(st0.players.p1.passiveSpirit, { next: 'fire', name: 'イフリート', element: 'fire', effect: 'castleDamage', amount: 3, order: ['fire', 'water', 'wind', 'earth'] });
+  assert.deepEqual(st0.players.p1.passiveSpirit, { next: 'fire', name: 'イフリート', element: 'fire', effect: 'castleDamage', amount: 3, order: ['fire', 'water', 'wind', 'earth'], everyTurns: 1, turnsUntilAct: 1 });
   assert.equal(st0.players.p2.passiveSpirit, null, '持っていない人は null');
   game.start();
   const seen = [];
@@ -96,6 +96,36 @@ test('常時の精霊：自分のターンの始めに 火 → 水 → 風 → �
   const first = log.slice(0, log.findIndex((e) => e.event === 'cardDrawn') + 1).map((e) => e.event);
   assert.deepEqual(first.filter((t) => ['turnStarted', 'coinsChanged', 'passiveSpiritActed', 'castleDamaged', 'cardDrawn'].includes(t)), ['turnStarted', 'coinsChanged', 'passiveSpiritActed', 'castleDamaged', 'cardDrawn']);
   assert.equal(game.getState('p1').players.p1.passiveSpirit.next, ['fire', 'water', 'wind', 'earth'][seen.length % 4]);
+});
+
+test('精霊の動く間隔（everyTurns）：自分の2ターンに1回動く（1ターン目に動く）。順番は動いたときだけ進む。getState に turnsUntilAct', () => {
+  const { game, log } = setup({ spirits: { ...SPIRITS, everyTurns: 2 } });
+  const ps = () => game.getState('p1').players.p1.passiveSpirit;
+  assert.deepEqual([ps().next, ps().everyTurns, ps().turnsUntilAct], ['fire', 2, 1]);
+  game.start(); // p1 の1ターン目：火が動く
+  const acted = () => log.filter((e) => e.event === 'passiveSpiritActed').map((e) => e.spirit);
+  assert.deepEqual(acted(), ['fire']);
+  assert.deepEqual([ps().next, ps().turnsUntilAct], ['water', 2]);
+  game.endTurn(); // p2
+  game.endTurn(); // p1 の2ターン目：休む
+  assert.deepEqual(acted(), ['fire']);
+  assert.deepEqual([ps().next, ps().turnsUntilAct], ['water', 1]);
+  game.endTurn();
+  game.endTurn(); // p1 の3ターン目：水が動く
+  assert.deepEqual(acted(), ['fire', 'water']);
+  assert.deepEqual([ps().next, ps().turnsUntilAct], ['wind', 2]);
+  for (let i = 0; i < 6; i++) game.endTurn(); // p1 の4・5・6ターン目
+  assert.deepEqual(acted(), ['fire', 'water', 'wind']);
+  assert.throws(() => setup({ spirits: { ...SPIRITS, everyTurns: 0 } }), /everyTurns/);
+});
+
+test('everyTurns を省略すると毎ターン（turnsUntilAct はいつも1）', () => {
+  const { game } = setup();
+  game.start();
+  game.endTurn();
+  game.endTurn();
+  const ps = game.getState('p1').players.p1.passiveSpirit;
+  assert.deepEqual([ps.next, ps.everyTurns, ps.turnsUntilAct], ['wind', 1, 1]);
 });
 
 test('常時の精霊を持つ人がいないゲームでは、getState に passiveSpirit のキーがない', () => {
