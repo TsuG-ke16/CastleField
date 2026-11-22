@@ -158,6 +158,12 @@ function playSupports(game, pid, ctx, { chargeArmor = false } = {}) {
         const foe = reactTarget(def);
         const target = (foe && front.find((s) => !s.weapon && s.roadId === foe.roadId)) || front.find((s) => !s.weapon);
         if (!bad && target) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === target.soldierId));
+      } else if (def.effect === 'guardCastle') {
+        // 身代わり（4陣営）：相手の兵士が自分の城の近く（あと2マス以内）まで来ていて、まだ身代わりがいなければ、HPのいちばん多い兵士に
+        const L = ctx.rules?.laneLength ?? 5;
+        const near = enemySoldiers.some((s) => s.position >= L - 2);
+        const sturdy = [...me.soldiers].sort((a, b) => b.hp + b.shield - (a.hp + a.shield))[0];
+        if (near && !me.castleGuard && sturdy) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === sturdy.soldierId));
       } else if (def.effect === 'shieldSoldier') {
         if (front.length) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === front[0].soldierId));
       } else if (def.effect === 'armorCastle') {
@@ -401,7 +407,7 @@ function smartStep(game, pid, ctx) {
   }
   // 毒にかかっていれば、解毒薬で治す（毒は永続なので、放っておくと削られ続ける）
   if (playFirst(game, playable, typesWithEffect(ctx, 'curePoison'))) return true;
-  if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, typesWithEffect(ctx, 'healOwnCastle'))) return true;
+  if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, [...typesWithEffect(ctx, 'healOwnCastle'), ...typesWithEffect(ctx, 'healCastleAndSoldiers')])) return true;
   // 永続の毒は早く入れるほど効く。強い毒から
   const toxins = typesWithEffect(ctx, 'poisonEnemy').sort((a, b) => ctx.cards[b].amount - ctx.cards[a].amount);
   if (enemy && playFirst(game, playable, toxins)) return true;
@@ -445,6 +451,12 @@ function smartStep(game, pid, ctx) {
       if (playWith(game, c.cardId, strongest)) return true;
     }
   }
+  // 竜血の雫（healSoldier。4陣営）：回復量ぶん以上減っている自分の兵士のうち、いちばん前の兵士
+  for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'healSoldier')) {
+    const amount = ctx.cards[c.type].amount;
+    const hurt = me.soldiers.filter((x) => x.maxHp - x.hp >= amount).sort((a, b) => b.position - a.position)[0];
+    if (hurt && playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === hurt.soldierId))) return true;
+  }
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;
@@ -456,6 +468,7 @@ function smartStep(game, pid, ctx) {
   const played = playFirst(game, playable, [
     ...soldierTypes(ctx),
     ...castleSpells,
+    ...typesWithEffect(ctx, 'breathAttack'), // 火炎の吐息（4陣営）：相手の兵士がいちばん多い道へ（pickLane）
     ...typesWithEffect(ctx, 'damageEnemySoldiers'),
     ...typesWithEffect(ctx, 'healOwnCastle'),
   ]);
