@@ -437,6 +437,8 @@ function smartStep(game, pid, ctx) {
     for (const c of playable.filter((x) => ['singleDamage', 'randomElementDamage'].includes(ctx.cards[x.type].effect))) {
       const amount = ctx.cards[c.type].amount;
       const pickFront = (targets) => {
+        // 先頭の兵士に当たる魔法（target "front"。4陣営）は相手・道を選ぶ：相手の兵士がいちばん多い道（pickLane）
+        if (!targets.some((t) => t.soldierId)) return targets.some((t) => t.roadId) ? pickLane(game, pid, c.cardId, targets) : targets[0];
         const list = targets.map((t) => ({ t, s: byId.get(t.soldierId) })).filter((x) => x.s);
         const kills = list.filter((x) => x.s.hp + x.s.shield <= amount);
         const pool = kills.length ? kills : list;

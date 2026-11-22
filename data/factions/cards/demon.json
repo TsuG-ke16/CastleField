@@ -71,6 +71,8 @@
     "effect": "singleDamage",
     "element": "dark",
     "amount": 4,
+    "target": "front",
+    "description": "選んだ道の先頭の相手の兵士（自分の城にいちばん近い兵士）に4ダメージ（闇）",
     "mpCost": 3,
     "count": 2
   },
@@ -90,7 +92,8 @@
     "effect": "randomElementDamage",
     "element": "chaos",
     "amount": 3,
-    "description": "相手の兵士1体に、火・水・風・土のうちランダムな属性で3ダメージ（強い属性なら増える）。当たった兵士には混沌が付く",
+    "target": "front",
+    "description": "選んだ道の先頭の相手の兵士に、火・水・風・土のうちランダムな属性で3ダメージ（強い属性なら増える）。当たった兵士には混沌が付く",
     "mpCost": 3,
     "count": 2
   },

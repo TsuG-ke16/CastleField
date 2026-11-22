@@ -2644,12 +2644,14 @@ export class Game {
           reason: '毒にかかっているものがありません',
         };
       case 'singleDamage':
+        if (def.target === 'front') return this.frontSoldierTargets(player);
         // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
         return {
           targets: this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers.map((x) => ({ soldierId: x.soldierId }))),
           reason: '道の上に相手の兵士がいません',
         };
       case 'randomElementDamage':
+        if (def.target === 'front') return this.frontSoldierTargets(player);
         // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
         return {
           targets: this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers.map((x) => ({ soldierId: x.soldierId }))),
@@ -3108,6 +3110,20 @@ export class Game {
     }
   }
 
+  /**
+   * 先頭の兵士に当たる1体への魔法（カードの target "front"。4陣営）の対象：相手ごと（レーンが2本以上なら道ごと）の { playerId } / { playerId, roadId }。
+   * その道に相手の見える兵士がいるものだけ（当たるのは、撃った人の城にいちばん近い兵士＝frontSoldier）
+   */
+  frontSoldierTargets(player) {
+    const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
+    const targets = this.frontSpellTargets(player, foes).filter((t) => {
+      const enemy = this.players[t.playerId];
+      const road = this.frontRoad(player, enemy, t.roadId);
+      return road && this.frontSoldier(player, enemy, road);
+    });
+    return { targets, reason: '道の上に相手の兵士がいません' };
+  }
+
   /** castleSpellHitsFront の対象：相手ごとに、2人の間の道が2本以上なら { playerId, roadId }、そうでなければ { playerId } */
   frontSpellTargets(player, foes) {
     return foes.flatMap((p) => {
@@ -3172,6 +3188,15 @@ export class Game {
     const victims = () => enemy.visibleSoldiers.filter((x) => roadId === undefined || x.roadId === roadId);
 
     switch (effect) {
+      case 'singleDamage':
+      case 'randomElementDamage': {
+        // 先頭の兵士に当たる1体への魔法（target "front"）：選んだ道の先頭の兵士に、1体への魔法と同じように当てる
+        const front = this.frontSoldier(player, enemy, this.frontRoad(player, enemy, roadId));
+        if (effect === 'singleDamage') this.singleDamage(player, card, front.soldier.soldierId);
+        else this.randomElementDamage(player, card, front.soldier.soldierId);
+        break;
+      }
+
       case 'damageEnemyCastle':
         // castleSpellHitsFront：選んだレーンの相手の先頭の兵士に当てる（いなければ、下の城へのダメージ）
         if (this.rules.castleSpellHitsFront && this.castFrontSpell(player, card, enemy, roadId, amount)) break;

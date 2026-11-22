@@ -252,6 +252,10 @@ export class Card {
       if (def.freezeTurns !== undefined && (def.effect !== 'singleDamage' || !isPositive(def.freezeTurns))) {
         throw new Error(`${where}: freezeTurns（当たった兵士を休ませる回数）は singleDamage の魔法にだけ、1以上の整数で書けます`);
       }
+      // 4陣営：target "front" は、敵兵士1体を選ばずに、選んだ道（相手）の先頭の兵士（自分の城にいちばん近い見える兵士）に当てる
+      if (def.target !== undefined && (def.target !== 'front' || !['singleDamage', 'randomElementDamage'].includes(def.effect))) {
+        throw new Error(`${where}: target は singleDamage / randomElementDamage の魔法にだけ "front"（先頭の兵士に当たる）と書けます`);
+      }
       if (def.spiritMode !== undefined && (def.spirit !== 'wind' || (def.spiritMode !== 'min' && def.spiritMode !== 'add'))) {
         throw new Error(`${where}: spiritMode は風の精霊にだけ、"min"（速さの最低値）か "add"（速さに足す）で書けます`);
       }

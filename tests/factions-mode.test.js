@@ -515,3 +515,37 @@ test('身代わり：守る兵士が倒れた・城に着いて消えたら、�
   assert.equal(b.game.players.p1.soldiers.includes(h), false);
   assert.equal(b.game.getState('p1').players.p1.castleGuard, null);
 });
+
+test('先頭に当たる1体への魔法（target "front"）：選んだ道の、自分の城にいちばん近い相手の兵士に当たる。いなければ出せない', () => {
+  const extra = {
+    frontShadow: { name: 'シャドウ', kind: 'spell', effect: 'singleDamage', element: 'dark', amount: 4, target: 'front', count: 1 },
+    frontPulse: { name: 'カオスパルス', kind: 'spell', effect: 'randomElementDamage', element: 'chaos', amount: 3, target: 'front', count: 1 },
+  };
+  const cards = { ...loadFixture('cards-step2.json'), ...EXTRA, ...extra };
+  const rules = { ...loadFixture('rules.json'), elementBonus: 0, maxHand: 30, laneCount: 2 };
+  const game = new Game({ cards, rules, rng: seededRng(3), elements: ELEMENTS });
+  game.debugSetHand('p1', ['frontShadow', 'frontPulse']);
+  game.debugSetHand('p2', ['tank', 'tank', 'tank']);
+  game.debugSetDeck(Array(60).fill('heal'));
+  game.start();
+  const id = (t) => game.players.p1.hand.find((c) => c.type === t).cardId;
+  assert.equal(game.canPlayCard(id('frontShadow')).reason, '道の上に相手の兵士がいません');
+  const [r1, r2] = game.roads.map((r) => r.roadId);
+  game.currentPlayer = 'p2';
+  for (const roadId of [r1, r1, r2]) {
+    game.players.p2.soldiersPlayedThisTurn = 0;
+    const c = game.players.p2.hand.find((x) => x.type === 'tank');
+    assert.equal(game.playCard(c.cardId, { playerId: 'p1', roadId }).ok, true);
+  }
+  const [a, b, c] = game.players.p2.soldiers;
+  a.position = 1; b.position = 3; // 道1：b が先頭（p1 の城に近い）
+  game.currentPlayer = 'p1';
+  assert.deepEqual(game.getTargets(id('frontShadow')), [{ playerId: 'p2', roadId: r1 }, { playerId: 'p2', roadId: r2 }]);
+  assert.equal(game.playCard(id('frontShadow'), { playerId: 'p2', roadId: r1 }).ok, true);
+  assert.equal(b.hp, 56);
+  assert.equal(a.hp, 60);
+  game.players.p1.playedThisTurn = false;
+  assert.equal(game.playCard(id('frontPulse'), { playerId: 'p2', roadId: r2 }).ok, true);
+  assert.ok(c.hp <= 57, '道2の兵士に当たる');
+  assert.throws(() => new Game({ cards: { ...cards, x: { ...EXTRA.fireBolt, target: 'back' } }, rules, elements: ELEMENTS }), /target/);
+});
