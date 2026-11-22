@@ -27,7 +27,7 @@ test('クラシックのルールは、決めた値だけが通常モードと�
   assert.deepEqual(changed, [
     'castleSpellHitsFront', 'collapseAnnounceRound', 'collapseDamage', 'collapseStartRound',
     'drawPerPlayed', 'drawPerTurn', 'drawUntilHand', 'firstTurnDraw', 'maxHand', 'maxRounds',
-    'mpAllCards', 'mpPerTurn', 'secondPlayerMp',
+    'mpAllCards', 'mpPerTurn', 'secondPlayerArmor', 'secondPlayerMp',
   ]);
 });
 
