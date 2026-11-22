@@ -38,11 +38,34 @@
     "mpCost": 4,
     "count": 2
   },
+  "fac_king_priest": {
+    "name": "聖術師",
+    "kind": "soldier",
+    "role": "mage",
+    "hp": 4,
+    "attack": 2,
+    "range": 2,
+    "stay": 2,
+    "innateElement": "light",
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る。光の属性で撃つ",
+    "mpCost": 4,
+    "count": 2
+  },
   "fac_king_holy_sword": {
     "name": "聖鉄の剣",
     "kind": "weapon",
     "attackBonus": 2,
     "element": "light",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_king_lumina_lance": {
+    "name": "ルミナスランス",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "light",
+    "rangeBonus": 1,
+    "description": "攻撃+1・光。射程+1（弓兵・魔法使いは撃てる距離が1のびる。進む兵士は2マス先の相手を、反撃を受けずに突く）",
     "mpCost": 2,
     "count": 2
   },
@@ -94,6 +117,24 @@
     "kind": "defense",
     "effect": "armorCastle",
     "amount": 5,
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_king_decoy": {
+    "name": "身代わり",
+    "kind": "defense",
+    "effect": "guardCastle",
+    "description": "自分の兵士1体を選ぶ。次に城が受ける攻撃を、その兵士が代わりに受ける（盾は効く。城壁は使わない）",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_king_purify": {
+    "name": "浄化",
+    "kind": "spell",
+    "effect": "purifyFlare",
+    "amount": 0,
+    "clearEnemyAttachments": true,
+    "description": "自分の兵士の毒・やけど・凍結と城の毒をすべて治し、相手の兵士に付いている属性（付着）をすべて消す",
     "mpCost": 2,
     "count": 2
   }

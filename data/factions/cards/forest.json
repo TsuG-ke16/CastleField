@@ -20,12 +20,44 @@
     "mpCost": 3,
     "count": 2
   },
+  "fac_forest_druid": {
+    "name": "ドルイド",
+    "kind": "soldier",
+    "role": "mage",
+    "hp": 4,
+    "attack": 2,
+    "range": 2,
+    "stay": 2,
+    "spellBoost": {
+      "elements": [
+        "fire",
+        "water",
+        "wind",
+        "earth"
+      ],
+      "amount": 1
+    },
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る。場にいるあいだ、自分の火・水・風・土の魔法のダメージ+1",
+    "mpCost": 4,
+    "count": 2
+  },
   "fac_forest_fire_bolt": {
     "name": "火炎弾",
     "kind": "spell",
     "effect": "singleDamage",
     "element": "fire",
     "amount": 4,
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_forest_water_stream": {
+    "name": "水流",
+    "kind": "spell",
+    "effect": "singleDamage",
+    "element": "water",
+    "amount": 3,
+    "attachTurns": 8,
+    "description": "相手の兵士1体に3ダメージ（水）。付いた水の属性が長く残る（8回）",
     "mpCost": 3,
     "count": 2
   },
@@ -36,6 +68,17 @@
     "element": "wind",
     "amount": 2,
     "scope": "lane",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_forest_fissure": {
+    "name": "地割れ",
+    "kind": "spell",
+    "effect": "singleDamage",
+    "element": "earth",
+    "amount": 3,
+    "freezeTurns": 1,
+    "description": "相手の兵士1体に3ダメージ（土）。生き残れば1回休み",
     "mpCost": 3,
     "count": 2
   },
@@ -59,6 +102,18 @@
     "mpCost": 4,
     "count": 2
   },
+  "fac_forest_wind_spirit": {
+    "name": "風の精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "wind",
+    "amount": 1,
+    "turns": 3,
+    "spiritMode": "add",
+    "description": "3ターンのあいだ、自分の進む兵士の速さ+1",
+    "mpCost": 4,
+    "count": 2
+  },
   "fac_forest_earth_spirit": {
     "name": "土の精霊",
     "kind": "spell",
@@ -67,6 +122,16 @@
     "amount": 1,
     "turns": 3,
     "mpCost": 4,
+    "count": 2
+  },
+  "fac_forest_life_drop": {
+    "name": "生命の雫",
+    "kind": "spell",
+    "effect": "healCastleAndSoldiers",
+    "amount": 3,
+    "soldierHeal": 2,
+    "description": "自分の城HP+3。傷ついた自分の兵士全員のHP+2（最大HPまで）",
+    "mpCost": 3,
     "count": 2
   },
   "fac_forest_thorn_wall": {

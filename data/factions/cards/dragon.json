@@ -17,11 +17,41 @@
     "mpCost": 3,
     "count": 2
   },
+  "fac_dragon_flame_whelp": {
+    "name": "幼炎竜",
+    "kind": "soldier",
+    "hp": 5,
+    "attack": 5,
+    "speed": 2,
+    "innateElement": "fire",
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_dragon_thunder_whelp": {
+    "name": "幼雷竜",
+    "kind": "soldier",
+    "hp": 4,
+    "attack": 4,
+    "speed": 3,
+    "innateElement": "thunder",
+    "mpCost": 4,
+    "count": 2
+  },
   "fac_dragon_fang_sword": {
     "name": "竜牙剣",
     "kind": "weapon",
     "attackBonus": 2,
     "element": "fire",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_dragon_thunder_spear": {
+    "name": "雷牙槍",
+    "kind": "weapon",
+    "attackBonus": 2,
+    "element": "thunder",
+    "rangeBonus": 1,
+    "description": "攻撃+2・雷。射程+1（弓兵・魔法使いは撃てる距離が1のびる。進む兵士は2マス先の相手を、反撃を受けずに突く）",
     "mpCost": 2,
     "count": 2
   },
@@ -42,6 +72,26 @@
     "amount": 3,
     "scope": "lane",
     "mpCost": 3,
+    "count": 2
+  },
+  "fac_dragon_flame_breath": {
+    "name": "火炎の吐息",
+    "kind": "spell",
+    "effect": "breathAttack",
+    "element": "fire",
+    "amount": 4,
+    "castleAmount": 4,
+    "description": "選んだ道の相手の兵士全員に4ダメージ（火）。相手の城にも、城壁を無視して4ダメージ",
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_dragon_blood_drop": {
+    "name": "竜血の雫",
+    "kind": "spell",
+    "effect": "healSoldier",
+    "amount": 4,
+    "description": "傷ついた自分の兵士1体のHP+4（最大HPまで）",
+    "mpCost": 2,
     "count": 2
   },
   "fac_dragon_ash_veil": {
