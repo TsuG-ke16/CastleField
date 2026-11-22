@@ -120,6 +120,7 @@ const EXTRA = {
   waterStream: { name: '水流', kind: 'spell', effect: 'singleDamage', element: 'water', amount: 1, attachTurns: 8, count: 1 },
   quake: { name: '地割れ', kind: 'spell', effect: 'singleDamage', element: 'earth', amount: 2, freezeTurns: 1, count: 1 },
   windAdd: { name: '風の精霊', kind: 'spell', effect: 'summonSpirit', spirit: 'wind', amount: 1, turns: 3, spiritMode: 'add', count: 1 },
+  fireSpirit: { name: '火の精霊', kind: 'spell', effect: 'summonSpirit', spirit: 'fire', amount: 1, turns: 3, count: 1 },
   windMin: { name: '風の精霊（最低）', kind: 'spell', effect: 'summonSpirit', spirit: 'wind', amount: 1, turns: 3, count: 1 },
   bloodDrop: { name: '竜血の雫', kind: 'spell', effect: 'healSoldier', amount: 4, count: 1 },
   lifeDrop: { name: '生命の雫', kind: 'spell', effect: 'healCastleAndSoldiers', amount: 3, soldierHeal: 2, count: 1 },
@@ -657,10 +658,12 @@ const PLAN = {
   ],
   forest: [
     ['獣人', 2, S(4, 5, 2)], ['エルフ', 3, S(3, 3, 0, { role: 'archer' })], ['ドルイド', 4, S(2, 4, 0, { role: 'mage', spellBoost: { elements: ['fire', 'water', 'wind', 'earth'], amount: 1 } })],
-    ['火炎弾', 3, { effect: 'singleDamage', amount: 4, element: 'fire' }], ['水流', 3, { effect: 'singleDamage', amount: 3, element: 'water', attachTurns: 8 }],
-    ['突風', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'wind', scope: 'lane' }], ['地割れ', 3, { effect: 'singleDamage', amount: 3, element: 'earth', freezeTurns: 1 }],
-    ['火の精霊', 4, { spirit: 'fire', amount: 1, turns: 3 }], ['水の精霊', 4, { spirit: 'water', amount: 1, turns: 3 }],
-    ['風の精霊', 4, { spirit: 'wind', amount: 1, turns: 3, spiritMode: 'add' }], ['土の精霊', 4, { spirit: 'earth', amount: 1, turns: 3, spiritScope: 'soldiers' }],
+    // 精霊のカード4枚は、常時の精霊（陣営の特性）に変えてなくし、属性の武器4枚にした（人間の指示）
+    ['フレイムソード', 2, { kind: 'weapon', attackBonus: 1, element: 'fire' }], ['アクアスピア', 2, { kind: 'weapon', attackBonus: 1, element: 'water' }],
+    ['ゲイルボウ', 2, { kind: 'weapon', attackBonus: 1, element: 'wind' }], ['アースハンマー', 2, { kind: 'weapon', attackBonus: 1, element: 'earth' }],
+    // 属性魔法は改名し、MP を3 → 2 にした（効果は同じ）
+    ['フレアシード', 2, { effect: 'singleDamage', amount: 4, element: 'fire' }], ['スプリングウェーブ', 2, { effect: 'singleDamage', amount: 3, element: 'water', attachTurns: 8 }],
+    ['リーフストーム', 2, { effect: 'damageEnemySoldiers', amount: 2, element: 'wind', scope: 'lane' }], ['ルートバインド', 2, { effect: 'singleDamage', amount: 3, element: 'earth', freezeTurns: 1 }],
     ['生命の雫', 3, { effect: 'healCastleAndSoldiers' }], ['茨の壁', 2, { effect: 'armorCastle', amount: 4 }], ['樹皮の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
   ],
   demon: [
@@ -701,25 +704,20 @@ function setupReal(opts = {}) {
   return setup({ ...opts, reactions: opts.reactions === undefined ? loadOptionalData(MODE).reactions : opts.reactions, real: true });
 }
 
-test('本物のカード：精霊（火：城に1・水：城+1・風：速さ+1・土：兵士だけ−1）は次の自分のターンから効く', () => {
-  const { game, play, events } = setupReal({ hands: { p1: ['fac_forest_fire_spirit', 'fac_forest_water_spirit', 'fac_forest_wind_spirit', 'fac_forest_earth_spirit', 'hitter'] } });
-  play('p1', 'fac_forest_fire_spirit');
-  game.players.p1.spirit.fresh = false;
-  const hp2 = game.players.p2.castle.hp;
-  game.triggerSpirit(game.players.p1);
-  assert.equal(game.players.p2.castle.hp, hp2 - 1);
-  play('p1', 'fac_forest_water_spirit');
-  assert.ok(events('spiritEnded').some((e) => e.reason === 'replaced'));
-  game.players.p1.spirit.fresh = false;
-  game.debugSetCastleHp('p1', 10);
-  game.triggerSpirit(game.players.p1);
-  assert.equal(game.players.p1.castle.hp, 11);
-  const h = play('p1', 'hitter');
-  play('p1', 'fac_forest_wind_spirit');
-  assert.equal(game.speedOf(game.players.p1, h), 2);
-  play('p1', 'fac_forest_earth_spirit');
-  assert.equal(game.reduceDamage(game.players.p1, 3, 'soldier'), 2);
-  assert.equal(game.reduceDamage(game.players.p1, 3, 'castle'), 3, '土の精霊は城を軽くしない');
+test('本物のカード：森には精霊のカード（summonSpirit）がない。精霊は陣営の特性（passiveSpirits）', () => {
+  const forest = loadFactionCards(MODE, 'forest');
+  assert.equal(Object.values(forest).some((d) => d.effect === 'summonSpirit'), false);
+  for (const t of ['fac_forest_fire_spirit', 'fac_forest_water_spirit', 'fac_forest_wind_spirit', 'fac_forest_earth_spirit', 'fac_forest_fire_bolt', 'fac_forest_water_stream', 'fac_forest_gust', 'fac_forest_fissure']) {
+    assert.equal(forest[t], undefined, t);
+  }
+  const decks = loadOptionalData(MODE).decks;
+  assert.deepEqual(decks.forest.passiveSpirits.spirits.map((x) => [x.name, x.element, x.effect, x.amount]), [
+    ['イフリート', 'fire', 'castleDamage', 3], ['ウンディーネ', 'water', 'soldiersDamage', 1], ['シルフ', 'wind', 'pushFront', 2], ['タイタン', 'earth', 'castleDamage', 10],
+  ]);
+  assert.equal(decks.forest.passiveSpirits.spirits[3].ignoreArmor, true);
+  assert.equal(decks.forest.passiveSpirits.spirits[2].push, 1);
+  assert.equal(decks.forest.passiveSpirits.attachTurns, 1);
+  for (const f of ['kingdom', 'demon', 'dragon']) assert.equal(decks[f].passiveSpirits, undefined, f);
 });
 
 test('本物のカード：魂の欠片・残響の魂・カオスパルス・氷の息・呪いの印・毒の霧（兵士だけ・3ターン・城は毒にしない）', () => {
@@ -780,8 +778,8 @@ test('本物の反応：全部の組で起きて、それぞれの効果が出�
   assert.equal(x.r.reaction, 'mud'); assert.deepEqual(x.t.slowed, { amount: 1, turns: 2 });
   x = react('windTap', 'fireTap', { others: 1 }); // 炎拡散：同じマスのほかの兵士にも
   assert.equal(x.r.reaction, 'flameSpread'); assert.deepEqual(x.t.burn, { amount: 1, turns: 2 }); assert.deepEqual(x.rest[0].burn, { amount: 1, turns: 2 });
-  x = react('windTap', 'earthTap'); // 砂嵐：やけど＋目くらまし
-  assert.equal(x.r.reaction, 'sandstorm'); assert.deepEqual(x.t.burn, { amount: 1, turns: 2 }); assert.deepEqual(x.t.blinded, { chance: 0.3, turns: 2 });
+  x = react('windTap', 'earthTap'); // 砂嵐：目くらまし40%＋砂（やけどではない）
+  assert.equal(x.r.reaction, 'sandstorm'); assert.equal(x.t.burn, null); assert.deepEqual(x.t.sand, { amount: 1, turns: 2 }); assert.deepEqual(x.t.blinded, { chance: 0.4, turns: 2 });
   x = react('windTap', 'waterTap'); // 霧
   assert.equal(x.r.reaction, 'fog'); assert.deepEqual(x.t.blinded, { chance: 0.3, turns: 2 }); assert.equal(x.t.burn, null);
   x = react('earthTap', 'fireTap', { shield: 5 }); // 溶岩：盾5−1(土)=4 → 火で3 → 壊すのは3、+2
@@ -790,8 +788,8 @@ test('本物の反応：全部の組で起きて、それぞれの効果が出�
   assert.equal(x.r.reaction, 'thunderBlaze'); assert.equal(x.rest[0].hp, 58); assert.equal(x.game.players.p2.castle.hp, x.game.players.p2.castle.maxHp - 3);
   x = react('darkTap', 'chaosTap'); // 深淵侵食
   assert.equal(x.r.reaction, 'abyss'); assert.deepEqual(x.game.players.p2.castle.healCut, { ratio: 0.5, turns: 2 });
-  x = react('darkTap', 'iceTap'); // 黒氷：凍結＋やけど
-  assert.equal(x.r.reaction, 'blackIce'); assert.equal(x.t.frozen, 1); assert.deepEqual(x.t.burn, { amount: 1, turns: 2 });
+  x = react('darkTap', 'iceTap'); // 黒氷：凍結＋凍傷（やけどではない）
+  assert.equal(x.r.reaction, 'blackIce'); assert.equal(x.t.frozen, 1); assert.equal(x.t.burn, null); assert.deepEqual(x.t.frostbite, { amount: 1, turns: 2 });
   x = react('chaosTap', 'iceTap', { frozen: 1 }); // 砕氷：凍結中は+6
   assert.equal(x.r.reaction, 'shatter'); assert.equal(x.r.damage, 8); assert.equal(x.t.frozen, 0);
   x = react('darkTap', 'lightTap'); // 対消滅
@@ -821,10 +819,10 @@ test('身代わり：兵士の突入・精霊・反応からの城への攻撃�
   assert.equal(g.hp, 60 - 3);
   assert.equal(a.game.players.p1.castle.guard, null);
   // 精霊
-  const b = setupReal({ hands: { p1: ['tank', 'decoy'], p2: ['fac_forest_fire_spirit'] }, reactions: null });
+  const b = setupReal({ hands: { p1: ['tank', 'decoy'], p2: ['fireSpirit'] }, reactions: null });
   const g2 = b.play('p1', 'tank');
   b.play('p1', 'decoy', { soldierId: g2.soldierId });
-  b.play('p2', 'fac_forest_fire_spirit');
+  b.play('p2', 'fireSpirit');
   b.game.players.p2.spirit.fresh = false;
   b.game.triggerSpirit(b.game.players.p2);
   assert.equal(g2.hp, 59);
