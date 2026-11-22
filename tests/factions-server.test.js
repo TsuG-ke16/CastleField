@@ -5,7 +5,9 @@ import { Lobby } from '../server/rooms.js';
 import { loadData, loadModeData } from '../server/server.js';
 import { filterEventFor } from '../js/game/visibility.js';
 import { EVENT_TYPES } from '../js/game/Game.js';
-import { seededRng } from './helpers.js';
+import { Game } from '../js/game/Game.js';
+import { createGameServer } from '../server/server.js';
+import { seededRng, loadFixture, recordEvents } from './helpers.js';
 
 function newLobby() {
   let seed = 1;
@@ -125,13 +127,114 @@ test('2人（人2人）でも始められ、数手進められる', () => {
   assert.ok(g.getState(null).turn >= 4);
 });
 
-test('新しいイベントはサーバーで落ちず、忍者（stealth）の隠しが効く', () => {
+test('新しいイベントは EVENT_TYPES にあり、そのまま送られる。忍者の隠しは Game が本当に付ける', () => {
   const news = ['soldierHealed', 'castleGuardSet', 'castleGuarded', 'shieldBroken', 'castleHealCut', 'castleHealCutEnded'];
-  for (const t of news) assert.ok(EVENT_TYPES.includes(t), t);
   for (const t of news) {
-    const p = { playerId: 'p1', soldierId: 's01', amount: 2, hp: 3 };
+    assert.ok(EVENT_TYPES.includes(t), t);
+    const p = { playerId: 'p1', amount: 2 };
     assert.deepEqual(filterEventFor(t, p, 'p2'), p, `${t} はそのまま送る`);
-    assert.equal(filterEventFor(t, { ...p, stealth: 'p1' }, 'p2'), null, `${t} は忍者なら相手に送らない`);
-    assert.deepEqual(filterEventFor(t, { ...p, stealth: 'p1' }, 'p1'), { ...p, stealth: 'p1' });
+  }
+  const cards = {
+    ...loadFixture('cards.json'),
+    ninja: { name: '下忍', kind: 'soldier', role: 'ninja', hp: 3, attack: 2, speed: 1, count: 1 },
+    decoy: { name: '身代わり', kind: 'defense', effect: 'guardCastle', count: 1 },
+  };
+  const game = new Game({ cards, rules: { ...loadFixture('rules.json'), laneLength: 5, defenseReaction: false }, rng: seededRng(1) });
+  const log = recordEvents(game, EVENT_TYPES);
+  game.debugSetDeck(Array(40).fill('heal'));
+  game.start();
+  const play = (type, target) => {
+    const pid = game.currentPlayer;
+    game.debugSetHand(pid, [type]);
+    const r = game.playCard(game.players[pid].hand[0].cardId, target);
+    assert.equal(r.ok, true, r.reason);
+    return game.players[pid].soldiers.at(-1);
+  };
+  const ninja = play('ninja');
+  play('decoy', { soldierId: ninja.soldierId });
+  // 忍者に関わるイベントには、Game が stealth を付ける（相手には送らない）
+  const set = log.find((e) => e.event === 'castleGuardSet');
+  assert.equal(set.stealth, 'p1');
+  assert.equal(filterEventFor('castleGuardSet', set, 'p2'), null);
+  assert.ok(filterEventFor('castleGuardSet', set, 'p1'));
+  // shieldBroken（忍者は魔法・反応の的にならないので、盤面では起きない）：忍者の持ち主の陣地を stealth に付ける決まりだけ確かめる
+  game.emit('shieldBroken', { playerId: 'p1', soldierId: ninja.soldierId, amount: 1 });
+  const broken = log.find((e) => e.event === 'shieldBroken');
+  assert.equal(broken.stealth, 'p1');
+  assert.equal(filterEventFor('shieldBroken', broken, 'p2'), null);
+  // 身代わりの castleGuarded：stealth は付けず、相手にも届く（城が攻撃を受けなかったことは伝わる）。隠すのは soldierId だけ
+  game.currentPlayer = 'p2';
+  game.guardCastleHit(game.players.p1, 5);
+  const guarded = log.find((e) => e.event === 'castleGuarded');
+  assert.equal(guarded.stealth, undefined);
+  const seenByFoe = filterEventFor('castleGuarded', guarded, 'p2');
+  assert.deepEqual(seenByFoe, { event: 'castleGuarded', playerId: 'p1', guardOwnerId: 'p1', amount: 5 });
+  assert.equal(filterEventFor('castleGuarded', guarded, 'p1').soldierId, ninja.soldierId);
+  assert.equal(filterEventFor('castleGuarded', guarded, null).soldierId, undefined);
+  // 忍者でない兵士の castleGuarded は、そのまま
+  const plain = { playerId: 'p1', soldierId: 's9', guardOwnerId: 'p1', amount: 5 };
+  assert.deepEqual(filterEventFor('castleGuarded', plain, 'p2'), plain);
+});
+
+test('部屋：CPU を外す・始まる前に出ると席が詰まり、陣営は席についていく', () => {
+  const lobby = newLobby();
+  const a = enter(lobby);
+  const c1 = a.room.action(a.seat, 'addCpu', ['easy']).playerId;
+  a.room.action(a.seat, 'addCpu', ['easy']);
+  a.room.action(a.seat, 'setSeat', [{ faction: 'demon' }, c1]);
+  a.room.action(a.seat, 'setSeat', [{ faction: 'dragon' }, 'p3']);
+  assert.equal(a.room.action(a.seat, 'removeCpu', [c1]).ok, true);
+  assert.deepEqual(a.lastRoom().players.map((p) => [p.playerId, p.faction]), [['p1', 'kingdom'], ['p2', 'dragon']]);
+  const b = enter(lobby, 'f', 'B');
+  a.room.action(b.seat, 'setSeat', [{ faction: 'forest' }]);
+  assert.equal(b.seat.playerId, 'p3');
+  assert.equal(a.room.action(a.seat, 'setSeat', [{ faction: 'demon' }]).ok, true);
+  assert.equal(a.room.action(a.seat, 'leave', []).ok, true);
+  const room = b.lastRoom();
+  assert.deepEqual(room.players.map((p) => [p.playerId, p.faction]), [['p1', 'dragon'], ['p2', 'forest']]);
+  assert.equal(room.hostId, 'p2');
+});
+
+test('部屋：もう1回・部屋に戻ったあとも、陣営と deckId は同じ席に残る。deckMode "cost" は断る', () => {
+  const lobby = newLobby();
+  const a = enter(lobby);
+  const cpu = a.room.action(a.seat, 'addCpu', ['hard']).playerId;
+  a.room.action(a.seat, 'setSeat', [{ faction: 'dragon' }]);
+  a.room.action(a.seat, 'setSeat', [{ faction: 'demon' }, cpu]);
+  assert.deepEqual(a.room.action(a.seat, 'setRules', [{ deckMode: 'cost' }]).ok, false);
+  assert.equal(a.room.settings.deckMode, 'own');
+  const decks = () => ['p1', 'p2'].map((p) => a.room.game.getState(p).players[p].deckId);
+  a.room.action(a.seat, 'start', []);
+  assert.deepEqual(decks(), ['dragon', 'demon']);
+  a.room.action(a.seat, 'surrender', []);
+  assert.equal(a.room.game.phase, 'gameOver');
+  assert.equal(a.room.action(a.seat, 'rematch', []).ok, true);
+  assert.deepEqual(decks(), ['dragon', 'demon'], 'もう1回');
+  a.room.action(a.seat, 'surrender', []);
+  assert.equal(a.room.action(a.seat, 'backToRoom', []).ok, true);
+  assert.deepEqual(a.lastRoom().players.map((p) => p.faction), ['dragon', 'demon']);
+  a.room.action(a.seat, 'setSeat', [{ faction: 'forest' }]);
+  a.room.action(a.seat, 'start', []);
+  assert.deepEqual(decks(), ['forest', 'demon'], '部屋に戻って変えたあと');
+});
+
+test('HTTP：/api/join に mode: "factions" を付けると4陣営の部屋に入れ、陣営を選んで始められる', async () => {
+  let seed = 1;
+  const server = createGameServer({ data: loadData(), modeData: loadModeData(), makeRng: () => seededRng(seed++), cpuDelayMs: 0 });
+  await new Promise((r) => server.listen(0, r));
+  const base = `http://localhost:${server.address().port}`;
+  const post = async (path, body) => (await fetch(base + path, { method: 'POST', body: JSON.stringify(body) })).json();
+  try {
+    const a = await post('/api/join', { passphrase: 'f4', name: 'A', mode: 'factions' });
+    assert.equal(a.ok, true, a.reason);
+    assert.deepEqual(await post('/api/join', { passphrase: 'f4', name: 'B' }), { ok: false, reason: 'その合言葉の部屋は別のモードです' });
+    assert.equal((await post('/api/join', { passphrase: 'zz', name: 'B', mode: 'nothing' })).ok, false);
+    assert.equal((await post('/api/action', { token: a.token, method: 'setSeat', args: [{ faction: 'dragon' }] })).ok, true);
+    assert.equal((await post('/api/action', { token: a.token, method: 'setSeat', args: [{ faction: 'x' }] })).ok, false);
+    assert.equal((await post('/api/action', { token: a.token, method: 'addCpu', args: ['normal'] })).ok, true);
+    assert.equal((await post('/api/action', { token: a.token, method: 'start', args: [] })).ok, true);
+  } finally {
+    server.closeAllConnections();
+    server.close();
   }
 });
