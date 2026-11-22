@@ -15,7 +15,7 @@
           "name": "イフリート",
           "element": "fire",
           "effect": "castleDamage",
-          "amount": 3
+          "amount": 2
         },
         {
           "spirit": "water",
@@ -37,7 +37,7 @@
           "name": "タイタン",
           "element": "earth",
           "effect": "castleDamage",
-          "amount": 7
+          "amount": 5
         }
       ]
     }

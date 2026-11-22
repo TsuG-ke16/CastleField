@@ -367,7 +367,7 @@ test('砂・凍傷を使わないゲーム（クラシック）の getState に�
 
 // ================= 本物のデータ =================
 
-test('本物のデータ：森の陣営は最初のターンにイフリートが敵城に3。森の属性の武器と魔法を出せる', () => {
+test('本物のデータ：森の陣営は最初のターンにイフリートが敵城に2。森の属性の武器と魔法を出せる', () => {
   const { rules, cards } = buildData({ mode: 'factions' });
   const opts = loadOptionalData('factions');
   const game = new Game({ cards, rules: { ...rules, mulligan: false }, rng: seededRng(2), ...opts, setup: { decks: ['forest', 'kingdom'] } });
@@ -378,8 +378,8 @@ test('本物のデータ：森の陣営は最初のターンにイフリート�
   assert.equal(acted.name, 'イフリート');
   // 後攻の城壁（secondPlayerArmor）が先に受ける
   const dmg = log.find((e) => e.event === 'castleDamaged');
-  assert.equal(dmg.amount, 3);
-  assert.equal(game.players.p2.castle.hp, hp - (3 - dmg.blocked));
+  assert.equal(dmg.amount, 2);
+  assert.equal(game.players.p2.castle.hp, hp - (2 - dmg.blocked));
   assert.equal(game.getState('p1').players.p1.passiveSpirit.next, 'water');
   assert.equal(game.getState('p1').players.p2.passiveSpirit, null);
   // 武器（属性つき・MP2）と改名した魔法（MP3）
