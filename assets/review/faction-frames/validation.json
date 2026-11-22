@@ -1,5 +1,5 @@
 {
-  "designRevision": 2,
+  "designRevision": 3,
   "assets": [
     {
       "faction": "dragon",
@@ -8,7 +8,7 @@
         512,
         768
       ],
-      "bytes": 97125,
+      "bytes": 77571,
       "transparentExterior": true
     },
     {
@@ -18,7 +18,7 @@
         64,
         768
       ],
-      "bytes": 37949,
+      "bytes": 30200,
       "transparentExterior": true
     },
     {
@@ -28,7 +28,7 @@
         512,
         768
       ],
-      "bytes": 151438,
+      "bytes": 115518,
       "transparentExterior": true
     },
     {
