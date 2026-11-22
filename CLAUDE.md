@@ -1630,6 +1630,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 - **置き場**：`data/factions/`（`factions.json` 陣営の名前・`cards/<陣営>.json` 陣営ごとのカード表・`rules.json`・`elements.json`・`reactions.json`）。`data/modes.json` の `factions`（`hidden`・`available: false`）。`cardSet` はなく、`factionCardSets` を全部合わせたものがカード定義、`factionDecks: true` で**各陣営のカード表がその陣営のデッキ**になる（`js/game/Setup.js` の `factionDecks(factions, cardSets)` → decks.json と同じ形）
 - **遊び方**：1人1つのデッキ（`rules.deckMode: "own"`）。`new Game({ ..., decks: factionDecks(...), setup: { decks: ["kingdom", "dragon"] } })` で席ごとに陣営を選ぶ（省略すると `rules.defaultDeck` の王国）。テスト・シミュレーションは `tests/helpers.js` の `buildData({ mode: "factions" })`・`loadOptionalData("factions")` で読む。**サーバー対応済み・画面は未対応**：`server/server.js` の `loadData(dir, "factions")` が陣営ごとのカード表を合わせたカード・`decks`（陣営）・`factions`（陣営IDの配列）・属性・反応を読み、`loadModeData()` に `factions` が入る（部屋に入るとき `body.mode: "factions"`）。部屋（`server/rooms.js`）は席ごとに `setSeat` の `faction` で陣営を選び、始まると `setup.decks` に各席の陣営を渡す（2〜8人・CPU を含む）。**チーム戦（`teams`）と、`deckMode` を `own` 以外にすることは `setRules` で断る**（「4陣営ではチーム戦は使えません」）。忍者のイベントを隠す `stealth` は `shieldBroken` にも付く。テストは `tests/factions-server.test.js`。画面で陣営を選んで遊べるのは UI 側の対応（`factionDecks` を使う試合の読み込み・部屋の陣営選び）のあと
+- **要確認（人間の確認待ち。まだ決めていない）**：①`available: false` のモードに、`/api/join` の `mode` 指定で入れてしまう（今は入れる）②4陣営で城の種類（`castles.json`）を使うか（今は部屋が城の種類を渡している）③4陣営でチーム戦を断るのは仮か恒久か
 - **枚数**：案に枚数がないので、**どのカードも2枚**（`count: 2`。王国30・森28・魔族30・竜24枚）にした（仮）
 - **ルール**（`data/factions/rules.json`。全モード共通の `data/rules.json` は変えていない）：クラシックのルールのまま（毎ターン2枚ドロー固定 `drawPerTurn` 2・`drawUntilHand` 0・`drawPerPlayed` false、手札上限6、全カードで MP を使う `mpAllCards`、MP 10/20・毎ターン+3、城HP60、城への魔法は先頭の兵士に当たる、崩壊の刻）に、`deckMode: "own"`・`defaultDeck: "kingdom"` を足し、使わないデッキ編成の数値を外した
 - 属性の強弱の表はクラシックと同じ9属性（`data/factions/elements.json`。写し）
@@ -1663,7 +1664,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 順番（反応）：`reactionTriggered` → `elementCleared` …（→ 砕氷の `statusCleared`）→ 溶岩の `shieldBroken` → 追加ダメージの `soldierDamaged` → 生き残れば 凍結・やけど・鈍足・目くらましの `statusApplied` → splash の `soldierDamaged` → `castleHealCut` → `castleDamaged`
 - `getState()`：兵士に `rangeBonus`（1以上のときだけ）。反応に鈍足・目くらましがあるゲームだけ `statuses.slowed` / `statuses.blinded`。カード・反応にあるゲームだけ `players.pX.castleGuard`（身代わりの兵士のID か null）・`bloodArmor`（血の膜の残り）・`castleHealCut`（`{ ratio, turns }` か null）。今までのモードの `getState` の形は変わらない
 - 進軍中の戦い・射撃の反応で城が落ちたら（轟雷爆炎）、そこで止める（反応のないゲームでは今までどおり）
-- 忍者：`soldierHealed` / `castleGuardSet` / `castleGuarded` も、忍者の兵士なら `stealth` が付く（ほかの忍者のイベントと同じく相手に隠す）
+- 忍者：`soldierHealed` / `castleGuardSet` / `shieldBroken` も、忍者の兵士なら `stealth` が付く（ほかの忍者のイベントと同じく相手に隠す）。**`castleGuarded` は `stealth` を付けず**、城が攻撃を受けなかったことは相手にも送る。忍者が身代わりのときだけ `stealthSoldier`（持ち主の陣地）が付き、`visibility.js` が同じ陣地でない人には `soldierId` と `stealthSoldier` を消す（このあとの `soldierDamaged` は `stealth` つきで隠れる）
 
 ### 未実装・人間の確認待ち
 - 森の「召喚中の精霊が、付着の代わりになる」：意味が決まっていないので作っていない（要確認）

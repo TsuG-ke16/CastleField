@@ -68,7 +68,7 @@ export function loadData(dir = join(ROOT, 'data'), modeId = null) {
   return data;
 }
 
-/** 既定以外のモード（modes.json に cardSet があるもの）のデータを、モードのIDごとに読む */
+/** 既定以外のモード（modes.json に cardSet があるもの。4陣営モード＝factionDecks: true も含む）のデータを、モードのIDごとに読む */
 export function loadModeData(dir = join(ROOT, 'data')) {
   const modes = existsSync(join(dir, 'modes.json')) ? JSON.parse(readFileSync(join(dir, 'modes.json'), 'utf8')) : null;
   return Object.fromEntries(Object.entries(modes?.modes ?? {}).filter(([id, m]) => id !== modes.default && (m.cardSet || m.factionDecks)).map(([id]) => [id, loadData(dir, id)]));

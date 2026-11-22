@@ -248,7 +248,7 @@ const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
   'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
   // 4陣営
-  'soldierHealed', 'castleGuardSet', 'castleGuarded', 'shieldBroken',
+  'soldierHealed', 'castleGuardSet', 'shieldBroken',
 ]);
 export class Game {
   /**
@@ -642,6 +642,9 @@ export class Game {
     // 相手には visibility.js（filterEventFor）がこのイベントを隠す（城・魔物へのダメージは見える）
     const sid = payload?.soldierId ?? payload?.attacker?.soldierId;
     if (sid && this.stealthSides?.has(sid) && STEALTH_EVENTS.has(type)) payload = { ...payload, stealth: this.stealthSides.get(sid) };
+    // 忍者が身代わりになったときの castleGuarded：城が攻撃を受けなかったことは相手にも伝える。隠すのは soldierId だけ
+    // （stealthSoldier に忍者の持ち主の陣地を入れ、visibility.js が同じ陣地でない人には soldierId を消す）
+    else if (type === 'castleGuarded' && sid && this.stealthSides?.has(sid)) payload = { ...payload, stealthSoldier: this.stealthSides.get(sid) };
     for (const handler of [...this.listeners.get(type)]) {
       try {
         handler(payload);
