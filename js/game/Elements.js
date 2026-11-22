@@ -75,6 +75,9 @@ export function validateReactions(data, ids) {
     if (r.burn !== undefined && !(obj(r.burn) && posInt(r.burn.amount) && posInt(r.burn.turns) && [undefined, 'target', 'adjacent'].includes(r.burn.scope))) {
       throw new Error(`${where}: burn（やけど）は { amount, turns, scope?: "target" | "adjacent" }（1以上の整数）にしてください`);
     }
+    if (r.dot !== undefined && !(obj(r.dot) && ['sand', 'frostbite'].includes(r.dot.status) && posInt(r.dot.amount) && posInt(r.dot.turns))) {
+      throw new Error(`${where}: dot（継続ダメージ）は { status: "sand" | "frostbite", amount, turns }（1以上の整数）にしてください`);
+    }
     if (r.slow !== undefined && !(obj(r.slow) && posInt(r.slow.amount) && posInt(r.slow.turns))) throw new Error(`${where}: slow（鈍足）は { amount, turns }（1以上の整数）にしてください`);
     if (r.blind !== undefined && !(obj(r.blind) && rate(r.blind.chance) && posInt(r.blind.turns))) throw new Error(`${where}: blind（目くらまし）は { chance: 0より大きく1以下, turns: 1以上の整数 } にしてください`);
     if (r.splash !== undefined && !(obj(r.splash) && posInt(r.splash.amount) && [undefined, 'lane'].includes(r.splash.scope))) throw new Error(`${where}: splash（同じ道のほかの兵士へのダメージ）は { amount: 1以上の整数, scope?: "lane" } にしてください`);

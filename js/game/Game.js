@@ -21,7 +21,7 @@
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
 import { validateElements, elementIds, beatsElement, validateReactions } from './Elements.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
+import { Pile, validatePassiveSpirits, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -30,7 +30,9 @@ import { validateWeather } from './Weather.js';
 import { validateStages, pickStage } from './Stage.js';
 
 /** 身代わり（guardCastle）が代わりに受ける、城へのダメージの出どころ（相手からの攻撃）。自分で払うコスト・崩壊・天候・毒は受けない */
-const GUARDED_SOURCES = ['soldier', 'spell', 'spirit', 'reaction'];
+/** 4陣営の反応の継続ダメージ（reactions.json の dot.status） */
+export const DOT_STATUSES = ['sand', 'frostbite'];
+const GUARDED_SOURCES = ['soldier', 'spell', 'spirit', 'reaction', 'passiveSpirit'];
 /** ドルイド・呪術師（spellBoost）で強くなる、ダメージの魔法 */
 const BOOSTED_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'breathAttack'];
 
@@ -89,6 +91,7 @@ export const EVENT_TYPES = [
   'cardStolen',
   'spiritSummoned',
   'spiritTriggered',
+  'passiveSpiritActed',
   'spiritEnded',
   'soldierShot',
   'weatherChanged',
@@ -283,7 +286,10 @@ export class Game {
     if (stages !== null) validateStages(stages, allowedElements);
     if (upgrades !== null) validateUpgrades(upgrades);
     if (castles !== null) validateCastles(castles);
-    if (decks !== null) validateDecks(decks, cards);
+    if (decks !== null) {
+      validateDecks(decks, cards);
+      for (const [id, d] of Object.entries(decks)) if (d.passiveSpirits !== undefined) validatePassiveSpirits(d.passiveSpirits, allowedElements, `decks の "${id}"`);
+    }
 
     this.cardDefs = cards;
     /** 属性の強弱の表（null なら今までの4属性の輪） */
@@ -298,6 +304,7 @@ export class Game {
       healCut: reactionList.some((r) => r.healCut),
       guard: cardList.some((d) => d.effect === 'guardCastle'),
       blood: cardList.some((d) => d.bloodArmor),
+      dots: [...new Set(reactionList.filter((r) => r.dot).map((r) => r.dot.status))],
     };
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
@@ -387,8 +394,12 @@ export class Game {
         const types = Object.entries(decks[deckIds[seat]].cards).flatMap(([t, k]) => Array(k).fill(t));
         pile.deck = this.shuffle(types).map((type) => this.createCard(type));
         this.players[id].deckId = deckIds[seat];
+        // 4陣営：陣営の特性（森の常時の精霊）
+        this.players[id].passiveSpirits = decks[deckIds[seat]].passiveSpirits ?? null;
         this.piles.set(id, pile);
       });
+      // getState に常時の精霊のキーを足すのは、だれかが常時の精霊を持つゲームだけ
+      this.extState.passiveSpirits = this.playerOrder.some((id) => this.players[id].passiveSpirits);
     } else if (this.rules.deckMode === 'cost') {
       // デッキ編成：席ごとに、編成した deckLists[席]（{ 種類: 枚数 }）か、decks.json の costDeck のデッキ（setup.decks[席] / rules.defaultCostDeck）
       if (!rarities) throw new Error('deckMode が "cost" のときは rarities（data/rarities.json）を渡してください');
@@ -1056,6 +1067,8 @@ export class Game {
     // 属性のランダム付着：コイン・MP のあと、ドローの前（手札を引く前に盤面の状態が決まる）。
     // 自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる
     this.randomAttachAtTurnStart(player);
+    // 4陣営の森：常時の精霊が1体動く（randomAttach と同じ位置）。城が落ちて決着したら、そこで止める
+    if (this.actPassiveSpirit(player)) return;
 
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
@@ -1118,6 +1131,25 @@ export class Game {
           this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'burn' });
         }
       }
+      // 4陣営の継続ダメージ（砂・凍傷。反応の dot）：やけどと同じく盾は効かず、回数が来たら治る
+      let dotKilled = false;
+      for (const status of DOT_STATUSES) {
+        if (!soldier[status]) continue;
+        const { amount } = soldier[status];
+        soldier.takeDamage(amount, { ignoreShield: true });
+        this.emit('soldierDamaged', { playerId: player.id, soldierId: soldier.soldierId, amount, hp: soldier.hp, cause: status, blocked: 0 });
+        soldier[status].turns -= 1;
+        if (soldier.isDead) {
+          this.removeSoldier(player, soldier, 'killed');
+          dotKilled = true;
+          break;
+        }
+        if (soldier[status].turns <= 0) {
+          soldier[status] = null;
+          this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status });
+        }
+      }
+      if (dotKilled) continue;
       // 凍結：この進軍は休む
       if (soldier.frozen > 0) {
         soldier.frozen -= 1;
@@ -1385,6 +1417,68 @@ export class Game {
     this.emit('elementAttached', { playerId: enemy.id, soldierId: s.soldierId, element, turns: (found ?? s.attachments.at(-1)).turns, source: 'turnStart' });
   }
 
+  /**
+   * 4陣営の森：常時の精霊（席のデッキの passiveSpirits）。自分のターンの始めに、spirits の精霊が順に1体ずつ動く（1ターン目は先頭）。
+   * passiveSpiritActed → 効果（castleDamaged / soldierMoved（"pushed"）・soldierDamaged（cause "spirit"））→ 動いた精霊の属性を
+   * 敵の見える兵士全員に付着（elementAttached。反応は起こさない。reactions を渡したゲームだけ）。
+   * 城を攻める相手は、まだ負けていない相手の陣地のうち席順で最初の陣地。防御は聞かない（身代わりは受ける）。霧で外れない。
+   * 敵の兵士がいなければ、兵士への精霊は何もしない（付着もなし。passiveSpiritActed は出す）。城が落ちて決着したら true
+   */
+  actPassiveSpirit(player) {
+    const def = player.passiveSpirits;
+    if (!def) return false;
+    const sp = def.spirits[player.passiveSpiritIndex % def.spirits.length];
+    player.passiveSpiritIndex = (player.passiveSpiritIndex + 1) % def.spirits.length;
+    const mySide = this.side(player.id);
+    const foes = () => this.alivePlayerIds().filter((id) => this.side(id) !== mySide).flatMap((id) =>
+      this.players[id].visibleSoldiers.map((soldier) => ({ owner: this.players[id], soldier })));
+    const base = { playerId: player.id, spirit: sp.spirit, name: sp.name, element: sp.element, effect: sp.effect, amount: sp.amount };
+    if (sp.effect === 'castleDamage') {
+      const target = this.enemySides(player.id)[0];
+      if (!target) return false;
+      this.emit('passiveSpiritActed', { ...base, targetId: target.id, soldierIds: [] });
+      this.damageCastle(target, sp.amount, { kind: 'passiveSpirit', spirit: sp.spirit }, { ignoreArmor: Boolean(sp.ignoreArmor) });
+      if (this.checkGameOver()) return true;
+    } else if (sp.effect === 'soldiersDamage') {
+      const list = foes();
+      this.emit('passiveSpiritActed', { ...base, targetId: null, soldierIds: list.map((x) => x.soldier.soldierId) });
+      for (const x of list) if (x.owner.soldiers.includes(x.soldier)) this.damageSoldier(x.owner, x.soldier, sp.amount, 'spirit');
+    } else if (sp.effect === 'pushFront') {
+      // 先頭：自分の城にいちばん近い（position がいちばん大きい。同じなら先に出された方）。マス0より後ろには下がらない
+      const list = foes().sort((a, b) => b.soldier.position - a.soldier.position || soldierNumber(a.soldier) - soldierNumber(b.soldier));
+      const front = list[0] ?? null;
+      this.emit('passiveSpiritActed', { ...base, targetId: null, soldierIds: front ? [front.soldier.soldierId] : [], push: sp.push });
+      if (front) {
+        const { owner, soldier } = front;
+        const from = soldier.position;
+        const to = Math.max(0, from - sp.push);
+        if (to !== from) {
+          soldier.position = to;
+          this.emit('soldierMoved', { playerId: owner.id, soldierId: soldier.soldierId, roadId: soldier.roadId, from, to, cause: 'pushed' });
+        }
+        this.damageSoldier(owner, soldier, sp.amount, 'spirit');
+      }
+    }
+    // 動いた精霊の属性を、敵の見える兵士全員に付着（残りは長い方にそろえる。反応は起こさない）
+    if (this.reactionDefs) {
+      for (const { owner, soldier } of foes()) {
+        const found = soldier.attachments.find((a) => a.element === sp.element);
+        if (found) found.turns = Math.max(found.turns, def.attachTurns);
+        else soldier.attachments.push({ element: sp.element, turns: def.attachTurns });
+        this.emit('elementAttached', { playerId: owner.id, soldierId: soldier.soldierId, element: sp.element, turns: (found ?? soldier.attachments.at(-1)).turns, source: 'passiveSpirit' });
+      }
+    }
+    return false;
+  }
+
+  /** getState の常時の精霊：{ next, name, element, effect, amount, order } か null */
+  passiveSpiritState(player) {
+    const def = player.passiveSpirits;
+    if (!def) return null;
+    const sp = def.spirits[player.passiveSpiritIndex % def.spirits.length];
+    return { next: sp.spirit, name: sp.name, element: sp.element, effect: sp.effect, amount: sp.amount, order: def.spirits.map((x) => x.spirit) };
+  }
+
   /** 起こる反応（なければ null）。{ id, name, elements（反応した属性）, consumed（兵士から消える属性）, damage, def } */
   findReaction(soldier, element) {
     const defs = this.reactionDefs;
@@ -1465,6 +1559,12 @@ export class Game {
       const list = alive ? [{ owner, soldier }] : [];
       if (def.burn.scope === 'adjacent' && road) list.push(...sameSide().filter((x) => onRoad(x) && Math.abs(road.toSquare(side, x.soldier.position) - sq) <= 1));
       for (const x of list) this.burnSoldier(x.owner, x.soldier, def.burn);
+    }
+    // 継続ダメージ（砂・凍傷）：やけどとは別の状態。量・回数は大きい方にそろえる
+    if (alive && def.dot) {
+      const { status } = def.dot;
+      soldier[status] = { amount: Math.max(def.dot.amount, soldier[status]?.amount ?? 0), turns: Math.max(def.dot.turns, soldier[status]?.turns ?? 0) };
+      this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status, turns: soldier[status].turns, amount: soldier[status].amount });
     }
     if (alive && def.slow) {
       soldier.slowed = { amount: Math.max(def.slow.amount, soldier.slowed?.amount ?? 0), turns: Math.max(def.slow.turns, soldier.slowed?.turns ?? 0) };
@@ -2691,7 +2791,7 @@ export class Game {
         if (player.armor <= 0) return { targets: [], reason: '城壁がありません' };
         return { targets: playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id)), reason: '相手がいません' };
       case 'purifyFlare': {
-        const cures = player.castle.poison || player.soldiers.some((x) => x.poison || x.burn || x.frozen > 0);
+        const cures = player.castle.poison || player.soldiers.some((x) => x.poison || x.burn || x.frozen > 0 || DOT_STATUSES.some((st) => x[st]));
         const foes = def.amount > 0 && this.opponentsOf(player.id).some(hasSoldiers);
         // 4陣営：相手の付着を消す浄化は、相手の兵士に付着があれば出せる
         const attached = def.clearEnemyAttachments && this.opponentsOf(player.id).some((p) => p.visibleSoldiers.some((x) => x.attachments.length > 0));
@@ -3449,10 +3549,10 @@ export class Game {
       }
 
       case 'purifyFlare': {
-        // 自分の毒・やけど・凍結を治し、相手の兵士全員に amount
+        // 自分の毒・やけど・凍結（4陣営は砂・凍傷も）を治し、相手の兵士全員に amount
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         for (const soldier of player.soldiers) {
-          for (const status of ['poison', 'burn', 'frozen']) {
+          for (const status of ['poison', 'burn', 'frozen', ...DOT_STATUSES]) {
             if (status === 'frozen' ? soldier.frozen <= 0 : !soldier[status]) continue;
             soldier[status] = status === 'frozen' ? 0 : null;
             this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status });
@@ -4113,6 +4213,8 @@ export class Game {
           st.statuses.slowed = soldier.slowed ? { ...soldier.slowed } : null;
           st.statuses.blinded = soldier.blinded ? { ...soldier.blinded } : null;
         }
+        // 4陣営：継続ダメージ（砂・凍傷。反応で使うときだけキーを足す）
+        for (const status of this.extState.dots) st.statuses[status] = soldier[status] ? { ...soldier[status] } : null;
         if (soldier.rangeBonus > 0) st.rangeBonus = soldier.rangeBonus;
       }
       players[id] = {
@@ -4130,6 +4232,8 @@ export class Game {
         // 4陣営：身代わりの兵士・血の膜の残り・回復量減少（使うデータのときだけキーを足す）
         ...(this.extState.guard ? { castleGuard: p.castle.guard ?? null } : {}),
         ...(this.extState.blood ? { bloodArmor: p.castle.bloodArmor ?? 0 } : {}),
+        // 4陣営の森：常時の精霊（だれかが持つゲームだけキーを足す）。次に動く精霊と、動く順
+        ...(this.extState.passiveSpirits ? { passiveSpirit: this.passiveSpiritState(p) } : {}),
         ...(this.extState.healCut ? { castleHealCut: p.castle.healCut ? { ...p.castle.healCut } : null } : {}),
         // 強化の今の値段（costs で買うたびに上がる強化があるので、人ごと）
         upgradeCosts: Object.fromEntries(Object.keys(this.upgradeDefs).map((u) => [u, this.upgradeCostOf(p, u)])),

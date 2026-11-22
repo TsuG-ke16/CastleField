@@ -234,6 +234,38 @@ export function factionDecks(factions, cardSets) {
       if (card.count > 0) cards[type] = card.count;
     }
     decks[id] = { name: def.name, cards };
+    // 陣営の特性（森の常時の精霊）は、デッキに付けて Game に渡す（Game は席のデッキから読む）
+    if (def.passiveSpirits !== undefined) decks[id].passiveSpirits = def.passiveSpirits;
   }
   return decks;
+}
+
+/** 常時の精霊の効果（passiveSpirits.spirits[].effect） */
+export const PASSIVE_SPIRIT_EFFECTS = ['castleDamage', 'soldiersDamage', 'pushFront'];
+
+/**
+ * 常時の精霊（デッキの passiveSpirits。4陣営の森）のチェック。間違っていれば Error を投げる。
+ * 形：{ attachTurns, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }
+ * @param {object} data passiveSpirits
+ * @param {string[]} elementIds 使える属性ID
+ * @param {string} where エラーの文の頭
+ */
+export function validatePassiveSpirits(data, elementIds, where) {
+  const posInt = (v) => Number.isInteger(v) && v > 0;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(`${where}: passiveSpirits は { attachTurns, spirits } にしてください`);
+  if (!posInt(data.attachTurns)) throw new Error(`${where}: passiveSpirits.attachTurns（付着が残る回数）は1以上の整数にしてください`);
+  if (!Array.isArray(data.spirits) || data.spirits.length === 0) throw new Error(`${where}: passiveSpirits.spirits に、動く順に精霊を1体以上書いてください`);
+  const seen = new Set();
+  data.spirits.forEach((sp, i) => {
+    const w = `${where}: passiveSpirits.spirits[${i}]`;
+    if (!sp || typeof sp !== 'object') throw new Error(`${w}: { spirit, name, element, effect, amount } のオブジェクトにしてください`);
+    if (typeof sp.spirit !== 'string' || sp.spirit === '' || seen.has(sp.spirit)) throw new Error(`${w}: spirit（精霊のID）は、ほかの精霊と重ならない文字列にしてください`);
+    seen.add(sp.spirit);
+    if (typeof sp.name !== 'string' || sp.name === '') throw new Error(`${w}: name（表示名）を書いてください`);
+    if (!elementIds.includes(sp.element)) throw new Error(`${w}: element の "${sp.element}" は属性の表にありません`);
+    if (!PASSIVE_SPIRIT_EFFECTS.includes(sp.effect)) throw new Error(`${w}: effect は ${PASSIVE_SPIRIT_EFFECTS.join(' / ')} のどれかにしてください`);
+    if (!posInt(sp.amount)) throw new Error(`${w}: amount（ダメージ）は1以上の整数にしてください`);
+    if (sp.ignoreArmor !== undefined && (typeof sp.ignoreArmor !== 'boolean' || sp.effect !== 'castleDamage')) throw new Error(`${w}: ignoreArmor は castleDamage の精霊だけに、true / false で書けます`);
+    if (sp.effect === 'pushFront' ? !posInt(sp.push) : sp.push !== undefined) throw new Error(`${w}: push（押し戻すマス数）は pushFront の精霊だけに、1以上の整数で書いてください`);
+  });
 }

@@ -40,6 +40,9 @@ export class Soldier {
     this.slowed = null;
     /** 目くらまし { chance, turns }（霧・砂嵐の反応。攻撃が chance の確率で外れる）か null */
     this.blinded = null;
+    /** 継続ダメージ（4陣営の反応）：砂（砂嵐）・凍傷（黒氷）{ amount, turns } か null。持ち主の進軍の前にダメージ（盾は効かない） */
+    this.sand = null;
+    this.frostbite = null;
     /** 盾の残り。ダメージは先に盾が受ける */
     this.shield = 0;
     /** 毒 { amount, turns }（なければ null） */
