@@ -288,7 +288,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   - 道の `players[0]` の兵士：道のマス番号 = `position`
   - 道の `players[1]` の兵士：道のマス番号 = `laneLength - 1 - position`
 - 兵士の `targetId` は、その兵士が向かっている相手（道の向こうの人）
-- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）。くわしくは「4陣営モード」
+- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.castleAttachments`（城に付いている属性 `[{ element, turns }]`。`rules.castleAttach` のゲームだけ。試作）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）。くわしくは「4陣営モード」
 
 ### Gameが出すイベント
 
@@ -358,6 +358,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `shieldBroken` | `{ playerId, soldierId, amount }` … 溶岩の反応で盾が全部壊れた |
 | `castleHealCut` | `{ playerId, ratio, turns }` … 深淵侵食で城の回復量が減る |
 | `castleHealCutEnded` | `{ playerId }` … 回復量減少が終わった |
+| `castleElementAttached` | `{ playerId, element, turns, source }` … 城に属性が付いた（4陣営・試作。`rules.castleAttach`）。`playerId` は城の持ち主（チーム戦は代表）。`source` は当たった攻撃の `castleDamaged.source`（森の精霊の付着は `{ kind: "passiveSpirit", spirit }`）。同じ属性なら残りは長い方 |
+| `castleElementCleared` | `{ playerId, element, reason }` … 城の属性が消えた。`reason` は `"reaction"`（反応で使われた）か `"expired"`（城の持ち主のターンの終わりに残りが0） |
+| `castleReactionTriggered` | `{ playerId, reaction, name, elements, damage, consumed, armorBroken? }` … 城で反応が起きた（4陣営・試作）。このあと `castleElementCleared`（`"reaction"`）…→（`healCut` なら `castleHealCut`）→ `castleDamaged`（`source: { kind: "reaction", reaction }`）。`armorBroken` は溶岩が追加で削った城壁 |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参）/ `"collapse"`（崩壊の刻のダメージで決着） |
 
 #### イベントの順番
@@ -1690,6 +1693,18 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 砂嵐・黒氷の「やけど」は不自然だったので、やけどとは別の状態にした：反応の `dot: { status: "sand" | "frostbite", amount, turns }`（チェックは `validateReactions`）
 - 持ち主の進軍の前（やけどのあと）に `amount` ダメージ（**盾は効かない**。`soldierDamaged` の `cause` は `"sand"` / `"frostbite"`）。回数が来たら治る（`statusCleared`）。重ねがけは量・回数を大きい方にそろえる。生き残ったときだけかかる。王国の浄化（`purifyFlare`）で治る（仮）
 - `getState()` の兵士の `statuses.sand` / `statuses.frostbite`（`{ amount, turns }` か null。反応に dot があるゲームだけキーを足す）。イベントは `statusApplied` / `statusCleared`（`status: "sand"` / `"frostbite"`）
+
+### 城の付着と反応（試作。人間の案。数値はすべて仮）
+兵士は2〜3ターンで消えるので、兵士の反応が勝敗にほとんど効かなかった。**残り続ける城に属性を付けて、反応を勝敗に効くものにする**ための試作（人間の案：城が燃える・水没する・風が吹く）。`data/factions/rules.json` の `castleAttach`（**今は `false`**。測るときは `--rules '{"castleAttach":true}'`）。書かなければ・`false` なら今までどおり（通常・クラシックは変わらない。`reactions` を渡さないゲームでも起きない）。
+
+- **付着**：城（チーム戦は城の持ち主の城）に属性が付く。原因：①属性つきの魔法が城に当たった（カードの `element`。城壁が全部受けても付く。霧で外れたら・身代わりが受けたら付かない。反射された魔法は撃った人の城に付く）②属性つきの兵士が城に着いた（兵士の `element`＝武器か生まれつきの属性。防御（身代わりのカード）で無効にされたら付かない）③魔法使いの射撃が城に当たった（②と同じ）。属性なしは付かない。種類ごとに1つ（同じ属性なら残りは長い方）。残りは `rules.castleAttachTurns`（仮：4）で、**城の持ち主のターンの終わりに1減り、0で消える**（`castleElementCleared` の `"expired"`）
+- **反応**：城に付いている属性に、別の属性が当たると、`reactions.json` の表（兵士と同じ決まり。混沌反応も同じ）で反応する。1回の当たりで1反応。付いていた属性は消え、当たった属性は付かない。**同じ城で起きる反応は1周回に `rules.castleReactionPerRound`（仮：1。0 は上限なし）回まで**（上限のあとは反応せずに付着する）
+- **効果**：反応の `castle: { damage, armorBreak? }`（仮：対消滅8・黒氷4・深淵侵食4・砕氷3・蒸発4・泥2・炎拡散3・砂嵐2・霧2・溶岩4（その前に城壁を追加で2削る）・轟雷爆炎6）、混沌反応は `chaos.castleDamagePerElement`（仮：4）× 種類。書かなければ兵士用の `damage`。ダメージは城壁が先に受け、**身代わり・土の精霊・防御カードは効かない**（`castleDamaged` の `source: { kind: "reaction", reaction }`）。`healCut`（深淵侵食）は城にも効く。兵士用の効果（凍結・やけど・鈍足・目くらまし・倍率・`castleDamage` など）は城には使わない（兵士に当たったときは今までどおり。轟雷爆炎の `castleDamage` 3 は兵士に起きたときだけ）
+- **森の精霊の付着先**（`passiveSpirits.spiritAttachTo`。実験用）：`"soldiers"`（省略したとき。敵の見える兵士全員）か `"castle"`（敵の城（席順で最初の陣地）に、精霊の属性を `attachTurns` 回付ける。反応は起こさない。`castleAttach` のときだけ。兵士には付けない）
+- イベント `castleElementAttached` / `castleElementCleared` / `castleReactionTriggered`、`getState().players.pX.castleAttachments`（「ロジックとUIの約束」）。オンラインでも隠さない。順番：当たりの `castleDamaged` → `castleElementAttached` か `castleReactionTriggered` → `castleElementCleared` …（→ `castleHealCut`）→ `castleDamaged`（反応）
+- CPU：付着を狙う選び方は足していない（自動で起きる分だけ）
+- 確かめたこと（`node tests/sim/factions.js --games 200 --seed 1 --spirit-every 2`。森の `everyTurns` を2にして測った。各組み合わせ400試合・smart 同士）：全条件で4000/4000決着。陣営の平均勝率（王国・森・魔族・竜）は、なし 56%・53%・38%・53%／あり 54%・54%・38%・55%／あり＋精霊を城に 57%・48%・39%・56%。**城の反応は1試合0〜0.63回、反応で城に入ったダメージは城への総ダメージの0〜2.4%で、勝敗をほとんど動かさない**。ほとんどが竜×竜・竜の相手の轟雷爆炎（竜は火と雷を両方持つ）。属性つきの攻撃が城に当たるのは1試合に約5回（兵士3.2・魔法2.0）だが、1つの陣営の属性は偏っていて、同じ城に別の属性が当たる組がまれなため（城への魔法は先頭の兵士に当たる `castleSpellHitsFront` も効いている）。1周回1回の歯止めに止められた反応は0回。先に城で反応した側の勝率は54〜81%（回数が少ない）
+- 未決：数字だけでは効果が小さい。効かせるなら、相手の属性を城に付ける手段（精霊・魔法）、城への魔法が先頭の兵士に当たる決まりとの関係、付着を狙う CPU を人間と決める
 
 ### 未実装・人間の確認待ち
 - 身代わりが魔物の城への攻撃を受けるか（今は受けない）、身代わりがいるときにも城への攻撃で防御（城壁など）を聞くか（今は聞く）：要確認

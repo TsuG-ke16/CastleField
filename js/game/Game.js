@@ -109,6 +109,10 @@ export const EVENT_TYPES = [
   'shieldBroken',
   'castleHealCut',
   'castleHealCutEnded',
+  // 4陣営：城の付着と反応（rules.castleAttach。試作）
+  'castleElementAttached',
+  'castleElementCleared',
+  'castleReactionTriggered',
   'gameOver',
 ];
 
@@ -200,6 +204,11 @@ const OPTIONAL_RULES = {
   castleSpellHitsFront: false,
   // 属性の付着（reactions を渡したゲームだけ）：true なら、自分のターンの始めに、敵の見える兵士1体にランダムな属性を付着させる（反応は起こさない）
   randomAttachTurnStart: false,
+  // 4陣営（試作）：城の付着と反応（reactions を渡したゲームだけ）。true なら、属性つきの魔法・兵士・射撃が城に当たると城に属性が付き、
+  // 別の属性が当たると反応する。castleAttachTurns は付着の残り（城の持ち主のターンの終わりに1減る）、castleReactionPerRound は同じ城で1周回に起きる反応の上限
+  castleAttach: false,
+  castleAttachTurns: 4,
+  castleReactionPerRound: 1,
   // 崩壊の刻：collapseStartRound（0 なら使わない）の周回から、周回の始めに全員の城に collapseDamage × (始まってからの周回の数) のダメージ。
   // collapseAnnounceRound（0 なら予告しない）の周回で予告する
   collapseStartRound: 0,
@@ -588,6 +597,9 @@ export class Game {
     }
     if (rules.castleSpellHitsFront !== undefined && typeof rules.castleSpellHitsFront !== 'boolean') throw new Error('rules.json の castleSpellHitsFront は true か false にしてください');
     if (rules.randomAttachTurnStart !== undefined && typeof rules.randomAttachTurnStart !== 'boolean') throw new Error('rules.json の randomAttachTurnStart は true か false にしてください（書かなければ false）');
+    if (rules.castleAttach !== undefined && typeof rules.castleAttach !== 'boolean') throw new Error('rules.json の castleAttach は true か false にしてください（書かなければ false）');
+    if (rules.castleAttachTurns !== undefined && (!Number.isInteger(rules.castleAttachTurns) || rules.castleAttachTurns < 1)) throw new Error('rules.json の castleAttachTurns は 1 以上の整数にしてください（書かなければ 4）');
+    if (rules.castleReactionPerRound !== undefined && (!Number.isInteger(rules.castleReactionPerRound) || rules.castleReactionPerRound < 0)) throw new Error('rules.json の castleReactionPerRound は 0 以上の整数にしてください（0 は上限なし。書かなければ 1）');
     if (rules.mpAllCards !== undefined && typeof rules.mpAllCards !== 'boolean') throw new Error('rules.json の mpAllCards は true か false にしてください（書かなければ false）');
     for (const key of ['monsterLateBias', 'monsterEvolveMultiplier']) {
       const v = rules[key];
@@ -1283,9 +1295,10 @@ export class Game {
    * 4陣営：身代わり（castle.guard）がいれば、相手からの攻撃（兵士・魔法・精霊・反応）はその兵士が代わりに受ける。
    * 血の膜（castle.bloodArmor）の城壁が受けたぶんは、城HPが回復する
    */
-  damageCastle(owner, amount, source, { ignoreArmor = false } = {}) {
-    if (owner.castle.guard && GUARDED_SOURCES.includes(source?.kind) && this.guardCastleHit(owner, amount)) return;
-    amount = this.reduceDamage(owner, amount, 'castle');
+  damageCastle(owner, amount, source, { ignoreArmor = false, raw = false } = {}) {
+    // raw：城に起きた反応のダメージ（身代わり・土の精霊を通さない。城壁は先に受ける）
+    if (!raw && owner.castle.guard && GUARDED_SOURCES.includes(source?.kind) && this.guardCastleHit(owner, amount)) return;
+    if (!raw) amount = this.reduceDamage(owner, amount, 'castle');
     const castle = owner.castle;
     const armorBefore = owner.armor;
     const blocked = ignoreArmor ? 0 : Math.min(owner.armor, amount);
@@ -1301,6 +1314,95 @@ export class Game {
         const healed = castle.heal(blood);
         if (healed > 0) this.emit('castleHealed', { playerId: owner.id, amount: healed, hp: castle.hp, source: { kind: 'bloodArmor' } });
       }
+    }
+    // 4陣営（試作）：属性つきの攻撃が城に当たったら、城に付着か反応（城壁が全部受けても付く）
+    if (!raw) this.castleElementHit(owner, this.castleHitElement(source), source);
+  }
+
+  // ================= 城の付着と反応（4陣営・試作。rules.castleAttach と reactions を渡したゲームだけ） =================
+
+  /** 城に当たった攻撃の属性：魔法はカードの element、兵士（城に着いた・魔法使いの射撃）はその兵士の属性（武器・生まれつき）。ほかは null */
+  castleHitElement(source) {
+    if (!this.reactionDefs || !this.rules.castleAttach || !source) return null;
+    if (source.kind === 'spell') return this.cardDefs[source.type]?.element ?? null;
+    if (source.kind === 'soldier') {
+      for (const p of Object.values(this.players)) {
+        const x = p.soldiers.find((s) => s.soldierId === source.soldierId);
+        if (x) return x.element ?? null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 属性 element の攻撃が owner の城（チーム戦は城の持ち主の城）に当たった。付いている属性と反応の表で組になれば反応
+   * （同じ城で1周回に castleReactionPerRound 回まで。上限なら反応せずに付着）、ならなければ付着（同じ属性なら残りを長い方に）。
+   * castleAttach でない・属性なし・城が落ちたなら何もしない
+   */
+  castleElementHit(owner, element, source, { turns, react = true } = {}) {
+    if (!this.reactionDefs || !this.rules.castleAttach || !element) return;
+    const side = this.players[this.side(owner.id)];
+    const castle = side.castle;
+    if (castle.isDestroyed || side.eliminated) return;
+    if (react) {
+      const limit = this.rules.castleReactionPerRound;
+      const used = castle.reactionRound === this.round ? castle.reactionCount : 0;
+      const reaction = limit === 0 || used < limit ? this.matchReaction(castle.attachments.map((a) => a.element), element) : null;
+      if (reaction) {
+        castle.reactionRound = this.round;
+        castle.reactionCount = used + 1;
+        this.triggerCastleReaction(side, reaction);
+        return;
+      }
+    }
+    const t = turns ?? this.rules.castleAttachTurns;
+    const found = castle.attachments.find((a) => a.element === element);
+    if (found) found.turns = Math.max(found.turns, t);
+    else castle.attachments.push({ element, turns: t });
+    this.emit('castleElementAttached', { playerId: side.id, element, turns: (found ?? castle.attachments.at(-1)).turns, source: source ?? null });
+  }
+
+  /**
+   * 城に起きた反応：castleReactionTriggered → 消えた属性の castleElementCleared → （深淵侵食）castleHealCut → castleDamaged（source { kind: "reaction" }）。
+   * ダメージは反応の castle.damage（混沌反応は chaos.castleDamagePerElement × 種類。書かなければ兵士用の damage）。城壁が先に受け、
+   * 身代わり・土の精霊・防御カードは効かない。溶岩（castle.armorBreak）はその前に城壁を追加で削る。凍結・やけど等の状態は城には付けない
+   */
+  triggerCastleReaction(side, reaction) {
+    const castle = side.castle;
+    const { def } = reaction;
+    const chaos = this.reactionDefs.chaos;
+    const damage = reaction.id === 'chaos'
+      ? (chaos.castleDamagePerElement ?? chaos.damagePerElement) * reaction.elements.length
+      : (def.castle?.damage ?? def.damage);
+    const armorBroken = Math.min(side.armor, def.castle?.armorBreak ?? 0);
+    this.emit('castleReactionTriggered', {
+      playerId: side.id, reaction: reaction.id, name: reaction.name, elements: [...reaction.elements], damage, consumed: [...reaction.consumed],
+      ...(armorBroken > 0 ? { armorBroken } : {}),
+    });
+    for (const element of reaction.consumed) {
+      castle.attachments = castle.attachments.filter((a) => a.element !== element);
+      this.emit('castleElementCleared', { playerId: side.id, element, reason: 'reaction' });
+    }
+    if (armorBroken > 0) {
+      side.armor -= armorBroken;
+      castle.bloodArmor = Math.min(castle.bloodArmor, side.armor);
+    }
+    if (def.healCut) {
+      castle.healCut = { ratio: Math.max(def.healCut.ratio, castle.healCut?.ratio ?? 0), turns: Math.max(def.healCut.turns, castle.healCut?.turns ?? 0) };
+      this.emit('castleHealCut', { playerId: side.id, ratio: castle.healCut.ratio, turns: castle.healCut.turns });
+    }
+    if (damage > 0) this.damageCastle(side, damage, { kind: 'reaction', reaction: reaction.id }, { raw: true });
+  }
+
+  /** 城の付着：城の持ち主（チーム戦なら代表）のターンの終わりに残りを1減らす（0で消える） */
+  tickCastleAttachments(player) {
+    if (!this.reactionDefs || !this.rules.castleAttach || this.side(player.id) !== player.id) return;
+    const castle = player.castle;
+    for (const a of [...castle.attachments]) {
+      a.turns -= 1;
+      if (a.turns > 0) continue;
+      castle.attachments = castle.attachments.filter((x) => x !== a);
+      this.emit('castleElementCleared', { playerId: player.id, element: a.element, reason: 'expired' });
     }
   }
 
@@ -1466,6 +1568,12 @@ export class Game {
         this.damageSoldier(owner, soldier, sp.amount, 'spirit');
       }
     }
+    // 試作（spiritAttachTo: "castle"）：兵士ではなく、敵の城（席順で最初の陣地）に付着（反応は起こさない。rules.castleAttach のときだけ）
+    if (def.spiritAttachTo === 'castle') {
+      const target = this.enemySides(player.id)[0];
+      if (target) this.castleElementHit(target, sp.element, { kind: 'passiveSpirit', spirit: sp.spirit }, { turns: def.attachTurns, react: false });
+      return false;
+    }
     // 動いた精霊の属性を、敵の見える兵士全員に付着（残りは長い方にそろえる。反応は起こさない）
     if (this.reactionDefs) {
       for (const { owner, soldier } of foes()) {
@@ -1491,8 +1599,12 @@ export class Game {
 
   /** 起こる反応（なければ null）。{ id, name, elements（反応した属性）, consumed（兵士から消える属性）, damage, def } */
   findReaction(soldier, element) {
+    return this.matchReaction(this.elementsOn(soldier), element);
+  }
+
+  /** 付いている属性 on に、属性 element が当たったときに起こる反応（なければ null）。兵士にも城にも使う */
+  matchReaction(on, element) {
     const defs = this.reactionDefs;
-    const on = this.elementsOn(soldier);
     const chaos = defs.chaos;
     // 混沌反応：この攻撃のあと、付いている属性（当たった攻撃の属性も数える）に混沌が入っていて、種類が minElements 以上。
     // 当たったのが混沌でなくてもよい（混沌が付いている・武器が混沌の兵士に、別の属性が当たって3種になったときも）。
@@ -4069,6 +4181,8 @@ export class Game {
     player.soldiersPlayedThisTurn = 0;
     player.coinCardsPlayedThisTurn = 0;
     this.tickSpirit(player);
+    // 4陣営（試作）：城の付着は、城の持ち主のターンの終わりに1減る
+    this.tickCastleAttachments(player);
     this.beginTurn(this.nextPlayerAfter(this.currentPlayer));
   }
 
@@ -4245,6 +4359,8 @@ export class Game {
         // 4陣営の森：常時の精霊（だれかが持つゲームだけキーを足す）。次に動く精霊と、動く順
         ...(this.extState.passiveSpirits ? { passiveSpirit: this.passiveSpiritState(p) } : {}),
         ...(this.extState.healCut ? { castleHealCut: p.castle.healCut ? { ...p.castle.healCut } : null } : {}),
+        // 4陣営（試作）：城に付いている属性（castleAttach のゲームだけキーを足す。チーム戦は城を共有）
+        ...(this.rules.castleAttach && this.reactionDefs ? { castleAttachments: p.castle.attachments.map((a) => ({ ...a })) } : {}),
         // 強化の今の値段（costs で買うたびに上がる強化があるので、人ごと）
         upgradeCosts: Object.fromEntries(Object.keys(this.upgradeDefs).map((u) => [u, this.upgradeCostOf(p, u)])),
       };
