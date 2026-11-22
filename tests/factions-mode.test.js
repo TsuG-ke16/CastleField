@@ -661,9 +661,9 @@ const PLAN = {
     // 精霊のカード4枚は、常時の精霊（陣営の特性）に変えてなくし、属性の武器4枚にした（人間の指示）
     ['フレイムソード', 2, { kind: 'weapon', attackBonus: 1, element: 'fire' }], ['アクアスピア', 2, { kind: 'weapon', attackBonus: 1, element: 'water' }],
     ['ゲイルボウ', 2, { kind: 'weapon', attackBonus: 1, element: 'wind' }], ['アースハンマー', 2, { kind: 'weapon', attackBonus: 1, element: 'earth' }],
-    // 属性魔法は改名し、MP を3 → 2 にした（効果は同じ）
-    ['フレアシード', 2, { effect: 'singleDamage', amount: 4, element: 'fire' }], ['スプリングウェーブ', 2, { effect: 'singleDamage', amount: 3, element: 'water', attachTurns: 8 }],
-    ['リーフストーム', 2, { effect: 'damageEnemySoldiers', amount: 2, element: 'wind', scope: 'lane' }], ['ルートバインド', 2, { effect: 'singleDamage', amount: 3, element: 'earth', freezeTurns: 1 }],
+    // 属性魔法は改名した（効果・MP3 は同じ。いったん MP2 にしたが、人間の指示で3に戻した）
+    ['フレアシード', 3, { effect: 'singleDamage', amount: 4, element: 'fire' }], ['スプリングウェーブ', 3, { effect: 'singleDamage', amount: 3, element: 'water', attachTurns: 8 }],
+    ['リーフストーム', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'wind', scope: 'lane' }], ['ルートバインド', 3, { effect: 'singleDamage', amount: 3, element: 'earth', freezeTurns: 1 }],
     ['生命の雫', 3, { effect: 'healCastleAndSoldiers' }], ['茨の壁', 2, { effect: 'armorCastle', amount: 4 }], ['樹皮の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
   ],
   demon: [

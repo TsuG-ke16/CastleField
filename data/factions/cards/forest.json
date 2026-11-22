@@ -79,7 +79,7 @@
     "effect": "singleDamage",
     "element": "fire",
     "amount": 4,
-    "mpCost": 2,
+    "mpCost": 3,
     "count": 2
   },
   "fac_forest_spring_wave": {
@@ -90,7 +90,7 @@
     "amount": 3,
     "attachTurns": 8,
     "description": "相手の兵士1体に3ダメージ（水）。付いた水の属性が長く残る（8回）",
-    "mpCost": 2,
+    "mpCost": 3,
     "count": 2
   },
   "fac_forest_leaf_storm": {
@@ -100,7 +100,7 @@
     "element": "wind",
     "amount": 2,
     "scope": "lane",
-    "mpCost": 2,
+    "mpCost": 3,
     "count": 2
   },
   "fac_forest_root_bind": {
@@ -111,7 +111,7 @@
     "amount": 3,
     "freezeTurns": 1,
     "description": "相手の兵士1体に3ダメージ（土）。生き残れば1回休み",
-    "mpCost": 2,
+    "mpCost": 3,
     "count": 2
   },
   "fac_forest_life_drop": {
