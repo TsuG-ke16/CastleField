@@ -643,3 +643,108 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 | `review/faction-frames/dragon-turnaround.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
 
 `frames/factions.json`・`review/faction-frames/construction.svg` は、この依頼向けに数値で作成した造形ガイド。生成原画を高さ・法線マップへ変換したものではない。
+
+## 4陣営のモデリング資料・UI素材（2026-11-22）
+
+兵士は既存の各カード絵、城と陣営章は承認済みフレーム、フィールド小物はstyle-reference、砂漠背景は既存の草原背景を参照し、OpenAI画像生成（ChatGPT）で作成。聖術師の装備と一部原画の透過は同ツールで修正。個別PNGは機械的に切り出し・縮小・圧縮し、原画シートはWebPで保管。下表の生成原本名は出典記録用。
+
+| ファイル | 生成原本 | 作成ツール | 利用条件 | 作成日 |
+|---|---|---|---|---|
+| `review/modeling-kit/units/fac-king-infantry-front.png` | `exec-6fd52803-0bdd-44ca-9612-bd9c86bad9f3.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-infantry-right.png` | `exec-6fd52803-0bdd-44ca-9612-bd9c86bad9f3.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-infantry-back.png` | `exec-6fd52803-0bdd-44ca-9612-bd9c86bad9f3.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-king-infantry.webp` | `exec-6fd52803-0bdd-44ca-9612-bd9c86bad9f3.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-cavalry-front.png` | `exec-e81a1d32-857f-4d15-a717-d551bbea5802.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-cavalry-right.png` | `exec-e81a1d32-857f-4d15-a717-d551bbea5802.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-cavalry-back.png` | `exec-e81a1d32-857f-4d15-a717-d551bbea5802.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-king-cavalry.webp` | `exec-e81a1d32-857f-4d15-a717-d551bbea5802.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-archer-front.png` | `exec-742a891c-8cba-49ae-b4b4-29ad2ff4f1d3.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-archer-right.png` | `exec-742a891c-8cba-49ae-b4b4-29ad2ff4f1d3.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-archer-back.png` | `exec-742a891c-8cba-49ae-b4b4-29ad2ff4f1d3.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-king-archer.webp` | `exec-742a891c-8cba-49ae-b4b4-29ad2ff4f1d3.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-heavy-front.png` | `exec-16e5a44d-c51f-468b-9e2a-713520bc2354.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-heavy-right.png` | `exec-16e5a44d-c51f-468b-9e2a-713520bc2354.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-heavy-back.png` | `exec-16e5a44d-c51f-468b-9e2a-713520bc2354.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-king-heavy.webp` | `exec-16e5a44d-c51f-468b-9e2a-713520bc2354.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-priest-front.png` | `exec-10075678-f020-4b70-be96-158ad6f9c04d.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-priest-right.png` | `exec-10075678-f020-4b70-be96-158ad6f9c04d.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-king-priest-back.png` | `exec-10075678-f020-4b70-be96-158ad6f9c04d.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-king-priest.webp` | `exec-10075678-f020-4b70-be96-158ad6f9c04d.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-beastman-front.png` | `exec-550653e2-bda1-4ca5-9eb9-f1b157308766.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-beastman-right.png` | `exec-550653e2-bda1-4ca5-9eb9-f1b157308766.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-beastman-back.png` | `exec-550653e2-bda1-4ca5-9eb9-f1b157308766.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-forest-beastman.webp` | `exec-550653e2-bda1-4ca5-9eb9-f1b157308766.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-elf-front.png` | `exec-d8275d88-1cb2-4c09-8cd8-75efd69ce262.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-elf-right.png` | `exec-d8275d88-1cb2-4c09-8cd8-75efd69ce262.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-elf-back.png` | `exec-d8275d88-1cb2-4c09-8cd8-75efd69ce262.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-forest-elf.webp` | `exec-d8275d88-1cb2-4c09-8cd8-75efd69ce262.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-druid-front.png` | `exec-fac3763f-2223-45e0-bc67-28dcf81f2167.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-druid-right.png` | `exec-fac3763f-2223-45e0-bc67-28dcf81f2167.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-forest-druid-back.png` | `exec-fac3763f-2223-45e0-bc67-28dcf81f2167.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-forest-druid.webp` | `exec-fac3763f-2223-45e0-bc67-28dcf81f2167.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-skeleton-front.png` | `exec-09a61bd1-bebb-4495-8874-fa018c24caef.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-skeleton-right.png` | `exec-09a61bd1-bebb-4495-8874-fa018c24caef.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-skeleton-back.png` | `exec-09a61bd1-bebb-4495-8874-fa018c24caef.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-demon-skeleton.webp` | `exec-09a61bd1-bebb-4495-8874-fa018c24caef.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-imp-front.png` | `exec-5273be62-afef-4be8-8ad3-02fa7e4c2f98.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-imp-right.png` | `exec-5273be62-afef-4be8-8ad3-02fa7e4c2f98.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-imp-back.png` | `exec-5273be62-afef-4be8-8ad3-02fa7e4c2f98.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-demon-imp.webp` | `exec-5273be62-afef-4be8-8ad3-02fa7e4c2f98.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-curser-front.png` | `exec-84ee97b8-941c-47ba-ae42-8f8015a447e4.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-curser-right.png` | `exec-84ee97b8-941c-47ba-ae42-8f8015a447e4.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-demon-curser-back.png` | `exec-84ee97b8-941c-47ba-ae42-8f8015a447e4.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-demon-curser.webp` | `exec-84ee97b8-941c-47ba-ae42-8f8015a447e4.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-recruit-front.png` | `exec-dd6f783c-2939-4026-a3ca-323b68490a22.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-recruit-right.png` | `exec-dd6f783c-2939-4026-a3ca-323b68490a22.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-recruit-back.png` | `exec-dd6f783c-2939-4026-a3ca-323b68490a22.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-dragon-recruit.webp` | `exec-dd6f783c-2939-4026-a3ca-323b68490a22.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-dragoon-front.png` | `exec-e38c02d1-5f29-4c2f-96b8-2aa7a799d7a5.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-dragoon-right.png` | `exec-e38c02d1-5f29-4c2f-96b8-2aa7a799d7a5.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-dragoon-back.png` | `exec-e38c02d1-5f29-4c2f-96b8-2aa7a799d7a5.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-dragon-dragoon.webp` | `exec-e38c02d1-5f29-4c2f-96b8-2aa7a799d7a5.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-flame-whelp-front.png` | `exec-34e19cd2-b5ea-4a83-8089-6fb9f2b625fe.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-flame-whelp-right.png` | `exec-34e19cd2-b5ea-4a83-8089-6fb9f2b625fe.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-flame-whelp-back.png` | `exec-34e19cd2-b5ea-4a83-8089-6fb9f2b625fe.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-dragon-flame-whelp.webp` | `exec-34e19cd2-b5ea-4a83-8089-6fb9f2b625fe.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-thunder-whelp-front.png` | `exec-2437d437-446b-4fa7-a5f0-e551fe87545d.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-thunder-whelp-right.png` | `exec-2437d437-446b-4fa7-a5f0-e551fe87545d.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/units/fac-dragon-thunder-whelp-back.png` | `exec-2437d437-446b-4fa7-a5f0-e551fe87545d.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/fac-dragon-thunder-whelp.webp` | `exec-2437d437-446b-4fa7-a5f0-e551fe87545d.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `castles/castle-faction-kingdom.png` | `exec-2c36e597-c7d2-4c46-a455-e25649db965f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/kingdom-right.png` | `exec-2c36e597-c7d2-4c46-a455-e25649db965f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/kingdom-back.png` | `exec-2c36e597-c7d2-4c46-a455-e25649db965f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/kingdom-top.png` | `exec-2c36e597-c7d2-4c46-a455-e25649db965f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/castle-kingdom.webp` | `exec-2c36e597-c7d2-4c46-a455-e25649db965f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `castles/castle-faction-forest.png` | `exec-c1da6926-543a-4d8f-8e40-37c472380a01.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/forest-right.png` | `exec-c1da6926-543a-4d8f-8e40-37c472380a01.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/forest-back.png` | `exec-c1da6926-543a-4d8f-8e40-37c472380a01.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/forest-top.png` | `exec-c1da6926-543a-4d8f-8e40-37c472380a01.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/castle-forest.webp` | `exec-c1da6926-543a-4d8f-8e40-37c472380a01.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `castles/castle-faction-demon.png` | `exec-cf9185ab-90c0-412d-9d09-e98b296ca439.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/demon-right.png` | `exec-cf9185ab-90c0-412d-9d09-e98b296ca439.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/demon-back.png` | `exec-cf9185ab-90c0-412d-9d09-e98b296ca439.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/demon-top.png` | `exec-cf9185ab-90c0-412d-9d09-e98b296ca439.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/castle-demon.webp` | `exec-cf9185ab-90c0-412d-9d09-e98b296ca439.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `castles/castle-faction-dragon.png` | `exec-70ba6434-1e71-49ce-ab72-62b6c10f2372.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/dragon-right.png` | `exec-70ba6434-1e71-49ce-ab72-62b6c10f2372.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/dragon-back.png` | `exec-70ba6434-1e71-49ce-ab72-62b6c10f2372.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/castles/dragon-top.png` | `exec-70ba6434-1e71-49ce-ab72-62b6c10f2372.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/castle-dragon.webp` | `exec-70ba6434-1e71-49ce-ab72-62b6c10f2372.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `ui/factions/crest-kingdom.png` | `exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `ui/factions/crest-forest.png` | `exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `ui/factions/crest-demon.png` | `exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `ui/factions/crest-dragon.png` | `exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `props/field-stepping-stone.png` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `props/field-grass.png` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `props/field-boulders.png` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `props/field-column.png` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `props/field-root-arch.png` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `props/field-amethyst.png` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `props/field-brazier.png` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `props/field-wall.png` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `bg/stage-desert.png` | `exec-0d5d9859-2237-4151-b222-87185b5a73a6.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/faction-crests.webp` | `exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/field-props.webp` | `exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `review/modeling-kit/sources/stage-desert.webp` | `exec-0d5d9859-2237-4151-b222-87185b5a73a6.png` | OpenAI画像生成（ChatGPT） | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+
+`review/modeling-kit/catalog.json`・`field-layout.svg`・Blenderスクリプト・仮形状・説明・確認ページはこの依頼向けに作成。Blenderファイルに内蔵した参照画像の出典は上表。仮形状は数値から作った配置見本で、完成モデルではない。原画から法線・高さマップを作成したものではない。

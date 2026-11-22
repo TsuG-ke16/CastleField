@@ -1,0 +1,2398 @@
+{
+  "schemaVersion": 1,
+  "units": [
+    {
+      "id": "fac_king_infantry",
+      "label": "歩兵",
+      "faction": "kingdom",
+      "kind": "unit",
+      "height": 1.6,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-king-infantry.webp",
+      "originalSource": "exec-6fd52803-0bdd-44ca-9612-bd9c86bad9f3.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-king-infantry-front.png",
+        "right": "review/modeling-kit/units/fac-king-infantry-right.png",
+        "back": "review/modeling-kit/units/fac-king-infantry-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            116,
+            25,
+            396,
+            487
+          ],
+          "sourceCrop": [
+            48,
+            127,
+            507,
+            882
+          ],
+          "groundPivotPx": [
+            247.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            141,
+            25,
+            370,
+            487
+          ],
+          "sourceCrop": [
+            12,
+            127,
+            389,
+            884
+          ],
+          "groundPivotPx": [
+            280.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            115,
+            25,
+            397,
+            487
+          ],
+          "sourceCrop": [
+            59,
+            126,
+            523,
+            883
+          ],
+          "groundPivotPx": [
+            264.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          518,
+          1024
+        ],
+        [
+          518,
+          0,
+          964,
+          1024
+        ],
+        [
+          964,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_king_cavalry",
+      "label": "騎兵",
+      "faction": "kingdom",
+      "kind": "unit",
+      "height": 2.2,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-king-cavalry.webp",
+      "originalSource": "exec-e81a1d32-857f-4d15-a717-d551bbea5802.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-king-cavalry-front.png",
+        "right": "review/modeling-kit/units/fac-king-cavalry-right.png",
+        "back": "review/modeling-kit/units/fac-king-cavalry-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            146,
+            25,
+            365,
+            487
+          ],
+          "sourceCrop": [
+            50,
+            97,
+            428,
+            891
+          ],
+          "groundPivotPx": [
+            267.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            86,
+            25,
+            425,
+            487
+          ],
+          "sourceCrop": [
+            18,
+            97,
+            601,
+            891
+          ],
+          "groundPivotPx": [
+            209.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            146,
+            25,
+            365,
+            487
+          ],
+          "sourceCrop": [
+            31,
+            97,
+            410,
+            891
+          ],
+          "groundPivotPx": [
+            259.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          445,
+          1024
+        ],
+        [
+          445,
+          0,
+          1075,
+          1024
+        ],
+        [
+          1075,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "rider",
+        "mount",
+        "saddle",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_king_archer",
+      "label": "弓兵",
+      "faction": "kingdom",
+      "kind": "unit",
+      "height": 1.6,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-king-archer.webp",
+      "originalSource": "exec-742a891c-8cba-49ae-b4b4-29ad2ff4f1d3.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-king-archer-front.png",
+        "right": "review/modeling-kit/units/fac-king-archer-right.png",
+        "back": "review/modeling-kit/units/fac-king-archer-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            92,
+            25,
+            420,
+            487
+          ],
+          "sourceCrop": [
+            16,
+            174,
+            506,
+            863
+          ],
+          "groundPivotPx": [
+            279.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            126,
+            25,
+            385,
+            487
+          ],
+          "sourceCrop": [
+            23,
+            174,
+            412,
+            863
+          ],
+          "groundPivotPx": [
+            260.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            101,
+            25,
+            411,
+            487
+          ],
+          "sourceCrop": [
+            47,
+            175,
+            509,
+            863
+          ],
+          "groundPivotPx": [
+            239.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          527,
+          1024
+        ],
+        [
+          527,
+          0,
+          984,
+          1024
+        ],
+        [
+          984,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_king_heavy",
+      "label": "重装兵",
+      "faction": "kingdom",
+      "kind": "unit",
+      "height": 1.75,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-king-heavy.webp",
+      "originalSource": "exec-16e5a44d-c51f-468b-9e2a-713520bc2354.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-king-heavy-front.png",
+        "right": "review/modeling-kit/units/fac-king-heavy-right.png",
+        "back": "review/modeling-kit/units/fac-king-heavy-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            99,
+            25,
+            413,
+            487
+          ],
+          "sourceCrop": [
+            31,
+            154,
+            516,
+            866
+          ],
+          "groundPivotPx": [
+            284.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            143,
+            25,
+            368,
+            487
+          ],
+          "sourceCrop": [
+            26,
+            154,
+            375,
+            866
+          ],
+          "groundPivotPx": [
+            275.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            99,
+            25,
+            412,
+            487
+          ],
+          "sourceCrop": [
+            53,
+            153,
+            537,
+            866
+          ],
+          "groundPivotPx": [
+            225.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          541,
+          1024
+        ],
+        [
+          541,
+          0,
+          968,
+          1024
+        ],
+        [
+          968,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_king_priest",
+      "label": "聖術師",
+      "faction": "kingdom",
+      "kind": "unit",
+      "height": 1.8,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-king-priest.webp",
+      "originalSource": "exec-10075678-f020-4b70-be96-158ad6f9c04d.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-king-priest-front.png",
+        "right": "review/modeling-kit/units/fac-king-priest-right.png",
+        "back": "review/modeling-kit/units/fac-king-priest-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            83,
+            25,
+            428,
+            487
+          ],
+          "sourceCrop": [
+            9,
+            182,
+            506,
+            847
+          ],
+          "groundPivotPx": [
+            275.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            127,
+            25,
+            384,
+            487
+          ],
+          "sourceCrop": [
+            37,
+            182,
+            408,
+            847
+          ],
+          "groundPivotPx": [
+            253.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            79,
+            25,
+            432,
+            487
+          ],
+          "sourceCrop": [
+            35,
+            182,
+            545,
+            847
+          ],
+          "groundPivotPx": [
+            240.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          541,
+          1024
+        ],
+        [
+          541,
+          0,
+          983,
+          1024
+        ],
+        [
+          983,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_forest_beastman",
+      "label": "獣人",
+      "faction": "forest",
+      "kind": "unit",
+      "height": 1.7,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-forest-beastman.webp",
+      "originalSource": "exec-550653e2-bda1-4ca5-9eb9-f1b157308766.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-forest-beastman-front.png",
+        "right": "review/modeling-kit/units/fac-forest-beastman-right.png",
+        "back": "review/modeling-kit/units/fac-forest-beastman-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            91,
+            25,
+            421,
+            486
+          ],
+          "sourceCrop": [
+            6,
+            182,
+            494,
+            861
+          ],
+          "groundPivotPx": [
+            304.0,
+            486
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            124,
+            26,
+            387,
+            487
+          ],
+          "sourceCrop": [
+            23,
+            181,
+            412,
+            862
+          ],
+          "groundPivotPx": [
+            287.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            90,
+            25,
+            421,
+            487
+          ],
+          "sourceCrop": [
+            58,
+            182,
+            544,
+            860
+          ],
+          "groundPivotPx": [
+            231.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          516,
+          1024
+        ],
+        [
+          516,
+          0,
+          985,
+          1024
+        ],
+        [
+          985,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_forest_elf",
+      "label": "エルフ",
+      "faction": "forest",
+      "kind": "unit",
+      "height": 1.6,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-forest-elf.webp",
+      "originalSource": "exec-d8275d88-1cb2-4c09-8cd8-75efd69ce262.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-forest-elf-front.png",
+        "right": "review/modeling-kit/units/fac-forest-elf-right.png",
+        "back": "review/modeling-kit/units/fac-forest-elf-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            104,
+            25,
+            407,
+            487
+          ],
+          "sourceCrop": [
+            41,
+            169,
+            504,
+            873
+          ],
+          "groundPivotPx": [
+            265.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            104,
+            25,
+            408,
+            487
+          ],
+          "sourceCrop": [
+            11,
+            169,
+            475,
+            873
+          ],
+          "groundPivotPx": [
+            272.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            108,
+            25,
+            403,
+            487
+          ],
+          "sourceCrop": [
+            22,
+            169,
+            473,
+            873
+          ],
+          "groundPivotPx": [
+            263.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          514,
+          1024
+        ],
+        [
+          514,
+          0,
+          1010,
+          1024
+        ],
+        [
+          1010,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_forest_druid",
+      "label": "ドルイド",
+      "faction": "forest",
+      "kind": "unit",
+      "height": 1.9,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-forest-druid.webp",
+      "originalSource": "exec-fac3763f-2223-45e0-bc67-28dcf81f2167.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-forest-druid-front.png",
+        "right": "review/modeling-kit/units/fac-forest-druid-right.png",
+        "back": "review/modeling-kit/units/fac-forest-druid-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            98,
+            26,
+            413,
+            487
+          ],
+          "sourceCrop": [
+            27,
+            152,
+            514,
+            864
+          ],
+          "groundPivotPx": [
+            270.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            121,
+            25,
+            390,
+            487
+          ],
+          "sourceCrop": [
+            25,
+            144,
+            445,
+            864
+          ],
+          "groundPivotPx": [
+            255.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            99,
+            25,
+            413,
+            487
+          ],
+          "sourceCrop": [
+            20,
+            152,
+            505,
+            864
+          ],
+          "groundPivotPx": [
+            238.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          537,
+          1024
+        ],
+        [
+          537,
+          0,
+          1001,
+          1024
+        ],
+        [
+          1001,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_demon_skeleton",
+      "label": "骸骨兵",
+      "faction": "demon",
+      "kind": "unit",
+      "height": 1.65,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-demon-skeleton.webp",
+      "originalSource": "exec-09a61bd1-bebb-4495-8874-fa018c24caef.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-demon-skeleton-front.png",
+        "right": "review/modeling-kit/units/fac-demon-skeleton-right.png",
+        "back": "review/modeling-kit/units/fac-demon-skeleton-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            112,
+            25,
+            401,
+            486
+          ],
+          "sourceCrop": [
+            39,
+            157,
+            494,
+            880
+          ],
+          "groundPivotPx": [
+            254.0,
+            486
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            141,
+            25,
+            371,
+            487
+          ],
+          "sourceCrop": [
+            37,
+            152,
+            401,
+            879
+          ],
+          "groundPivotPx": [
+            250.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            110,
+            25,
+            401,
+            487
+          ],
+          "sourceCrop": [
+            58,
+            158,
+            514,
+            880
+          ],
+          "groundPivotPx": [
+            214.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          529,
+          1024
+        ],
+        [
+          529,
+          0,
+          987,
+          1024
+        ],
+        [
+          987,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_demon_imp",
+      "label": "小悪魔",
+      "faction": "demon",
+      "kind": "unit",
+      "height": 1.35,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-demon-imp.webp",
+      "originalSource": "exec-5273be62-afef-4be8-8ad3-02fa7e4c2f98.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-demon-imp-front.png",
+        "right": "review/modeling-kit/units/fac-demon-imp-right.png",
+        "back": "review/modeling-kit/units/fac-demon-imp-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            76,
+            26,
+            435,
+            487
+          ],
+          "sourceCrop": [
+            9,
+            207,
+            496,
+            832
+          ],
+          "groundPivotPx": [
+            272.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            104,
+            25,
+            408,
+            486
+          ],
+          "sourceCrop": [
+            28,
+            206,
+            441,
+            833
+          ],
+          "groundPivotPx": [
+            255.0,
+            486
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            76,
+            25,
+            436,
+            487
+          ],
+          "sourceCrop": [
+            33,
+            208,
+            521,
+            832
+          ],
+          "groundPivotPx": [
+            245.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          522,
+          1024
+        ],
+        [
+          522,
+          0,
+          995,
+          1024
+        ],
+        [
+          995,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "left-wing",
+        "right-wing",
+        "tail"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_demon_curser",
+      "label": "呪術師",
+      "faction": "demon",
+      "kind": "unit",
+      "height": 1.7,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-demon-curser.webp",
+      "originalSource": "exec-84ee97b8-941c-47ba-ae42-8f8015a447e4.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-demon-curser-front.png",
+        "right": "review/modeling-kit/units/fac-demon-curser-right.png",
+        "back": "review/modeling-kit/units/fac-demon-curser-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            93,
+            25,
+            419,
+            487
+          ],
+          "sourceCrop": [
+            35,
+            160,
+            528,
+            858
+          ],
+          "groundPivotPx": [
+            251.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            120,
+            25,
+            390,
+            487
+          ],
+          "sourceCrop": [
+            13,
+            160,
+            423,
+            857
+          ],
+          "groundPivotPx": [
+            262.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            90,
+            25,
+            422,
+            487
+          ],
+          "sourceCrop": [
+            22,
+            160,
+            524,
+            857
+          ],
+          "groundPivotPx": [
+            263.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          539,
+          1024
+        ],
+        [
+          539,
+          0,
+          982,
+          1024
+        ],
+        [
+          982,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_dragon_recruit",
+      "label": "竜人の新兵",
+      "faction": "dragon",
+      "kind": "unit",
+      "height": 1.7,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-dragon-recruit.webp",
+      "originalSource": "exec-dd6f783c-2939-4026-a3ca-323b68490a22.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-dragon-recruit-front.png",
+        "right": "review/modeling-kit/units/fac-dragon-recruit-right.png",
+        "back": "review/modeling-kit/units/fac-dragon-recruit-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            93,
+            25,
+            419,
+            487
+          ],
+          "sourceCrop": [
+            26,
+            164,
+            496,
+            828
+          ],
+          "groundPivotPx": [
+            232.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            132,
+            25,
+            379,
+            487
+          ],
+          "sourceCrop": [
+            32,
+            162,
+            389,
+            828
+          ],
+          "groundPivotPx": [
+            266.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            87,
+            25,
+            425,
+            487
+          ],
+          "sourceCrop": [
+            54,
+            164,
+            541,
+            828
+          ],
+          "groundPivotPx": [
+            280.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          527,
+          1024
+        ],
+        [
+          527,
+          0,
+          968,
+          1024
+        ],
+        [
+          968,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_dragon_dragoon",
+      "label": "竜騎兵",
+      "faction": "dragon",
+      "kind": "unit",
+      "height": 2.2,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-dragon-dragoon.webp",
+      "originalSource": "exec-e38c02d1-5f29-4c2f-96b8-2aa7a799d7a5.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-dragon-dragoon-front.png",
+        "right": "review/modeling-kit/units/fac-dragon-dragoon-right.png",
+        "back": "review/modeling-kit/units/fac-dragon-dragoon-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            144,
+            25,
+            367,
+            487
+          ],
+          "sourceCrop": [
+            31,
+            125,
+            391,
+            868
+          ],
+          "groundPivotPx": [
+            261.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            68,
+            25,
+            444,
+            487
+          ],
+          "sourceCrop": [
+            26,
+            127,
+            630,
+            868
+          ],
+          "groundPivotPx": [
+            273.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            141,
+            25,
+            370,
+            487
+          ],
+          "sourceCrop": [
+            38,
+            124,
+            408,
+            867
+          ],
+          "groundPivotPx": [
+            239.5,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          416,
+          1024
+        ],
+        [
+          416,
+          0,
+          1082,
+          1024
+        ],
+        [
+          1082,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "rider",
+        "mount",
+        "saddle",
+        "weapon",
+        "cape"
+      ],
+      "profileCamera": "+X"
+    },
+    {
+      "id": "fac_dragon_flame_whelp",
+      "label": "幼炎竜",
+      "faction": "dragon",
+      "kind": "unit",
+      "height": 1.55,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-dragon-flame-whelp.webp",
+      "originalSource": "exec-34e19cd2-b5ea-4a83-8089-6fb9f2b625fe.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-dragon-flame-whelp-front.png",
+        "right": "review/modeling-kit/units/fac-dragon-flame-whelp-right.png",
+        "back": "review/modeling-kit/units/fac-dragon-flame-whelp-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            75,
+            25,
+            437,
+            487
+          ],
+          "sourceCrop": [
+            6,
+            192,
+            501,
+            823
+          ],
+          "groundPivotPx": [
+            278.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            85,
+            25,
+            428,
+            487
+          ],
+          "sourceCrop": [
+            2,
+            193,
+            471,
+            822
+          ],
+          "groundPivotPx": [
+            277.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            73,
+            25,
+            438,
+            486
+          ],
+          "sourceCrop": [
+            31,
+            192,
+            529,
+            820
+          ],
+          "groundPivotPx": [
+            277.0,
+            486
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          502,
+          1024
+        ],
+        [
+          502,
+          0,
+          1002,
+          1024
+        ],
+        [
+          1002,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "left-wing",
+        "right-wing",
+        "tail"
+      ],
+      "profileCamera": "-X"
+    },
+    {
+      "id": "fac_dragon_thunder_whelp",
+      "label": "幼雷竜",
+      "faction": "dragon",
+      "kind": "unit",
+      "height": 1.55,
+      "heightIncludes": "full silhouette including headgear and carried equipment",
+      "source": "review/modeling-kit/sources/fac-dragon-thunder-whelp.webp",
+      "originalSource": "exec-2437d437-446b-4fa7-a5f0-e551fe87545d.png",
+      "views": {
+        "front": "review/modeling-kit/units/fac-dragon-thunder-whelp-front.png",
+        "right": "review/modeling-kit/units/fac-dragon-thunder-whelp-right.png",
+        "back": "review/modeling-kit/units/fac-dragon-thunder-whelp-back.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            78,
+            25,
+            435,
+            487
+          ],
+          "sourceCrop": [
+            10,
+            183,
+            503,
+            821
+          ],
+          "groundPivotPx": [
+            230.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            74,
+            25,
+            438,
+            486
+          ],
+          "sourceCrop": [
+            1,
+            184,
+            506,
+            822
+          ],
+          "groundPivotPx": [
+            292.0,
+            486
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            77,
+            26,
+            433,
+            487
+          ],
+          "sourceCrop": [
+            13,
+            183,
+            507,
+            821
+          ],
+          "groundPivotPx": [
+            282.0,
+            487
+          ]
+        }
+      },
+      "sourcePanels": [
+        [
+          0,
+          0,
+          503,
+          1024
+        ],
+        [
+          503,
+          0,
+          1021,
+          1024
+        ],
+        [
+          1021,
+          0,
+          1536,
+          1024
+        ]
+      ],
+      "parts": [
+        "body",
+        "head",
+        "left-wing",
+        "right-wing",
+        "tail"
+      ],
+      "profileCamera": "-X"
+    }
+  ],
+  "castles": [
+    {
+      "id": "castle-kingdom",
+      "label": "王国の城",
+      "kind": "castle",
+      "faction": "kingdom",
+      "height": 4.6,
+      "footprint": [
+        4.8,
+        4.8
+      ],
+      "source": "review/modeling-kit/sources/castle-kingdom.webp",
+      "originalSource": "exec-2c36e597-c7d2-4c46-a455-e25649db965f.png",
+      "views": {
+        "front": "castles/castle-faction-kingdom.png",
+        "right": "review/modeling-kit/castles/kingdom-right.png",
+        "back": "review/modeling-kit/castles/kingdom-back.png",
+        "top": "review/modeling-kit/castles/kingdom-top.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            25,
+            90,
+            487,
+            486
+          ],
+          "sourceCrop": [
+            99,
+            3,
+            668,
+            492
+          ],
+          "groundPivotPx": [
+            255.0,
+            486
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            80,
+            486,
+            487
+          ],
+          "sourceCrop": [
+            107,
+            3,
+            661,
+            491
+          ],
+          "groundPivotPx": [
+            252.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            94,
+            487,
+            486
+          ],
+          "sourceCrop": [
+            94,
+            3,
+            667,
+            492
+          ],
+          "groundPivotPx": [
+            255.0,
+            486
+          ]
+        },
+        "top": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            36,
+            486,
+            486
+          ],
+          "sourceCrop": [
+            137,
+            10,
+            625,
+            486
+          ]
+        }
+      },
+      "parts": [
+        "base",
+        "wall",
+        "corner-tower",
+        "keep",
+        "gate",
+        "crest",
+        "roof"
+      ],
+      "profileCamera": "+X"
+    },
+    {
+      "id": "castle-forest",
+      "label": "森の同盟の城",
+      "kind": "castle",
+      "faction": "forest",
+      "height": 4.6,
+      "footprint": [
+        4.8,
+        4.8
+      ],
+      "source": "review/modeling-kit/sources/castle-forest.webp",
+      "originalSource": "exec-c1da6926-543a-4d8f-8e40-37c472380a01.png",
+      "views": {
+        "front": "castles/castle-faction-forest.png",
+        "right": "review/modeling-kit/castles/forest-right.png",
+        "back": "review/modeling-kit/castles/forest-back.png",
+        "top": "review/modeling-kit/castles/forest-top.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            123,
+            486,
+            487
+          ],
+          "sourceCrop": [
+            79,
+            6,
+            682,
+            483
+          ],
+          "groundPivotPx": [
+            256.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            25,
+            107,
+            486,
+            486
+          ],
+          "sourceCrop": [
+            112,
+            11,
+            684,
+            482
+          ],
+          "groundPivotPx": [
+            254.0,
+            486
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            122,
+            486,
+            487
+          ],
+          "sourceCrop": [
+            80,
+            5,
+            682,
+            481
+          ],
+          "groundPivotPx": [
+            255.0,
+            487
+          ]
+        },
+        "top": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            49,
+            486,
+            486
+          ],
+          "sourceCrop": [
+            128,
+            6,
+            631,
+            484
+          ]
+        }
+      },
+      "parts": [
+        "base",
+        "wall",
+        "corner-tower",
+        "keep",
+        "gate",
+        "crest",
+        "roof"
+      ],
+      "profileCamera": "+X"
+    },
+    {
+      "id": "castle-demon",
+      "label": "魔族軍の城",
+      "kind": "castle",
+      "faction": "demon",
+      "height": 4.6,
+      "footprint": [
+        4.8,
+        4.8
+      ],
+      "source": "review/modeling-kit/sources/castle-demon.webp",
+      "originalSource": "exec-cf9185ab-90c0-412d-9d09-e98b296ca439.png",
+      "views": {
+        "front": "castles/castle-faction-demon.png",
+        "right": "review/modeling-kit/castles/demon-right.png",
+        "back": "review/modeling-kit/castles/demon-back.png",
+        "top": "review/modeling-kit/castles/demon-top.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            25,
+            90,
+            486,
+            486
+          ],
+          "sourceCrop": [
+            107,
+            3,
+            668,
+            486
+          ],
+          "groundPivotPx": [
+            255.0,
+            486
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            90,
+            487,
+            486
+          ],
+          "sourceCrop": [
+            110,
+            5,
+            668,
+            486
+          ],
+          "groundPivotPx": [
+            257.0,
+            486
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            25,
+            89,
+            486,
+            486
+          ],
+          "sourceCrop": [
+            111,
+            6,
+            667,
+            486
+          ],
+          "groundPivotPx": [
+            255.0,
+            486
+          ]
+        },
+        "top": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            28,
+            26,
+            483,
+            486
+          ],
+          "sourceCrop": [
+            147,
+            6,
+            611,
+            475
+          ]
+        }
+      },
+      "parts": [
+        "base",
+        "wall",
+        "corner-tower",
+        "keep",
+        "gate",
+        "crest",
+        "roof"
+      ],
+      "profileCamera": "+X"
+    },
+    {
+      "id": "castle-dragon",
+      "label": "竜族帝国の城",
+      "kind": "castle",
+      "faction": "dragon",
+      "height": 4.6,
+      "footprint": [
+        4.8,
+        4.8
+      ],
+      "source": "review/modeling-kit/sources/castle-dragon.webp",
+      "originalSource": "exec-70ba6434-1e71-49ce-ab72-62b6c10f2372.png",
+      "views": {
+        "front": "castles/castle-faction-dragon.png",
+        "right": "review/modeling-kit/castles/dragon-right.png",
+        "back": "review/modeling-kit/castles/dragon-back.png",
+        "top": "review/modeling-kit/castles/dragon-top.png"
+      },
+      "registration": {
+        "front": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            25,
+            138,
+            486,
+            487
+          ],
+          "sourceCrop": [
+            72,
+            1,
+            698,
+            475
+          ],
+          "groundPivotPx": [
+            255.0,
+            487
+          ]
+        },
+        "right": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            25,
+            149,
+            486,
+            487
+          ],
+          "sourceCrop": [
+            50,
+            4,
+            690,
+            475
+          ],
+          "groundPivotPx": [
+            255.0,
+            487
+          ]
+        },
+        "back": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            140,
+            487,
+            487
+          ],
+          "sourceCrop": [
+            70,
+            5,
+            699,
+            478
+          ],
+          "groundPivotPx": [
+            256.0,
+            487
+          ]
+        },
+        "top": {
+          "canvas": [
+            512,
+            512
+          ],
+          "bbox": [
+            26,
+            31,
+            486,
+            486
+          ],
+          "sourceCrop": [
+            141,
+            8,
+            620,
+            482
+          ]
+        }
+      },
+      "parts": [
+        "base",
+        "wall",
+        "corner-tower",
+        "keep",
+        "gate",
+        "crest",
+        "roof"
+      ],
+      "profileCamera": "+X"
+    }
+  ],
+  "crests": {
+    "kingdom": {
+      "path": "ui/factions/crest-kingdom.png",
+      "source": "review/modeling-kit/sources/faction-crests.webp",
+      "originalSource": "exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png"
+    },
+    "forest": {
+      "path": "ui/factions/crest-forest.png",
+      "source": "review/modeling-kit/sources/faction-crests.webp",
+      "originalSource": "exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png"
+    },
+    "demon": {
+      "path": "ui/factions/crest-demon.png",
+      "source": "review/modeling-kit/sources/faction-crests.webp",
+      "originalSource": "exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png"
+    },
+    "dragon": {
+      "path": "ui/factions/crest-dragon.png",
+      "source": "review/modeling-kit/sources/faction-crests.webp",
+      "originalSource": "exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png"
+    }
+  },
+  "props": [
+    {
+      "id": "stepping-stone",
+      "label": "踏み石",
+      "path": "props/field-stepping-stone.png",
+      "width": 1.6,
+      "source": "review/modeling-kit/sources/field-props.webp",
+      "originalSource": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+      "registration": {
+        "canvas": [
+          512,
+          512
+        ],
+        "bbox": [
+          67,
+          224,
+          444,
+          486
+        ],
+        "sourceCrop": [
+          32,
+          106,
+          413,
+          372
+        ]
+      }
+    },
+    {
+      "id": "grass",
+      "label": "草と花",
+      "path": "props/field-grass.png",
+      "width": 0.8,
+      "source": "review/modeling-kit/sources/field-props.webp",
+      "originalSource": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+      "registration": {
+        "canvas": [
+          512,
+          512
+        ],
+        "bbox": [
+          65,
+          246,
+          446,
+          486
+        ],
+        "sourceCrop": [
+          29,
+          117,
+          414,
+          361
+        ]
+      }
+    },
+    {
+      "id": "boulders",
+      "label": "岩",
+      "path": "props/field-boulders.png",
+      "width": 1.2,
+      "source": "review/modeling-kit/sources/field-props.webp",
+      "originalSource": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+      "registration": {
+        "canvas": [
+          512,
+          512
+        ],
+        "bbox": [
+          82,
+          213,
+          429,
+          486
+        ],
+        "sourceCrop": [
+          29,
+          91,
+          380,
+          368
+        ]
+      }
+    },
+    {
+      "id": "column",
+      "label": "折れた柱",
+      "path": "props/field-column.png",
+      "width": 0.8,
+      "source": "review/modeling-kit/sources/field-props.webp",
+      "originalSource": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+      "registration": {
+        "canvas": [
+          512,
+          512
+        ],
+        "bbox": [
+          114,
+          97,
+          398,
+          486
+        ],
+        "sourceCrop": [
+          76,
+          22,
+          364,
+          415
+        ]
+      }
+    },
+    {
+      "id": "root-arch",
+      "label": "根のアーチ",
+      "path": "props/field-root-arch.png",
+      "width": 1.5,
+      "source": "review/modeling-kit/sources/field-props.webp",
+      "originalSource": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+      "registration": {
+        "canvas": [
+          512,
+          512
+        ],
+        "bbox": [
+          52,
+          232,
+          459,
+          486
+        ],
+        "sourceCrop": [
+          17,
+          110,
+          428,
+          368
+        ]
+      }
+    },
+    {
+      "id": "amethyst",
+      "label": "紫水晶",
+      "path": "props/field-amethyst.png",
+      "width": 0.9,
+      "source": "review/modeling-kit/sources/field-props.webp",
+      "originalSource": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+      "registration": {
+        "canvas": [
+          512,
+          512
+        ],
+        "bbox": [
+          105,
+          138,
+          407,
+          486
+        ],
+        "sourceCrop": [
+          58,
+          46,
+          364,
+          398
+        ]
+      }
+    },
+    {
+      "id": "brazier",
+      "label": "かがり火",
+      "path": "props/field-brazier.png",
+      "width": 0.9,
+      "source": "review/modeling-kit/sources/field-props.webp",
+      "originalSource": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+      "registration": {
+        "canvas": [
+          512,
+          512
+        ],
+        "bbox": [
+          105,
+          125,
+          407,
+          486
+        ],
+        "sourceCrop": [
+          56,
+          32,
+          362,
+          397
+        ]
+      }
+    },
+    {
+      "id": "wall",
+      "label": "王国の低い壁",
+      "path": "props/field-wall.png",
+      "width": 1.8,
+      "source": "review/modeling-kit/sources/field-props.webp",
+      "originalSource": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+      "registration": {
+        "canvas": [
+          512,
+          512
+        ],
+        "bbox": [
+          49,
+          183,
+          462,
+          486
+        ],
+        "sourceCrop": [
+          13,
+          75,
+          430,
+          382
+        ]
+      }
+    }
+  ],
+  "coordinates": {
+    "units": "meters",
+    "up": "+Z",
+    "forward": "-Y",
+    "frontCamera": "from -Y toward +Y",
+    "rightCamera": "Per-asset profileCamera: unit side usually from -X, castle side from +X. Use the recorded side; do not mirror textures.",
+    "backCamera": "from +Y toward -Y"
+  },
+  "field": {
+    "width": 12,
+    "length": 20,
+    "laneX": [
+      -2.4,
+      0,
+      2.4
+    ],
+    "stepY": [
+      -4,
+      -2,
+      0,
+      2,
+      4
+    ],
+    "socketRadius": 0.8,
+    "castleY": [
+      -7.2,
+      7.2
+    ],
+    "castleFootprint": [
+      4.8,
+      4.8
+    ],
+    "propMinAbsX": 4.2,
+    "note": "Art blockout proposal, not a gameplay rule change. Three lanes and five steps follow data/factions/rules.json."
+  },
+  "background": {
+    "path": "bg/stage-desert.png",
+    "source": "review/modeling-kit/sources/stage-desert.webp",
+    "originalSource": "exec-0d5d9859-2237-4151-b222-87185b5a73a6.png",
+    "size": [
+      1080,
+      1920
+    ]
+  }
+}

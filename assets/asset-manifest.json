@@ -412,5 +412,22 @@
   "skins/back-faction-demon.png": "exec-17f70fed-9004-455a-8c53-506620f6df4b.png",
   "cards/frame-faction-forest.png": "exec-8366a03b-a92a-419c-b4a9-0d9bdfb4a4ec.png",
   "frames/edge-faction-forest.png": "exec-8366a03b-a92a-419c-b4a9-0d9bdfb4a4ec.png",
-  "skins/back-faction-forest.png": "exec-8366a03b-a92a-419c-b4a9-0d9bdfb4a4ec.png"
+  "skins/back-faction-forest.png": "exec-8366a03b-a92a-419c-b4a9-0d9bdfb4a4ec.png",
+  "castles/castle-faction-kingdom.png": "exec-2c36e597-c7d2-4c46-a455-e25649db965f.png",
+  "castles/castle-faction-forest.png": "exec-c1da6926-543a-4d8f-8e40-37c472380a01.png",
+  "castles/castle-faction-demon.png": "exec-cf9185ab-90c0-412d-9d09-e98b296ca439.png",
+  "castles/castle-faction-dragon.png": "exec-70ba6434-1e71-49ce-ab72-62b6c10f2372.png",
+  "ui/factions/crest-kingdom.png": "exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png",
+  "ui/factions/crest-forest.png": "exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png",
+  "ui/factions/crest-demon.png": "exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png",
+  "ui/factions/crest-dragon.png": "exec-d93facf3-c4d7-4d3f-b1b3-252181108f7a.png",
+  "props/field-stepping-stone.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+  "props/field-grass.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+  "props/field-boulders.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+  "props/field-column.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+  "props/field-root-arch.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+  "props/field-amethyst.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+  "props/field-brazier.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+  "props/field-wall.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
+  "bg/stage-desert.png": "exec-0d5d9859-2237-4151-b222-87185b5a73a6.png"
 }

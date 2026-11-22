@@ -71,6 +71,7 @@
 #app[data-stage="darkForest"] { --stage-ground: #418280; }
 #app[data-stage="ice"] { --stage-ground: #b5cbf2; }
 #app[data-stage="lava"] { --stage-ground: #904a45; }
+#app[data-stage="desert"] { --stage-ground: #e9bc71; }
 #app[data-stage][data-stage-art] #scenery .tree { display: none; }
 #app[data-stage][data-stage-art] #road .lane:not(.targetable) { border-color: transparent; background: none; box-shadow: none; }
 /* 飛び石は、道にぴったり合う画面側のもの（砂漠と同じ石）を、地面の絵の上に並べる（絵の飛び石は道とずれるため） */
