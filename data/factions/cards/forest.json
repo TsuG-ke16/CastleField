@@ -1,0 +1,88 @@
+{
+  "fac_forest_beastman": {
+    "name": "獣人",
+    "kind": "soldier",
+    "hp": 5,
+    "attack": 4,
+    "speed": 2,
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_forest_elf": {
+    "name": "エルフ",
+    "kind": "soldier",
+    "role": "archer",
+    "hp": 3,
+    "attack": 3,
+    "range": 2,
+    "stay": 2,
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ（反撃を受けない）。2ターンで帰る",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_forest_fire_bolt": {
+    "name": "火炎弾",
+    "kind": "spell",
+    "effect": "singleDamage",
+    "element": "fire",
+    "amount": 4,
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_forest_gust": {
+    "name": "突風",
+    "kind": "spell",
+    "effect": "damageEnemySoldiers",
+    "element": "wind",
+    "amount": 2,
+    "scope": "lane",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_forest_fire_spirit": {
+    "name": "火の精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "fire",
+    "amount": 1,
+    "turns": 3,
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_forest_water_spirit": {
+    "name": "水の精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "water",
+    "amount": 1,
+    "turns": 3,
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_forest_earth_spirit": {
+    "name": "土の精霊",
+    "kind": "spell",
+    "effect": "summonSpirit",
+    "spirit": "earth",
+    "amount": 1,
+    "turns": 3,
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_forest_thorn_wall": {
+    "name": "茨の壁",
+    "kind": "defense",
+    "effect": "armorCastle",
+    "amount": 4,
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_forest_bark_shield": {
+    "name": "樹皮の盾",
+    "kind": "defense",
+    "effect": "shieldSoldier",
+    "amount": 3,
+    "mpCost": 1,
+    "count": 2
+  }
+}

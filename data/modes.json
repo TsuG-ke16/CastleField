@@ -44,6 +44,30 @@
         "independent": true
       },
       "background": "assets/bg/kingdom-meadow.png"
+    },
+    "factions": {
+      "name": "4陣営",
+      "available": false,
+      "hidden": true,
+      "world": "kingdom",
+      "_note": "4陣営モード（王国・森の同盟・魔族軍・竜族帝国）。クラシックと同じ作り（レアリティを使わない・属性の付着と反応）。cardSet はなく、陣営ごとのカード表（factionCardSets）を全部合わせたものがカード定義になり、各陣営のカード表がその陣営のデッキになる（factionDecks: true・deckMode \"own\"）。今はテスト・シミュレーションだけが読む（tests/helpers.js）。画面・サーバーで遊べるようにするのは別の作業",
+      "rulesSet": "data/factions/rules.json",
+      "elementsSet": "data/factions/elements.json",
+      "reactionsSet": "data/factions/reactions.json",
+      "factionsSet": "data/factions/factions.json",
+      "factionCardSets": {
+        "kingdom": "data/factions/cards/kingdom.json",
+        "forest": "data/factions/cards/forest.json",
+        "demon": "data/factions/cards/demon.json",
+        "dragon": "data/factions/cards/dragon.json"
+      },
+      "factionDecks": true,
+      "useRarities": false,
+      "rank": {
+        "enabled": false,
+        "independent": true
+      },
+      "background": "assets/bg/kingdom-meadow.png"
     }
   }
 }

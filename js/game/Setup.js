@@ -214,3 +214,26 @@ export function checkCostDeck(list, cards, rarities, rules) {
   if (cost < min) problems.push(`合計コストが${min}未満です（${cost}）`);
   return { ok: problems.length === 0, reason: problems[0], problems, cost, total, counts };
 }
+
+/**
+ * 4陣営モード：陣営ごとのカード表から、陣営ごとのデッキ（decks.json と同じ形）を作る。
+ * 陣営のカード表のカード全部が、count 枚ずつ、その陣営のデッキに入る（deckMode "own" で setup.decks に陣営のIDを渡す）。
+ * @param {object} factions factions.json の中身（{ <陣営ID>: { name } }。"_" で始まるキーは説明なので読まない）
+ * @param {object} cardSets { <陣営ID>: そのカード表の中身 }
+ * @returns {object} { <陣営ID>: { name, cards: { <カード種類>: 枚数 } } }
+ */
+export function factionDecks(factions, cardSets) {
+  const decks = {};
+  for (const [id, def] of Object.entries(factions)) {
+    if (id.startsWith('_')) continue;
+    const set = cardSets[id];
+    if (!set) throw new Error(`陣営 "${id}" のカード表がありません`);
+    const cards = {};
+    for (const [type, card] of Object.entries(set)) {
+      if (type.startsWith('_')) continue;
+      if (card.count > 0) cards[type] = card.count;
+    }
+    decks[id] = { name: def.name, cards };
+  }
+  return decks;
+}

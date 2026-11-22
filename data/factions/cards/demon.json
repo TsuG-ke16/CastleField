@@ -1,0 +1,81 @@
+{
+  "fac_demon_shadow_scythe": {
+    "name": "シャドウサイズ",
+    "kind": "weapon",
+    "attackBonus": 2,
+    "element": "dark",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_chaos_rod": {
+    "name": "カオスロッド",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "chaos",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_shadow": {
+    "name": "シャドウ",
+    "kind": "spell",
+    "effect": "singleDamage",
+    "element": "dark",
+    "amount": 4,
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_frost_breath": {
+    "name": "氷の息",
+    "kind": "spell",
+    "effect": "freezeEnemySoldiers",
+    "element": "ice",
+    "turns": 1,
+    "scope": "lane",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_chaos_pulse": {
+    "name": "カオスパルス",
+    "kind": "spell",
+    "effect": "randomElementDamage",
+    "element": "chaos",
+    "amount": 3,
+    "description": "相手の兵士1体に、火・水・風・土のうちランダムな属性で3ダメージ（強い属性なら増える）。当たった兵士には混沌が付く",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_curse_mark": {
+    "name": "呪いの印",
+    "kind": "spell",
+    "effect": "weakenAttack",
+    "amount": 2,
+    "turns": 3,
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_soul_shard": {
+    "name": "魂の欠片",
+    "kind": "spell",
+    "effect": "damageCastleAndHeal",
+    "amount": 3,
+    "heal": 3,
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_echo_soul": {
+    "name": "残響の魂",
+    "kind": "spell",
+    "effect": "reviveFallen",
+    "amount": 0.5,
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_demon_bone_shield": {
+    "name": "骨の盾",
+    "kind": "defense",
+    "effect": "shieldSoldier",
+    "amount": 3,
+    "mpCost": 1,
+    "count": 2
+  }
+}

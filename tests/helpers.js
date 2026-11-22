@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { factionDecks } from '../js/game/Setup.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -16,7 +17,8 @@ function modeEntry(mode) {
   const modes = loadJson('modes.json');
   if (mode === modes.default) return null;
   const entry = modes.modes[mode];
-  if (!entry?.cardSet) throw new Error(`モード "${mode}" は data/modes.json にないか、cardSet がありません`);
+  // カード定義は cardSet か、陣営ごとのカード表を全部合わせたもの（factionDecks: true の4陣営モード）
+  if (!entry?.cardSet && !entry?.factionDecks) throw new Error(`モード "${mode}" は data/modes.json にないか、cardSet がありません`);
   return entry;
 }
 
@@ -42,14 +44,17 @@ export function loadFixture(name) {
  * cards はカードごとに中身をまぜる（null を渡したカードは消す）。
  * mode を渡すと、そのモード（data/modes.json）のカード・ルールを土台にする（省略すると今まで通り）。
  * factions を渡すと、そのモードの陣営ごとの別のカード表（modes.json の factionCardSets）も足す（山札の枚数は増える。陣営の山札を作るとき用）。
+ * 4陣営モード（modes.json の factionDecks: true）は、factions を渡さなくても、陣営のカード表を全部足す。
  * @param {{rules?: object, cards?: object, source?: 'data' | 'fixture', mode?: string|null, factions?: string[]}} [patch]
  */
 export function buildData({ rules: rulesPatch = {}, cards: cardsPatch = {}, source = 'data', mode = null, factions = [] } = {}) {
   const load = source === 'fixture' ? loadFixture : loadJson;
   const entry = source === 'fixture' ? null : modeEntry(mode);
   const rules = { ...(entry?.rulesSet ? loadModeFile(entry.rulesSet) : load('rules.json')), ...rulesPatch };
-  const cards = entry ? loadModeFile(entry.cardSet) : load('cards.json');
-  for (const f of factions) Object.assign(cards, loadFactionCards(mode, f));
+  const cards = entry ? (entry.cardSet ? loadModeFile(entry.cardSet) : {}) : load('cards.json');
+  // 4陣営モード（factionDecks: true）：陣営ごとのカード表を全部合わせたものがカード定義（デッキは loadOptionalData の decks）
+  const sets = entry?.factionDecks ? Object.keys(entry.factionCardSets) : factions;
+  for (const f of sets) Object.assign(cards, loadFactionCards(mode, f));
   for (const [k, v] of Object.entries(cardsPatch)) {
     if (v === null) delete cards[k];
     else cards[k] = { ...(cards[k] || {}), ...v };
@@ -83,6 +88,11 @@ export function loadOptionalData(mode = null) {
   if (entry?.elementsSet) data.elements = loadModeFile(entry.elementsSet);
   // 属性の付着と反応（reactionsSet があるモードだけ。通常モードには渡さない）
   if (entry?.reactionsSet) data.reactions = loadModeFile(entry.reactionsSet);
+  // 4陣営モード：陣営ごとのカード表が、その陣営のデッキ（deckMode "own"。setup.decks に陣営のIDを渡す）
+  if (entry?.factionDecks) {
+    const sets = Object.fromEntries(Object.entries(entry.factionCardSets).map(([f, path]) => [f, loadModeFile(path)]));
+    data.decks = factionDecks(loadModeFile(entry.factionsSet), sets);
+  }
   return data;
 }
 
