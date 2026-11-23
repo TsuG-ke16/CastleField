@@ -65,3 +65,31 @@ test('フレーム優先順位：魔物 > 4陣営 > ランクスキン > レア�
     assert.equal(factionFrameBack(faction), `assets/skins/back-faction-${faction}.png`);
   }
 });
+
+test('4陣営の3Dモデルの表の絵（face の UV）は上下が正しい（glTF の V は上が0：イラストは上半分・名前と説明は下）', () => {
+  const vRange = (buf, gltf, binStart, index) => {
+    const acc = gltf.accessors[index];
+    const view = gltf.bufferViews[acc.bufferView];
+    const stride = view.byteStride ?? 8;
+    const base = binStart + (view.byteOffset ?? 0) + (acc.byteOffset ?? 0);
+    let min = Infinity, max = -Infinity;
+    for (let i = 0; i < acc.count; i++) { const v = buf.readFloatLE(base + i * stride + 4); min = Math.min(min, v); max = Math.max(max, v); }
+    return (min + max) / 2;
+  };
+  for (const faction of FACTION_IDS) {
+    const glbPath = join(REPO, `assets/models/card-faction-${faction}.glb`);
+    const buf = readFileSync(glbPath);
+    const gltf = parseGlbJson(glbPath);
+    const binStart = 20 + buf.readUInt32LE(12) + 8;
+    const center = {};
+    for (const mesh of gltf.meshes) {
+      for (const prim of mesh.primitives) {
+        if (gltf.materials[prim.material]?.name !== 'face') continue;
+        const part = mesh.name.split('-face-')[1];
+        if (part) center[part] = vRange(buf, gltf, binStart, prim.attributes.TEXCOORD_0);
+      }
+    }
+    assert.ok(center.illu < 0.5, `${faction}：イラストは上半分（V の中心 ${center.illu}）`);
+    assert.ok(center.name > center.illu && center.desc > center.name, `${faction}：イラスト → 名前 → 説明の順に下へ`);
+  }
+});

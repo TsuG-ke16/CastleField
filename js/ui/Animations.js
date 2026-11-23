@@ -891,7 +891,7 @@ export class Animations {
   effectCard(type, name) {
     const el = document.createElement('div'); el.className = 'effect-card';
     const def = type ? this.cards[type] : null;
-    if (def && frameAsset(def, this.rarities)) {
+    if (def && frameAsset(def, this.rarities, undefined, type)) { // type：4陣営のカードは種類から陣営のフレームを決める
       mountMiniCard(el, type, def, this.rarities);
       return el;
     }

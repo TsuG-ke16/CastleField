@@ -1,5 +1,6 @@
 // サーバーが送る選択肢と席だけで部屋を描く。名前は必ず textContent。
-import { castleArt, colorOf, cardArt } from './art.js';
+import { castleArt, colorOf } from './art.js';
+import { mountMiniCard } from './cardView.js';
 import { cardDescription } from './text.js';
 import { profileArt } from './profileArt.js';
 import { rankEmblem } from './RankEmblem.js';
@@ -169,12 +170,15 @@ export class RoomView {
     panel.append(tabs);
     const def = info?.factions?.[this.factionTab];
     if (def?.description) panel.append(this.node('p', def.description, 'faction-desc'));
+    panel.append(this.node('p', 'カードを長押しすると大きく見られます', 'faction-zoom-hint'));
     const list = this.node('ul', null, 'faction-cards');
     for (const [type, card] of Object.entries(info?.cardSets?.[this.factionTab] ?? {})) {
       if (type.startsWith('_')) continue;
       const li = this.node('li', null, 'faction-card');
+      // 手札と同じ陣営のフレーム（cardFrame.js）で描く。長押しで拡大（CardZoom.js。陣営の3Dフレームは CardGL.js）
       const art = this.node('span', null, 'faction-card-art'); art.setAttribute('aria-hidden', 'true');
-      art.innerHTML = cardArt(type, 'blue', card.name ?? '');
+      mountMiniCard(art, type, card, null, { showName: false, faction: this.factionTab });
+      art.dataset.zoom = type;
       const body = this.node('span', null, 'faction-card-body');
       const mp = card.mpCost != null ? `　MP${card.mpCost}` : '';
       body.append(this.node('b', `${card.name ?? type}${mp}${card.count > 1 ? `　×${card.count}` : ''}`));

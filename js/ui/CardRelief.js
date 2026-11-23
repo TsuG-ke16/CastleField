@@ -109,6 +109,8 @@ export const CARD_LIGHT = (() => { const v = [-.42, -.62, .66]; const l = Math.h
 
 export const reliefPaths = (frameSrc) => {
   const m = /cards\/(frame-[a-z-]+)\.png/.exec(frameSrc ?? '');
+  // 4陣営のフレームには凹凸の地図がない（立体は CardGL.js の card-faction-*.glb が持つ）。読みに行って 404 にしない
+  if (m && m[1].startsWith('frame-faction-')) return null;
   return m ? { relief: `assets/cards/relief/${m[1]}-relief.png`, raised: `assets/cards/relief/${m[1]}-raised.png` } : null;
 };
 

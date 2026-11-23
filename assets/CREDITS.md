@@ -831,3 +831,10 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `models/fix-ground-contact.py` | 手書き Python：GLBのJSONのルート位置だけを動かして接地（形・材質・階層は不変） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/monster-{demon,dragon,goblin,mimic,slime}.glb`・`models/unit-dragon.glb` | 上の接地補正を適用（Blender 5.3 で最下面 y=0 を確認） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `review/battle-3d-qa/**` | 検査結果（`report.json`）・Blenderの比較画像・ゲーム画面のスクリーンショット | 本リポジトリのコードと同一 | 2026-11-23 |
+
+### 4陣営の3Dカードの表の絵の向きを直した（2026-11-23）
+
+| ファイル | 作った道具 | ライセンス・利用条件 | 日付 |
+|---|---|---|---|
+| `models/card-faction-{kingdom,forest,demon,dragon}.glb` | `models/fix-faction-card-uv.py` で、表の絵（face の材質）の UV の上下だけを直した（形・材質は不変。表の絵が上下逆さまに貼られていた） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/fix-faction-card-uv.py` | 手書き Python：GLB の face の TEXCOORD_0 の V を 1 - V にする（何度実行しても同じ） | 本リポジトリのコードと同一 | 2026-11-23 |

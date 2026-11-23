@@ -7,7 +7,10 @@
 .faction-info .faction-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow: auto; }
 .faction-info .faction-card { display: flex; gap: 8px; align-items: center; padding: 4px; border-radius: 8px; background: #fff8; }
 .faction-info .faction-card-art { flex: 0 0 44px; width: 44px; height: 44px; display: block; }
-.faction-info .faction-card-art > * { width: 100%; height: 100%; }
+.faction-info .faction-card-art:not(.mini-card) > * { width: 100%; height: 100%; }
+/* 陣営のフレームつきの小さなカード（mountMiniCard）。長押しで拡大する */
+.faction-info .faction-card-art.mini-card { flex: 0 0 48px; width: 48px; height: auto; aspect-ratio: 2 / 3; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.faction-info .faction-zoom-hint { margin: 0; font-size: 11px; color: #5a4a3a; }
 .faction-info .faction-card-body { display: flex; flex-direction: column; min-width: 0; font-size: 12px; }
 .faction-info .faction-card-body small { color: #5a4a3a; overflow-wrap: anywhere; }
 

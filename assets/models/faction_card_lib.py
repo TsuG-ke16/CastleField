@@ -72,13 +72,13 @@ def px_to_mm(px, py):
 
 
 def front_uv_from_xz(x, z):
-    """Blender (X, Z) → 表キャンバス UV (0..1, 上0)"""
-    return x + 0.5, 0.5 - z * (PX / IMG_H)
+    """Blender (X, Z) → 表キャンバス UV（Blender の UV は上が1。glTF に書き出すと上が0になる。card_model_lib.face_uv と同じ）"""
+    return x + 0.5, 0.5 + z * (PX / IMG_H)
 
 
 def back_uv_from_xz(x, z):
-    """Blender (X, Z) → 裏キャンバス UV (0..1, 裏から見て右が-X)"""
-    return 0.5 - x, 0.5 - z * (PX / IMG_H)
+    """Blender (X, Z) → 裏キャンバス UV（裏から見て右が-X。上下は front_uv_from_xz と同じ決まり）"""
+    return 0.5 - x, 0.5 + z * (PX / IMG_H)
 
 
 # ---------------------------------------------------------------- シーン・マテリアル
