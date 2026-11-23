@@ -32,7 +32,9 @@ async function verify(width, height, reducedMotion) {
     const presets = await fetch('data/decks.json').then(response => response.json());
     localStorage.setItem('cf-mydeck-v1', JSON.stringify({ ...presets.costBalance.cards, oldCard: 1 }));
   });
-  await page.goto(new URL('?local=1&cpu=hard&debug=1&seed=8', base).href);
+  const matchUrl = new URL('?local=1&cpu=hard&debug=1&seed=8', base);
+  if (process.env.UI_TEST_FIELD3D) matchUrl.searchParams.set('field3d',process.env.UI_TEST_FIELD3D);
+  await page.goto(matchUrl.href);
   await page.waitForFunction(() => Boolean(window.castlefield?.game()));
   await page.evaluate(async () => { (await import('./js/ui/config.js')).UI_CONFIG.speed = .03; });
   await press('#menu-open');

@@ -429,5 +429,8 @@
   "props/field-amethyst.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
   "props/field-brazier.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
   "props/field-wall.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
-  "bg/stage-desert.png": "exec-8110da6b-6698-486a-b298-135bbabe1229.png"
+  "bg/stage-desert.png": "exec-8110da6b-6698-486a-b298-135bbabe1229.png",
+  "bg/home-courtyard.png": "exec-8ce87a4f-39c2-4f75-9b7f-07da20f9e1c3.png",
+  "bg/home-courtyard-wide.png": "exec-d3cf51d3-8222-4c9f-9e6b-f07b471a674b.png",
+  "ui/home/help.png": "exec-8b95bbec-81e2-42e8-b7f7-612472d1b67f.png"
 }

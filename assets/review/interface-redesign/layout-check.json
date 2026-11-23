@@ -1,0 +1,125 @@
+{
+  "report": [
+    {
+      "width": 320,
+      "height": 568,
+      "overflow": false,
+      "start": {
+        "top": 420.53125,
+        "bottom": 470.53125
+      },
+      "nav": {
+        "top": 495,
+        "bottom": 560
+      },
+      "orientation": "horizontal",
+      "navigation": true,
+      "panels": true,
+      "catalog": true,
+      "editor": true,
+      "settings": true,
+      "help": true
+    },
+    {
+      "width": 360,
+      "height": 640,
+      "overflow": false,
+      "start": {
+        "top": 485.9375,
+        "bottom": 535.9375
+      },
+      "nav": {
+        "top": 567,
+        "bottom": 632
+      },
+      "orientation": "horizontal",
+      "navigation": true,
+      "panels": true,
+      "catalog": true,
+      "editor": true,
+      "settings": true,
+      "help": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "start": {
+        "top": 641.828125,
+        "bottom": 697.828125
+      },
+      "nav": {
+        "top": 768,
+        "bottom": 836
+      },
+      "orientation": "horizontal",
+      "navigation": true,
+      "panels": true,
+      "catalog": true,
+      "editor": true,
+      "settings": true,
+      "help": true
+    },
+    {
+      "width": 768,
+      "height": 1024,
+      "overflow": false,
+      "start": {
+        "top": 406.546875,
+        "bottom": 462.546875
+      },
+      "nav": {
+        "top": 948,
+        "bottom": 1016
+      },
+      "orientation": "horizontal",
+      "navigation": true,
+      "panels": true,
+      "catalog": true,
+      "editor": true,
+      "settings": true,
+      "help": true
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "overflow": false,
+      "start": {
+        "top": 226,
+        "bottom": 276
+      },
+      "nav": {
+        "top": 315.8125,
+        "bottom": 382
+      },
+      "orientation": "horizontal",
+      "navigation": true,
+      "panels": true,
+      "catalog": true,
+      "editor": true,
+      "settings": true,
+      "help": true
+    },
+    {
+      "width": 1440,
+      "height": 1000,
+      "overflow": false,
+      "start": {
+        "top": 500.25,
+        "bottom": 564.25
+      },
+      "nav": {
+        "top": 148,
+        "bottom": 548
+      },
+      "orientation": "vertical",
+      "navigation": true,
+      "panels": true,
+      "catalog": true,
+      "editor": true,
+      "settings": true,
+      "help": true
+    }
+  ],
+  "errors": []
+}

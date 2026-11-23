@@ -1,0 +1,20 @@
+{
+  "stats": {
+    "active3d": true,
+    "stageId": "lava",
+    "cameraMode": "battle",
+    "qualityTier": "medium",
+    "fps": 1.6,
+    "frameMs": 615.3,
+    "loadMs": 193,
+    "drawCalls": 172,
+    "triangles": 35810,
+    "geometries": 93,
+    "textures": 1,
+    "jsHeapMB": 15
+  },
+  "castlesLoaded": 2,
+  "menu": true,
+  "errors": [],
+  "note": "Headless Chromium software rendering. Visual verification only; not a device performance benchmark."
+}

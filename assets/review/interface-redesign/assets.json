@@ -1,0 +1,32 @@
+[
+  {
+    "path": "bg/home-courtyard.png",
+    "originalSource": "exec-8ce87a4f-39c2-4f75-9b7f-07da20f9e1c3.png",
+    "size": [
+      960,
+      640
+    ],
+    "bytes": 132137,
+    "source": "review/interface-redesign/source-hero.webp"
+  },
+  {
+    "path": "bg/home-courtyard-wide.png",
+    "originalSource": "exec-d3cf51d3-8222-4c9f-9e6b-f07b471a674b.png",
+    "size": [
+      960,
+      480
+    ],
+    "bytes": 84635,
+    "source": "review/interface-redesign/source-hero-wide.webp"
+  },
+  {
+    "path": "ui/home/help.png",
+    "originalSource": "exec-8b95bbec-81e2-42e8-b7f7-612472d1b67f.png",
+    "size": [
+      256,
+      256
+    ],
+    "bytes": 58101,
+    "source": "review/interface-redesign/source-help.webp"
+  }
+]

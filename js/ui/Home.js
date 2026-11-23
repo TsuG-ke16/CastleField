@@ -1,5 +1,5 @@
 import { profileArt } from './profileArt.js';
-// ホーム画面：上にプレイヤー情報、下にタブ（アカウント・デッキ・バトル・ガチャ・設定）。
+// ホーム画面：プレイヤー情報と各ページ。ナビゲーションはスマホで下、PCで左に置く。
 // バトルのページは「城の絵 → シーズン・ランク → モード → デッキ → 大きな対戦開始ボタン」の順に、上から下へ迷わず進めるように並べる。
 // デッキのページは、使うデッキの中身（カードの絵）を主役にする。ほかのページも、そのタブで一番よく使う操作を大きく出す。
 // いつも入口になる。サーバーのアカウント機能がないとき（python の簡易サーバー・オフライン）は、
@@ -107,6 +107,10 @@ export class Home {
     box.id = 'home'; box.className = 'screen'; box.hidden = true;
     box.innerHTML = `<div class="home-sky" aria-hidden="true"></div>
     <div class="home-wrap">
+      <div class="home-masthead">
+        <div class="home-brand"><img src="assets/ui/factions/crest-kingdom.png" alt="" width="34" height="34"><strong>キャッスルフィールド</strong></div>
+        <button type="button" class="home-help raw-btn" data-act="help" aria-label="遊び方">${menuIcon('help', 24)}<span>遊び方</span></button>
+      </div>
       <header class="home-top">
         <button type="button" class="home-player raw-btn" data-act="profile" aria-label="プロフィールを開く">
           <span class="home-avatar" data-part="avatar"></span>
@@ -243,6 +247,8 @@ export class Home {
             <span class="home-rank-chip" data-part="rank"><span class="home-rank-emblem" data-part="rankEmblem"></span><span><small>ランク</small><span data-part="rankText">—</span></span></span>
           </div>
         </section>
+        <section class="home-battle-console" aria-label="対戦の準備">
+        <div class="home-console-head"><h2>対戦の準備</h2><p>モードとデッキを選んで出発しよう</p></div>
         <section class="home-card home-modes-card" aria-label="ゲームモード"><div class="home-modes" role="tablist" aria-label="ゲームモード" data-part="modes"></div></section>
         <section class="home-card home-deckpanel" aria-label="使うデッキ">
           <div class="home-deckpanel-text">
@@ -257,6 +263,8 @@ export class Home {
         <p class="home-note" data-part="note" role="status"></p>
         <button type="button" class="home-retry cf-btn cf-btn-secondary raw-btn" data-act="retry" hidden>再読み込み</button>
         <dl class="home-facts" hidden><div><dt>戦績</dt><dd data-part="stats">—</dd></div></dl>
+        <button type="button" class="home-catalog-link raw-btn" data-act="catalog">${menuIcon('catalog', 24)}カード図鑑を見る<span aria-hidden="true">→</span></button>
+        </section>
         <nav class="home-menu" aria-label="対戦" data-menu="battle"></nav>
       </div>
       <nav class="home-tabbar" role="tablist" aria-label="メニュー" data-part="tabbar"></nav>
@@ -266,6 +274,10 @@ export class Home {
     this.tab = 'battle';
     this.renderMenu();
     this.renderTabs();
+    this.navLayout = matchMedia('(min-width: 1000px) and (min-height: 650px)');
+    const orientNavigation = () => this.part('tabbar').setAttribute('aria-orientation', this.navLayout.matches ? 'vertical' : 'horizontal');
+    this.navLayout.addEventListener('change', orientNavigation);
+    orientNavigation();
     this.renderModes();
     this.renderGachaShow();
     box.addEventListener('click', (e) => this.onClick(e));
@@ -701,8 +713,7 @@ export class Home {
           button.type = 'button';
           button.className = 'home-tile raw-btn';
           button.dataset.id = id;
-          // 遊び方だけは専用の絵がまだないので、「？」の文字で出す（絵ができたら assets/ui/home/help.png を足して、ここを消す）
-          const iconHtml = id === 'help' ? '<b class="home-tile-glyph" aria-hidden="true">？</b>' : menuIcon(id, style === 'list' ? 44 : 36);
+          const iconHtml = menuIcon(id, style === 'list' ? 44 : 36);
           button.innerHTML = `<span class="home-tile-icon">${iconHtml}</span><span class="home-tile-text"><span class="home-tile-label"></span>${style === 'list' ? '<small class="home-tile-note"></small>' : ''}</span>${style === 'list' ? '<span class="home-tile-chevron" aria-hidden="true"></span>' : ''}`;
           button.querySelector('.home-tile-label').textContent = MENU_IN_PAGE[tab]?.[id] ?? MENU[id];
           const note = button.querySelector('.home-tile-note');
@@ -725,6 +736,8 @@ export class Home {
       b.type = 'button';
       b.className = `home-tab raw-btn${t.id === 'battle' ? ' home-tab-main' : ''}`;
       b.dataset.tab = t.id;
+      b.id = `home-tab-${t.id}`;
+      b.setAttribute('aria-controls', `home-page-${t.id}`);
       b.setAttribute('role', 'tab');
       b.innerHTML = `<span class="home-tab-icon">${menuIcon(t.icon)}</span><span class="home-tab-label"></span><i class="home-tab-dot" hidden></i>`;
       b.querySelector('.home-tab-label').textContent = t.label;
@@ -745,6 +758,8 @@ export class Home {
       sky.classList.remove('home-sky-in'); void sky.offsetWidth; sky.classList.add('home-sky-in');
     }
     for (const page of this.box.querySelectorAll('.home-page')) {
+      page.id = `home-page-${page.dataset.page}`;
+      page.setAttribute('aria-labelledby', `home-tab-${page.dataset.page}`);
       const show = page.dataset.page === tab;
       const changed = page.hidden === show;
       page.hidden = !show;
@@ -785,11 +800,12 @@ export class Home {
   }
 
   onKey(e) {
-    // タブは左右の矢印でも切りかえられる
+    // ナビの向きに合わせて、横なら左右・縦なら上下で切り替える。
     const tab = e.target.closest?.('.home-tab');
-    if (!tab || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    const keys = this.part('tabbar').getAttribute('aria-orientation') === 'vertical' ? ['ArrowUp', 'ArrowDown'] : ['ArrowLeft', 'ArrowRight'];
+    if (!tab || !keys.includes(e.key)) return;
     const ids = TABS.map((t) => t.id);
-    const next = ids[(ids.indexOf(tab.dataset.tab) + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length];
+    const next = ids[(ids.indexOf(tab.dataset.tab) + (e.key === keys[1] ? 1 : ids.length - 1)) % ids.length];
     e.preventDefault();
     this.showTab(next, { focus: true });
   }

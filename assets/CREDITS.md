@@ -796,3 +796,18 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `models/unit-{infantry,knight,mage}.glb` | Blender 5.3 / `assets/models/make-battle-models.py`（本格造形版：2頭身ちびキャラ・軍馬騎乗・発光宝玉杖・関節階層アニメーションリグ内蔵） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/unit-{spearman,heavy,archer,assassin,dragon,hero}.glb` | Blender 5.3 プロシージャル生成（兵士6種） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/monster-{slime,goblin,dragon,golem,demon,mimic}.glb` | Blender 5.3 プロシージャル生成（魔物6種） | 本リポジトリのコードと同一 | 2026-11-23 |
+
+## ホーム・共通UIの更新（2026-11-23）
+
+既存の明るいファンタジー調に合わせて、城の中庭（PC用・横長のスマホ用）と遊び方アイコンをOpenAI画像生成で制作。実行用PNGは縮小・圧縮し、生成原稿はレビュー用WebPで保存。
+
+| ファイル | 生成原稿 | 作った道具 | 利用条件 | 作成日 |
+|---|---|---|---|---|
+| `bg/home-courtyard.png` | `exec-8ce87a4f-39c2-4f75-9b7f-07da20f9e1c3.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+| `review/interface-redesign/source-hero.webp` | `exec-8ce87a4f-39c2-4f75-9b7f-07da20f9e1c3.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+| `bg/home-courtyard-wide.png` | `exec-d3cf51d3-8222-4c9f-9e6b-f07b471a674b.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+| `review/interface-redesign/source-hero-wide.webp` | `exec-d3cf51d3-8222-4c9f-9e6b-f07b471a674b.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+| `ui/home/help.png` | `exec-8b95bbec-81e2-42e8-b7f7-612472d1b67f.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+| `review/interface-redesign/source-help.webp` | `exec-8b95bbec-81e2-42e8-b7f7-612472d1b67f.png` | OpenAI画像生成（ChatGPT）・縮小/圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+
+`review/interface-redesign/` 内の画面キャプチャは本ゲームの変更前後を撮影したもの。説明・確認用データは本依頼向けに作成。

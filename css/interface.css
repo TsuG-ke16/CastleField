@@ -1,0 +1,389 @@
+/* Atlas interface: shared paper surfaces, navy navigation, restrained gold commands.
+   Loaded last so the original illustrated skin remains available to older themes. */
+#app[data-design="atlas"] {
+  --ui-ink:#233b50; --ui-muted:#6b746f; --ui-paper:#fbf8f0; --ui-warm:#f0e9da;
+  --ui-line:#d9d1c0; --ui-navy:#203e56; --ui-navy-deep:#142d42; --ui-gold:#dfb763;
+  --ui-soft-shadow:0 8px 24px #1d354315; --ui-raise:0 2px 0 #15304724,0 5px 12px #15304712;
+  --ink:var(--ui-ink); --ink-muted:var(--ui-muted); --mat-ink:var(--ui-ink);
+  --mat-muted:var(--ui-muted); --mat-paper:var(--ui-paper); --paper:var(--ui-paper);
+  --paper-d:var(--ui-warm); --parch:var(--ui-paper); --cream:var(--ui-paper);
+  --line-outline:var(--ui-line); --ink-royal:var(--ui-ink); --royal:var(--ui-navy);
+  --royal-hi:#395d78; --royal-lo:var(--ui-navy-deep); --royal-deep:var(--ui-navy-deep);
+  --selected:#315c76; --selected-hi:#e4eef2; --focus-outline:#1a6985; --focus-halo:#fff9e8;
+  --font:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  --head:var(--font); color:var(--ui-ink);
+}
+html.at-title,html.at-title body { background:#ede8dc; }
+html.at-title #app[data-design="atlas"] { width:100%; height:100dvh; max-height:100dvh; min-height:0; margin:0; border:0; border-radius:0; box-shadow:none; }
+#app[data-design="atlas"] :is(button,a,input,select,textarea):focus-visible {
+  outline:3px solid var(--focus-outline) !important; outline-offset:3px; box-shadow:0 0 0 5px var(--focus-halo) !important;
+}
+
+#app[data-design="atlas"] [data-ui-frame] {
+  border:1px solid var(--ui-line) !important; border-image:none !important;
+  background:var(--ui-paper) !important; border-radius:16px !important;
+  color:var(--ui-ink); box-shadow:var(--ui-soft-shadow) !important;
+}
+#app[data-design="atlas"] [data-ui-frame="wood"] {
+  background:var(--ui-navy-deep) !important; color:#fff7e6; border-color:#486173 !important;
+}
+#app[data-design="atlas"] button[data-ui-skin] {
+  background:linear-gradient(#fffdf7,#f1ebde) !important; border:1px solid #cfc5b0 !important;
+  border-image:none !important; color:var(--ui-ink) !important; text-shadow:none !important;
+  border-radius:10px !important; box-shadow:var(--ui-raise) !important; filter:none !important;
+  font-weight:700; letter-spacing:0;
+}
+#app[data-design="atlas"] button[data-ui-tone="primary"] {
+  background:linear-gradient(#eac777,#dbaf57) !important; border-color:#b38b41 !important;
+  color:#263b47 !important;
+}
+#app[data-design="atlas"] button[data-ui-tone="danger"] {
+  background:#a24542 !important; color:#fff !important; border-color:#843333 !important;
+}
+#app[data-design="atlas"] button[data-ui-skin="card"] {
+  height:auto; padding:10px !important; border-radius:12px !important; background:#fffdf7 !important;
+}
+#app[data-design="atlas"] button[data-ui-skin="round"] { border-radius:50% !important; }
+#app[data-design="atlas"] button[data-ui-skin]:is(.on,[aria-selected="true"],[aria-pressed="true"]) {
+  background:var(--ui-navy) !important; border-color:var(--ui-navy) !important; color:#fffaf0 !important;
+}
+#app[data-design="atlas"] button[data-ui-skin]:disabled { opacity:.52; box-shadow:none !important; }
+#app[data-design="atlas"] .screen.dim { background:#102a40a6; backdrop-filter:blur(3px); }
+#app[data-design="atlas"] :is(.screen-box,.guide-box,.progress-box,.collection-box,.settings-box,.menu-box) {
+  color:var(--ui-ink); border-radius:18px; scrollbar-color:#c3b9a7 transparent;
+}
+#app[data-design="atlas"] :is(.screen-box,.guide-box,.progress-box) :is(h2,.menu-title) {
+  color:var(--ui-ink); background:none; text-shadow:none; border-color:var(--ui-line); box-shadow:none;
+}
+#app[data-design="atlas"] :is(input:not([type="checkbox"]):not([type="range"]),select,textarea) {
+  background:#fffdf7; color:var(--ui-ink); border:1px solid #c9c3b5; border-image:none;
+  border-radius:8px; box-shadow:inset 0 1px 3px #20394a08; font-family:var(--font);
+}
+#app[data-design="atlas"] .screen :is(input:not([type="checkbox"]):not([type="range"]),select) { min-height:40px; }
+#app[data-design="atlas"] :is(.set-group,.room-seat,.room-settings,.local-options) {
+  border-radius:12px !important; background:#f3eee2 !important; box-shadow:none !important;
+}
+#app[data-design="atlas"] .set-group h3 { color:var(--ui-ink); background:none; border-color:var(--ui-line); }
+#app[data-design="atlas"] :is(.social-tab,.collection-slot,.deck-button,.deck-icon,.pill) {
+  background:#fffaf0; border:1px solid var(--ui-line); color:var(--ui-ink); border-radius:9px; text-shadow:none;
+}
+#app[data-design="atlas"] :is(.social-tab,.collection-slot,.pill)[aria-selected="true"],
+#app[data-design="atlas"] .pill.on { background:var(--ui-navy); border-color:var(--ui-navy); color:#fffaf0; }
+#app[data-design="atlas"] :is(.social-tabs,.collection-tabs,.collection-slots) { border-color:var(--ui-line); }
+#app[data-design="atlas"] :is(.collection-head,.progress-head,.deck-heading) { border-color:var(--ui-line); }
+#app[data-design="atlas"] :is(.collection-close,.social-close,.settings-close) { margin-top:12px; }
+#app[data-design="atlas"] .guide-box { background:var(--ui-paper); }
+#app[data-design="atlas"] .guide-card { box-shadow:none !important; }
+#app[data-design="atlas"] :is(.guide-card-name,.guide-card-info,.guide-monster h3,.rate-group h3) { color:var(--ui-ink); }
+#app[data-design="atlas"] :is(.guide-monster,.rate-group,.collection .item-card) {
+  border-color:var(--ui-line); background:#fffdf8; box-shadow:none; border-radius:12px;
+}
+#app[data-design="atlas"] #deck-editor {
+  --deck-night:var(--ui-navy-deep); --deck-night-light:var(--ui-navy); --deck-gold:#89682c; --deck-cream:var(--ui-paper);
+  border:1px solid var(--ui-line); border-radius:18px; background:var(--ui-paper); color:var(--ui-ink);
+  box-shadow:0 20px 80px #0d25334d;
+}
+#app[data-design="atlas"] #deck-editor::backdrop { background:#102a40a6; }
+#app[data-design="atlas"] #deck-editor :is(.deck-box,.deck-subdialog) { background:var(--ui-paper); color:var(--ui-ink); }
+#app[data-design="atlas"] #deck-editor :is(.deck-heading,.deck-footer,.deck-tools,.deck-tray) {
+  background:#f4efe4; color:var(--ui-ink); border-color:var(--ui-line); box-shadow:none;
+}
+#app[data-design="atlas"] #deck-editor .deck-save { background:var(--ui-navy); color:#fffaf0; border-color:var(--ui-navy); }
+#app[data-design="atlas"] #deck-editor .deck-save:disabled { opacity:.45; }
+#app[data-design="atlas"] #deck-editor .deck-tile { background:#fffdf8; border-color:var(--ui-line); box-shadow:none; }
+#app[data-design="atlas"] #deck-editor :is(select,input) { color-scheme:light; background:#fffdf7; color:var(--ui-ink); border-color:#c9c3b5; }
+#app[data-design="atlas"] #deck-editor :is(.deck-grid-item,.deck-limit) { background:#f2ecdf; border-color:var(--ui-line); color:var(--ui-ink); }
+#app[data-design="atlas"] #deck-editor .deck-card-info { background:#fffdf7; color:var(--ui-ink); border-color:var(--ui-line); }
+#app[data-design="atlas"] #deck-editor .deck-card-info span { color:#6e705f; }
+#app[data-design="atlas"] #deck-editor .deck-meter-bar { background:#ded8ca; }
+#app[data-design="atlas"] #deck-editor .deck-meter-bar[data-state="ok"] .deck-meter-fill { background:#6d9988; }
+#app[data-design="atlas"] #deck-editor .deck-button[aria-disabled="true"] { background:#e6e1d7; color:#787568; border-color:var(--ui-line); }
+#app[data-design="atlas"] .collection-box { background:var(--ui-paper); }
+#app[data-design="atlas"] .item-card { border:1px solid var(--ui-line); box-shadow:none; }
+#app[data-design="atlas"] :is(.collection-wallet,.collection-coin,.item-name,.collection-empty) { color:var(--ui-ink); }
+#app[data-design="atlas"] #menu .menu-box > button { border-color:var(--ui-line); background:#fffdf7; color:var(--ui-ink); box-shadow:none; }
+#app[data-design="atlas"] #hud { box-shadow:0 3px 12px #0d27342b !important; }
+#app[data-design="atlas"] #controls { border-radius:16px 16px 0 0 !important; }
+#app[data-design="atlas"] #my-mp { background:#e8f2ef; border-color:#a9c5c4; color:#254b53; }
+#app[data-design="atlas"] #hand { background:#10233338; }
+#app[data-design="atlas"] .hand-toolbar { color:#fff5df; }
+#app[data-design="atlas"] #message { color:var(--ui-ink); background:var(--ui-paper); }
+#app[data-design="atlas"] #result .screen-box { padding:22px; }
+
+/* Home: a quiet lobby, with a single large command and readable card previews. */
+#app[data-design="atlas"] #home {
+  --home-line:var(--ui-line); --home-ink:var(--ui-ink); --home-ink-muted:var(--ui-muted);
+  --home-panel:var(--ui-paper); --home-paper:var(--ui-paper);
+  display:block; background:#eee9dd; color:var(--ui-ink);
+  padding:14px 16px calc(90px + env(safe-area-inset-bottom));
+}
+#app[data-design="atlas"] #home .home-sky {
+  background:radial-gradient(ellipse at 50% 0,#fffdf7 0,#eee9dd 70%); animation:none;
+}
+#app[data-design="atlas"] #home .home-wrap { width:min(100%,720px); margin:auto; gap:12px; }
+#app[data-design="atlas"] #home .home-masthead { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:34px; }
+#app[data-design="atlas"] #home .home-brand { display:flex; align-items:center; gap:8px; min-width:0; }
+#app[data-design="atlas"] #home .home-brand strong { font-size:17px; line-height:1.3; letter-spacing:.025em; }
+#app[data-design="atlas"] #home .home-brand img { width:30px; height:30px; object-fit:contain; }
+#app[data-design="atlas"] #home .home-help { display:flex; gap:4px; align-items:center; min-height:36px; border:0; background:none; padding:2px; color:var(--ui-muted); font:700 11px var(--font); cursor:pointer; white-space:nowrap; }
+#app[data-design="atlas"] #home .home-help img { width:24px; height:24px; }
+#app[data-design="atlas"] #home .home-top {
+  position:relative; top:auto; padding:9px 10px; gap:10px; border:1px solid var(--ui-line);
+  background:#fffaf1; color:var(--ui-ink); border-radius:15px; box-shadow:0 2px 8px #20394a06;
+}
+#app[data-design="atlas"] #home .home-player { gap:9px; min-height:44px; }
+#app[data-design="atlas"] #home .home-avatar { flex-basis:44px; height:44px; border:2px solid #cfad69; outline:none; box-shadow:none; }
+#app[data-design="atlas"] #home .home-who strong { font-size:14px; text-shadow:none; color:var(--ui-ink); }
+#app[data-design="atlas"] #home .home-who small { color:var(--ui-muted); font-size:10px; }
+#app[data-design="atlas"] #home .home-level { gap:5px; margin-top:2px; }
+#app[data-design="atlas"] #home .home-level b { border:0; color:var(--ui-muted); background:none; padding:0; font-size:10px; }
+#app[data-design="atlas"] #home .home-xp { height:7px; border:0; border-radius:4px; background:#e5e4db; box-shadow:none; }
+#app[data-design="atlas"] #home .home-xp i { background:#6a969a; box-shadow:none; }
+#app[data-design="atlas"] #home .home-xp-text { display:none; }
+#app[data-design="atlas"] #home .home-wallet-pill { min-height:36px; padding:0 3px 0 7px; background:#f0e8d8; border:0; box-shadow:none; }
+#app[data-design="atlas"] #home .home-wallet-pill:has(.home-coins[hidden]) { display:none; }
+#app[data-design="atlas"] #home .home-coins { color:var(--ui-ink); font-size:13px; }
+#app[data-design="atlas"] #home .home-coins img { width:20px; height:20px; filter:none; }
+#app[data-design="atlas"] #home .home-coin-add { width:26px; height:26px; border:0; background:none; color:var(--ui-ink); }
+#app[data-design="atlas"] #home .home-icon-btn { width:38px; height:38px; border:1px solid var(--ui-line); border-radius:11px; background:#fffdf6; box-shadow:none; }
+#app[data-design="atlas"] #home .home-page { gap:12px; }
+#app[data-design="atlas"] #home .home-pagehead {
+  justify-self:start; margin:8px 0 0; padding:0; min-height:36px; border:0; border-radius:0;
+  background:none; color:var(--ui-ink); box-shadow:none; text-shadow:none; letter-spacing:.02em; font-size:24px;
+}
+#app[data-design="atlas"] #home .home-pagehead::before,
+#app[data-design="atlas"] #home .home-pagehead::after { display:none; }
+#app[data-design="atlas"] #home :is(.home-card,.home-hero,.home-deckhero,.home-gacha) {
+  background:var(--ui-paper); border:1px solid var(--ui-line); border-radius:17px; box-shadow:var(--ui-soft-shadow); color:var(--ui-ink);
+}
+#app[data-design="atlas"] #home .home-worlds { display:flex; gap:6px; padding:3px; border:1px solid var(--ui-line); border-radius:11px; background:#e7e0d0; box-shadow:none; overflow-x:auto; }
+#app[data-design="atlas"] #home .home-world { flex:1; min-height:32px; padding:5px 14px; border:0; border-radius:8px; background:none; color:var(--ui-muted); font-size:12px; text-shadow:none; box-shadow:none; white-space:nowrap; }
+#app[data-design="atlas"] #home .home-world[aria-selected="true"] { background:var(--ui-paper); color:var(--ui-ink); box-shadow:0 1px 3px #20394a16; }
+#app[data-design="atlas"] #home .home-world:disabled { opacity:.6; }
+#app[data-design="atlas"] #home .home-world small { background:#ddd5c4; color:#6b6a60; border:0; box-shadow:none; font-size:9px; }
+#app[data-design="atlas"] #home .home-hero { overflow:hidden; }
+#app[data-design="atlas"] #home .home-landscape { width:100%; aspect-ratio:2/1; max-height:none; min-height:0; border:0; border-radius:0; background:#cfe3ed; }
+#app[data-design="atlas"] #home .home-landscape-art { background:url('../assets/bg/home-courtyard-wide.png') center/cover no-repeat; animation:none; transform:none; }
+#app[data-design="atlas"] #home :is(.home-sun,.home-glint) { display:none; }
+#app[data-design="atlas"] #home .home-infobar { min-height:42px; gap:8px; padding:8px 12px; background:var(--ui-paper); }
+#app[data-design="atlas"] #home .home-infobar-world { order:0; flex:1; gap:5px; }
+#app[data-design="atlas"] #home .home-infobar-world b { font-size:17px; letter-spacing:.04em; }
+#app[data-design="atlas"] #home .home-infobar-world svg { width:20px; height:17px; }
+#app[data-design="atlas"] #home .home-season { order:1; position:static; margin:0; align-self:center; min-height:24px; padding:3px 8px; background:#ece6d7; color:#685a3e; border:0; border-radius:6px; font-size:10px; box-shadow:none; text-shadow:none; }
+#app[data-design="atlas"] #home .home-rank-chip { order:2; max-width:145px; min-width:0; padding:0 0 0 8px; border-color:var(--ui-line); font-size:11px; color:var(--ui-muted); }
+#app[data-design="atlas"] #home .home-rank-chip small { font-size:9px; }
+#app[data-design="atlas"] #home .home-battle-console { display:grid; gap:12px; min-width:0; align-content:start; }
+#app[data-design="atlas"] #home .home-console-head { display:none; }
+#app[data-design="atlas"] #home .home-console-head h2 { margin:0; font-size:25px; letter-spacing:.025em; }
+#app[data-design="atlas"] #home .home-console-head p { margin:6px 0 0; color:var(--ui-muted); font-size:13px; }
+#app[data-design="atlas"] #home .home-modes-card { padding:0; border:0; border-radius:0; box-shadow:none; background:none; }
+#app[data-design="atlas"] #home .home-modes { gap:7px; }
+#app[data-design="atlas"] #home .home-mode { min-height:66px; gap:3px; padding:6px 4px; border:1px solid var(--ui-line); border-radius:12px; background:#fffaf1; color:var(--ui-ink); box-shadow:none; }
+#app[data-design="atlas"] #home .home-mode strong { font-size:12px; }
+#app[data-design="atlas"] #home .home-mode-icon { width:30px; height:30px; filter:none; }
+#app[data-design="atlas"] #home .home-mode[aria-selected="true"] { border:2px solid #335d75; padding:5px 3px; background:#eaf1f2; box-shadow:inset 0 0 0 1px #fff; }
+#app[data-design="atlas"] #home .home-mode[aria-selected="true"]::after { content:"✓"; display:grid; place-items:center; line-height:1; color:#fff; background:#335d75; border:2px solid #fff; width:16px; height:16px; font-size:10px; top:4px; right:4px; }
+#app[data-design="atlas"] #home .home-deckpanel { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:10px 12px; min-height:94px; overflow:hidden; }
+#app[data-design="atlas"] #home .home-deckpanel-text { min-width:0; flex:1; }
+#app[data-design="atlas"] #home .home-deckpanel-name { font-size:13px; line-height:1.35; display:block; }
+#app[data-design="atlas"] #home .home-eyebrow { color:var(--ui-muted); font-size:10px; letter-spacing:.04em; }
+#app[data-design="atlas"] #home .home-deck-meta { gap:4px; margin-top:4px; }
+#app[data-design="atlas"] #home .home-deck-meta span { background:#ece8de; border:0; color:#5d655e; font-size:9px; text-shadow:none; }
+#app[data-design="atlas"] #home .home-deck-meta b { color:var(--ui-ink); }
+#app[data-design="atlas"] #home .home-deckpanel .home-deckpanel-btn { display:flex; padding:0 !important; min-height:30px; height:auto; border:0; box-shadow:none; background:none; font-size:11px; color:#28516b; }
+#app[data-design="atlas"] #home .home-deckpanel-btn img { width:19px; height:19px; }
+#app[data-design="atlas"] #home .home-deck-fan-mini { --w:43px !important; flex:0 0 130px; height:78px !important; padding-top:4px !important; overflow:visible; }
+#app[data-design="atlas"] #home .home-fan-card { filter:drop-shadow(0 4px 3px #20394a25); }
+#app[data-design="atlas"] #home .home-start {
+  min-height:56px; height:auto; padding:10px 18px !important; gap:10px; border:1px solid #b68e43 !important;
+  border-radius:13px !important; color:#263c4b !important; background:linear-gradient(#eacb80,#ddb05a) !important;
+  box-shadow:0 3px 0 #b68e43,0 7px 14px #7d61221c !important;
+  text-shadow:none !important; font-size:18px !important; letter-spacing:.04em;
+}
+#app[data-design="atlas"] #home .home-start::before,
+#app[data-design="atlas"] #home .home-start::after,
+#app[data-design="atlas"] #home .home-laurel { display:none; animation:none; }
+#app[data-design="atlas"] #home .home-start-icon { filter:none; }
+#app[data-design="atlas"] #home .home-start-icon img { width:30px; height:30px; }
+#app[data-design="atlas"] #home .home-start:active { transform:translateY(2px); box-shadow:0 1px 0 #b68e43 !important; }
+#app[data-design="atlas"] #home .home-catalog-link { display:flex; align-items:center; justify-content:center; gap:6px; min-height:38px; border:0; background:none; color:#45647a; font:700 12px var(--font); cursor:pointer; }
+#app[data-design="atlas"] #home .home-catalog-link img { width:24px; height:24px; }
+#app[data-design="atlas"] #home .home-catalog-link > span { margin-left:5px; }
+#app[data-design="atlas"] #home .home-note:empty { display:none; }
+#app[data-design="atlas"] #home .home-menu { border:0; padding:0; background:none; box-shadow:none; }
+#app[data-design="atlas"] #home .home-menu-group { border:0; padding:0; background:none; box-shadow:none; }
+#app[data-design="atlas"] #home .home-menu-group h2 { color:var(--ui-muted); font-size:12px; border:0; margin:6px 0 10px; padding:0; }
+#app[data-design="atlas"] #home .home-menu-group h2::after { display:none; }
+#app[data-design="atlas"] #home .home-menu-grid { gap:9px; }
+#app[data-design="atlas"] #home .home-tile { min-height:74px; padding:10px 8px; border:1px solid var(--ui-line); border-radius:13px; background:#fbf8f0; box-shadow:none; color:var(--ui-ink); }
+#app[data-design="atlas"] #home .home-tile-label { font-size:12px; color:var(--ui-ink); text-shadow:none; }
+#app[data-design="atlas"] #home .home-tile-icon { background:#f0eadd; border:0; box-shadow:none; }
+#app[data-design="atlas"] #home .home-tile-icon img { filter:none; }
+#app[data-design="atlas"] #home .home-menu-group.is-list .home-tile { min-height:74px; }
+#app[data-design="atlas"] #home .home-menu-group.is-list .home-tile-label { font-size:15px; }
+#app[data-design="atlas"] #home .home-tabbar {
+  bottom:max(8px,env(safe-area-inset-bottom)); width:min(calc(100% - 24px),700px); left:50%; right:auto; transform:translateX(-50%);
+  display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:2px; padding:5px;
+  border:1px solid #476275; border-radius:18px; background:var(--ui-navy-deep); box-shadow:0 8px 30px #132d4240; min-height:68px;
+}
+#app[data-design="atlas"] #home .home-tab { min-height:56px; grid-auto-flow:row; margin:0; gap:2px; padding:4px 0; border:0; border-radius:12px; color:#dae4e8; background:none; box-shadow:none; text-shadow:none; font-size:11px; }
+#app[data-design="atlas"] #home .home-tab-main { min-height:56px; align-self:auto; margin:0; font-size:11px; background:none; color:#dae4e8; box-shadow:none; border:0; }
+#app[data-design="atlas"] #home .home-tab-icon { width:32px; height:31px; }
+#app[data-design="atlas"] #home .home-tab-icon img { width:30px; height:30px; filter:none; }
+#app[data-design="atlas"] #home .home-tab[aria-selected="true"] { background:#f9f4e7; color:var(--ui-navy); text-shadow:none; box-shadow:none; }
+#app[data-design="atlas"] #home .home-tab[aria-selected="true"] .home-tab-icon { transform:none; }
+#app[data-design="atlas"] #home .home-tab::after { display:none; }
+#app[data-design="atlas"] #home .home-tab::before { bottom:2px; height:3px; background:var(--ui-gold); box-shadow:none; }
+#app[data-design="atlas"] #home .home-tab[aria-selected="true"]::before { width:16px; }
+#app[data-design="atlas"] #home .home-tab-label { text-overflow:clip; letter-spacing:-.025em; }
+#app[data-design="atlas"] #home .home-ribbon { background:#e9e2d2; color:#645b48; border:0; box-shadow:none; text-shadow:none; }
+#app[data-design="atlas"] #home :is(.home-profilecard,.home-rankstats,.home-levelcard) { padding:16px; }
+#app[data-design="atlas"] #home .home-profilecard-text b { color:var(--ui-ink); }
+#app[data-design="atlas"] #home .home-titlechip { background:#e9e2d2; color:#6d6047; border:0; box-shadow:none; }
+#app[data-design="atlas"] #home .home-rankstats-head { background:none; border-color:var(--ui-line); }
+#app[data-design="atlas"] #home .home-stat { background:#f2ecde; border-color:var(--ui-line); box-shadow:none; }
+#app[data-design="atlas"] #home .home-stat b { color:var(--ui-ink); }
+#app[data-design="atlas"] #home .home-stats { background:#f2ecde; border:1px solid var(--ui-line); }
+#app[data-design="atlas"] #home .home-stats > div + div { border-color:var(--ui-line); }
+#app[data-design="atlas"] #home .home-stats span { color:var(--ui-muted); }
+#app[data-design="atlas"] #home .home-deckhero { overflow:hidden; }
+#app[data-design="atlas"] #home .home-deckhero-head { background:#f3eee2; color:var(--ui-ink); border:0; padding:14px 16px; }
+#app[data-design="atlas"] #home .home-deckhero-head h2 { color:var(--ui-ink); text-shadow:none; }
+#app[data-design="atlas"] #home .home-deck-stage { background:radial-gradient(ellipse at center,#fffdf7,#e9e3d4); border:0; }
+#app[data-design="atlas"] #home .home-deck-stage::before,
+#app[data-design="atlas"] #home .home-deck-stage::after { display:none; }
+#app[data-design="atlas"] #home .home-deck-slots { background:#e7e0d0; border:1px solid var(--ui-line); padding:3px; box-shadow:none; }
+#app[data-design="atlas"] #home .home-slot { color:var(--ui-muted); text-shadow:none; background:none; border:0; box-shadow:none; }
+#app[data-design="atlas"] #home .home-slot[aria-checked="true"] { background:var(--ui-paper); color:var(--ui-ink); box-shadow:0 1px 3px #20394a16; border-radius:8px; }
+#app[data-design="atlas"] #home .home-deck-pen { background:var(--ui-navy); border:0; box-shadow:none; border-radius:10px; }
+#app[data-design="atlas"] #home .home-deck-state { background:#e6dfcf; color:#675b47; border:0; box-shadow:none; }
+#app[data-design="atlas"] #home .home-deck-cards { padding:14px; }
+#app[data-design="atlas"] #home .home-deck-actions { gap:8px; }
+#app[data-design="atlas"] #home .cf-btn { background:linear-gradient(#fffdf7,#efe8d8); border:1px solid #cfc5b0; color:var(--ui-ink); border-radius:10px; box-shadow:var(--ui-raise); text-shadow:none; }
+#app[data-design="atlas"] #home .cf-btn-primary { background:var(--ui-navy); color:#fff9ea; border-color:var(--ui-navy); text-shadow:none; }
+#app[data-design="atlas"] #home .home-gacha { padding:16px; }
+#app[data-design="atlas"] #home .home-gacha-rays { opacity:.25; }
+#app[data-design="atlas"] #home .home-gacha h2 { color:var(--ui-ink); text-shadow:none; }
+#app[data-design="atlas"] #home .home-gacha p { color:var(--ui-muted); }
+#app[data-design="atlas"] #home .home-gacha-banner { background:var(--ui-navy); border:1px solid #466175; padding:18px; box-shadow:var(--ui-soft-shadow); }
+#app[data-design="atlas"] #home .home-gacha-banner::before,
+#app[data-design="atlas"] #home .home-gacha-banner::after { display:none; }
+#app[data-design="atlas"] #home .home-gacha-banner .home-eyebrow { color:#ebca85; }
+#app[data-design="atlas"] #home .home-gacha-banner h2 { text-shadow:none; }
+#app[data-design="atlas"] #home .home-wallet small { color:var(--ui-muted); }
+#app[data-design="atlas"] #home .home-wallet b { color:var(--ui-ink); background:#e8dfcb; }
+#app[data-design="atlas"] #home :is(.home-wallet,.home-gacha-buy,.home-guestnote,.home-membernote) { color:var(--ui-ink); background:#f6f0e3; border-color:var(--ui-line); box-shadow:none; }
+#app[data-design="atlas"] #home .home-deal { background:#a84139; box-shadow:none; }
+#app[data-design="atlas"] #home .home-points { color:var(--ui-muted); }
+#app[data-design="atlas"] #home .home-plaque { position:static; margin:0 0 4px; padding:0; border:0; background:none; box-shadow:none; color:var(--ui-ink); font-size:16px; }
+#app[data-design="atlas"] #home .home-points li { background:#f1eee4; border:1px solid var(--ui-line); }
+#app[data-design="atlas"] #home .home-points li::before { border:2px solid var(--ui-paper); box-shadow:none; }
+
+@media(min-width:650px) and (max-width:999px) and (min-height:650px) {
+  #app[data-design="atlas"] #home .home-page[data-page="battle"] { grid-template-columns:minmax(0,1fr) minmax(0,1fr); grid-template-areas:"worlds worlds" "hero console" "menu menu"; align-items:start; gap:16px; }
+  #app[data-design="atlas"] #home .home-worlds { grid-area:worlds; }
+  #app[data-design="atlas"] #home .home-hero { grid-area:hero; }
+  #app[data-design="atlas"] #home .home-landscape { aspect-ratio:1/1; }
+  #app[data-design="atlas"] #home .home-landscape-art { background-image:url('../assets/bg/home-courtyard.png'); }
+  #app[data-design="atlas"] #home .home-battle-console { grid-area:console; }
+  #app[data-design="atlas"] #home [data-menu="battle"] { grid-area:menu; }
+  #app[data-design="atlas"] #home .home-deck-fan-mini { --w:32px !important; flex-basis:96px; }
+}
+
+@media(min-width:1000px) and (min-height:650px) {
+  #app[data-design="atlas"] #home { padding:30px 32px 44px 142px; }
+  #app[data-design="atlas"] #home .home-wrap { width:min(100%,1120px); grid-template-columns:minmax(0,1fr) minmax(300px,420px); gap:22px; align-items:center; }
+  #app[data-design="atlas"] #home .home-brand strong { font-size:22px; letter-spacing:.06em; }
+  #app[data-design="atlas"] #home .home-brand img { width:42px; height:42px; }
+  #app[data-design="atlas"] #home .home-help { margin-left:auto; font-size:12px; }
+  #app[data-design="atlas"] #home .home-masthead { grid-column:1; }
+  #app[data-design="atlas"] #home .home-top { grid-column:2; }
+  #app[data-design="atlas"] #home .home-page { grid-column:1/-1; gap:20px; }
+  #app[data-design="atlas"] #home .home-page[data-page="battle"] { grid-template-columns:minmax(0,1.35fr) minmax(310px,1fr); grid-template-areas:"worlds worlds" "hero console" "menu menu"; align-items:stretch; }
+  #app[data-design="atlas"] #home .home-worlds { grid-area:worlds; justify-self:start; min-width:360px; }
+  #app[data-design="atlas"] #home .home-hero { grid-area:hero; display:flex; flex-direction:column; min-height:420px; }
+  #app[data-design="atlas"] #home .home-landscape { flex:1; min-height:300px; aspect-ratio:auto; }
+  #app[data-design="atlas"] #home .home-landscape-art { background-image:url('../assets/bg/home-courtyard.png'); background-position:center top; }
+  #app[data-design="atlas"] #home .home-infobar { min-height:64px; padding:12px 18px; }
+  #app[data-design="atlas"] #home .home-infobar-world b { font-size:24px; }
+  #app[data-design="atlas"] #home .home-battle-console { grid-area:console; gap:16px; align-self:center; }
+  #app[data-design="atlas"] #home .home-console-head { display:block; }
+  #app[data-design="atlas"] #home .home-mode { min-height:82px; padding:10px 6px; }
+  #app[data-design="atlas"] #home .home-mode[aria-selected="true"] { padding:9px 5px; }
+  #app[data-design="atlas"] #home .home-mode-icon { width:36px; height:36px; }
+  #app[data-design="atlas"] #home .home-mode strong { font-size:13px; }
+  #app[data-design="atlas"] #home .home-deckpanel { min-height:114px; padding:14px; }
+  #app[data-design="atlas"] #home .home-deckpanel-name { font-size:15px; }
+  #app[data-design="atlas"] #home .home-deck-fan-mini { --w:48px !important; flex-basis:144px; height:92px !important; }
+  #app[data-design="atlas"] #home .home-start { min-height:64px; }
+  #app[data-design="atlas"] #home [data-menu="battle"] { grid-area:menu; }
+  #app[data-design="atlas"] #home [data-menu="battle"] .home-menu-grid { grid-template-columns:repeat(4,minmax(0,1fr)); }
+  #app[data-design="atlas"] #home .home-tabbar { left:24px; top:148px; right:auto; bottom:auto; transform:none; width:88px; grid-template-columns:1fr; gap:6px; padding:7px; border-radius:20px; }
+  #app[data-design="atlas"] #home .home-tab { min-height:72px; }
+  #app[data-design="atlas"] #home .home-tab::before { top:50%; bottom:auto; left:3px; width:3px; height:0; translate:0 -50%; }
+  #app[data-design="atlas"] #home .home-tab[aria-selected="true"]::before { width:3px; height:24px; }
+  #app[data-design="atlas"] #home .home-page[data-page="deck"] { grid-template-columns:1fr 1fr; align-items:start; }
+  #app[data-design="atlas"] #home .home-page[data-page="deck"] > :is(.home-pagehead,.home-deck-tabsrow,.home-menu) { grid-column:1/-1; }
+  #app[data-design="atlas"] #home .home-deckhero { grid-column:1; grid-row:3; }
+  #app[data-design="atlas"] #home .home-deck-actions { grid-column:1; grid-row:4; }
+  #app[data-design="atlas"] #home .home-deck-cards { grid-column:2; grid-row:3/span 2; }
+  #app[data-design="atlas"] #home .home-deck-strip { grid-template-columns:repeat(auto-fill,minmax(72px,1fr)); max-height:360px; overflow:auto; padding:4px; }
+  #app[data-design="atlas"] #home .home-deck-fan:not(.home-deck-fan-mini) { --w:100px; }
+  #app[data-design="atlas"] #home .home-page[data-page="account"] { grid-template-columns:1fr 1fr; align-items:start; }
+  #app[data-design="atlas"] #home .home-page[data-page="account"] > :is(.home-pagehead,.home-menu,.home-guestnote,.home-membernote) { grid-column:1/-1; }
+  #app[data-design="atlas"] #home .home-page[data-page="shop"],
+  #app[data-design="atlas"] #home .home-page[data-page="settings"] { max-width:850px; width:100%; justify-self:center; }
+}
+@media(max-width:380px) {
+  #app[data-design="atlas"] #home { padding-inline:12px; }
+  #app[data-design="atlas"] #home .home-brand strong { font-size:15px; }
+  #app[data-design="atlas"] #home .home-help span { display:none; }
+  #app[data-design="atlas"] #home .home-deck-fan-mini { --w:36px !important; flex-basis:108px; }
+  #app[data-design="atlas"] #home .home-tab { font-size:10px; }
+}
+@media(max-height:740px) and (max-width:999px) {
+  #app[data-design="atlas"] #home { padding-top:8px; padding-bottom:82px; }
+  #app[data-design="atlas"] #home .home-wrap,#app[data-design="atlas"] #home .home-page,#app[data-design="atlas"] #home .home-battle-console { gap:8px; }
+  #app[data-design="atlas"] #home .home-top { padding:6px 9px; }
+  #app[data-design="atlas"] #home .home-landscape { aspect-ratio:3/1; }
+  #app[data-design="atlas"] #home .home-infobar { min-height:34px; padding:5px 10px; }
+  #app[data-design="atlas"] #home .home-mode { min-height:58px; }
+  #app[data-design="atlas"] #home .home-mode-icon { width:25px; height:25px; }
+  #app[data-design="atlas"] #home .home-deckpanel { min-height:80px; padding:8px 10px; }
+  #app[data-design="atlas"] #home .home-deck-fan-mini { --w:35px !important; height:64px !important; flex-basis:108px; }
+  #app[data-design="atlas"] #home .home-start { min-height:50px; padding:8px 14px !important; font-size:16px !important; }
+  #app[data-design="atlas"] #home .home-tabbar { min-height:62px; }
+  #app[data-design="atlas"] #home .home-tab { min-height:50px; }
+}
+@media(orientation:landscape) and (max-height:649px) {
+  #app[data-design="atlas"] #home { padding:10px 18px 80px; }
+  #app[data-design="atlas"] #home .home-wrap { width:min(100%,1060px); grid-template-columns:1fr 1fr; gap:8px 16px; }
+  #app[data-design="atlas"] #home .home-masthead { grid-column:1; }
+  #app[data-design="atlas"] #home .home-top { grid-column:2; padding:4px 8px; }
+  #app[data-design="atlas"] #home .home-page { grid-column:1/-1; }
+  #app[data-design="atlas"] #home .home-page[data-page="battle"] { grid-template-columns:minmax(0,1fr) minmax(0,1fr); align-items:start; gap:8px 16px; }
+  #app[data-design="atlas"] #home .home-worlds { display:flex; grid-column:1; grid-row:1; }
+  #app[data-design="atlas"] #home .home-hero { grid-column:1; grid-row:2; }
+  #app[data-design="atlas"] #home .home-landscape { aspect-ratio:2.4/1; }
+  #app[data-design="atlas"] #home .home-battle-console { grid-column:2; grid-row:1/span 2; gap:7px; }
+  #app[data-design="atlas"] #home .home-catalog-link { min-height:28px; font-size:10px; }
+  #app[data-design="atlas"] #home .home-menu { grid-column:1/-1; }
+  #app[data-design="atlas"] #home .home-deckpanel-btn { display:none !important; }
+}
+@media(prefers-reduced-motion:reduce) {
+  #app[data-design="atlas"] #home *,#app[data-design="atlas"] #home *::before,#app[data-design="atlas"] #home *::after { animation:none !important; transition:none !important; }
+}
+
+@media(max-height:600px) and (orientation:portrait) {
+  #app[data-design="atlas"] #home .home-wrap,
+  #app[data-design="atlas"] #home .home-page,
+  #app[data-design="atlas"] #home .home-battle-console { gap:6px; }
+  #app[data-design="atlas"] #home .home-masthead { min-height:28px; }
+  #app[data-design="atlas"] #home .home-top { padding:4px 8px; }
+  #app[data-design="atlas"] #home .home-player { min-height:38px; }
+  #app[data-design="atlas"] #home .home-avatar { flex-basis:36px; height:36px; }
+  #app[data-design="atlas"] #home .home-who small { display:none; }
+  #app[data-design="atlas"] #home .home-landscape { aspect-ratio:3.8/1; }
+  #app[data-design="atlas"] #home .home-deckpanel { min-height:70px; }
+  #app[data-design="atlas"] #home .home-deck-fan-mini { --w:30px !important; height:54px !important; }
+}

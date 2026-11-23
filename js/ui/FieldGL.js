@@ -1305,7 +1305,7 @@ export class FieldGL {
         type: cType, color: colorKey, side,
         shieldMesh, overdriveRing, spiritOrb,
         hitFlash: 0, recoilTime: 0, collapseProgress: 0, isCollapsed: false,
-        hpRatio: 1, baseScale: sc,
+        hpRatio: 1,
       };
       this.castleEntries.set(side, entry);
       this.entityGroup.add(group);
