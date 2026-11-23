@@ -1,0 +1,57 @@
+{
+  "imageCount": 74,
+  "unitIdsMatchCardData": true,
+  "unitCount": 15,
+  "castleCount": 4,
+  "sourceSheets": 22,
+  "largestPngBytes": 279299,
+  "allPngsUnder300KB": true,
+  "alphaAndDimensionsPassed": true,
+  "runtimeImagesRegistered": 17,
+  "fieldGlb": {
+    "meshes": 18,
+    "steps": 15,
+    "version": 2
+  },
+  "svgParsed": true,
+  "blender": {
+    "version": "4.3.2",
+    "packedReferenceImages": 61,
+    "referenceCollections": 19,
+    "footRegistrationMaxErrorMeters": 0,
+    "fieldSteps": 15,
+    "profileNormalsPassed": true,
+    "templateReloadPassed": true,
+    "existingMeshPreservedOnImport": true
+  },
+  "browser": {
+    "engine": "Chromium",
+    "galleryImageLoadsPassed": true,
+    "filterPassed": true,
+    "threeViewDisclosurePassed": true,
+    "noHorizontalOverflowAt": [
+      1200,
+      390,
+      320
+    ],
+    "pageErrors": [],
+    "desert": {
+      "backgroundLoaded": true,
+      "visibleStones": 15,
+      "groundColor": "rgb(233, 188, 113)",
+      "fixture": "Renderer.setStage visual fixture; game rules untouched",
+      "supersededBy": "../field-backgrounds-v2/validation.json"
+    }
+  },
+  "existingGameSmoke": {
+    "viewport": "390x844",
+    "deployed": true,
+    "ended": true,
+    "turns": 51,
+    "cards": 41,
+    "errors": [],
+    "warnings": [],
+    "rematch": true
+  },
+  "backgroundRevision": "field-backgrounds-v2: 576x1024 lightweight runtime"
+}

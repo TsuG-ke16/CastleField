@@ -1,0 +1,161 @@
+{
+  "engine": "Chromium",
+  "galleryImagesLoaded": 12,
+  "galleryNoOverflowAt": [
+    1200,
+    390,
+    320
+  ],
+  "gameViews": [
+    {
+      "stage": "meadow",
+      "width": 390,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "lava",
+      "width": 390,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "ice",
+      "width": 390,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "ruins",
+      "width": 390,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "darkForest",
+      "width": 390,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "desert",
+      "width": 390,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "meadow",
+      "width": 1280,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "lava",
+      "width": 1280,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "ice",
+      "width": 1280,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "ruins",
+      "width": 1280,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "darkForest",
+      "width": 1280,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "desert",
+      "width": 1280,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "meadow",
+      "width": 320,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "lava",
+      "width": 320,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "ice",
+      "width": 320,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "ruins",
+      "width": 320,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "darkForest",
+      "width": 320,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    },
+    {
+      "stage": "desert",
+      "width": 320,
+      "stones": 15,
+      "overflow": false,
+      "backgroundLoaded": true
+    }
+  ],
+  "darkForestNightCaptured": true,
+  "pageErrors": [],
+  "fixture": "Renderer stage/time display only; no gameplay changes",
+  "runtime": {
+    "size": [
+      576,
+      1024
+    ],
+    "count": 6,
+    "totalBytes": 837372,
+    "maxBytes": 147746,
+    "opaquePngs": true,
+    "manifestSourcesMatch": true
+  },
+  "existingGameSmoke": {
+    "viewport": "390x844",
+    "deployed": true,
+    "ended": true,
+    "turns": 51,
+    "cards": 41,
+    "errors": [],
+    "warnings": [],
+    "rematch": true
+  }
+}

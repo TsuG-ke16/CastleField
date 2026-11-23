@@ -201,7 +201,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
         return true;
       }
       if (req.method === 'GET' && path === '/api/home') { const claimable = missions ? Object.values(missions.view(session.userId)).reduce((n, p) => n + p.missions.filter((m) => m.completed && !m.claimed).length, 0) + missions.seasonRewards(session.userId).filter((r) => r.eligible && !r.claimed && r.coins > 0).length : 0;
-        send(req, res, 200, { ok: true, ...progress.home(session.userId), claimable, modes: Object.entries(modes.modes).map(([id, m]) => ({ id, name: m.name, available: !!m.available })), defaultMode: modes.default }); return true; }
+        send(req, res, 200, { ok: true, ...progress.home(session.userId), claimable, modes: Object.entries(modes.modes).filter(([, m]) => !m.hidden).map(([id, m]) => ({ id, name: m.name, available: !!m.available })), defaultMode: modes.default }); return true; }
       if (req.method === 'GET' && path === '/api/profile/me') { send(req, res, 200, { ok: true, profile: progress.profile(session.userId, session.userId) }); return true; }
       const other = /^\/api\/profile\/user\/(u_[0-9a-f]{24})$/.exec(path);
       if (req.method === 'GET' && other) {
@@ -264,7 +264,7 @@ export function createAccountRoutes({ db, cards = null, env = process.env, oidc 
     if (req.method === 'GET' && path === '/api/modes') {
       const mine = {};
       for (const id of modeIds) mine[id] = { stats: progress.stats(uid, id), rank: acc.publicUser(uid).kind === 'member' ? ranking.summary(uid, id) : null };
-      return ok({ default: modes.default, modes: Object.entries(modes.modes).map(([id, m]) => ({ id, name: m.name, available: !!m.available, world: m.world, rank: m.rank })), mine });
+      return ok({ default: modes.default, modes: Object.entries(modes.modes).filter(([, m]) => !m.hidden).map(([id, m]) => ({ id, name: m.name, available: !!m.available, world: m.world, rank: m.rank })), mine });
     }
     if (req.method === 'GET' && path === '/api/account/export') {
       social.rate(uid, 'export', 3, 3600_000, '書き出しは1時間に3回までです');

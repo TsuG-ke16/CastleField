@@ -19,6 +19,7 @@
 //   城HPが0以下になった瞬間に phase "gameOver"
 
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
+import { validateElements, elementIds, beatsElement, validateReactions } from './Elements.js';
 import { Monster, validateUpgrades } from './Monster.js';
 import { Pile, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
@@ -27,6 +28,11 @@ import { Road } from './Road.js';
 import { Castle } from './Castle.js';
 import { validateWeather } from './Weather.js';
 import { validateStages, pickStage } from './Stage.js';
+
+/** 身代わり（guardCastle）が代わりに受ける、城へのダメージの出どころ（相手からの攻撃）。自分で払うコスト・崩壊・天候・毒は受けない */
+const GUARDED_SOURCES = ['soldier', 'spell', 'spirit', 'reaction'];
+/** ドルイド・呪術師（spellBoost）で強くなる、ダメージの魔法 */
+const BOOSTED_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'breathAttack'];
 
 /** 2人のときのプレイヤーID（人数は rules.playerCount。3人以上は p3〜p8 が続く） */
 export const PLAYER_IDS = ['p1', 'p2'];
@@ -88,10 +94,25 @@ export const EVENT_TYPES = [
   'weatherChanged',
   'weatherLightning',
   'attackMissed',
+  'collapseAnnounced',
+  'collapseStarted',
+  'elementAttached',
+  'elementCleared',
+  'reactionTriggered',
+  // 4陣営モード（CLAUDE.md「4陣営モード」）
+  'soldierHealed',
+  'castleGuardSet',
+  'castleGuarded',
+  'shieldBroken',
+  'castleHealCut',
+  'castleHealCutEnded',
   'gameOver',
 ];
 
-/** 属性の強い・弱い：キーの属性は、値の属性に強い（水は火に強い、火は風に強い、風は土に強い、土は水に強い） */
+/**
+ * 属性の強い・弱い：キーの属性は、値の属性に強い（水は火に強い、火は風に強い、風は土に強い、土は水に強い）。
+ * 表（new Game({ elements })）を渡さないときの決まり。Game の中の判定は Elements.js の beatsElement を使う（画面が読むので残す）
+ */
 export const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 /** rules.json に必要な項目と、許される最小値 */
@@ -142,6 +163,12 @@ const OPTIONAL_RULES = {
   // MP：試合の最初に持っている量と上限（maxMp が 0 のときは MP を使わない＝コストなし）
   initialMp: 0,
   maxMp: 0,
+  // MP：true なら、兵士・武器・防御・回復などのカードも、カードの mpCost（書かなければ0）だけ MP を使う。false なら攻撃の魔法と精霊だけ
+  mpAllCards: false,
+  // MP：自分のターンの始めに増える量（0 なら自然には増えない）
+  mpPerTurn: 0,
+  // 後攻（先攻以外の人）の補正：最初の MP がこれだけ多い（チーム戦では使わない）
+  secondPlayerMp: 0,
   // 後半ほど強い魔物が出やすくなる：魔物の重み × (1 + この値 × ごほうびの段階 × 出はじめてからの周回の数)。0 なら重みは変わらない
   monsterLateBias: 0,
   // 魔物を放置すると、この周回ごとにレアリティが1つ上がって強くなる（0 なら強くならない）。強くなる倍率は monsterEvolveMultiplier
@@ -166,6 +193,15 @@ const OPTIONAL_RULES = {
   mulligan: false,
   // 背水の陣：城HPが上限 × overdriveHpRatio（四捨五入）以下になると、その城の兵士全員の攻撃 +overdriveAttack（0 なら使わない）
   overdriveAttack: 0,
+  // 城への魔法（damageEnemyCastle）を、選んだレーンの相手の先頭の兵士に当てる（いなければ城に当たる）。false なら今までどおり城に当たる
+  castleSpellHitsFront: false,
+  // 属性の付着（reactions を渡したゲームだけ）：true なら、自分のターンの始めに、敵の見える兵士1体にランダムな属性を付着させる（反応は起こさない）
+  randomAttachTurnStart: false,
+  // 崩壊の刻：collapseStartRound（0 なら使わない）の周回から、周回の始めに全員の城に collapseDamage × (始まってからの周回の数) のダメージ。
+  // collapseAnnounceRound（0 なら予告しない）の周回で予告する
+  collapseStartRound: 0,
+  collapseAnnounceRound: 0,
+  collapseDamage: 1,
 };
 /** 文字列で選ぶ項目と、選べる値（最初の値が省略したときの値） */
 const CHOICE_RULES = {
@@ -211,6 +247,8 @@ const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttac
 const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
   'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
+  // 4陣営
+  'soldierHealed', 'castleGuardSet', 'castleGuarded',
 ]);
 export class Game {
   /**
@@ -222,25 +260,45 @@ export class Game {
    * @param {object} [options.upgrades] data/upgrades.json の中身。省略すると強化は買えない
    * @param {object} [options.castles] data/castles.json の中身。省略すると城の種類なし
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
+   * @param {object} [options.elements] 属性の強弱の表（data/classic/elements.json の中身）。省略すると今までの4属性の輪
+   * @param {object} [options.reactions] 属性の付着と反応（data/classic/reactions.json の中身）。省略すると付着・反応は起きない
    * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, reactions = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
+    // elements（data/classic/elements.json の中身）：属性の強弱の表。省略すると今までの4属性の輪
+    if (elements !== null) validateElements(elements);
+    const allowedElements = elementIds(elements);
+    // reactions（data/classic/reactions.json の中身）：属性の付着と反応。省略すると付着・反応は起きない（通常モード）
+    if (reactions !== null) validateReactions(reactions, allowedElements);
     if (rarities !== null) validateRarities(rarities);
-    Card.validateDefinitions(cards, rarities);
+    Card.validateDefinitions(cards, rarities, allowedElements);
     Game.validateRules(rules);
     if (typeof rng !== 'function') throw new Error('rng は 0以上1未満の数を返す関数にしてください');
     if (monsters !== null) {
-      Monster.validateDefinitions(monsters, ELEMENTS);
+      Monster.validateDefinitions(monsters, allowedElements);
       if (rules.laneLength % 2 === 0) throw new Error('魔物を使うときは、真ん中のマスがひとつに決まるよう rules.json の laneLength を奇数にしてください');
     }
-    if (weather !== null) validateWeather(weather, ELEMENTS);
-    if (stages !== null) validateStages(stages, ELEMENTS);
+    if (weather !== null) validateWeather(weather, allowedElements);
+    if (stages !== null) validateStages(stages, allowedElements);
     if (upgrades !== null) validateUpgrades(upgrades);
     if (castles !== null) validateCastles(castles);
     if (decks !== null) validateDecks(decks, cards);
 
     this.cardDefs = cards;
+    /** 属性の強弱の表（null なら今までの4属性の輪） */
+    this.elementDefs = elements;
+    /** 属性の付着と反応（null なら付着も反応もしない） */
+    this.reactionDefs = reactions;
+    // 4陣営モードの状態を getState に出すか（使うデータのときだけキーを足す。今までのモードの getState の形は変えない）
+    const reactionList = Object.values(reactions?.reactions ?? {});
+    const cardList = Object.values(cards);
+    this.extState = {
+      slowBlind: reactionList.some((r) => r.slow || r.blind),
+      healCut: reactionList.some((r) => r.healCut),
+      guard: cardList.some((d) => d.effect === 'guardCastle'),
+      blood: cardList.some((d) => d.bloodArmor),
+    };
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
     this.weatherDefs = weather;
@@ -271,6 +329,11 @@ export class Game {
     /** 2人の組（道の pairId）→ この周回より前には魔物が出ない */
     this.monsterCooldown = new Map();
     this.round = 0;
+    /** 崩壊の刻（rules.collapseStartRound が 0 なら使わない）：予告したか・始まったか */
+    this.collapseAnnounced = false;
+    this.collapseActive = false;
+    /** 人ごとの「相手の城に与えたダメージの合計」（崩壊の刻で同時に城が落ちたときの決め手） */
+    this.castleDamageDealt = new Map();
     /** 攻撃を受けた人の防御を待っているとき（phase "defend"）：{ defenderId, attackerId, kind, amount, soldierIds, apply, after } */
     this.pending = null;
     /** @type {Map<string, Set<Function>>} */
@@ -391,6 +454,10 @@ export class Game {
         if (this.rules.secondPlayerArmor > 0) {
           this.players[id].armor = this.rules.armorMax ? Math.min(this.rules.armorMax, this.rules.secondPlayerArmor) : this.rules.secondPlayerArmor;
         }
+        // 後攻のマナ：最初の MP が secondPlayerMp だけ多い（上限まで。イベントは出さない）
+        if (this.rules.secondPlayerMp > 0) {
+          this.players[id].mp = Math.min(this.rules.maxMp, this.players[id].mp + this.rules.secondPlayerMp);
+        }
       }
     }
     /** 背水の陣になっている城（城の持ち主のID） */
@@ -484,7 +551,7 @@ export class Game {
 
   static validateRules(rules) {
     if (!rules || typeof rules !== 'object') throw new Error('rules.json の中身を渡してください');
-    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor', 'overdriveAttack']) {
+    for (const key of ['elementBonus', 'monsterFirstRound', 'monsterCooldownRounds', 'maxRounds', 'drawUntilHand', 'initialCoins', 'coinPerTurn', 'monsterAttackGrowth', 'initialMp', 'maxMp', 'monsterEvolveEvery', 'nightFirstRound', 'nightBeastAttack', 'nightStealthAttack', 'nightMonsterAttack', 'secondPlayerHandBonus', 'secondPlayerArmor', 'overdriveAttack', 'collapseStartRound', 'collapseAnnounceRound', 'mpPerTurn', 'secondPlayerMp']) {
       const v = rules[key];
       if (v !== undefined && (!Number.isInteger(v) || v < 0)) {
         throw new Error(`rules.json の ${key} は 0 以上の整数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -504,6 +571,13 @@ export class Game {
       throw new Error('rules.json の seatCastleBonus は、人数ぶん以上の0以上の整数の配列にしてください');
     }
     if (rules.nightRounds !== undefined && (!Number.isInteger(rules.nightRounds) || rules.nightRounds < 1)) throw new Error('rules.json の nightRounds は 1 以上の整数にしてください');
+    if (rules.collapseDamage !== undefined && (!Number.isInteger(rules.collapseDamage) || rules.collapseDamage < 1)) throw new Error('rules.json の collapseDamage は 1 以上の整数にしてください（書かなければ 1）');
+    if (rules.collapseAnnounceRound > 0 && rules.collapseStartRound > 0 && rules.collapseAnnounceRound > rules.collapseStartRound) {
+      throw new Error('rules.json の collapseAnnounceRound は collapseStartRound 以下にしてください');
+    }
+    if (rules.castleSpellHitsFront !== undefined && typeof rules.castleSpellHitsFront !== 'boolean') throw new Error('rules.json の castleSpellHitsFront は true か false にしてください');
+    if (rules.randomAttachTurnStart !== undefined && typeof rules.randomAttachTurnStart !== 'boolean') throw new Error('rules.json の randomAttachTurnStart は true か false にしてください（書かなければ false）');
+    if (rules.mpAllCards !== undefined && typeof rules.mpAllCards !== 'boolean') throw new Error('rules.json の mpAllCards は true か false にしてください（書かなければ false）');
     for (const key of ['monsterLateBias', 'monsterEvolveMultiplier']) {
       const v = rules[key];
       if (v !== undefined && (typeof v !== 'number' || !(v >= 0))) throw new Error(`rules.json の ${key} は 0 以上の数にしてください（書かなければ ${OPTIONAL_RULES[key]}）`);
@@ -576,8 +650,69 @@ export class Game {
         console.error(`イベント "${type}" の処理中にエラー:`, err);
       }
     }
+    // 崩壊の刻を使うときだけ、相手の城に与えたダメージを数える
+    if (type === 'castleDamaged' && this.rules.collapseStartRound > 0) this.countCastleDamage(payload);
     // 城HPが変わったら、背水の陣になったか（終わったか）を確かめる
     if (CASTLE_HP_EVENTS.has(type)) this.updateOverdrive();
+  }
+
+  /**
+   * castleDamaged の「実際に城HPに入った量（amount − blocked）」を、与えた人に数える。
+   * 数えないもの：自分で払うコスト（sacrifice / self）・崩壊・降参・天候・城の毒（だれのものか分からない）。
+   * 兵士はその兵士の持ち主、反射は反射した人（creditTo）、ほかは手番の人。自分の陣地の城に入ったぶんは数えない
+   */
+  countCastleDamage({ playerId, amount, blocked, source }) {
+    if (!source || ['sacrifice', 'self', 'collapse', 'surrender', 'weather', 'poison'].includes(source.kind)) return;
+    let by = this.creditTo ?? this.currentPlayer;
+    if (source.kind === 'soldier') by = this.playerOrder.find((id) => this.players[id].soldiers.some((x) => x.soldierId === source.soldierId)) ?? by;
+    if (!by || this.side(by) === this.side(playerId)) return;
+    const dealt = Math.max(0, amount - (blocked ?? 0));
+    this.castleDamageDealt.set(by, (this.castleDamageDealt.get(by) ?? 0) + dealt);
+  }
+
+  /**
+   * 崩壊の刻（周回の始め、天候のあと・魔物の城への攻撃の前）。予告 → 開始 → 全員の城に同じダメージ。
+   * ダメージは collapseDamage × (始まってからの周回の数。始まった周回が1)。城壁が先に受ける（土の精霊は効かない）。
+   * 城が落ちた人がいたら決着して true（reason "collapse"）
+   */
+  collapseRound() {
+    const start = this.rules.collapseStartRound;
+    if (!(start > 0)) return false;
+    const announce = this.rules.collapseAnnounceRound;
+    if (!this.collapseAnnounced && announce > 0 && this.round >= announce && this.round < start) {
+      this.collapseAnnounced = true;
+      this.emit('collapseAnnounced', { round: this.round, startRound: start });
+    }
+    if (this.round < start) return false;
+    if (!this.collapseActive) {
+      this.collapseActive = true;
+      this.collapseAnnounced = true;
+      this.emit('collapseStarted', { round: this.round });
+    }
+    const damage = this.rules.collapseDamage * (this.round - start + 1);
+    for (const id of this.aliveSides()) {
+      const owner = this.players[id];
+      const blocked = Math.min(owner.armor, damage);
+      owner.armor -= blocked;
+      owner.castle.takeDamage(damage - blocked);
+      this.emit('castleDamaged', { playerId: id, amount: damage, blocked, hp: owner.castle.hp, source: { kind: 'collapse' } });
+    }
+    const sides = this.aliveSides();
+    const fallen = sides.filter((id) => this.players[id].castle.isDestroyed);
+    if (fallen.length === 0) return false;
+    const standing = sides.filter((id) => !fallen.includes(id));
+    // バトルロイヤルで2つ以上の城が残っていれば、落ちた人だけ抜けて続ける
+    if (this.rules.winCondition === 'lastStanding' && standing.length >= 2) {
+      for (const id of this.alivePlayerIds().filter((x) => fallen.includes(this.side(x)))) this.eliminate(this.players[id], null);
+      return false;
+    }
+    // 残った城があれば、その中から。全部落ちたら全員の中から、相手の城に与えたダメージの合計が大きい陣地（同じなら席順が後ろ）
+    const pool = standing.length > 0 ? standing : fallen;
+    const dealtBy = (side) => this.playerOrder.filter((x) => this.side(x) === side).reduce((n, x) => n + (this.castleDamageDealt.get(x) ?? 0), 0);
+    const seat = (side) => this.playerOrder.indexOf(side);
+    const winner = [...pool].sort((a, b) => dealtBy(b) - dealtBy(a) || seat(b) - seat(a))[0];
+    this.finish(winner, 'collapse');
+    return true;
   }
 
   /** 背水の陣になる城HP（上限 × overdriveHpRatio を四捨五入）。使わないなら -1 */
@@ -872,6 +1007,14 @@ export class Game {
       // 天候の雷・砂嵐で城が落ちたら、そこで止める
       if (this.weatherRoundEffects() && this.checkGameOver()) return;
       this.stageEruption();
+      // 崩壊の刻：全員の城にダメージ。城が落ちたら、そこで決着
+      if (this.collapseRound()) return;
+      // （バトルロイヤルで）手番の人が崩壊で抜けたら、次の人の番にする
+      if (this.rules.collapseStartRound > 0 && player.eliminated) {
+        this.spawnMonsters();
+        this.beginTurn(this.nextPlayerAfter(playerId), { continueRound: true });
+        return;
+      }
       this.monstersAttackCastles();
       // 魔物に城を落とされたら、そこで止める（魔物の出現・ドロー・進軍はしない）
       if (this.checkGameOver()) return;
@@ -892,6 +1035,8 @@ export class Game {
 
     // 毒の城：自分のターンの始めに毒のダメージ（城壁は効かない。城が落ちたら、そこで止める）
     if (this.tickCastlePoison(player)) return;
+    // 回復量減少（深淵侵食）：城の持ち主のターンの始めに残りを1減らす
+    this.tickHealCut(player);
     if (player.eliminated) {
       this.beginTurn(this.nextPlayerAfter(playerId), { continueRound: true });
       return;
@@ -902,9 +1047,15 @@ export class Game {
     // コインの雨：自分のターンの始めにコインがもらえる
     const rainCoins = this.weatherDef()?.coinPerTurn ?? 0;
     if (rainCoins > 0) this.changeCoins(player, rainCoins, 'weather');
+    // MP の自然回復：自分のターンの始めに mpPerTurn 増える（上限まで）
+    if (this.rules.mpPerTurn > 0 && this.rules.maxMp > 0) this.changeMp(player, this.rules.mpPerTurn, 'turn');
     // 古代遺跡：自分のターンの始めに MP が増える
     const stageMp = this.stageDef()?.mpPerTurn ?? 0;
     if (stageMp > 0 && this.rules.maxMp > 0) this.changeMp(player, stageMp, 'stage');
+
+    // 属性のランダム付着：コイン・MP のあと、ドローの前（手札を引く前に盤面の状態が決まる）。
+    // 自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる
+    this.randomAttachAtTurnStart(player);
 
     // 1. ドロー（先攻の最初のターンだけ firstTurnDraw 枚。ほかは毎ターン drawPerTurn 枚に固定）
     const baseDraw = this.turn === 1 ? this.rules.firstTurnDraw : this.rules.drawPerTurn;
@@ -1035,7 +1186,9 @@ export class Game {
           });
         }
         if (!opponent) break;
-        this.fight(player, soldier, opponent.owner, opponent.soldier);
+        this.fight(player, soldier, opponent.owner, opponent.soldier, opponent.q - soldier.position > 1);
+        // 反応（轟雷爆炎）は城にもダメージを与えるので、城が落ちたらここで止める（反応のないゲームでは城は減らない）
+        if (this.reactionDefs && this.checkGameOver()) return;
         const keepGoing = this.rules.advanceAfterWin && opponent.soldier.isDead && !soldier.isDead && steps < speed;
         if (!keepGoing) break;
       }
@@ -1075,6 +1228,12 @@ export class Game {
       // 城が落ちた瞬間にゲームを止める（残りの兵士は動かさない）
       if (this.checkGameOver()) return;
     }
+    // 呪い：進軍が終わったら残りを1減らす（防御待ちで止まったときは、続きの進軍が終わってから）
+    this.tickWeakened(player);
+    // 鈍足・目くらまし（4陣営の反応）も同じ
+    this.tickReactionStatuses(player);
+    // 付着も同じく、進軍が終わったら残りを1減らす
+    this.tickAttachments(player);
   }
 
   /** 毒の量を上限（poisonMax。0 は上限なし）でおさえる */
@@ -1087,13 +1246,47 @@ export class Game {
     return this.rules.armorMax ? player.armor >= this.rules.armorMax : player.armor >= def.amount;
   }
 
-  /** 城にダメージ。城壁が先に受ける。castleDamaged を出す */
-  damageCastle(owner, amount, source) {
-    amount = this.reduceDamage(owner, amount);
-    const blocked = Math.min(owner.armor, amount);
+  /**
+   * 城にダメージ。城壁が先に受ける（ignoreArmor なら城壁を通さない）。castleDamaged を出す。
+   * 4陣営：身代わり（castle.guard）がいれば、相手からの攻撃（兵士・魔法・精霊・反応）はその兵士が代わりに受ける。
+   * 血の膜（castle.bloodArmor）の城壁が受けたぶんは、城HPが回復する
+   */
+  damageCastle(owner, amount, source, { ignoreArmor = false } = {}) {
+    if (owner.castle.guard && GUARDED_SOURCES.includes(source?.kind) && this.guardCastleHit(owner, amount)) return;
+    amount = this.reduceDamage(owner, amount, 'castle');
+    const castle = owner.castle;
+    const armorBefore = owner.armor;
+    const blocked = ignoreArmor ? 0 : Math.min(owner.armor, amount);
     owner.armor -= blocked;
-    owner.castle.takeDamage(amount - blocked);
-    this.emit('castleDamaged', { playerId: owner.id, amount, blocked, hp: owner.castle.hp, source });
+    castle.takeDamage(amount - blocked);
+    this.emit('castleDamaged', { playerId: owner.id, amount, blocked, hp: castle.hp, source, ...(ignoreArmor ? { ignoreArmor: true } : {}) });
+    if (castle.bloodArmor > 0) {
+      // 血の膜：城壁のうち血の膜のぶん（ほかの城壁より先に削れる）が受けた量だけ回復（城が落ちたら回復しない）
+      castle.bloodArmor = Math.min(castle.bloodArmor, armorBefore);
+      const blood = Math.min(blocked, castle.bloodArmor);
+      castle.bloodArmor -= blood;
+      if (blood > 0 && !castle.isDestroyed) {
+        const healed = castle.heal(blood);
+        if (healed > 0) this.emit('castleHealed', { playerId: owner.id, amount: healed, hp: castle.hp, source: { kind: 'bloodArmor' } });
+      }
+    }
+  }
+
+  /**
+   * 身代わり：owner の城を守る兵士が、城へのダメージを代わりに受ける（盾は効く。城壁は使わない）。
+   * 守る兵士がもういなければ身代わりは消え、false（城がそのまま受ける）
+   */
+  guardCastleHit(owner, amount) {
+    const castle = owner.castle;
+    const soldierId = castle.guard;
+    castle.guard = null;
+    const side = this.side(owner.id);
+    const holder = this.alivePlayerIds().map((id) => this.players[id]).find((p) => this.side(p.id) === side && p.soldiers.some((x) => x.soldierId === soldierId));
+    if (!holder) return false;
+    const soldier = holder.soldiers.find((x) => x.soldierId === soldierId);
+    this.emit('castleGuarded', { playerId: owner.id, soldierId, guardOwnerId: holder.id, amount });
+    this.damageSoldier(holder, soldier, amount, 'guard');
+    return true;
   }
 
   /**
@@ -1129,8 +1322,239 @@ export class Game {
     return true;
   }
 
+  /**
+   * 魔法が兵士に当たった：ダメージ（damageSoldier）のあと、生きていれば魔法の属性（card.def.element）を付着させる（反応することもある）。
+   * reactions を渡していないゲームでは damageSoldier と同じ。消えたら true
+   */
+  spellHit(owner, soldier, amount, card) {
+    if (this.damageSoldier(owner, soldier, amount, 'spell')) return true;
+    this.elementHit(owner, soldier, card.def?.element ?? null, { damage: amount, turns: card.def?.attachTurns });
+    return !owner.soldiers.includes(soldier);
+  }
+
+  // ================= 属性の付着と反応（reactions を渡したときだけ。CLAUDE.md「クラシックの付着と反応」） =================
+
+  /** 兵士に付いている属性（武器の属性 → 付着の順。重なりは1つ） */
+  elementsOn(soldier) {
+    const list = soldier.element ? [soldier.element] : [];
+    for (const a of soldier.attachments) if (!list.includes(a.element)) list.push(a.element);
+    return list;
+  }
+
+  /**
+   * 属性 element の攻撃が、owner の兵士 soldier に当たった（ダメージのあと。外れた攻撃では呼ばない）。
+   * 反応の表で組になる属性が付いていれば反応する（1回の攻撃で1つ。3種類以上で混沌が入っていれば混沌反応が先、次に表の順）。反応しなければ付着する。
+   * reactions を渡していない・属性なし・忍者・もう場にいない兵士なら何もしない（乱数も使わない）
+   */
+  elementHit(owner, soldier, element, { damage = 0, turns: attachTurns } = {}) {
+    const defs = this.reactionDefs;
+    if (!defs || !element || soldier.stealth || !owner.soldiers.includes(soldier)) return;
+    const reaction = this.findReaction(soldier, element);
+    if (reaction) {
+      reaction.hit = damage; // 蒸発（multiplier）が使う、当たった攻撃のダメージ
+      this.triggerReaction(owner, soldier, reaction);
+      return;
+    }
+    // 付着が残る回数（水流のように、魔法の attachTurns で長くできる）
+    const turns = attachTurns ?? defs.attachTurns;
+    const found = soldier.attachments.find((a) => a.element === element);
+    if (found) found.turns = turns; // 同じ属性がまた付いたら、残りを戻す
+    else soldier.attachments.push({ element, turns });
+    this.emit('elementAttached', { playerId: owner.id, soldierId: soldier.soldierId, element, turns });
+  }
+
+  /**
+   * 自分のターンの始め：敵の見える兵士（忍者は除く）からランダムに1体を選び、ランダムな属性を1つ付着させる（反応は起こさない）。
+   * rules.randomAttachTurnStart が true で reactions を渡したゲームだけ。敵の兵士がいなければ何もしない（乱数も使わない）。
+   * 将来スキルツリーが入ったら、ここの先頭の条件を「player がこの能力を持っているか」に変える
+   */
+  randomAttachAtTurnStart(player) {
+    const defs = this.reactionDefs;
+    if (!defs || !this.rules.randomAttachTurnStart) return;
+    const targets = [];
+    for (const enemy of this.opponentsOf(player.id)) for (const s of enemy.visibleSoldiers) targets.push({ enemy, s });
+    if (targets.length === 0) return;
+    const { enemy, s } = targets[Math.floor(this.rng() * targets.length)];
+    const ids = elementIds(this.elementDefs);
+    const element = ids[Math.floor(this.rng() * ids.length)];
+    const turns = defs.randomAttach?.turns ?? defs.attachTurns;
+    const found = s.attachments.find((a) => a.element === element);
+    // 同じ属性がもう付いていたら、残りは長い方にそろえる（武器・魔法で付いた長い残りを、短いランダム付着で縮めない）
+    if (found) found.turns = Math.max(found.turns, turns);
+    else s.attachments.push({ element, turns });
+    this.emit('elementAttached', { playerId: enemy.id, soldierId: s.soldierId, element, turns: (found ?? s.attachments.at(-1)).turns, source: 'turnStart' });
+  }
+
+  /** 起こる反応（なければ null）。{ id, name, elements（反応した属性）, consumed（兵士から消える属性）, damage, def } */
+  findReaction(soldier, element) {
+    const defs = this.reactionDefs;
+    const on = this.elementsOn(soldier);
+    const chaos = defs.chaos;
+    // 混沌反応：この攻撃のあと、付いている属性（当たった攻撃の属性も数える）に混沌が入っていて、種類が minElements 以上。
+    // 当たったのが混沌でなくてもよい（混沌が付いている・武器が混沌の兵士に、別の属性が当たって3種になったときも）。
+    // 2種類のときはここに入らず、下の表の反応（砕氷など）を見る（2種類で表の反応が成り立つなら表が優先）
+    const all = on.includes(element) ? on : [...on, element];
+    if (chaos && all.includes(chaos.element) && all.length >= chaos.minElements) {
+      return { id: 'chaos', name: chaos.name, elements: all, consumed: on, damage: chaos.damagePerElement * all.length, def: {} };
+    }
+    for (const [id, def] of Object.entries(defs.reactions)) {
+      if (!def.elements.includes(element)) continue;
+      const other = def.elements.find((e) => e !== element);
+      if (on.includes(other)) return { id, name: def.name, elements: [element, other], consumed: [other], damage: def.damage, def };
+    }
+    return null;
+  }
+
+  /**
+   * 反応を起こす：reactionTriggered → 消えた属性の elementCleared → 追加ダメージ（soldierDamaged、cause "reaction"。盾が先に受ける）。
+   * 反応した属性は兵士から消える（付着も、武器の属性も。武器の攻撃ボーナスは残る）。当たった攻撃の属性は付着しない。
+   * 砕氷（frozenBonus）：凍結中なら追加ダメージが増えて、凍結が解ける。黒氷（frozenTurns）：生き残れば凍結する
+   */
+  triggerReaction(owner, soldier, reaction) {
+    const { def } = reaction;
+    let damage = reaction.damage;
+    const shatter = def.frozenBonus !== undefined && soldier.frozen > 0;
+    if (shatter) damage += def.frozenBonus;
+    // 4陣営：蒸発（multiplier）は当たった攻撃のダメージを倍に、溶岩（shieldBreak）は盾を全部壊して、壊した量＋bonus
+    if (def.multiplier !== undefined) damage += Math.ceil((reaction.hit ?? 0) * (def.multiplier - 1));
+    const broken = def.shieldBreak ? soldier.shield : 0;
+    if (def.shieldBreak) damage += broken + def.shieldBreak.bonus;
+    const playerId = owner.id;
+    const { soldierId } = soldier;
+    this.emit('reactionTriggered', {
+      reaction: reaction.id, name: reaction.name, soldierId, playerId, elements: [...reaction.elements], damage, consumed: [...reaction.consumed],
+    });
+    for (const element of reaction.consumed) {
+      // 武器の属性が反応で消えたときだけ weapon: true（生まれつきの属性＝武器を持っていない兵士の属性には付けない）
+      const weapon = soldier.element === element && soldier.weapon !== null;
+      if (soldier.element === element) soldier.element = null;
+      soldier.attachments = soldier.attachments.filter((a) => a.element !== element);
+      this.emit('elementCleared', { playerId, soldierId, element, reason: 'reaction', ...(weapon ? { weapon: true } : {}) });
+    }
+    if (shatter) {
+      soldier.frozen = 0;
+      this.emit('statusCleared', { playerId, soldierId, status: 'frozen' });
+    }
+    if (def.shieldBreak && broken > 0) {
+      soldier.shield = 0;
+      this.emit('shieldBroken', { playerId, soldierId, amount: broken });
+    }
+    const alive = !(damage > 0 && this.damageSoldier(owner, soldier, damage, 'reaction'));
+    if (alive && def.frozenTurns !== undefined && soldier.frozen < def.frozenTurns) {
+      soldier.frozen = def.frozenTurns;
+      this.emit('statusApplied', { playerId, soldierId, status: 'frozen', turns: soldier.frozen });
+    }
+    this.reactionExtras(owner, soldier, reaction, alive);
+  }
+
+  /**
+   * 4陣営の反応の追加の効果（reactions.json の burn / slow / blind / splash / healCut / castleDamage）。
+   * 当たった兵士が生きていれば、やけど・鈍足・目くらまし。炎拡散（burn.scope "adjacent"）は、同じ道の前後1マスの同じ陣地の兵士にも。
+   * splash は同じ道の、同じ陣地のほかの兵士にダメージ（cause "reaction"）。healCut は当たった兵士の陣地の城の回復量が減る。
+   * castleDamage は当たった兵士の陣地の城にダメージ（城壁は受ける。source { kind: "reaction", reaction }）
+   */
+  reactionExtras(owner, soldier, reaction, alive) {
+    const { def } = reaction;
+    const side = this.side(owner.id);
+    const sameSide = () => this.alivePlayerIds().filter((id) => this.side(id) === side).flatMap((id) =>
+      this.players[id].visibleSoldiers.map((x) => ({ owner: this.players[id], soldier: x })));
+    const road = this.findRoad(soldier.roadId);
+    const sq = road?.toSquare(side, soldier.position);
+    const onRoad = (x) => x.soldier !== soldier && x.soldier.roadId === soldier.roadId;
+    if (def.burn) {
+      const list = alive ? [{ owner, soldier }] : [];
+      if (def.burn.scope === 'adjacent' && road) list.push(...sameSide().filter((x) => onRoad(x) && Math.abs(road.toSquare(side, x.soldier.position) - sq) <= 1));
+      for (const x of list) this.burnSoldier(x.owner, x.soldier, def.burn);
+    }
+    if (alive && def.slow) {
+      soldier.slowed = { amount: Math.max(def.slow.amount, soldier.slowed?.amount ?? 0), turns: Math.max(def.slow.turns, soldier.slowed?.turns ?? 0) };
+      this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status: 'slowed', turns: soldier.slowed.turns, amount: soldier.slowed.amount });
+    }
+    if (alive && def.blind) {
+      soldier.blinded = { chance: Math.max(def.blind.chance, soldier.blinded?.chance ?? 0), turns: Math.max(def.blind.turns, soldier.blinded?.turns ?? 0) };
+      this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status: 'blinded', turns: soldier.blinded.turns, chance: soldier.blinded.chance });
+    }
+    if (def.splash) {
+      for (const x of sameSide().filter(onRoad)) if (x.owner.soldiers.includes(x.soldier)) this.damageSoldier(x.owner, x.soldier, def.splash.amount, 'reaction');
+    }
+    const castleOwner = this.players[side];
+    if (def.healCut && castleOwner) {
+      const c = castleOwner.castle;
+      c.healCut = { ratio: Math.max(def.healCut.ratio, c.healCut?.ratio ?? 0), turns: Math.max(def.healCut.turns, c.healCut?.turns ?? 0) };
+      this.emit('castleHealCut', { playerId: side, ratio: c.healCut.ratio, turns: c.healCut.turns });
+    }
+    if (def.castleDamage && castleOwner && !castleOwner.eliminated) {
+      this.damageCastle(castleOwner, def.castleDamage, { kind: 'reaction', reaction: reaction.id });
+    }
+  }
+
+  /** やけど（量・回数を大きい方にそろえる。重ねがけで増えない）。statusApplied を出す */
+  burnSoldier(owner, soldier, burn) {
+    if (!owner.soldiers.includes(soldier)) return;
+    const turns = Math.max(burn.turns, soldier.burn?.turns ?? 0);
+    soldier.burn = { amount: Math.max(burn.amount, soldier.burn?.amount ?? 0), turns };
+    this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status: 'burn', turns, amount: soldier.burn.amount });
+  }
+
+  /** 鈍足・目くらまし：持ち主の進軍が終わったら、残りを1減らす（0で治る） */
+  tickReactionStatuses(player) {
+    for (const soldier of player.soldiers) {
+      for (const status of ['slowed', 'blinded']) {
+        if (!soldier[status]) continue;
+        soldier[status].turns -= 1;
+        if (soldier[status].turns > 0) continue;
+        soldier[status] = null;
+        this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status });
+      }
+    }
+  }
+
+  /** 回復量減少：城の持ち主（チーム戦なら代表）のターンの始めに残りを1減らす（0で終わる） */
+  tickHealCut(player) {
+    const c = player.castle;
+    if (!c.healCut || this.side(player.id) !== player.id) return;
+    c.healCut.turns -= 1;
+    if (c.healCut.turns > 0) return;
+    c.healCut = null;
+    this.emit('castleHealCutEnded', { playerId: player.id });
+  }
+
+  /** 目くらまし：攻撃が外れるか（目くらましでなければ乱数を使わない） */
+  rollBlind(soldier) {
+    return Boolean(soldier?.blinded) && this.rng() < soldier.blinded.chance;
+  }
+
+  /** 4陣営：場にいる自分の兵士の spellBoost（ドルイド・呪術師）で、属性 element の魔法に足すダメージ（重ならない。いちばん大きいもの） */
+  spellBonus(player, element) {
+    if (!element) return 0;
+    let best = 0;
+    for (const x of player.soldiers) {
+      const b = this.cardDefs[x.type]?.spellBoost;
+      if (b && b.elements.includes(element)) best = Math.max(best, b.amount);
+    }
+    return best;
+  }
+
+  /** 付着：持ち主の進軍が終わったら、残りを1減らす（0で消える） */
+  tickAttachments(player) {
+    if (!this.reactionDefs) return;
+    for (const soldier of player.soldiers) {
+      for (const a of [...soldier.attachments]) {
+        a.turns -= 1;
+        if (a.turns > 0) continue;
+        soldier.attachments = soldier.attachments.filter((x) => x !== a);
+        this.emit('elementCleared', { playerId: player.id, soldierId: soldier.soldierId, element: a.element, reason: 'expired' });
+      }
+    }
+  }
+
   removeSoldier(owner, soldier, reason) {
     owner.removeSoldier(soldier.soldierId);
+    // 蘇生（reviveFallen）のために、HPが0になって倒れた（killed）兵士を持ち主ごとに1体だけ覚えておく（getState には出さない）。
+    // 魔物のカードの駒は山札に戻らない特別なカードなので、生き返らせない
+    if (reason === 'killed' && this.cardDefs[soldier.type]?.monster === undefined) {
+      owner.lastFallen = { type: soldier.type, roadId: soldier.roadId, targetId: soldier.targetId, maxHp: soldier.maxHp };
+    }
     this.emit('soldierDestroyed', { playerId: owner.id, soldierId: soldier.soldierId, reason });
   }
 
@@ -1143,10 +1567,14 @@ export class Game {
    */
   findClashTarget(soldier, owner) {
     const here = soldier.position;
+    // 4陣営：射程+の武器（rangeBonus）を持つ進む兵士は、もっと先の相手も突ける（近い相手が先）
+    // ただし、すぐ前（同じマスか1つ先）に魔物がいるときは、魔物を飛び越えて突けない
+    const reach = soldier.rangeBonus > 0 && !this.findMonsterInRange(soldier, owner) ? 1 + soldier.rangeBonus : 1;
     let best = null;
     for (const c of this.foesOf(soldier, owner)) {
-      if (c.q !== here && c.q !== here + 1) continue;
-      if (!best || soldierNumber(c.soldier) < soldierNumber(best.soldier)) best = { owner: c.owner, soldier: c.soldier };
+      if (c.q < here || c.q > here + reach) continue;
+      const near = (x) => (x.q <= here + 1 ? 0 : x.q - here);
+      if (!best || near(c) < near(best) || (near(c) === near(best) && soldierNumber(c.soldier) < soldierNumber(best.soldier))) best = { owner: c.owner, soldier: c.soldier, q: c.q };
     }
     return best;
   }
@@ -1194,7 +1622,7 @@ export class Game {
   shoot(player, soldier) {
     const here = soldier.position;
     // 砂漠のステージ：射程が短くなる（最低1）
-    const range = Math.max(1, soldier.range - (this.stageDef()?.rangePenalty ?? 0));
+    const range = Math.max(1, soldier.range + soldier.rangeBonus - (this.stageDef()?.rangePenalty ?? 0));
     const inRange = (q) => q !== null && q >= here && q <= here + range;
     const foes = this.foesOf(soldier, player).filter((c) => inRange(c.q));
     foes.sort((a, b) => a.q - b.q || soldierNumber(a.soldier) - soldierNumber(b.soldier));
@@ -1202,11 +1630,15 @@ export class Game {
     let over = false;
     if (foes.length > 0) {
       const { owner, soldier: victim } = foes[0];
-      const miss = this.rollMiss();
+      const miss = this.rollMiss() || this.rollBlind(soldier);
       const amount = miss ? 0 : this.fightDamage(soldier, victim);
       this.emit('soldierShot', { ...shot, target: { kind: 'soldier', playerId: owner.id, soldierId: victim.soldierId }, amount });
       if (miss) this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
-      else this.damageSoldier(owner, victim, amount, 'shot');
+      else if (!this.damageSoldier(owner, victim, amount, 'shot')) {
+        this.elementHit(owner, victim, soldier.element, { damage: amount });
+        this.freezeOnHitBy(soldier, owner, victim);
+        if (this.reactionDefs) over = this.checkGameOver();
+      }
     } else {
       const road = this.findRoad(soldier.roadId);
       const monster = this.monsters.find((m) =>
@@ -1623,7 +2055,10 @@ export class Game {
     const def = card.def;
     if (def.monster !== undefined) return 0; // 魔物のカード（倒したごほうび）は MP を使わない
     const attackDice = def.effect === 'dice' && def.dice === 'attack'; // 攻撃サイコロは攻撃の魔法と同じく MP を使う
-    if (def.kind !== 'spell' || (!MP_EFFECTS.includes(def.effect) && !attackDice)) return 0;
+    const mpSpell = def.kind === 'spell' && (MP_EFFECTS.includes(def.effect) || attackDice);
+    // mpAllCards：兵士・武器・防御・回復なども、カードの mpCost だけ MP を使う（サイコロ・マナ回復は今までどおり）
+    if (this.rules.mpAllCards && !mpSpell && def.effect !== 'dice' && def.effect !== 'gainMp') return def.mpCost ?? 0;
+    if (!mpSpell) return 0;
     return def.mpCost ?? this.rarityDefs?.[def.rarity]?.mpCost ?? 0;
   }
 
@@ -1816,7 +2251,7 @@ export class Game {
 
   /** a が b に与えるダメージ（攻撃力 ＋ 属性が強ければ elementBonus） */
   fightDamage(a, b) {
-    const strong = a.element && b.element && ELEMENT_BEATS[a.element] === b.element;
+    const strong = beatsElement(this.elementDefs, a.element, b.element);
     const attack = a instanceof Soldier ? this.attackOf(a) : a.attack;
     return this.stageBoost(a, attack + (strong ? this.rules.elementBonus : 0) + this.weatherElementBonus(a.element));
   }
@@ -1834,6 +2269,8 @@ export class Game {
       if (def.monster !== undefined || def.beast) bonus += this.rules.nightBeastAttack;
       if (soldier.stealth) bonus += this.rules.nightStealthAttack;
     }
+    // 呪い：攻撃力が下がる（最低1）
+    if (soldier.weakened) return Math.max(1, soldier.attack + bonus - soldier.weakened.amount);
     return soldier.attack + bonus;
   }
 
@@ -2036,7 +2473,15 @@ export class Game {
   }
 
   /** 進軍中の attacker と、相手の defender が戦う。お互いに攻撃力ぶんのダメージを同時に与える */
-  fight(player, attacker, enemy, defender) {
+  /** 4陣営：武器の freezeOnHit（フロストブレード）。当たって生き残った相手を休ませる */
+  freezeOnHitBy(hitter, owner, victim) {
+    if (!hitter.freezeOnHit || !owner.soldiers.includes(victim) || victim.frozen >= hitter.freezeOnHit) return;
+    victim.frozen = hitter.freezeOnHit;
+    this.emit('statusApplied', { playerId: owner.id, soldierId: victim.soldierId, status: 'frozen', turns: victim.frozen });
+  }
+
+  /** reach：攻める側が射程+の武器で、1マスより先の相手を突くとき（相手は届かないので反撃しない） */
+  fight(player, attacker, enemy, defender, reach = false) {
     const road = this.findRoad(attacker.roadId);
     this.emit('soldiersClashed', {
       attacker: { playerId: player.id, soldierId: attacker.soldierId },
@@ -2045,11 +2490,14 @@ export class Game {
       square: road.toSquare(this.side(player.id), attacker.position), // 攻める側が止まったマス
     });
 
-    // 霧：攻撃が外れる（ダメージ0）
-    const missD = this.rollMiss();
-    const missA = this.rollMiss();
+    // 霧：攻撃が外れる（ダメージ0）。目くらまし（4陣営の反応）の兵士も外れることがある（目くらましでなければ乱数を使わない）
+    const missD = this.rollMiss() || this.rollBlind(attacker);
+    const missA = this.rollMiss() || reach || this.rollBlind(defender);
+    // 付着・反応に使う、ぶつかる前の属性（反応で武器の属性が外れることがあるので、先に覚えておく）
+    const elementA = attacker.element;
+    const elementD = defender.element;
     if (missD) this.emitMiss(player.id, 'fight', { soldierId: attacker.soldierId });
-    if (missA) this.emitMiss(enemy.id, 'fight', { soldierId: defender.soldierId });
+    if (missA && !reach) this.emitMiss(enemy.id, 'fight', { soldierId: defender.soldierId });
     const toDefender = missD ? 0 : this.reduceDamage(enemy, this.fightDamage(attacker, defender));
     const toAttacker = missA ? 0 : this.reduceDamage(player, this.fightDamage(defender, attacker));
     const blockedD = defender.takeDamage(toDefender);
@@ -2057,14 +2505,23 @@ export class Game {
     this.emit('soldierDamaged', {
       playerId: enemy.id, soldierId: defender.soldierId, amount: toDefender, hp: defender.hp, cause: 'fight', blocked: blockedD,
     });
-    this.emit('soldierDamaged', {
-      playerId: player.id, soldierId: attacker.soldierId, amount: toAttacker, hp: attacker.hp, cause: 'fight', blocked: blockedA,
-    });
+    // 突き（reach）：守る側の攻撃は届かないので、攻める側の soldierDamaged は出さない
+    if (!reach) {
+      this.emit('soldierDamaged', {
+        playerId: player.id, soldierId: attacker.soldierId, amount: toAttacker, hp: attacker.hp, cause: 'fight', blocked: blockedA,
+      });
+    }
 
     // 消える順番は soldierDamaged と同じ（守る側 → 攻める側）
     for (const [owner, s] of [[enemy, defender], [player, attacker]]) {
       if (s.isDead) this.removeSoldier(owner, s, 'killed');
     }
+    // 付着・反応（reactions を渡したときだけ）：当たった攻撃の属性（武器の属性）。外れた攻撃は付かない。同じ順番（守る側 → 攻める側）
+    if (!missD) this.elementHit(enemy, defender, elementA, { damage: toDefender });
+    if (!missA) this.elementHit(player, attacker, elementD, { damage: toAttacker });
+    // フロストブレード：当たって生き残った相手を休ませる
+    if (!missD) this.freezeOnHitBy(attacker, enemy, defender);
+    if (!missA) this.freezeOnHitBy(defender, player, attacker);
   }
 
   // ================= カードを出す =================
@@ -2115,8 +2572,10 @@ export class Game {
       case 'damageEnemyCastle':
         return {
           targets: [
-            // 城は陣地ごとに1つ（チーム戦ならチームの代表）
-            ...playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id)),
+            // 城は陣地ごとに1つ（チーム戦ならチームの代表）。castleSpellHitsFront のときは、レーンが2本以上なら道ごと（{ playerId, roadId }）
+            ...(this.rules.castleSpellHitsFront
+              ? this.frontSpellTargets(player, this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id))
+              : playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id))),
             // 魔物は、自分の道（自分が両はしのどちらか）にいるものだけ。広場の魔物はだれからでも狙える
             ...this.monsters.filter((m) => m.roadId === PLAZA || this.findRoad(m.roadId).has(this.side(player.id))).map((m) => ({ monsterId: m.monsterId })),
           ],
@@ -2188,6 +2647,35 @@ export class Game {
           targets: player.castle.poison || player.soldiers.some((x) => x.poison) ? [{ playerId: player.id }] : [],
           reason: '毒にかかっているものがありません',
         };
+      case 'singleDamage':
+        if (def.target === 'front') return this.frontSoldierTargets(player);
+        // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
+        return {
+          targets: this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers.map((x) => ({ soldierId: x.soldierId }))),
+          reason: '道の上に相手の兵士がいません',
+        };
+      case 'randomElementDamage':
+        if (def.target === 'front') return this.frontSoldierTargets(player);
+        // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
+        return {
+          targets: this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers.map((x) => ({ soldierId: x.soldierId }))),
+          reason: '道の上に相手の兵士がいません',
+        };
+      case 'reviveFallen': {
+        // 蘇生：最後に倒れた自分の兵士がいて、その道がまだあるときだけ（対象は自分）
+        const fallen = player.lastFallen;
+        if (!fallen) return { targets: [], reason: '生き返らせる兵士がいません' };
+        return { targets: this.findRoad(fallen.roadId) ? [{ playerId: player.id }] : [], reason: '倒れた兵士の道がもうありません' };
+      }
+      case 'weakenAttack': {
+        // 呪い：相手の兵士1体。もう同じか強い呪いがかかっている兵士は選べない（出しても何も変わらないため）
+        const all = this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers);
+        const changes = (x) => !x.weakened || x.weakened.amount < def.amount || x.weakened.turns < def.turns;
+        return {
+          targets: all.filter(changes).map((x) => ({ soldierId: x.soldierId })),
+          reason: all.length ? 'もう同じ状態になっています' : '道の上に相手の兵士がいません',
+        };
+      }
       case 'chainBlast':
         // 相手の兵士1体を選ぶ（見えない忍者・暗殺者は選べない）
         return {
@@ -2204,8 +2692,10 @@ export class Game {
         return { targets: playerTargets(this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id)), reason: '相手がいません' };
       case 'purifyFlare': {
         const cures = player.castle.poison || player.soldiers.some((x) => x.poison || x.burn || x.frozen > 0);
-        const foes = this.opponentsOf(player.id).some(hasSoldiers);
-        return { targets: cures || foes ? [{ playerId: player.id }] : [], reason: '治すものも、相手の兵士もいません' };
+        const foes = def.amount > 0 && this.opponentsOf(player.id).some(hasSoldiers);
+        // 4陣営：相手の付着を消す浄化は、相手の兵士に付着があれば出せる
+        const attached = def.clearEnemyAttachments && this.opponentsOf(player.id).some((p) => p.visibleSoldiers.some((x) => x.attachments.length > 0));
+        return { targets: cures || foes || attached ? [{ playerId: player.id }] : [], reason: def.amount > 0 ? '治すものも、相手の兵士もいません' : '治すものも、相手の付着もありません' };
       }
       case 'setTime': {
         // 刻の魔法：ムーンライズは昼のとき（夜にする）、ドーンブレイクは夜のとき（昼にする）だけ出せる
@@ -2254,6 +2744,27 @@ export class Game {
       case 'reflectSpell':
       case 'nullifySoldier':
         return { targets: [], reason: '攻撃を受けたときにだけ使えます' };
+      case 'guardCastle':
+        // 身代わり（4陣営）：自分の兵士1体（もう身代わりの兵士は選べない）
+        return {
+          targets: player.soldiers.filter((x) => x.soldierId !== player.castle.guard).map((x) => ({ soldierId: x.soldierId })),
+          reason: player.soldiers.length ? 'その兵士はもう身代わりです' : '道の上に自分の兵士がいません',
+        };
+      case 'healSoldier':
+        // 竜血の雫：傷ついた自分の兵士1体
+        return {
+          targets: player.soldiers.filter((x) => x.hp < x.maxHp).map((x) => ({ soldierId: x.soldierId })),
+          reason: player.soldiers.length ? '傷ついた兵士がいません' : '道の上に自分の兵士がいません',
+        };
+      case 'healCastleAndSoldiers':
+        // 生命の雫：城HPか、傷ついた兵士のどちらかが回復できれば出せる
+        return {
+          targets: !player.castle.isFull || player.soldiers.some((x) => x.hp < x.maxHp) ? [{ playerId: player.id }] : [],
+          reason: '城のHPが満タンで、傷ついた兵士もいません',
+        };
+      case 'breathAttack':
+        // 火炎の吐息：道を選ぶ（相手の兵士がいなくても、城に届く）
+        return { targets: this.frontSpellTargets(player, this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id)), reason: '相手がいません' };
       case 'healOwnCastle':
         return { targets: player.castle.isFull ? [] : [{ playerId: player.id }], reason: '城のHPが満タンです' };
       case 'shieldSoldier':
@@ -2412,7 +2923,11 @@ export class Game {
         attack: soldier.attack,
       });
     } else if (card.isSpell && target.soldierId) {
-      this.chainBlast(player, card, target.soldierId);
+      if (card.def.effect === 'singleDamage') this.singleDamage(player, card, target.soldierId);
+      else if (card.def.effect === 'healSoldier') this.healSoldier(player, card, target.soldierId);
+      else if (card.def.effect === 'randomElementDamage') this.randomElementDamage(player, card, target.soldierId);
+      else if (card.def.effect === 'weakenAttack') this.weakenAttack(player, card, target.soldierId);
+      else this.chainBlast(player, card, target.soldierId);
     } else if (card.isSpell && target.monsterId) {
       const monster = this.findMonster(target.monsterId);
       this.emit('spellCast', { playerId: player.id, type: card.type, target: monster.monsterId, targetKind: 'monster' });
@@ -2422,6 +2937,8 @@ export class Game {
         this.damageMonster(monster, card.def.amount + this.stageEffectBonus(card.def.effect), { playerId: player.id, type: card.type });
         this.defeatMonsterIfDead(monster, player.id);
       }
+    } else if (card.isSpell && card.def.effect === 'reviveFallen') {
+      this.reviveFallen(player, card);
     } else if (card.isSpell) {
       this.castSpell(player, card, this.players[target.playerId], target.roadId);
     } else {
@@ -2462,25 +2979,236 @@ export class Game {
     this.requestDefense(
       { kind: 'soldiers', defenderId: side, attackerId: player.id, amount, soldierIds: [soldierId, ...near.map((n) => n.soldier.soldierId)] },
       () => {
-        if (owner.soldiers.includes(center)) this.damageSoldier(owner, center, amount, 'spell');
-        for (const n of near) if (n.owner.soldiers.includes(n.soldier)) this.damageSoldier(n.owner, n.soldier, half, 'spell');
+        if (owner.soldiers.includes(center)) this.spellHit(owner, center, amount, card);
+        for (const n of near) if (n.owner.soldiers.includes(n.soldier)) this.spellHit(n.owner, n.soldier, half, card);
       },
       () => this.checkGameOver(),
     );
+  }
+
+  /**
+   * ランダム属性ダメージ（randomElementDamage）：敵兵士1体に amount（ステージの魔法の増加は乗る）。
+   * 火・水・風・土のうちランダムな1つの属性で撃ち、その属性が相手の兵士の属性に強ければ elementBonus 増える
+   * （属性なしの相手・弱い側に当たったときは増減なし）。盾が先に受ける。霧で外れる。相手は盾を出せる
+   */
+  randomElementDamage(player, card, soldierId) {
+    const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
+    const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
+    const element = ELEMENTS[Math.floor(this.rng() * ELEMENTS.length)];
+    const strong = beatsElement(this.elementDefs, element, soldier.element);
+    // 4陣営：呪術師（混沌）などの属性魔法の強化は、カードの属性で乗る（撃つランダムな属性ではない）
+    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + (strong ? this.rules.elementBonus : 0) + this.spellBonus(player, card.def.element);
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId, element });
+    if (this.rollMiss()) {
+      this.emitMiss(player.id, 'spell', { type: card.type });
+      return;
+    }
+    this.requestDefense(
+      { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldierId] },
+      () => {
+        if (owner.soldiers.includes(soldier)) this.spellHit(owner, soldier, amount, card);
+      },
+      () => this.checkGameOver(),
+    );
+  }
+
+  /**
+   * 蘇生（reviveFallen）：最後に倒れた自分の兵士1体を、倒れた道の自分の城の前（マス0）に生き返らせる。
+   * HP は倒れたときの最大HPの amount 倍（切り上げ・最低1）。武器・盾・状態異常はなし。攻撃は新しく出した兵士と同じ決まり
+   * （種類の値＋兵舎＋訓練）。出したターンには動かない
+   */
+  reviveFallen(player, card) {
+    const fallen = player.lastFallen;
+    player.lastFallen = null;
+    // 忍者は相手から見えないので、どの道に生き返ったか（roadId）は spellCast に入れない（soldierDeployed は stealth 付きで出る）
+    const hidden = this.cardDefs[fallen.type].role === 'ninja';
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player', ...(hidden ? {} : { roadId: fallen.roadId }) });
+    const soldierId = `s${String(this.nextSoldierNumber++).padStart(2, '0')}`;
+    const soldier = new Soldier(soldierId, { type: fallen.type, def: this.cardDefs[fallen.type] }, fallen.roadId, fallen.targetId);
+    soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
+    soldier.baseAttack += player.armyAttack; // 訓練（コインで買う）
+    soldier.maxHp = fallen.maxHp;
+    soldier.hp = Math.max(1, Math.ceil(fallen.maxHp * card.def.amount));
+    player.soldiers.push(soldier);
+    if (soldier.stealth) (this.stealthSides ??= new Map()).set(soldierId, this.side(player.id));
+    this.emit('soldierDeployed', {
+      playerId: player.id,
+      soldierId,
+      type: fallen.type,
+      roadId: fallen.roadId,
+      targetId: fallen.targetId,
+      position: soldier.position,
+      hp: soldier.hp,
+      attack: soldier.attack,
+      revived: true,
+    });
+  }
+
+  /**
+   * 敵兵士1体にダメージ（singleDamage）：amount（ステージの魔法の増加は乗る）。盾が先に受ける。霧で外れる。
+   * 兵士に当たる魔法なので、相手は盾を出せる
+   */
+  singleDamage(player, card, soldierId) {
+    const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
+    const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
+    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + this.spellBonus(player, card.def.element);
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId });
+    if (this.rollMiss()) {
+      this.emitMiss(player.id, 'spell', { type: card.type });
+      return;
+    }
+    this.requestDefense(
+      { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldierId] },
+      () => {
+        if (!owner.soldiers.includes(soldier)) return;
+        this.spellHit(owner, soldier, amount, card);
+        // 地割れ（freezeTurns）：生き残れば休ませる
+        const turns = card.def.freezeTurns;
+        if (turns && owner.soldiers.includes(soldier) && soldier.frozen < turns) {
+          soldier.frozen = turns;
+          this.emit('statusApplied', { playerId: owner.id, soldierId, status: 'frozen', turns });
+        }
+      },
+      () => this.checkGameOver(),
+    );
+  }
+
+  /** 竜血の雫（healSoldier）：傷ついた自分の兵士1体のHPを amount 回復（最大HPまで）。soldierHealed を出す */
+  healSoldier(player, card, soldierId) {
+    const soldier = player.soldiers.find((x) => x.soldierId === soldierId);
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player', roadId: soldier.roadId, soldierId });
+    this.healOneSoldier(player, soldier, card.def.amount);
+  }
+
+  /** 兵士のHPを回復（最大HPまで）。増えたら soldierHealed を出す */
+  healOneSoldier(owner, soldier, amount) {
+    const healed = Math.min(amount, soldier.maxHp - soldier.hp);
+    if (healed <= 0) return;
+    soldier.hp += healed;
+    this.emit('soldierHealed', { playerId: owner.id, soldierId: soldier.soldierId, amount: healed, hp: soldier.hp });
+  }
+
+  /**
+   * 呪い（weakenAttack）：敵兵士1体の攻撃力を amount 下げる（最低1）。turns 回、持ち主の進軍が終わるたびに1減って0で治る。
+   * 重ねがけは、量・回数を大きい方にそろえる。ダメージではないので、霧でも外れず、防御も聞かない（凍結と同じ）
+   */
+  weakenAttack(player, card, soldierId) {
+    const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
+    const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId });
+    const amount = Math.max(card.def.amount, soldier.weakened?.amount ?? 0);
+    const turns = Math.max(card.def.turns, soldier.weakened?.turns ?? 0);
+    soldier.weakened = { amount, turns };
+    this.emit('statusApplied', { playerId: owner.id, soldierId, status: 'weakened', turns, amount });
+    this.elementHit(owner, soldier, card.def.element);
+  }
+
+  /** 呪い：持ち主の進軍が終わったら、残りを1減らす（0で治る） */
+  tickWeakened(player) {
+    for (const soldier of player.soldiers) {
+      if (!soldier.weakened) continue;
+      soldier.weakened.turns -= 1;
+      if (soldier.weakened.turns <= 0) {
+        soldier.weakened = null;
+        this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status: 'weakened' });
+      }
+    }
+  }
+
+  /**
+   * 先頭の兵士に当たる1体への魔法（カードの target "front"。4陣営）の対象：相手ごと（レーンが2本以上なら道ごと）の { playerId } / { playerId, roadId }。
+   * その道に相手の見える兵士がいるものだけ（当たるのは、撃った人の城にいちばん近い兵士＝frontSoldier）
+   */
+  frontSoldierTargets(player) {
+    const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
+    const targets = this.frontSpellTargets(player, foes).filter((t) => {
+      const enemy = this.players[t.playerId];
+      const road = this.frontRoad(player, enemy, t.roadId);
+      return road && this.frontSoldier(player, enemy, road);
+    });
+    return { targets, reason: '道の上に相手の兵士がいません' };
+  }
+
+  /** castleSpellHitsFront の対象：相手ごとに、2人の間の道が2本以上なら { playerId, roadId }、そうでなければ { playerId } */
+  frontSpellTargets(player, foes) {
+    return foes.flatMap((p) => {
+      const roads = this.roadsBetween(player.id, p.id);
+      return roads.length > 1 ? roads.map((r) => ({ playerId: p.id, roadId: r.roadId })) : [{ playerId: p.id }];
+    });
+  }
+
+  /** 城への魔法が通る道（roadId を選んでいなければ、2人の間の道が1本のときだけその道）。なければ null */
+  frontRoad(player, enemy, roadId) {
+    if (roadId !== undefined) return this.findRoad(roadId);
+    const roads = this.roadsBetween(player.id, enemy.id);
+    return roads.length === 1 ? roads[0] : null;
+  }
+
+  /**
+   * 選んだ道の、相手の陣地の見える兵士のうち、撃った人の城にいちばん近い兵士（position がいちばん大きい。同じなら先に出された方）。
+   * 忍者は見えないので数えない。いなければ null。見つかったら { owner, soldier }
+   */
+  frontSoldier(player, enemy, road) {
+    const side = this.side(enemy.id);
+    const list = this.alivePlayerIds().filter((id) => this.side(id) === side).flatMap((id) =>
+      this.players[id].visibleSoldiers.filter((x) => x.roadId === road.roadId).map((soldier) => ({ owner: this.players[id], soldier })),
+    );
+    list.sort((a, b) => b.soldier.position - a.soldier.position || soldierNumber(a.soldier) - soldierNumber(b.soldier));
+    return list[0] ?? null;
+  }
+
+  /**
+   * 城への魔法を先頭の兵士に当てる（castleSpellHitsFront）。当てる兵士がいなければ何もせず false（城に当たる）。
+   * ダメージは魔法の量そのまま（魔法の塔のボーナスは城だけ）。盾が先に受ける。防御は兵士に当たる魔法と同じ（盾だけ）
+   */
+  castFrontSpell(player, card, enemy, roadId, amount) {
+    const road = this.frontRoad(player, enemy, roadId);
+    const front = road && this.frontSoldier(player, enemy, road);
+    if (!front) return false;
+    const { owner, soldier } = front;
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player', roadId: road.roadId, soldierId: soldier.soldierId });
+    if (this.rollMiss()) {
+      this.emitMiss(player.id, 'spell', { type: card.type });
+      return true;
+    }
+    this.requestDefense(
+      { kind: 'soldiers', defenderId: owner.id, attackerId: player.id, amount, soldierIds: [soldier.soldierId] },
+      () => {
+        if (owner.soldiers.includes(soldier)) this.spellHit(owner, soldier, amount, card);
+      },
+      () => this.checkGameOver(),
+    );
+    return true;
   }
 
   castSpell(player, card, targetPlayer, roadId) {
     const enemy = targetPlayer;
     const { effect } = card.def;
     // ステージで、魔法の数値が増える（溶岩・遺跡）
-    const amount = card.def.amount === undefined ? undefined : card.def.amount + this.stageEffectBonus(effect);
+    const amount = card.def.amount === undefined ? undefined : card.def.amount + this.stageEffectBonus(effect)
+      // 4陣営：ドルイド・呪術師がいれば、その属性のダメージの魔法が強くなる（兵士がいなければ0）
+      + (BOOSTED_EFFECTS.includes(effect) ? this.spellBonus(player, card.def.element) : 0);
     // レーンを選んだ魔法は、その道の兵士だけに効く（spellCast にも roadId を入れる）
     const lane = roadId === undefined ? {} : { roadId };
     const victims = () => enemy.visibleSoldiers.filter((x) => roadId === undefined || x.roadId === roadId);
 
     switch (effect) {
+      case 'singleDamage':
+      case 'randomElementDamage': {
+        // 先頭の兵士に当たる1体への魔法（target "front"）：選んだ道の先頭の兵士に、1体への魔法と同じように当てる
+        const front = this.frontSoldier(player, enemy, this.frontRoad(player, enemy, roadId));
+        if (effect === 'singleDamage') this.singleDamage(player, card, front.soldier.soldierId);
+        else this.randomElementDamage(player, card, front.soldier.soldierId);
+        break;
+      }
+
       case 'damageEnemyCastle':
-        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        // castleSpellHitsFront：選んだレーンの相手の先頭の兵士に当てる（いなければ、下の城へのダメージ）
+        if (this.rules.castleSpellHitsFront && this.castFrontSpell(player, card, enemy, roadId, amount)) break;
+        this.emit('spellCast', {
+          playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player',
+          ...(this.rules.castleSpellHitsFront && this.frontRoad(player, enemy, roadId) ? { roadId: this.frontRoad(player, enemy, roadId).roadId } : {}),
+        });
         // 魔法の塔は城への魔法が強い
         {
           const damage = amount + (player.castleDef.castleSpellBonus ?? 0);
@@ -2583,7 +3311,7 @@ export class Game {
         for (const id of this.alivePlayerIds()) {
           const owner = this.players[id];
           for (const soldier of [...owner.visibleSoldiers]) {
-            if (owner.soldiers.includes(soldier)) this.damageSoldier(owner, soldier, amount, 'spell');
+            if (owner.soldiers.includes(soldier)) this.spellHit(owner, soldier, amount, card);
           }
         }
         this.checkGameOver();
@@ -2602,7 +3330,7 @@ export class Game {
           this.requestDefense(
             { kind: 'soldiers', defenderId: enemy.id, attackerId: player.id, amount, soldierIds: hit.map((x) => x.soldierId) },
             () => {
-              for (const soldier of hit) if (enemy.soldiers.includes(soldier)) this.damageSoldier(enemy, soldier, amount, 'spell');
+              for (const soldier of hit) if (enemy.soldiers.includes(soldier)) this.spellHit(enemy, soldier, amount, card);
             },
             () => this.checkGameOver(),
           );
@@ -2623,6 +3351,8 @@ export class Game {
             soldier.frozen = Math.max(card.def.turns + this.stageEffectBonus(effect), soldier.frozen);
             this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status, turns: soldier.frozen });
           }
+          // ダメージのない魔法でも、当たれば魔法の属性が付着する（反応することもある）
+          this.elementHit(enemy, soldier, card.def.element);
         }
         break;
       }
@@ -2637,6 +3367,7 @@ export class Game {
           if (to === from) continue;
           soldier.position = to;
           this.emit('soldierMoved', { playerId: enemy.id, soldierId: soldier.soldierId, roadId: soldier.roadId, from, to, cause: 'pushed' });
+          this.elementHit(enemy, soldier, card.def.element);
         }
         break;
       }
@@ -2644,14 +3375,17 @@ export class Game {
       case 'poisonEnemy': {
         // 選んだ相手の兵士全員と城を、永続の毒にする（重ねがけは足し算：毒の量が増える）
         this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        // 毒の回数：カードの turns（4陣営の毒の霧）か rules.poisonTurns（0 は永続）
+        const poisonTurns = card.def.turns ?? (this.rules.poisonTurns || null);
         for (const soldier of enemy.visibleSoldiers) {
           const total = this.capPoison(amount + (soldier.poison?.amount ?? 0));
-          const turns = this.rules.poisonTurns || null; // 重ねがけで残りターンも延びる（0 は永続）
+          const turns = poisonTurns; // 重ねがけで残りターンも延びる
           soldier.poison = { amount: total, turns };
           this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status: 'poison', turns, amount: soldier.poison.amount });
+          this.elementHit(enemy, soldier, card.def.element);
         }
         enemy.castle.poison = this.capPoison(amount + (enemy.castle.poison ?? 0));
-        enemy.castle.poisonTurns = this.rules.poisonTurns || null;
+        enemy.castle.poisonTurns = poisonTurns;
         this.emit('castlePoisoned', { playerId: enemy.id, amount: enemy.castle.poison });
         break;
       }
@@ -2689,7 +3423,7 @@ export class Game {
         }
         for (const id of this.alivePlayerIds().filter((id) => this.side(id) === enemy.id)) {
           const owner = this.players[id];
-          for (const soldier of [...owner.visibleSoldiers]) this.damageSoldier(owner, soldier, amount, 'spell');
+          for (const soldier of [...owner.visibleSoldiers]) this.spellHit(owner, soldier, amount, card);
         }
         this.damageCastle(enemy, amount, { kind: 'spell', type: card.type });
         this.checkGameOver();
@@ -2729,9 +3463,49 @@ export class Game {
           player.castle.poisonTurns = null;
           this.emit('castleCured', { playerId: player.id });
         }
-        for (const foe of this.opponentsOf(player.id)) {
-          for (const soldier of [...foe.visibleSoldiers]) this.damageSoldier(foe, soldier, amount, 'spell');
+        // 4陣営：相手の兵士の付着を消す（武器・生まれつきの属性は消えない）
+        if (card.def.clearEnemyAttachments) {
+          for (const foe of this.opponentsOf(player.id)) {
+            for (const soldier of foe.visibleSoldiers) {
+              for (const a of soldier.attachments) this.emit('elementCleared', { playerId: foe.id, soldierId: soldier.soldierId, element: a.element, reason: 'purified' });
+              soldier.attachments = [];
+            }
+          }
         }
+        if (amount > 0) {
+          for (const foe of this.opponentsOf(player.id)) {
+            for (const soldier of [...foe.visibleSoldiers]) this.spellHit(foe, soldier, amount, card);
+          }
+        }
+        break;
+      }
+
+      case 'healCastleAndSoldiers': {
+        // 生命の雫：自分の城と、傷ついた自分の兵士全員を回復
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        const healed = player.castle.heal(amount);
+        if (healed > 0) this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp });
+        for (const soldier of player.soldiers) this.healOneSoldier(player, soldier, card.def.soldierHeal);
+        break;
+      }
+
+      case 'breathAttack': {
+        // 火炎の吐息：選んだ道の相手の兵士全員に amount（盾が先に受ける）、相手の城に城壁を無視して castleAmount。防御は聞かない
+        const road = this.frontRoad(player, enemy, roadId);
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player', ...(road ? { roadId: road.roadId } : {}) });
+        if (this.rollMiss()) {
+          this.emitMiss(player.id, 'spell', { type: card.type });
+          break;
+        }
+        const side = this.side(enemy.id);
+        for (const id of this.alivePlayerIds().filter((x) => this.side(x) === side)) {
+          const owner = this.players[id];
+          for (const soldier of owner.visibleSoldiers.filter((x) => road && x.roadId === road.roadId)) {
+            if (owner.soldiers.includes(soldier)) this.spellHit(owner, soldier, amount, card);
+          }
+        }
+        if (!this.players[side].eliminated) this.damageCastle(this.players[side], card.def.castleAmount, { kind: 'spell', type: card.type }, { ignoreArmor: true });
+        this.checkGameOver();
         break;
       }
 
@@ -2836,7 +3610,7 @@ export class Game {
           break;
         }
         for (const soldier of [...enemy.visibleSoldiers]) {
-          if (enemy.soldiers.includes(soldier)) this.damageSoldier(enemy, soldier, amount, 'spell');
+          if (enemy.soldiers.includes(soldier)) this.spellHit(enemy, soldier, amount, card);
         }
         this.requestDefense(
           { kind: 'castle', defenderId: enemy.id, attackerId: player.id, amount, from: 'spell', spellType: card.type },
@@ -2869,6 +3643,8 @@ export class Game {
       amount: def.amount,
       turns: def.turns,
       targetId: def.spirit === 'fire' ? target.id : null,
+      mode: def.spiritMode ?? 'min',
+      soldiersOnly: def.spiritScope === 'soldiers', // 土の精霊：兵士だけ軽くする（4陣営） // 風の精霊：min（速さの最低値）か add（速さに足す。4陣営）
       fresh: true, // 呼んだターンの終わりには減らさない
     };
     this.emit('spiritSummoned', {
@@ -2916,13 +3692,18 @@ export class Game {
   /** 兵士 soldier の今の速さ（風の精霊は、最低でも amount にする） */
   speedOf(player, soldier) {
     const sp = player.spirit;
-    return sp && sp.spirit === 'wind' ? Math.max(soldier.speed, sp.amount) : soldier.speed;
+    let speed = soldier.speed;
+    if (sp && sp.spirit === 'wind') speed = sp.mode === 'add' ? speed + sp.amount : Math.max(speed, sp.amount);
+    // 鈍足（泥の反応）：速さが下がる（最低1）
+    if (soldier.slowed) speed = Math.max(1, speed - soldier.slowed.amount);
+    return speed;
   }
 
   /** 土の精霊：owner が受けるダメージを軽くする（0のダメージはそのまま。1より小さくはならない） */
-  reduceDamage(owner, amount) {
+  reduceDamage(owner, amount, target = 'soldier') {
     const sp = owner.spirit;
     if (!sp || sp.spirit !== 'earth' || amount <= 0) return amount;
+    if (sp.soldiersOnly && target === 'castle') return amount; // 4陣営の土の精霊は城を軽くしない
     return Math.max(1, amount - sp.amount);
   }
 
@@ -2957,6 +3738,9 @@ export class Game {
         soldier.weapon = card.type;
         soldier.weaponBonus += def.attackBonus;
         soldier.element = def.element ?? null;
+        // 4陣営：射程+（重ねると足し算）と、当たった相手を休ませる（いちばん大きいもの）
+        soldier.rangeBonus += def.rangeBonus ?? 0;
+        soldier.freezeOnHit = Math.max(soldier.freezeOnHit, def.freezeOnHit ?? 0);
         this.emit('weaponEquipped', {
           playerId: player.id, soldierId: soldier.soldierId, type: card.type, attack: soldier.attack, element: soldier.element,
         });
@@ -2970,8 +3754,17 @@ export class Game {
     }
     if (def.effect === 'armorCastle') {
       // armorMax があれば永続で足し算（上限まで）。なければ重ならない（今より多いときだけ出せる）
+      const before = player.armor;
       player.armor = this.rules.armorMax ? Math.min(this.rules.armorMax, player.armor + def.amount) : def.amount;
-      this.emit('castleArmored', { playerId: player.id, armor: player.armor });
+      // 血の膜：増えたぶんが血の膜（削れると城HPが回復する）
+      if (def.bloodArmor) player.castle.bloodArmor = Math.min(player.armor, (player.castle.bloodArmor ?? 0) + Math.max(0, player.armor - before));
+      this.emit('castleArmored', { playerId: player.id, armor: player.armor, ...(def.bloodArmor ? { bloodArmor: player.castle.bloodArmor } : {}) });
+      return;
+    }
+    if (def.effect === 'guardCastle') {
+      // 身代わり（4陣営）：次に城が受ける攻撃を、この兵士が代わりに受ける（城に1体だけ。入れかわる）
+      player.castle.guard = target.soldierId;
+      this.emit('castleGuardSet', { playerId: player.id, soldierId: target.soldierId });
       return;
     }
   }
@@ -3033,6 +3826,9 @@ export class Game {
     const def = card.def;
     const defender = this.players[pending.defenderId];
     if (def.kind !== 'defense') return { targets: [], reason: '防御カードだけ出せます' };
+    // mpAllCards のときは、防御カードも MP を使う（ふつうのルールでは防御カードの MP は0）
+    const cost = this.mpCostOf(card);
+    if (cost > defender.mp) return { targets: [], reason: `MPが足りません（${cost}必要・あと${cost - defender.mp}）` };
     if (pending.kind === 'castle') {
       if (def.effect === 'reflectSpell') {
         return pending.from === 'spell'
@@ -3089,7 +3885,9 @@ export class Game {
     if (p.outcome === 'reflect') {
       // 魔法を、撃った人の城にそのまま返す（撃った人の城壁は先に受ける）
       this.emit('spellReflected', { defenderId: p.defenderId, attackerId: p.attackerId, amount: p.amount });
+      this.creditTo = p.defenderId; // 反射したダメージは、反射した人が与えたものとして数える
       this.damageCastle(this.players[p.attackerId], p.amount, { kind: 'spell', type: p.spellType });
+      this.creditTo = null;
     } else if (p.outcome === 'nullify') {
       this.emit('soldierDecoyed', { defenderId: p.defenderId, attackerId: p.attackerId, soldierId: p.soldierId });
       p.onNullify();
@@ -3130,6 +3928,8 @@ export class Game {
     const chosen = target ? targets.find((t) => Object.keys(target).every((k) => target[k] === undefined || t[k] === target[k])) : targets[0];
 
     defender.takeFromHand(cardId);
+    const mpCost = this.mpCostOf(card);
+    if (mpCost > 0) this.changeMp(defender, -mpCost, 'cast');
     this.throwAway(defender.id, card);
     this.emit('cardPlayed', { playerId: defender.id, cardId: card.cardId, type: card.type });
     if (card.def.effect === 'reflectSpell' || card.def.effect === 'nullifySoldier') {
@@ -3306,6 +4106,14 @@ export class Game {
       for (const st of base.soldiers) {
         const soldier = p.soldiers.find((x) => x.soldierId === st.soldierId);
         st.place = this.plaza ? this.placeOf(id, soldier) : null;
+        // 付着（reactions を渡したゲームだけ。通常モードの getState にはキーを足さない）
+        if (this.reactionDefs) st.attachments = soldier.attachments.map((a) => ({ ...a }));
+        // 4陣営：鈍足・目くらまし（反応で使うときだけキーを足す）・射程+
+        if (this.extState.slowBlind) {
+          st.statuses.slowed = soldier.slowed ? { ...soldier.slowed } : null;
+          st.statuses.blinded = soldier.blinded ? { ...soldier.blinded } : null;
+        }
+        if (soldier.rangeBonus > 0) st.rangeBonus = soldier.rangeBonus;
       }
       players[id] = {
         ...base,
@@ -3319,6 +4127,10 @@ export class Game {
         deckCount: own ? pile.deck.length : null,
         discardCount: own ? pile.discard.length : null,
         exhaustedCount: own ? pile.exhausted.length : null,
+        // 4陣営：身代わりの兵士・血の膜の残り・回復量減少（使うデータのときだけキーを足す）
+        ...(this.extState.guard ? { castleGuard: p.castle.guard ?? null } : {}),
+        ...(this.extState.blood ? { bloodArmor: p.castle.bloodArmor ?? 0 } : {}),
+        ...(this.extState.healCut ? { castleHealCut: p.castle.healCut ? { ...p.castle.healCut } : null } : {}),
         // 強化の今の値段（costs で買うたびに上がる強化があるので、人ごと）
         upgradeCosts: Object.fromEntries(Object.keys(this.upgradeDefs).map((u) => [u, this.upgradeCostOf(p, u)])),
       };
@@ -3330,6 +4142,8 @@ export class Game {
       maxMp: this.rules.maxMp,
       // MP を使うカードの種類 → 必要な MP（UI が手札に表示する）
       mpCosts: Object.fromEntries(Object.entries(this.cardDefs).map(([t, d]) => [t, this.mpCostOf({ def: d })]).filter(([, c]) => c > 0)),
+      // 属性の反応の定義（reactions を渡したゲームだけ。キーごと足さない）。CPU・画面が、ゲームの内部を読まずに反応を調べるため
+      ...(this.reactionDefs ? { reactions: structuredClone(this.reactionDefs) } : {}),
       layout: this.plaza ? 'plaza' : 'lanes',
       // チーム戦のとき { t1: { members, castleOwner, size } … }（チームの順）。チーム戦でなければ null
       teams: this.teamOrder
@@ -3341,6 +4155,10 @@ export class Game {
       firstPlayer: this.firstPlayer,
       mulligan: this.phase === 'mulligan' ? { pending: this.playerOrder.filter((id) => this.mulliganPending.has(id)) } : null,
       round: this.round,
+      // 崩壊の刻（使わないルールなら null）：予告したか・始まったか・始まった周回（まだなら null）
+      collapse: this.rules.collapseStartRound > 0
+        ? { announced: this.collapseAnnounced, active: this.collapseActive, round: this.collapseActive ? this.rules.collapseStartRound : null }
+        : null,
       weather: this.weather ? { type: this.weather.type, name: this.weatherDef().name, icon: this.weatherDef().icon ?? null, description: this.weatherDef().description ?? null, roundsLeft: this.weather.roundsLeft } : null,
       weatherEnabled: Boolean(this.weatherDefs),
       // ステージ（stages を渡さなければ null）

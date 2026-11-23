@@ -1,0 +1,100 @@
+{
+  "report": [
+    {
+      "width": 375,
+      "height": 812,
+      "overflow": false,
+      "start": {
+        "top": 622,
+        "bottom": 680,
+        "height": 58
+      },
+      "nav": {
+        "top": 740,
+        "bottom": 812
+      },
+      "startClickable": true,
+      "smallTargets": [],
+      "orientation": "horizontal",
+      "normalFlows": true,
+      "keyboard": true,
+      "nativeSheetFocus": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "start": {
+        "top": 654,
+        "bottom": 712,
+        "height": 58
+      },
+      "nav": {
+        "top": 772,
+        "bottom": 844
+      },
+      "startClickable": true,
+      "smallTargets": [],
+      "orientation": "horizontal",
+      "normalFlows": true,
+      "keyboard": true,
+      "nativeSheetFocus": true
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "overflow": false,
+      "start": {
+        "top": 742,
+        "bottom": 800,
+        "height": 58
+      },
+      "nav": {
+        "top": 860,
+        "bottom": 932
+      },
+      "startClickable": true,
+      "smallTargets": [],
+      "orientation": "horizontal",
+      "normalFlows": true,
+      "keyboard": true,
+      "nativeSheetFocus": true
+    },
+    {
+      "width": 1280,
+      "height": 800,
+      "overflow": false,
+      "start": {
+        "top": 539,
+        "bottom": 603,
+        "height": 64
+      },
+      "nav": {
+        "top": 142,
+        "bottom": 538
+      },
+      "startClickable": true,
+      "smallTargets": [],
+      "orientation": "vertical",
+      "normalFlows": true,
+      "keyboard": true,
+      "nativeSheetFocus": true
+    }
+  ],
+  "factionFlow": {
+    "id": "p1",
+    "deckId": "dragon",
+    "hand": [
+      "fac_dragon_flame_whelp",
+      "fac_dragon_thunder_spear",
+      "fac_dragon_recruit",
+      "fac_dragon_fang_sword",
+      "fac_dragon_whelp_scale"
+    ],
+    "opponents": [
+      "kingdom"
+    ]
+  },
+  "selectedDeckMatches": true,
+  "errors": []
+}

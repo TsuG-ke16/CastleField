@@ -1,0 +1,11 @@
+{
+  "_note": "クラシックモードだけの属性の付着と反応（数値はすべて仮）。属性つきの武器を持つ兵士の攻撃・element のある魔法が兵士に当たると、その属性が付着する（attachTurns 回、持ち主の進軍が終わるたびに1減る）。付いている属性（武器の属性＋付着）と、当たった攻撃の属性が reactions の elements の組になると反応する（2つとも消えて damage の追加ダメージ）。chaos は混沌反応：攻撃が当たったあとの属性（武器の属性＋付着＋当たった攻撃の属性）に混沌が入っていて、種類が minElements 以上なら（当たったのは混沌でなくてもよい）、付いている属性が全部消えて damagePerElement × 種類の数。2種類のときは表の反応を見る。randomAttach は、rules.randomAttachTurnStart が true のとき、自分のターンの始めに敵の兵士1体に付くランダムな属性が残る回数（turns。省略すると attachTurns）",
+  "attachTurns": 5,
+  "randomAttach": { "turns": 1 },
+  "reactions": {
+    "annihilation": { "name": "対消滅", "elements": ["light", "dark"], "damage": 8 },
+    "blackIce": { "name": "黒氷", "elements": ["dark", "ice"], "damage": 3, "frozenTurns": 1 },
+    "shatter": { "name": "砕氷", "elements": ["ice", "chaos"], "damage": 2, "frozenBonus": 6 }
+  },
+  "chaos": { "element": "chaos", "name": "混沌反応", "damagePerElement": 4, "minElements": 3 }
+}

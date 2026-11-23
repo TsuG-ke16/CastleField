@@ -76,6 +76,7 @@ export class Animations {
     this.skipping = true;
     sound.enabled = false; // 飛ばしているあいだは鳴らさない
     this.el.app.classList.add('skipping');
+    this.renderer?.fieldGL?.skipAnimations?.();
     for (const a of [...this.running]) {
       try { a.finish(); } catch { a.cancel(); }
     }
@@ -548,6 +549,7 @@ export class Animations {
 
   /** 城に着いた兵士が、城をなぐる（このあと城のダメージ） */
   castleStrike(soldierId, castle) {
+    this.renderer.fieldGL?.playUnitAction(soldierId, 'attack');
     const el = this.renderer.soldierEl(soldierId);
     if (!el || !castle || this.skipping) return undefined;
     const a = this.centerOf(el);
@@ -564,10 +566,18 @@ export class Animations {
   }
 
   soldiersClashed({ attacker, defender }) {
+    this.renderer.fieldGL?.triggerEffect('clash', {
+      attackerId: attacker?.soldierId,
+      defenderId: defender?.soldierId,
+      soldierId: defender?.soldierId ?? attacker?.soldierId,
+    });
     return this.clashBetween(this.renderer.soldierEl(attacker?.soldierId), this.renderer.soldierEl(defender?.soldierId));
   }
 
   monsterClashed({ attacker, monsterId }) {
+    const m = this.renderer.monster(monsterId);
+    const to = m ? this.renderer.fieldGL?.cellWorldPos(this.renderer.laneOf(m.roadId), this.renderer.rowOfSquare(m.square)) : undefined;
+    this.renderer.fieldGL?.triggerEffect('clash', { attackerId: attacker?.soldierId, to, color: '#ff6644' });
     return this.clashBetween(this.renderer.soldierEl(attacker?.soldierId), this.renderer.monsterEl(monsterId));
   }
 
@@ -627,10 +637,15 @@ export class Animations {
   }
 
   /** 溶岩の噴火：その道のマスに炎を噴き上げる（このあと兵士の soldierDamaged・やけど） */
-  async stageEruption({ roadId }) {
+  async stageEruption({ roadId, square }) {
     if (this.skipping) return;
     sound.play('fire');
     this.screenShake('spell', 8);
+    if (this.renderer.fieldGL) {
+      const lane = this.renderer.laneOf(roadId);
+      const row = square !== undefined ? this.renderer.rowOfSquare(square) : Math.floor(this.renderer.laneLength / 2);
+      this.renderer.fieldGL.triggerEffect('eruption', { to: this.renderer.fieldGL.cellWorldPos(lane, row) });
+    }
     this.mist(null, 'rgba(255, 96, 32, 0.55)', roadId === 'plaza' ? undefined : roadId);
     await this.banner('🌋 噴火！', UI_CONFIG.timing.round * 0.8, 'small');
   }
@@ -1229,6 +1244,7 @@ export class Animations {
         });
         if (dir?.weak) this.number(el, '弱点！', { size: small.size * 0.85, duration: cfg.numberDuration, kind: 'weak', dy: -30 });
         if (lethal) this.koDir.set(el, poison ? { melt: true } : dir ?? { x: 0, y: 0 });
+        this.renderer.fieldGL?.playUnitAction(h.soldierId, 'hit', { power: p, poison });
         reacts.push({ el, dir, power: p, cause: h.cause });
       }
       if (blocked > 0) {
@@ -1250,6 +1266,19 @@ export class Animations {
   /** 弓兵・魔法使いが撃つ：ねらう（ため）→ 放つ（反動）→ 飛ぶ → 当たる */
   async soldierShot({ playerId, soldierId, role, target, amount }, model) {
     this.cosmetics?.styleFx(this.el.fx, playerId);
+    if (this.renderer.fieldGL) {
+      const sEntry = this.renderer.fieldGL.soldierEntries.get(soldierId);
+      const from = sEntry?.curPos;
+      let to;
+      if (target.kind === 'soldier') to = this.renderer.fieldGL.soldierEntries.get(target.soldierId)?.curPos;
+      else if (target.kind === 'monster') {
+        const m = this.renderer.monster(target.monsterId);
+        if (m) to = this.renderer.fieldGL.cellWorldPos(this.renderer.laneOf(m.roadId), this.renderer.rowOfSquare(m.square));
+      } else if (target.kind === 'castle') {
+        to = this.renderer.fieldGL.castleWorldPos(this.renderer.sideOf(target.playerId));
+      }
+      this.renderer.fieldGL.triggerEffect('shot', { attackerId: soldierId, from, to, color: role === 'mage' ? '#66d8ff' : '#ffe066', power: amount });
+    }
     const from = this.renderer.soldierEl(soldierId);
     const to = target.kind === 'soldier' ? this.renderer.soldierEl(target.soldierId)
       : target.kind === 'monster' ? this.renderer.monsterEl(target.monsterId) : this.renderer.castleEl(target.playerId)?.querySelector('.castle-pic');
@@ -1338,6 +1367,12 @@ export class Animations {
       const pl = model.players[d.playerId];
       pl.soldiers = pl.soldiers.filter(x => x.soldierId !== d.soldierId);
       const el = this.renderer.soldierEl(d.soldierId);
+      if (d.reason !== 'reachedCastle') {
+        this.renderer.fieldGL?.playUnitAction(d.soldierId, 'defeat', {
+          reason: d.reason,
+          poison: Boolean(el && this.koDir.get(el)?.melt),
+        });
+      }
       if (el && d.reason === 'returned') {
         const a = this.centerOf(el), b = this.centerOf(this.renderer.castleEl(d.playerId));
         const scale = this.renderer.isPlaza ? this.renderer.plazaScale || 1 : 1;
@@ -1386,6 +1421,30 @@ export class Animations {
   async spellCast({ playerId, type, target, targetKind, roadId }) {
     this.cosmetics?.styleFx(this.el.fx, playerId, type); // 撃った人の攻撃エフェクトの色（魔法ごとのスキンが先）
     const def = this.cards[type] ?? {};
+    // 3D 魔法エフェクトを発火
+    if (this.renderer.fieldGL) {
+      const fromSide = this.renderer.sideOf(playerId);
+      const enemyId = typeof target === 'string' ? target : this.renderer.opponentOf(playerId);
+      const toSide = this.renderer.sideOf(enemyId);
+      const lane = roadId ? this.renderer.laneOf(roadId) : Math.floor(this.renderer.laneCount / 2);
+      const laneMid = this.renderer.fieldGL.cellWorldPos(lane, Math.floor(this.renderer.laneLength / 2));
+      const power = def.amount ?? 6;
+      if (targetKind === 'monster') {
+        const m = this.renderer.monster(target);
+        const to = m ? this.renderer.fieldGL.cellWorldPos(this.renderer.laneOf(m.roadId), this.renderer.rowOfSquare(m.square)) : laneMid;
+        this.renderer.fieldGL.triggerEffect('fire', { fromSide, to, power });
+      } else if (def.effect === 'damageEnemyCastle' || def.effect === 'ignitionBurst' || def.effect === 'armorBlast') {
+        this.renderer.fieldGL.triggerEffect('fire', { fromSide, side: toSide, power: def.effect === 'ignitionBurst' ? Math.max(12, power) : power });
+      } else if (def.effect === 'damageEnemySoldiers' || def.effect === 'chainBlast') {
+        this.renderer.fieldGL.triggerEffect('lightning', { to: laneMid, power });
+      } else if (/freeze|frost|glacier|ice/i.test(String(def.effect) + String(type))) {
+        this.renderer.fieldGL.triggerEffect('ice', { to: laneMid, power });
+      } else if (/poison|toxic|plague|venom/i.test(String(def.effect) + String(type))) {
+        this.renderer.fieldGL.triggerEffect('poison', { to: laneMid, power });
+      } else if (/push|gale|wind/i.test(String(def.effect) + String(type))) {
+        this.renderer.fieldGL.triggerEffect('wind', { to: laneMid, power });
+      }
+    }
     // 魔法を使うと、画面が揺れる（強い魔法ほど大きく）
     this.screenShake('spell', def.amount ?? 4);
     if (targetKind === 'monster') {
@@ -1633,6 +1692,11 @@ export class Animations {
     const pl = model.players[playerId];
     // 城に着いた兵士は、なぐってからダメージが入る
     if (source?.kind === 'soldier') await this.castleStrike(source.soldierId, this.renderer.castleEl(playerId));
+    this.renderer.fieldGL?.triggerEffect('castleHit', {
+      side: this.renderer.sideOf(playerId),
+      color: blocked > 0 ? '#55d8ff' : '#ff7a24',
+      power: Math.max(0, amount - blocked),
+    });
     this.patchCastle(model, playerId, {castleHp:hp});
     if (blocked > 0) {
       this.patchCastle(model, playerId, {armor:Math.max(0,(pl.armor ?? 0)-blocked)});
@@ -1699,6 +1763,7 @@ export class Animations {
 
   async castleHealed({ playerId, amount, hp }, model) {
     this.patchCastle(model, playerId, {castleHp:hp});
+    this.renderer.fieldGL?.triggerEffect('heal', { side: this.renderer.sideOf(playerId) });
     const castle = this.renderer.castleEl(playerId);
     this.renderer.setCastleHp(playerId, hp);
     if (this.skipping) return;
@@ -1897,6 +1962,7 @@ export class Animations {
 
   async monsterAttackedCastle({ monsterId, playerId, amount, hp }, model) {
     this.patchCastle(model, playerId, {castleHp:hp});
+    this.renderer.fieldGL?.playUnitAction(monsterId, 'attack', { isMonster: true });
     const m = this.modelMonster(model, monsterId);
     if (m && m.castleAttack != null) { m.castleAttack += this.rules.monsterAttackGrowth ?? 0; this.renderer.updateMonster(monsterId, { castleAttack: m.castleAttack }); }
     const mEl = this.renderer.monsterEl(monsterId);
@@ -1936,6 +2002,7 @@ export class Animations {
     const dir = this.hitDir.get(el) ?? null;
     this.hitDir.delete(el);
     const power = Math.min(cfg.powerMax, cfg.powerBase + amount * cfg.powerPerDamage);
+    this.renderer.fieldGL?.playUnitAction(monsterId, 'hit', { isMonster: true, power });
     el.classList.add('hit');
     sound.play('smallHit');
     this.screenShake('monster', power);

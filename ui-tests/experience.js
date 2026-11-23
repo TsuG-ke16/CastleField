@@ -45,7 +45,7 @@ async function walkThrough() {
   await toTitle(page);
   await picture(page, 'title');
 
-  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home .home-mode[data-mode="local"]').click();
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await page.locator('#home .home-mode[data-mode="local"]').click();
   await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="start"]').press('Enter');
   await expectFocus(page, '#local-start');
   await page.locator('.local-options summary').click();
@@ -127,7 +127,7 @@ async function roomAndCompact() {
   await page.goto(base.href);
   await toTitle(page);
   await picture(page, 'title');
-  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home .home-mode[data-mode="online"]').click();
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await page.locator('#home .home-mode[data-mode="online"]').click();
   await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="start"]').click();
   await expectFocus(page, '#title-name');
   await page.locator('#title-name').fill('案内を確認');

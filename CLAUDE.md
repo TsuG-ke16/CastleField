@@ -134,6 +134,7 @@ data/
   weather.json     … 天候（晴れ・雨・大雨・霧・嵐・砂嵐・コインの雨）
   stages.json      … ステージ（草原・溶岩・氷・古代遺跡・闇の森・砂漠）
   stamps.json      … チャットのスタンプの一覧
+  factions/        … 4陣営モード（factions.json・cards/<陣営>.json・rules.json・elements.json・reactions.json。「4陣営モード」）
 ui-tests/          … 画面のスモークテスト（node ui-tests/smoke.js。Playwright は環境にあるものを使う。UI担当）
 docs/              … 設計メモ。archive/ は終わった依頼（Codex 向けのプロンプトなど）
 tests/             … 自動テスト（node --test）。Node.js だけで動く
@@ -147,6 +148,7 @@ tests/             … 自動テスト（node --test）。Node.js だけで動�
     multi.js       … 2人・4人・8人で、道の形（広場・輪）と勝利条件を比べる
     castles.js     … 城の種類・デッキの勝率
     teams.js       … チーム戦の分け方ごとの勝率と長さ
+    factions.js    … 4陣営モードの陣営どうしの勝率と長さ
 server/            … オンライン対戦のサーバー（Node.js だけ。ロジック担当）
   server.js        … HTTP（合言葉で入る・操作を受ける・SSE で送る）。node server/server.js で起動
   rooms.js         … 部屋と席。Game を動かし、プレイヤーごとに隠して送る
@@ -191,7 +193,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
 - 兵士ID（soldierId）：場に出た兵士につく一意のID。例：`"s03"`
 - カードIDは山札をシャッフルしたあとの順に振る。IDから種類は分からない
 - 道ID（roadId）：道のID。2人のIDを席順で `-` でつなぐ（3人以上の広場のときは、2人ずつの組の「通り道」。STEP 5 の「真ん中の広場を通る道」）。例：`"p1-p2"`。`rules.laneCount`（レーンの数）が2以上のときは、同じ2人の間に道が `laneCount` 本でき、`"p1-p2#1"`、`"p1-p2#2"` … のように番号がつく（1本のときは番号なし）
-- 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ playerId, roadId }`（レーンが2本以上のときの、兵士を出す道と、`scope: "lane"` の魔法で狙う道）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
+- 対象（target）：カードを出す先。`{ playerId }`（兵士は送り込む相手、攻撃の魔法は攻める相手、ヒール・城壁は自分）、`{ playerId, roadId }`（レーンが2本以上のときの、兵士を出す道と、`scope: "lane"` の魔法で狙う道。`castleSpellHitsFront` のときの城への魔法も）、`{ soldierId }`（武器・盾：道の上の自分の兵士）、`{ monsterId }`（ファイアボールで魔物を狙う）
 
 ### UIから呼ぶもの
 
@@ -239,6 +241,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   deckMode: "shared",          // "shared"（全員共通の山札）| "own"（1人1つ）
   playerOrder: ["p1", "p2"],   // 席順（手番の順）。p1〜p8
   round: 2,                    // 周回（席順の最初の人のターンが始まるたびに1増える。start() の前は 0）
+  collapse: null,              // 崩壊の刻（rules.collapseStartRound が 0 か省略なら null）。使うときは { announced, active, round }（round は始まった周回。まだなら null）
   monsters: [{ monsterId: "m01", type: "slime", roadId: "p1-p2", square: 1, hp: 4, maxHp: 4, attack: 1, element: "water", attackIn: 3, reward: 2, castleAttack: 2 }],
   roads: [{ roadId: "p1-p2#1", players: ["p1", "p2"], length: 3, lane: 0 }, /* laneCount 本ぶん */],  // 道。length はいつも laneLength。lane は同じ2人の間の何本目か（0から）
   turn: 3,                     // 通算ターン数（1から）
@@ -269,7 +272,8 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
         weapon: "waterSpear",  // 持っている武器のカード種類か null
         element: "water",      // "fire" | "water" | "wind" | "earth" | null
         shield: 0,             // 盾の残り
-        statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */ }
+        statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */, burn: null /* やけど */, weakened: null /* 呪い { amount, turns } か null */ },
+        attachments: [{ element: "light", turns: 5 }]  // 付着（reactions を渡したゲームだけ。渡さなければこのキー自体がない）
       }]
     },
     p2: { /* 同じ形 */ }
@@ -284,6 +288,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   - 道の `players[0]` の兵士：道のマス番号 = `position`
   - 道の `players[1]` の兵士：道のマス番号 = `laneLength - 1 - position`
 - 兵士の `targetId` は、その兵士が向かっている相手（道の向こうの人）
+- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）。くわしくは「4陣営モード」
 
 ### Gameが出すイベント
 
@@ -303,20 +308,20 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `cardsFused` | `{ playerId, cardIds: [a, b], cardId, from, to }` … 手札の2枚（`from` の種類）が、1枚（`to` の種類）になった。オンラインでは本人以外に `{ playerId }` だけ送る |
 | `discardRequired` | `{ playerId, count }` … 捨てる必要がある枚数 |
 | `cardDiscarded` | `{ playerId, cardIds }` |
-| `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack }` … `hp` / `attack` は出した時点の値 |
+| `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack, revived? }` … `hp` / `attack` は出した時点の値。`revived: true` は蘇生（`reviveFallen`）で生き返った兵士 |
 | `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause?, slipped? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい）。`slipped: true` は氷のステージで滑って1マス余分に進んだとき |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
-| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
+| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）/ `"reaction"`（属性の反応の追加ダメージ。クラシック）/ `"guard"`（身代わりとして城への攻撃を受けた。4陣営）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
 | `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
-| `spellCast` | `{ playerId, type, target, targetKind, roadId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）のときだけ入る。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
-| `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }` |
-| `castleHealed` | `{ playerId, amount, hp }` … `amount` は実際に増えた量（上限で止まったぶんは含まない） |
+| `spellCast` | `{ playerId, type, target, targetKind, roadId?, soldierId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）と、`castleSpellHitsFront` の城への魔法（道が決まるとき）に入る。`soldierId` は、城への魔法が先頭の兵士に当たるとき（`castleSpellHitsFront`）とチェーン・ブラストのときだけ入る（このあと `soldierDamaged`（`cause: "spell"`））。`element` は、ランダム属性ダメージ（`randomElementDamage`）で選ばれた属性（`"fire"` / `"water"` / `"wind"` / `"earth"`）。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
+| `castleDamaged` | `{ playerId, amount, blocked, hp, source }` … `playerId` は城の持ち主。崩壊の刻のダメージは `source: { kind: "collapse" }`。`amount` は与えようとしたダメージ（兵士は攻撃力 × `soldierCastleDamageMultiplier`、魔法は値そのまま）（`hp` は0未満にならない）。`blocked` は城壁が受けた量（`hp` は城壁で減らしたあとの値）。`source` は `{ kind: "soldier", soldierId }` か `{ kind: "spell", type }`（4陣営：反応の城へのダメージは `{ kind: "reaction", reaction }`）。`ignoreArmor: true` は城壁を通さなかったとき（4陣営の火炎の吐息。`blocked` は0） |
+| `castleHealed` | `{ playerId, amount, hp, source? }` … `amount` は実際に増えた量（上限で止まったぶんは含まない。回復量減少のときは減らしたあと）。`source: { kind: "bloodArmor" }` は血の膜で回復したとき（4陣営） |
 | `weaponEquipped` | `{ playerId, soldierId, type, attack, element }` … 武器を持たせた。`attack` は持たせたあとの攻撃力（重ねると足し算。`element` は最後の武器の属性に上書き） |
 | `shieldAdded` | `{ playerId, soldierId, amount, shield }` … `shield` は足したあとの盾 |
-| `castleArmored` | `{ playerId, armor }` … 城壁を置いた |
+| `castleArmored` | `{ playerId, armor, bloodArmor? }` … 城壁を置いた。`bloodArmor` は血の膜の城壁を置いたときの、血の膜の残り（4陣営） |
 | `armorExpired` | `{ playerId }` … 城壁が消えた（その人のターンの始め） |
-| `statusApplied` | `{ playerId, soldierId, status, turns }` … `status` は `"poison"` か `"frozen"` |
+| `statusApplied` | `{ playerId, soldierId, status, turns }` … `status` は `"poison"` / `"frozen"` / `"burn"` / `"weakened"`（呪い。`amount` も付く）/ `"slowed"`（鈍足。`amount` も付く。4陣営）/ `"blinded"`（目くらまし。`chance` も付く。4陣営） |
 | `statusCleared` | `{ playerId, soldierId, status }` |
 | `roundStarted` | `{ round }` … 周回の始め（`turnStarted` のすぐあと） |
 | `monsterAppeared` | `{ monsterId, type, roadId, square, hp, attack, element }` |
@@ -339,13 +344,24 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `spiritSummoned` | `{ playerId, type, spirit, amount, turns, targetId }` … 精霊を呼んだ。`spirit` は `"fire"` / `"water"` / `"wind"` / `"earth"`。`targetId` は火の精霊が攻める相手（ほかは `null`） |
 | `spiritTriggered` | `{ playerId, type, spirit, amount, targetId? }` … 火・水の精霊が効いた（このあと `castleDamaged`（`source: { kind: "spirit", type }`）／`castleHealed`） |
 | `spiritEnded` | `{ playerId, type, reason }` … `reason` は `"expired"`（終わった）か `"replaced"`（ほかの精霊に入れ替わった） |
-| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
+| `mpChanged` | `{ playerId, delta, mp, reason }` … `reason` は `"cast"`（魔法・精霊で使った。`mpAllCards` なら兵士・武器・防御なども）／`"turn"`（ターンの始めの自然回復 `mpPerTurn`）／`"stage"`（古代遺跡）／`"card"`（マナ回復）／`"drained"`（MPドレインで奪われた）／`"drain"`（MPドレインで奪った）。上限や0で止まったぶんは `delta` に含まない |
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
-| `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参） |
+| `collapseAnnounced` | `{ round, startRound }` … 崩壊の刻の予告（`rules.collapseAnnounceRound` の周回の始め。`roundStarted` のあと） |
+| `collapseStarted` | `{ round }` … 崩壊の刻が始まった（`rules.collapseStartRound` の周回の始め）。このあと全員の城の `castleDamaged`（`source: { kind: "collapse" }`） |
+| `elementAttached` | `{ playerId, soldierId, element, turns, source? }` … 兵士に属性が付着した（同じ属性がまた付いて残りが戻ったときも出る）。`source: "turnStart"` は自分のターンの始めのランダム付着（「クラシックの属性：ターン開始時のランダム付着」）。`reactions` を渡したゲームだけ（「クラシックの付着と反応」） |
+| `elementCleared` | `{ playerId, soldierId, element, reason, weapon? }` … 兵士の属性が消えた。`reason` は `"reaction"`（反応で使われた）か `"expired"`（付着の残りが0）か `"purified"`（4陣営の浄化で消された）。`weapon: true` は武器の属性が反応で外れたとき（武器の攻撃ボーナスは残る。生まれつきの属性が消えたときは付かない） |
+| `reactionTriggered` | `{ reaction, name, soldierId, playerId, elements, damage, consumed }` … 属性の反応が起きた。`reaction` は反応のID（`"chaos"` は混沌反応）、`elements` は反応した属性（当たった攻撃の属性も含む）、`consumed` は兵士から消える属性、`damage` は追加ダメージ（砕氷の凍結中の上乗せ込み）。このあと `elementCleared` …（`"reaction"`）→ 追加ダメージの `soldierDamaged`（`cause: "reaction"`） |
+| `soldierHealed` | `{ playerId, soldierId, amount, hp }` … 兵士が回復した（4陣営の竜血の雫・生命の雫） |
+| `castleGuardSet` | `{ playerId, soldierId }` … 身代わり（`guardCastle`）を置いた |
+| `castleGuarded` | `{ playerId, soldierId, guardOwnerId, amount }` … 城への攻撃を身代わりの兵士が受けた。このあと `soldierDamaged`（`cause: "guard"`） |
+| `shieldBroken` | `{ playerId, soldierId, amount }` … 溶岩の反応で盾が全部壊れた |
+| `castleHealCut` | `{ playerId, ratio, turns }` … 深淵侵食で城の回復量が減る |
+| `castleHealCutEnded` | `{ playerId }` … 回復量減少が終わった |
+| `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参）/ `"collapse"`（崩壊の刻のダメージで決着） |
 
 #### イベントの順番
 
-- ターンの始め：`turnStarted` → ドロー → 進軍
+- ターンの始め：`turnStarted` → ドロー → 進軍（`randomAttachTurnStart` のゲームでは、コイン・MP の回復のあと、ドローの前に `elementAttached`（`source: "turnStart"`））
   - ドロー：山札が途中で尽きたら `deckShuffled` → 残りを引く。`cardDrawn` は引いたぶんを1回にまとめて出す。1枚も引かなければ `cardDrawn` は出さない
   - 進軍：兵士は出した順に1体ずつ動く。城に着いた兵士は `soldierMoved` → `castleDamaged` → `soldierDestroyed`（`"reachedCastle"`）の順に出す
   - 城に着いた兵士の `soldierMoved.to` は `laneLength` にそろえる（`laneLength` 以上に進んでも `laneLength`）
@@ -418,6 +434,13 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - `advanceAfterWin`：`true` なら、戦いで相手だけが消えたとき、残りの歩数で進み続ける（`false` ならそのターンはその場で止まる）。省略すると `false`
 - `soldierCastleDamageMultiplier`：城に着いた兵士が与えるダメージ ＝ 攻撃力 × この値（1以上の整数）。省略すると 1
 - `firstTurnDraw`：先攻の最初のターンに引く枚数（2ターン目以降と後攻は `drawPerTurn`）
+- `castleSpellHitsFront`：`true` なら、城への魔法（`damageEnemyCastle`）は選んだレーンの相手の先頭の兵士に当たる（下の「クラシックの戦闘ルール」）。省略すると `false`（今までどおり城に当たる）
+- `collapseStartRound` / `collapseAnnounceRound` / `collapseDamage`：崩壊の刻（下の「クラシックの戦闘ルール」）。`collapseStartRound` が 0 か省略なら使わない。`collapseAnnounceRound` は 0 なら予告しない（`collapseStartRound` 以下）。`collapseDamage` は1以上（省略すると1）
+- `mpAllCards`：`true` なら、兵士・武器・防御・回復などのカードも、カードの `mpCost`（書かなければ0）だけ MP を使う（下の「クラシックの道具」）。省略すると `false`（今までどおり、攻撃の魔法と精霊だけ）
+- `mpPerTurn`：自分のターンの始めに増える MP（0以上の整数。省略すると0）。`secondPlayerMp`：後攻（先攻以外の人）の最初の MP に足す量（0以上の整数。省略すると0。チーム戦では使わない）
+- 魔法の `effect` に `singleDamage`（`amount`。敵兵士1体にダメージ）と `weakenAttack`（`amount`・`turns`。呪い：敵兵士1体の攻撃力を下げる）が増えた（下の「クラシックの道具」）
+- 魔法の `effect` に `reviveFallen`（`amount`：0より大きく1以下の数。蘇生）と `randomElementDamage`（`amount`。ランダムな属性で敵兵士1体にダメージ）が増えた（下の「クラシックの道具：蘇生・ランダム属性ダメージ」）
+- カードの `element` は武器と魔法に書ける（魔法の属性は、`reactions` を渡したゲームで兵士に当たったときの付着・反応だけに使う）。使える属性は `new Game({ elements })` の表のキー（渡さなければ fire / water / wind / earth。下の「クラシックの属性」）
 - `exhaust`：`true` のカードは使い切り。使うと使い切り置き場へ行き、山札に戻らない。省略すると `false`。手札の上限で捨てたときは、ふつうに捨て札置き場へ行く（山札に戻る）
 - カードの説明文は UI が `kind` / `effect` と数値から組み立てる。カードに `description` を書けば、そちらを優先する（Game は `description` を使わない）
 
@@ -1363,6 +1386,326 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ### まだ作っていないもの
 - **ワールドレイド**（ボスごとに専用ステージ：ドラゴン＝溶岩・古代竜＝古代遺跡・魔王＝闇の魔城）：遊び方（だれとだれが、どこで、何人で、何を倒すか）がまだ決まっていないので、人間に確認してから作る
+
+## クラシックの戦闘ルール（PR2a。人間の指示。仮）
+
+どちらも `rules` のキーで切り替える（書かなければ今までどおり。通常モードの `data/rules.json` には書いていない）。クラシック（`data/classic/rules.json`）だけで使う。
+
+### 城への魔法が先頭の兵士に当たる（`rules.castleSpellHitsFront: true`）
+- 対象：`effect: "damageEnemyCastle"` のカード。**対象は `{ playerId, roadId }`**（相手と、レーンの道）。2人の間の道が1本なら `{ playerId }`（省略できる）。魔物を狙う `{ monsterId }` は今までどおり
+- 当たる先：選んだ道の、相手の陣地の見える兵士のうち、**撃った人の城にいちばん近い兵士**（`position` がいちばん大きい。同じなら先に出された方）。忍者は見えないので数えない。いなければ、今までどおり相手の城に当たる（城壁・防御・魔法の塔のボーナスも今までどおり）
+- 兵士に当たるとき：ダメージはカードの `amount`（ステージの魔法の増加は乗る。**魔法の塔の `castleSpellBonus` は城への分なので乗せない**）。盾が先に受け、HPが0以下なら倒れる。霧で外れることがある。防御はサンダーと同じ（`defenseRequested` の `kind: "soldiers"`。盾だけ。反射・身代わりは出せない）。`defenderId` は当たる兵士の持ち主
+- イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`）→（防御）→ `soldierDamaged`（`cause: "spell"`）→（0なら）`soldierDestroyed`（`"killed"`）。城に当たるときは `spellCast`（道が決まれば `roadId`）→ `castleDamaged`
+- CPU（`js/game/strategies.js`）：道を選ぶとき、相手の兵士がいちばん先頭まで来ている道へ（いなければ最初の道）
+- クラシックのカード：聖なる火球・闇の火球（PR2b で足した）
+
+### 崩壊の刻（`rules.collapseStartRound` など）
+- `collapseAnnounceRound`（クラシック：50）の周回の始めに予告（`collapseAnnounced`）。`collapseStartRound`（クラシック：60）の周回から崩壊（`collapseStarted`）
+- 崩壊中は、周回の始め（天候・噴火のあと、魔物の城への攻撃の前）に、**残っている全員の城に同じダメージ**：`collapseDamage` × (始まってからの周回の数。始まった周回が1)＝ 1, 2, 3 …。城壁が先に受け、残りが城HP（土の精霊・防御カードでは防げない）。`castleDamaged`（`source: { kind: "collapse" }`）
+- 城が落ちた人は負け。**同時に2つ以上落ちたら、ここまでに相手の城に与えたダメージの合計が大きい人の勝ち**（同じなら席順が後ろ）。城が残った人がいれば、その中で同じ決め方（2人なら残った人）。`gameOver` の `reason` は `"collapse"`。バトルロイヤル（`lastStanding`）で城が2つ以上残るなら、落ちた人だけ抜けて続ける
+- 「相手の城に与えたダメージ」：`castleDamaged` で相手の陣地の城HPに実際に入った量（`amount − blocked`）。兵士はその持ち主、反射は反射した人、ほかは手番の人に数える。自分で払うコスト（`sacrifice` / `self`）・崩壊・降参・天候・城の毒・魔物の城への攻撃は数えない。崩壊の刻を使うルールのときだけ数える
+- クラシックは周回の上限なし（`maxRounds: 0`）。崩壊の刻で必ず終わる
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着、平均126手番（周回の上限60のときは115手番・上限で終わる83%）、崩壊の刻で決着した試合49%
+- 画面（UI担当にお願いしたいこと）：崩壊の予告・開始の帯、`collapse` のバッジ、`castleDamaged` の `source.kind: "collapse"` の演出、`gameOver` の `reason: "collapse"` の表示。城への魔法でレーンを選ぶ操作（`getTargets` が `{ playerId, roadId }` を返す）と、`spellCast.soldierId` があるときに兵士へ当てる演出
+
+## クラシックの道具：MP・1体への魔法・呪い（PR2b。人間の指示。仮）
+
+どれも `rules` のキー・カードの `effect` で切り替える（書かなければ今までどおり。通常モードの `data/rules.json`・`data/cards.json` には書いていない）。
+
+### MP をすべてのカードに（`rules.mpAllCards: true`）
+- 兵士・武器・防御・回復なども、カードの `mpCost` だけ MP を使う（書かなければ0）。攻撃の魔法・精霊は今までどおり（`mpCost` か、レアリティの `mpCost`）。足りなければ出せない（理由は「MPが足りません（○必要・あと○）」）
+- 魔物のカード・サイコロ（攻撃サイコロ以外）・マナ回復のカードは、今までどおり MP を使わない
+- 攻撃を受けたときの防御カード（`defend()`）も MP を使う。MP が足りない防御カードは、出せるカードに数えない（ほかに出せるカードがなければ防御を聞かない）
+- `getState().mpCosts` に、MP を使う兵士・武器・防御なども入る
+- **MP の自然回復**（`rules.mpPerTurn`）：自分のターンの始め（コインのあと、ドローの前）に増える（`mpChanged` の `reason: "turn"`。上限まで）
+- **後攻のマナ**（`rules.secondPlayerMp`）：先攻以外の人の最初の MP がこれだけ多い（上限まで。イベントは出さない）
+- クラシック（仮）：`initialMp` 10・`maxMp` 20・`mpPerTurn` 3・`secondPlayerMp` 2（後攻の優遇は少し弱めた：城壁5→3・MP3→2。手札+1はそのまま）。`data/classic/cards.json` の全カードに `mpCost` を書いた（兵士1〜2・武器1〜2・防御1〜2・回復1〜3・攻撃の魔法2〜4）
+
+### 敵兵士1体にダメージ（`effect: "singleDamage"`、`amount`）
+- 対象は相手の見える兵士1体 `{ soldierId }`（忍者・暗殺者は選べない）。ダメージは `amount`（ステージの魔法の増加は乗る）。盾が先に受ける。霧で外れる。属性なし
+- 兵士に当たる魔法なので、相手は盾を出せる（`defenseRequested` の `kind: "soldiers"`）
+- 攻撃の魔法（メインの1枚・MP を使う）
+- イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`）→（防御）→ `soldierDamaged`（`cause: "spell"`）→（0なら）`soldierDestroyed`（`"killed"`）
+
+### 呪い（`effect: "weakenAttack"`、`amount`・`turns`）
+- 対象は相手の見える兵士1体 `{ soldierId }`。状態 `weakened`（`getState()` の兵士の `statuses.weakened` は `{ amount, turns }` か `null`）
+- 攻撃力が `amount` 下がる（最低1）。戦い・射撃・城へのダメージの攻撃力に効く（背水の陣・夜と同じところで引く。`getState()` の `attack` は変わらない）
+- **持ち主の進軍が終わるたびに**残りが1減り、0で治る（`statusCleared`）。凍っていて動かなかった進軍も数える。呪いは自分のターンにしか出せないので、`turns: 3` なら相手の進軍3回ぶん（そのあいだの守りの戦いも）効く
+- 重ねがけは、量・回数を大きい方にそろえる。もう同じか強い呪いがかかっている兵士は選べない（「もう同じ状態になっています」）
+- ダメージではないので、霧でも外れず、防御も聞かない（凍結と同じ）。浄化（`purifyFlare`）では治らない
+- 攻撃の魔法（メインの1枚・MP を使う）
+- イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`）→ `statusApplied`（`status: "weakened"`、`amount`・`turns`）
+
+### クラシックのカードを足した（`data/classic/cards.json`）
+| 陣営 | カード（type） | 効果 | MP | 枚数 |
+|---|---|---|---|---|
+| 王国 | ホーリーレイ（`classic_king_holy_ray`） | 敵兵士1体に5 | 4 | 2 |
+| 王国 | 聖なる火球（`classic_king_holy_fireball`） | 城への魔法6（先頭の兵士に当たる） | 4 | 2 |
+| 魔族 | シャドウ（`classic_demon_shadow`） | 敵兵士1体に4 | 3 | 3 |
+| 魔族 | 呪いの印（`classic_demon_curse_mark`） | 敵兵士1体の攻撃−2・3回 | 2 | 2 |
+| 魔族 | 闇の火球（`classic_demon_dark_fireball`） | 城への魔法6（先頭の兵士に当たる） | 4 | 2 |
+
+- 山札は 76 枚
+- CPU（`smart` 系）：1体への魔法は、倒せる兵士のうちいちばん前の兵士（いなければいちばん前の兵士）。呪いは攻撃力がいちばん高い兵士。MP が足りないカードは `canPlayCard` で出せないので選ばない
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1`）：smart 同士 100/100 決着・平均106手番・先攻の勝率51%・崩壊の刻で決着25%（PR2a のときは126手番・49%）。smart が random に勝つ割合は、先攻73%・後攻74%（PR2a のときは先攻81%）。通常モードのシミュレーションは変わらない（変更前と結果が完全に一致）
+- 画面（UI担当にお願いしたいこと）：新しい5枚の絵、`weakened` の表示（兵士のそば）と `statusApplied` / `statusCleared` の演出、兵士・武器・防御の札に必要な MP を出す（`getState().mpCosts`）、`singleDamage` / `weakenAttack` の対象選び（相手の兵士をタップ）と命中の演出、`js/ui/text.js` の説明文・効果アイコン
+
+## クラシックの道具：蘇生・ランダム属性ダメージ（PR2c。人間の指示。仮）
+
+どちらもカードの `effect` で切り替える（通常モードの `data/cards.json` には書いていない）。
+
+### 蘇生（`effect: "reviveFallen"`、`amount`）
+- 自分の兵士のうち**最後に倒れた1体**を、倒れた道の自分の城の前（マス0）に生き返らせる。対象は自分 `{ playerId }`（省略できる）
+- 「倒れた」＝ `soldierDestroyed` の `reason` が `"killed"`。城に着いた・帰った・抜けた・道がなくなった兵士は数えない。魔物のカードの駒（`monster`）は生き返らせない
+- 記録は持ち主ごとに1体だけ（新しく倒れると上書き。生き返らせたら消える）。`getState()` には出さない
+- HP は倒れたときの最大HP（鍛錬を含む）× `amount`（切り上げ・最低1）。最大HPは元のまま。武器・盾・状態異常はなし。攻撃は新しく出した兵士と同じ（種類の値＋兵舎＋訓練）。出したターンは動かない
+- メインの1枚を使う。兵士の枠（`soldiersPerTurn`）には数えない。攻撃の魔法ではないので、MP は `mpAllCards` のときだけ（カードの `mpCost`）
+- 出せない：倒れた兵士がいない（「生き返らせる兵士がいません」）／その道がもうない（「倒れた兵士の道がもうありません」）
+- 忍者も生き返る（`soldierDeployed` は `stealth` 付き。`spellCast` には `roadId` を入れない）
+- イベント：`cardPlayed` → `spellCast`（`target` は自分、`roadId`）→ `soldierDeployed`（`revived: true`）
+
+### ランダム属性ダメージ（`effect: "randomElementDamage"`、`amount`）
+- 対象は相手の見える兵士1体 `{ soldierId }`（忍者は選べない）。火・水・風・土のうちランダムな1つ（`rng`）の属性で撃つ
+- ダメージは `amount`（ステージの魔法の増加は乗る）＋、その属性が兵士の属性に強いとき `rules.elementBonus`。属性なしの相手・弱い側に当たったときは増減なし。盾が先に受ける。霧で外れる。相手は盾を出せる（`kind: "soldiers"`、`amount` は上乗せ込み）
+- 攻撃の魔法（メインの1枚・MP を使う。`MP_EFFECTS`）
+- イベント：`cardPlayed` → `spellCast`（`roadId`・`soldierId`・`element`）→（防御）→ `soldierDamaged`（`cause: "spell"`）→（0なら）`soldierDestroyed`（`"killed"`）
+
+### クラシックのカード
+| 陣営 | カード（type） | 効果 | MP | 枚数 |
+|---|---|---|---|---|
+| 魔族 | 残響の魂（`classic_demon_echo_soul`） | 蘇生（HP半分） | 3 | 2 |
+| 魔族 | カオスパルス（`classic_demon_chaos_pulse`） | ランダム属性で敵兵士1体に3 | 3 | 2 |
+
+- 山札は 80 枚（`tests/classic-mode.test.js` の上限）。王国の蘇生（聖なる祈り）は、入れると上限を超えるので入れていない
+- CPU（`smart` 系）：ランダム属性ダメージは1体へのダメージと同じ選び方。蘇生は、ほかに出す兵士・魔法がないときに出す
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均104手番・先攻の勝率39%±10%（PR2b は51%）・崩壊の刻で決着19%（PR2b は25%）。smart が random に勝つ割合は先攻66%・後攻83%。通常モードのシミュレーションは変わらない
+- 画面（UI担当にお願いしたいこと）：2枚の絵、`soldierDeployed.revived` の演出、`spellCast.element` の色、`js/ui/text.js` の説明文・効果アイコン、`randomElementDamage` の対象選び（相手の兵士をタップ）
+
+## クラシックの属性（PR3a。人間に確認して決めた。仮）
+
+クラシックだけ、属性を9つにした（通常モードは今までの4属性の輪のまま）。付着・混沌反応は PR3b（下の「クラシックの付着と反応」）。
+
+- **表**：`data/classic/elements.json`（`{ elements: { <id>: { name, beats: [<id>, ...] } } }`。`beats` は「その属性が強い相手」）。`data/modes.json` のモードに `elementsSet` を書くと、画面（`js/main.js`）・サーバー（`server/server.js` の `loadData`）・テスト（`tests/helpers.js` の `loadOptionalData(mode)`）が読んで `new Game({ elements })` に渡す。書いていないモード（通常モード）には渡さない
+- **`new Game({ elements })`**（省略できる。チェックは `js/game/Elements.js`）：渡すと、兵士同士・兵士と魔物の戦い・射撃・ランダム属性ダメージの「強いか」を、この表の `beats` で決める。増え方は今までどおり `rules.elementBonus`（足し算。弱い側に当たっても減らない）。渡さなければ今までの輪（水→火→風→土→水）
+- 起動時のチェック：カード（武器・魔法）・魔物・ステージ・天候の属性が、表にない（表がなければ4つにない）とエラー
+- 強弱：火→氷／水→火・土／風→火／土→雷・風／氷→水／雷→水／闇→光／光→闇／混沌→なし（混沌に強い属性もない）
+- **魔法にも `element` を書ける**（武器と魔法だけ）。ダメージ・強弱には使わない。兵士に当たったときの付着・反応に使う（PR3b）
+- クラシックのカード：光＝聖鉄の剣・ルミナスランス・ルミナ・ホーリーレイ・聖なる火球／闇＝シャドウサイズ・シャドウ・闇の火球／氷＝フロストブレード・氷の息／混沌＝カオスロッド。カオスパルスは書かない（ランダム属性の仮の魔法。撃つ属性は今までどおり火・水・風・土から選び、強いかは表で決める）
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均104手番・先攻の勝率38%（属性を入れる前は104手番・39%）。通常モードのシミュレーションは変わらない
+- 画面（UI担当にお願いしたいこと）：`js/ui/look.js` の `ELEMENT_LOOK` に光・闇・氷・雷・混沌がないので、名前・色・アイコンが出ない（落ちはしない）。`js/ui/text.js`・`js/ui/Animations.js` の強弱（`ELEMENT_BEATS`）と `js/ui/HelpView.js` の説明は4属性の輪のまま
+
+## クラシックの付着と反応（PR3b。人間に確認して決めた。数値は仮）
+
+クラシックだけ。`new Game({ reactions })`（`data/classic/reactions.json`。チェックは `js/game/Elements.js` の `validateReactions`）。**渡さなければ付着も反応も起きない**（通常モード。乱数も使わず、`getState()` の兵士に `attachments` のキーも付かない）。`data/modes.json` のモードに `reactionsSet` を書くと、画面（`js/main.js`）・サーバー（`server/server.js` の `loadData`）・テスト（`tests/helpers.js` の `loadOptionalData(mode)`）が読んで渡す。
+
+- **属性を持つのは武器を持った兵士だけ**（生まれつきの属性はない）。武器の属性（`element`）は、その兵士に最初から付いている属性として数える
+- **付着**：属性つきの攻撃が兵士に当たると、その属性が付く（`attachments`：`[{ element, turns }]`。種類ごとに1つ。同じ属性がまた付いたら残りが `attachTurns` に戻る）。付く攻撃：①属性つきの武器を持つ兵士の戦い（お互いに）・射撃（武器の属性）②`element` のある魔法が兵士に当たったとき（ダメージのない氷の息・毒・呪い・押し戻しも、当たれば付く）。城に当たる魔法・魔物の攻撃・魔物への攻撃・忍者には付かない。属性なしの武器・魔法は付かない。霧で外れた攻撃は付かない。当たって倒れた兵士には付かない
+- 付着の残りは、持ち主の進軍が終わったあとに1減り、0で消える（`elementCleared` の `reason: "expired"`。呪いと同じ。凍って動かなかった進軍も数える）
+- **反応**：属性 X の攻撃が当たったとき、兵士に付いている属性（武器の属性＋付着）に、表で X と組になる属性があれば反応する（1回の攻撃で1つ。**3種類以上で混沌が入っていれば混沌反応が先**、次に表の順）。反応した属性は兵士から消える（**武器の属性も外れる。武器の攻撃ボーナスは残る**。同じ武器で何度も反応し続けないように）。当たった攻撃の属性は付かない。追加ダメージは元のダメージのあとに別に入る（盾が先に受ける。土の精霊は効く。城壁は関係ない）。属性の強弱の上乗せ（`elementBonus`）は今までどおり別に乗る
+
+| 反応（ID） | 組 | 効果（仮） |
+|---|---|---|
+| 対消滅（`annihilation`） | 光＋闇 | 追加8 |
+| 黒氷（`blackIce`） | 闇＋氷 | 追加3。生き残れば凍結1回 |
+| 砕氷（`shatter`） | 氷＋混沌 | 追加2。凍結中なら、さらに+6して凍結が解ける |
+| 混沌反応（`chaos`） | 攻撃が当たったあとの属性（武器の属性＋付着＋当たった攻撃の属性）に混沌が入っていて、種類が3以上（`minElements`）。**当たったのは混沌でなくてもよい** | 付いている属性が全部消えて、追加 4 × 種類の数（混沌を含む）。状態異常・盾・武器（攻撃ボーナス）は残る |
+
+- 混沌＋ほか1種（2種類）のときは、2つの反応の表を見る（氷なら砕氷、光なら何も起きずに付着する）。**2種類で表の反応が成り立つなら表が優先、3種類以上なら混沌反応が優先**（表の組が成り立っていても。例：光＋混沌が付いていて闇が当たると、対消滅ではなく混沌反応）。混沌が付いている（武器が混沌の）兵士に別の属性が当たって3種になったときも起きる。混沌が入っていない3種類は混沌反応にならない。混沌と同じ属性の攻撃がまた当たっても、すでに混沌を含めて3種以上なら起きる（武器だけで3種そろっていたとき）
+- `attachTurns`（仮：5）：兵士は戦いで数ターンのうちに倒れるので、4以上にしても結果は変わらない（smart 同士100試合で、4・5・8・10 は完全に同じ。2・3 は混沌反応が少し減る）。混沌反応が出にくいときは、この数字ではなく成立条件で調整する
+- `reactions.json` の形：`{ attachTurns, reactions: { <id>: { name, elements: [a, b], damage, frozenTurns?, frozenBonus? } }, chaos: { element, name, damagePerElement, minElements } }`。反応した2つは必ず消える
+- イベントの順番：（元の攻撃の `soldierDamaged`）→ `reactionTriggered` → `elementCleared`（`"reaction"`。消える属性ごと）→（砕氷で凍結中なら `statusCleared`（`frozen`））→ `soldierDamaged`（`cause: "reaction"`）→（0なら `soldierDestroyed`（`"killed"`）、黒氷で生き残れば `statusApplied`（`frozen`））。反応しなければ `elementAttached`。兵士同士の戦いでは、両方の `soldierDamaged`・倒れた兵士の `soldierDestroyed` のあとに、守る側 → 攻める側の順
+- `getState().reactions`：反応の定義（`reactions.json` の中身のコピー。`reactions` を渡したゲームだけ。キーごとなし）。CPU・画面が、ゲームの内部を読まずに反応を調べるために出す
+- CPU（`smart` 系だけ）：武器を出すとき、反応を起こせる相手の兵士がいる武器を先に選び、その相手と同じ道の、まだ武器のない兵士に持たせる（`js/game/strategies.js` の `canReact`。`getState().reactions` だけを使い、`game.reactionDefs` は読まない。判定は `Game.findReaction` と同じ決まりで、`tests/classic-reactions.test.js` が全組み合わせで一致を確かめる）
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均105手番・先攻の勝率52%（PR3a は104手番・38%）。反応は smart 同士で1試合に平均1.8回（対消滅0.8・黒氷0.5・砕氷0.4・混沌反応0.15。直す前は混沌反応0.02）、反応が1回以上あった試合70%。smart vs random は1.5回、random 同士は1.4回。反応の回数は `node tests/sim/run.js --mode classic` の表の下に出る。通常モードのシミュレーションは変わらない（変更前と結果が完全に一致）
+- 画面（UI担当にお願いしたいこと）：兵士のそばに付着の表示（`attachments`・`elementAttached` / `elementCleared`）、`reactionTriggered` の演出（反応名を大きく。ヒットストップ・揺れ）、`soldierDamaged` の `cause: "reaction"`、武器の属性が外れたとき（`elementCleared.weapon`）の表示
+
+## クラシックの属性：ターン開始時のランダム付着（人間の指示。仮）
+
+`rules.randomAttachTurnStart: true`（省略すると `false`）で有効。`reactions` を渡したゲーム（クラシック）だけ。スキルツリーはまだないので、今は有効にすると全プレイヤーに効く。処理は `Game.js` の `randomAttachAtTurnStart(player)` の1か所（スキルツリーが入ったら、ここの先頭の条件を「そのプレイヤーが持っているか」に変える）。
+
+- **いつ**：自分のターンの始め。コイン・MP の回復のあと、ドローの前（自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる）
+- **何を**：敵（チーム戦なら相手チーム）の**見える兵士**（忍者・暗殺者は除く）からランダムに1体を選び、`elements` の表の全属性（混沌を含む）から等確率で1つ付着させる（`rng` を2回使う）。自分の兵士には付かない。**付着だけで、その場で反応は起こさない**。同じ属性がもう付いていれば、残りは**長い方にそろえる**（武器・魔法で付いた長い残りが縮まない）
+- 敵の兵士がいなければ何も起きない（乱数も使わない）。キーが `false`/なしなら通常どおり（乱数も使わず、通常モードのシミュレーションは変わらない）
+- 付着が残る回数：`data/classic/reactions.json` の `randomAttach: { turns }`（仮：1。省略すると `attachTurns`）。付着の残りは**持ち主の進軍が終わるたびに1減る**ので、1なら「持ち主の次の進軍が終わるまで」残る。つまり、付いたそのターンの自分の攻撃のほか、その間の相手の守りの戦いでも、こちらの兵士の属性が当たれば反応する。3人以上では、間の席の人のターンでも残る。広場では、自分を狙っていない兵士にも付く（兵士同士は戦わないので、魔法でしか活かせない）
+- イベント：`elementAttached`（`{ playerId, soldierId, element, turns }`）に `source: "turnStart"` が付く（武器・魔法の付着には付かない）。反応したときは今までの `reactionTriggered`
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`。`--rules '{"randomAttachTurnStart":true}'`）：
+
+| | 反応/試合 | 混沌反応（100試合） | あり | 平均手番 | p1勝率 |
+|---|---|---|---|---|---|
+| なし | 1.79 | 15 | 70% | 105.0 | 52% |
+| 1ターン | 3.30 | 91 | 93% | 100.8 | 47% |
+| 5ターン | 4.61 | 193 | 95% | 105.1 | 46% |
+
+  1ターンを採用（5ターンは反応が増えすぎ）。1ターンでも目安（1〜3回）をやや超える。`data/classic/rules.json` にはまだ書いていない（スキルツリーで一部のプレイヤーだけに渡す想定のため。書くときは遊んで確かめる）
+- 画面（UI担当にお願いしたいこと）：`elementAttached.source: "turnStart"` のとき、付着の演出を目立たせるか（スキルの発動として見せる）
+
+## クラシック：王国の「守りを貫く手段」（案A 聖壁の号砲。人間の指示。数値は仮）
+
+城への魔法は先頭の兵士に当たる（`castleSpellHitsFront`）ので、兵士を並べられると王国は城を撃てなかった（魔族には城と兵士を貫く毒がある）。王国らしく「守り（城壁）を攻めに変える」カードを足した。Game は変えていない（通常モードのシールド・ブラストと同じ効果 `armorBlast` をデータで使う）。
+
+| 陣営 | カード（type） | 効果 | MP | 枚数 |
+|---|---|---|---|---|
+| 王国 | 聖壁の号砲（`classic_king_rampart_volley`） | 自分の城壁の値と同じダメージを相手の城に（兵士には止められない。相手の城壁・血の膜では止められる）。自分の城壁は0になる。光 | 3 | 2 |
+
+- **陣営のカードだが、クラシックは全員共通の山札なので、魔族のプレイヤーも引いて使える**（ほかの王国・魔族のカードと同じ）
+- 効果：対象は相手 `{ playerId }`（2人なら省略できる。レーンは選ばない）。相手の城壁は受け、攻撃を受けたときの防御を聞く（クラシックの山札で出せるのは城壁・血の膜。反射・土嚢はクラシックにない）。霧で外れても城壁は0になる。城壁がないと出せない（「城壁がありません」）。魔法の塔の `castleSpellBonus` は乗らない。使い切りではない（通常モードのシールド・ブラストは使い切り）。レアリティ・`fuseTo` は書かない（クラシックのほかのカードと同じ）
+- 長所：城壁を貯めるほど大きい。貯めているあいだは城を守る。兵士の壁を越えて城に届く
+- 短所：城壁を置く手間（城壁1枚 MP2・血の膜 MP1・手札）がかかり、撃つと守りが0になる。城壁がないと出せない。相手の城壁・血の膜で止められる
+- **山札は80枚のまま**：身代わり（`classic_king_decoy`）2枚を外して、号砲2枚を入れた（身代わりは smart 同士で1試合0.1回しか使われず、城壁・盾と役目が重なっていた）
+- CPU（**`smart`・`guard` だけ**。`js/game/strategies.js` の `playSupports` の `chargeArmor`。defensive・rush は今までどおり貯めない）：`castleSpellHitsFront` のルールで、城壁をぶつける魔法（`armorBlast`）を手札に持っているときは、城HPが満タンでも城壁を15（`ARMOR_CHARGE`）まで貯める。撃つのは今までどおり城壁10以上か、相手の城を落とせるとき。CPU を変えないと、号砲は1試合0.04回しか撃たれなかった。通常モードは `castleSpellHitsFront` がないので変わらない
+- 確かめたこと（全員共通の山札。`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均98.9手番・先攻の勝率52%±10%（入れる前は106.3手番・46%）。号砲は1試合0.95回撃たれ（王国・魔族どちらのプレイヤーも撃つ）、城に9.2ダメージ（城壁で止まったぶんを引く）。崩壊の刻で決着14%。通常モードのシミュレーション（`node tests/sim/run.js --games 100 --seed 1 --json`）は変更前と完全に一致
+  - 参考（陣営の山札：王国40枚 vs 魔族40枚を1人1つの山札で、席を入れかえて200試合。今のクラシックの遊び方ではない。計測用のスクリプトはリポジトリの外）：王国の勝率53%（先攻46%・後攻60%）、平均99手番
+- 気になる点（遊んで確かめる）：山札の城壁（城壁5×3・血の膜4×3）を全部集めれば27まで（後攻は最初の城壁3を足して30）貯まり、一撃が城HP60の半分ほどになる。人が遊ぶと CPU より上手に貯められる。強すぎたら一撃の上限か、使い切りで抑える
+- 画面（UI担当にお願いしたいこと）：号砲の絵（今は仮の絵）、`js/ui/text.js` の説明文・効果アイコン、演出はシールド・ブラスト（`armorBlast`）と同じものが使えるか確かめる。図鑑・デッキ編成などでクラシックの身代わりを見せている所があれば外す
+
+## クラシックの陣営カード：森の同盟・竜族帝国（人間の指示。数値は仮）
+
+四大陣営のPR（#163〜#166。まだ main にない）で作った森（`faction: "forest"`）・竜（`"dragon"`）のカードを、クラシック用にした（人間の指示：「クラシックにするだけ」）。**クラシックの山札（`data/classic/cards.json`、80枚）には混ぜず、別のカード表にした**（人間の確認）。
+
+- **置き場**：`data/classic/factions/forest.json`・`data/classic/factions/dragon.json`（各40枚）。`data/modes.json` のクラシックに `factionCardSets`（陣営 → ファイル）を足した。今は**テスト・シミュレーションだけが読む**（`tests/helpers.js` の `loadFactionCards(mode, faction)` と `buildData({ mode, factions: ['forest', 'dragon'] })`）。画面（`js/main.js`）・サーバー（`server/server.js`）は読まないので、遊べるのは陣営のデッキを選ぶ画面ができてから
+- 書き方は王国・魔族と同じ：キーは `classic_forest_*` / `classic_dragon_*`、`rarity`・`fuseTo`・`weight`・`faction` は書かない、`count` と `mpCost` を書く。名前は #166 のまま。数値はクラシックの王国・魔族の帯に合わせて直した（#166 のコモン〜レアの値を土台に、MP で重さをつけた）
+- 陣営らしさ（#163 の `factions.json`）：森＝回復・支援・粘り（精霊・城壁・射手・押し戻し・夜に強い獣人）、竜＝高火力・高耐久（硬い竜人・+2/+4 の武器・城と兵士への大きな魔法）。**竜は防御・回復のカードを持たない**（#166 の竜の防御・回復はどれも未実装のため）。それが竜の短所
+
+### 森の同盟（18種・40枚）
+| カード（type） | 効果 | MP | 枚数 | 長所／短所 |
+|---|---|---|---|---|
+| 森の獣兵（`classic_forest_beast`） | 兵士 HP2・攻撃5・速さ3・獣（`beast`） | 1 | 5 | 安くて速く、夜は攻撃+2／とても打たれ弱い |
+| ウルフファイター（`classic_forest_wolf`） | 兵士 HP5・攻撃6・速さ3・獣 | 3 | 3 | 強くて夜は攻撃+2／MPが重い |
+| エルフの斥候（`classic_forest_elf_scout`） | 弓兵 HP2・攻撃3・射程3・2ターン | 1 | 3 | 弓兵より遠く・安い／とても打たれ弱い |
+| エルフの射手（`classic_forest_elf_archer`） | 弓兵 HP4・攻撃5・射程2・2ターン | 3 | 2 | 弓兵より強い／MPが重い |
+| フレイムソード・アクアスピア・ゲイルボウ・アースハンマー | 武器 攻撃+1・火／水／風／土 | 各1 | 各1 | 安い・相手に合わせて属性を選べる／+1だけ。反応（光・闇・氷・混沌）は起こさない |
+| 火の精霊（`classic_forest_fire_spirit`） | 精霊：相手の城に3×3ターン | 3 | 2 | メインを使わない／すぐ効かない・1人1体 |
+| 水の精霊（`classic_forest_water_spirit`） | 精霊：自分の城+2×4ターン | 2 | 3 | メインを使わない回復／すぐ効かない・入れ替えると無駄 |
+| 水の大精霊（`classic_forest_great_water_spirit`） | 精霊：自分の城+3×4ターン | 4 | 1 | 水の精霊より多い／MPが重い |
+| 風の精霊（`classic_forest_wind_spirit`） | 精霊：自分の兵士の速さが最低2・3ターン | 2 | 2 | 遅い兵士を急がせる／兵士がいないと無駄 |
+| 土の精霊（`classic_forest_earth_spirit`） | 精霊：受けるダメージ−1（最低1）・3ターン | 3 | 2 | 城も兵士も軽くなる／0にはできない |
+| ゲイルフォース（`classic_forest_gale_force`） | 相手の兵士全員を2マス押し戻す | 2 | 2 | 城の前の兵士を戻せる／ダメージなし |
+| 蔦の防壁（`classic_forest_ivy_wall`） | 城壁3 | 0 | 4 | MPを使わない／薄い |
+| 樹皮の鎧（`classic_forest_bark_armor`） | 兵士に盾5 | 2 | 3 | 盾（3）より厚い／MPが重い |
+| ブレイズ（`classic_forest_blaze`） | 選んだ1レーンの相手の兵士に3・火 | 4 | 2 | ルミナ（2）より強い／MPが重い |
+| 森の結界（`classic_forest_grove_barrier`） | 城壁9 | 4 | 2 | 厚い／MPが重い |
+
+### 竜族帝国（14種・40枚）
+| カード（type） | 効果 | MP | 枚数 | 長所／短所 |
+|---|---|---|---|---|
+| 竜人の新兵（`classic_dragon_recruit`） | 兵士 HP6・攻撃4・速さ2 | 2 | 6 | 歩兵より強い／MPが重い |
+| 竜鱗戦士（`classic_dragon_scale_warrior`） | 兵士 HP6・攻撃6・速さ2 | 3 | 5 | 硬くて強い／遅い・MPが重い |
+| 竜槍兵（`classic_dragon_lancer`） | 兵士 HP10・攻撃7・速さ2 | 4 | 2 | とても硬い／MPが重い |
+| 竜将（`classic_dragon_general`） | 兵士 HP12・攻撃10・速さ2 | 7 | 1 | いちばん強い兵士／MP7 |
+| 紅蓮の竜剣・迅雷の槍 | 武器 攻撃+2・火／雷 | 2 | 各3 | 強い武器／属性が反応を起こさない |
+| 灼竜剣・轟雷竜槍 | 武器 攻撃+4・火／雷 | 4 | 各1 | 武器でいちばん強い／MPが重い |
+| ファイアボール（`classic_dragon_fireball`） | 城への魔法5（先頭の兵士に当たる） | 3 | 5 | 火球（6・MP4）より軽い／弱い |
+| 業火（`classic_dragon_inferno`） | 城への魔法9 | 6 | 2 | 大きい／MPが重い |
+| 隕石（`classic_dragon_meteor`） | 城への魔法14 | 9 | 1 | とても大きい／MP9 |
+| サンダー（`classic_dragon_thunder`） | 選んだ1レーンの相手の兵士に3 | 4 | 5 | ルミナより強い／MPが重い・属性なし |
+| 雷光（`classic_dragon_bolt`） | 相手の全レーンの兵士に2 | 4 | 3 | 全レーンに届く／弱い |
+| 大雷（`classic_dragon_big_thunder`） | 相手の全レーンの兵士に5 | 7 | 2 | まとめて倒せる／MP7 |
+
+### 除いたカード（#166 の森83種・竜70種から）
+- **今のクラシックのしくみで動かないもの**（#166 で `implemented: false`。森28種・竜44種）：ドルイド（精霊起点の反応）、水・風・土の攻撃魔法（属性連鎖・拡散・拘束）、生命の回復（兵士の回復）、棘の鎧（棘の反撃）、竜騎兵（飛行）、竜術師（火雷の支援）、純竜（武器を持てない制限）、竜の息（城と兵士を同時に・範囲増加）、竜の覚醒（竜威ゲージ）、竜の城壁・鎧・再生（個性・量が未決定）
+- **動くが入れなかったもの**：レアリティの高い段（エピック・レジェンドの武器・兵士・魔法、精霊王、火・風・土の大精霊、竜騎士・星降り・終末の炎・雷神の怒り・天罰）は、クラシックの数値の帯に合わないため。根の城柵（城壁5）・葉の衣（盾3）・フレイム（1レーン2）は、王国の城壁・盾・ルミナと効果が同じか、属性だけ違う下位互換になるため
+- 森・竜の武器の属性（火・水・風・土・雷）は、クラシックの反応（光・闇・氷・混沌の組）には入っていない。属性の強弱（`elements.json`）だけに効く
+
+### 確かめたこと
+- `node --test` 全部通る（`tests/classic-factions.test.js`：山札80枚のまま・書き方・`new Game()` の検証・全32種を1枚ずつ出して効果のイベント・ほかのカードと効果が完全に同じでない・森 vs 竜の試合が決着）。王国の歩兵と魔族の骸骨兵は、このPRより前から同じ数値（テストは森・竜のカードだけを比べる）
+- 通常モード（`node tests/sim/run.js --games 100 --seed 1 --json`）・クラシック（`--mode classic --games 100 --seed 1 --match smart,smart`）のシミュレーションは変更前と完全に一致
+- 陣営の山札どうし（`deckMode: "own"`、smart 同士、席を入れかえて各400試合。リポジトリの外の計測スクリプト）：全試合決着
+
+| 組み合わせ | 前の陣営の勝率 | 平均手番 | 崩壊の刻で決着 |
+|---|---|---|---|
+| 森 vs 竜 | 54% | 85 | 13% |
+| 森 vs 王国 | 48% | 128 | 60% |
+| 森 vs 魔族 | 47% | 75 | 3% |
+| 竜 vs 王国 | 59% | 88 | 12% |
+| 竜 vs 魔族 | 60% | 50 | 0% |
+| 王国 vs 魔族 | 56% | 98 | 17% |
+
+  - 調整：最初の数値では、森が王国に7%・魔族に20%、竜が森に29%だった。森は獣兵・斥候の MP を2→1、ウルフの HP を4→5、斥候4→3枚・蔦の防壁3→4枚。竜は竜槍兵の MP を5→4・3→2枚、サンダー4→5枚。竜はカード1枚で勝率が10%以上動く（竜槍兵の MP だけで、王国に44→62%）ので、変えたら必ず400試合で確かめる
+  - **竜は王国・魔族に59〜60%で、目安のふち**。森 vs 王国は崩壊の刻で決着する試合が6割と多い（森の城壁・回復と王国の守りで長引く）。遊んで確かめる
+- 画面（UI担当にお願いしたいこと）：陣営のデッキを選ぶ画面（`factionCardSets` を読む）、32種のカードの絵（今は仮の絵もない）、`js/ui/text.js` の説明文（`description` を書いたカードはそれを使える。武器には書いていない）、雷（`thunder`）属性の見た目（`js/ui/look.js` の `ELEMENT_LOOK`）
+
+## 4陣営モード（王国・森の同盟・魔族軍・竜族帝国。人間に確認して決めた。数値はすべて仮）
+
+四大陣営のPR（#163〜#166。まだ main にない。349種）は、カードを取り込みすぎて多すぎたので、**クラシックと同じ作りで組み直した**（人間の指示）。レアリティを使わず、属性の付着と反応を楽しむ。カード表は人間が確定した案（王国15・森14・魔族15・竜13種）のとおり。ただし竜の「竜の鼓動」（竜威）は、竜威のルールが決まっていないので外した（竜は12種）。王国の防御は案どおり身代わり（3MP）で、聖壁の号砲（#176）は入れない。
+
+- **置き場**：`data/factions/`（`factions.json` 陣営の名前・`cards/<陣営>.json` 陣営ごとのカード表・`rules.json`・`elements.json`・`reactions.json`）。`data/modes.json` の `factions`（`hidden`・`available: false`）。`cardSet` はなく、`factionCardSets` を全部合わせたものがカード定義、`factionDecks: true` で**各陣営のカード表がその陣営のデッキ**になる（`js/game/Setup.js` の `factionDecks(factions, cardSets)` → decks.json と同じ形）
+- **遊び方**：1人1つのデッキ（`rules.deckMode: "own"`）。`new Game({ ..., decks: factionDecks(...), setup: { decks: ["kingdom", "dragon"] } })` で席ごとに陣営を選ぶ（省略すると `rules.defaultDeck` の王国）。今は**テスト・シミュレーションだけが読む**（`tests/helpers.js` の `buildData({ mode: "factions" })`・`loadOptionalData("factions")`）。画面（`js/main.js`）・サーバー（`server/server.js`）は `cardSet` のないモードを読まないので、遊べるのは陣営を選ぶ画面ができてから
+- **枚数**：案に枚数がないので、**どのカードも2枚**（`count: 2`。王国30・森28・魔族30・竜24枚）にした（仮）
+- **ルール**（`data/factions/rules.json`。全モード共通の `data/rules.json` は変えていない）：クラシックのルールのまま（毎ターン2枚ドロー固定 `drawPerTurn` 2・`drawUntilHand` 0・`drawPerPlayed` false、手札上限6、全カードで MP を使う `mpAllCards`、MP 10/20・毎ターン+3、城HP60、城への魔法は先頭の兵士に当たる、崩壊の刻）に、`deckMode: "own"`・`defaultDeck: "kingdom"` を足し、使わないデッキ編成の数値を外した
+- 属性の強弱の表はクラシックと同じ9属性（`data/factions/elements.json`。写し）
+
+### カード（`data/factions/cards/*.json`。キーは `fac_king_*` / `fac_forest_*` / `fac_demon_*` / `fac_dragon_*`）
+| 陣営 | 兵士 | 武器 | 魔法 | 回復・防御・特殊 |
+|---|---|---|---|---|
+| 王国 | 歩兵 3/5/2（MP2）・騎兵 4/4/3（3）・弓兵 3/3（3）・重装兵 2/9/1（4）・聖術師 2/4 魔法使い・光（4） | 聖鉄の剣 +2光（2）・ルミナスランス +1光・射程+1（2） | ルミナ 1レーンに2・光（3）・ホーリーレイ 1体に5・光（4） | 小回復 5（2）・ヒール 10（4）・盾 3（1）・城壁 5（2）・身代わり（3）・浄化（2） |
+| 森 | 獣人 4/5/2（2）・エルフ 3/3 弓兵（3）・ドルイド 2/4 魔法使い・火水風土の魔法+1（4） | なし | 火炎弾 1体に4・火・水流 1体に3・水・付着8回・突風 1レーンに2・風・地割れ 1体に3・土・1回休み（各3） | 火・水・風・土の精霊（各4。火 城に1×3・水 +1×3・風 速さ+1×3・土 兵士が受けるダメージ−1×3（城は軽くしない））・生命の雫 城+3・兵士+2（3）・茨の壁 4（2）・樹皮の盾 3（1） |
+| 魔族 | 骸骨兵 3/5/2 闇（2）・小悪魔 4/3/3 闇（2）・呪術師 2/3 魔法使い・闇氷混沌の魔法+1（3） | シャドウサイズ +2闇・フロストブレード +1氷・当てた相手を1回休み・カオスロッド +1混沌（各2） | シャドウ 先頭の兵士に4・闇・氷の息 1レーン凍結1・氷・カオスパルス 先頭の兵士にランダム属性で3・混沌が付く・毒の霧 兵士全員に1×3ターン（盾は効かない。城は毒にしない）（各3）・呪いの印 −2×3（2）・魂の欠片 城に3・自城+3（3）・残響の魂 蘇生（4） | 血の膜 城壁4（2）・骨の盾 3（1） |
+| 竜 | 竜人の新兵 4/5/2（3）・竜騎兵 5/3/3（3）・幼炎竜 5/5/2 火（4）・幼雷竜 4/4/3 雷（4） | 竜牙剣 +2火・雷牙槍 +2雷・射程+1（各2） | ファイアボール 5・火（先頭の兵士か城。3）・雷光 1レーンに3・雷（3）・火炎の吐息（4） | 竜血の雫 兵士1体+4（2）・火山灰の幕 城壁3（2）・幼竜の鱗 盾2（1） |
+
+（兵士は 攻撃/HP/速さ。括弧は MP）
+
+### 4陣営のために足した仕組み（どれもデータで切り替える。書かなければ今までどおり）
+- **生まれつきの属性**（兵士の `innateElement`）：出した兵士の属性になる（武器の属性と同じ扱い。武器を持つと上書き、反応で消える）。兵士の `element` は今までどおり書けない
+- **射程+**（武器の `rangeBonus`。重ねると足し算）：弓兵・魔法使いは撃てる距離がのびる。**進む兵士は、1マスより先（1＋射程+ マスまで）の相手を、止まって突く。相手の攻撃は届かないので反撃を受けない**（`fight` の `reach`。攻める側の `soldierDamaged` は出さない）。すぐ前（同じマスか1つ先）に魔物がいるときは、魔物を飛び越えて突けない（ふつうに魔物と戦う）
+- **凍らせる武器**（武器の `freezeOnHit`）：その兵士の攻撃（戦い・射撃）が当たって生き残った相手は、その回数休む（付着・反応のあと）
+- **属性魔法の強化**（兵士の `spellBoost: { elements, amount }`）：その兵士が場にいるあいだ、持ち主の、その属性のダメージの魔法（1体へ・ランダム属性（カードの属性で見る）・兵士全員へ・城への魔法・火炎の吐息）が +amount（何体いても重ならない）
+- **付着の長い魔法**（魔法の `attachTurns`）・**休ませる1体への魔法**（`singleDamage` の `freezeTurns`）
+- **風の精霊の足し算**（`spiritMode: "add"`。省略すると `"min"`＝今までの「速さの最低値」）
+- **回復**：`healSoldier`（竜血の雫。傷ついた自分の兵士1体。対象 `{ soldierId }`）・`healCastleAndSoldiers`（生命の雫。`amount` と `soldierHeal`）。兵士の回復は最大HPまで。イベント `soldierHealed`
+- **身代わり**（防御 `guardCastle`。対象は自分の兵士 `{ soldierId }`。自分のターンに何枚でも）：次に城が受ける**相手からの攻撃**（兵士・魔法・精霊・反応）を、その兵士が代わりに受ける（盾は効く。城壁は使わない。土の精霊は効く）。1回で消える。守る兵士が場からいなくなったとき（倒れた・城に着いた・帰った）も消える。城に1体だけ（置き直すと入れかわる）。毒・崩壊・天候・自分で払うコストは受けない。守る兵士がもういなければ、城がそのまま受ける。攻撃を受けたときの防御（`defend`）には出せない。イベント `castleGuardSet` / `castleGuarded`（このあと兵士の `soldierDamaged`、`cause: "guard"`）
+- **浄化の付着消し**（`purifyFlare` の `clearEnemyAttachments: true`。このときは `amount` 0 も書ける）：相手の兵士の付着を全部消す（武器・生まれつきの属性は残る。`elementCleared` の `reason: "purified"`）
+- **先頭に当たる1体への魔法**（`singleDamage` / `randomElementDamage` の `target: "front"`）：兵士を選ばずに、相手（レーンが2本以上なら道も。対象は `{ playerId }` / `{ playerId, roadId }`）を選び、その道の、自分の城にいちばん近い見える兵士に当たる（`frontSoldier`。城への魔法の `castleSpellHitsFront` と同じ選び方）。その道に兵士がいなければ出せない（城には当たらない）。当たり方・防御・イベントは、兵士を選んだときと同じ。竜のファイアボールは城への魔法（`castleSpellHitsFront` で先頭の兵士に当たり、いなければ城に当たる）
+- **土の精霊を兵士だけに**（`spiritScope: "soldiers"`。省略すると `"all"`＝城と兵士）
+- **回数つきの毒**（`poisonEnemy` の `turns`。書かなければ `rules.poisonTurns`。今の4陣営のカードは使っていない。毒の霧は兵士だけのターン数つきの毒 `poisonEnemySoldiers`）
+- **血の膜**（城壁の `bloodArmor: true`）：増えた城壁のぶんが「血の膜」。城壁が攻撃を受けたとき、血の膜のぶんから先に削れ、削れた量だけ城HPが回復する（`castleHealed` の `source: { kind: "bloodArmor" }`）
+- **火炎の吐息**（`breathAttack`：`amount`・`castleAmount`。対象は相手（レーンが2本以上なら `{ playerId, roadId }`）。攻撃の魔法）：選んだ道の相手の兵士全員に amount、相手の城に**城壁を無視して** castleAmount（`castleDamaged` の `ignoreArmor: true`）。防御は聞かない。霧で外れる
+- **反応の追加の効果**（`reactions.json` の反応に書ける。チェックは `validateReactions`）：`multiplier`（当たった攻撃のダメージ × (倍率−1) を切り上げで足す）・`burn`（やけど。`scope: "adjacent"` なら同じ道の前後1マスの同じ陣地の兵士にも）・`slow`（鈍足：速さ −amount、最低1）・`blind`（目くらまし：戦い・射撃が chance で外れる）・`splash`（同じ道の同じ陣地のほかの兵士に amount）・`castleDamage`（当たった兵士の陣地の城に。城壁は受ける。`source: { kind: "reaction", reaction }`）・`shieldBreak`（盾を全部壊して、壊した量＋bonus のダメージ。`shieldBroken`）・`healCut`（当たった兵士の陣地の城の回復が ratio だけ減る（切り捨て）。城の持ち主のターンの始めに1減る。`castleHealCut` / `castleHealCutEnded`）。鈍足・目くらましは持ち主の進軍が終わるたびに1減る（`statusApplied` / `statusCleared` の `status` は `"slowed"` / `"blinded"`）
+- 順番（反応）：`reactionTriggered` → `elementCleared` …（→ 砕氷の `statusCleared`）→ 溶岩の `shieldBroken` → 追加ダメージの `soldierDamaged` → 生き残れば 凍結・やけど・鈍足・目くらましの `statusApplied` → splash の `soldierDamaged` → `castleHealCut` → `castleDamaged`
+- `getState()`：兵士に `rangeBonus`（1以上のときだけ）。反応に鈍足・目くらましがあるゲームだけ `statuses.slowed` / `statuses.blinded`。カード・反応にあるゲームだけ `players.pX.castleGuard`（身代わりの兵士のID か null）・`bloodArmor`（血の膜の残り）・`castleHealCut`（`{ ratio, turns }` か null）。今までのモードの `getState` の形は変わらない
+- 進軍中の戦い・射撃の反応で城が落ちたら（轟雷爆炎）、そこで止める（反応のないゲームでは今までどおり）
+- 忍者：`soldierHealed` / `castleGuardSet` / `castleGuarded` も、忍者の兵士なら `stealth` が付く（ほかの忍者のイベントと同じく相手に隠す）
+
+### 未実装・人間の確認待ち
+- 森の「召喚中の精霊が、付着の代わりになる」：意味が決まっていないので作っていない（要確認）
+- 身代わりが魔物の城への攻撃を受けるか（今は受けない）、身代わりがいるときにも城への攻撃で防御（城壁など）を聞くか（今は聞く）：要確認
+
+### 反応（`data/factions/reactions.json`）
+| 反応 | 組 | 効果（仮） |
+|---|---|---|
+| 対消滅 | 光＋闇 | 追加8（王国の光が魔族の闇に当たったとき） |
+| 黒氷 | 闇＋氷 | 追加3・凍結1・やけど1×2（継続ダメージ） |
+| 深淵侵食 | 闇＋混沌 | 追加3・城の回復が半分×2ターン |
+| 砕氷 | 氷＋混沌 | 追加2（凍結中なら+6して凍結が解ける） |
+| 蒸発 | 火＋水 | 当たったダメージの1.5倍 |
+| 泥 | 水＋土 | 鈍足1×2 |
+| 炎拡散 | 風＋火 | やけど1×2（となりのマスの兵士にも） |
+| 砂嵐 | 風＋土 | やけど1×2・目くらまし30%×2 |
+| 霧 | 風＋水 | 目くらまし30%×2 |
+| 溶岩 | 火＋土 | 盾を全部壊して、壊した量＋2 |
+| 轟雷爆炎 | 火＋雷 | 追加4・同じ道のほかの兵士に2・相手の城に3 |
+| 混沌反応 | 混沌を含む3種以上 | 4×種類の数（クラシックと同じ） |
+
+- 森の5反応は #163 の `data/reactions.json`（a352658）の効果を、今の形に直した（`dot` はやけど、`blind` は目くらまし、`slow` は鈍足。霧の「水霧」の付着は、属性の表にないので入れない）
+
+### CPU（`js/game/strategies.js`。smart 系だけ）
+- 火炎の吐息は城への魔法のあとに（道は相手の兵士がいちばん多い道）。竜血の雫は回復量以上減った兵士のうちいちばん前の兵士に。生命の雫は城HPが半分を切ったとき（ヒールと同じ）。身代わりは、相手の兵士が自分の城まであと2マス以内に来ていて、まだ身代わりがいないとき、HP＋盾のいちばん多い兵士に
+- 先頭に当たる1体への魔法（シャドウ・カオスパルス）は、相手の兵士がいちばん多い道へ（`pickLane`）
+- 魂の欠片（`damageCastleAndHeal`）は smart がまだ選ばない（クラシック・通常モードの CPU を変えないため。直すときはクラシックのシミュレーションも変わる）
+
+### 確かめたこと
+- `node --test` は全部通る（`tests/factions-mode.test.js`）。通常モード・クラシックのシミュレーション（`node tests/sim/run.js --games 100 --seed 1 --json`、`--mode classic`）は変更前と完全に一致
+- 陣営別（`node tests/sim/factions.js --games 100 --seed 1`。smart 同士、各組み合わせ席を入れかえて200試合）：全2000試合が決着。行の陣営の勝率
+
+| | 王国 | 森 | 魔族 | 竜 | 平均 |
+|---|---|---|---|---|---|
+| 王国 | — | 89% | 67% | 47% | 68% |
+| 森 | 11% | — | 24% | 16% | 17% |
+| 魔族 | 33% | 76% | — | 37% | 49% |
+| 竜 | 53% | 84% | 63% | — | 67% |
+
+  - 平均手番 87〜133（王国どうしがいちばん長い）。崩壊の刻で決着する試合が多い（王国どうし67%・王国×竜46%）。先攻の勝率42〜53%。反応は1試合0〜9.6回（王国どうしは0、王国×竜は0.3、魔族どうしは9.6）
+  - **森が弱く（17%）、竜・王国が強い**。直し方の候補（試した結果。森 vs 3陣営を各100試合）：森の攻撃魔法・精霊の MP を1ずつ下げる → 森の勝率 王国37%・魔族66%・竜57%／森の兵士を各3枚 → 15%・43%・22%／精霊を2倍・4ターン → 10%・38%・22%（同じシードで今は5%・28%・16%。上の表とはシードが違う）。長さは、城HP45で平均107→93手番、崩壊の刻を予告30・開始40にすると84手番（崩壊での決着は増える）。カードの数値・枚数は案のままなので、調整は遊んで確かめてから人間と決める。試合は10分の目安より長い
+- 画面（UI担当にお願いしたいこと）：56枚の絵・説明文・効果アイコン（`js/ui/art.js`・`js/ui/text.js`）、陣営を選ぶ画面、`js/main.js` / `server/server.js` が `factionDecks` のモード（`cardSet` なし）を読むこと、新しいイベント（`soldierHealed` / `castleGuardSet` / `castleGuarded` / `shieldBroken` / `castleHealCut` / `castleHealCutEnded`）と `statuses.slowed` / `blinded`・`castleGuard`・`bloodArmor`・`castleHealCut` の表示、突き（`soldierDamaged` が片方だけ）の演出
 
 ## 全体の設計（STEP 2〜5 の見通し）
 

@@ -1,0 +1,14 @@
+{
+  "_note": "4陣営モードだけの属性の強弱（data/classic/elements.json の写し。クラシックとは別に調整できるように分けた）。beats は「その属性が強い相手」。強い側のダメージが rules.elementBonus 増える（弱い側に当たっても減らない）。混沌は何にも強くなく、混沌に強い属性もない",
+  "elements": {
+    "fire": { "name": "火", "beats": ["ice"] },
+    "water": { "name": "水", "beats": ["fire", "earth"] },
+    "wind": { "name": "風", "beats": ["fire"] },
+    "earth": { "name": "土", "beats": ["thunder", "wind"] },
+    "ice": { "name": "氷", "beats": ["water"] },
+    "thunder": { "name": "雷", "beats": ["water"] },
+    "dark": { "name": "闇", "beats": ["light"] },
+    "light": { "name": "光", "beats": ["dark"] },
+    "chaos": { "name": "混沌", "beats": [] }
+  }
+}

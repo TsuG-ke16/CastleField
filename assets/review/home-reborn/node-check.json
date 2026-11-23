@@ -1,0 +1,8 @@
+{
+  "tests": 742,
+  "pass": 742,
+  "fail": 0,
+  "skipped": 0,
+  "command": "node --test",
+  "environment": "Node.js / local network enabled for test HTTP servers"
+}

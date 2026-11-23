@@ -1,9 +1,8 @@
+import { homeIcon } from './HomeIcons.js';
 import { profileArt } from './profileArt.js';
-// ホーム画面：上にプレイヤー情報、下にタブ（アカウント・デッキ・バトル・ガチャ・設定）。
-// バトルのページは「城の絵 → シーズン・ランク → モード → デッキ → 大きな対戦開始ボタン」の順に、上から下へ迷わず進めるように並べる。
-// デッキのページは、使うデッキの中身（カードの絵）を主役にする。ほかのページも、そのタブで一番よく使う操作を大きく出す。
-// いつも入口になる。サーバーのアカウント機能がないとき（python の簡易サーバー・オフライン）は、
-// ひとりで遊ぶ・同じ端末・デッキ編成・図鑑・設定だけを使え、サーバーが要るメニューは押すと理由を出す。表示名などは textContent で入れる。
+// Battle Station：ルールセット・使用デッキ・対戦形式を分け、開始操作を下部へ集約する。
+// 形式・デッキ・補助機能はnative dialogで選び、既存の各機能へ接続する。
+// サーバー未接続でもソロ・同じ端末・デッキ・図鑑・設定は利用できる。
 import { account } from './Account.js';
 import { loadDecks, selectMyDeck, saveMyDeck, deleteMyDeck, DECK_SLOTS } from './DeckStore.js';
 import { deckCard } from './DeckPreview.js';
@@ -20,7 +19,7 @@ const MODES = {
 // サーバーのアカウント機能がないと使えないメニュー
 const NEEDS_SERVER = new Set(['rank', 'ranking', 'friend', 'profile', 'shop', 'gacha', 'skin', 'mission']);
 const SERVER_REASON = 'この機能は、オンライン対戦のサーバー（node server/server.js）で開くと使えます';
-const menuIcon = (id, size = 36) => `<img src="assets/ui/home/${id}.png" alt="" width="${size}" height="${size}" draggable="false">`;
+const menuIcon = (id, size = 24) => homeIcon(id, size);
 // 画面下のタブ（一般的なアプリと同じ）。左から アカウント・デッキ・バトル（真ん中）・ガチャ・設定。
 const TABS = [
   { id: 'account', label: 'アカウント', icon: 'profile' },
@@ -97,14 +96,16 @@ export class Home {
    * @param {(type: string) => void} [o.onZoomCard] カードを大きく見せる（CardZoom）
    * @param {object} [o.cards] @param {object} [o.rarities] @param {object} [o.rules] @param {object} [o.decks] デッキの中身を見せるのに使う（data/ の中身）
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {} }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks, ruleset, factions, onRuleset });
     this.deckSort = 'rarity';
     this.data = null;
     this.mode = 'solo';
+    this.faction = 'kingdom';
+    try { const f = localStorage.getItem('cf-home-faction'); if (factions?.[f]) this.faction = f; } catch { /* optional */ }
     try { const m = localStorage.getItem(MODE_KEY); if (m in MODES) this.mode = m; } catch { /* 保存できなくても動く */ }
     const box = this.box = document.createElement('div');
-    box.id = 'home'; box.className = 'screen'; box.hidden = true;
+    box.id = 'home'; box.className = 'screen home-reborn'; box.dataset.ruleset = ruleset; box.hidden = true;
     box.innerHTML = `<div class="home-sky" aria-hidden="true"></div>
     <div class="home-wrap">
       <header class="home-top">
@@ -230,42 +231,38 @@ export class Home {
       </div>
 
       <div class="home-page" data-page="battle" role="tabpanel" aria-label="バトル">
-        <div class="home-worlds" role="tablist" aria-label="世界" data-part="worlds"></div>
-        <section class="home-hero" aria-label="王国">
-          <div class="home-landscape">
-            <span class="home-landscape-art" aria-hidden="true"></span>
-            <span class="home-sun" aria-hidden="true"></span>
-            <span class="home-glint" aria-hidden="true"></span>
+        <div class="home-worlds" role="group" aria-label="ルールセット" data-part="worlds"></div>
+        <div class="home-battle-heading"><p>CASTLE FIELD</p><h1 data-part="worldName">城を落とせ。</h1><span>カードで戦う、城攻めバトル</span></div>
+        <figure class="home-hero" aria-label="選択中の戦場"><img class="home-arena" src="assets/bg/home-arena-${ruleset === 'factions' ? 'factions' : 'duel'}.png" alt="${ruleset === 'factions' ? '四つの陣営の城と、中央に集まる道' : '道で結ばれた青とオレンジの二つの城'}" width="960" height="570"></figure>
+        <div class="home-progress-line"><span class="home-season" data-part="season"></span><button class="home-rank-chip raw-btn" data-part="rank" data-act="rank"><span data-part="rankEmblem"></span><span><small>ランク</small><span data-part="rankText">未参加</span></span>${homeIcon('arrow',16)}</button></div>
+        <section class="home-battle-console" aria-label="対戦の準備">
+          <div class="home-deckpanel" aria-label="使うデッキ">
+            <div class="home-deck-fan home-deck-fan-mini" data-part="deckFan2" aria-label="使用デッキの代表カード"></div>
+            <button class="home-deckpanel-text raw-btn" data-act="chooseDeck"><span class="home-eyebrow">使用デッキ</span><strong class="home-deckpanel-name" data-part="deck">—</strong><span class="home-deck-meta" data-part="deckMeta2"></span></button>
+            <button class="home-deck-change raw-btn" data-act="chooseDeck" aria-label="使用デッキを選択・編集">${homeIcon('arrow',22)}</button>
           </div>
-          <div class="home-infobar">
-            <span data-part="season" class="home-season home-ribbon"></span>
-            <span class="home-infobar-world"><svg viewBox="0 0 24 18" width="26" height="20" aria-hidden="true"><path d="M2 15 1 4l6 5 5-8 5 8 6-5-1 11Z" fill="#ffc94f" stroke="#4d3426" stroke-width="1.6" stroke-linejoin="round"/></svg><b data-part="worldName">王国</b></span>
-            <span class="home-rank-chip" data-part="rank"><span class="home-rank-emblem" data-part="rankEmblem"></span><span><small>ランク</small><span data-part="rankText">—</span></span></span>
-          </div>
+          <button class="home-mode-picker raw-btn" data-act="chooseMode" aria-haspopup="dialog"><span class="home-selected-mode-icon" data-part="modeIcon"></span><span><small>対戦形式</small><strong data-part="modeName">ひとりで遊ぶ</strong></span><span class="home-mode-change">変更${homeIcon('down',16)}</span></button>
+          <button type="button" class="home-start raw-btn" data-act="start"><span data-part="startLabel">対戦の準備へ</span>${homeIcon('arrow',22)}</button>
+          <p class="home-note" data-part="note" role="status"></p>
+          <button type="button" class="home-retry cf-btn raw-btn" data-act="retry" hidden>再読み込み</button>
+          <dl class="home-facts" hidden><div><dt>戦績</dt><dd data-part="stats">—</dd></div></dl>
         </section>
-        <section class="home-card home-modes-card" aria-label="ゲームモード"><div class="home-modes" role="tablist" aria-label="ゲームモード" data-part="modes"></div></section>
-        <section class="home-card home-deckpanel" aria-label="使うデッキ">
-          <div class="home-deckpanel-text">
-            <span class="home-eyebrow">使うデッキ</span>
-            <b class="home-deckpanel-name" data-part="deck">—</b>
-            <div class="home-deck-meta home-deck-meta-light" data-part="deckMeta2"></div>
-            <button type="button" class="cf-btn cf-btn-secondary cf-btn-sm raw-btn home-deckpanel-btn" data-act="deck"><img src="assets/ui/home/deck.png" alt="" width="24" height="24">デッキを編成する<span class="home-tile-chevron" aria-hidden="true"></span></button>
-          </div>
-          <div class="home-deck-fan home-deck-fan-mini" data-part="deckFan2" role="list" aria-label="デッキの代表カード（タップで拡大）"></div>
-        </section>
-        <button type="button" class="home-start raw-btn" data-act="start"><span class="home-laurel" aria-hidden="true"></span><span class="home-start-icon" aria-hidden="true">${menuIcon('casual', 40)}</span><span data-part="startLabel">対戦開始</span><span class="home-laurel home-laurel-r" aria-hidden="true"></span></button>
-        <p class="home-note" data-part="note" role="status"></p>
-        <button type="button" class="home-retry cf-btn cf-btn-secondary raw-btn" data-act="retry" hidden>再読み込み</button>
-        <dl class="home-facts" hidden><div><dt>戦績</dt><dd data-part="stats">—</dd></div></dl>
-        <nav class="home-menu" aria-label="対戦" data-menu="battle"></nav>
+        <div class="home-shortcuts"><button class="raw-btn" data-act="catalog">${homeIcon('catalog',20)}カード図鑑</button><button class="raw-btn" data-act="more" aria-haspopup="dialog">${homeIcon('more',20)}その他</button></div>
       </div>
       <nav class="home-tabbar" role="tablist" aria-label="メニュー" data-part="tabbar"></nav>
-    </div>`;
+    </div>
+    <dialog class="home-sheet" id="home-mode-sheet" aria-labelledby="home-mode-title"><div class="home-sheet-heading"><h2 id="home-mode-title">対戦形式</h2><button class="raw-btn home-sheet-close" data-close-sheet aria-label="閉じる">${homeIcon('close')}</button></div><div class="home-modes" role="group" aria-label="対戦形式" data-part="modes"></div></dialog>
+    <dialog class="home-sheet" id="home-deck-sheet" aria-labelledby="home-deck-title"><div class="home-sheet-heading"><h2 id="home-deck-title">使うデッキ</h2><button class="raw-btn home-sheet-close" data-close-sheet aria-label="閉じる">${homeIcon('close')}</button></div><div data-part="deckChoices"></div></dialog>
+    <dialog class="home-sheet" id="home-more-sheet" aria-labelledby="home-more-title"><div class="home-sheet-heading"><h2 id="home-more-title">バトルメニュー</h2><button class="raw-btn home-sheet-close" data-close-sheet aria-label="閉じる">${homeIcon('close')}</button></div><nav class="home-menu" aria-label="ほかの対戦と進行" data-menu="battle"></nav><button class="home-help-link raw-btn" data-act="help">${homeIcon('help')}遊び方</button></dialog>`;
     document.getElementById('app').append(box);
     this.part = (n) => box.querySelector(`[data-part="${n}"]`);
     this.tab = 'battle';
     this.renderMenu();
     this.renderTabs();
+    this.navLayout = matchMedia('(min-width: 1000px) and (min-height: 650px)');
+    const orient = () => this.part('tabbar').setAttribute('aria-orientation', this.navLayout.matches ? 'vertical' : 'horizontal');
+    this.navLayout.addEventListener('change', orient); orient();
+    for (const dialog of box.querySelectorAll('.home-sheet')) dialog.addEventListener('click', e => { if (e.target === dialog) { const r=dialog.getBoundingClientRect(); if(e.clientX<r.left || e.clientX>r.right || e.clientY<r.top || e.clientY>r.bottom) dialog.close(); } });
     this.renderModes();
     this.renderGachaShow();
     box.addEventListener('click', (e) => this.onClick(e));
@@ -289,7 +286,7 @@ export class Home {
     focusEl?.focus({ preventScroll: true });
   }
 
-  close() { this.box.hidden = true; }
+  close() { this.closeSheets(); this.box.hidden = true; }
 
   async refresh() {
     const request = Symbol();
@@ -329,7 +326,7 @@ export class Home {
   }
 
   renderSeason() {
-    const text = this.season ? `シーズン ${this.season.id}` : '';
+    const text = this.ruleset === 'factions' ? '' : this.season ? `シーズン ${this.season.id}` : '';
     this.part('season').textContent = text;
     this.part('accSeason').textContent = text;
   }
@@ -420,17 +417,7 @@ export class Home {
     this.renderBadges();
     this.renderPulls();
     this.renderSeason();
-    // 世界（モード）：いまは王国だけ。ほかは準備中（アカウント・レベル・通貨・所持品は世界をこえて共通）
-    const worlds = this.part('worlds'); worlds.replaceChildren();
-    for (const w of d?.modes ?? [{ id: 'kingdom', name: '王国', available: true }]) {
-      const b = document.createElement('button'); b.type = 'button'; b.className = 'home-world raw-btn'; b.disabled = !w.available;
-      b.textContent = w.name.replace(/（準備中）$/, '');
-      if (!w.available) b.title = '準備中です';
-      if (!w.available || w.name.includes('準備中')) { const tag = document.createElement('small'); tag.textContent = '準備中'; b.append(tag); }
-      b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(w.id === (d?.defaultMode ?? 'kingdom'))); worlds.append(b);
-    }
-    const world = (d?.modes ?? []).find((w) => w.id === (d?.defaultMode ?? 'kingdom'));
-    this.part('worldName').textContent = world?.name ?? '王国';
+    this.renderWorlds();
     const sum = d?.rank;
     const member = u?.kind === 'member';
     this.part('rankEmblem').innerHTML = member ? rankEmblem(sum?.rank ?? null, 26) : '';
@@ -465,8 +452,7 @@ export class Home {
     this.part('guestNote').hidden = true;
     this.part('season').textContent = '';
     this.part('accSeason').textContent = '';
-    const worlds = this.part('worlds'); worlds.replaceChildren();
-    const w = document.createElement('button'); w.type = 'button'; w.className = 'home-world raw-btn'; w.textContent = '王国'; w.setAttribute('role', 'tab'); w.setAttribute('aria-selected', 'true'); worlds.append(w);
+    this.renderWorlds();
     this.part('rankEmblem').innerHTML = '';
     this.part('accEmblem').innerHTML = '';
     this.setRank('未参加', 'サーバーで遊ぶと参加できます');
@@ -514,6 +500,10 @@ export class Home {
    * 決まりに合うデッキがなければ、対戦で実際に使われる見本のデッキを見せる。
    */
   currentDeck(serverName) {
+    if (this.ruleset === 'factions') {
+      const d = this.decks?.[this.faction];
+      return { name:d?.name ?? '陣営を選択', list:d?.cards ?? {}, kind:'faction', check:{ok:true,total:Object.values(d?.cards ?? {}).reduce((a,b)=>a+b,0)}, state:null };
+    }
     let state = null;
     try { state = loadDecks(); } catch { /* 読めなくても動く */ }
     const slot = state?.active ?? 0;
@@ -524,7 +514,7 @@ export class Home {
     const sampleId = this.rules?.defaultCostDeck;
     const sample = sampleId && this.decks?.[sampleId];
     const sampleCheck = sample && canCheck ? checkCostDeck(sample.cards, this.cards, this.rarities, this.rules) : null;
-    if (mine) return { name: mine.name, list: mine.list, check, kind: 'invalid', slot, state, fallback: sample?.name };
+    if (mine) return { name: sample?.name ?? serverName ?? '見本のデッキ', list: sample?.cards ?? {}, check:sampleCheck, kind:'fallback', slot,state,repairReason:check?.reason,invalidName:mine.name };
     if (sample) return { name: sample.name, list: sample.cards, check: sampleCheck, kind: 'sample', slot, state };
     return { name: serverName ?? '未設定', list: null, check: null, kind: 'none', slot, state };
   }
@@ -532,10 +522,11 @@ export class Home {
   renderDeck(serverName) {
     const deck = this.currentDeck(serverName);
     this.part('deck').textContent = deck.name;
+    this.box.querySelector('.home-deckpanel .home-eyebrow').textContent=this.ruleset==='factions'?'使用する陣営':'使用デッキ';
     this.part('deck2').textContent = deck.name;
     const state = this.part('deckState');
     state.className = `home-deck-state is-${deck.kind}`;
-    state.textContent = { mine: '使えます', sample: '見本', invalid: '要調整', none: '' }[deck.kind];
+    state.textContent = { mine: '使えます', sample: '見本', invalid: '要調整', none: '', fallback:'見本を使用中', faction: '固定デッキ' }[deck.kind];
     state.title = deck.kind === 'invalid' ? `決まりに合わないため、対戦では「${deck.fallback ?? '見本のデッキ'}」を使います（${deck.check?.reason ?? ''}）`
       : deck.kind === 'sample' ? 'デッキを編成するまでは、この見本のデッキで対戦します' : '';
     // 枚数・コスト
@@ -544,14 +535,14 @@ export class Home {
       meta.replaceChildren();
       if (!deck.check) continue;
       const max = this.rules?.deckCostMax ?? 100;
-      for (const [label, value] of [['枚数', `${deck.check.total}枚`], ['コスト', `${deck.check.cost}/${max}`]]) {
+      for (const [label, value] of (deck.kind === 'faction' ? [['枚数', `${deck.check.total}枚`], ['構成', '陣営固定']] : [['枚数', `${deck.check.total}枚`], ['コスト', `${deck.check.cost}/${max}`]])) {
         const s = document.createElement('span'); const b = document.createElement('b');
         s.textContent = label; b.textContent = value; s.append(b); meta.append(s);
       }
     }
     const warn = this.part('deckWarn');
-    warn.hidden = deck.kind !== 'invalid';
-    warn.textContent = deck.kind === 'invalid' ? `${deck.check?.reason ?? '決まりに合いません'}。対戦では見本のデッキを使います` : '';
+    warn.hidden = !['invalid','fallback'].includes(deck.kind);
+    warn.textContent = deck.kind === 'fallback' ? `保存した「${deck.invalidName}」は要調整（${deck.repairReason ?? '構成を確認してください'}）。対戦では見本のデッキを使います。` : deck.kind === 'invalid' ? `${deck.check?.reason ?? '決まりに合いません'}。対戦では見本のデッキを使います` : '';
     // 代表のカード（レアリティの高い順・枚数の多い順）
     const entries = Object.entries(deck.list ?? {}).filter(([type]) => this.cards && Object.hasOwn(this.cards, type));
     const order = this.rarities ? Object.keys(this.rarities) : [];
@@ -561,7 +552,10 @@ export class Home {
     for (const fanName of ['deckFan', 'deckFan2']) {
       const fan = this.part(fanName);
       fan.replaceChildren();
-      picks.forEach(([type], i) => fan.append(this.cardButton(type, 'home-fan-card', { index: i, total: picks.length })));
+      if(fanName === 'deckFan2' && deck.kind === 'faction') {
+        const emblem = new Image();emblem.src=`assets/ui/factions/crest-${this.faction}.png`;emblem.alt='';emblem.width=60;emblem.height=60;fan.append(emblem);fan.hidden=false;fan.setAttribute('aria-label',`選択中の陣営：${deck.name}`);continue;
+      }
+      (fanName === 'deckFan2' ? [picks[0], sorted.find(([type]) => this.cards[type].kind !== this.cards[picks[0]?.[0]]?.kind) ?? picks[1]].filter(Boolean) : picks).forEach(([type], i) => fan.append(this.cardButton(type, 'home-fan-card', { index: i, total: picks.length })));
       fan.hidden = !picks.length;
     }
     // カードの一覧（すべて。種類ごとに1枚、枚数つき）
@@ -579,6 +573,7 @@ export class Home {
     this.part('deckKinds').textContent = sorted.length ? `${sorted.length}種類` : '';
     this.part('deckCardsWrap').hidden = !sorted.length;
     this.currentDeckInfo = deck;
+    for(const act of ['deckCopy','deckDelete']) { const b=this.box.querySelector(`[data-act=${act}]`);b.disabled=deck.kind==='faction';b.title=deck.kind==='faction'?'4陣営は陣営ごとの固定デッキです':''; }
     this.renderSlots(deck);
   }
 
@@ -589,7 +584,7 @@ export class Home {
     b.className = `${className} raw-btn`;
     b.dataset.card = type;
     b.dataset.zoom = type;
-    b.setAttribute('role', className === 'home-fan-card' ? 'listitem' : 'button');
+    b.setAttribute('role', 'button');
     b.setAttribute('aria-label', `${this.cards[type].name}（タップで拡大）`);
     if (className === 'home-fan-card') {
       const mid = (total - 1) / 2;
@@ -652,7 +647,7 @@ export class Home {
 
   /** ランク：バトルのページは短く（城の絵の下の帯）、アカウントのページはくわしく出す */
   setRank(short, full) {
-    this.part('rankText').textContent = short;
+    this.part('rankText').textContent = this.ruleset === 'factions' ? '対象外' : short;
     this.part('rank').title = full;
     this.rankFull = full;
   }
@@ -669,21 +664,57 @@ export class Home {
     this.renderBadges();
   }
 
-  renderFacts() { this.part('startLabel').textContent = MODES[this.mode].label; }
+  renderFacts() {
+    this.part('startLabel').textContent = '対戦の準備へ';
+    this.part('modeName').textContent = MODES[this.mode].label;
+    this.part('modeIcon').innerHTML = homeIcon(this.mode);
+    this.box.querySelector('.home-start').setAttribute('aria-label', `${MODES[this.mode].label}：対戦の準備へ`);
+  }
+
+  renderWorlds() {
+    const wrap = this.part('worlds'); wrap.replaceChildren();
+    for (const [id,label] of [['kingdom','通常モード'],['factions','4陣営モード']]) {
+      const b=document.createElement('button'); b.type='button'; b.className='home-world raw-btn'; b.dataset.ruleset=id;
+      b.textContent=label; b.setAttribute('aria-pressed',String(id===this.ruleset)); wrap.append(b);
+    }
+    this.part('worldName').textContent = this.ruleset === 'factions' ? '四つの陣営、激突。' : '城を落とせ。';
+  }
 
   renderModes() {
-    const wrap = this.part('modes');
-    wrap.replaceChildren();
-    for (const [id, m] of Object.entries(MODES)) {
-      const b = document.createElement('button');
-      b.type = 'button'; b.className = 'home-mode raw-btn'; b.dataset.mode = id; b.setAttribute('role', 'tab');
-      b.setAttribute('aria-selected', String(id === this.mode));
-      b.title = m.note;
-      const ic = new Image(); ic.src = m.icon; ic.alt = ''; ic.width = 40; ic.height = 40; ic.draggable = false; ic.className = 'home-mode-icon';
-      const s = document.createElement('strong'); s.textContent = m.chip;
-      const n = document.createElement('small'); n.textContent = m.note;
-      b.append(ic, s, n); wrap.append(b);
+    const wrap=this.part('modes'); wrap.replaceChildren();
+    if(this.ruleset==='factions' && this.mode==='online') this.mode='solo';
+    for(const [id,m] of Object.entries(MODES)) {
+      const b=document.createElement('button'); b.type='button'; b.className='home-mode raw-btn'; b.dataset.mode=id;
+      b.setAttribute('aria-pressed',String(id===this.mode));
+      b.innerHTML=`${homeIcon(id,28)}<span><strong>${m.label}</strong><small>${m.note}</small></span>${homeIcon('check',20)}`;
+      if(id==='online' && this.ruleset==='factions') { b.disabled=true; b.querySelector('small').textContent='4陣営のオンラインは準備中'; }
+      wrap.append(b);
     }
+    this.renderFacts();
+  }
+
+  openSheet(id) { this.box.querySelector(`#home-${id}-sheet`).showModal(); }
+  closeSheets() { for(const d of this.box.querySelectorAll('.home-sheet[open]')) d.close(); }
+
+  renderDeckChoices() {
+    const wrap=this.part('deckChoices'); wrap.replaceChildren();
+    const factionMode=this.ruleset==='factions';
+    this.box.querySelector('#home-deck-title').textContent=factionMode?'陣営を選択':'使うデッキ';
+    const choices=factionMode ? Object.entries(this.decks ?? {}).map(([id,d])=>({id,name:d.name,list:d.cards,description:this.factions?.[id]?.description}))
+      : loadDecks().slots.map((d,i)=>({id:String(i),name:d?.name ?? `デッキ${i+1}を作成`,list:d?.list,description:d?(checkCostDeck(d.list,this.cards,this.rarities,this.rules).ok?'選択して使う':'要調整：編集して使う'):'空き枠'}));
+    for(const c of choices) {
+      const b=document.createElement('button'); b.type='button'; b.className='home-deck-choice raw-btn';
+      b.dataset[factionMode?'faction':'chooseSlot']=c.id;
+      const on=factionMode ? this.faction===c.id : this.currentDeckInfo?.kind==='mine' && this.currentDeckInfo.slot===Number(c.id);
+      b.setAttribute('aria-pressed',String(on));
+      if(factionMode) { const im=new Image(); im.src=`assets/ui/factions/crest-${c.id}.png`; im.alt=''; im.width=48; im.height=48; b.append(im); }
+      const text=document.createElement('span'),name=document.createElement('strong'),note=document.createElement('small');
+      name.textContent=c.name; note.textContent=c.description; text.append(name,note); b.append(text); b.insertAdjacentHTML('beforeend', homeIcon(on?'check':'arrow',20));wrap.append(b);
+    }
+    if(!factionMode) {
+      const edit=document.createElement('button'); edit.type='button';edit.className='home-sheet-edit raw-btn';edit.dataset.act='deck';edit.textContent='使用デッキを編集';wrap.append(edit);
+      if(this.currentDeckInfo?.kind==='sample') { const note=document.createElement('p');note.className='home-sheet-note';note.textContent='現在は見本のデッキを使用中。空き枠から自分のデッキを作れます。';wrap.append(note); }
+    } else { const note=document.createElement('p');note.className='home-sheet-note';note.textContent='4陣営は陣営ごとの固定デッキです。カード図鑑で構成を確認できます。';wrap.append(note); }
   }
 
   renderMenu() {
@@ -701,8 +732,8 @@ export class Home {
           button.type = 'button';
           button.className = 'home-tile raw-btn';
           button.dataset.id = id;
-          // 遊び方だけは専用の絵がまだないので、「？」の文字で出す（絵ができたら assets/ui/home/help.png を足して、ここを消す）
-          const iconHtml = id === 'help' ? '<b class="home-tile-glyph" aria-hidden="true">？</b>' : menuIcon(id, style === 'list' ? 44 : 36);
+          // 補助メニューもナビと共通のSVGアイコンで表示する。
+          const iconHtml = menuIcon(id, 24);
           button.innerHTML = `<span class="home-tile-icon">${iconHtml}</span><span class="home-tile-text"><span class="home-tile-label"></span>${style === 'list' ? '<small class="home-tile-note"></small>' : ''}</span>${style === 'list' ? '<span class="home-tile-chevron" aria-hidden="true"></span>' : ''}`;
           button.querySelector('.home-tile-label').textContent = MENU_IN_PAGE[tab]?.[id] ?? MENU[id];
           const note = button.querySelector('.home-tile-note');
@@ -725,6 +756,7 @@ export class Home {
       b.type = 'button';
       b.className = `home-tab raw-btn${t.id === 'battle' ? ' home-tab-main' : ''}`;
       b.dataset.tab = t.id;
+      b.id = `home-tab-${t.id}`; b.setAttribute('aria-controls', `home-page-${t.id}`);
       b.setAttribute('role', 'tab');
       b.innerHTML = `<span class="home-tab-icon">${menuIcon(t.icon)}</span><span class="home-tab-label"></span><i class="home-tab-dot" hidden></i>`;
       b.querySelector('.home-tab-label').textContent = t.label;
@@ -745,6 +777,7 @@ export class Home {
       sky.classList.remove('home-sky-in'); void sky.offsetWidth; sky.classList.add('home-sky-in');
     }
     for (const page of this.box.querySelectorAll('.home-page')) {
+      page.id = `home-page-${page.dataset.page}`; page.setAttribute('aria-labelledby', `home-tab-${page.dataset.page}`);
       const show = page.dataset.page === tab;
       const changed = page.hidden === show;
       page.hidden = !show;
@@ -787,14 +820,23 @@ export class Home {
   onKey(e) {
     // タブは左右の矢印でも切りかえられる
     const tab = e.target.closest?.('.home-tab');
-    if (!tab || !['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+    const keys = this.navLayout.matches ? ['ArrowUp','ArrowDown'] : ['ArrowLeft','ArrowRight'];
+    if (!tab || ![...keys,'Home','End'].includes(e.key)) return;
     const ids = TABS.map((t) => t.id);
-    const next = ids[(ids.indexOf(tab.dataset.tab) + (e.key === 'ArrowRight' ? 1 : ids.length - 1)) % ids.length];
+    const next = e.key === 'Home' ? ids[0] : e.key === 'End' ? ids.at(-1) : ids[(ids.indexOf(tab.dataset.tab) + (e.key === keys[1] ? 1 : ids.length - 1)) % ids.length];
     e.preventDefault();
     this.showTab(next, { focus: true });
   }
 
   onClick(e) {
+    if(e.target.closest('[data-close-sheet]')) { this.closeSheets(); return; }
+    const world=e.target.closest('[data-ruleset]');
+    if(world?.tagName==='BUTTON') { if(world.dataset.ruleset!==this.ruleset) this.onRuleset(world.dataset.ruleset); return; }
+    const faction=e.target.closest('[data-faction]');
+    if(faction) { this.faction=faction.dataset.faction; try{localStorage.setItem('cf-home-faction',this.faction)}catch{} this.closeSheets();this.renderDeck();return; }
+    const choose=e.target.closest('[data-choose-slot]');
+    if(choose) { const slot=Number(choose.dataset.chooseSlot),deck=loadDecks().slots[slot];this.closeSheets(); if(!deck || !checkCostDeck(deck.list,this.cards,this.rarities,this.rules).ok) return this.onDeck(slot);selectMyDeck(slot);this.renderDeck();return; }
+
     const tabBtn = e.target.closest('.home-tab');
     if (tabBtn) { sound.play('tap'); this.showTab(tabBtn.dataset.tab); return; }
     const modeBtn = e.target.closest('.home-mode');
@@ -802,7 +844,8 @@ export class Home {
       this.mode = modeBtn.dataset.mode;
       try { localStorage.setItem(MODE_KEY, this.mode); } catch { /* ok */ }
       sound.play('tap');
-      for (const tab of this.part('modes').children) tab.setAttribute('aria-selected', String(tab === modeBtn));
+      for (const tab of this.part('modes').children) tab.setAttribute('aria-pressed', String(tab === modeBtn));
+      this.closeSheets();
       this.renderFacts();
       return;
     }
@@ -823,6 +866,12 @@ export class Home {
     const tile = e.target.closest('.home-tile');
     const act = tile ? tile.dataset.id : e.target.closest('[data-act]')?.dataset.act;
     if (!act) return;
+    if(act==='chooseMode') return this.openSheet('mode');
+    if(act==='chooseDeck') { this.renderDeckChoices(); return this.openSheet('deck'); }
+    if(act==='more') return this.openSheet('more');
+    this.closeSheets();
+    if(this.ruleset==='factions' && ['rank','ranking','friend','casual','mission'].includes(act)) return this.toast('この機能は通常モードで利用できます。4陣営は現在ローカル対戦に対応しています。','info');
+    if(this.ruleset==='factions' && act==='deck') { this.renderDeckChoices();return this.openSheet('deck'); }
     sound.play('tap');
     if (act === 'account') return this.onAccount();
     if (act === 'retry') return this.refresh();

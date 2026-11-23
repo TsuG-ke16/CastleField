@@ -1,0 +1,9 @@
+<!doctype html><html lang="ja"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>4陣営カードフレーム</title>
+<style>*{box-sizing:border-box}body{margin:0;padding:24px;font-family:system-ui,sans-serif;background:#f3ecdc;color:#493421}h1{font-size:26px;margin:0 0 8px}p{margin:8px 0 24px}main{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}article{background:#fffaf1;border:1px solid #bba486;border-radius:14px;padding:16px}h2{font-size:19px;margin:0 0 12px}.views{display:flex;gap:2.1875%;align-items:start}.face{width:45%;height:auto}.edge{width:5.625%;height:auto}.labels{display:flex;justify-content:space-between;padding:8px 10%;font-size:12px}a{color:inherit}@media(max-width:650px){body{padding:12px}main{grid-template-columns:1fr}}</style>
+<h1>4陣営の表・側面・裏</h1><p>同じ縮尺で表示。共通外形64×96mm、本体厚3.52mm。<a href="construction.svg">寸法・接続ガイド</a> ／ <a href="README.md">Blender向け仕様</a></p><main></main>
+<script type="module">
+const root=new URL('../../../',location.href);const d=await(await fetch(new URL('assets/frames/factions.json',root))).json();
+const labels={kingdom:'王国：銀翼と王冠',forest:'森の同盟：編み根と琥珀',demon:'魔族軍：黒鉄と骨',dragon:'竜族帝国：竜鋼と翼'};
+for(const id of ['kingdom','forest','demon','dragon']){const f=d.factions[id],a=document.createElement('article');a.innerHTML=`<h2>${labels[id]}</h2><div class="views"><img class="face" alt="表" src="${new URL('assets/'+f.views.front,root)}"><img class="edge" alt="右側面" src="${new URL('assets/'+f.views.edge,root)}"><img class="face" alt="裏" src="${new URL('assets/'+f.views.back,root)}"></div><div class="labels"><span>表</span><span>右側面</span><span>裏</span></div>`;document.querySelector('main').append(a)}
+await Promise.all([...document.images].map(i=>i.decode()));document.documentElement.dataset.ready='true';
+</script></html>

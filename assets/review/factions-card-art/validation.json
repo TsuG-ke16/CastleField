@@ -1,0 +1,10 @@
+{
+  "cards": 56,
+  "units": 30,
+  "imageCount": 86,
+  "broken": [],
+  "desktop": "1100px; four factions",
+  "comparison": "6 pairs of existing and revised card illustrations loaded",
+  "mobile": "390x844; no horizontal overflow; faction navigation works",
+  "errors": []
+}

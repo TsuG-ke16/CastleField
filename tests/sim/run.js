@@ -7,6 +7,7 @@
 //       … data/ の値を一部だけ上書きして試す（cards はカードごとに中身をまぜる）
 //   node tests/sim/run.js --json                … 結果を JSON で出す
 //   node tests/sim/run.js --no-monsters         … 魔物と強化なしで回す
+//   node tests/sim/run.js --mode classic        … クラシックモードのカード・ルールで回す（省略すると通常モード）
 // 同じ引数なら、誰が回しても同じ結果になる。
 import { buildData, loadOptionalData } from '../helpers.js';
 import { runMany } from './sim.js';
@@ -39,17 +40,23 @@ const DEFAULT_MATCHES = [
 ];
 
 const matches = opt('match', null) ? [opt('match')] : DEFAULT_MATCHES;
-const { rules, cards } = buildData({ rules: rulesPatch, cards: cardsPatch });
-const gameOptions = args.includes('--no-monsters') ? {} : loadOptionalData();
+const mode = opt('mode', null);
+let rules, cards, gameOptions;
+try {
+  ({ rules, cards } = buildData({ rules: rulesPatch, cards: cardsPatch, mode }));
+  gameOptions = args.includes('--no-monsters') ? {} : loadOptionalData(mode);
+} catch (err) {
+  die(err.message);
+}
 // --stage lava：ステージを1つに決める（省略すると毎試合ランダム。--no-stages でステージなし）
 if (args.includes('--no-stages')) delete gameOptions.stages;
 else if (opt('stage', null)) gameOptions.setup = { ...(gameOptions.setup ?? {}), stage: opt('stage') };
 const rows = matches.map((m) => runMany({ games, seed, cards, rules, gameOptions, strategies: m.split(',') }));
 
+const pct = (x) => `${Math.round(x * 100)}%`;
 if (args.includes('--json')) {
   console.log(JSON.stringify(rows, null, 2));
 } else {
-  const pct = (x) => `${Math.round(x * 100)}%`;
   console.log(`試合数 ${games}・シード ${seed}`);
   console.log('「決着」は3000手番までに決着した試合数。手番は決着した試合だけで数える。');
   console.log('| 組み合わせ | 決着 | 平均手番（中央値・最大） | p1 の勝率 | 兵士からの城ダメージ | 戦い/試合 | 魔物を倒す/試合 | 魔物の城ダメージ/試合 | 魔物で決着 | 捨てる場面 | 出せる種類が2以上 |');
@@ -58,5 +65,14 @@ if (args.includes('--json')) {
     console.log(
       `| ${r.strategies.join(' vs ')} | ${r.decided}/${r.games} | ${r.avgTurns?.toFixed(1)}（${r.medianTurns}・${r.maxTurns}） | ${pct(r.winRate.p1 || 0)}±${pct(r.p1Margin ?? 0)} | ${pct(r.soldierDamageShare)} | ${r.clashesPerGame.toFixed(1)} | ${r.monstersDefeatedPerGame.toFixed(1)} | ${r.monsterCastleDamagePerGame.toFixed(1)} | ${pct(r.endedByMonsterRate)} | ${pct(r.discardRate)} | ${pct(r.choiceRate)} |`,
     );
+  }
+}
+// クラシック：属性の反応（対消滅・黒氷・砕氷・混沌反応）の回数。反応が起きたときだけ出す
+if (!args.includes('--json') && rows.some((r) => r.reactionsPerGame !== undefined)) {
+  console.log('\n属性の反応（全試合の回数。「/試合」は1試合の平均、「あり」は反応が1回以上あった試合の割合）');
+  for (const r of rows) {
+    if (r.reactionsPerGame === undefined) continue;
+    const counts = Object.entries(r.reactionCounts).map(([k, v]) => `${k} ${v}`).join('・');
+    console.log(`- ${r.strategies.join(' vs ')}：${r.reactionsPerGame.toFixed(2)}/試合・あり ${pct(r.reactionGameRate)}（${counts}）`);
   }
 }

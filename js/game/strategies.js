@@ -36,6 +36,16 @@ function pickLane(game, pid, cardId, targets) {
   const st = game.getState(pid);
   const type = st.players[pid].hand.find((c) => c.cardId === cardId)?.type;
   const isSoldier = curCards[type]?.kind === 'soldier';
+  // 城への魔法が先頭の兵士に当たるルール（castleSpellHitsFront）：相手の兵士がいちばん先頭（自分の城の近く）まで来ている道へ。
+  // だれもいなければ最初の道（城に当たる）。ふつうのルールでは城への魔法に道はないので、ここには来ない
+  if (curCards[type]?.effect === 'damageEnemyCastle') {
+    const me = st.players[pid].castleOwner ?? pid;
+    const front = (roadId) => Math.max(-1, ...Object.entries(st.players)
+      .filter(([id, p]) => (p.castleOwner ?? id) !== me)
+      .flatMap(([, p]) => p.soldiers.filter((x) => x.roadId === roadId).map((x) => x.position)));
+    const best = Math.max(...withRoad.map((t) => front(t.roadId)));
+    return best < 0 ? withRoad[0] : withRoad.find((t) => front(t.roadId) === best);
+  }
   const enemyCount = (roadId) => Object.entries(st.players)
     .filter(([id, p]) => (p.castleOwner ?? id) !== (st.players[pid].castleOwner ?? pid))
     .reduce((n, [, p]) => n + p.soldiers.filter((x) => x.roadId === roadId).length, 0);
@@ -102,18 +112,41 @@ function playFirst(game, playable, typesInOrder) {
 const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'water' };
 
 /**
+ * 属性 element の攻撃が、相手の兵士 s（getState の形）に当たったら反応するか。
+ * reactions は getState().reactions（反応の定義。ゲームの内部は読まない）。Game.findReaction と同じ決まり：
+ *   当たったあとの属性（武器の属性＋付着＋element）に混沌が入っていて3種以上 → 混沌反応／表で element と組になる属性が付いている → その反応
+ */
+export function canReact(reactions, element, s) {
+  if (!element || !reactions) return false;
+  const on = [...new Set([s.element, ...(s.attachments ?? []).map((a) => a.element)].filter(Boolean))];
+  const all = on.includes(element) ? on : [...on, element];
+  const chaos = reactions.chaos;
+  if (chaos && all.includes(chaos.element) && all.length >= chaos.minElements) return true;
+  return Object.values(reactions.reactions).some((r) => r.elements.includes(element) && on.includes(r.elements.find((e) => e !== element)));
+}
+
+/** 城壁をぶつける魔法（armorBlast）を持っているとき、CPU が城壁を貯める目安（castleSpellHitsFront のルールだけ） */
+const ARMOR_CHARGE = 15;
+
+/**
  * メイン以外（付加・防御）のカードを、役に立つときに出す（ほどよく考える戦い方で使う）
  *   武器：まだ武器のない、いちばん前の兵士に。近くの相手の属性に強い属性を選ぶ
  *   盾：いちばん前の兵士に
- *   城壁：城HPが半分以下のときだけ（使い切りで、手札も1枚減るため）
+ *   城壁：城HPが半分以下のときだけ（手札が1枚減り、MP を使うルールでは MP も使うため）。
+ *         chargeArmor が true なら、castleSpellHitsFront のルールで城壁をぶつける魔法を持っているとき、ARMOR_CHARGE まで貯める（smart・guard だけ）
  */
-function playSupports(game, pid, ctx) {
+function playSupports(game, pid, ctx, { chargeArmor = false } = {}) {
+  // 属性の付着と反応（クラシック）があるゲームだけ、反応を起こせる武器を先に選ぶ（ないゲームでは今までどおり）
   for (let guard = 0; guard < 20; guard++) {
-    const { me, enemies, playable } = view(game, pid);
-    const support = playable.filter((c) => ctx.cards[c.type].kind !== 'soldier' && ctx.cards[c.type].kind !== 'spell');
+    const { state, me, enemies, playable } = view(game, pid);
+    const reactions = state.reactions ?? null; // getState の公開データ（付着と反応のないゲームでは null）
+    let support = playable.filter((c) => ctx.cards[c.type].kind !== 'soldier' && ctx.cards[c.type].kind !== 'spell');
     if (support.length === 0) return;
     const front = [...me.soldiers].sort((a, b) => b.position - a.position);
     const enemySoldiers = enemies.flatMap((e) => e.soldiers);
+    // 武器ごとに、反応を起こせる相手の兵士（いなければ null）
+    const reactTarget = (def) => (reactions && def.kind === 'weapon' ? enemySoldiers.find((s) => canReact(reactions, def.element, s)) ?? null : null);
+    if (reactions) support = [...support].sort((a, b) => Number(Boolean(reactTarget(ctx.cards[b.type]))) - Number(Boolean(reactTarget(ctx.cards[a.type]))));
     let played = false;
     for (const c of support) {
       const def = ctx.cards[c.type];
@@ -121,13 +154,24 @@ function playSupports(game, pid, ctx) {
         const nearElements = new Set(enemySoldiers.map((s) => s.element).filter(Boolean));
         // 近くの相手の属性に負ける属性は避ける
         const bad = [...nearElements].some((e) => ELEMENT_BEATS[e] === def.element);
-        const target = front.find((s) => !s.weapon);
+        // 反応を起こせる相手がいれば、その相手と同じ道の、まだ武器のない兵士に持たせる（いなければ、いちばん前の兵士）
+        const foe = reactTarget(def);
+        const target = (foe && front.find((s) => !s.weapon && s.roadId === foe.roadId)) || front.find((s) => !s.weapon);
         if (!bad && target) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === target.soldierId));
+      } else if (def.effect === 'guardCastle') {
+        // 身代わり（4陣営）：相手の兵士が自分の城の近く（あと2マス以内）まで来ていて、まだ身代わりがいなければ、HPのいちばん多い兵士に
+        const L = ctx.rules?.laneLength ?? 5;
+        const near = enemySoldiers.some((s) => s.position >= L - 2);
+        const sturdy = [...me.soldiers].sort((a, b) => b.hp + b.shield - (a.hp + a.shield))[0];
+        if (near && !me.castleGuard && sturdy) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === sturdy.soldierId));
       } else if (def.effect === 'shieldSoldier') {
         if (front.length) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === front[0].soldierId));
       } else if (def.effect === 'armorCastle') {
-        // 城壁は使い切りで手札も1枚減るので、城HPが半分以下のときだけ出す
-        if (me.castleHp * 2 <= me.castleMaxHp) played = playWith(game, c.cardId);
+        // 城壁は手札が1枚減る（MP を使うルールでは MP も使う）ので、城HPが半分以下のときだけ出す。
+        // ただし chargeArmor（smart・guard）で、城への魔法が兵士に止められるルール（castleSpellHitsFront）のとき、城壁をぶつける魔法（armorBlast）を持っていれば、
+        // 城壁を弾として貯める（ARMOR_CHARGE まで。ぶつけるのは smartStep：城壁10以上か、相手の城を落とせるとき）
+        const charging = chargeArmor && Boolean(ctx.rules?.castleSpellHitsFront) && me.armor < ARMOR_CHARGE && me.hand.some((h) => ctx.cards[h.type]?.effect === 'armorBlast');
+        if (me.castleHp * 2 <= me.castleMaxHp || charging) played = playWith(game, c.cardId);
       }
       if (played) break;
     }
@@ -230,7 +274,7 @@ const RAW_STRATEGIES = {
     takeTurn(game, pid, rng, ctx) {
       buyUpgrades(game, pid, ctx);
       smartTurn(game, pid, ctx);
-      playSupports(game, pid, ctx);
+      playSupports(game, pid, ctx, { chargeArmor: true });
     },
     respond(game, pid, rng, ctx) {
       respondDefense(game, pid, rng, ctx, 'smart');
@@ -285,7 +329,7 @@ const RAW_STRATEGIES = {
       const near = enemies.some((e) => e.soldiers.some((s) => s.position >= L - 3));
       buyUpgrades(game, pid, ctx);
       if (!(near && playFirst(game, playable, soldierTypes(ctx)))) smartTurn(game, pid, ctx);
-      playSupports(game, pid, ctx);
+      playSupports(game, pid, ctx, { chargeArmor: true });
     },
     respond(game, pid, rng, ctx) {
       respondDefense(game, pid, rng, ctx, 'smart');
@@ -363,7 +407,7 @@ function smartStep(game, pid, ctx) {
   }
   // 毒にかかっていれば、解毒薬で治す（毒は永続なので、放っておくと削られ続ける）
   if (playFirst(game, playable, typesWithEffect(ctx, 'curePoison'))) return true;
-  if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, typesWithEffect(ctx, 'healOwnCastle'))) return true;
+  if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, [...typesWithEffect(ctx, 'healOwnCastle'), ...typesWithEffect(ctx, 'healCastleAndSoldiers')])) return true;
   // 永続の毒は早く入れるほど効く。強い毒から
   const toxins = typesWithEffect(ctx, 'poisonEnemy').sort((a, b) => ctx.cards[b].amount - ctx.cards[a].amount);
   if (enemy && playFirst(game, playable, toxins)) return true;
@@ -385,6 +429,36 @@ function smartStep(game, pid, ctx) {
     };
     for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'chainBlast')) if (playWith(game, c.cardId, front)) return true;
   }
+  // 敵兵士1体へのダメージ（singleDamage）：倒せる兵士のうちいちばん前の兵士、倒せなければいちばん前の兵士
+  // 呪い（weakenAttack）：攻撃力がいちばん高い兵士（同じなら前の兵士）
+  if (enemy && enemy.soldiers.length > 0) {
+    const byId = new Map(enemies.flatMap((e) => e.soldiers).map((s) => [s.soldierId, s]));
+    // ランダム属性ダメージ（randomElementDamage）も同じ選び方（属性の上乗せは数えない）
+    for (const c of playable.filter((x) => ['singleDamage', 'randomElementDamage'].includes(ctx.cards[x.type].effect))) {
+      const amount = ctx.cards[c.type].amount;
+      const pickFront = (targets) => {
+        // 先頭の兵士に当たる魔法（target "front"。4陣営）は相手・道を選ぶ：相手の兵士がいちばん多い道（pickLane）
+        if (!targets.some((t) => t.soldierId)) return targets.some((t) => t.roadId) ? pickLane(game, pid, c.cardId, targets) : targets[0];
+        const list = targets.map((t) => ({ t, s: byId.get(t.soldierId) })).filter((x) => x.s);
+        const kills = list.filter((x) => x.s.hp + x.s.shield <= amount);
+        const pool = kills.length ? kills : list;
+        return pool.sort((a, b) => b.s.position - a.s.position)[0]?.t;
+      };
+      if (playWith(game, c.cardId, pickFront)) return true;
+    }
+    for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'weakenAttack')) {
+      const strongest = (targets) => targets
+        .map((t) => ({ t, s: byId.get(t.soldierId) })).filter((x) => x.s)
+        .sort((a, b) => b.s.attack - a.s.attack || b.s.position - a.s.position)[0]?.t;
+      if (playWith(game, c.cardId, strongest)) return true;
+    }
+  }
+  // 竜血の雫（healSoldier。4陣営）：回復量ぶん以上減っている自分の兵士のうち、いちばん前の兵士
+  for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'healSoldier')) {
+    const amount = ctx.cards[c.type].amount;
+    const hurt = me.soldiers.filter((x) => x.maxHp - x.hp >= amount).sort((a, b) => b.position - a.position)[0];
+    if (hurt && playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === hurt.soldierId))) return true;
+  }
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;
@@ -396,10 +470,13 @@ function smartStep(game, pid, ctx) {
   const played = playFirst(game, playable, [
     ...soldierTypes(ctx),
     ...castleSpells,
+    ...typesWithEffect(ctx, 'breathAttack'), // 火炎の吐息（4陣営）：相手の兵士がいちばん多い道へ（pickLane）
     ...typesWithEffect(ctx, 'damageEnemySoldiers'),
     ...typesWithEffect(ctx, 'healOwnCastle'),
   ]);
   if (played) return true;
+  // 蘇生：ほかに出す兵士がないとき、最後に倒れた兵士を生き返らせる（出せないときは playable に入らない）
+  if (playFirst(game, playable, typesWithEffect(ctx, 'reviveFallen'))) return true;
   // 出すものがないとき、コインを増やすカード
   if (playFirst(game, playable, typesWithEffect(ctx, 'gainCoins'))) return true;
   // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み

@@ -36,6 +36,8 @@ export class Player {
     this.armyHp = 0;
     /** 今来ている精霊（1人1体まで）。{ type, spirit, amount, turns, targetId, fresh } か null */
     this.spirit = null;
+    /** 最後に倒れた（HPが0になった）自分の兵士 { type, roadId, targetId, maxHp } か null。蘇生（reviveFallen）が使う。相手に見せない（toState に入れない） */
+    this.lastFallen = null;
   }
 
   /** 城壁の残り。次の自分のターンの始めに消える（城に置く。チーム戦では城を共有するので、城壁もチームで共有） */
@@ -65,6 +67,8 @@ export class Player {
 
   removeSoldier(soldierId) {
     this.soldiers = this.soldiers.filter((s) => s.soldierId !== soldierId);
+    // 身代わり（4陣営）：城を守っていた兵士が場からいなくなったら（倒れた・城に着いた・帰った…）、身代わりも消える
+    if (this.castle.guard === soldierId) this.castle.guard = null;
   }
 
   /**
