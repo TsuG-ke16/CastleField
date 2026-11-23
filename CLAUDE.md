@@ -922,6 +922,9 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - `gameOver`：`{ winner, reason }`
 - 順番（`"lastStanding"` で城が落ちたとき）：`castleDamaged`（兵士が城に着いたときは、そのあとの `soldierDestroyed`（`"reachedCastle"`））→ `playerEliminated` → 抜けた人の兵士の `soldierDestroyed`（`"eliminated"`）→ `roadClosed` →（その道の兵士の `soldierDestroyed`（`"roadClosed"`））→ `roadOpened` →（残りが1人なら）`gameOver`
 
+### 4陣営（ベータ）の先行プレイ版（画面。人間の指示）
+オンライン専用で、URL `?beta=factions`（`?mode=factions`）で入る。合言葉の部屋 → 席ごとに陣営を選ぶ → 部屋主が開始。`data/modes.json` の `beta: true` のモードは、戦績・経験値・ミッションに記録しない（`Room.finishMatch`）。ランク・ショップ・ひとりで遊ぶは出さない。使い方・検証結果・既知の不具合・バランス提案は `docs/beta-factions/`。カードの数値は変えていない。
+
 ## ゴッドフィールド風の変更（人間に確認して決めた）
 
 「ゴッドフィールドに似せる」ため、ターン進行とカードを変えた。案の全体は `docs/godfield-proposal.md`。採用したのは A1 と B1〜B5（A2・A3・B6 は採用しない）。**数値はすべて仮。**
