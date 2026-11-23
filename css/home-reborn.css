@@ -309,3 +309,58 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app[data-home-theme] #title .levels-title { display:block;text-align:left;justify-self:start;width:100%; }
 /* ナビの上で各タブのスクロール領域を終え、下端の操作が固定ナビに隠れないようにする。 */
 #app #home.home-reborn .home-page:not([data-page="battle"]) { align-self:stretch;overflow-y:auto;overscroll-behavior:contain;grid-auto-rows:max-content;scroll-padding-bottom:16px;padding-bottom:24px; }
+
+/* 宇宙に浮かぶ4陣営3Dジオラマ統合レイヤー（WebGL有効時のみ適用・?fx=lite等は従来2Dを維持） */
+#app #home.home-reborn.has-3d-diorama { background:transparent; }
+#app #home.home-reborn.has-3d-diorama .home-sky { background:#040814;overflow:hidden; }
+#app #home.home-reborn.has-3d-diorama .home-sky .home-diorama-canvas { display:block;width:100%;height:100%; }
+#app #home.home-reborn.has-3d-diorama .home-sky::after {
+  content:'';position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg, rgba(4,9,22,.72) 0%, rgba(4,9,22,.22) 20%, rgba(4,9,22,0) 44%, rgba(4,9,22,.42) 60%, rgba(4,9,22,.86) 76%, rgba(4,9,22,.94) 100%);
+  transition:background .35s ease;
+}
+#app #home.home-reborn.has-3d-diorama:not([data-tab="battle"]) .home-sky::after {
+  background:rgba(5,11,24,.78);
+}
+#app #home.home-reborn.has-3d-diorama .home-progress-line,
+#app #home.home-reborn.has-3d-diorama .home-battle-console,
+#app #home.home-reborn.has-3d-diorama .home-shortcuts {
+  text-shadow:0 1px 10px rgba(2,6,18,.88);
+}
+#app #home.home-reborn.has-3d-diorama .home-battle-console {
+  background:rgba(5,12,26,.54);border-radius:12px;padding:6px 12px 10px;
+  backdrop-filter:blur(6px);border:1px solid rgba(138,215,222,.16);
+}
+#app #home.home-reborn.has-3d-diorama .home-hero { cursor:grab;touch-action:pan-y; }
+#app #home.home-reborn.has-3d-diorama .home-hero:active { cursor:grabbing; }
+#app #home.home-reborn.has-3d-diorama .home-arena { transition:opacity .45s ease; }
+#app #home.home-reborn.diorama-3d-ready .home-arena { opacity:0;pointer-events:none; }
+#app #home.home-reborn.has-3d-diorama .home-battle-heading h1 { text-shadow:0 2px 16px rgba(2,6,18,.78); }
+#app #home.home-reborn.has-3d-diorama .home-battle-heading p { text-shadow:0 1px 10px rgba(2,6,18,.8); }
+#app #home.home-reborn.has-3d-diorama .home-top { border-bottom-color:rgba(138,215,222,.22); }
+#app #home.home-reborn.has-3d-diorama .home-deckpanel { border-color:rgba(138,215,222,.22); }
+#app #home.home-reborn.has-3d-diorama .home-tabbar { background:rgba(6,13,26,.82);backdrop-filter:blur(10px);border-top-color:rgba(138,215,222,.22); }
+@media(min-width:1000px) and (min-height:650px) {
+  #app #home.home-reborn.has-3d-diorama .home-sky::after {
+    background:linear-gradient(90deg, rgba(4,9,22,.32) 0%, rgba(4,9,22,0) 24%, rgba(4,9,22,0) 56%, rgba(4,9,22,.68) 80%, rgba(4,9,22,.82) 100%);
+  }
+  #app #home.home-reborn.has-3d-diorama .home-tabbar { background:rgba(6,13,26,.55);border-radius:10px;padding:4px; }
+}
+
+/* 4陣営モード：3Dジオラマ下部からのワンタップ陣営旋回バー */
+#app #home.home-reborn .home-faction-bar {
+  position:absolute;left:50%;bottom:4px;transform:translateX(-50%);z-index:2;
+  display:flex;gap:6px;padding:4px;border-radius:999px;
+  background:rgba(5,12,26,.62);border:1px solid rgba(138,215,222,.28);
+  backdrop-filter:blur(8px);box-shadow:0 4px 16px rgba(0,0,0,.42);
+}
+#app #home.home-reborn .home-faction-bar[hidden] { display:none; }
+#app #home.home-reborn .home-faction-chip {
+  min-height:32px;padding:4px 12px;border:1px solid transparent;border-radius:999px;
+  background:transparent;color:var(--lobby-muted);font:700 12px/1 var(--font);
+  white-space:nowrap;cursor:pointer;transition:background .18s,color .18s,border-color .18s;
+}
+#app #home.home-reborn .home-faction-chip:hover { color:var(--lobby-text);background:rgba(138,215,222,.12); }
+#app #home.home-reborn .home-faction-chip[aria-pressed="true"] {
+  background:rgba(138,215,222,.22);border-color:rgba(138,215,222,.72);color:#ffffff;
+}

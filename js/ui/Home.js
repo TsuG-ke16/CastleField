@@ -9,6 +9,7 @@ import { deckCard } from './DeckPreview.js';
 import { checkCostDeck } from '../game/Setup.js';
 import { sound } from './Sound.js';
 import { rankEmblem } from './RankEmblem.js';
+import { HomeDioramaGL } from './HomeDioramaGL.js';
 
 const MODE_KEY = 'cf-home-mode';
 const MODES = {
@@ -96,8 +97,8 @@ export class Home {
    * @param {(type: string) => void} [o.onZoomCard] カードを大きく見せる（CardZoom）
    * @param {object} [o.cards] @param {object} [o.rarities] @param {object} [o.rules] @param {object} [o.decks] デッキの中身を見せるのに使う（data/ の中身）
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {} }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks, ruleset, factions, onRuleset });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {}, skyMode = 'auto' }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks, ruleset, factions, onRuleset, skyMode });
     this.deckSort = 'rarity';
     this.data = null;
     this.mode = 'solo';
@@ -233,7 +234,7 @@ export class Home {
       <div class="home-page" data-page="battle" role="tabpanel" aria-label="バトル">
         <div class="home-worlds" role="group" aria-label="ルールセット" data-part="worlds"></div>
         <div class="home-battle-heading"><p>CASTLE FIELD</p><h1 data-part="worldName">城を落とせ。</h1><span>カードで戦う、城攻めバトル</span></div>
-        <figure class="home-hero" aria-label="選択中の戦場"><img class="home-arena" src="assets/bg/home-arena-${ruleset === 'factions' ? 'factions' : 'duel'}.png" alt="${ruleset === 'factions' ? '四つの陣営の城と、中央に集まる道' : '道で結ばれた青とオレンジの二つの城'}" width="960" height="570"></figure>
+        <figure class="home-hero" aria-label="選択中の戦場"><img class="home-arena" src="assets/bg/home-arena-${ruleset === 'factions' ? 'factions' : 'duel'}.png" alt="${ruleset === 'factions' ? '四つの陣営の城と、中央に集まる道' : '道で結ばれた青とオレンジの二つの城'}" width="960" height="570"><div class="home-faction-bar" role="group" aria-label="陣営の城を切りかえる" data-part="factionBar"${ruleset === 'factions' ? '' : ' hidden'}></div></figure>
         <div class="home-progress-line"><span class="home-season" data-part="season"></span><button class="home-rank-chip raw-btn" data-part="rank" data-act="rank"><span data-part="rankEmblem"></span><span><small>ランク</small><span data-part="rankText">未参加</span></span>${homeIcon('arrow',16)}</button></div>
         <section class="home-battle-console" aria-label="対戦の準備">
           <div class="home-deckpanel" aria-label="使うデッキ">
@@ -264,11 +265,60 @@ export class Home {
     this.navLayout.addEventListener('change', orient); orient();
     for (const dialog of box.querySelectorAll('.home-sheet')) dialog.addEventListener('click', e => { if (e.target === dialog) { const r=dialog.getBoundingClientRect(); if(e.clientX<r.left || e.clientX>r.right || e.clientY<r.top || e.clientY>r.bottom) dialog.close(); } });
     this.renderModes();
+    this.renderFactionBar();
     this.renderGachaShow();
+    this.diorama = new HomeDioramaGL({
+      skyEl: box.querySelector('.home-sky'),
+      heroEl: box.querySelector('.home-hero'),
+      homeEl: box,
+      viewMode: ruleset === 'factions' ? 'factions' : 'overview',
+      faction: this.faction,
+      skyMode,
+    });
     box.addEventListener('click', (e) => this.onClick(e));
     box.addEventListener('keydown', (e) => this.onKey(e));
     this.part('deckSort').addEventListener('change', (e) => { this.deckSort = e.target.value; this.renderDeck(this.data?.deck?.name); });
     account.onChange(() => { if (!box.hidden) this.refresh(); });
+  }
+
+  /** ホームの宇宙背景の時間帯モードを更新（auto / dawn / day / dusk / night） */
+  setSkyMode(mode) {
+    this.skyMode = mode;
+    this.diorama?.setSkyMode(mode);
+  }
+
+  /** 4陣営モード時、3Dジオラマ下部からワンタップで4城を旋回切替できるバー */
+  renderFactionBar() {
+    const bar = this.part('factionBar');
+    if (!bar) return;
+    bar.replaceChildren();
+    if (this.ruleset !== 'factions') { bar.hidden = true; return; }
+    bar.hidden = false;
+    const order = [
+      ['kingdom', '王国'],
+      ['forest', '森'],
+      ['demon', '魔族'],
+      ['dragon', '竜族'],
+    ];
+    for (const [id, shortName] of order) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'home-faction-chip raw-btn';
+      b.dataset.factionQuick = id;
+      b.setAttribute('aria-pressed', String(this.faction === id));
+      b.setAttribute('aria-label', `${this.factions?.[id]?.name ?? shortName}の城を見る`);
+      b.textContent = shortName;
+      bar.append(b);
+    }
+  }
+
+  selectFaction(id) {
+    if (!id || (this.factions && !this.factions[id])) return;
+    this.faction = id;
+    try { localStorage.setItem('cf-home-faction', this.faction); } catch { /* optional */ }
+    this.diorama?.setFaction(this.faction);
+    this.renderFactionBar();
+    this.renderDeck();
   }
 
   /** ホームを入口にするか（いつも。アカウント機能がなければ、端末だけで使えるメニューにする） */
@@ -281,12 +331,13 @@ export class Home {
     const wasHidden = this.box.hidden;
     this.box.hidden = false;
     if (wasHidden) { this.box.classList.remove('home-enter'); void this.box.offsetWidth; this.box.classList.add('home-enter'); }
+    this.diorama?.setVisible(true);
     this.refresh();
     const focusEl = this.tab === 'battle' ? this.box.querySelector('.home-start') : this.part('tabbar').querySelector('[aria-selected=true]');
     focusEl?.focus({ preventScroll: true });
   }
 
-  close() { this.closeSheets(); this.box.hidden = true; }
+  close() { this.closeSheets(); this.diorama?.setVisible(false); this.box.hidden = true; }
 
   async refresh() {
     const request = Symbol();
@@ -789,6 +840,7 @@ export class Home {
       b.tabIndex = on ? 0 : -1;
       if (on && focus) b.focus({ preventScroll: true });
     }
+    this.diorama?.setTab(tab);
     this.box.scrollTop = 0;
   }
 
@@ -832,8 +884,10 @@ export class Home {
     if(e.target.closest('[data-close-sheet]')) { this.closeSheets(); return; }
     const world=e.target.closest('[data-ruleset]');
     if(world?.tagName==='BUTTON') { if(world.dataset.ruleset!==this.ruleset) this.onRuleset(world.dataset.ruleset); return; }
+    const factionQuick = e.target.closest('.home-faction-chip[data-faction-quick]');
+    if (factionQuick) { sound.play('tap'); this.selectFaction(factionQuick.dataset.factionQuick); return; }
     const faction=e.target.closest('.home-deck-choice[data-faction]'); // 陣営のカード（mountMiniCard）も data-faction を持つので、陣営を選ぶボタンだけに絞る
-    if(faction) { this.faction=faction.dataset.faction; try{localStorage.setItem('cf-home-faction',this.faction)}catch{} this.closeSheets();this.renderDeck();return; }
+    if(faction) { this.closeSheets(); this.selectFaction(faction.dataset.faction); return; }
     const choose=e.target.closest('[data-choose-slot]');
     if(choose) { const slot=Number(choose.dataset.chooseSlot),deck=loadDecks().slots[slot];this.closeSheets(); if(!deck || !checkCostDeck(deck.list,this.cards,this.rarities,this.rules).ok) return this.onDeck(slot);selectMyDeck(slot);this.renderDeck();return; }
 

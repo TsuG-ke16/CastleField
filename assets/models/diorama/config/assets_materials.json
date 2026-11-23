@@ -1,0 +1,289 @@
+{
+  "summary": {
+    "total_objects": 45,
+    "total_meshes": 19,
+    "total_polygons": 197780,
+    "total_triangles": 199160,
+    "total_materials": 14,
+    "external_assets_used": "Tripo Studio 3D sculpted PBR assets (4 faction hero castles + 4-biome floating island base, decimated & texture-baked with synthesized emissive maps via prepare_tripo_castles.py / prepare_tripo_island.py) + procedural Blender lanterns, bollards, waterfall mist, fireflies, clouds, lighting & 10-camera rig."
+  },
+  "collections": {
+    "Bridges": {
+      "object_count": 2,
+      "mesh_count": 2,
+      "polygons": 272,
+      "triangles": 512,
+      "objects": [
+        "Bridges_Lantern_Iron",
+        "Bridges_Lantern_Glow"
+      ]
+    },
+    "Cameras": {
+      "object_count": 10,
+      "mesh_count": 0,
+      "polygons": 0,
+      "triangles": 0,
+      "objects": [
+        "Camera_Overview",
+        "Camera_Top",
+        "Camera_North",
+        "Camera_South",
+        "Camera_East",
+        "Camera_West",
+        "Camera_Kingdom",
+        "Camera_Forest",
+        "Camera_Demon",
+        "Camera_Dragon"
+      ]
+    },
+    "Castle_Demon": {
+      "object_count": 3,
+      "mesh_count": 2,
+      "polygons": 30008,
+      "triangles": 30020,
+      "objects": [
+        "Castle_Demon_Root",
+        "Castle_Demon_Hero",
+        "Castle_Demon_FoundationPlinth"
+      ]
+    },
+    "Castle_Dragon": {
+      "object_count": 3,
+      "mesh_count": 2,
+      "polygons": 30010,
+      "triangles": 30028,
+      "objects": [
+        "Castle_Dragon_Root",
+        "Castle_Dragon_Hero",
+        "Castle_Dragon_FoundationPlinth"
+      ]
+    },
+    "Castle_Forest": {
+      "object_count": 3,
+      "mesh_count": 2,
+      "polygons": 34020,
+      "triangles": 34068,
+      "objects": [
+        "Castle_Forest_Root",
+        "Castle_Forest_Hero",
+        "Castle_Forest_FoundationPlinth"
+      ]
+    },
+    "Castle_Kingdom": {
+      "object_count": 3,
+      "mesh_count": 2,
+      "polygons": 30006,
+      "triangles": 30012,
+      "objects": [
+        "Castle_Kingdom_Root",
+        "Castle_Kingdom_Hero",
+        "Castle_Kingdom_FoundationPlinth"
+      ]
+    },
+    "Central_Plaza": {
+      "object_count": 2,
+      "mesh_count": 2,
+      "polygons": 544,
+      "triangles": 1024,
+      "objects": [
+        "Plaza_Lantern_Iron",
+        "Plaza_Lantern_Glow"
+      ]
+    },
+    "Island_Base": {
+      "object_count": 1,
+      "mesh_count": 1,
+      "polygons": 65000,
+      "triangles": 65000,
+      "objects": [
+        "Tripo_Floating_Island_Base"
+      ]
+    },
+    "Lights": {
+      "object_count": 12,
+      "mesh_count": 0,
+      "polygons": 0,
+      "triangles": 0,
+      "objects": [
+        "Light_Sun_Key",
+        "Light_Sun_SkyFill",
+        "Light_Sun_CloudBounce",
+        "Light_Plaza_Warm",
+        "Light_Kingdom_RoyalWarm",
+        "Light_Kingdom_MeadowFill",
+        "Light_Forest_Sanctuary",
+        "Light_Forest_CanopyWarm",
+        "Light_Demon_CrystalGlow",
+        "Light_Demon_GateGlow",
+        "Light_Dragon_FurnaceGate",
+        "Light_Dragon_KeepFlame"
+      ]
+    },
+    "Nature": {
+      "object_count": 1,
+      "mesh_count": 1,
+      "polygons": 560,
+      "triangles": 560,
+      "objects": [
+        "Nature_Forest_Fireflies"
+      ]
+    },
+    "Props": {
+      "object_count": 1,
+      "mesh_count": 1,
+      "polygons": 5760,
+      "triangles": 5760,
+      "objects": [
+        "Props_Floating_Cloud_Ring"
+      ]
+    },
+    "Roads": {
+      "object_count": 3,
+      "mesh_count": 3,
+      "polygons": 640,
+      "triangles": 1216,
+      "objects": [
+        "Roads_Threshold_Bollards",
+        "Roads_Threshold_Iron",
+        "Roads_Threshold_Glow"
+      ]
+    },
+    "Water": {
+      "object_count": 1,
+      "mesh_count": 1,
+      "polygons": 960,
+      "triangles": 960,
+      "objects": [
+        "Water_Waterfall_MistPlumes"
+      ]
+    }
+  },
+  "materials": {
+    "Mat_Cloud_Mist": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": true,
+      "metallic": 0.0,
+      "roughness": 0.96,
+      "emission_strength": 0.16,
+      "alpha": 0.78
+    },
+    "Mat_Dark_Iron": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.86,
+      "roughness": 0.4,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Demon_ObsidianWall": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": true,
+      "metallic": 0.28,
+      "roughness": 0.34,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Dragon_BasaltWall": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": true,
+      "metallic": 0.12,
+      "roughness": 0.76,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Forest_MossyStone": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": true,
+      "metallic": 0.0,
+      "roughness": 0.8,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Glow_Forest_Emerald": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.25,
+      "emission_strength": 3.0,
+      "alpha": 1.0
+    },
+    "Mat_Glow_Warm_Lantern": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.24,
+      "emission_strength": 3.6,
+      "alpha": 1.0
+    },
+    "Mat_Kingdom_Trim": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.6,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Plaza_Trim_Marble": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "tripo_material_427fa42f-41a3-46af-8d7a-d20552aeea43": {
+      "source": "Tripo Studio PBR (optimized + synthesized emissive)",
+      "uses_image_textures": true,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emission_strength": 3.2,
+      "alpha": 1.0
+    },
+    "tripo_material_469bc4c3-8f80-412b-83a7-a2b523a1d238": {
+      "source": "Tripo Studio PBR (optimized + synthesized emissive)",
+      "uses_image_textures": true,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emission_strength": 3.8,
+      "alpha": 1.0
+    },
+    "tripo_material_d7d1a64a-7ba8-4317-999b-e7b4108988fe": {
+      "source": "Tripo Studio PBR (optimized + synthesized emissive)",
+      "uses_image_textures": true,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emission_strength": 2.6,
+      "alpha": 1.0
+    },
+    "tripo_material_dbe6fb46-4950-46bc-aa70-8b5169f8fc37": {
+      "source": "Tripo Studio PBR (optimized + synthesized emissive)",
+      "uses_image_textures": true,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emission_strength": 2.8,
+      "alpha": 1.0
+    },
+    "tripo_material_fa6646d1-3725-4ad5-98a4-6382453a6d0c": {
+      "source": "Tripo Studio PBR (optimized + synthesized emissive)",
+      "uses_image_textures": true,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.5,
+      "emission_strength": 3.4,
+      "alpha": 1.0
+    }
+  }
+}
