@@ -33,3 +33,9 @@ Playwrightのブラウザ配置を環境で変えている場合は `PLAYWRIGHT_
 - 長押し拡大：iPhone SE・iPhone 13・Pixel 7 の大きさとタッチで、デッキ編成のカードを長押しして拡大し、指を離してもカードが足されないこと、端末の傾き（`deviceorientation`）で光と角度が動くこと（許可を聞ける端末では「傾きセンサーを使う」を押してから）、カードが画面に収まることを確かめる
 
 ホーム画面に追加する操作・iPhone の「動きと向き」の許可の確認・指の感触は、実機でしか分からないので対象外。
+
+## 4陣営（ベータ）のカード
+
+`node server/server.js` を起動し、`node ui-tests/faction-beta-cards.js` を実行する。`?beta=factions`（ホームで4陣営モードを選んだのと同じ）で開き、ホームのカジュアル対戦から部屋に入り、「陣営の説明」の全カードが陣営のフレーム（`cards/frame-faction-*.png`）で出ること、長押しの拡大表示が陣営の3Dフレーム（Blender 製の `models/card-faction-*.glb`）で出ること、CPU と始めた対戦の手札も陣営のフレームで出ることを確かめる。3D はソフトウェア描画で重いので、`UI_TEST_GL=0` でフレームだけを確かめられる。画像は `ui-tests/artifacts/` に出力する。
+
+4陣営の入口（ホームの対戦形式に一本化）は、`CF_DB_PATH=<作業用フォルダ>/t.db node server/server.js` を起動し、`node ui-tests/home-factions-entry.js` で確かめる。ホームで4陣営 → ひとりで遊ぶ・カジュアル対戦（ホームの陣営が席の陣営になる・部屋で変えられる・読み直しても4陣営でつなぎ直す）、4陣営を覚えていても `?debug=1`・`?local=1&cpu=hard` は通常モード、通常モードの部屋は通常モードでつなぎ直すこと。

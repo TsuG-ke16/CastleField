@@ -1,0 +1,131 @@
+{
+  "classic_dragon_recruit": {
+    "name": "竜人の新兵",
+    "kind": "soldier",
+    "hp": 6,
+    "attack": 4,
+    "speed": 2,
+    "mpCost": 2,
+    "count": 6,
+    "description": "打たれ強い竜人の兵士。歩兵より強いが、MPが重い"
+  },
+  "classic_dragon_scale_warrior": {
+    "name": "竜鱗戦士",
+    "kind": "soldier",
+    "hp": 6,
+    "attack": 6,
+    "speed": 2,
+    "mpCost": 3,
+    "count": 5,
+    "description": "硬い鱗の竜人の戦士。MPが重い"
+  },
+  "classic_dragon_lancer": {
+    "name": "竜槍兵",
+    "kind": "soldier",
+    "hp": 10,
+    "attack": 7,
+    "speed": 2,
+    "mpCost": 4,
+    "count": 2,
+    "description": "とても硬くて強い竜人の槍兵。MPが重い"
+  },
+  "classic_dragon_general": {
+    "name": "竜将",
+    "kind": "soldier",
+    "hp": 12,
+    "attack": 10,
+    "speed": 2,
+    "mpCost": 7,
+    "count": 1,
+    "description": "竜人の将。いちばん強いが、MPを7も使う"
+  },
+  "classic_dragon_crimson_blade": {
+    "name": "紅蓮の竜剣",
+    "kind": "weapon",
+    "attackBonus": 2,
+    "element": "fire",
+    "mpCost": 2,
+    "count": 3
+  },
+  "classic_dragon_thunder_spear": {
+    "name": "迅雷の槍",
+    "kind": "weapon",
+    "attackBonus": 2,
+    "element": "thunder",
+    "mpCost": 2,
+    "count": 3
+  },
+  "classic_dragon_scorch_blade": {
+    "name": "灼竜剣",
+    "kind": "weapon",
+    "attackBonus": 4,
+    "element": "fire",
+    "mpCost": 4,
+    "count": 1,
+    "description": "攻撃+4・火。武器でいちばん強いが、MPが重い"
+  },
+  "classic_dragon_roar_spear": {
+    "name": "轟雷竜槍",
+    "kind": "weapon",
+    "attackBonus": 4,
+    "element": "thunder",
+    "mpCost": 4,
+    "count": 1,
+    "description": "攻撃+4・雷。武器でいちばん強いが、MPが重い"
+  },
+  "classic_dragon_fireball": {
+    "name": "ファイアボール",
+    "kind": "spell",
+    "effect": "damageEnemyCastle",
+    "amount": 5,
+    "mpCost": 3,
+    "count": 5,
+    "description": "相手の城に5ダメージ（選んだレーンに相手の兵士がいれば、いちばん前の兵士に当たる）。火球より弱いがMPが軽い"
+  },
+  "classic_dragon_inferno": {
+    "name": "業火",
+    "kind": "spell",
+    "effect": "damageEnemyCastle",
+    "amount": 9,
+    "mpCost": 6,
+    "count": 2,
+    "description": "相手の城に9ダメージ（選んだレーンに相手の兵士がいれば、いちばん前の兵士に当たる）。MPが重い"
+  },
+  "classic_dragon_meteor": {
+    "name": "隕石",
+    "kind": "spell",
+    "effect": "damageEnemyCastle",
+    "amount": 14,
+    "mpCost": 9,
+    "count": 1,
+    "description": "相手の城に14ダメージ（選んだレーンに相手の兵士がいれば、いちばん前の兵士に当たる）。MPをとても多く使う"
+  },
+  "classic_dragon_thunder": {
+    "name": "サンダー",
+    "kind": "spell",
+    "effect": "damageEnemySoldiers",
+    "amount": 3,
+    "scope": "lane",
+    "mpCost": 4,
+    "count": 5,
+    "description": "選んだ1レーンの相手の兵士全員に3ダメージ"
+  },
+  "classic_dragon_bolt": {
+    "name": "雷光",
+    "kind": "spell",
+    "effect": "damageEnemySoldiers",
+    "amount": 2,
+    "mpCost": 4,
+    "count": 3,
+    "description": "相手の全レーンの兵士全員に2ダメージ"
+  },
+  "classic_dragon_big_thunder": {
+    "name": "大雷",
+    "kind": "spell",
+    "effect": "damageEnemySoldiers",
+    "amount": 5,
+    "mpCost": 7,
+    "count": 2,
+    "description": "相手の全レーンの兵士全員に5ダメージ。MPをとても多く使う"
+  }
+}

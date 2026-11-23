@@ -1,0 +1,24 @@
+{
+  "initial": {
+    "active3d": true,
+    "stageId": "lava",
+    "cameraMode": "battle",
+    "qualityTier": "medium",
+    "fps": 1.6,
+    "frameMs": 635.7,
+    "loadMs": 110,
+    "drawCalls": 172,
+    "triangles": 35810,
+    "geometries": 93,
+    "textures": 1,
+    "jsHeapMB": 15
+  },
+  "pausedInHome": {
+    "active": false,
+    "hidden": true,
+    "rafId": 0
+  },
+  "resumed": true,
+  "errors": [],
+  "note": "Headless software rendering; visual/state verification, not a real-device performance benchmark."
+}

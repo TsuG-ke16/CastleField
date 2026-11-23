@@ -104,7 +104,7 @@ try {
   await page.locator('#menu-title-btn').click();await toTitle(page); // メニューの「タイトルへ」はホーム（入口）に戻る
   assert.ok(await page.locator('#home [data-act="start"]').isVisible());assert.equal(await page.locator('#title').isVisible(),false,'タイトルのメニューはない（入口はホームだけ）');
   await page.screenshot({path:new URL(`./artifacts/layout-title-${width}.png`,import.meta.url).pathname});
-  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home .home-mode[data-mode="solo"]').click();await page.locator('#home [data-act="start"]').click();assert.equal(await page.locator('#local-recommended').count(),0,'one start choice per action');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await page.locator('#home .home-mode[data-mode="solo"]').click();await page.locator('#home [data-act="start"]').click();assert.equal(await page.locator('#local-recommended').count(),0,'one start choice per action');
   await page.close();
  }
  assert.deepEqual(errors,[]);console.log('PASS: 4 viewports, primary action row, touch targets, board space, 12-card hand, folded references, match information, title hierarchy');

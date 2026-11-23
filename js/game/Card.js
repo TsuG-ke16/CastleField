@@ -21,6 +21,10 @@ export const EFFECTS = {
     poisonEnemy: ['amount'], // 毒：選んだ相手の兵士と城を、永続の毒状態にする（毎ターン amount ダメージ。盾・城壁は効かない）
     curePoison: [], // 解毒薬：自分の毒状態（兵士・城）をすべて治す
     freezeEnemySoldiers: ['turns'],
+    singleDamage: ['amount'], // 敵兵士1体に amount ダメージ（対象 { soldierId }。盾が先に受ける）
+    weakenAttack: ['amount', 'turns'], // 呪い：敵兵士1体の攻撃力を amount 下げる（最低1）。持ち主の進軍 turns 回ぶん続く
+    randomElementDamage: ['amount'], // 敵兵士1体に amount ダメージ。火・水・風・土のうちランダムな属性で撃ち、強い属性なら elementBonus 増える
+    reviveFallen: [], // 蘇生：最後に倒れた自分の兵士1体を、HP を最大HPの amount 倍（0より大きく1以下の数。下でチェック）で生き返らせる
     chainBlast: ['amount'], // チェーン・ブラスト：相手の兵士1体に amount、まわり（同じ道の前後1マス・となりの道の同じマス）に半分（切り上げ）
     ignitionBurst: ['amount', 'selfDamage'], // イグニッション・バースト：自分の城に selfDamage、相手の兵士全員と城に amount
     armorBlast: [], // シールド・ブラスト：自分の城壁の値ぶん相手の城にダメージ。城壁は0になる
@@ -45,12 +49,17 @@ export const EFFECTS = {
     stealCoins: ['amount'], // ミミックのカード：相手のコインを amount 枚まで奪う
     damageEnemyAll: ['amount'], // 魔王のカード：相手の城と、相手の兵士全員に amount ダメージ
     dice: [], // サイコロ：1〜6の目 × per の効果（dice で種類を決める。下の DICE_KINDS）
+    // 4陣営モード（CLAUDE.md「4陣営モード」）
+    healCastleAndSoldiers: ['amount', 'soldierHeal'], // 生命の雫：自分の城HPを amount、傷ついた自分の兵士全員のHPを soldierHeal 回復
+    healSoldier: ['amount'], // 竜血の雫：傷ついた自分の兵士1体のHPを amount 回復（対象 { soldierId }）
+    breathAttack: ['amount', 'castleAmount'], // 火炎の吐息：選んだ道の相手の兵士全員に amount、相手の城に城壁を無視して castleAmount
   },
   defense: {
     shieldSoldier: ['amount'],
     armorCastle: ['amount'],
     reflectSpell: [], // 反射：城に当たる魔法を、相手の城に返す（攻撃を受けたときだけ）
     nullifySoldier: [], // 身代わり：城に着いた兵士1体のダメージを無効にする（攻撃を受けたときだけ）
+    guardCastle: [], // 身代わり（4陣営）：自分の兵士1体を選ぶ。次に城が受ける攻撃を、その兵士が代わりに受ける
   },
 };
 
@@ -73,7 +82,7 @@ export const BASIC_DICE = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff'];
 /** メインを使わず何枚でも出せるサイコロ（ほかはメイン） */
 export const SUPPORT_DICE = ['mana', 'coin', 'shield', 'buff'];
 
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
@@ -129,8 +138,9 @@ export class Card {
   /**
    * cards.json の中身をチェックする。書き間違いがあれば、どこが悪いかを書いた Error を投げる。
    * （不正な「操作」は例外にしない約束だが、データの書き間違いは起動時に気づけるよう例外にする）
+   * @param {string[]} [elements] 使える属性ID（new Game({ elements }) の表のキー。省略すると今までの4つ）
    */
-  static validateDefinitions(cards, rarities = null) {
+  static validateDefinitions(cards, rarities = null, elements = ELEMENTS) {
     if (!cards || typeof cards !== 'object' || Array.isArray(cards)) {
       throw new Error('cards.json はカード種類をキーにしたオブジェクトにしてください');
     }
@@ -173,11 +183,16 @@ export class Card {
       if (def.exhaust !== undefined && typeof def.exhaust !== 'boolean') {
         throw new Error(`${where}: exhaust は true か false にしてください（書かなければ false）`);
       }
-      if (def.element !== undefined && def.kind !== 'weapon') {
-        throw new Error(`${where}: element を書けるのは武器（kind: "weapon"）だけです`);
+      // 魔法の element はデータとして持つだけ（効果・ダメージは変わらない。のちの付着・反応で使う）
+      if (def.element !== undefined && def.kind !== 'weapon' && def.kind !== 'spell') {
+        throw new Error(`${where}: element を書けるのは武器（kind: "weapon"）と魔法（kind: "spell"）だけです`);
       }
-      if (def.element !== undefined && def.element !== null && !ELEMENTS.includes(def.element)) {
-        throw new Error(`${where}: element は ${ELEMENTS.join(' / ')} のどれかにしてください（書かなければ属性なし）`);
+      // 兵士の innateElement は生まれつきの属性（4陣営モード。武器の属性と同じに扱い、武器を持つと上書きされる）
+      if (def.innateElement !== undefined && (def.kind !== 'soldier' || !elements.includes(def.innateElement))) {
+        throw new Error(`${where}: innateElement（生まれつきの属性）は兵士にだけ、${elements.join(' / ')} のどれかで書けます`);
+      }
+      if (def.element !== undefined && def.element !== null && !elements.includes(def.element)) {
+        throw new Error(`${where}: element は ${elements.join(' / ')} のどれかにしてください（書かなければ属性なし）`);
       }
 
       if (def.effect === 'dice') {
@@ -205,11 +220,56 @@ export class Card {
         throw new Error(`${where}: spirit を書けるのは effect が summonSpirit の魔法だけです`);
       }
 
+      // 蘇生：amount は割合（0より大きく1以下の数。整数でなくてよい）
+      if (def.effect === 'reviveFallen' && !(typeof def.amount === 'number' && def.amount > 0 && def.amount <= 1)) {
+        throw new Error(`${where}: amount（生き返ったときのHPの割合）は 0 より大きく 1 以下の数にしてください（例：0.5）`);
+      }
+
       if (def.effect === 'setTime' && def.time !== 'night' && def.time !== 'day') {
         throw new Error(`${where}: time は "night"（夜にする）か "day"（昼にする）にしてください`);
       }
       if (def.beast !== undefined && (def.kind !== 'soldier' || typeof def.beast !== 'boolean')) {
         throw new Error(`${where}: beast（獣）は兵士にだけ、true か false で書けます`);
+      }
+
+      // 4陣営モードの追加のキー（書かなければ今までどおり）
+      if (def.rangeBonus !== undefined && (def.kind !== 'weapon' || !isPositive(def.rangeBonus))) {
+        throw new Error(`${where}: rangeBonus（射程+）は武器にだけ、1以上の整数で書けます`);
+      }
+      if (def.freezeOnHit !== undefined && (def.kind !== 'weapon' || !isPositive(def.freezeOnHit))) {
+        throw new Error(`${where}: freezeOnHit（当たった相手を休ませる回数）は武器にだけ、1以上の整数で書けます`);
+      }
+      if (def.spellBoost !== undefined) {
+        const b = def.spellBoost;
+        if (def.kind !== 'soldier' || !b || typeof b !== 'object' || !Array.isArray(b.elements) || b.elements.length === 0
+          || !b.elements.every((e) => elements.includes(e)) || !isPositive(b.amount)) {
+          throw new Error(`${where}: spellBoost は兵士にだけ { elements: [属性…], amount: 1以上の整数 } で書けます`);
+        }
+      }
+      if (def.attachTurns !== undefined && (def.kind !== 'spell' || !isPositive(def.attachTurns))) {
+        throw new Error(`${where}: attachTurns（付着が残る回数）は魔法にだけ、1以上の整数で書けます`);
+      }
+      if (def.freezeTurns !== undefined && (def.effect !== 'singleDamage' || !isPositive(def.freezeTurns))) {
+        throw new Error(`${where}: freezeTurns（当たった兵士を休ませる回数）は singleDamage の魔法にだけ、1以上の整数で書けます`);
+      }
+      // 4陣営：target "front" は、敵兵士1体を選ばずに、選んだ道（相手）の先頭の兵士（自分の城にいちばん近い見える兵士）に当てる
+      if (def.target !== undefined && (def.target !== 'front' || !['singleDamage', 'randomElementDamage'].includes(def.effect))) {
+        throw new Error(`${where}: target は singleDamage / randomElementDamage の魔法にだけ "front"（先頭の兵士に当たる）と書けます`);
+      }
+      if (def.spiritScope !== undefined && (def.spirit !== 'earth' || (def.spiritScope !== 'all' && def.spiritScope !== 'soldiers'))) {
+        throw new Error(`${where}: spiritScope は土の精霊にだけ、"all"（城と兵士）か "soldiers"（兵士だけ）で書けます`);
+      }
+      if (def.spiritMode !== undefined && (def.spirit !== 'wind' || (def.spiritMode !== 'min' && def.spiritMode !== 'add'))) {
+        throw new Error(`${where}: spiritMode は風の精霊にだけ、"min"（速さの最低値）か "add"（速さに足す）で書けます`);
+      }
+      if (def.turns !== undefined && def.effect === 'poisonEnemy' && !isPositive(def.turns)) {
+        throw new Error(`${where}: 毒（poisonEnemy）の turns は1以上の整数にしてください（書かなければ rules.poisonTurns）`);
+      }
+      if (def.clearEnemyAttachments !== undefined && (def.effect !== 'purifyFlare' || typeof def.clearEnemyAttachments !== 'boolean')) {
+        throw new Error(`${where}: clearEnemyAttachments は浄化（purifyFlare）にだけ、true か false で書けます`);
+      }
+      if (def.bloodArmor !== undefined && (def.effect !== 'armorCastle' || typeof def.bloodArmor !== 'boolean')) {
+        throw new Error(`${where}: bloodArmor は城壁（armorCastle）にだけ、true か false で書けます`);
       }
 
       if (def.scope !== undefined) {
@@ -241,6 +301,8 @@ export class Card {
           throw new Error(`${where}: effect は ${Object.keys(effects).join(' / ')} のどれかです`);
         }
         for (const key of effects[def.effect]) {
+          // 浄化は、相手の付着を消すだけ（clearEnemyAttachments）なら、ダメージ0でもよい
+          if (def.effect === 'purifyFlare' && key === 'amount' && def.clearEnemyAttachments === true && def.amount === 0) continue;
           if (!isPositive(def[key])) throw new Error(`${where}: ${key} は1以上の整数にしてください`);
         }
       }

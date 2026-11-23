@@ -1,0 +1,21 @@
+/* 4陣営（ベータ）：?beta=factions のときだけ使う目印と、陣営の説明 */
+.faction-beta-badge { position: fixed; top: 0; left: 0; z-index: 200; padding: 0 8px 1px 6px; border-radius: 0 0 10px 0; border: 2px solid #4d3426; border-top: 0; border-left: 0; font-size: 10px; background: #ffd36b; color: #4d3426; font-weight: 700; line-height: 1.3; pointer-events: none; opacity: .9; }
+.faction-beta-note { text-align: center; }
+.faction-info .faction-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.faction-info .faction-tab[aria-selected="true"] { background: #ffd36b; border-color: #4d3426; font-weight: 700; }
+.faction-info .faction-desc { margin: 0; font-size: 13px; }
+.faction-info .faction-cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 50vh; overflow: auto; }
+.faction-info .faction-card { display: flex; gap: 8px; align-items: center; padding: 4px; border-radius: 8px; background: #fff8; }
+.faction-info .faction-card-art { flex: 0 0 44px; width: 44px; height: 44px; display: block; }
+.faction-info .faction-card-art:not(.mini-card) > * { width: 100%; height: 100%; }
+/* 陣営のフレームつきの小さなカード（mountMiniCard）。長押しで拡大する */
+.faction-info .faction-card-art.mini-card { flex: 0 0 48px; width: 48px; height: auto; aspect-ratio: 2 / 3; touch-action: manipulation; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.faction-info .faction-zoom-hint { margin: 0; font-size: 11px; color: #5a4a3a; }
+.faction-info .faction-card-body { display: flex; flex-direction: column; min-width: 0; font-size: 12px; }
+.faction-info .faction-card-body small { color: #5a4a3a; overflow-wrap: anywhere; }
+
+/* 部屋：ボタンが増えても右にはみ出さない。席の陣営名（選べない席）が城の絵と重ならない */
+.faction-beta .room-heading { flex-wrap: wrap; gap: 6px; }
+.faction-beta .room-heading-btns { flex-wrap: wrap; }
+.faction-beta .room-seat label.room-select { padding-right: 90px; }
+.at-title .faction-beta-badge { display: none; } /* ホームは「4陣営モード」の表示があるので、目印は部屋・対戦でだけ出す */

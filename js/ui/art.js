@@ -3,6 +3,8 @@
 // - どの種類にどの絵を使うかは、ここで決める（data/ には画像の情報を入れない）
 // - カード・魔物を増やしたら、CARD_ART / MONSTER_ART に同じキーで足す。なければ仮の絵（名前の1文字目）になる
 
+import { factionCardPath, factionUnitPath } from './factionArt.js';
+
 const INK = '#4a2e1a';
 const SKIN = '#ffe2c4';
 const STEEL = '#cfd8e0';
@@ -428,13 +430,13 @@ function escapeText(s) {
 }
 
 // 画像の割り当てはUIだけが持つ。読み込み前・失敗時は元のSVGを表示する。
-const CARD_TYPES = new Set(["attackDice","healDice","manaDice","coinDice","shieldDice","buffDice","randomDice","godDice","manaRaid","lifeSteal","desperateShot","powderKeg","antidote","weatherCall","manaShard","manaDrop","manaCrystal","manaSpring","worldTreeDew","adapt", ...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "treasure", "goldVein", "kingTreasure"]);
+const CARD_TYPES = new Set(["galeForce", "chainBlast", "ignitionBurst", "shieldBlast", "purifyFlare", "moonrise", "dawnbreak", "assassin", "attackDice","healDice","manaDice","coinDice","shieldDice","buffDice","randomDice","godDice","manaRaid","lifeSteal","desperateShot","powderKeg","antidote","weatherCall","manaShard","manaDrop","manaCrystal","manaSpring","worldTreeDew","adapt", ...NEW_SOLDIER_TYPES,"infantry", "knight", "fireball", "thunder", "heal", "flameSword", "waterSpear", "windBow", "earthHammer", "shield", "wall", "poisonMist", "frostBreath", "spearman", "heavy", "giant", "meteor", "bigThunder", "venom", "deepFreeze", "ironSword", "bigShield", "sandbag", "reflect", "decoy", "blessing", "thief", "minorHeal", "toxicRain", "glacier", "bolt", "fireSpirit", "greatFireSpirit", "waterSpirit", "greatWaterSpirit", "windSpirit", "greatWindSpirit", "earthSpirit", "greatEarthSpirit", "hero", "inferno", "starfall", "apocalypse", "raijin", "judgment", "greatHeal", "holyLight", "goddess", "deathMist", "plague", "absoluteZero", "frozenWorld", "magicSword", "holySword", "godSword", "steelShield", "holyShield", "godShield", "stoneWall", "gate", "barrier", "fireKing", "waterKing", "windKing", "earthKing", "treasure", "goldVein", "kingTreasure"]);
 const kebab = (key) => key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
 // 起動時に全部の画像を先に読み込んでおく。読み込めた画像は、代わりのSVGを出さず最初からPNGで描く
 // （読み込み中にSVGが一瞬見えて、あとで差し変わるのを防ぐ）。読み込めなかった画像だけ、SVGで描く。
 const READY = new Set();
 export const isAssetReady = (path) => READY.has(path);
-const TITLE_ASSETS = ['ui/natural/paper-tile.png','ui/natural/oak-tile.png','ui/natural/frame.png','ui/natural/neutral-72-left.png','ui/natural/neutral-72-middle.png','ui/natural/neutral-72-right.png','ui/natural/primary-72-left.png','ui/natural/primary-72-middle.png','ui/natural/primary-72-right.png','ui/natural/primary-wide-full.png','ui/natural/neutral-wide-full.png','bg/kingdom-meadow.png','bg/kingdom-valley.png','ui/kingdom-crest.png','ui/logo.png','ui/title-castle-blue.png','ui/title-castle-orange.png','ui/title-knight-blue.png','ui/title-infantry-orange.png'];
+const TITLE_ASSETS = ['bg/home-arena-duel.png','bg/home-arena-factions.png','ui/natural/paper-tile.png','ui/natural/oak-tile.png','ui/natural/frame.png','ui/natural/neutral-72-left.png','ui/natural/neutral-72-middle.png','ui/natural/neutral-72-right.png','ui/natural/primary-72-left.png','ui/natural/primary-72-middle.png','ui/natural/primary-72-right.png','ui/natural/primary-wide-full.png','ui/natural/neutral-wide-full.png','bg/kingdom-meadow.png','bg/kingdom-valley.png','ui/kingdom-crest.png','ui/logo.png','ui/title-castle-blue.png','ui/title-castle-orange.png','ui/title-knight-blue.png','ui/title-infantry-orange.png'];
 export async function preloadAssets(timeoutMs = 8000, onProgress = null, {phase = 'game'} = {}) {
   let paths = [...TITLE_ASSETS];
   if (phase !== 'title') {
@@ -491,6 +493,8 @@ function beastArt(beast, name, cls) {
 }
 
 export function cardArt(type, color = 'blue', name = '') {
+  const factionPath = factionCardPath(type);
+  if (factionPath) return imageArt(factionPath, '', 'art card-art-svg');
   if (beastOf(type)) return beastArt(beastOf(type), name, 'card-art-svg');
   if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`cards/card-${kebab(type)}.png`, 'art card-art-svg', name);
   const fallback = svgCardArt(type, color, name);
@@ -502,6 +506,8 @@ export function cardArt(type, color = 'blue', name = '') {
   return CARD_TYPES.has(type) ? imageArt(`cards/card-${kebab(type)}.png`, fallback, 'art card-art-svg') : fallback;
 }
 export function unitArt(type, color, name = '') {
+  const factionPath = factionUnitPath(type);
+  if (factionPath) return imageArt(factionPath, '', 'art unit-art');
   if (beastOf(type)) return beastArt(beastOf(type), name, 'unit-art');
   if (NEW_SOLDIER_TYPES.has(type)) return generatedSoldierPng(`units/${kebab(type)}-${color === 'orange' ? 'orange' : 'blue'}.png`, 'art unit-art', name);
   const fallback = svgUnitArt(type, color, name);

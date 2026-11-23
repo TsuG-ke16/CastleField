@@ -1,0 +1,154 @@
+{
+  "fac_demon_skeleton": {
+    "name": "骸骨兵",
+    "kind": "soldier",
+    "hp": 5,
+    "attack": 3,
+    "speed": 2,
+    "innateElement": "dark",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_imp": {
+    "name": "小悪魔",
+    "kind": "soldier",
+    "hp": 3,
+    "attack": 4,
+    "speed": 3,
+    "innateElement": "dark",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_curser": {
+    "name": "呪術師",
+    "kind": "soldier",
+    "role": "mage",
+    "hp": 3,
+    "attack": 2,
+    "range": 2,
+    "stay": 2,
+    "spellBoost": {
+      "elements": [
+        "dark",
+        "ice",
+        "chaos"
+      ],
+      "amount": 1
+    },
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る。場にいるあいだ、自分の闇・氷・混沌の魔法のダメージ+1",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_shadow_scythe": {
+    "name": "シャドウサイズ",
+    "kind": "weapon",
+    "attackBonus": 2,
+    "element": "dark",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_frost_blade": {
+    "name": "フロストブレード",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "ice",
+    "freezeOnHit": 1,
+    "description": "攻撃+1・氷。この兵士の攻撃が当たった相手は、生き残れば1回休み",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_chaos_rod": {
+    "name": "カオスロッド",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "chaos",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_shadow": {
+    "name": "シャドウ",
+    "kind": "spell",
+    "effect": "singleDamage",
+    "element": "dark",
+    "amount": 4,
+    "target": "front",
+    "description": "選んだ道の先頭の相手の兵士（自分の城にいちばん近い兵士）に4ダメージ（闇）",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_frost_breath": {
+    "name": "氷の息",
+    "kind": "spell",
+    "effect": "freezeEnemySoldiers",
+    "element": "ice",
+    "turns": 1,
+    "scope": "lane",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_chaos_pulse": {
+    "name": "カオスパルス",
+    "kind": "spell",
+    "effect": "randomElementDamage",
+    "element": "chaos",
+    "amount": 3,
+    "target": "front",
+    "description": "選んだ道の先頭の相手の兵士に、火・水・風・土のうちランダムな属性で3ダメージ（強い属性なら増える）。当たった兵士には混沌が付く",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_poison_mist": {
+    "name": "毒の霧",
+    "kind": "spell",
+    "effect": "poisonEnemySoldiers",
+    "amount": 1,
+    "turns": 3,
+    "description": "相手の兵士全員を毒にする（毎ターン1・3ターン）。盾は効かない。城は毒にしない",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_curse_mark": {
+    "name": "呪いの印",
+    "kind": "spell",
+    "effect": "weakenAttack",
+    "amount": 2,
+    "turns": 3,
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_soul_shard": {
+    "name": "魂の欠片",
+    "kind": "spell",
+    "effect": "damageCastleAndHeal",
+    "amount": 3,
+    "heal": 3,
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_echo_soul": {
+    "name": "残響の魂",
+    "kind": "spell",
+    "effect": "reviveFallen",
+    "amount": 0.5,
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_demon_blood_veil": {
+    "name": "血の膜",
+    "kind": "defense",
+    "effect": "armorCastle",
+    "amount": 4,
+    "bloodArmor": true,
+    "description": "自分の城壁+4。この城壁が攻撃を受けて削れたぶん、自分の城HPが回復する",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_bone_shield": {
+    "name": "骨の盾",
+    "kind": "defense",
+    "effect": "shieldSoldier",
+    "amount": 3,
+    "mpCost": 1,
+    "count": 2
+  }
+}

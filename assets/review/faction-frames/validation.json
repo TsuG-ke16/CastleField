@@ -1,0 +1,141 @@
+{
+  "designRevision": 3,
+  "assets": [
+    {
+      "faction": "dragon",
+      "view": "front",
+      "size": [
+        512,
+        768
+      ],
+      "bytes": 77571,
+      "transparentExterior": true
+    },
+    {
+      "faction": "dragon",
+      "view": "edge",
+      "size": [
+        64,
+        768
+      ],
+      "bytes": 30200,
+      "transparentExterior": true
+    },
+    {
+      "faction": "dragon",
+      "view": "back",
+      "size": [
+        512,
+        768
+      ],
+      "bytes": 115518,
+      "transparentExterior": true
+    },
+    {
+      "faction": "kingdom",
+      "view": "front",
+      "size": [
+        512,
+        768
+      ],
+      "bytes": 101066,
+      "transparentExterior": true
+    },
+    {
+      "faction": "kingdom",
+      "view": "edge",
+      "size": [
+        64,
+        768
+      ],
+      "bytes": 33569,
+      "transparentExterior": true
+    },
+    {
+      "faction": "kingdom",
+      "view": "back",
+      "size": [
+        512,
+        768
+      ],
+      "bytes": 170650,
+      "transparentExterior": true
+    },
+    {
+      "faction": "demon",
+      "view": "front",
+      "size": [
+        512,
+        768
+      ],
+      "bytes": 98214,
+      "transparentExterior": true
+    },
+    {
+      "faction": "demon",
+      "view": "edge",
+      "size": [
+        64,
+        768
+      ],
+      "bytes": 21280,
+      "transparentExterior": true
+    },
+    {
+      "faction": "demon",
+      "view": "back",
+      "size": [
+        512,
+        768
+      ],
+      "bytes": 142293,
+      "transparentExterior": true
+    },
+    {
+      "faction": "forest",
+      "view": "front",
+      "size": [
+        512,
+        768
+      ],
+      "bytes": 118475,
+      "transparentExterior": true
+    },
+    {
+      "faction": "forest",
+      "view": "edge",
+      "size": [
+        64,
+        768
+      ],
+      "bytes": 42579,
+      "transparentExterior": true
+    },
+    {
+      "faction": "forest",
+      "view": "back",
+      "size": [
+        512,
+        768
+      ],
+      "bytes": 195902,
+      "transparentExterior": true
+    }
+  ],
+  "safeIllustrationSubjectPx": [
+    128,
+    199,
+    256,
+    256
+  ],
+  "manifestMatchesSources": true,
+  "browser": {
+    "engine": "Chromium",
+    "imageCount": 12,
+    "desktopWidth": 1200,
+    "mobileWidth": 390,
+    "horizontalOverflow": false,
+    "pageErrors": [],
+    "constructionSvgRendered": true
+  }
+}

@@ -44,6 +44,8 @@ export const STATUS_ICON = {
   poison: '☠️',
   frozen: '❄️',
   burn: '🔥',
+  slowed: '🐌',
+  blinded: '🌫️',
 };
 
 /** 強化の絵文字 */

@@ -1,0 +1,832 @@
+[
+ {
+  "name": "castle-barracks",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 426,
+  "size_xyz_m": [
+   4.425,
+   3.4,
+   4.0
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   0.0
+  ],
+  "materials": 7,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Castle_Keep",
+   "Castle_Flag_Main"
+  ],
+  "flipped_face_ratio": 0.2488
+ },
+ {
+  "name": "castle-fortress",
+  "meshes": 8,
+  "objects": 9,
+  "faces": 7608,
+  "size_xyz_m": [
+   6.08,
+   4.6,
+   5.96
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   0.0
+  ],
+  "materials": 8,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.2511
+ },
+ {
+  "name": "castle-standard",
+  "meshes": 8,
+  "objects": 9,
+  "faces": 15568,
+  "size_xyz_m": [
+   5.844,
+   4.61,
+   6.105
+  ],
+  "min_z_ground": -0.065,
+  "center_xy": [
+   0.0,
+   0.0
+  ],
+  "materials": 11,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.3074
+ },
+ {
+  "name": "castle-tower",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 648,
+  "size_xyz_m": [
+   4.34,
+   4.3,
+   7.2
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   0.0
+  ],
+  "materials": 4,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Castle_Keep",
+   "Castle_Flag_Main"
+  ],
+  "flipped_face_ratio": 0.3318
+ },
+ {
+  "name": "field-dark-forest",
+  "meshes": 17,
+  "objects": 18,
+  "faces": 1902,
+  "size_xyz_m": [
+   15.451,
+   20.65,
+   5.365
+  ],
+  "min_z_ground": -0.0,
+  "center_xy": [
+   -0.105,
+   0.325
+  ],
+  "materials": 11,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0284
+ },
+ {
+  "name": "field-desert",
+  "meshes": 18,
+  "objects": 19,
+  "faces": 1582,
+  "size_xyz_m": [
+   14.686,
+   20.57,
+   3.722
+  ],
+  "min_z_ground": -0.202,
+  "center_xy": [
+   0.083,
+   0.285
+  ],
+  "materials": 8,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0221
+ },
+ {
+  "name": "field-ice",
+  "meshes": 15,
+  "objects": 16,
+  "faces": 1404,
+  "size_xyz_m": [
+   14.288,
+   21.124,
+   4.586
+  ],
+  "min_z_ground": -0.111,
+  "center_xy": [
+   -0.019,
+   0.391
+  ],
+  "materials": 7,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0178
+ },
+ {
+  "name": "field-lava",
+  "meshes": 22,
+  "objects": 23,
+  "faces": 1578,
+  "size_xyz_m": [
+   14.549,
+   20.275,
+   4.006
+  ],
+  "min_z_ground": -0.127,
+  "center_xy": [
+   -0.167,
+   0.136
+  ],
+  "materials": 6,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0304
+ },
+ {
+  "name": "field-meadow",
+  "meshes": 38,
+  "objects": 39,
+  "faces": 30358,
+  "size_xyz_m": [
+   21.0,
+   29.0,
+   5.918
+  ],
+  "min_z_ground": -0.248,
+  "center_xy": [
+   0.0,
+   -1.0
+  ],
+  "materials": 4,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.121
+ },
+ {
+  "name": "field-ruins",
+  "meshes": 17,
+  "objects": 18,
+  "faces": 1584,
+  "size_xyz_m": [
+   13.839,
+   20.084,
+   4.215
+  ],
+  "min_z_ground": -0.063,
+  "center_xy": [
+   -0.019,
+   0.042
+  ],
+  "materials": 7,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0631
+ },
+ {
+  "name": "field-stone",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 72,
+  "size_xyz_m": [
+   1.598,
+   1.68,
+   0.2
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   0.0
+  ],
+  "materials": 2,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0
+ },
+ {
+  "name": "monster-demon",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 220,
+  "size_xyz_m": [
+   3.329,
+   1.047,
+   2.153
+  ],
+  "min_z_ground": 0.08,
+  "center_xy": [
+   0.0,
+   -0.003
+  ],
+  "materials": 3,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0955
+ },
+ {
+  "name": "monster-dragon",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 264,
+  "size_xyz_m": [
+   3.915,
+   3.207,
+   2.114
+  ],
+  "min_z_ground": 0.178,
+  "center_xy": [
+   0.0,
+   -0.144
+  ],
+  "materials": 4,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.1477
+ },
+ {
+  "name": "monster-goblin",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 216,
+  "size_xyz_m": [
+   1.464,
+   1.042,
+   1.366
+  ],
+  "min_z_ground": 0.175,
+  "center_xy": [
+   0.028,
+   0.141
+  ],
+  "materials": 3,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0787
+ },
+ {
+  "name": "monster-golem",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 104,
+  "size_xyz_m": [
+   2.44,
+   1.079,
+   2.22
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   0.06
+  ],
+  "materials": 2,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.1154
+ },
+ {
+  "name": "monster-mimic",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 128,
+  "size_xyz_m": [
+   1.22,
+   1.235,
+   1.309
+  ],
+  "min_z_ground": 0.06,
+  "center_xy": [
+   0.0,
+   -0.05
+  ],
+  "materials": 4,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0312
+ },
+ {
+  "name": "monster-slime",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 148,
+  "size_xyz_m": [
+   1.575,
+   1.555,
+   1.41
+  ],
+  "min_z_ground": -0.03,
+  "center_xy": [
+   0.0,
+   0.0
+  ],
+  "materials": 3,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.1216
+ },
+ {
+  "name": "unit-archer",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 396,
+  "size_xyz_m": [
+   1.031,
+   1.605,
+   1.507
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   0.287
+  ],
+  "materials": 7,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Anim_Body",
+   "Anim_Head",
+   "Anim_ArmR",
+   "Anim_ArmL"
+  ],
+  "flipped_face_ratio": 0.1162
+ },
+ {
+  "name": "unit-assassin",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 396,
+  "size_xyz_m": [
+   1.079,
+   1.256,
+   1.49
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   -0.03
+  ],
+  "materials": 7,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Anim_Body",
+   "Anim_Head",
+   "Anim_ArmR",
+   "Anim_ArmL"
+  ],
+  "flipped_face_ratio": 0.0859
+ },
+ {
+  "name": "unit-dragon",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 248,
+  "size_xyz_m": [
+   2.497,
+   2.34,
+   1.455
+  ],
+  "min_z_ground": 0.14,
+  "center_xy": [
+   0.0,
+   -0.08
+  ],
+  "materials": 5,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Anim_Body",
+   "Anim_Head",
+   "Anim_ArmR",
+   "Anim_ArmL"
+  ],
+  "flipped_face_ratio": 0.0887
+ },
+ {
+  "name": "unit-heavy",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 444,
+  "size_xyz_m": [
+   1.617,
+   1.497,
+   2.025
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.002,
+   0.168
+  ],
+  "materials": 9,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Anim_Body",
+   "Anim_Head",
+   "Anim_ArmR",
+   "Anim_ArmL"
+  ],
+  "flipped_face_ratio": 0.1126
+ },
+ {
+  "name": "unit-hero",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 372,
+  "size_xyz_m": [
+   1.364,
+   1.505,
+   2.054
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.048,
+   0.18
+  ],
+  "materials": 7,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Anim_Body",
+   "Anim_Head",
+   "Anim_ArmR",
+   "Anim_ArmL"
+  ],
+  "flipped_face_ratio": 0.1532
+ },
+ {
+  "name": "unit-infantry",
+  "meshes": 8,
+  "objects": 9,
+  "faces": 3574,
+  "size_xyz_m": [
+   1.265,
+   0.83,
+   1.81
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   -0.093,
+   0.015
+  ],
+  "materials": 9,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0095
+ },
+ {
+  "name": "unit-knight",
+  "meshes": 13,
+  "objects": 14,
+  "faces": 5930,
+  "size_xyz_m": [
+   1.291,
+   2.771,
+   2.202
+  ],
+  "min_z_ground": -0.0,
+  "center_xy": [
+   -0.075,
+   0.392
+  ],
+  "materials": 12,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0246
+ },
+ {
+  "name": "unit-mage",
+  "meshes": 8,
+  "objects": 9,
+  "faces": 3584,
+  "size_xyz_m": [
+   1.271,
+   1.149,
+   2.145
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.059,
+   -0.005
+  ],
+  "materials": 9,
+  "meshes_without_material": [],
+  "root_rotation_deg": [
+   [
+    0.0,
+    0.0,
+    0.0
+   ]
+  ],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0463
+ },
+ {
+  "name": "unit-spearman",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 348,
+  "size_xyz_m": [
+   1.074,
+   1.12,
+   2.518
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   0.12
+  ],
+  "materials": 8,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Anim_Body",
+   "Anim_Head",
+   "Anim_ArmR",
+   "Anim_ArmL"
+  ],
+  "flipped_face_ratio": 0.1351
+ }
+]

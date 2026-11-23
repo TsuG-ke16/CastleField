@@ -1,5 +1,7 @@
 // サーバーが送る選択肢と席だけで部屋を描く。名前は必ず textContent。
 import { castleArt, colorOf } from './art.js';
+import { mountMiniCard } from './cardView.js';
+import { cardDescription } from './text.js';
 import { profileArt } from './profileArt.js';
 import { rankEmblem } from './RankEmblem.js';
 import { deckChoice, deckSlot } from './DeckStore.js';
@@ -8,7 +10,8 @@ const ROOM_DECK_KEY = 'cf-room-deck-v1';
 const RULE_ROWS = [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes'],['stage','ステージ','stages']];
 
 export class RoomView {
-  constructor({ onAction, onLeave, onChat, getUnread, onEditDeck, savedDecks, presetDeck, previewDeck }) {
+  constructor({ onAction, onLeave, onChat, getUnread, onEditDeck, savedDecks, presetDeck, previewDeck, factionInfo = null }) {
+    this.factionInfo = factionInfo; // 4陣営（ベータ）：{ factions, cardSets, rules }。通常モードは null
     this.onAction = onAction;
     this.onChat = onChat;           // チャットを開く・閉じる（部屋の画面からも話せる）
     this.getUnread = getUnread;
@@ -147,6 +150,47 @@ export class RoomView {
     btn.addEventListener('click', action); parent.append(btn);
     return btn;
   }
+  /** 4陣営：陣営ごとの説明とカード一覧（タブで切りかえ） */
+  factionDialog(choices) {
+    const info = this.factionInfo;
+    const close = () => { this.factionOpen = false; this.render(this.room, this.passphrase); };
+    const back = this.node('div', null, 'room-modal');
+    back.addEventListener('click', (e) => { if (e.target === back) close(); });
+    back.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
+    const panel = this.node('section', null, 'room-modal-panel faction-info');
+    panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-modal', 'true'); panel.setAttribute('aria-label', '陣営の説明');
+    panel.append(this.node('h2', '陣営の説明'));
+    const ids = (choices.factions ?? []).map(f => f.id);
+    if (!ids.includes(this.factionTab)) this.factionTab = ids[0];
+    const tabs = this.node('div', null, 'faction-tabs'); tabs.setAttribute('role', 'tablist');
+    for (const f of choices.factions ?? []) {
+      const b = this.button(tabs, f.name, () => { this.factionTab = f.id; this.render(this.room, this.passphrase); }, false, 'small-btn faction-tab');
+      b.setAttribute('role', 'tab'); b.setAttribute('aria-selected', String(f.id === this.factionTab));
+    }
+    panel.append(tabs);
+    const def = info?.factions?.[this.factionTab];
+    if (def?.description) panel.append(this.node('p', def.description, 'faction-desc'));
+    panel.append(this.node('p', 'カードを長押しすると大きく見られます', 'faction-zoom-hint'));
+    const list = this.node('ul', null, 'faction-cards');
+    for (const [type, card] of Object.entries(info?.cardSets?.[this.factionTab] ?? {})) {
+      if (type.startsWith('_')) continue;
+      const li = this.node('li', null, 'faction-card');
+      // 手札と同じ陣営のフレーム（cardFrame.js）で描く。長押しで拡大（CardZoom.js。陣営の3Dフレームは CardGL.js）
+      const art = this.node('span', null, 'faction-card-art'); art.setAttribute('aria-hidden', 'true');
+      mountMiniCard(art, type, card, null, { showName: false, faction: this.factionTab });
+      art.dataset.zoom = type;
+      const body = this.node('span', null, 'faction-card-body');
+      const mp = card.mpCost != null ? `　MP${card.mpCost}` : '';
+      body.append(this.node('b', `${card.name ?? type}${mp}${card.count > 1 ? `　×${card.count}` : ''}`));
+      body.append(this.node('small', cardDescription(card, info?.rules ?? {}) || ''));
+      li.append(art, body); list.append(li);
+    }
+    panel.append(list);
+    this.button(panel, '閉じる', close, false, 'plank-btn');
+    back.append(panel);
+    queueMicrotask(() => panel.querySelector('button')?.focus({ preventScroll: true }));
+    return back;
+  }
   /** ルールを変更する画面（部屋主だけ）。ルールの選択・城のHP */
   rulesDialog(room, choices) {
     const close = () => { this.rulesOpen = false; this.render(this.room, this.passphrase); };
@@ -158,6 +202,7 @@ export class RoomView {
     panel.append(this.node('h2', 'ルールを変更'));
     for (const [key,label,list] of RULE_ROWS) {
       if (!choices[list]?.length) continue; // ステージを使わないサーバーなど
+      if (choices.factions?.length && (key === 'deckMode' || key === 'teams')) continue; // 4陣営：山札の形・チームは変えられない
       this.select(panel, label, choices[list], room.settings[key], true, v => this.act('setRules', [{[key]:v}]), `rule:${key}`);
     }
     this.numberInput(panel, '城のHP', room.settings.castleHp, choices.castleHpRange, true, v => this.act('setRules', [{castleHp:v}]), 'rule:castleHp');
@@ -182,7 +227,9 @@ export class RoomView {
       const unread = this.getUnread?.() ?? 0;
       chatBtn.dataset.unread = unread > 0 ? (unread > 9 ? '9+' : String(unread)) : '';
     }
+    if (choices.factions?.length && this.factionInfo) this.button(headBtns, '陣営の説明', () => { this.factionOpen = true; this.render(this.room, this.passphrase); });
     this.button(headBtns, '部屋を出る', this.onLeave); box.append(head);
+    if (choices.factions?.length) box.insertBefore(this.node('p', '4陣営（ベータ）：陣営を選んで対戦します。遊んだ結果は戦績やランクに記録されません。', 'room-note faction-beta-note'), head);
     const seats = this.node('div', null, 'room-seats'); box.append(seats);
     for (const p of room.players) {
       const seat = this.node('article', null, 'room-seat');
@@ -215,9 +262,12 @@ export class RoomView {
       if (!p.connected) seat.append(this.node('p', '再接続を待っています', 'room-note'));
       const edit = p.playerId === room.you || (host && Boolean(p.cpu));
       const set = (patch) => this.act('setSeat', p.playerId === room.you ? [patch] : [patch, p.playerId]);
-      this.select(seat, '城', choices.castles, p.castle, edit, v => set({castle:v}), `${p.playerId}:castle`);
+      const fac = Boolean(choices.factions?.length); // 4陣営（ベータ）：城・デッキ・チームは選ばず、陣営だけ選ぶ
+      if (fac) this.select(seat, '陣営', choices.factions, p.faction, edit, v => set({faction:v}), `${p.playerId}:faction`);
+      else this.select(seat, '城', choices.castles, p.castle, edit, v => set({castle:v}), `${p.playerId}:castle`);
       const acts = this.node('div', null, 'room-seat-actions'); // 席のボタン（デッキ編成・ルール変更・部屋主を譲る・CPUを外す）
-      if (room.settings.deckMode === 'cost') {
+      if (fac) { /* 陣営のカード表がそのままデッキ */ }
+      else if (room.settings.deckMode === 'cost') {
         // デッキ編成（コスト制）：見本のデッキか、自分で編成したデッキ（自分の席だけ）
         const mine = p.playerId === room.you;
         const saved = mine ? this.savedDecks() : [];
@@ -250,7 +300,7 @@ export class RoomView {
           seat.append(preview);
         }
       }
-      if (room.settings.teams === 'choose') this.select(seat, 'チーム', choices.teams, p.team, edit, v => set({team:v}), `${p.playerId}:team`);
+      if (!fac && room.settings.teams === 'choose') this.select(seat, 'チーム', choices.teams, p.team, edit, v => set({team:v}), `${p.playerId}:team`);
       if (host && p.playerId === room.you) this.button(acts, 'ルールを変更', () => { this.rulesOpen = true; this.render(this.room, this.passphrase); });
       if (host && !p.cpu && p.playerId !== room.you && !p.left) this.button(acts, '部屋主を譲る', () => this.act('transferHost', [p.playerId]));
       if (host && p.cpu) this.button(acts, 'CPUを外す', () => this.act('removeCpu', [p.playerId]));
@@ -269,11 +319,13 @@ export class RoomView {
     settings.append(this.node('h2', '対戦ルール'));
     for (const [key,label,list] of RULE_ROWS) {
       if (!choices[list]?.length) continue;
+      if (choices.factions?.length && (key === 'deckMode' || key === 'teams')) continue;
       this.select(settings, label, choices[list], room.settings[key], false);
     }
     this.numberInput(settings, '城のHP', room.settings.castleHp, choices.castleHpRange, false);
     if (!host) this.rulesOpen = false;
     if (this.rulesOpen) box.append(this.rulesDialog(room, choices));
+    if (this.factionOpen && choices.factions?.length) box.append(this.factionDialog(choices));
     let reason = '';
     if (room.players.length < room.minPlayers) reason = `開始には${room.minPlayers}人必要です。仲間を招待するかCPUを追加してください。`;
     else if (room.settings.teams === 'choose' && new Set(room.players.map(p => p.team)).size < 2) reason = '2つ以上のチームに分かれてください。';

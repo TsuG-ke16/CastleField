@@ -57,11 +57,12 @@ try{
   // debugは公開状態を読むためだけに使用。Gameの変更メソッドはテストから呼ばない。
   // 既存のdebug起動からメニューでホーム（入口）へ戻り、以降は実際のUIで開始する。
   const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8';
+  if(process.env.UI_TEST_FIELD3D)url.searchParams.set('field3d',process.env.UI_TEST_FIELD3D);
   await page.goto(url.href);await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:60000});
   await page.evaluate(async()=>{(await import('./js/ui/config.js')).UI_CONFIG.speed=.03});
   await press('#menu-open');await press('#menu-title-btn');
   assert.ok(await page.locator('#home').isVisible(),'ホームを表示');await snapshot('home');
-  await page.click('#home .home-tab[data-tab=battle]'); await press('#home .home-mode[data-mode="solo"]');await press('#home [data-act="start"]');await press('.level[data-level="hard"]');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await press('#home .home-mode[data-mode="solo"]');await press('#home [data-act="start"]');await press('.level[data-level="hard"]');
   await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:60000});
   await page.evaluate(()=>{window.__uiSmokeCards=0;const id=document.querySelector('#app').dataset.viewer;castlefield.game().on('cardPlayed',e=>{if(e.playerId===id)window.__uiSmokeCards++})});
   const deadline=Date.now()+180000;let deployed=false,ended=false,mulliganShown=false;

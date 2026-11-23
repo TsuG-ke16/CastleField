@@ -1,0 +1,7 @@
+{
+  "_note": "4陣営モードの陣営（数値なし）。陣営ごとのカード表は data/modes.json の factions.factionCardSets。陣営のカード表のカード全部（count 枚ずつ）が、その陣営のデッキになる（deckMode \"own\"。Setup.js の factionDecks）",
+  "kingdom": { "name": "王国", "description": "守りと回復で粘り、光で押し切る。" },
+  "forest": { "name": "森の同盟", "description": "4つの属性と精霊で、反応をいちばん起こしやすい。" },
+  "demon": { "name": "魔族軍", "description": "毒・呪い・吸収で守りを貫き、倒れても蘇る。" },
+  "dragon": { "name": "竜族帝国", "description": "火と雷の高火力で短期決戦を狙う。" }
+}

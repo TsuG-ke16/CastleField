@@ -32,6 +32,7 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
     choiceTurns: 0, // 出せるカードが2種類以上あったターン（「迷う場面」そのものではない。目安）
     mainTurns: 0,
     played: {},
+    reactions: {}, // 属性の反応（reactionTriggered）の回数。反応のID → 回数
     errors: 0,
     events: {},
   };
@@ -51,6 +52,7 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
         stats.monsterCastleDamage += e.amount;
         if (e.hp <= 0) stats.endedByMonster = true;
       }
+      if (type === 'reactionTriggered') stats.reactions[e.reaction] = (stats.reactions[e.reaction] || 0) + 1;
       if (type === 'cardPlayed') stats.played[e.type] = (stats.played[e.type] || 0) + 1;
     });
   }
@@ -130,7 +132,18 @@ export function summarize(results, strategies) {
   }
   const totalDmg = dmg.soldier + dmg.spell + dmg.other || 1;
   const sum = (f) => results.reduce((a, r) => a + f(r), 0);
+  // 属性の反応（クラシック）。反応が1回も起きていない（通常モード）ときはキーごと出さない
+  const reactionTotals = {};
+  for (const r of results) for (const [k, v] of Object.entries(r.reactions)) reactionTotals[k] = (reactionTotals[k] || 0) + v;
+  const reactionTotal = Object.values(reactionTotals).reduce((a, b) => a + b, 0);
   return {
+    ...(reactionTotal > 0
+      ? {
+          reactionsPerGame: reactionTotal / results.length,
+          reactionCounts: reactionTotals,
+          reactionGameRate: results.filter((r) => Object.keys(r.reactions).length > 0).length / results.length,
+        }
+      : {}),
     strategies,
     games: results.length,
     decided: decided.length,

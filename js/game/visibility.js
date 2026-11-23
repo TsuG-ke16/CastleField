@@ -14,6 +14,11 @@ export function filterEventFor(type, payload, viewerId, viewerSide = viewerId) {
   if (payload?.stealth !== undefined) {
     if (payload.stealth !== viewerSide) return null;
   }
+  if (type === 'castleGuarded' && payload.stealthSoldier !== undefined) {
+    // 忍者が身代わりになった：城が攻撃を受けなかったことは見せるが、どの兵士かは同じ陣地の人にしか見せない
+    const { soldierId, stealthSoldier, ...rest } = payload;
+    return stealthSoldier === viewerSide ? payload : rest;
+  }
   if (type === 'cardDrawn' && payload.playerId !== viewerId) {
     // 本人以外には、引いた枚数だけ
     return { playerId: payload.playerId, count: payload.cardIds.length };

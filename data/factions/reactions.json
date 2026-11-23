@@ -1,0 +1,19 @@
+{
+  "_note": "4陣営モードだけの属性の付着と反応（数値はすべて仮）。決まりはクラシックと同じ（attachTurns・randomAttach・chaos の意味は data/classic/reactions.json の _note）。4陣営で足した効果：multiplier（当たった攻撃のダメージを倍にする。足すのは ceil(ダメージ ×（倍率−1）)）、burn（やけど。scope \"adjacent\" なら同じ道の前後1マスの同じ陣地の兵士にも）、slow（鈍足：速さが下がる。最低1）、blind（目くらまし：攻撃が chance の確率で外れる）、splash（同じ道の同じ陣地のほかの兵士にダメージ）、castleDamage（当たった兵士の陣地の城にダメージ）、shieldBreak（盾を全部壊して、壊した量＋bonus のダメージ）、healCut（当たった兵士の陣地の城の回復量が ratio の割合だけ減る）。森の5反応は #163 の data/reactions.json（a352658）の効果を、この形に直したもの",
+  "attachTurns": 5,
+  "randomAttach": { "turns": 1 },
+  "reactions": {
+    "annihilation": { "name": "対消滅", "elements": ["light", "dark"], "damage": 8 },
+    "blackIce": { "name": "黒氷", "elements": ["dark", "ice"], "damage": 3, "frozenTurns": 1, "burn": { "amount": 1, "turns": 2 } },
+    "abyss": { "name": "深淵侵食", "elements": ["dark", "chaos"], "damage": 3, "healCut": { "ratio": 0.5, "turns": 2 } },
+    "shatter": { "name": "砕氷", "elements": ["ice", "chaos"], "damage": 2, "frozenBonus": 6 },
+    "evaporate": { "name": "蒸発", "elements": ["fire", "water"], "damage": 0, "multiplier": 1.5 },
+    "mud": { "name": "泥", "elements": ["water", "earth"], "damage": 0, "slow": { "amount": 1, "turns": 2 } },
+    "flameSpread": { "name": "炎拡散", "elements": ["wind", "fire"], "damage": 0, "burn": { "amount": 1, "turns": 2, "scope": "adjacent" } },
+    "sandstorm": { "name": "砂嵐", "elements": ["wind", "earth"], "damage": 0, "burn": { "amount": 1, "turns": 2 }, "blind": { "chance": 0.3, "turns": 2 } },
+    "fog": { "name": "霧", "elements": ["wind", "water"], "damage": 0, "blind": { "chance": 0.3, "turns": 2 } },
+    "lava": { "name": "溶岩", "elements": ["fire", "earth"], "damage": 0, "shieldBreak": { "bonus": 2 } },
+    "thunderBlaze": { "name": "轟雷爆炎", "elements": ["fire", "thunder"], "damage": 4, "splash": { "amount": 2, "scope": "lane" }, "castleDamage": 3 }
+  },
+  "chaos": { "element": "chaos", "name": "混沌反応", "damagePerElement": 4, "minElements": 3 }
+}

@@ -49,8 +49,8 @@ export class OnlineClient {
   }
 
   /** 合言葉で部屋に入り、つなぐ。成功したら { ok: true, playerId, roomId } */
-  async join(passphrase, name) {
-    const res = await postJson('/api/join', { passphrase, name });
+  async join(passphrase, name, mode) {
+    const res = await postJson('/api/join', mode ? { passphrase, name, mode } : { passphrase, name });
     if (!res.ok) return res;
     this.token = res.token;
     this.playerId = res.playerId;

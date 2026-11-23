@@ -6,6 +6,7 @@
 import { CARD_LIGHT, RELIEF_PRESETS, reliefPaths } from './CardRelief.js';
 import { UI_CONFIG } from './config.js';
 import { rankSkinBack } from './skinArt.js';
+import { factionFrameBack } from './cardFrame.js';
 import { cardMotionReduced, cardAxes } from './Card3D.js';
 
 const MODEL = 'assets/models/card-slab.glb';
@@ -210,6 +211,82 @@ const CARD_MODELS = {
       lightEmissiveIntensity: 0.34,
     },
     foil: 'special',
+  },
+  'faction-kingdom': {
+    path: 'assets/models/card-faction-kingdom.glb',
+    frameFile: 'frame-faction-kingdom.png',
+    backBase: '#0b1e59',
+    has3DBack: true,
+    rimLight: { color: '#9ec4ff', intensity: 1.05, position: [-2.3, -1.7, 2.2] },
+    gem: {
+      ior: 1.77,
+      attenuationColor: '#1e66ff',
+      attenuationDistance: 0.06,
+      thickness: 0.055,
+      emissive: '#061f66',
+      emissiveIntensity: 0.22,
+      lightColor: '#1854e0',
+      lightEmissive: '#082470',
+      lightEmissiveIntensity: 0.32,
+    },
+    foil: null,
+  },
+  'faction-forest': {
+    path: 'assets/models/card-faction-forest.glb',
+    frameFile: 'frame-faction-forest.png',
+    backBase: '#233610',
+    has3DBack: true,
+    rimLight: { color: '#ffd98a', intensity: 0.95, position: [-2.2, -1.7, 2.1] },
+    gem: {
+      ior: 1.54,
+      attenuationColor: '#ff9a14',
+      attenuationDistance: 0.065,
+      thickness: 0.055,
+      emissive: '#592602',
+      emissiveIntensity: 0.24,
+      lightColor: '#eb8810',
+      lightEmissive: '#5c2804',
+      lightEmissiveIntensity: 0.34,
+    },
+    foil: null,
+  },
+  'faction-demon': {
+    path: 'assets/models/card-faction-demon.glb',
+    frameFile: 'frame-faction-demon.png',
+    backBase: '#1d0d29',
+    has3DBack: true,
+    rimLight: { color: '#d48aff', intensity: 1.05, position: [-2.3, -1.7, 2.2] },
+    gem: {
+      ior: 1.55,
+      attenuationColor: '#a826ff',
+      attenuationDistance: 0.06,
+      thickness: 0.055,
+      emissive: '#3e096b',
+      emissiveIntensity: 0.24,
+      lightColor: '#9b22f0',
+      lightEmissive: '#420a73',
+      lightEmissiveIntensity: 0.34,
+    },
+    foil: null,
+  },
+  'faction-dragon': {
+    path: 'assets/models/card-faction-dragon.glb',
+    frameFile: 'frame-faction-dragon.png',
+    backBase: '#1a0e10',
+    has3DBack: true,
+    rimLight: { color: '#ff8a5c', intensity: 1.15, position: [-2.4, -1.6, 2.2] },
+    gem: {
+      ior: 1.77,
+      attenuationColor: '#e81828',
+      attenuationDistance: 0.055,
+      thickness: 0.055,
+      emissive: '#4a060e',
+      emissiveIntensity: 0.22,
+      lightColor: '#cc1224',
+      lightEmissive: '#540610',
+      lightEmissiveIntensity: 0.34,
+    },
+    foil: null,
   },
 };
 const BACK = 'assets/ui/card-back.png';
@@ -670,18 +747,23 @@ function foilTexture(THREE, rarity, aspect) {
   return { texture, opacity: spec.opacity };
 }
 
-/** レアリティ別・魔物・ランクスキン用の専用3Dモデルを使うカードならその定義を返す（?card3d=slab で無効化可能） */
+/** レアリティ別・魔物・ランクスキン・4陣営用の専用3Dモデルを使うカードならその定義を返す（?card3d=slab で無効化可能） */
 function cardModelSpec(card) {
   if (!card) return null;
   if (new URLSearchParams(location.search).get('card3d') === 'slab') return null;
   const frameSrc = (card.querySelector('.mini-card-frame')?.getAttribute('src') ?? '').split('?')[0];
+  if (card.dataset.beast && frameSrc.endsWith(CARD_MODELS.beast.frameFile)) {
+    return { key: 'beast', ...CARD_MODELS.beast };
+  }
+  if (card.dataset.faction) {
+    const factionKey = `faction-${card.dataset.faction}`;
+    const factionSpec = CARD_MODELS[factionKey];
+    return factionSpec && frameSrc.endsWith(factionSpec.frameFile) ? { key: factionKey, ...factionSpec } : null;
+  }
   if (card.dataset.skin) {
     const skinKey = `skin-${card.dataset.skin}`;
     const skinSpec = CARD_MODELS[skinKey];
     return skinSpec && frameSrc.endsWith(skinSpec.frameFile) ? { key: skinKey, ...skinSpec } : null;
-  }
-  if (card.dataset.beast && frameSrc.endsWith(CARD_MODELS.beast.frameFile)) {
-    return { key: 'beast', ...CARD_MODELS.beast };
   }
   const key = card.dataset.rarity;
   const spec = CARD_MODELS[key];
@@ -841,6 +923,31 @@ function dressCardModel(THREE, model, spec, { face, rects, backTexture, jewelMap
     diamond_gem: (source) => makeGemMaterial(source, gemLook),
     amethyst_gem: (source) => makeGemMaterial(source, gemLook),
     ruby_gem: (source) => makeGemMaterial(source, rubyGemLook),
+    // 4陣営専用3Dフレーム PBR マテリアル（王国・森林・魔族・竜族）
+    cobalt_enamel: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 0.18, roughness: 0.22, clearcoat: 0.88, clearcoatRoughness: 0.08, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.1, side: source.side }),
+    silver_dark: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.85, roughness: 0.30, envMap: jewelMap, envMapIntensity: highGfx ? 1.25 : 1.05, side: source.side }),
+    sapphire_gem: (source) => makeGemMaterial(source, gemLook),
+    forest_bg: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0, roughness: 0.84, side: source.side }),
+    wood_bark: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0, roughness: 0.76, side: source.side }),
+    wood_light: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0, roughness: 0.66, side: source.side }),
+    leaf_green: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 0, roughness: 0.40, clearcoat: 0.24, clearcoatRoughness: 0.32, side: source.side }),
+    moss_dark: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0, roughness: 0.92, side: source.side }),
+    brass: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.90, roughness: 0.26, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.15, side: source.side }),
+    amber_gem: (source) => makeGemMaterial(source, gemLook),
+    amber_foil: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.12, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.45, side: source.side }),
+    dark_iron: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.74, roughness: 0.36, envMap: jewelMap, envMapIntensity: highGfx ? 1.25 : 1.05, side: source.side }),
+    obsidian: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 0.28, roughness: 0.12, clearcoat: 0.95, clearcoatRoughness: 0.05, envMap: jewelMap, envMapIntensity: highGfx ? 1.60 : 1.25, side: source.side }),
+    bone_ivory: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.0, roughness: 0.54, side: source.side }),
+    bone_dark: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.0, roughness: 0.66, side: source.side }),
+    demon_gold: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.90, roughness: 0.26, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.15, side: source.side }),
+    purple_glow: (source) => new THREE.MeshStandardMaterial({ color: source.color, emissive: '#8f24ff', emissiveIntensity: 0.65, metalness: 0.15, roughness: 0.28, side: source.side }),
+    amethyst_foil: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.45, side: source.side }),
+    dragonsteel: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.82, roughness: 0.32, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.10, side: source.side }),
+    dragonsteel_dark: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.76, roughness: 0.42, envMap: jewelMap, envMapIntensity: highGfx ? 1.20 : 1.00, side: source.side }),
+    bronze: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 0.92, roughness: 0.22, envMap: jewelMap, envMapIntensity: highGfx ? 1.45 : 1.20, side: source.side }),
+    crimson_enamel: (source) => new THREE.MeshPhysicalMaterial({ color: source.color, metalness: 0.22, roughness: 0.20, clearcoat: 0.85, clearcoatRoughness: 0.08, envMap: jewelMap, envMapIntensity: highGfx ? 1.35 : 1.10, side: source.side }),
+    crimson_glow: (source) => new THREE.MeshStandardMaterial({ color: source.color, emissive: '#d61c14', emissiveIntensity: 0.62, metalness: 0.15, roughness: 0.26, side: source.side }),
+    ruby_foil: (source) => new THREE.MeshStandardMaterial({ color: source.color, metalness: 1, roughness: 0.10, envMap: jewelMap, envMapIntensity: highGfx ? 1.75 : 1.45, side: source.side }),
   };
   // 同じ名前の材質は1つだけ作って使い回す。知らない名前は wood 相当で描く
   const madeByName = new Map();
@@ -923,7 +1030,7 @@ export async function createCardGL(card, { stage, rarityColor = '#9aa3ad' } = {}
 
     // 板（Blender 製）。対応レアリティ・魔物は専用の立体モデル、ほかは板。マテリアルは名前で見つけて、色と絵を付ける
     const model = (dedicatedGltf ?? gltf).scene.clone(true);
-    const backSource = card.dataset.skin ? rankSkinBack(card.dataset.skin)?.art : null;
+    const backSource = card.dataset.faction ? factionFrameBack(card.dataset.faction) : (card.dataset.skin ? rankSkinBack(card.dataset.skin)?.art : null);
     const backTexture = own(await new THREE.TextureLoader().loadAsync(new URL(backSource || BACK, document.baseURI).href));
     backTexture.flipY = false;                  // glTF の UV は上が 0
     backTexture.colorSpace = THREE.SRGBColorSpace;
