@@ -359,7 +359,7 @@ export class FieldGL {
   }
 
   castleWorldPos(side) {
-    return side === 'opp' ? { x: 0, y: 0, z: -5.5 } : { x: 0, y: 0, z: 5.5 };
+    return side === 'opp' ? { x: 0, y: 0, z: -5.55 } : { x: 0, y: 0, z: 5.85 };
   }
 
   // ===========================================================================
@@ -1237,8 +1237,12 @@ export class FieldGL {
       const pos = this.castleWorldPos(side);
       group.position.set(pos.x, pos.y, pos.z);
       group.rotation.y = side === 'opp' ? Math.PI : 0;
-      const sc = side === 'opp' ? 0.88 : 0.80;
-      group.scale.set(sc, sc, sc);
+      if (side === 'opp') {
+        group.scale.set(0.88, 0.88, 0.88);
+      } else {
+        // 手前の自軍城は、手前マスの踏み石・兵士の視認性を遮らないよう高さを抑える
+        group.scale.set(0.75, 0.64, 0.72);
+      }
 
       const pickInfo = { kind: 'castle', side };
       group.userData.pickInfo = pickInfo;
@@ -1351,9 +1355,9 @@ export class FieldGL {
     const mKey = soldierModelKey(s.type);
     const colorKey = s.color || (s.side === 'me' ? 'blue' : 'orange');
     const base = this.cellWorldPos(s.lane, s.row);
-    const sideOffset = s.side === 'me' ? 0.52 : -0.52;
-    const stackOffX = (stackIdx % 2) * (s.side === 'me' ? 0.28 : -0.28);
-    const stackOffZ = Math.floor(stackIdx / 2) * 0.34;
+    const sideOffset = s.side === 'me' ? 0.36 : -0.36;
+    const stackOffX = (stackIdx % 2) * (s.side === 'me' ? 0.24 : -0.24);
+    const stackOffZ = Math.floor(stackIdx / 2) * 0.32;
     const targetPos = { x: base.x + sideOffset + stackOffX, y: 0.16, z: base.z + stackOffZ };
 
     let entry = this.soldierEntries.get(s.id);

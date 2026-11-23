@@ -1,8 +1,22 @@
 // 第1任務〜第4任務：3D カメラシステム・Raycaster 空間選択・3D→2D 座標射影・階層アニメーションの単体テスト
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as THREE from '../js/vendor/three/three.module.min.js';
 import { FieldGL, CAMERA_MODES, CAM_BOUNDS } from '../js/ui/FieldGL.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const MODELS_DIR = path.resolve(__dirname, '../assets/models');
+
+function parseGlbJson(filename) {
+  const buf = fs.readFileSync(path.join(MODELS_DIR, filename));
+  assert.equal(buf.toString('ascii', 0, 4), 'glTF', `${filename} has valid glTF magic header`);
+  const jsonLen = buf.readUInt32LE(12);
+  const jsonStr = buf.toString('utf8', 20, 20 + jsonLen);
+  return { json: JSON.parse(jsonStr), byteLength: buf.byteLength };
+}
 
 function createTestFieldGL(width = 1280, height = 800) {
   const appEl = { dataset: {} };
@@ -347,4 +361,106 @@ test('第4任務：兵士（歩兵・騎士・魔法使い）の3D階層アニ�
   fg.skipAnimations();
   assert.equal(fg.camState.cinematic, null, 'スキップ時にカメラ演出が即時解除される');
   assert.equal(fg.shakeTime, 0, 'スキップ時にカメラシェイクが即時停止する');
+});
+
+test('第3任務＆第5任務：改良された5つのGLBモデル（王城・要塞・歩兵・騎士・魔法使い）の階層リグ・マテリアル検証と複数兵士＋魔法重複時の性能測定', () => {
+  const specs = [
+    {
+      file: 'castle-standard.glb',
+      requiredNodes: ['Castle_Base', 'Castle_Walls', 'Castle_Keep', 'Castle_Tower_FL', 'Castle_Tower_FR', 'Castle_Tower_BL', 'Castle_Tower_BR', 'Castle_Flag_Main'],
+      requiredMats: ['TeamRoof', 'TeamBanner', 'TeamAccent'],
+    },
+    {
+      file: 'castle-fortress.glb',
+      requiredNodes: ['Castle_Base', 'Castle_Walls', 'Castle_Keep', 'Castle_Tower_FL', 'Castle_Tower_FR', 'Castle_Tower_BL', 'Castle_Tower_BR', 'Castle_Flag_Main'],
+      requiredMats: ['TeamRoof', 'TeamBanner', 'TeamAccent'],
+    },
+    {
+      file: 'unit-infantry.glb',
+      requiredNodes: ['Anim_Body', 'Anim_Head', 'Anim_ArmR', 'Anim_ArmL', 'Anim_LegL', 'Anim_LegR', 'Anim_Cape', 'Anim_Plume'],
+      requiredMats: ['TeamAccent', 'TeamCape', 'TeamPlume'],
+    },
+    {
+      file: 'unit-knight.glb',
+      requiredNodes: ['Anim_Body', 'Anim_Head', 'Anim_ArmR', 'Anim_ArmL', 'Anim_Cape', 'Anim_Plume', 'Anim_MountBody', 'Anim_MountHead', 'Anim_MountLegFL', 'Anim_MountLegFR', 'Anim_MountLegBL', 'Anim_MountLegBR', 'Anim_MountTail'],
+      requiredMats: ['TeamRoof', 'TeamAccent', 'TeamCape', 'TeamPlume'],
+    },
+    {
+      file: 'unit-mage.glb',
+      requiredNodes: ['Anim_Body', 'Anim_Head', 'Anim_ArmR', 'Anim_ArmL', 'Anim_LegL', 'Anim_LegR', 'Anim_Cape', 'Anim_StaffOrb'],
+      requiredMats: ['TeamRoof', 'TeamAccent', 'TeamCape', 'Unit_GlowBlue'],
+    },
+  ];
+
+  for (const sp of specs) {
+    const { json, byteLength } = parseGlbJson(sp.file);
+    assert.ok(byteLength > 50 * 1024 && byteLength < 1200 * 1024, `${sp.file} size is optimal (${(byteLength / 1024).toFixed(1)} KB)`);
+    const nodeNames = new Set((json.nodes ?? []).map((n) => n.name));
+    for (const reqNode of sp.requiredNodes) {
+      assert.ok(nodeNames.has(reqNode), `${sp.file} contains hierarchical node ${reqNode}`);
+    }
+    const matNames = new Set((json.materials ?? []).map((m) => m.name));
+    for (const reqMat of sp.requiredMats) {
+      assert.ok(matNames.has(reqMat), `${sp.file} contains material ${reqMat}`);
+    }
+  }
+
+  // Stress-test benchmark: 10 soldiers on board + 6 overlapping 3D magic effects (fire, lightning, ice, poison, wind, castleHit)
+  const fg = createTestFieldGL(1280, 800);
+  for (let i = 4; i <= 10; i++) {
+    const side = i % 2 === 0 ? 'me' : 'opp';
+    const lane = i % 3;
+    const row = i % 5;
+    const base = fg.cellWorldPos(lane, row);
+    const targetPos = { x: base.x + (side === 'me' ? 0.36 : -0.36), y: 0.16, z: base.z };
+    const group = new THREE.Group();
+    group.position.set(targetPos.x, targetPos.y, targetPos.z);
+    const model = new THREE.Group();
+    for (const n of ['Anim_Body', 'Anim_Head', 'Anim_ArmL', 'Anim_ArmR', 'Anim_LegL', 'Anim_LegR', 'Anim_Cape']) {
+      const m = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.3, 0.2), new THREE.MeshStandardMaterial());
+      m.name = n;
+      model.add(m);
+    }
+    group.add(model);
+    fg.entityGroup.add(group);
+    fg.soldierEntries.set(`s${i}`, {
+      id: `s${i}`,
+      group,
+      model,
+      rig: fg.bindModelRig(model),
+      materials: [],
+      auraRing: new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial()),
+      iceCage: new THREE.Mesh(),
+      shieldRing: new THREE.Mesh(),
+      type: i % 3 === 0 ? 'knight' : (i % 3 === 1 ? 'mage' : 'infantry'),
+      side,
+      lane,
+      row,
+      curPos: { ...targetPos },
+      targetPos: { x: targetPos.x, y: targetPos.y, z: targetPos.z + (side === 'me' ? -1.5 : 1.5) },
+      phase: i * 0.7,
+      action: null,
+      hitFlash: 0,
+      dustTimer: 0,
+    });
+  }
+
+  // Trigger overlapping magic & combat effects simultaneously
+  fg.triggerEffect('fire', { fromSide: 'me', side: 'opp', power: 14 });
+  fg.triggerEffect('lightning', { to: fg.cellWorldPos(1, 2), power: 10 });
+  fg.triggerEffect('ice', { to: fg.cellWorldPos(0, 1), power: 8 });
+  fg.triggerEffect('poison', { to: fg.cellWorldPos(2, 3), power: 6 });
+  fg.triggerEffect('wind', { to: fg.cellWorldPos(1, 1), power: 8 });
+  fg.triggerEffect('castleHit', { side: 'opp', power: 12 });
+
+  const frames = 120;
+  let now = 1000;
+  const t0 = performance.now();
+  for (let f = 0; f < frames; f++) {
+    now += 16.67;
+    fg.renderFrame(now);
+  }
+  const elapsedMs = performance.now() - t0;
+  const avgCpuFrameMs = elapsedMs / frames;
+  assert.ok(avgCpuFrameMs < 4.0, `10体兵士＋6重魔法エフェクト時の1フレーム更新・射影CPU時間が十分高速 (${avgCpuFrameMs.toFixed(3)} ms/frame, <16.6ms for 60FPS)`);
 });

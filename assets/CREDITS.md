@@ -789,7 +789,10 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `models/field-dark-forest.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/field-desert.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/make-fields.py` | 手書き Python（bpy / bmesh） | 本リポジトリのコードと同一 | 2026-11-23 |
-| `models/castle-{standard,fortress,tower,barracks}.glb` | Blender 5.3 プロシージャル生成（城4種） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/make-battle-models.py` | 手書き Python（bpy / bmesh）：王城・要塞・歩兵・騎士・魔法使いの高品質3D造形＆階層アニメーションリグ生成スクリプト | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/castle-{standard,fortress}.glb` | Blender 5.3 / `assets/models/make-battle-models.py`（本格造形版：切石レリーフ・翼紋章・アーチ門・ステンドグラス背面壁・8パーツ階層崩壊リグ内蔵） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/castle-{tower,barracks}.glb` | Blender 5.3 プロシージャル生成（城2種） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/field-stone.glb` | Blender 5.3 プロシージャル生成（踏み石） | 本リポジトリのコードと同一 | 2026-11-23 |
-| `models/unit-{infantry,knight,spearman,heavy,archer,mage,assassin,dragon,hero}.glb` | Blender 5.3 プロシージャル生成（兵士9種） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/unit-{infantry,knight,mage}.glb` | Blender 5.3 / `assets/models/make-battle-models.py`（本格造形版：2頭身ちびキャラ・軍馬騎乗・発光宝玉杖・関節階層アニメーションリグ内蔵） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/unit-{spearman,heavy,archer,assassin,dragon,hero}.glb` | Blender 5.3 プロシージャル生成（兵士6種） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/monster-{slime,goblin,dragon,golem,demon,mimic}.glb` | Blender 5.3 プロシージャル生成（魔物6種） | 本リポジトリのコードと同一 | 2026-11-23 |
