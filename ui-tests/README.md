@@ -36,4 +36,6 @@ Playwrightのブラウザ配置を環境で変えている場合は `PLAYWRIGHT_
 
 ## 4陣営（ベータ）のカード
 
-`node server/server.js` を起動し、`node ui-tests/faction-beta-cards.js` を実行する。`?beta=factions` で部屋に入り、「陣営の説明」の全カードが陣営のフレーム（`cards/frame-faction-*.png`）で出ること、長押しの拡大表示が陣営の3Dフレーム（Blender 製の `models/card-faction-*.glb`）で出ること、CPU と始めた対戦の手札も陣営のフレームで出ることを確かめる。3D はソフトウェア描画で重いので、`UI_TEST_GL=0` でフレームだけを確かめられる。画像は `ui-tests/artifacts/` に出力する。
+`node server/server.js` を起動し、`node ui-tests/faction-beta-cards.js` を実行する。`?beta=factions`（ホームで4陣営モードを選んだのと同じ）で開き、ホームのカジュアル対戦から部屋に入り、「陣営の説明」の全カードが陣営のフレーム（`cards/frame-faction-*.png`）で出ること、長押しの拡大表示が陣営の3Dフレーム（Blender 製の `models/card-faction-*.glb`）で出ること、CPU と始めた対戦の手札も陣営のフレームで出ることを確かめる。3D はソフトウェア描画で重いので、`UI_TEST_GL=0` でフレームだけを確かめられる。画像は `ui-tests/artifacts/` に出力する。
+
+4陣営の入口（ホームの対戦形式に一本化）は、`CF_DB_PATH=<作業用フォルダ>/t.db node server/server.js` を起動し、`node ui-tests/home-factions-entry.js` で確かめる。ホームで4陣営 → ひとりで遊ぶ・カジュアル対戦（ホームの陣営が席の陣営になる・部屋で変えられる・読み直しても4陣営でつなぎ直す）、4陣営を覚えていても `?debug=1`・`?local=1&cpu=hard` は通常モード、通常モードの部屋は通常モードでつなぎ直すこと。

@@ -18,3 +18,4 @@
 .faction-beta .room-heading { flex-wrap: wrap; gap: 6px; }
 .faction-beta .room-heading-btns { flex-wrap: wrap; }
 .faction-beta .room-seat label.room-select { padding-right: 90px; }
+.at-title .faction-beta-badge { display: none; } /* ホームは「4陣営モード」の表示があるので、目印は部屋・対戦でだけ出す */

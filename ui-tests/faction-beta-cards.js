@@ -1,4 +1,4 @@
-// 4陣営（ベータ、?beta=factions）で、陣営のカードが陣営のフレームで出ること・長押しの拡大が陣営の3Dフレーム（Blender 製の card-faction-*.glb）で出ることを確かめる。
+// 4陣営モード（ホームの対戦形式で4陣営を選ぶのと同じ ?beta=factions で開き、カジュアル対戦から部屋に入る）で、陣営のカードが陣営のフレームで出ること・長押しの拡大が陣営の3Dフレーム（Blender 製の card-faction-*.glb）で出ることを確かめる。
 // PORT=8787 node server/server.js を起動しておく。実行：node ui-tests/faction-beta-cards.js（require('playwright') が見つからないときは NODE_PATH=$(npm root -g)）
 // UI_TEST_GL=0 にすると、拡大表示の3D（ソフトウェア描画で重い）は確かめずに、フレームだけを確かめる
 import assert from 'node:assert/strict';
@@ -44,9 +44,14 @@ const longPress = async (target) => {
   await page.waitForSelector('dialog.card-zoom[open]', { timeout: 30000 });
 };
 
-await step('ベータのタイトルから部屋に入る', async () => {
+await step('ホームの4陣営モードから、カジュアル対戦の部屋に入る', async () => {
+  // ?beta=factions は互換の入口で、ホームで4陣営を選んだのと同じ（ホームが開く）
   await page.goto(new URL(`?beta=factions&fx=full`, base).href);
-  await page.locator('#title-form').waitFor();
+  await page.locator('#home[data-ruleset=factions]:not([hidden])').waitFor();
+  await page.locator('[data-act=chooseMode]').click();
+  await page.locator('.home-mode[data-mode=online]').click();
+  await page.locator('.home-start').click();
+  await page.locator('#title-form:not([hidden])').waitFor();
   await page.fill('#title-name', 'テスト');
   await page.fill('#title-pass', `beta-cards-${Date.now()}`);
   await page.click('#title-join');

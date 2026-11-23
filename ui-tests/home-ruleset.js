@@ -18,4 +18,7 @@ assert.equal(url.searchParams.get('mode'),'factions');assert.equal(url.searchPar
 for(const key of ['seed','cpu','local','pass'])assert.equal(url.searchParams.has(key),false);
 assert.equal(new URL(rulesetUrl(url.href,'kingdom')).searchParams.has('mode'),false);
 assert.throws(()=>rulesetUrl(url.href,'unknown'));
+// 前の入口 ?beta=factions から通常モードへ切り替えると、beta も消える（?beta=factions は ?mode=factions と同じ扱いのため）
+assert.equal(new URL(rulesetUrl('https://game.test/?beta=factions','kingdom')).searchParams.has('beta'),false);
+assert.ok(factions.cardSets?.kingdom && Object.keys(factions.cardSets).length===4);assert.equal(normal.cardSets,null);
 console.log('通常・4陣営・旧クラシックの読込、固定デッキとURL切替 OK');

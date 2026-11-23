@@ -77,7 +77,7 @@ try {
   await shot(page,'faction-sheet');await page.locator('.home-deck-choice[data-faction=dragon]').click();
   assert.equal(await page.locator('.home-deckpanel-name').innerText(),'竜族帝国');
   await page.locator('.home-deck-fan-mini img').evaluate(im=>im.decode());await shot(page,'factions-home');
-  await page.locator('[data-act=chooseMode]').click();assert.equal(await page.locator('.home-mode[data-mode=online]').isDisabled(),true);await page.keyboard.press('Escape');
+  await page.locator('[data-act=chooseMode]').click();assert.equal(await page.locator('.home-mode[data-mode=online]').isDisabled(),false,'4陣営でもカジュアル対戦（オンライン）を選べる');await page.locator('.home-mode[data-mode=solo]').click();
   await page.locator('.home-start').click();await page.locator('.level[data-level=hard]').click();
   await page.waitForFunction(()=>Boolean(window.castlefield?.game()));
   const state=await page.evaluate(()=>{const id=document.querySelector('#app').dataset.viewer,s=castlefield.game().getState(id),p=s.players[id];return {id,deckId:p.deckId,hand:p.hand.map(c=>c.type),opponents:Object.entries(s.players).filter(([pid])=>pid!==id).map(([,p])=>p.deckId)}});
@@ -100,6 +100,23 @@ try {
   const actualDeck=await deckPage.evaluate(()=>{const g=castlefield.game(),p=g.pileOf('p1'),cards=[...p.deck,...p.discard,...p.exhausted,...g.getState('p1').players.p1.hand];return cards.reduce((map,c)=>(map[c.type]=(map[c.type]??0)+1,map),{})});
   assert.deepEqual(actualDeck,presets.costAssault.cards,'ホームで選んだ枠のカードが実際の山札になる');
   console.log('actual deck verified');await deckContext.close();
+  // 決まりに合わない保存デッキ（見本を使用中）も削除できる。コピーは保存したデッキの中身を写す（#192 の退行）
+  const badList={infantry:1};
+  const badContext=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',serviceWorkers:'block'});
+  await badContext.route('**/api/me',r=>r.fulfill({json:{ok:false}}));
+  await badContext.addInitScript((list)=>{if(!sessionStorage.getItem('seeded')){sessionStorage.setItem('seeded','1');localStorage.setItem('cf-mydecks-v2',JSON.stringify({active:0,slots:[{name:'こわれ枠',list},null,null,null]}));}},badList);
+  const badPage=await badContext.newPage();badPage.on('pageerror',e=>errors.push(e.message));badPage.on('dialog',d=>d.accept());
+  const badUrl=new URL(base);badUrl.search='?home=1&field3d=2d';await badPage.goto(badUrl.href);await ready(badPage);
+  await badPage.locator('.home-tab[data-tab=deck]').click();
+  assert.match(await badPage.locator('.home-deck-state').first().innerText(),/見本を使用中/);
+  await badPage.locator('[data-act=deckCopy]').click();
+  const afterCopy=await badPage.evaluate(()=>JSON.parse(localStorage.getItem('cf-mydecks-v2')));
+  assert.equal(afterCopy.slots[1]?.name,'こわれ枠のコピー');assert.deepEqual(afterCopy.slots[1]?.list,badList,'コピーは保存したデッキの中身');
+  await badPage.locator('[data-act=deckDelete]').click();
+  const afterDelete=await badPage.evaluate(()=>JSON.parse(localStorage.getItem('cf-mydecks-v2')));
+  // コピーすると写した枠が使うデッキになる（saveMyDeck）。そのコピー（決まりに合わない）を消す
+  assert.equal(afterCopy.active,1);assert.equal(afterDelete.slots[1],null,'決まりに合わない保存デッキを削除できる');assert.equal(afterDelete.slots[0]?.name,'こわれ枠');
+  console.log('invalid saved deck: copy and delete verified');await badContext.close();
   assert.deepEqual(errors,[],'ページエラーなし');
   writeFileSync(new URL('report.json',dir),JSON.stringify({report,factionFlow:state,selectedDeckMatches:true,errors},null,2)+'\n');
   console.log(JSON.stringify({viewports:report.length,factionFlow:state,errors}));

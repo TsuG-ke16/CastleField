@@ -70,6 +70,7 @@ YouTube「桜井政博のゲーム作るには」の考え方を、このゲー�
 
 - HTML / CSS / JavaScript（フレームワークなし、ES Modules）。**例外：three.js を `js/vendor/three/` に置いてある**（図鑑・デッキ編成の拡大表示のカードを3Dで描くためだけに使う。人間に確認して入れた。npm からは入れず、ファイルをそのまま置く。拡大表示を開いたときにだけ読み込む）
 - 起動：リポジトリのルートで `python3 -m http.server` を実行し、`http://localhost:8000` を開く（Windows は `python -m http.server`）
+  - 遊ぶモード（通常／4陣営）は、ホームの「通常モード／4陣営モード」で選ぶ（URL の `?mode=factions` でも同じ。くわしくは「4陣営モード（ベータ）の入口」）
 - 自動テスト：リポジトリのルートで `node --test`（Node.js 22.7 以上。`package.json` がなくても `.js` を ES Modules として読めるのが 22.7 から。外部パッケージは使わない）。ロジックを変えたら必ず全部通してからPRを出す。新しい機能にはテストを足す
 - 画面のスモークテスト：`node ui-tests/smoke.js`（タイトル→ひとりで遊ぶ→1手出す→結果→再戦。Playwright は環境にあるものを使い、リポジトリには入れない）。画面を大きく変えたら通す
 - **オフライン用の一覧**：配るファイル（`index.html`・`css/`・`js/`・`data/`・`assets/`）を変えたら、`node js/ui/build-precache.js` で `js/ui/precache.js` を作り直して同じPRに入れる（忘れると、2回目以降の起動で古い版が出る）
@@ -922,8 +923,16 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   - `gameOver`：`{ winner, reason }`
 - 順番（`"lastStanding"` で城が落ちたとき）：`castleDamaged`（兵士が城に着いたときは、そのあとの `soldierDestroyed`（`"reachedCastle"`））→ `playerEliminated` → 抜けた人の兵士の `soldierDestroyed`（`"eliminated"`）→ `roadClosed` →（その道の兵士の `soldierDestroyed`（`"roadClosed"`））→ `roadOpened` →（残りが1人なら）`gameOver`
 
-### 4陣営（ベータ）の先行プレイ版（画面。人間の指示）
-オンライン専用で、URL `?beta=factions`（`?mode=factions`）で入る。合言葉の部屋 → 席ごとに陣営を選ぶ → 部屋主が開始。`data/modes.json` の `beta: true` のモードは、戦績・経験値・ミッションに記録しない（`Room.finishMatch`）。ランク・ショップ・ひとりで遊ぶは出さない。使い方・検証結果・既知の不具合・バランス提案は `docs/beta-factions/`。カードの数値は変えていない。
+### 4陣営モード（ベータ）の入口（画面。人間の指示：ホームの刷新 #192 に合わせて一本化した）
+- **入口はホームだけ**：ホームの「通常モード／4陣営モード」で4陣営を選ぶと、ページを `?mode=factions&home=1` で読み直し、4陣営のカード・ルールで動く。そのまま、対戦形式（モード）で選んだ遊び方で遊べる：**ひとりで遊ぶ**（CPU）・**カジュアル対戦**（合言葉の部屋。サーバー #182）・**同じ端末**。4陣営のときはチュートリアルを出さない。ランク・ランキング・フレンド・ミッションは通常モードだけ（押すと理由を出す）
+- **陣営**：ホームの「使用する陣営」で選んだ陣営を、ひとりで遊ぶ・同じ端末では自分の席に使う。カジュアル対戦では、部屋に入ったときに自分の席の陣営にする（部屋の「陣営」でいつでも変えられる。「陣営の説明」・陣営のフレーム・属性反応の演出は #191 のまま）
+- **前に選んだモードを覚える**（`localStorage` の `cf-home-ruleset`）：URL に `?mode=` がなければ、覚えたモードで開く。ただし
+  - `?debug=1`・`?local=1`・`?seed=` があるときは**覚えたモードを使わない**（URL の `?mode=` だけ見る。なければ通常モード）
+  - つなぎ直せる部屋が残っているとき（同じタブを読み直した。`sessionStorage` の `cf-online`）は、**その部屋のモード**で開いてつなぎ直す（鍵と一緒に `mode` を覚える。通常モードの部屋を4陣営で開かない。モードを覚えていない前の版の鍵は、URL の `?mode=`、なければ通常として扱う）
+- `?beta=factions`（前の入口）は互換のために残し、**`?mode=factions` と同じ**（ホームが4陣営で開く。合言葉の画面に直行はしない）。ホームで通常モードに切り替えると `beta` も URL から消す（`js/ui/HomeRuleSet.js` の `rulesetUrl`）
+- `data/modes.json` の `beta: true` のモードは、戦績・経験値・ミッションに記録しない（`Room.finishMatch`）。部屋と対戦では左上に「4陣営（ベータ）」の目印（ホームでは出さない）。使い方・検証結果・既知の不具合・バランス提案は `docs/beta-factions/`。カードの数値は変えていない
+- テスト：`ui-tests/home-factions-entry.js`（サーバーを起動して：ホームから4陣営のひとりで遊ぶ・カジュアル対戦・`?debug`／`?local` では通常・通常の部屋は通常でつなぎ直す）、`ui-tests/home-lobby.js`、`ui-tests/faction-beta-cards.js`
+- **今はやらない（あとで）**（人間の指示）：Blender 製カード（3D）の作り直し・凹凸の地図の追加などの作り込み、手札のカードの長押し拡大
 
 ## ゴッドフィールド風の変更（人間に確認して決めた）
 
@@ -1632,7 +1641,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 四大陣営のPR（#163〜#166。まだ main にない。349種）は、カードを取り込みすぎて多すぎたので、**クラシックと同じ作りで組み直した**（人間の指示）。レアリティを使わず、属性の付着と反応を楽しむ。カード表は人間が確定した案（王国15・森14・魔族15・竜13種）のとおり。ただし竜の「竜の鼓動」（竜威）は、竜威のルールが決まっていないので外した（竜は12種）。王国の防御は案どおり身代わり（3MP）で、聖壁の号砲（#176）は入れない。
 
 - **置き場**：`data/factions/`（`factions.json` 陣営の名前・`cards/<陣営>.json` 陣営ごとのカード表・`rules.json`・`elements.json`・`reactions.json`）。`data/modes.json` の `factions`（`hidden`・`available: false`）。`cardSet` はなく、`factionCardSets` を全部合わせたものがカード定義、`factionDecks: true` で**各陣営のカード表がその陣営のデッキ**になる（`js/game/Setup.js` の `factionDecks(factions, cardSets)` → decks.json と同じ形）
-- **遊び方**：1人1つのデッキ（`rules.deckMode: "own"`）。`new Game({ ..., decks: factionDecks(...), setup: { decks: ["kingdom", "dragon"] } })` で席ごとに陣営を選ぶ（省略すると `rules.defaultDeck` の王国）。テスト・シミュレーションは `tests/helpers.js` の `buildData({ mode: "factions" })`・`loadOptionalData("factions")` で読む。**サーバー対応済み・画面は未対応**：`server/server.js` の `loadData(dir, "factions")` が陣営ごとのカード表を合わせたカード・`decks`（陣営）・`factions`（陣営IDの配列）・属性・反応を読み、`loadModeData()` に `factions` が入る（部屋に入るとき `body.mode: "factions"`）。部屋（`server/rooms.js`）は席ごとに `setSeat` の `faction` で陣営を選び、始まると `setup.decks` に各席の陣営を渡す（2〜8人・CPU を含む）。**チーム戦（`teams`）と、`deckMode` を `own` 以外にすることは `setRules` で断る**（「4陣営ではチーム戦は使えません」）。忍者のイベントを隠す `stealth` は `shieldBroken` にも付く。テストは `tests/factions-server.test.js`。画面で陣営を選んで遊べるのは UI 側の対応（`factionDecks` を使う試合の読み込み・部屋の陣営選び）のあと
+- **遊び方**：1人1つのデッキ（`rules.deckMode: "own"`）。`new Game({ ..., decks: factionDecks(...), setup: { decks: ["kingdom", "dragon"] } })` で席ごとに陣営を選ぶ（省略すると `rules.defaultDeck` の王国）。テスト・シミュレーションは `tests/helpers.js` の `buildData({ mode: "factions" })`・`loadOptionalData("factions")` で読む。**サーバー対応済み・画面は未対応**：`server/server.js` の `loadData(dir, "factions")` が陣営ごとのカード表を合わせたカード・`decks`（陣営）・`factions`（陣営IDの配列）・属性・反応を読み、`loadModeData()` に `factions` が入る（部屋に入るとき `body.mode: "factions"`）。部屋（`server/rooms.js`）は席ごとに `setSeat` の `faction` で陣営を選び、始まると `setup.decks` に各席の陣営を渡す（2〜8人・CPU を含む）。**チーム戦（`teams`）と、`deckMode` を `own` 以外にすることは `setRules` で断る**（「4陣営ではチーム戦は使えません」）。忍者のイベントを隠す `stealth` は `shieldBroken` にも付く。テストは `tests/factions-server.test.js`。画面は対応済み：ホームの「4陣営モード」から、ひとりで遊ぶ・カジュアル対戦（部屋で陣営を選ぶ）・同じ端末で遊べる（「4陣営モード（ベータ）の入口」）
 - **要確認（人間の確認待ち。まだ決めていない）**：①`available: false` のモードに、`/api/join` の `mode` 指定で入れてしまう（今は入れる）②4陣営で城の種類（`castles.json`）を使うか（今は部屋が城の種類を渡している）③4陣営でチーム戦を断るのは仮か恒久か
 - **枚数**：案に枚数がないので、**どのカードも2枚**（`count: 2`。王国30・森28・魔族30・竜24枚）にした（仮）
 - **ルール**（`data/factions/rules.json`。全モード共通の `data/rules.json` は変えていない）：クラシックのルールのまま（毎ターン2枚ドロー固定 `drawPerTurn` 2・`drawUntilHand` 0・`drawPerPlayed` false、手札上限6、全カードで MP を使う `mpAllCards`、MP 10/20・毎ターン+3、城HP60、城への魔法は先頭の兵士に当たる、崩壊の刻）に、`deckMode: "own"`・`defaultDeck: "kingdom"` を足し、使わないデッキ編成の数値を外した

@@ -514,7 +514,7 @@ export class Home {
     const sampleId = this.rules?.defaultCostDeck;
     const sample = sampleId && this.decks?.[sampleId];
     const sampleCheck = sample && canCheck ? checkCostDeck(sample.cards, this.cards, this.rarities, this.rules) : null;
-    if (mine) return { name: sample?.name ?? serverName ?? '見本のデッキ', list: sample?.cards ?? {}, check:sampleCheck, kind:'fallback', slot,state,repairReason:check?.reason,invalidName:mine.name };
+    if (mine) return { name: sample?.name ?? serverName ?? '見本のデッキ', list: sample?.cards ?? {}, check:sampleCheck, kind:'fallback', slot,state,repairReason:check?.reason,invalidName:mine.name,savedList:mine.list };
     if (sample) return { name: sample.name, list: sample.cards, check: sampleCheck, kind: 'sample', slot, state };
     return { name: serverName ?? '未設定', list: null, check: null, kind: 'none', slot, state };
   }
@@ -526,9 +526,8 @@ export class Home {
     this.part('deck2').textContent = deck.name;
     const state = this.part('deckState');
     state.className = `home-deck-state is-${deck.kind}`;
-    state.textContent = { mine: '使えます', sample: '見本', invalid: '要調整', none: '', fallback:'見本を使用中', faction: '固定デッキ' }[deck.kind];
-    state.title = deck.kind === 'invalid' ? `決まりに合わないため、対戦では「${deck.fallback ?? '見本のデッキ'}」を使います（${deck.check?.reason ?? ''}）`
-      : deck.kind === 'sample' ? 'デッキを編成するまでは、この見本のデッキで対戦します' : '';
+    state.textContent = { mine: '使えます', sample: '見本', none: '', fallback:'見本を使用中', faction: '固定デッキ' }[deck.kind];
+    state.title = deck.kind === 'sample' ? 'デッキを編成するまでは、この見本のデッキで対戦します' : '';
     // 枚数・コスト
     for (const metaName of ['deckMeta', 'deckMeta2']) {
       const meta = this.part(metaName);
@@ -541,8 +540,8 @@ export class Home {
       }
     }
     const warn = this.part('deckWarn');
-    warn.hidden = !['invalid','fallback'].includes(deck.kind);
-    warn.textContent = deck.kind === 'fallback' ? `保存した「${deck.invalidName}」は要調整（${deck.repairReason ?? '構成を確認してください'}）。対戦では見本のデッキを使います。` : deck.kind === 'invalid' ? `${deck.check?.reason ?? '決まりに合いません'}。対戦では見本のデッキを使います` : '';
+    warn.hidden = deck.kind !== 'fallback';
+    warn.textContent = deck.kind === 'fallback' ? `保存した「${deck.invalidName}」は要調整（${deck.repairReason ?? '構成を確認してください'}）。対戦では見本のデッキを使います。` : '';
     // 代表のカード（レアリティの高い順・枚数の多い順）
     const entries = Object.entries(deck.list ?? {}).filter(([type]) => this.cards && Object.hasOwn(this.cards, type));
     const order = this.rarities ? Object.keys(this.rarities) : [];
@@ -682,12 +681,10 @@ export class Home {
 
   renderModes() {
     const wrap=this.part('modes'); wrap.replaceChildren();
-    if(this.ruleset==='factions' && this.mode==='online') this.mode='solo';
     for(const [id,m] of Object.entries(MODES)) {
       const b=document.createElement('button'); b.type='button'; b.className='home-mode raw-btn'; b.dataset.mode=id;
       b.setAttribute('aria-pressed',String(id===this.mode));
       b.innerHTML=`${homeIcon(id,28)}<span><strong>${m.label}</strong><small>${m.note}</small></span>${homeIcon('check',20)}`;
-      if(id==='online' && this.ruleset==='factions') { b.disabled=true; b.querySelector('small').textContent='4陣営のオンラインは準備中'; }
       wrap.append(b);
     }
     this.renderFacts();
@@ -795,26 +792,29 @@ export class Home {
     this.box.scrollTop = 0;
   }
 
-  /** 使うデッキを、空いている枠にコピーする（見本のデッキもコピーできる） */
+  /** 使うデッキを、空いている枠にコピーする（見本のデッキもコピーできる）。
+   * 決まりに合わない保存デッキ（見本を使用中）は、見本ではなく保存したデッキの中身を写す（直してから使えるように） */
   copyDeck() {
     const deck = this.currentDeckInfo;
-    if (!deck?.list) return this.toast('コピーできるデッキがありません', 'info');
+    const list = deck?.kind === 'fallback' ? deck.savedList : deck?.list;
+    if (!list) return this.toast('コピーできるデッキがありません', 'info');
     const slot = loadDecks().slots.findIndex((d) => !d);
     if (slot < 0) return this.toast(`空いているデッキ枠がありません（${DECK_SLOTS}つまで）。いらないデッキを削除してください`, 'info');
-    const name = `${deck.name}のコピー`.slice(0, 24);
-    if (!saveMyDeck(slot, name, deck.list)) return this.toast('この端末に保存できませんでした', 'info');
+    const name = `${deck.kind === 'fallback' ? deck.invalidName : deck.name}のコピー`.slice(0, 24);
+    if (!saveMyDeck(slot, name, list)) return this.toast('この端末に保存できませんでした', 'info');
     this.renderDeck(this.data?.deck?.name);
     this.toast(`デッキ${slot + 1}にコピーしました`, 'info');
   }
 
-  /** 使うデッキを削除する（自分で作ったデッキだけ。見本は消せない） */
+  /** 使うデッキを削除する（自分で作ったデッキだけ。決まりに合わない保存デッキ（見本を使用中）も消せる。見本は消せない） */
   deleteDeck() {
     const deck = this.currentDeckInfo;
-    if (!deck || !['mine', 'invalid'].includes(deck.kind)) return this.toast('見本のデッキは削除できません', 'info');
-    if (!window.confirm(`「${deck.name}」を削除しますか？`)) return;
+    if (!deck || !['mine', 'fallback'].includes(deck.kind)) return this.toast('見本のデッキは削除できません', 'info');
+    const name = deck.kind === 'fallback' ? deck.invalidName : deck.name;
+    if (!window.confirm(`「${name}」を削除しますか？`)) return;
     if (!deleteMyDeck(deck.slot)) return this.toast('この端末に保存できませんでした', 'info');
     this.renderDeck(this.data?.deck?.name);
-    this.toast(`「${deck.name}」を削除しました`, 'info');
+    this.toast(`「${name}」を削除しました`, 'info');
   }
 
   onKey(e) {
@@ -870,7 +870,7 @@ export class Home {
     if(act==='chooseDeck') { this.renderDeckChoices(); return this.openSheet('deck'); }
     if(act==='more') return this.openSheet('more');
     this.closeSheets();
-    if(this.ruleset==='factions' && ['rank','ranking','friend','casual','mission'].includes(act)) return this.toast('この機能は通常モードで利用できます。4陣営は現在ローカル対戦に対応しています。','info');
+    if(this.ruleset==='factions' && ['rank','ranking','friend','mission'].includes(act)) return this.toast('この機能は通常モードで利用できます。4陣営は、ひとりで遊ぶ・カジュアル対戦（合言葉）・同じ端末で遊べます。','info');
     if(this.ruleset==='factions' && act==='deck') { this.renderDeckChoices();return this.openSheet('deck'); }
     sound.play('tap');
     if (act === 'account') return this.onAccount();
