@@ -1,6 +1,6 @@
 # 3案の比較と採用案
 
-3案とも375×812のHTMLモックを実際のChromiumで描画した。[比較](concepts-comparison.png) / [操作モック](concepts.html) / [A](concept-a.png) / [B](concept-b.png) / [C](concept-c.png)
+3案とも375×812のHTMLモックを実際のChromiumで描画した。[比較](concepts-comparison.webp) / [操作モック](concepts.html) / [A](concept-a.webp) / [B](concept-b.webp) / [C](concept-c.webp)
 
 | 案 | レイアウト | 操作フロー | 長所 | 課題 |
 |---|---|---|---|---|

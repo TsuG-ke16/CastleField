@@ -10,7 +10,9 @@ try {
   const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'}),page=await context.newPage(),errors=[];
   page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000);
   const url=new URL(base);url.search='?home=1&debug=1&field3d=2d';await page.goto(url.href);await page.locator('#home:not([hidden])').waitFor();
-  await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller),{},{timeout:120000});
+  await page.evaluate(async()=>{await navigator.serviceWorker.ready;});
+  await page.reload();
+  await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller));
   await context.setOffline(true);await page.reload();await page.locator('#home.home-local:not([hidden])').waitFor();
   await page.locator('.home-world[data-ruleset=factions]').click();await page.locator('#home[data-ruleset=factions]:not([hidden])').waitFor();
   await page.locator('[data-act=chooseDeck]').first().click();await page.locator('[data-faction=dragon]').click();

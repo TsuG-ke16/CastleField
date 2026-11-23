@@ -9,7 +9,8 @@ const browser=await chromium.launch({...(process.env.UI_TEST_CHROMIUM?{executabl
 const errors=[],report=[];
 const ready=async(page)=>{
   await page.locator('#home:not([hidden]) .home-tabbar[aria-orientation]').waitFor();
-  await page.evaluate(async()=>{await document.fonts.ready;await Promise.all([...document.images].map(i=>i.decode().catch(()=>{})))});
+  await page.locator('#home .home-arena').evaluate(im=>im.decode());
+  await page.evaluate(async()=>{await document.fonts.ready;const visible=[...document.querySelectorAll('#home img')].filter(im=>im.getBoundingClientRect().width>0&&im.getBoundingClientRect().height>0);await Promise.race([Promise.all(visible.map(im=>im.decode().catch(()=>{}))),new Promise(resolve=>setTimeout(resolve,3000))]);});
 };
 const shot=async(page,name)=>{await page.evaluate(()=>document.activeElement?.blur());await page.screenshot({path:new URL(name+'.png',dir).pathname});};
 const selectMode=async(page,id)=>{await page.locator('[data-act=chooseMode]').click();await page.locator(`.home-mode[data-mode=${id}]`).click();};
@@ -84,20 +85,21 @@ try {
   await page.locator('#hand .card').first().waitFor();await shot(page,'factions-battle');
   await context.close();
   // 初期化後に別の保存枠を選び、準備と実際の山札が一致することを確かめる。
+  console.log('viewports and faction flow complete');
   const presets=JSON.parse(readFileSync(new URL('../data/decks.json',import.meta.url),'utf8'));
   const deckContext=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce',serviceWorkers:'block'});
   await deckContext.route('**/api/me',r=>r.fulfill({json:{ok:false}}));
   await deckContext.addInitScript((state)=>localStorage.setItem('cf-mydecks-v2',JSON.stringify(state)),{active:0,slots:[{name:'バランス枠',list:presets.costBalance.cards},{name:'突撃枠',list:presets.costAssault.cards},null,null]});
   const deckPage=await deckContext.newPage();deckPage.on('pageerror',e=>errors.push(e.message));
-  const deckUrl=new URL(base);deckUrl.search='?home=1&debug=1&field3d=2d&seed=8';await deckPage.goto(deckUrl.href);await ready(deckPage);
+  const deckUrl=new URL(base);deckUrl.search='?home=1&debug=1&field3d=2d&seed=8';await deckPage.goto(deckUrl.href);await ready(deckPage);console.log('deck fixture ready');
   await deckPage.locator('[data-act=chooseDeck]').first().click();await deckPage.locator('[data-choose-slot="1"]').click();
-  assert.equal(await deckPage.locator('.home-deckpanel-name').innerText(),'突撃枠');
+  assert.equal(await deckPage.locator('.home-deckpanel-name').innerText(),'突撃枠');console.log('deck selected');
   await selectMode(deckPage,'local');await deckPage.locator('.home-start').click();
-  assert.equal(await deckPage.locator('.local-options select[name=deck]').inputValue(),'custom:1');
+  assert.equal(await deckPage.locator('.local-options select[name=deck]').inputValue(),'custom:1');console.log('deck setup synchronized');
   await deckPage.locator('#local-start').click();await deckPage.waitForFunction(()=>Boolean(window.castlefield?.game()));
   const actualDeck=await deckPage.evaluate(()=>{const g=castlefield.game(),p=g.pileOf('p1'),cards=[...p.deck,...p.discard,...p.exhausted,...g.getState('p1').players.p1.hand];return cards.reduce((map,c)=>(map[c.type]=(map[c.type]??0)+1,map),{})});
   assert.deepEqual(actualDeck,presets.costAssault.cards,'ホームで選んだ枠のカードが実際の山札になる');
-  await deckContext.close();
+  console.log('actual deck verified');await deckContext.close();
   assert.deepEqual(errors,[],'ページエラーなし');
   writeFileSync(new URL('report.json',dir),JSON.stringify({report,factionFlow:state,selectedDeckMatches:true,errors},null,2)+'\n');
   console.log(JSON.stringify({viewports:report.length,factionFlow:state,errors}));
