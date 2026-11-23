@@ -16,12 +16,38 @@ export const setCardSkin = (rank) => {
 export const cardSkinNow = () => cardSkin;
 
 export const RARITY_IDS = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
+export const FACTION_IDS = ['kingdom', 'forest', 'demon', 'dragon'];
+const FACTION_PREFIXES = [
+  ['fac_king_', 'kingdom'],
+  ['fac_forest_', 'forest'],
+  ['fac_demon_', 'demon'],
+  ['fac_dragon_', 'dragon'],
+];
 const KINDS = new Set(['soldier', 'spell', 'weapon', 'defense']);
 const KIND_ICON = { soldier: 'sword', spell: 'fire', weapon: 'hammer', defense: 'shield' };
 const RARITY_MARK = { common: '●', uncommon: '◆', rare: '✦', epic: '✶', legendary: '♛', special: '❖' };
 
-export function frameAsset(def, rarities, skin = cardSkin) {
+/** カードIDまたは定義から4陣営ID（kingdom / forest / demon / dragon）を判定する */
+export function factionFromCard(type, def) {
+  if (def?.monster) return null;
+  if (def?.faction && FACTION_IDS.includes(def.faction)) return def.faction;
+  if (typeof type === 'string') {
+    for (const [prefix, id] of FACTION_PREFIXES) {
+      if (type.startsWith(prefix)) return id;
+    }
+  }
+  return null;
+}
+
+/** 4陣営専用フレームの表面PNGパス（assets/ からの相対パス） */
+export const factionFrameFront = (faction) => (FACTION_IDS.includes(faction) ? `cards/frame-faction-${faction}.png` : null);
+/** 4陣営専用フレームの裏面PNGパス（assets/ からの完全パス） */
+export const factionFrameBack = (faction) => (FACTION_IDS.includes(faction) ? `assets/skins/back-faction-${faction}.png` : null);
+
+export function frameAsset(def, rarities, skin = cardSkin, type = null) {
   if (def?.monster) return 'cards/frame-beast.png';
+  const faction = factionFromCard(type, def);
+  if (faction) return factionFrameFront(faction);
   if (skin && rankSkinFront(skin)) return rankSkinFront(skin);
   // スペシャルは真珠色・虹色の専用枠を使う。
   if (def?.rarity === 'special' && rarities?.special) return 'cards/frame-special.png';
