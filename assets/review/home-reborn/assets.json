@@ -1,0 +1,22 @@
+[
+  {
+    "path": "assets/bg/home-arena-duel.png",
+    "source": "exec-992eb956-5c88-46ca-98a5-270c22166cf1.png",
+    "archive": "assets/review/home-reborn/source-duel.webp",
+    "dimensions": [
+      960,
+      567
+    ],
+    "bytes": 118709
+  },
+  {
+    "path": "assets/bg/home-arena-factions.png",
+    "source": "exec-bb781081-7826-4f6a-a96e-d27cbeb2473b.png",
+    "archive": "assets/review/home-reborn/source-factions.webp",
+    "dimensions": [
+      960,
+      565
+    ],
+    "bytes": 159062
+  }
+]

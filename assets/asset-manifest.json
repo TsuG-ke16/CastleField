@@ -429,5 +429,7 @@
   "props/field-amethyst.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
   "props/field-brazier.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
   "props/field-wall.png": "exec-35feb730-098c-4dc2-83ee-155df3ea1f6f.png",
-  "bg/stage-desert.png": "exec-8110da6b-6698-486a-b298-135bbabe1229.png"
+  "bg/stage-desert.png": "exec-8110da6b-6698-486a-b298-135bbabe1229.png",
+  "bg/home-arena-duel.png": "exec-992eb956-5c88-46ca-98a5-270c22166cf1.png",
+  "bg/home-arena-factions.png": "exec-bb781081-7826-4f6a-a96e-d27cbeb2473b.png"
 }

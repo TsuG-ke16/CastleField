@@ -796,3 +796,16 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `models/unit-{infantry,knight,mage}.glb` | Blender 5.3 / `assets/models/make-battle-models.py`（本格造形版：2頭身ちびキャラ・軍馬騎乗・発光宝玉杖・関節階層アニメーションリグ内蔵） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/unit-{spearman,heavy,archer,assassin,dragon,hero}.glb` | Blender 5.3 プロシージャル生成（兵士6種） | 本リポジトリのコードと同一 | 2026-11-23 |
 | `models/monster-{slime,goblin,dragon,golem,demon,mimic}.glb` | Blender 5.3 プロシージャル生成（魔物6種） | 本リポジトリのコードと同一 | 2026-11-23 |
+
+## Battle Station ホーム用の戦場アート（2026-11-23）
+
+既存の城・草原の絵柄を参照し、通常対戦と4陣営モードを説明するジオラマを制作。外部ゲームのスクリーンショットは調査のみに使用し、製品アセットへ取り込んでいない。
+
+| ファイル | 原稿 | 作った道具 | 利用条件 | 作成日 |
+|---|---|---|---|---|
+| `bg/home-arena-duel.png` | `exec-992eb956-5c88-46ca-98a5-270c22166cf1.png` | OpenAI画像生成（ChatGPT）、Pillowで切り抜き範囲・縮小・PNG圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+| `review/home-reborn/source-duel.webp` | `exec-992eb956-5c88-46ca-98a5-270c22166cf1.png` | OpenAI画像生成（ChatGPT）、Pillowで切り抜き範囲・縮小・PNG圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+| `bg/home-arena-factions.png` | `exec-bb781081-7826-4f6a-a96e-d27cbeb2473b.png` | OpenAI画像生成（ChatGPT）、Pillowで切り抜き範囲・縮小・PNG圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+| `review/home-reborn/source-factions.webp` | `exec-bb781081-7826-4f6a-a96e-d27cbeb2473b.png` | OpenAI画像生成（ChatGPT）、Pillowで切り抜き範囲・縮小・PNG圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
+
+`js/ui/HomeIcons.js` の操作アイコンは本リポジトリ向けに作成したSVG。レビュー用の画面キャプチャ・HTMLモックは本ゲームを撮影・制作したもの。元の生成画像は `review/home-reborn/source-*.webp` に保存。
