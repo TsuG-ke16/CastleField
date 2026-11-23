@@ -51,7 +51,7 @@ test('server: loadData(dir, "classic") と loadModeData', () => {
   assert.equal(data.decks, null);
   assert.ok(data.cards.classic_king_wall);
   assert.ok(data.monsters); // 魔物などは通常モードと同じ
-  assert.deepEqual(Object.keys(loadModeData()), ['classic']);
+  assert.deepEqual(Object.keys(loadModeData()), ['classic', 'factions']); // factions は4陣営モード（tests/factions-server.test.js）
   assert.ok(loadData().rarities); // 既定は今まで通り
 });
 

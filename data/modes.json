@@ -46,11 +46,12 @@
       "background": "assets/bg/kingdom-meadow.png"
     },
     "factions": {
-      "name": "4陣営",
+      "name": "4陣営（ベータ）",
       "available": false,
       "hidden": true,
+      "beta": true,
       "world": "kingdom",
-      "_note": "4陣営モード（王国・森の同盟・魔族軍・竜族帝国）。クラシックと同じ作り（レアリティを使わない・属性の付着と反応）。cardSet はなく、陣営ごとのカード表（factionCardSets）を全部合わせたものがカード定義になり、各陣営のカード表がその陣営のデッキになる（factionDecks: true・deckMode \"own\"）。今はテスト・シミュレーションだけが読む（tests/helpers.js）。画面・サーバーで遊べるようにするのは別の作業",
+      "_note": "4陣営モード（王国・森の同盟・魔族軍・竜族帝国）。クラシックと同じ作り（レアリティを使わない・属性の付着と反応）。cardSet はなく、陣営ごとのカード表（factionCardSets）を全部合わせたものがカード定義になり、各陣営のカード表がその陣営のデッキになる（factionDecks: true・deckMode \"own\"）。テスト・シミュレーション（tests/helpers.js）とオンライン対戦のサーバー（server/server.js・rooms.js。席ごとに setSeat の faction で陣営を選ぶ）が読む。サーバーでは遊べる。画面（js/main.js）は未対応",
       "rulesSet": "data/factions/rules.json",
       "elementsSet": "data/factions/elements.json",
       "reactionsSet": "data/factions/reactions.json",

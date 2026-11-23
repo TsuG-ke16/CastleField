@@ -8,6 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { Lobby } from './rooms.js';
 import { Game } from '../js/game/Game.js';
+import { factionDecks } from '../js/game/Setup.js';
 import { Db } from './accounts/db.js';
 import { createAccountRoutes } from './accounts/http.js';
 import { Logger, Metrics, routeClass, startMaintenance } from './ops.js';
@@ -23,11 +24,12 @@ export function loadData(dir = join(ROOT, 'data'), modeId = null) {
   const optional = (name) => (existsSync(join(dir, name)) ? read(name) : null);
   const modes = optional('modes.json');
   const entry = modeId && modeId !== modes?.default ? modes?.modes?.[modeId] : null;
-  if (modeId && modeId !== modes?.default && !entry?.cardSet) throw new Error(`モード "${modeId}" は data/modes.json に cardSet がありません`);
+  // カード定義は cardSet か、陣営ごとのカード表（factionCardSets。factionDecks: true の4陣営モード）
+  if (modeId && modeId !== modes?.default && !entry?.cardSet && !entry?.factionDecks) throw new Error(`モード "${modeId}" は data/modes.json に cardSet も factionDecks もありません`);
   // modes.json の "data/classic/cards.json" のような書き方を、dir の中の場所に直す
   const inDir = (path) => join(dir, path.replace(/^data\//, ''));
   const data = {
-    cards: entry ? JSON.parse(readFileSync(inDir(entry.cardSet), 'utf8')) : read('cards.json'),
+    cards: entry ? (entry.cardSet ? JSON.parse(readFileSync(inDir(entry.cardSet), 'utf8')) : {}) : read('cards.json'),
     rules: entry?.rulesSet ? JSON.parse(readFileSync(inDir(entry.rulesSet), 'utf8')) : read('rules.json'),
     monsters: optional('monsters.json'),
     upgrades: optional('upgrades.json'),
@@ -45,6 +47,8 @@ export function loadData(dir = join(ROOT, 'data'), modeId = null) {
     gacha: optional('gacha.json'),
     missions: optional('missions.json'),
     modes,
+    // ベータ版のモード（modes.json の beta: true）。戦績・経験値・ミッションを記録しない（rooms.js の finishMatch）
+    beta: entry?.beta === true,
   };
   if (entry) {
     // レアリティを使わないモード（カードの count 枚ずつで山札を作る）。レアリティとコスト制のデッキは、このモードでは使えない
@@ -53,14 +57,23 @@ export function loadData(dir = join(ROOT, 'data'), modeId = null) {
     if (entry.elementsSet) data.elements = JSON.parse(readFileSync(inDir(entry.elementsSet), 'utf8'));
     // 属性の付着と反応（reactionsSet）。書いてあるモードだけ new Game({ reactions }) に渡す。通常モードには渡さない（付着・反応なし）
     if (entry.reactionsSet) data.reactions = JSON.parse(readFileSync(inDir(entry.reactionsSet), 'utf8'));
+    // 4陣営モード：陣営ごとのカード表（factionCardSets）を全部合わせたものがカード定義。各陣営のカード表がその陣営のデッキ（decks）。
+    // 部屋は data.factions（陣営の一覧）があるときだけ、席ごとに陣営を選べる
+    if (entry.factionDecks) {
+      const sets = Object.fromEntries(Object.entries(entry.factionCardSets ?? {}).map(([f, path]) => [f, JSON.parse(readFileSync(inDir(path), 'utf8'))]));
+      for (const set of Object.values(sets)) Object.assign(data.cards, set);
+      const factions = JSON.parse(readFileSync(inDir(entry.factionsSet), 'utf8'));
+      data.decks = factionDecks(factions, sets);
+      data.factions = Object.keys(data.decks);
+    }
   }
   return data;
 }
 
-/** 既定以外のモード（modes.json に cardSet があるもの）のデータを、モードのIDごとに読む */
+/** 既定以外のモード（modes.json に cardSet があるもの。4陣営モード＝factionDecks: true も含む）のデータを、モードのIDごとに読む */
 export function loadModeData(dir = join(ROOT, 'data')) {
   const modes = existsSync(join(dir, 'modes.json')) ? JSON.parse(readFileSync(join(dir, 'modes.json'), 'utf8')) : null;
-  return Object.fromEntries(Object.entries(modes?.modes ?? {}).filter(([id, m]) => id !== modes.default && m.cardSet).map(([id]) => [id, loadData(dir, id)]));
+  return Object.fromEntries(Object.entries(modes?.modes ?? {}).filter(([id, m]) => id !== modes.default && (m.cardSet || m.factionDecks)).map(([id]) => [id, loadData(dir, id)]));
 }
 
 const MAX_BODY = 16 * 1024;

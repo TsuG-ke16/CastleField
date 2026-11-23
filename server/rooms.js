@@ -146,6 +146,8 @@ export class Room {
       team: TEAM_IDS[this.seats.length % 2],
       castle: this.data.castles ? this.defaultOf(this.data.castles, this.data.rules.defaultCastle) : null,
       deck: this.data.decks ? this.defaultOf(this.plainDecks(), this.data.rules.defaultDeck) : null,
+      // 4陣営モード：席の陣営（data.factions があるときだけ。決めなければ既定の陣営）。デッキは陣営のカード表そのもの
+      faction: this.data.factions ? this.defaultOf(this.factionDefs(), this.data.rules.defaultDeck) : null,
       // デッキ編成（コスト制）：選んだ見本のデッキ（costDeck）と、自分で編成したデッキ（{ 種類: 枚数 }。なければ null）
       costDeck: this.costDecks() ? this.defaultOf(this.costDecks(), this.data.rules.defaultCostDeck) : null,
       deckList: null,
@@ -156,7 +158,13 @@ export class Room {
 
   /** decks.json のうち、「1人1つのデッキ」（own）で選べるもの（コスト制の見本は除く） */
   plainDecks() {
+    if (this.data.factions) return {}; // 4陣営モードの decks は陣営（faction で選ぶ。deck では選ばない）
     return Object.fromEntries(Object.entries(this.data.decks ?? {}).filter(([, d]) => !d.costDeck));
+  }
+
+  /** 4陣営モードの陣営（decks.json と同じ形のデッキ { 陣営ID: { name, cards } }）。4陣営モードでなければ空 */
+  factionDefs() {
+    return this.data.factions ? this.data.decks : {};
   }
 
   /** コスト制（cost）の見本のデッキ（decks.json の costDeck: true）。使えなければ null */
@@ -214,7 +222,8 @@ export class Room {
       setup.firstPlayer = this.seats[Math.floor(coin() * this.seats.length)].playerId;
     }
     if (this.data.castles) setup.castles = this.seats.map((s) => s.castle);
-    if (this.data.decks && rules.deckMode === 'own') setup.decks = this.seats.map((s) => s.deck);
+    if (this.data.factions) setup.decks = this.seats.map((s) => s.faction);
+    else if (this.data.decks && rules.deckMode === 'own') setup.decks = this.seats.map((s) => s.deck);
     if (rules.deckMode === 'cost') {
       setup.decks = this.seats.map((s) => s.costDeck);
       setup.deckLists = this.seats.map((s) => s.deckList);
@@ -254,6 +263,7 @@ export class Room {
   finishMatch(game, payload) {
     const meta = this.matchMeta;
     if (!this.onMatchEnd || !meta || this.game !== game) return;
+    if (this.data.beta) return; // ベータ版のモード：本番の戦績・経験値・通貨に影響させない
     try {
       const seats = meta.seats.map((m) => {
         const won = payload.winnerTeam ? m.team === payload.winnerTeam : m.playerId === payload.winner;
@@ -509,9 +519,11 @@ export class Room {
         next.stage = value;
       } else if (key === 'teams') {
         if (!Object.hasOwn(TEAM_MODES, value)) return { ok: false, reason: 'そのチームの分け方はありません' };
+        if (this.data.factions && value !== 'off') return { ok: false, reason: '4陣営ではチーム戦は使えません' };
         next.teams = value;
       } else if (key === 'deckMode') {
         if (!Object.hasOwn(DECK_MODES, value)) return { ok: false, reason: 'その山札の形はありません' };
+        if (this.data.factions && value !== 'own') return { ok: false, reason: '4陣営では山札の形は変えられません（陣営ごとのデッキです）' };
         if (value === 'own' && !this.data.decks) return { ok: false, reason: 'デッキがないので、1人1つのデッキは選べません' };
         if (value === 'cost' && !this.costDecks()) return { ok: false, reason: 'デッキ編成に必要なデータがないので、選べません' };
         next.deckMode = value;
@@ -538,12 +550,18 @@ export class Room {
       if (seat !== this.host) return { ok: false, reason: 'CPU の席は部屋主だけが変えられます' };
     }
     if (!patch || typeof patch !== 'object' || Array.isArray(patch)) return { ok: false, reason: '設定の形が正しくありません' };
-    const next = { castle: target.castle, deck: target.deck, team: target.team, costDeck: target.costDeck, deckList: target.deckList };
+    const next = { castle: target.castle, deck: target.deck, faction: target.faction, team: target.team, costDeck: target.costDeck, deckList: target.deckList };
     for (const [key, value] of Object.entries(patch)) {
       if (key === 'castle') {
         if (!this.data.castles || typeof value !== 'string' || !Object.hasOwn(this.data.castles, value)) return { ok: false, reason: 'その城はありません' };
         next.castle = value;
+      } else if (key === 'faction') {
+        // 4陣営モード：席の陣営（始まる前だけ）
+        if (!this.data.factions) return { ok: false, reason: 'このモードでは陣営を選べません' };
+        if (typeof value !== 'string' || !Object.hasOwn(this.factionDefs(), value)) return { ok: false, reason: 'その陣営はありません' };
+        next.faction = value;
       } else if (key === 'team') {
+        if (this.data.factions) return { ok: false, reason: '4陣営ではチーム戦は使えません' };
         if (!TEAM_IDS.includes(value)) return { ok: false, reason: 'そのチームはありません' };
         next.team = value;
       } else if (key === 'deck') {
@@ -844,6 +862,8 @@ export class Room {
         cpu: s.cpu,
         castle: s.castle,
         deck: s.deck,
+        // 4陣営モードの席の陣営（ほかのモードは null）
+        faction: s.faction ?? null,
         // コスト制：見本のデッキの id。自分で編成したデッキなら "custom"
         costDeck: s.deckList ? 'custom' : s.costDeck,
         // 試合中・試合のあとは、その試合のチーム。始まる前は、各自で選ぶときのチーム
@@ -861,6 +881,8 @@ export class Room {
           .filter(([id]) => (id !== 'own' || this.data.decks) && (id !== 'cost' || this.costDecks()))
           .map(([id, name]) => ({ id, name })),
         castles: Object.entries(this.data.castles ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
+        // 4陣営モードの陣営（ほかのモードは空）
+        factions: Object.entries(this.factionDefs()).map(([id, d]) => ({ id, name: d.name ?? id })),
         decks: Object.entries(this.plainDecks()).map(([id, d]) => ({ id, name: d.name ?? id })),
         costDecks: Object.entries(this.costDecks() ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),

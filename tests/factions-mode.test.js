@@ -638,7 +638,11 @@ test('生まれつきの属性が反応で消えるときは、elementCleared �
   assert.equal(game.playCard(game.players.p1.hand.find((c) => c.type === 'decoy').cardId, { soldierId: n.soldierId }).ok, true);
   game.currentPlayer = 'p2';
   game.playCard(game.players.p2.hand[0].cardId);
-  for (const type of ['castleGuardSet', 'castleGuarded']) assert.equal(log.find((e) => e.event === type).stealth, 'p1', type);
+  assert.equal(log.find((e) => e.event === 'castleGuardSet').stealth, 'p1');
+  // castleGuarded は stealth を付けず（城が攻撃を受けなかったことは相手にも届く）、soldierId だけ同じ陣地の人にしか見せない
+  const guarded = log.find((e) => e.event === 'castleGuarded');
+  assert.equal(guarded.stealth, undefined);
+  assert.equal(guarded.stealthSoldier, 'p1');
 });
 
 // ================= カード表を案（人間が確定した表）と突き合わせる =================
