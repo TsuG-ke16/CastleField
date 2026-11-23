@@ -1,26 +1,34 @@
 {
   "summary": {
-    "total_objects": 91,
-    "total_meshes": 67,
-    "total_polygons": 24372,
-    "total_triangles": 39686,
-    "total_materials": 44,
+    "total_objects": 113,
+    "total_meshes": 89,
+    "total_polygons": 82231,
+    "total_triangles": 128692,
+    "total_materials": 52,
     "external_assets_used": "None (100% original procedural Blender Python meshes & PBR materials)"
   },
   "collections": {
     "Bridges": {
-      "object_count": 8,
-      "mesh_count": 8,
-      "polygons": 872,
-      "triangles": 1744,
+      "object_count": 16,
+      "mesh_count": 16,
+      "polygons": 3672,
+      "triangles": 7216,
       "objects": [
         "Bridge_Kingdom",
+        "Bridge_Kingdom_Trim",
+        "Bridge_Kingdom_Iron",
         "Bridge_Kingdom_Lanterns",
         "Bridge_Forest",
+        "Bridge_Forest_Trim",
+        "Bridge_Forest_Iron",
         "Bridge_Forest_Lanterns",
         "Bridge_Demon",
+        "Bridge_Demon_Trim",
+        "Bridge_Demon_Iron",
         "Bridge_Demon_Lanterns",
         "Bridge_Dragon",
+        "Bridge_Dragon_Trim",
+        "Bridge_Dragon_Iron",
         "Bridge_Dragon_Lanterns"
       ]
     },
@@ -43,25 +51,26 @@
       ]
     },
     "Castle_Demon": {
-      "object_count": 7,
-      "mesh_count": 6,
-      "polygons": 1132,
-      "triangles": 2380,
+      "object_count": 8,
+      "mesh_count": 7,
+      "polygons": 3788,
+      "triangles": 7808,
       "objects": [
         "Castle_Demon_Root",
         "Demon_Obsidian_Citadel",
         "Demon_VioletIron_Trim",
         "Demon_Gothic_Spires",
         "Demon_Mana_Crystals",
+        "Demon_Crystal_Core",
         "Demon_Arcane_Glow",
         "Demon_Banners"
       ]
     },
     "Castle_Dragon": {
-      "object_count": 10,
-      "mesh_count": 9,
-      "polygons": 1475,
-      "triangles": 3272,
+      "object_count": 11,
+      "mesh_count": 10,
+      "polygons": 5899,
+      "triangles": 11932,
       "objects": [
         "Castle_Dragon_Root",
         "Dragon_Basalt_Fortress",
@@ -71,15 +80,16 @@
         "Dragon_Iron_Braziers",
         "Dragon_Bronze_Trim",
         "Dragon_Roaring_Flames",
+        "Dragon_Flame_Cores",
         "Dragon_Magma_Veins",
         "Dragon_Crimson_Banners"
       ]
     },
     "Castle_Forest": {
-      "object_count": 9,
-      "mesh_count": 8,
-      "polygons": 2827,
-      "triangles": 4358,
+      "object_count": 11,
+      "mesh_count": 10,
+      "polygons": 14841,
+      "triangles": 20160,
       "objects": [
         "Castle_Forest_Root",
         "Forest_Ancient_WorldTree",
@@ -87,7 +97,9 @@
         "Forest_Mossy_StoneBase",
         "Forest_Canopy_Foliage",
         "Forest_Leaf_Roofs",
+        "Forest_Hanging_Vines",
         "Forest_Amber_Glow",
+        "Forest_Spirit_Lights",
         "Forest_Banners",
         "Forest_Gold_Emblems"
       ]
@@ -95,8 +107,8 @@
     "Castle_Kingdom": {
       "object_count": 8,
       "mesh_count": 7,
-      "polygons": 1571,
-      "triangles": 3512,
+      "polygons": 6863,
+      "triangles": 14160,
       "objects": [
         "Castle_Kingdom_Root",
         "Kingdom_Walls_And_Towers",
@@ -109,26 +121,28 @@
       ]
     },
     "Central_Plaza": {
-      "object_count": 5,
-      "mesh_count": 5,
-      "polygons": 890,
-      "triangles": 1940,
+      "object_count": 6,
+      "mesh_count": 6,
+      "polygons": 3272,
+      "triangles": 7288,
       "objects": [
         "Plaza_Main_Deck",
-        "Plaza_Perimeter_Curb",
-        "Plaza_Compass_Rose",
-        "Plaza_Lantern_Posts",
-        "Plaza_Lantern_Glow"
+        "Plaza_Balustrade_And_Piers",
+        "Plaza_Lantern_Iron",
+        "Plaza_Lantern_Glow",
+        "Plaza_Compass_Gold",
+        "Plaza_Compass_Bronze"
       ]
     },
     "Island_Base": {
-      "object_count": 3,
-      "mesh_count": 3,
-      "polygons": 3488,
-      "triangles": 6912,
+      "object_count": 4,
+      "mesh_count": 4,
+      "polygons": 7752,
+      "triangles": 15528,
       "objects": [
         "Island_Top_Terrain",
         "Island_Cliff_Underside",
+        "Island_Terrace_RetainingWalls",
         "Island_Floating_Islets"
       ]
     },
@@ -151,14 +165,17 @@
       ]
     },
     "Nature": {
-      "object_count": 8,
-      "mesh_count": 8,
-      "polygons": 3595,
-      "triangles": 4732,
+      "object_count": 11,
+      "mesh_count": 11,
+      "polygons": 20778,
+      "triangles": 24512,
       "objects": [
         "Nature_Tree_Trunks",
         "Nature_Broadleaf_Trees",
         "Nature_Pine_Trees",
+        "Nature_Meadow_Flowers",
+        "Nature_Cliff_Vines",
+        "Nature_Forest_Spores",
         "Nature_Demon_ShadowTrees",
         "Nature_Demon_Crystals",
         "Nature_Dragon_LavaPools",
@@ -167,36 +184,41 @@
       ]
     },
     "Props": {
-      "object_count": 2,
-      "mesh_count": 2,
-      "polygons": 1992,
-      "triangles": 2064,
+      "object_count": 3,
+      "mesh_count": 3,
+      "polygons": 6136,
+      "triangles": 6448,
       "objects": [
         "Props_Plaza_Neutral_Benches",
+        "Props_Plaza_Planter_Greenery",
         "Props_Floating_Cloud_Ring"
       ]
     },
     "Roads": {
-      "object_count": 8,
-      "mesh_count": 8,
-      "polygons": 1178,
-      "triangles": 1716,
+      "object_count": 12,
+      "mesh_count": 12,
+      "polygons": 1630,
+      "triangles": 3128,
       "objects": [
         "Road_Stairs_Kingdom",
+        "Road_Pillars_Kingdom",
         "Road_Lanterns_Kingdom",
         "Road_Stairs_Forest",
+        "Road_Pillars_Forest",
         "Road_Lanterns_Forest",
         "Road_Stairs_Demon",
+        "Road_Pillars_Demon",
         "Road_Lanterns_Demon",
         "Road_Stairs_Dragon",
+        "Road_Pillars_Dragon",
         "Road_Lanterns_Dragon"
       ]
     },
     "Water": {
       "object_count": 3,
       "mesh_count": 3,
-      "polygons": 5352,
-      "triangles": 7056,
+      "polygons": 7600,
+      "triangles": 10512,
       "objects": [
         "Water_Moat_And_Rivers",
         "Water_Four_Waterfalls",
@@ -209,23 +231,23 @@
       "key": "bridge_stone",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.74,
+      "roughness": 0.72,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Cloud_Mist": {
       "key": "cloud",
-      "uses_vertex_color": false,
+      "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.95,
-      "emission_strength": 0.12,
-      "alpha": 0.65
+      "roughness": 0.96,
+      "emission_strength": 0.16,
+      "alpha": 0.78
     },
     "Mat_Demon_Banner": {
       "key": "demon_banner",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.68,
+      "roughness": 0.66,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -233,31 +255,31 @@
       "key": "demon_crystal",
       "uses_vertex_color": false,
       "metallic": 0.06,
-      "roughness": 0.12,
-      "emission_strength": 3.4,
+      "roughness": 0.07,
+      "emission_strength": 2.3,
       "alpha": 1.0
     },
     "Mat_Demon_ObsidianWall": {
       "key": "demon_obsidian",
       "uses_vertex_color": true,
-      "metallic": 0.26,
-      "roughness": 0.36,
+      "metallic": 0.28,
+      "roughness": 0.34,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Demon_SpireSlate": {
       "key": "demon_roof",
       "uses_vertex_color": false,
-      "metallic": 0.34,
-      "roughness": 0.3,
+      "metallic": 0.38,
+      "roughness": 0.28,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Demon_SilverVioletTrim": {
       "key": "demon_trim",
       "uses_vertex_color": false,
-      "metallic": 0.68,
-      "roughness": 0.34,
+      "metallic": 0.74,
+      "roughness": 0.3,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -265,23 +287,23 @@
       "key": "dragon_banner",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.68,
+      "roughness": 0.65,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Dragon_BasaltWall": {
       "key": "dragon_basalt",
       "uses_vertex_color": true,
-      "metallic": 0.08,
-      "roughness": 0.8,
+      "metallic": 0.12,
+      "roughness": 0.76,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Dragon_BronzeTrim": {
       "key": "dragon_bronze",
       "uses_vertex_color": false,
-      "metallic": 0.86,
-      "roughness": 0.34,
+      "metallic": 0.88,
+      "roughness": 0.3,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -289,7 +311,7 @@
       "key": "dragon_horn",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.52,
+      "roughness": 0.46,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -297,31 +319,39 @@
       "key": "dragon_redstone",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.68,
+      "roughness": 0.62,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Dragon_ObsidianRoof": {
       "key": "dragon_roof",
       "uses_vertex_color": false,
-      "metallic": 0.28,
-      "roughness": 0.45,
+      "metallic": 0.32,
+      "roughness": 0.4,
       "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Nature_Flowers": {
+      "key": "flower_gold",
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.55,
+      "emission_strength": 0.35,
       "alpha": 1.0
     },
     "Mat_Water_Foam": {
       "key": "foam",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.55,
-      "emission_strength": 0.28,
-      "alpha": 0.9
+      "roughness": 0.48,
+      "emission_strength": 0.36,
+      "alpha": 0.92
     },
     "Mat_Forest_Banner": {
       "key": "forest_banner",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.74,
+      "roughness": 0.7,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -337,15 +367,15 @@
       "key": "forest_canopy",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.7,
+      "roughness": 0.68,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Forest_LeafRoof": {
       "key": "forest_roof",
-      "uses_vertex_color": false,
+      "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.52,
+      "roughness": 0.48,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -353,7 +383,15 @@
       "key": "forest_stone",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.82,
+      "roughness": 0.8,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Forest_HangingVines": {
+      "key": "forest_vine",
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.74,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -361,7 +399,7 @@
       "key": "forest_wood",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.74,
+      "roughness": 0.72,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -369,47 +407,79 @@
       "key": "glow_demon",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.16,
-      "emission_strength": 4.2,
+      "roughness": 0.14,
+      "emission_strength": 3.4,
       "alpha": 1.0
     },
-    "Mat_Glow_Dragon_Flame": {
+    "Mat_Glow_Demon_MagentaCore": {
+      "key": "glow_demon_core",
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.1,
+      "emission_strength": 4.6,
+      "alpha": 1.0
+    },
+    "Mat_Glow_Dragon_FlameOuter": {
       "key": "glow_dragon",
       "uses_vertex_color": false,
       "metallic": 0.0,
       "roughness": 0.22,
-      "emission_strength": 4.6,
+      "emission_strength": 3.3,
+      "alpha": 1.0
+    },
+    "Mat_Glow_Dragon_FlameCore": {
+      "key": "glow_dragon_core",
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.16,
+      "emission_strength": 5.8,
       "alpha": 1.0
     },
     "Mat_Glow_Forest_Amber": {
       "key": "glow_forest",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.3,
-      "emission_strength": 3.1,
+      "roughness": 0.26,
+      "emission_strength": 3.5,
+      "alpha": 1.0
+    },
+    "Mat_Glow_Forest_Emerald": {
+      "key": "glow_forest_spore",
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.25,
+      "emission_strength": 3.0,
       "alpha": 1.0
     },
     "Mat_Glow_Warm_Lantern": {
       "key": "glow_warm",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.28,
+      "roughness": 0.24,
+      "emission_strength": 3.6,
+      "alpha": 1.0
+    },
+    "Mat_Glow_Cathedral_Gold": {
+      "key": "glow_window_gold",
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.22,
       "emission_strength": 3.2,
       "alpha": 1.0
     },
     "Mat_Royal_Gold": {
       "key": "gold",
       "uses_vertex_color": false,
-      "metallic": 0.92,
-      "roughness": 0.24,
+      "metallic": 0.94,
+      "roughness": 0.2,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Dark_Iron": {
       "key": "iron_dark",
       "uses_vertex_color": false,
-      "metallic": 0.82,
-      "roughness": 0.45,
+      "metallic": 0.86,
+      "roughness": 0.4,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -433,7 +503,7 @@
       "key": "kingdom_banner",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.7,
+      "roughness": 0.68,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -441,15 +511,15 @@
       "key": "kingdom_door",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.74,
+      "roughness": 0.72,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Kingdom_RoyalBlue_Roof": {
       "key": "kingdom_roof",
-      "uses_vertex_color": false,
-      "metallic": 0.1,
-      "roughness": 0.38,
+      "uses_vertex_color": true,
+      "metallic": 0.12,
+      "roughness": 0.34,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -457,7 +527,7 @@
       "key": "kingdom_trim",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.65,
+      "roughness": 0.6,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -465,7 +535,7 @@
       "key": "kingdom_wall",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.68,
+      "roughness": 0.66,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -473,15 +543,23 @@
       "key": "lava",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.3,
-      "emission_strength": 4.0,
+      "roughness": 0.28,
+      "emission_strength": 3.2,
+      "alpha": 1.0
+    },
+    "Mat_Plaza_Compass_Bronze": {
+      "key": "plaza_bronze",
+      "uses_vertex_color": false,
+      "metallic": 0.86,
+      "roughness": 0.34,
+      "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Plaza_Compass_Gold": {
       "key": "plaza_gold",
       "uses_vertex_color": false,
-      "metallic": 0.88,
-      "roughness": 0.26,
+      "metallic": 0.92,
+      "roughness": 0.22,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -489,7 +567,7 @@
       "key": "plaza_stone",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.72,
+      "roughness": 0.68,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -497,7 +575,15 @@
       "key": "plaza_trim",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.58,
+      "roughness": 0.5,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Terrace_RetainingStone": {
+      "key": "retaining_stone",
+      "uses_vertex_color": true,
+      "metallic": 0.0,
+      "roughness": 0.8,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -505,7 +591,7 @@
       "key": "road_stone",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.78,
+      "roughness": 0.76,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -513,7 +599,7 @@
       "key": "rock_dark",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.88,
+      "roughness": 0.86,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -521,7 +607,7 @@
       "key": "rock_light",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.86,
+      "roughness": 0.84,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -529,7 +615,7 @@
       "key": "tree_broad",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.72,
+      "roughness": 0.7,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
@@ -537,25 +623,25 @@
       "key": "tree_pine",
       "uses_vertex_color": true,
       "metallic": 0.0,
-      "roughness": 0.76,
+      "roughness": 0.74,
       "emission_strength": 0.0,
       "alpha": 1.0
     },
     "Mat_Water_Crystal": {
       "key": "water",
       "uses_vertex_color": false,
-      "metallic": 0.02,
-      "roughness": 0.08,
+      "metallic": 0.03,
+      "roughness": 0.06,
       "emission_strength": 0.0,
-      "alpha": 0.86
+      "alpha": 0.84
     },
     "Mat_Waterfall_Stream": {
       "key": "waterfall",
       "uses_vertex_color": false,
       "metallic": 0.0,
-      "roughness": 0.18,
-      "emission_strength": 0.35,
-      "alpha": 0.88
+      "roughness": 0.14,
+      "emission_strength": 0.42,
+      "alpha": 0.86
     }
   }
 }

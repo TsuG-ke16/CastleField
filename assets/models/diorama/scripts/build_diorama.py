@@ -72,26 +72,36 @@ def setup_world(scene):
     tc = nodes.new('ShaderNodeTexCoord')
     tc.location = (-560, 0)
 
+    # Map world view-ray Z (-1..+1) -> rich fantasy sky gradient centered cleanly in camera view!
     sep = nodes.new('ShaderNodeSeparateXYZ')
-    sep.location = (-360, 80)
+    sep.location = (-380, 80)
     links.new(tc.outputs['Generated'], sep.inputs['Vector'])
 
+    mrange = nodes.new('ShaderNodeMapRange')
+    mrange.location = (-230, 80)
+    mrange.inputs['From Min'].default_value = -0.35
+    mrange.inputs['From Max'].default_value = 0.55
+    mrange.inputs['To Min'].default_value = 0.0
+    mrange.inputs['To Max'].default_value = 1.0
+    links.new(sep.outputs['Z'], mrange.inputs['Value'])
+
     ramp = nodes.new('ShaderNodeValToRGB')
-    ramp.location = (-120, 120)
+    ramp.location = (-40, 120)
     cr = ramp.color_ramp
     cr.interpolation = 'B_SPLINE'
-    # Clear existing beyond 2 stops and build fantasy sky gradient
     cr.elements[0].position = 0.0
-    cr.elements[0].color = hex_rgba('#34528A')
-    cr.elements[1].position = 0.44
-    cr.elements[1].color = hex_rgba('#8BB5E6')
-    e2 = cr.elements.new(0.51)
-    e2.color = hex_rgba('#D9EAFF')  # soft bright cloud horizon band
-    e3 = cr.elements.new(0.64)
-    e3.color = hex_rgba('#568BD4')
-    e4 = cr.elements.new(1.0)
-    e4.color = hex_rgba('#1F468E')
-    links.new(sep.outputs['Z'], ramp.inputs['Fac'])
+    cr.elements[0].color = hex_rgba('#355896')    # deep cloud-sea shadow below island
+    cr.elements[1].position = 0.34
+    cr.elements[1].color = hex_rgba('#9BC2EC')    # luminous lower sky mist
+    e2 = cr.elements.new(0.46)
+    e2.color = hex_rgba('#F9ECDC')                # soft warm golden-white cloud horizon
+    e3 = cr.elements.new(0.62)
+    e3.color = hex_rgba('#7BAFE8')                # airy mid fantasy sky
+    e4 = cr.elements.new(0.84)
+    e4.color = hex_rgba('#3D74C4')                # vibrant cerulean sky
+    e5 = cr.elements.new(1.0)
+    e5.color = hex_rgba('#1B3F87')                # regal deep azure zenith
+    links.new(mrange.outputs['Result'], ramp.inputs['Fac'])
 
     # Subtle cloud wisps blended near horizon
     noise = nodes.new('ShaderNodeTexNoise')
@@ -303,7 +313,32 @@ def configure_render_settings(scene):
         scene.view_settings.look = 'AgX - Medium High Contrast'
     except Exception:
         pass
-    scene.view_settings.exposure = 0.15
+    scene.view_settings.exposure = 0.18
+
+    # Subtle fantasy Bloom / Fog Glow in Blender 5.3 Compositor (does not affect .glb)
+    try:
+        nt = bpy.data.node_groups.new('Diorama_Compositor', 'CompositorNodeTree')
+        nt.interface.new_socket('Image', in_out='OUTPUT', socket_type='NodeSocketColor')
+        scene.compositing_node_group = nt
+        rl = nt.nodes.new('CompositorNodeRLayers')
+        rl.location = (-280, 0)
+        glare = nt.nodes.new('CompositorNodeGlare')
+        glare.location = (60, 0)
+        try:
+            glare.inputs['Type'].default_value = 'Bloom'
+        except Exception:
+            glare.inputs['Type'].default_value = 'Fog Glow'
+        glare.inputs['Quality'].default_value = 'High'
+        glare.inputs['Threshold'].default_value = 1.45
+        glare.inputs['Strength'].default_value = 0.28
+        glare.inputs['Size'].default_value = 0.65
+        out = nt.nodes.new('NodeGroupOutput')
+        out.location = (380, 0)
+        nt.links.new(rl.outputs['Image'], glare.inputs['Image'])
+        nt.links.new(glare.outputs['Image'], out.inputs['Image'])
+        print('Compositor Bloom enabled cleanly!')
+    except Exception as e:
+        print('Compositor bloom note:', e)
 
 
 def world_bbox(objs):

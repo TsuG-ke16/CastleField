@@ -60,7 +60,7 @@ def render_mandatory_views(scene):
     else:
         scene.render.resolution_x = 1280
         scene.render.resolution_y = 720
-        setup_gpu(scene, samples=64)
+        setup_gpu(scene, samples=96)
 
     for fname, cam_name in MANDATORY_VIEWS:
         cam = bpy.data.objects.get(cam_name)
@@ -78,7 +78,7 @@ def render_mobile_portrait_samples(scene):
     scene.render.image_settings.file_format = 'PNG'
     scene.render.resolution_x = 540 if PREVIEW else 720
     scene.render.resolution_y = 960 if PREVIEW else 1280
-    setup_gpu(scene, samples=20 if PREVIEW else 48)
+    setup_gpu(scene, samples=20 if PREVIEW else 64)
 
     for fname, cam_name in [
         ('mobile_01_kingdom_9x16.png', 'Camera_Kingdom'),
@@ -114,7 +114,7 @@ def render_turntable_video(scene):
     scene.render.fps = 24
     scene.render.resolution_x = 960
     scene.render.resolution_y = 540
-    setup_gpu(scene, samples=20)
+    setup_gpu(scene, samples=24)
 
     r_back = 12.8
     r_side = 3.2
