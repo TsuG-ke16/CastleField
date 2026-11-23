@@ -99,16 +99,19 @@ def render_mobile_portrait_samples(scene):
 
 def render_turntable_video(scene):
     """Render a smooth 360-degree 4-faction home-camera orbit transition MP4 video!"""
-    # Create temporary orbit camera matching the unified home camera orbit rule
+    import json
+    cam_cfg = json.loads((DIORAMA_DIR / 'config' / 'cameras.json').read_text(encoding='utf-8'))
+    orb = cam_cfg['orbit_rule']
+
     cd = bpy.data.cameras.new('Cam_Turntable_Temp')
-    cd.lens = 24.5
-    cd.sensor_width = 36.0
+    cd.lens = orb['lens_mm']
+    cd.sensor_width = orb['sensor_width_mm']
     cd.clip_end = 500.0
     co = bpy.data.objects.new('Cam_Turntable_Temp', cd)
     bpy.context.scene.collection.objects.link(co)
     scene.camera = co
 
-    n_frames = 96  # 4 seconds @ 24fps (smooth 360 deg orbit visiting Kingdom -> Forest -> Dragon -> Demon -> Kingdom)
+    n_frames = 96
     scene.frame_start = 1
     scene.frame_end = n_frames
     scene.render.fps = 24
@@ -116,11 +119,11 @@ def render_turntable_video(scene):
     scene.render.resolution_y = 540
     setup_gpu(scene, samples=24)
 
-    r_back = 12.8
-    r_side = 3.2
-    cam_z = 11.4
-    tgt_dist = 16.2
-    tgt_z = 7.45
+    r_back = orb['r_back']
+    r_side = orb['r_side']
+    cam_z = orb['cam_z']
+    tgt_dist = orb['target_dist']
+    base_tgt_z = orb['target_z']
 
     # Start at Kingdom (dir = +Y -> angle 90 deg), orbit CCW through West (180), South (270), East (360), back to North (450)
     for f in range(1, n_frames + 1):
@@ -128,8 +131,15 @@ def render_turntable_video(scene):
         ang = math.radians(90.0 + 360.0 * t)
         dx, dy = math.cos(ang), math.sin(ang)
         px, py = dy, -dx
+        # Smooth C1 per-faction vertical framing match across all 4 hero castles
+        tz_bias = (
+            (max(0.0, dy) ** 2) * 0.85
+            + (max(0.0, -dx) ** 2) * 1.25
+            + (max(0.0, dx) ** 2) * 0.55
+            + (max(0.0, -dy) ** 2) * (-1.35)
+        )
         loc = Vector((-dx * r_back + px * r_side, -dy * r_back + py * r_side, cam_z))
-        tgt = Vector((dx * tgt_dist, dy * tgt_dist, tgt_z))
+        tgt = Vector((dx * tgt_dist, dy * tgt_dist, base_tgt_z + tz_bias))
         co.location = loc
         co.rotation_euler = (tgt - loc).to_track_quat('-Z', 'Y').to_euler()
         co.keyframe_insert(data_path='location', frame=f)
@@ -178,9 +188,9 @@ def render_turntable_contact_sheet(scene):
     setup_gpu(scene, samples=24)
 
     tiles = []
-    radius = 78.0
+    radius = 100.0
     cam_z = 36.0
-    tgt = Vector((0.0, 0.0, -0.5))
+    tgt = Vector((0.0, 0.0, -11.5))
     tmp_tile = RENDER_DIR / '_tmp_tile.png'
 
     for i in range(8):

@@ -1,6 +1,6 @@
-# Castle Field — 4陣営 3Dジオラマ制作・検証レポート（高精細版 v3）
+# Castle Field — 4陣営 3Dジオラマ制作・検証レポート（Tripo All-Star 完成版）
 
-Castle Field のホーム画面向けに、Blender 5.3（Cycles OPTIX / Compositor Bloom / Python再現スクリプト）で実制作した 4陣営の浮遊島 3Dジオラマアセット一式です。
+Castle Field のホーム画面向けに、**Tripo Studio 3DスカルプトPBRアセット**（4バイオーム浮遊島＋4陣営ヒーロー城）を Blender 5.3（Cycles OPTIX / AgX / Compositor Bloom / Python再現パイプライン）で最適化・発光テクスチャ合成・空間統合した 4陣営3Dジオラマアセット一式です。
 
 ---
 
@@ -8,86 +8,88 @@ Castle Field のホーム画面向けに、Blender 5.3（Cycles OPTIX / Composit
 
 | 種類 | ファイルパス | サイズ / 仕様 |
 |---|---|---|
-| 編集可能シーン | `assets/models/diorama/castle_field_diorama.blend` | 1,926.3 KB（13コレクション・89メッシュ・10カメラ・10ライト・52 PBRマテリアル・Compositor Bloom） |
-| Web向け 3Dモデル | `assets/models/diorama/castle_field_diorama.glb` | 7,609.5 KB（約 7.43 MB、128,692 tris、Y-up、カメラ・ライト同梱） |
-| 生成スクリプト | `assets/models/diorama/scripts/build_diorama.py` | ジオラマ全体の完全再生成 |
-| モジュール群 | `scripts/diorama_materials.py`, `diorama_terrain.py`, `diorama_arch_kit.py`, `diorama_castles.py`, `diorama_nature_props.py` | PBR材質・地形/水路・高精細建築キット・4城・自然物/プロップ |
-| レンダリングスクリプト | `assets/models/diorama/scripts/render_diorama.py` | 必須10視点（96 samples）+ モバイル9:16（64 samples）+ ターンテーブル一括出力 |
+| 編集可能シーン | `assets/models/diorama/castle_field_diorama.blend` | 12,640.6 KB（テクスチャ同梱・13コレクション・19メッシュ・10カメラ・12ライト・14 PBR材質・Compositor Bloom） |
+| Web向け 3Dモデル | `assets/models/diorama/castle_field_diorama.glb` | 10,909.9 KB（約 10.65 MB、199,160 tris、Y-up、JPEG圧縮PBR＋発光マップ、カメラ・ライト同梱） |
+| 最適化済み Tripo 個別アセット | `assets/models/diorama/tripo_castles/*.glb` | 島本体 65k tris（2K PBR+Emissive）＋4城 各30k〜34k tris（1K PBR+Emissive） |
+| 統合生成スクリプト | `assets/models/diorama/scripts/build_diorama.py` | `.blend` / `.glb` および `config/*.json` の完全再生成 |
+| Tripo 最適化スクリプト | `scripts/prepare_tripo_castles.py`, `scripts/prepare_tripo_island.py` | デシメート・向き/接地正規化・窓/結晶/炎/溶岩の自動Emissive合成 |
+| シーン構築モジュール群 | `scripts/diorama_materials.py`, `diorama_terrain.py`, `diorama_castles.py`, `diorama_arch_kit.py`, `diorama_nature_props.py` | PBR材質・島レイアウト＆レイキャスト接地・4城配置・街灯/雲/蛍プロップ（プロシージャルフォールバック実装も保持） |
+| レンダリングスクリプト | `assets/models/diorama/scripts/render_diorama.py` | 必須10視点（96 samples）＋スマホ9:16（64 samples）＋ターンテーブル一括出力 |
 | 自動検証スクリプト | `assets/models/diorama/scripts/verify_diorama.py` | `.blend`/`.glb`・向き・法線・欠損チェック |
-| カメラ設定 JSON | `assets/models/diorama/config/cameras.json` | Blender Z-up / Three.js Y-up 両座標系と共通軌道パラメータ |
+| カメラ設定 JSON | `assets/models/diorama/config/cameras.json` | Blender Z-up / Three.js Y-up 両座標系と共通円軌道パラメータ |
 | 座標一覧 JSON | `assets/models/diorama/config/coordinates.json` | 中央広場・水路・4陣営城の座標・正面ベクトル・バウンディングボックス |
-| アセット・材質一覧 | `assets/models/diorama/config/assets_materials.json` | 全13コレクション・89メッシュ・52マテリアルの一覧 |
+| アセット・材質一覧 | `assets/models/diorama/config/assets_materials.json` | 全13コレクション・19メッシュ・14マテリアルの一覧 |
 | 自動検証結果 JSON | `assets/models/diorama/config/verification_results.json` | `passed: true` |
 | 必須10視点レンダリング | `assets/models/diorama/renders/01_overview.png` 〜 `10_home_dragon.png` | 1280×720 PNG（Cycles 96 samples / AgX / Bloom） |
 | スマホ縦画面確認用 | `assets/models/diorama/renders/mobile_01_kingdom_9x16.png` 〜 `mobile_04_dragon_9x16.png` | 720×1280 PNG（9:16 縦画面 UIセーフ領域確認） |
 | ターンテーブル画像 | `assets/models/diorama/renders/turntable_sheet.png` | 45°刻み8方向コンタクトシート（2×4） |
-| ターンテーブル動画 | `assets/models/diorama/renders/turntable_4factions.mp4` | 960×540 / 24fps / 96フレーム（1,059.8 KB、4陣営ホームカメラの360°旋回） |
+| ターンテーブル動画 | `assets/models/diorama/renders/turntable_4factions.mp4` | 960×540 / 24fps / 96フレーム（1,013.6 KB、4陣営ホームカメラの360°旋回） |
 
 ---
 
-## 2. 3D空間構造と高精細ディテール
+## 2. 3D空間構造とデザイン
 
 座標系規約：
 - **Blender**：Z-up、1 unit = 1m、北 = `+Y`、南 = `-Y`、東 = `+X`、西 = `-X`
 - **glTF / Three.js（`.glb`）**：Y-up（`export_yup=True`）、`(x, y, z)_three = (x, z, -y)_blender`
 
-### 地形・中央広場・橋・階段・水系
-- **浮遊島 (`Island_Base`)**：`192×26` 極座標メッシュによる4バイオーム地形＋段差のある地層岩盤裏面（最下点 `Z = -19.8m`）＋各城の石積み擁壁＋周囲の浮遊小岩14基。
-- **中央広場 (`Central_Plaza`)**：中立地帯（陣営旗・紋章なし）。個別造形された放射状石畳3重リング、金・ブロンズ2層仕上げの8方位コンパスローズ、挽き物石造バラスター手すり、鍛鉄製ファンタジー街灯8基、対角アルコーブの石造ベンチ＆植栽プランター。
-- **石造アーチ橋 (`Bridges`)**：4方向すべてに実際のアーチ石（迫石/ヴソワール＋要石）、橋脚の水切り（カットウォーター）、個別石畳デッキ、パネル装飾欄干、鍛鉄街灯を造形。
-- **アプローチ＆大階段 (`Roads`)**：段鼻付き石段・階段手すり＋各陣営の門前専用ピラー（王国：金装飾街灯／森：木柱アンバー灯／魔族：浮遊紫水晶オベリスク／竜族：鉄製篝火）。
-- **水系・滝 (`Water`)**：環状堀＋岸辺の白波カラー＋斜め4方向の湧水＆河川＋有機的な波紋と白波筋を備えた4箇所の滝カーテン。
+### 地形・中央広場・橋・水系
+- **4バイオーム浮遊島 (`Island_Base`)**：北（王国草原・針葉樹）、西（森の同盟・苔岩と垂れ下がる古木根）、東（魔族軍・暗紫黒曜石と発光紫水晶）、南（竜族帝国・火山玄武岩と発光溶岩亀裂）の4区画と、立体的に彫刻された地層岩盤の裏面（最下点 `Z = -41.50m`）。
+- **中央広場 (`Central_Plaza`)**：完全中立地帯（陣営旗・紋章なし）。金色の8方位コンパスローズと彫刻石造バラスター手すりを備え、手すり天端へレイキャスト接地した鍛鉄製ファンタジー街灯8基を配置。
+- **4方向アーチ橋＆アプローチ (`Bridges` / `Roads`)**：十字4方向にアーチ橋が中央広場と各城の円形石造パッドを途切れず接続。各橋の欄干天端ランタンと、城門手前の石造ボラード街灯で動線を演出。
+- **水系・滝 (`Water`)**：中央広場を囲む環状堀から斜め4方向（45°/135°/225°/315°）へ河川と滝が落下し、滝壺付近に柔らかな水煙ミストを配置。
 
 ### 4陣営の建築デザイン（すべて正面入口が中央広場を向く）
-- **北（`+Y`）王国 (`Castle_Kingdom`)**：白石灰岩の石積み城壁・控え壁・持ち送り狭間（マシコレーション）、迫石アーチ＆金格子門、フルール・ド・リス紋章、正面中央の金色バラ窓、屋根ドーマー窓と8本金色棟リブを備えたロイヤルブルー尖塔屋根。
-- **西（`-X`）森の同盟 (`Castle_Forest`)**：縦溝樹皮を持つ巨大な古木幹・10本の崖を掴む根・8本の曲がる大枝、115以上の滑らかな多層樹冠クラスタ、垂れ下がる蔦と妖精ランタン、5棟のハーフティンバー樹上見張り塔＆吊り木橋、生木アーチの聖域門。
-- **東（`+X`）魔族軍 (`Castle_Demon`)**：六角黒曜石城壁・6本のゴシック飛梁（フライングバットレス）・5本の鋭利尖塔＆スパイク王冠ギャラリー、門前地面の発光召喚陣、6本の黒曜石爪アーチと二重回転アーケイン光輪・8個の周回結晶片に抱かれた大型両端尖頭アメジスト結晶（半透明外殻＋高輝度コア）、自然結晶ジオードと歪んだ闇樹。
-- **南（`-Y`）竜族帝国 (`Castle_Dragon`)**：玄武岩の傾斜控え壁・鉄帯リベット装甲・溶岩亀裂、3対の節（輪状隆起）入り巨大湾曲竜角、光る瞳と牙を備えた3D竜頭骨ゲートハウス＆鉄格子溶鉱炉門、3層構造の燃え上がる鉄爪篝火7基、六角玄武岩柱状節理と溶岩溜まり。
+- **北（`+Y`）王国 (`Castle_Kingdom`)**：明るい灰白色の石積み城郭、ロイヤルブルーの複数尖塔屋根、金色のフルール・ド・リス紋章と王室バナー、暖色に輝くアーチ窓。
+- **西（`-X`）森の同盟 (`Castle_Forest`)**：巨大な古木と完全に一体化した多層ツリーハウス建築、緑の瓦屋根・木製見張り塔・吊り歩道、周囲に漂う淡い森の蛍（`Nature_Forest_Fireflies`）。
+- **東（`+X`）魔族軍 (`Castle_Demon`)**：黒曜石の鋭利なゴシック尖塔と飛梁、爪状タワー頂部に浮かぶ高輝度パープル魔力結晶、紫光を放つステンドグラス窓と門前ジオード。
+- **南（`-Y`）竜族帝国 (`Castle_Dragon`)**：重厚な赤黒火山岩の要塞、正面門を挟む巨大な湾曲竜角と竜頭骨レリーフ、赤い軍旗、屋上4隅の燃え盛る篝火と溶鉱炉ゲート。
 
 ### 座標一覧（Blender Z-up）
 
 | 対象 | 方角 | コレクション | 中心座標 `(X, Y, Z)` | 正面入口座標 `(X, Y, Z)` | 正面向きベクトル | 敷地高さ `Z` |
 |---|---|---|---|---|---|---|
-| 中央広場（中立） | 中央 | `Central_Plaza` | `(0.0, 0.0, 0.0)` | 4方向開放 | 全方向対称 | `0.0 m` |
-| 王国 | 北 (`+Y`) | `Castle_Kingdom` | `(0.0, 22.4, 3.0)` | `(0.0, 17.6, 3.0)` | `(0, -1, 0)` | `+3.0 m` |
-| 森の同盟 | 西 (`-X`) | `Castle_Forest` | `(-22.2, 0.0, 2.2)` | `(-17.6, 0.0, 2.2)` | `(+1, 0, 0)` | `+2.2 m` |
-| 魔族軍 | 東 (`+X`) | `Castle_Demon` | `(22.4, 0.0, 2.4)` | `(17.6, 0.0, 2.4)` | `(-1, 0, 0)` | `+2.4 m` |
-| 竜族帝国 | 南 (`-Y`) | `Castle_Dragon` | `(0.0, -22.4, 2.2)` | `(0.0, -17.6, 2.2)` | `(0, +1, 0)` | `+2.2 m` |
+| 中央広場（中立） | 中央 | `Central_Plaza` | `(0.0, 0.0, 0.0)` | 4方向開放 | 全方向対称 | `0.000 m` |
+| 王国 | 北 (`+Y`) | `Castle_Kingdom` | `(0.0, 20.6, 0.188)` | `(0.0, 15.2, 0.188)` | `(0, -1, 0)` | `+0.188 m` |
+| 森の同盟 | 西 (`-X`) | `Castle_Forest` | `(-20.6, 0.0, 0.136)` | `(-15.2, 0.0, 0.136)` | `(+1, 0, 0)` | `+0.136 m` |
+| 魔族軍 | 東 (`+X`) | `Castle_Demon` | `(20.6, 0.0, 0.097)` | `(15.2, 0.0, 0.097)` | `(-1, 0, 0)` | `+0.097 m` |
+| 竜族帝国 | 南 (`-Y`) | `Castle_Dragon` | `(0.0, -20.6, 0.138)` | `(0.0, -15.2, 0.138)` | `(0, +1, 0)` | `+0.138 m` |
 
 ---
 
 ## 3. カメラシステムとホーム画面回転ルール
 
-4陣営ホームカメラは中央広場 `(0, 0, 0)` 中心の共通円軌道（`R_orbit = 13.194 m`, `Z = 11.4 m`, `lens = 24.5 mm`）上に配置されており、対岸城の正面門半径 `17.6 m` より内側を旋回するため**他陣営による遮蔽ゼロ**で滑らかに360°切替可能です（詳細：`config/cameras.json`）。
+4陣営ホームカメラ（`Camera_Kingdom`, `Camera_Forest`, `Camera_Demon`, `Camera_Dragon`）は中央広場 `(0, 0, 0)` 中心の共通円軌道（`R_orbit = 10.914 m`, `Z = 8.2 m`, `lens = 24.0 mm`）上に配置されており、城の正面入口リング半径 `15.2 m` より内側を旋回するため**他陣営による遮蔽ゼロ**で滑らかに360°切替可能です（詳細：`config/cameras.json`）。
 
 ---
 
-## 4. コレクション構成・ポリゴン数・材質一覧
+## 4. コレクション構成・ポリゴン数・使用アセット一覧
 
-外部アセットは一切未使用（**100% オリジナル Blender Python 造形＋PBR材質**）。
+- **Tripo Studio 3DスカルプトPBRアセット（最適化＋Emissive合成済み）**：浮遊島ベース1点（65,000 tris）＋4陣営城4点（各30,000〜34,000 tris）
+- **Blender プロシージャル追加要素**：基礎台座、広場・橋・門前ボラードの鍛鉄ランタン群、滝ミスト、森の蛍、外周雲リング、12ライト、10カメラリグ
 
 | コレクション | オブジェクト数 | メッシュ数 | 三角ポリゴン数 |
 |---|---:|---:|---:|
-| `Island_Base` | 4 | 4 | 15,528 |
-| `Central_Plaza` | 6 | 6 | 7,288 |
-| `Roads` | 12 | 12 | 3,128 |
-| `Bridges` | 16 | 16 | 7,216 |
-| `Water` | 3 | 3 | 10,512 |
-| `Nature` | 11 | 11 | 24,512 |
-| `Castle_Kingdom` | 8 | 7 | 14,160 |
-| `Castle_Forest` | 11 | 10 | 20,160 |
-| `Castle_Demon` | 8 | 7 | 7,808 |
-| `Castle_Dragon` | 11 | 10 | 11,932 |
-| `Props` | 3 | 3 | 6,448 |
-| `Lights` | 10 | 0 | 0 |
+| `Island_Base` | 1 | 1 | 65,000 |
+| `Central_Plaza` | 2 | 2 | 1,024 |
+| `Roads` | 3 | 3 | 1,216 |
+| `Bridges` | 2 | 2 | 512 |
+| `Water` | 1 | 1 | 960 |
+| `Nature` | 1 | 1 | 560 |
+| `Castle_Kingdom` | 3 | 2 | 30,012 |
+| `Castle_Forest` | 3 | 2 | 34,068 |
+| `Castle_Demon` | 3 | 2 | 30,020 |
+| `Castle_Dragon` | 3 | 2 | 30,028 |
+| `Props` | 1 | 1 | 5,760 |
+| `Lights` | 12 | 0 | 0 |
 | `Cameras` | 10 | 0 | 0 |
-| **合計** | **113** | **89** | **128,692（52 PBR材質）** |
+| **合計** | **45** | **19** | **199,160（14 PBR材質）** |
 
 ---
 
 ## 5. ホーム画面への実装方式の推奨
 
-- **通常モード（リアルタイム 3D）**：`castle_field_diorama.glb`（約 7.43 MB / 128.7k tris）を Three.js で読み込み、`config/cameras.json` の円軌道で陣営切替アニメーションを実行。Three.js 側で Draco 圧縮または `UnrealBloomPass`・結晶浮遊/炎揺らぎを加えるとさらに高品質化できます。
+- **通常モード（リアルタイム 3D）**：`castle_field_diorama.glb`（約 10.65 MB / 199.2k tris）を Three.js で読み込み、`config/cameras.json` の円軌道で陣営切替アニメーションを実行。Web配信時は Three.js 向け Draco 圧縮または KTX2 変換を適用するとさらに転送量を削減できます。
 - **軽量モード (`?fx=lite` / 低スペック端末)**：同一 `.blend` から出力した `renders/mobile_01〜04_*_9x16.png`（縦画面）または `renders/07〜10_home_*.png`（横画面）を背景画像としてフォールバック表示。
 
 ---
@@ -95,12 +97,14 @@ Castle Field のホーム画面向けに、Blender 5.3（Cycles OPTIX / Composit
 ## 6. 検証結果と残課題
 
 - [x] 真上から見た十字4方向配置（北:王国 / 西:森の同盟 / 東:魔族軍 / 南:竜族帝国）
-- [x] 4城すべての正面入口が中央広場を向いている（自動検証 `front_dot_to_plaza = 1.00000`）
+- [x] 4城すべての正面入口が中央広場を向いている（自動検証 `front_dot_to_plaza = 1.00000`, `cardinal_alignment_dot = 1.00000`）
 - [x] 中央広場は完全中立（陣営旗・紋章なし）
-- [x] 橋・階段・道・水路・滝の接続に破綻・貫通・浮きなし
+- [x] 4つの橋・階段・円形パッド・水路・4本の滝・裏面岩盤に構造的破綻なし
 - [x] 4方向・8方向ターンテーブル・スマホ9:16表示すべてでシルエットと個性を明瞭に視認可能
 - [x] `.blend` / `.glb` 再インポート自動検証合格（`verification_results.json: passed = true`, `nan_vertices = 0`, `degenerate_faces = 0`, 未割当材質ゼロ）
-- **残課題**：本PRでは既存ファイル無断上書き禁止ルールに従い、`assets/CREDITS.md`・`js/ui/precache.js`・ホーム画面UI実装は未変更です。統合時に `CREDITS.md` 追記および `node js/ui/build-precache.js` 実行、必要に応じて Three.js 向け Draco 圧縮版 `.glb` の生成を検討してください。
+- **残課題**：
+  1. 本PRでは既存ファイル無断上書き禁止ルールに従い、`assets/CREDITS.md`・`js/ui/precache.js`・ホーム画面UI実装は未変更です。統合時に Tripo Studio アセットのクレジット追記および `node js/ui/build-precache.js` 実行を行ってください。
+  2. モバイル回線での初回読み込み高速化を重視する場合は、Three.js 組み込み前に `castle_field_diorama.glb` へ Draco / Meshopt 圧縮または 512px テクスチャ軽量版バリアントの生成を検討してください。
 
 ---
 

@@ -155,8 +155,22 @@ def make_pbr_material(
     if use_vcol:
         vc = nodes.new('ShaderNodeVertexColor')
         vc.layer_name = 'Col'
-        vc.location = (-160, 140)
-        links.new(vc.outputs['Color'], bsdf.inputs['Base Color'])
+        vc.location = (-400, 180)
+        # Multiply subtle procedural Ambient Occlusion into Base Color for rich painterly crevice depth matching Tripo PBR!
+        ao = nodes.new('ShaderNodeAmbientOcclusion')
+        ao.location = (-400, 20)
+        ao.samples = 8
+        ao.inputs['Distance'].default_value = 1.6
+        links.new(vc.outputs['Color'], ao.inputs['Color'])
+
+        mix_ao = nodes.new('ShaderNodeMix')
+        mix_ao.data_type = 'RGBA'
+        mix_ao.blend_type = 'MULTIPLY'
+        mix_ao.location = (-120, 140)
+        mix_ao.inputs['Factor'].default_value = 0.55
+        links.new(vc.outputs['Color'], mix_ao.inputs['A'])
+        links.new(ao.outputs['AO'], mix_ao.inputs['B'])
+        links.new(mix_ao.outputs['Result'], bsdf.inputs['Base Color'])
     else:
         bsdf.inputs['Base Color'].default_value = col
 

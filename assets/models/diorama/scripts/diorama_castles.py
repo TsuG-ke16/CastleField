@@ -8,9 +8,12 @@ Local space convention for every castle:
 
 import math
 import random
+from pathlib import Path
 import bpy
 import bmesh
 from mathutils import Vector, Matrix
+
+TRIPO_DIR = Path(__file__).resolve().parent.parent / 'tripo_castles'
 
 from diorama_materials import (
     hex_rgba,
@@ -19,7 +22,7 @@ from diorama_materials import (
     paint_vertex_colors,
     mesh_from_bmesh,
 )
-from diorama_terrain import LAYOUT
+from diorama_terrain import LAYOUT, USE_TRIPO_ISLAND
 from diorama_arch_kit import (
     add_box,
     add_cylinder,
@@ -65,12 +68,89 @@ def finalize_part(bm, name, col, mat, root, smooth=False, vcol_fn=None):
     return obj
 
 
+def try_import_tripo_castle(faction_key, col, mats, root):
+    """Import pre-optimized Tripo hero castle GLB if available, anchored solidly onto a terrace plinth."""
+    glb_path = TRIPO_DIR / f'tripo_castle_{faction_key}.glb'
+    if not glb_path.exists():
+        return False
+
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=str(glb_path))
+    after = [o for o in bpy.data.objects if o not in before]
+    meshes = [o for o in after if o.type == 'MESH']
+    if not meshes:
+        return False
+
+    # Scale cleanly so each castle sits heroically dead-center on its circular Tripo stone pad!
+    tripo_scale_map = {
+        'kingdom': 0.90,
+        'forest': 0.92,
+        'demon': 0.90,
+        'dragon': 0.94,
+    }
+    sc = tripo_scale_map[faction_key] if USE_TRIPO_ISLAND else 1.0
+
+    # Move imported meshes cleanly into target faction collection & parent under castle root
+    for o in after:
+        for c in list(o.users_collection):
+            c.objects.unlink(o)
+        if o.type == 'MESH':
+            o.name = f'Castle_{faction_key.capitalize()}_Hero'
+            # Reset local transform to origin of root (already normalized & grounded at Z=0, facing -Y!)
+            o.parent = root
+            o.matrix_parent_inverse = Matrix.Identity(4)
+            o.location = (0.0, 0.0, -0.14 if USE_TRIPO_ISLAND else -0.05)  # embed cleanly into circular pad for airtight contact!
+            o.rotation_euler = (0.0, 0.0, 0.0)
+            o.scale = (sc, sc, sc)
+            col.objects.link(o)
+        else:
+            bpy.data.objects.remove(o, do_unlink=True)
+
+    # Solid sculpted masonry foundation skirt underneath so zero sliver gap appears from any oblique angle!
+    bm_plinth = bmesh.new()
+    plinth_h = 0.85 if USE_TRIPO_ISLAND else 2.12
+    plinth_cfg = {
+        'kingdom': ('kingdom_trim', 11.4 * sc, 10.8 * sc, 'box'),
+        'forest': ('forest_stone', 5.5 * sc, 5.5 * sc, 'cyl'),
+        'demon': ('demon_obsidian', 5.8 * sc, 5.8 * sc, 'hex'),
+        'dragon': ('dragon_basalt', 6.1 * sc, 6.1 * sc, 'oct'),
+    }[faction_key]
+    mat_key, sx, sy, shape = plinth_cfg
+    if shape == 'box':
+        add_box(bm_plinth, (0.0, 0.0, -plinth_h * 0.5 - 0.04), (sx, sy, plinth_h))
+    elif shape == 'cyl':
+        add_cylinder(bm_plinth, (0.0, 0.0, -plinth_h - 0.04), sx * 1.04, sx * 0.96, plinth_h, segs=18)
+    elif shape == 'hex':
+        add_cylinder(bm_plinth, (0.0, 0.0, -plinth_h - 0.04), sx * 1.05, sx * 0.97, plinth_h, segs=6, rot_z=math.pi / 6)
+    else:
+        add_cylinder(bm_plinth, (0.0, 0.0, -plinth_h - 0.04), sx * 1.05, sx * 0.97, plinth_h, segs=8, rot_z=math.pi / 8)
+
+    vcol_map = {
+        'kingdom': lambda co, n: hex_rgba('#CFC6B5'),
+        'forest': lambda co, n: lerp_rgba(hex_rgba('#56664B'), hex_rgba('#8C947C'), 0.4 + 0.5 * fbm_noise(co.x, co.y, co.z)),
+        'demon': lambda co, n: lerp_rgba(hex_rgba('#191326'), hex_rgba('#352B4F'), 0.4 + 0.5 * fbm_noise(co.x, co.y, co.z)),
+        'dragon': lambda co, n: lerp_rgba(hex_rgba('#241816'), hex_rgba('#4D322B'), 0.4 + 0.5 * fbm_noise(co.x, co.y, co.z)),
+    }
+    finalize_part(
+        bm_plinth,
+        f'Castle_{faction_key.capitalize()}_FoundationPlinth',
+        col,
+        mats[mat_key],
+        root,
+        smooth=False,
+        vcol_fn=vcol_map[faction_key] if mat_key != 'kingdom_trim' else None,
+    )
+    return True
+
+
 # ---------------------------------------------------------------------------
 # 1. KINGDOM CASTLE (North, +Y) — Grand Fairytale Limestone Cathedral-Citadel
 # ---------------------------------------------------------------------------
 
 def build_castle_kingdom(col, mats):
     root = make_castle_root('Castle_Kingdom_Root', 'kingdom', col)
+    if try_import_tripo_castle('kingdom', col, mats, root):
+        return root
     bm_wall = bmesh.new()
     bm_trim = bmesh.new()
     bm_roof = bmesh.new()
@@ -256,6 +336,8 @@ def build_castle_kingdom(col, mats):
 
 def build_castle_forest(col, mats):
     root = make_castle_root('Castle_Forest_Root', 'forest', col)
+    if try_import_tripo_castle('forest', col, mats, root):
+        return root
     bm_bark = bmesh.new()
     bm_wood = bmesh.new()
     bm_stone = bmesh.new()
@@ -533,6 +615,8 @@ def add_obsidian_gothic_spire(bm_wall, bm_roof, bm_trim, bm_glow, x, y, base_z, 
 
 def build_castle_demon(col, mats):
     root = make_castle_root('Castle_Demon_Root', 'demon', col)
+    if try_import_tripo_castle('demon', col, mats, root):
+        return root
     bm_wall = bmesh.new()
     bm_trim = bmesh.new()
     bm_roof = bmesh.new()
@@ -692,6 +776,8 @@ def build_castle_demon(col, mats):
 
 def build_castle_dragon(col, mats):
     root = make_castle_root('Castle_Dragon_Root', 'dragon', col)
+    if try_import_tripo_castle('dragon', col, mats, root):
+        return root
     bm_wall = bmesh.new()
     bm_red = bmesh.new()
     bm_roof = bmesh.new()

@@ -10,10 +10,15 @@ Coordinate system:
   Water surface = Z = -1.65 (Ring Moat R=7.8..11.4 + 4 diagonal rivers -> 4 tiered waterfalls).
 """
 
+import json
 import math
+from pathlib import Path
 import bpy
 import bmesh
 from mathutils import Vector, Matrix
+
+TRIPO_ISLAND_GLB = Path(__file__).resolve().parent.parent / 'tripo_castles' / 'tripo_island_base.glb'
+USE_TRIPO_ISLAND = TRIPO_ISLAND_GLB.exists()
 
 from diorama_materials import (
     hex_rgba,
@@ -36,33 +41,33 @@ LAYOUT = {
         'kingdom': {
             'dir': (0, 1),
             'angle_deg': 90.0,
-            'terrace_z': 3.0,
-            'gate_pos': (0.0, 17.6, 3.0),
-            'center': (0.0, 22.4, 3.0),
+            'terrace_z': -1.42 if USE_TRIPO_ISLAND else 3.0,
+            'gate_pos': (0.0, 14.4 if USE_TRIPO_ISLAND else 17.2, -1.42 if USE_TRIPO_ISLAND else 3.0),
+            'center': (0.0, 19.8 if USE_TRIPO_ISLAND else 23.0, -1.42 if USE_TRIPO_ISLAND else 3.0),
             'facing': (0.0, -1.0, 0.0),
         },
         'forest': {
             'dir': (-1, 0),
             'angle_deg': 180.0,
-            'terrace_z': 2.2,
-            'gate_pos': (-17.6, 0.0, 2.2),
-            'center': (-22.2, 0.0, 2.2),
+            'terrace_z': -1.08 if USE_TRIPO_ISLAND else 2.2,
+            'gate_pos': (-14.4 if USE_TRIPO_ISLAND else -17.2, 0.0, -1.08 if USE_TRIPO_ISLAND else 2.2),
+            'center': (-19.8 if USE_TRIPO_ISLAND else -22.9, 0.0, -1.08 if USE_TRIPO_ISLAND else 2.2),
             'facing': (1.0, 0.0, 0.0),
         },
         'demon': {
             'dir': (1, 0),
             'angle_deg': 0.0,
-            'terrace_z': 2.4,
-            'gate_pos': (17.6, 0.0, 2.4),
-            'center': (22.4, 0.0, 2.4),
+            'terrace_z': -1.38 if USE_TRIPO_ISLAND else 2.4,
+            'gate_pos': (14.4 if USE_TRIPO_ISLAND else 17.2, 0.0, -1.38 if USE_TRIPO_ISLAND else 2.4),
+            'center': (19.8 if USE_TRIPO_ISLAND else 23.3, 0.0, -1.38 if USE_TRIPO_ISLAND else 2.4),
             'facing': (-1.0, 0.0, 0.0),
         },
         'dragon': {
             'dir': (0, -1),
             'angle_deg': -90.0,
-            'terrace_z': 2.2,
-            'gate_pos': (0.0, -17.6, 2.2),
-            'center': (0.0, -22.4, 2.2),
+            'terrace_z': -1.02 if USE_TRIPO_ISLAND else 2.2,
+            'gate_pos': (0.0, -14.4 if USE_TRIPO_ISLAND else -17.2, -1.02 if USE_TRIPO_ISLAND else 2.2),
+            'center': (0.0, -19.8 if USE_TRIPO_ISLAND else -23.5, -1.02 if USE_TRIPO_ISLAND else 2.2),
             'facing': (0.0, 1.0, 0.0),
         },
     },
@@ -77,9 +82,9 @@ def smoothstep(edge0, edge1, x):
 
 
 def island_outer_radius(theta):
-    """4-lobed clover floating island rim with organic rocky promontories & diagonal waterfall notches."""
+    """4-lobed clover floating island rim with generous castle promontories & diagonal waterfall notches."""
     lobe = math.cos(4.0 * theta)
-    base = 28.5 + 2.45 * lobe
+    base = 29.4 + 3.15 * lobe
     notch_damp = 0.25 + 0.75 * (0.5 + 0.5 * lobe)
     jitter = (
         (fbm_noise(math.cos(theta) * 3.8, math.sin(theta) * 3.8) - 0.5) * 2.1
@@ -118,8 +123,8 @@ def terrain_height(x, y):
         along = x * dx + y * dy
         perp = abs(-x * dy + y * dx)
         tz = cfg['terrace_z']
-        a_in = smoothstep(16.7, 17.7, along) * (1.0 - smoothstep(26.8, 29.2, along))
-        p_in = 1.0 - smoothstep(6.2, 8.9, perp)
+        a_in = smoothstep(16.7, 17.6, along) * (1.0 - smoothstep(29.2, 31.4, along))
+        p_in = 1.0 - smoothstep(6.8, 9.4, perp)
         w = a_in * p_in
         if w > pad_blend:
             pad_blend = w
@@ -203,6 +208,138 @@ def add_fantasy_lantern(bm_iron, bm_glow, pos, scale=1.0):
         bm_iron, subdivisions=1, radius=0.055 * scale,
         matrix=Matrix.Translation((x, y, z + 0.80 * scale)),
     )
+
+
+def _raycast_surface_z(obj, x, y):
+    inv = obj.matrix_world.inverted()
+    origin = inv @ Vector((x, y, 120.0))
+    direction = (inv.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized()
+    ok, loc, norm, idx = obj.ray_cast(origin, direction)
+    if not ok:
+        return None
+    return (obj.matrix_world @ loc).z
+
+
+def build_tripo_island_scene(cols, mats):
+    """Import optimized Tripo 4-biome floating island, rotate +45 deg onto exact N/W/E/S pads,
+    dynamically raycast each circular stone pad's exact Z height, and add subtle lantern & mist accents."""
+    import numpy as np
+
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=str(TRIPO_ISLAND_GLB))
+    after = [o for o in bpy.data.objects if o not in before]
+    island_obj = None
+    for o in after:
+        for c in list(o.users_collection):
+            c.objects.unlink(o)
+        if o.type == 'MESH':
+            # Clear parent while keeping world transform, then rotate +45 deg CCW so 4 circular pads align on N/W/E/S!
+            wm = o.matrix_world.copy()
+            o.parent = None
+            o.matrix_world = Matrix.Rotation(math.radians(45.0), 4, 'Z') @ wm
+            o.name = 'Tripo_Floating_Island_Base'
+            cols['Island_Base'].objects.link(o)
+            island_obj = o
+        else:
+            bpy.data.objects.remove(o, do_unlink=True)
+
+    bpy.context.view_layer.update()
+    if island_obj is not None:
+        # Dynamically measure exact top surface Z of Central Plaza & all 4 circular stone pads!
+        plaza_zs = [_raycast_surface_z(island_obj, dx, dy) for dx in (-2.0, 0.0, 2.0) for dy in (-2.0, 0.0, 2.0)]
+        plaza_zs = [z for z in plaza_zs if z is not None]
+        if plaza_zs:
+            pz = float(np.median(plaza_zs))
+            island_obj.location.z -= pz
+            bpy.context.view_layer.update()
+
+        pad_r = 20.6
+        for key, cfg in LAYOUT['castles'].items():
+            dx, dy = cfg['dir']
+            zs = [
+                _raycast_surface_z(island_obj, dx * r + (-dy) * p, dy * r + dx * p)
+                for r in (18.5, 20.5, 22.5)
+                for p in (-2.2, 0.0, 2.2)
+            ]
+            zs = [z for z in zs if z is not None]
+            pad_z = round(float(np.median(zs)), 3) if zs else 0.0
+            cfg['terrace_z'] = pad_z
+            cfg['center'] = (round(dx * pad_r, 3), round(dy * pad_r, 3), pad_z)
+            cfg['gate_pos'] = (round(dx * 15.2, 3), round(dy * 15.2, 3), pad_z)
+            print(f'TRIPO_PAD_LOCKED {key}: center={cfg["center"]} pad_z={pad_z:.3f}')
+
+    # Helper to scan along a radial/lateral segment to find the exact highest stone parapet crest!
+    def _find_crest(samples):
+        best = None
+        for sx, sy in samples:
+            sz = _raycast_surface_z(island_obj, sx, sy) if island_obj else None
+            if sz is not None and (best is None or sz > best[2]):
+                best = (sx, sy, sz)
+        return best
+
+    # Subtle glowing neutral plaza lanterns perched cleanly on the actual scanned Tripo balustrade crest!
+    bm_plaza_iron = bmesh.new()
+    bm_plaza_glow = bmesh.new()
+    for deg in (32, 58, 122, 148, 212, 238, 302, 328):
+        a = math.radians(deg)
+        ca, sa = math.cos(a), math.sin(a)
+        crest = _find_crest([(r * ca, r * sa) for r in (8.6, 8.9, 9.2, 9.5, 9.8, 10.1, 10.4, 10.7)])
+        if crest is not None and crest[2] > 0.35:
+            add_fantasy_lantern(bm_plaza_iron, bm_plaza_glow, (crest[0], crest[1], crest[2] - 0.04), scale=0.68)
+    mesh_from_bmesh(bm_plaza_iron, 'Plaza_Lantern_Iron', cols['Central_Plaza'], mats['iron_dark'], smooth=False)
+    mesh_from_bmesh(bm_plaza_glow, 'Plaza_Lantern_Glow', cols['Central_Plaza'], mats['glow_warm'], smooth=True)
+
+    # Grounded bridge-crest lanterns & carved stone road threshold bollards along the 4 cardinal bridges!
+    bm_br_iron = bmesh.new()
+    bm_br_glow = bmesh.new()
+    bm_rd_stone = bmesh.new()
+    bm_rd_iron = bmesh.new()
+    bm_rd_glow = bmesh.new()
+    for name, cfg in LAYOUT['castles'].items():
+        dx, dy = cfg['dir']
+        rot_z = math.atan2(dy, dx)
+        xf = Matrix.Rotation(rot_z, 4, 'Z')
+        for side in (-1.0, 1.0):
+            # Bridge arch crest parapet lantern (scans lateral y to lock onto exact balustrade coping!)
+            br_samples = []
+            for y_off in (1.5, 1.75, 2.0, 2.25, 2.5, 2.75):
+                pw = xf @ Vector((11.2, side * y_off, 0.0))
+                br_samples.append((pw.x, pw.y))
+            b_crest = _find_crest(br_samples)
+            if b_crest is not None and b_crest[2] > 0.25:
+                add_fantasy_lantern(bm_br_iron, bm_br_glow, (b_crest[0], b_crest[1], b_crest[2] - 0.04), scale=0.66)
+
+            # Grounded carved stone threshold bollard + warm lantern flanking each castle entrance approach
+            p_out = xf @ Vector((14.6, side * 2.45, 0.0))
+            z_out = _raycast_surface_z(island_obj, p_out.x, p_out.y) if island_obj else cfg['terrace_z']
+            z_base = (z_out if z_out is not None else cfg['terrace_z']) - 0.12
+            bmesh.ops.create_cube(
+                bm_rd_stone, size=1.0,
+                matrix=Matrix.Translation((p_out.x, p_out.y, z_base + 0.42)) @ Matrix.Rotation(rot_z, 4, 'Z') @ Matrix.Diagonal((0.44, 0.44, 0.84, 1.0)),
+            )
+            bmesh.ops.create_cube(
+                bm_rd_stone, size=1.0,
+                matrix=Matrix.Translation((p_out.x, p_out.y, z_base + 0.88)) @ Matrix.Rotation(rot_z, 4, 'Z') @ Matrix.Diagonal((0.54, 0.54, 0.12, 1.0)),
+            )
+            add_fantasy_lantern(bm_rd_iron, bm_rd_glow, (p_out.x, p_out.y, z_base + 0.94), scale=0.64)
+    mesh_from_bmesh(bm_br_iron, 'Bridges_Lantern_Iron', cols['Bridges'], mats['iron_dark'], smooth=False)
+    mesh_from_bmesh(bm_br_glow, 'Bridges_Lantern_Glow', cols['Bridges'], mats['glow_warm'], smooth=True)
+    mesh_from_bmesh(bm_rd_stone, 'Roads_Threshold_Bollards', cols['Roads'], mats['plaza_trim'], smooth=False)
+    mesh_from_bmesh(bm_rd_iron, 'Roads_Threshold_Iron', cols['Roads'], mats['iron_dark'], smooth=False)
+    mesh_from_bmesh(bm_rd_glow, 'Roads_Threshold_Glow', cols['Roads'], mats['glow_warm'], smooth=True)
+
+    # Subtle mist spray wisps tucked right under the bottom lip of the 4 diagonal Tripo waterfalls (Water collection!)
+    bm_mist = bmesh.new()
+    for ang_deg in (45, 135, 225, 315):
+        a = math.radians(ang_deg)
+        xf = Matrix.Rotation(a, 4, 'Z')
+        for k in range(3):
+            yk = -1.1 + 1.1 * k
+            bmesh.ops.create_icosphere(
+                bm_mist, subdivisions=2, radius=0.95 + 0.15 * (k % 2),
+                matrix=xf @ Matrix.Translation((25.2, yk, -14.8)) @ Matrix.Diagonal((1.05, 1.15, 0.62, 1.0)),
+            )
+    mesh_from_bmesh(bm_mist, 'Water_Waterfall_MistPlumes', cols['Water'], mats['cloud'], smooth=True)
 
 
 def build_island_base(col, mats):
@@ -946,13 +1083,13 @@ def build_roads(col, mats):
                 matrix=xform @ Matrix.Translation((xm, yc, zm + 0.42)) @ Matrix.Diagonal((0.58, 0.62, 0.92, 1.0)),
             )
 
-            # Top Threshold Pillar customized by faction!
-            xt = r_stair_end + 0.12
+            # Top Threshold Pillar positioned cleanly at stair top (clear of castle front steps & tusks!)
+            xt = r_stair_end - 0.35
             bmesh.ops.create_cube(
                 bm_road, size=1.0,
-                matrix=xform @ Matrix.Translation((xt, yc, tz + 0.62)) @ Matrix.Diagonal((0.72, 0.72, 1.32, 1.0)),
+                matrix=xform @ Matrix.Translation((xt, yc, tz + 0.50)) @ Matrix.Diagonal((0.68, 0.68, 1.18, 1.0)),
             )
-            p_top = xform @ Vector((xt, yc, tz + 1.28))
+            p_top = xform @ Vector((xt, yc, tz + 1.10))
             if name == 'kingdom':
                 add_fantasy_lantern(bm_accent, bm_glow, p_top, scale=1.22)
             elif name == 'forest':

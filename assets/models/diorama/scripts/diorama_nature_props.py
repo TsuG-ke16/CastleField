@@ -37,9 +37,10 @@ def is_clear_for_nature(x, y, margin=0.0):
         dx, dy = cfg['dir']
         along = x * dx + y * dy
         perp = abs(-x * dy + y * dx)
-        if 11.5 <= along <= 18.2 and perp < 3.65 + margin:
+        # Keep clear of Tripo castle footprints & approach staircase sightlines!
+        if 11.5 <= along <= 18.8 and perp < 4.65 + margin:
             return False
-        if 16.0 <= along <= 27.6 and perp < 7.0 + margin:
+        if 16.0 <= along <= 30.8 and perp < 8.0 + margin:
             return False
     return True
 
@@ -364,6 +365,51 @@ def build_nature(col, mats):
     objs.append(mesh_from_bmesh(bm_rock_light, 'Nature_Light_Boulders', col, mats['rock_light'], smooth=False))
     objs.append(mesh_from_bmesh(bm_rock_dark, 'Nature_Volcanic_Boulders', col, mats['rock_dark'], smooth=False))
     return objs
+
+
+def build_tripo_props_only(col_props, col_nature, mats):
+    """Add soft painterly floating cloud sea banks cleanly outside the Tripo island silhouette + delicate forest fireflies."""
+    # Wide atmospheric cloud halo drifting around the floating island (zero overlap with the sculpted rocky underside!)
+    bm_clouds = bmesh.new()
+    cloud_banks = [
+        (43.0, 32.0, -19.5, 6.4, 4.4, 2.2),
+        (-43.5, 30.5, -20.0, 6.8, 4.6, 2.3),
+        (42.5, -33.0, -19.8, 6.2, 4.3, 2.1),
+        (-43.0, -31.5, -19.2, 6.6, 4.5, 2.2),
+        (0.0, 52.0, -23.5, 7.6, 4.8, 2.4),
+        (0.0, -52.5, -24.2, 7.2, 4.6, 2.3),
+        (53.0, 0.0, -22.0, 5.2, 7.4, 2.3),
+        (-53.0, 0.0, -21.8, 5.4, 7.6, 2.3),
+        (34.0, 44.0, -32.5, 6.4, 4.6, 2.2),
+        (-34.0, -44.0, -33.0, 6.6, 4.7, 2.2),
+        (-35.0, 43.5, -33.5, 6.2, 4.5, 2.1),
+        (35.0, -43.5, -32.2, 6.5, 4.6, 2.2),
+    ]
+    for cx, cy, cz, rx, ry, rz in cloud_banks:
+        lobes = [
+            (0.0, 0.0, 0.35, 0.96),
+            (rx * 0.50, ry * 0.18, -0.15, 0.78),
+            (-rx * 0.48, -ry * 0.20, -0.10, 0.74),
+            (rx * 0.22, -ry * 0.44, -0.25, 0.68),
+            (-rx * 0.25, ry * 0.42, -0.20, 0.70),
+            (0.0, 0.0, 0.72, 0.64),
+        ]
+        for ox, oy, oz, sc in lobes:
+            bmesh.ops.create_icosphere(
+                bm_clouds, subdivisions=2, radius=1.0,
+                matrix=Matrix.Translation((cx + ox, cy + oy, cz + oz)) @ Matrix.Diagonal((rx * sc, ry * sc, rz * sc, 1.0)),
+            )
+    c_cld_top = hex_rgba('#FFFDF8')
+    c_cld_bot = hex_rgba('#A5BEE8')
+    bm_clouds.normal_update()
+    paint_vertex_colors(bm_clouds, lambda co, n: lerp_rgba(c_cld_bot, c_cld_top, max(0.0, min(1.0, 0.45 + 0.55 * n.z))))
+    mesh_from_bmesh(bm_clouds, 'Props_Floating_Cloud_Ring', col_props, mats['cloud'], smooth=True)
+
+    # Delicate glowing forest fireflies nestled softly around the mossy glade & ancient roots (Nature collection)
+    bm_ff = bmesh.new()
+    for fx, fy, fz in [(-24.2, 7.6, 1.8), (-25.8, 5.8, 2.4), (-23.6, -7.4, 2.0), (-26.0, -5.2, 2.5), (-26.8, 1.6, 2.8), (-19.2, 6.2, 3.4), (-19.5, -5.8, 3.1)]:
+        bmesh.ops.create_icosphere(bm_ff, subdivisions=2, radius=0.075, matrix=Matrix.Translation((fx, fy, fz)))
+    mesh_from_bmesh(bm_ff, 'Nature_Forest_Fireflies', col_nature, mats['glow_forest_spore'], smooth=True)
 
 
 def build_props(col, mats):

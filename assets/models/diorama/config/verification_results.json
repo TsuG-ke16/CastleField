@@ -1,14 +1,14 @@
 {
   "blend_check": {
-    "file_size_kb": 1926.3,
+    "file_size_kb": 12640.6,
     "missing_collections": [],
     "missing_cameras": [],
     "facing_checks": {
       "Castle_Kingdom_Root": {
         "location": [
           0.0,
-          22.4,
-          3.0
+          20.6,
+          0.188
         ],
         "front_dot_to_plaza": 1.0,
         "cardinal_alignment_dot": 1.0,
@@ -16,9 +16,9 @@
       },
       "Castle_Forest_Root": {
         "location": [
-          -22.2,
+          -20.6,
           0.0,
-          2.2
+          0.136
         ],
         "front_dot_to_plaza": 1.0,
         "cardinal_alignment_dot": 1.0,
@@ -26,9 +26,9 @@
       },
       "Castle_Demon_Root": {
         "location": [
-          22.4,
+          20.6,
           0.0,
-          2.4
+          0.097
         ],
         "front_dot_to_plaza": 1.0,
         "cardinal_alignment_dot": 1.0,
@@ -37,8 +37,8 @@
       "Castle_Dragon_Root": {
         "location": [
           0.0,
-          -22.4,
-          2.2
+          -20.6,
+          0.138
         ],
         "front_dot_to_plaza": 1.0,
         "cardinal_alignment_dot": 1.0,
@@ -46,67 +46,67 @@
       }
     },
     "mesh_health": {
-      "mesh_count": 89,
-      "total_polygons": 82231,
-      "total_triangles": 128692,
+      "mesh_count": 19,
+      "total_polygons": 197780,
+      "total_triangles": 199160,
       "nan_vertices": 0,
       "degenerate_faces": 0,
       "meshes_without_material": []
     },
     "world_size_m": [
-      97.913,
-      93.816,
-      39.24
+      118.85,
+      115.028,
+      56.741
     ]
   },
   "glb_check": {
-    "file_size_kb": 7609.5,
-    "imported_objects": 113,
+    "file_size_kb": 10909.9,
+    "imported_objects": 45,
     "imported_cameras": 10,
-    "imported_materials": 53,
+    "imported_materials": 15,
     "mesh_health": {
-      "mesh_count": 89,
-      "total_polygons": 128692,
-      "total_triangles": 128692,
+      "mesh_count": 19,
+      "total_polygons": 199160,
+      "total_triangles": 199160,
       "nan_vertices": 0,
       "degenerate_faces": 0,
       "meshes_without_material": []
     },
     "world_bounds_min": [
-      -48.88,
-      -46.78,
-      -19.8
+      -59.392,
+      -57.652,
+      -41.504
     ],
     "world_bounds_max": [
-      49.033,
-      47.036,
-      19.44
+      59.457,
+      57.376,
+      15.236
     ],
     "world_size_m": [
-      97.913,
-      93.816,
-      39.24
+      118.85,
+      115.028,
+      56.741
     ]
   },
   "deliverables_check": {
     "missing_files": [],
     "render_files_kb": {
-      "01_overview.png": 1357.2,
-      "02_top.png": 1382.0,
-      "03_north.png": 1261.4,
-      "04_south.png": 1282.0,
-      "05_east.png": 1280.5,
-      "06_west.png": 1266.6,
-      "07_home_kingdom.png": 1253.7,
-      "08_home_forest.png": 1206.9,
-      "09_home_demon.png": 1202.7,
-      "10_home_dragon.png": 1183.3,
-      "mobile_01_kingdom_9x16.png": 1325.3,
-      "mobile_02_forest_9x16.png": 1268.4,
-      "mobile_03_demon_9x16.png": 1240.3,
-      "mobile_04_dragon_9x16.png": 1220.6,
-      "turntable_sheet.png": 1978.0,
-      "turntable_4factions.mp4": 1059.8
+      "01_overview.png": 1292.0,
+      "02_top.png": 1373.6,
+      "03_north.png": 1161.9,
+      "04_south.png": 1258.3,
+      "05_east.png": 1190.9,
+      "06_west.png": 1222.6,
+      "07_home_kingdom.png": 1182.0,
+      "08_home_forest.png": 1280.5,
+      "09_home_demon.png": 1186.2,
+      "10_home_dragon.png": 1177.6,
+      "mobile_01_kingdom_9x16.png": 1163.9,
+      "mobile_02_forest_9x16.png": 1343.4,
+      "mobile_03_demon_9x16.png": 1203.7,
+      "mobile_04_dragon_9x16.png": 1180.5,
+      "turntable_sheet.png": 1788.1,
+      "turntable_4factions.mp4": 1013.6
     }
   },
   "passed": true

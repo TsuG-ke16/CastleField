@@ -34,6 +34,8 @@ from diorama_materials import (
 )
 from diorama_terrain import (
     LAYOUT,
+    USE_TRIPO_ISLAND,
+    build_tripo_island_scene,
     build_island_base,
     build_central_plaza,
     build_bridges,
@@ -49,6 +51,7 @@ from diorama_castles import (
 from diorama_nature_props import (
     build_nature,
     build_props,
+    build_tripo_props_only,
 )
 
 
@@ -167,13 +170,24 @@ def setup_lights(col):
     # Neutral warm central plaza accent
     add_point('Light_Plaza_Warm', (0.0, 0.0, 5.2), energy=220.0, rgb=(1.0, 0.88, 0.66), radius=2.5)
 
-    # Faction mood lights
-    add_point('Light_Kingdom_RoyalWarm', (0.0, 17.5, 9.5), energy=420.0, rgb=(1.0, 0.92, 0.72), radius=2.2)
-    add_point('Light_Forest_Sanctuary', (-18.2, 0.0, 6.2), energy=420.0, rgb=(1.0, 0.88, 0.55), radius=2.4)
-    add_point('Light_Demon_CrystalGlow', (22.4, 0.4, 13.8), energy=1450.0, rgb=(0.78, 0.30, 1.0), radius=1.6)
-    add_point('Light_Demon_GateGlow', (17.2, 0.0, 5.8), energy=520.0, rgb=(0.74, 0.25, 1.0), radius=1.5)
-    add_point('Light_Dragon_FurnaceGate', (0.0, -17.0, 5.6), energy=950.0, rgb=(1.0, 0.40, 0.12), radius=1.6)
-    add_point('Light_Dragon_KeepFlame', (0.0, -22.0, 12.2), energy=820.0, rgb=(1.0, 0.45, 0.14), radius=2.0)
+    # Faction mood lights (matched cleanly to Tripo island pad heights!)
+    tz_k = LAYOUT['castles']['kingdom']['terrace_z']
+    tz_f = LAYOUT['castles']['forest']['terrace_z']
+    tz_d = LAYOUT['castles']['demon']['terrace_z']
+    tz_dr = LAYOUT['castles']['dragon']['terrace_z']
+    ck = LAYOUT['castles']['kingdom']['center']
+    cf = LAYOUT['castles']['forest']['center']
+    cd = LAYOUT['castles']['demon']['center']
+    cdr = LAYOUT['castles']['dragon']['center']
+
+    add_point('Light_Kingdom_RoyalWarm', (0.0, ck[1] - 4.8, tz_k + 5.8), energy=480.0, rgb=(1.0, 0.92, 0.72), radius=2.2)
+    add_point('Light_Kingdom_MeadowFill', (7.5, ck[1] + 2.2, tz_k + 6.8), energy=320.0, rgb=(1.0, 0.95, 0.80), radius=3.0)
+    add_point('Light_Forest_Sanctuary', (cf[0] + 4.8, 0.0, tz_f + 2.6), energy=380.0, rgb=(1.0, 0.80, 0.42), radius=1.6)
+    add_point('Light_Forest_CanopyWarm', (cf[0] + 3.2, 0.0, tz_f + 7.2), energy=320.0, rgb=(1.0, 0.92, 0.65), radius=2.6)
+    add_point('Light_Demon_CrystalGlow', (cd[0], 0.0, tz_d + 11.8), energy=1550.0, rgb=(0.78, 0.28, 1.0), radius=1.8)
+    add_point('Light_Demon_GateGlow', (cd[0] - 5.2, 0.0, tz_d + 3.4), energy=520.0, rgb=(0.74, 0.22, 1.0), radius=1.5)
+    add_point('Light_Dragon_FurnaceGate', (0.0, cdr[1] + 5.2, tz_dr + 2.8), energy=950.0, rgb=(1.0, 0.44, 0.12), radius=1.6)
+    add_point('Light_Dragon_KeepFlame', (0.0, cdr[1], tz_dr + 9.4), energy=780.0, rgb=(1.0, 0.50, 0.16), radius=2.2)
 
     return lights
 
@@ -205,33 +219,60 @@ def setup_cameras(col):
     #   target_pos =  d * TARGET_DIST + (0, 0, TARGET_Z)
     # R_BACK = 11.2, R_SIDE = 2.6 -> orbit radius = 11.50m (strictly inside opposite gate at 17.6m -> ZERO occlusion!).
     # Smooth 90-deg circular orbit around (0, 0, 0) transitions cleanly between all 4 factions!
-    orbit_rule = {
-        'orbit_center': [0.0, 0.0, 0.0],
-        'r_back': 12.8,
-        'r_side': 3.2,
-        'orbit_radius': round(math.hypot(12.8, 3.2), 3),
-        'cam_z': 11.4,
-        'target_dist': 16.2,
-        'target_z': 7.1,
-        'lens_mm': 24.5,
-        'sensor_width_mm': 36.0,
-        'fov_h_deg_16x9': round(math.degrees(2.0 * math.atan(36.0 / (2.0 * 24.5))), 2),
-        'notes': (
-            'All 4 home faction cameras share an identical circular orbit (radius 13.194m, Z=11.4m) '
-            'around Central Plaza (0,0,0), strictly inside the 17.6m gate radius of opposite castles to prevent occlusion. '
-            'Generous headroom above spires/canopy and foreground plaza margin support both 9:16 mobile and 16:9 desktop UI overlays.'
-        ),
-    }
-
-    cam_specs = [
-        # 1-6: Overview & Cardinal Inspection Cameras (generous margin showing full floating island & waterfalls!)
-        ('Camera_Overview', (11.0, -76.0, 48.0), (0.0, 0.5, -1.0), 34.0, '4陣営全体斜め俯瞰'),
-        ('Camera_Top', (0.0, 0.0, 126.0), (0.0, 0.0, 0.0), 40.0, '真上配置確認（上が北・王国）'),
-        ('Camera_North', (0.0, 80.0, 24.0), (0.0, 0.0, -0.8), 34.0, '北側からの外観確認'),
-        ('Camera_South', (0.0, -80.0, 24.0), (0.0, 0.0, -0.8), 34.0, '南側からの外観確認'),
-        ('Camera_East', (80.0, 0.0, 24.0), (0.0, 0.0, -0.8), 34.0, '東側からの外観確認'),
-        ('Camera_West', (-80.0, 0.0, 24.0), (0.0, 0.0, -0.8), 34.0, '西側からの外観確認'),
-    ]
+    if USE_TRIPO_ISLAND:
+        orbit_rule = {
+            'orbit_center': [0.0, 0.0, 0.0],
+            'r_back': 10.6,
+            'r_side': 2.6,
+            'orbit_radius': round(math.hypot(10.6, 2.6), 3),
+            'cam_z': 8.2,
+            'target_dist': 16.0,
+            'target_z': 4.4,
+            'lens_mm': 24.0,
+            'sensor_width_mm': 36.0,
+            'fov_h_deg_16x9': round(math.degrees(2.0 * math.atan(36.0 / (2.0 * 24.0))), 2),
+            'notes': (
+                'All 4 home faction cameras share a unified circular orbit (radius 10.914m, Z=8.2m) '
+                'around Central Plaza (0,0,0), strictly inside the 14.4m castle entrance ring to prevent occlusion. '
+                'Generous headroom above spires/canopy and foreground plaza margin support both 9:16 mobile and 16:9 desktop UI overlays.'
+            ),
+        }
+        cam_specs = [
+            ('Camera_Overview', (11.5, -96.0, 48.0), (0.0, 0.0, -11.0), 34.0, '4陣営全体斜め俯瞰'),
+            ('Camera_Top', (0.0, 0.0, 122.0), (0.0, 0.0, 0.0), 40.0, '真上配置確認（上が北・王国）'),
+            ('Camera_North', (0.0, 102.0, 18.0), (0.0, 0.0, -12.0), 33.0, '北側からの外観確認'),
+            ('Camera_South', (0.0, -102.0, 18.0), (0.0, 0.0, -12.0), 33.0, '南側からの外観確認'),
+            ('Camera_East', (102.0, 0.0, 18.0), (0.0, 0.0, -12.0), 33.0, '東側からの外観確認'),
+            ('Camera_West', (-102.0, 0.0, 18.0), (0.0, 0.0, -12.0), 33.0, '西側からの外観確認'),
+        ]
+        tz_bias_map = {'kingdom': 0.85, 'forest': 1.25, 'demon': 0.55, 'dragon': -1.35}
+    else:
+        orbit_rule = {
+            'orbit_center': [0.0, 0.0, 0.0],
+            'r_back': 12.8,
+            'r_side': 3.2,
+            'orbit_radius': round(math.hypot(12.8, 3.2), 3),
+            'cam_z': 11.4,
+            'target_dist': 16.5,
+            'target_z': 7.2,
+            'lens_mm': 23.2,
+            'sensor_width_mm': 36.0,
+            'fov_h_deg_16x9': round(math.degrees(2.0 * math.atan(36.0 / (2.0 * 23.2))), 2),
+            'notes': (
+                'All 4 home faction cameras share an identical circular orbit (radius 13.194m, Z=11.4m) '
+                'around Central Plaza (0,0,0), strictly inside the 17.6m gate radius of opposite castles to prevent occlusion. '
+                'Generous headroom above spires/canopy and foreground plaza margin support both 9:16 mobile and 16:9 desktop UI overlays.'
+            ),
+        }
+        cam_specs = [
+            ('Camera_Overview', (11.0, -76.0, 48.0), (0.0, 0.5, -1.0), 34.0, '4陣営全体斜め俯瞰'),
+            ('Camera_Top', (0.0, 0.0, 126.0), (0.0, 0.0, 0.0), 40.0, '真上配置確認（上が北・王国）'),
+            ('Camera_North', (0.0, 80.0, 24.0), (0.0, 0.0, -0.8), 34.0, '北側からの外観確認'),
+            ('Camera_South', (0.0, -80.0, 24.0), (0.0, 0.0, -0.8), 34.0, '南側からの外観確認'),
+            ('Camera_East', (80.0, 0.0, 24.0), (0.0, 0.0, -0.8), 34.0, '東側からの外観確認'),
+            ('Camera_West', (-80.0, 0.0, 24.0), (0.0, 0.0, -0.8), 34.0, '西側からの外観確認'),
+        ]
+        tz_bias_map = {'kingdom': 0.85, 'forest': 1.05, 'demon': 0.55, 'dragon': -0.85}
 
     faction_labels = {
         'kingdom': ('Camera_Kingdom', '王国（北）ホーム主役カメラ'),
@@ -248,8 +289,7 @@ def setup_cameras(col):
             round(-dy * orbit_rule['r_back'] + py * orbit_rule['r_side'], 3),
             orbit_rule['cam_z'],
         )
-        # Keep spire peaks & giant canopy cleanly framed with sky headroom for top UI
-        tz_bias = 0.65 if key in ('kingdom', 'forest') else 0.15
+        tz_bias = tz_bias_map[key]
         tgt = (
             round(dx * orbit_rule['target_dist'], 3),
             round(dy * orbit_rule['target_dist'], 3),
@@ -433,12 +473,17 @@ def export_metadata(scene, cam_json, mats):
             'objects': [o.name for o in col.objects],
         }
 
+    used_mat_names = {s.material.name for o in all_meshes for s in o.material_slots if s.material}
     mats_info = {}
-    for key, m in sorted(mats.items()):
-        bsdf = next((n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None)
-        has_vcol = any(n.type == 'VERTEX_COLOR' for n in m.node_tree.nodes)
+    for m in sorted(bpy.data.materials, key=lambda x: x.name):
+        if m.name not in used_mat_names:
+            continue
+        bsdf = next((n for n in m.node_tree.nodes if n.type == 'BSDF_PRINCIPLED'), None) if m.use_nodes else None
+        has_vcol = any(n.type == 'VERTEX_COLOR' for n in m.node_tree.nodes) if m.use_nodes else False
+        has_tex = any(n.type == 'TEX_IMAGE' for n in m.node_tree.nodes) if m.use_nodes else False
         mats_info[m.name] = {
-            'key': key,
+            'source': 'Tripo Studio PBR (optimized + synthesized emissive)' if has_tex else 'Procedural Blender PBR',
+            'uses_image_textures': has_tex,
             'uses_vertex_color': has_vcol,
             'metallic': round(bsdf.inputs['Metallic'].default_value, 3) if bsdf else 0.0,
             'roughness': round(bsdf.inputs['Roughness'].default_value, 3) if bsdf else 0.5,
@@ -453,7 +498,13 @@ def export_metadata(scene, cam_json, mats):
             'total_polygons': total_polys,
             'total_triangles': total_tris,
             'total_materials': len(mats_info),
-            'external_assets_used': 'None (100% original procedural Blender Python meshes & PBR materials)',
+            'external_assets_used': (
+                'Tripo Studio 3D sculpted PBR assets (4 faction hero castles + 4-biome floating island base, '
+                'decimated & texture-baked with synthesized emissive maps via prepare_tripo_castles.py / prepare_tripo_island.py) '
+                '+ procedural Blender lanterns, bollards, waterfall mist, fireflies, clouds, lighting & 10-camera rig.'
+                if USE_TRIPO_ISLAND else
+                'None (100% original procedural Blender Python meshes & PBR materials)'
+            ),
         },
         'collections': collections_info,
         'materials': mats_info,
@@ -487,22 +538,28 @@ def build_all():
 
     mats = build_material_library()
 
-    # Build terrain & infrastructure
-    build_island_base(cols['Island_Base'], mats)
-    build_central_plaza(cols['Central_Plaza'], mats)
-    build_bridges(cols['Bridges'], mats)
-    build_roads(cols['Roads'], mats)
-    build_water(cols['Water'], mats)
+    # Build terrain & infrastructure (Tripo sculpted floating island if available, else procedural!)
+    if USE_TRIPO_ISLAND:
+        build_tripo_island_scene(cols, mats)
+    else:
+        build_island_base(cols['Island_Base'], mats)
+        build_central_plaza(cols['Central_Plaza'], mats)
+        build_bridges(cols['Bridges'], mats)
+        build_roads(cols['Roads'], mats)
+        build_water(cols['Water'], mats)
 
-    # Build 4 distinct faction castles
+    # Build 4 distinct faction castles (imports optimized Tripo PBR+Emissive castles!)
     build_castle_kingdom(cols['Castle_Kingdom'], mats)
     build_castle_forest(cols['Castle_Forest'], mats)
     build_castle_demon(cols['Castle_Demon'], mats)
     build_castle_dragon(cols['Castle_Dragon'], mats)
 
-    # Build nature & props
-    build_nature(cols['Nature'], mats)
-    build_props(cols['Props'], mats)
+    # Build nature & props (harmonized with Tripo island!)
+    if USE_TRIPO_ISLAND:
+        build_tripo_props_only(cols['Props'], cols['Nature'], mats)
+    else:
+        build_nature(cols['Nature'], mats)
+        build_props(cols['Props'], mats)
 
     # World, lighting, cameras & render settings
     setup_world(scene)
@@ -514,11 +571,15 @@ def build_all():
     # Metadata JSONs
     inventory = export_metadata(scene, cam_json, mats)
 
-    # Save editable .blend
+    # Save editable .blend (pack all Tripo PBR + Normal + Emissive textures inside .blend!)
+    try:
+        bpy.ops.file.pack_all()
+    except Exception:
+        pass
     blend_path = DIORAMA_DIR / 'castle_field_diorama.blend'
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
 
-    # Export WebGL-ready .glb (Y-up, includes cameras & lights cleanly or meshes+cameras)
+    # Export WebGL-ready .glb (Y-up, JPEG compressed PBR textures for fast mobile web load!)
     glb_path = DIORAMA_DIR / 'castle_field_diorama.glb'
     bpy.ops.export_scene.gltf(
         filepath=str(glb_path),
@@ -528,6 +589,8 @@ def build_all():
         export_cameras=True,
         export_lights=True,
         export_materials='EXPORT',
+        export_image_format='JPEG',
+        export_image_quality=88,
         export_draco_mesh_compression_enable=False,
     )
 
