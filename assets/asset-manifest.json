@@ -330,5 +330,10 @@
   "bg/stage-ruins.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）",
   "bg/stage-dark-forest.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）",
   "bg/stage-ice.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）",
-  "bg/stage-lava.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）"
+  "bg/stage-lava.png": "IMG_7371.jpeg（人間が用意したステージの背景のシート）",
+  "ui/stone-meadow.png": "IMG_7371.jpeg（ステージの背景の飛び石を切り出し）",
+  "ui/stone-ruins.png": "IMG_7371.jpeg（ステージの背景の飛び石を切り出し）",
+  "ui/stone-dark-forest.png": "IMG_7371.jpeg（ステージの背景の飛び石を切り出し）",
+  "ui/stone-ice.png": "IMG_7371.jpeg（ステージの背景の飛び石を切り出し）",
+  "ui/stone-lava.png": "IMG_7371.jpeg（ステージの背景の飛び石を切り出し）"
 }

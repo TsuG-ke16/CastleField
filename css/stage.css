@@ -72,11 +72,22 @@
 #app[data-stage="ice"] { --stage-ground: #b5cbf2; }
 #app[data-stage="lava"] { --stage-ground: #904a45; }
 #app[data-stage][data-stage-art] #scenery .tree { display: none; }
+/* 飛び石：そのステージの絵から切り出した石（assets/ui/stone-<ステージ>.png）を、道にぴったり合わせて並べる */
+#app[data-stage][data-stage-art] #road .stone {
+  display: block; width: 50%; height: 30%; opacity: 1; filter: drop-shadow(0 2px 2px #0000004d);
+  background: var(--stage-stone) center / 100% 100% no-repeat; border: 0; box-shadow: none;
+}
+#app[data-stage="meadow"] { --stage-stone: url("../assets/ui/stone-meadow.png"); --stage-glow: #fff3b0; }
+#app[data-stage="ruins"] { --stage-stone: url("../assets/ui/stone-ruins.png"); --stage-glow: #9fd8ff; }
+#app[data-stage="darkForest"] { --stage-stone: url("../assets/ui/stone-dark-forest.png"); --stage-glow: #b98cff; }
+#app[data-stage="ice"] { --stage-stone: url("../assets/ui/stone-ice.png"); --stage-glow: #d6f2ff; }
+#app[data-stage="lava"] { --stage-stone: url("../assets/ui/stone-lava.png"); --stage-glow: #ff8a3d; }
+/* 真ん中のマス（魔物・ワールドボスの場所）：同じ石を大きくして、ステージの色でうっすら光らせる */
+#app[data-stage][data-stage-art] #road .cell.mid .stone {
+  width: 86%; height: 58%; animation: none;
+  filter: drop-shadow(0 0 6px var(--stage-glow)) drop-shadow(0 3px 3px #00000059);
+}
 #app[data-stage][data-stage-art] #road .lane:not(.targetable) { border-color: transparent; background: none; box-shadow: none; }
-/* 飛び石は、道にぴったり合う画面側のもの（砂漠と同じ石）を、地面の絵の上に並べる（絵の飛び石は道とずれるため） */
-#app[data-stage][data-stage-art] #road .stone { display: block; width: 48%; height: 34%; opacity: .95; filter: sepia(.4) saturate(1.2) brightness(1.05); }
-/* 真ん中のマスだけは、どのステージでも砂漠と同じ石の台（kingdom.css の飛び石の絵）を大きく出す */
-#app[data-stage][data-stage-art] #road .cell.mid .stone { display: block; opacity: .95; filter: sepia(.4) saturate(1.2) brightness(1.05); }
 
 /* 真ん中のマス（魔物・ワールドボスの場所）は、ほかのマスより大きい（js/ui/Renderer.js の --cell-rows と rowCenter） */
 #app #road .cells { grid-template-rows: var(--cell-rows, repeat(var(--cells), 1fr)); }
