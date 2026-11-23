@@ -19,6 +19,7 @@ test('レアリティ：data の全カードに rarity があり、合成先は1
     if (d.effect === 'wild' || rarities[d.rarity].special) { assert.equal(d.fuseTo, undefined, t); continue; } // 適応：合成先は相手のカードで決まる
     const i = order.indexOf(d.rarity);
     assert.ok(i >= 0, t);
+    if (d.fuseTo === null) continue; // 合成しないカード（はっきり null と書いたもの）
     if (i === order.length - 1) assert.equal(d.fuseTo, undefined, t);
     else assert.equal(cards[d.fuseTo].rarity, order[i + 1], t);
   }
@@ -126,14 +127,14 @@ test('コイン：最初に initialCoins、自分のターンの始めに coinPe
   const g = new Game({ cards, rules, rng: seededRng(7) });
   assert.equal(g.getState('p1').players.p1.coins, 5);
   assert.equal(g.getState('p1').players.p2.coins, 5);
-  g.debugSetHand('p1', ['coinPouch']);
+  g.debugSetHand('p1', ['treasure']);
   const log = recordEvents(g, ['coinsChanged']);
   g.start();
   assert.equal(g.getState('p1').players.p1.coins, 6); // 最初のターンの始め
   assert.equal(log[0].reason, 'turn');
-  const id = g.getState('p1').players.p1.hand.find((c) => c.type === 'coinPouch').cardId;
+  const id = g.getState('p1').players.p1.hand.find((c) => c.type === 'treasure').cardId;
   assert.equal(g.playCard(id).ok, true);
-  assert.equal(g.getState('p1').players.p1.coins, 6 + cards.coinPouch.amount);
+  assert.equal(g.getState('p1').players.p1.coins, 6 + cards.treasure.amount);
   assert.equal(log.at(-1).reason, 'card');
   g.endTurn(); // p2 のターン
   assert.equal(g.getState('p1').players.p2.coins, 6);
@@ -154,9 +155,12 @@ test('入手券：コインで、指定したレアリティのカードを1枚�
   assert.equal(g.getState('p1').players.p1.coins, 100 - upgrades.ticketRare.cost);
 });
 
-test('コインのカードの値：コモン1・アンコモン3・レア8・エピック20・レジェンド50', () => {
+test('コインのカードの値：レア8・エピック20・レジェンド50（小銭袋・金貨はなくした）', () => {
   const c = loadJson('cards.json');
-  assert.deepEqual(['coinPouch', 'goldCoin', 'treasure', 'goldVein', 'kingTreasure'].map((t) => c[t].amount), [1, 3, 8, 20, 50]);
+  assert.deepEqual(['treasure', 'goldVein', 'kingTreasure'].map((t) => c[t].amount), [8, 20, 50]);
+  assert.equal(c.coinPouch, undefined);
+  assert.equal(c.goldCoin, undefined);
+  assert.equal(c.prayer, undefined);
 });
 
 test('魔物のごほうび：rewardRarity の魔物を倒すと、そのレアリティのカードが手札に入る（コインは増えない）', () => {
@@ -258,6 +262,7 @@ test('適応：どのカードとでも合成できて、相手のカードの1�
 test('適応：メインのカードを出したあとも、出せない理由は「合成に使うカード」のまま', () => {
   const game = make();
   game.debugSetHand('p1', ['adapt', 'fireball']);
+  game.debugSetHand('p2', ['infantry']); // 相手が防御カードを持っていると、防御を待って止まるので
   game.start();
   const hand = game.getState('p1').players.p1.hand;
   const id = (t) => hand.find((c) => c.type === t).cardId;

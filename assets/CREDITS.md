@@ -507,7 +507,16 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 
 - 2026-11-19：`cards/frame-beast.png` を、作り直した元の絵のまま（引き伸ばさずに）入れ直した。窓・文字枠の位置は `css/beast.css` で合わせる
 
+## 仕様書4章のカードの絵（2026-11-19）
+
+- `cards/card-mana-raid.png`（魔力強奪）・`cards/card-life-steal.png`（命の簒奪）・`cards/card-desperate-shot.png`（決死の砲撃）・`cards/card-powder-keg.png`（火薬庫） — OpenAI画像生成（ChatGPT）。上記OpenAI規約・AI生成。外部の配布素材は使用していません。1254×1254 の原本（背景透明）を 512×512 に縮小（決死の砲撃・火薬庫は256色にして軽くした）。参考画像はリポジトリの `cards/card-fireball.png`・`cards/card-mana-crystal.png` ほか
+- 神頼み・小銭袋・金貨のカードをなくしたので、`cards/card-prayer.png`・`cards/card-coin-pouch.png`・`cards/card-gold-coin.png` を消した
+
+## サイコロのカードの絵（2026-11-20）
+
+- `cards/card-{attack,heal,mana,coin,shield,buff,random,god}-dice.png`（攻撃・ヒール・マナ・コイン・シールド・バフ・ランダム・ゴッドのサイコロ） — OpenAI画像生成（ChatGPT）。上記OpenAI規約・AI生成。外部の配布素材は使用していません。1254×1254 の原本（背景透明）を 512×512 に縮小（300KBを超えたものは256色にして軽くした）。参考画像はリポジトリの `cards/card-adapt.png`・`cards/card-fireball.png`・`cards/card-mana-crystal.png`
+
 ## ステージの背景（2026-11-20）
 
-- `bg/stage-{meadow,ruins,dark-forest,ice,lava}.png` — 人間（開発者）が用意したステージの背景のシート（`IMG_7371.jpeg`、草原・古代遺跡・闇の森・氷・溶岩の5枚が1枚にまとまったもの）から切り出した。氷・溶岩は真ん中を正方形に切り出し、奥に描かれた城は、城の左右の景色を折り返して重ねて消し（つなぎ目はぼかした）、空・山・木などの奥の景色は残した。地面の部分は少しぼかしてコントラストを下げ、上下反転をくり返して縦長（約 9:16）にして、256色の PNG に圧縮した。**作った道具（画像生成AIの名前）とライセンスは未確認**（開発者に確認して、ここに書き足す）。砂漠の絵はまだない
-- `ui/stone-{meadow,ruins,dark-forest,ice,lava}.png` — 上の背景の絵の、手前の飛び石を1つずつ切り出し、まわりを楕円にぼかして透かしたもの。道の飛び石と、真ん中の大きいマスに使う。出どころは背景と同じ
+- `bg/stage-{meadow,ruins,dark-forest,ice,lava}.png` — OpenAI画像生成（ChatGPT）で作ったステージの背景のシート（`IMG_7371.jpeg`。開発者が用意、草原・古代遺跡・闇の森・氷・溶岩の5枚が1枚にまとまったもの）から切り出した。氷・溶岩は真ん中を正方形に切り出し、奥に描かれた城は、城の左右の景色を折り返して重ねて消し（つなぎ目はぼかした）、空・山・木などの奥の景色は残した。地面の部分は少しぼかしてコントラストを下げ、上下反転をくり返して縦長（約 9:16）にして、256色の PNG に圧縮した。利用条件は OpenAI Terms of Use（生成出力）。外部の配布素材は使用していません（開発者に確認した。2026-11-20）。砂漠の絵はまだない
+- `ui/stone-{meadow,ruins,dark-forest,ice,lava}.png` — 上の背景の絵の、手前の飛び石を1つずつ切り出し、まわりを楕円にぼかして透かしたもの。道の飛び石と、真ん中の大きいマスに使う。出どころ・利用条件は背景と同じ
