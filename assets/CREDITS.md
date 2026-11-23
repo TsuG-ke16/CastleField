@@ -822,3 +822,12 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `cards/card-moonrise.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
 | `cards/card-dawnbreak.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
 | `cards/card-assassin.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+
+### 通常モード3D統合での追加（2026-11-23）
+
+| ファイル | 作った道具 | ライセンス・利用条件 | 日付 |
+|---|---|---|---|
+| `models/qa-audit-glb.py` | 手書き Python（bpy）：GLBの寸法・接地・材質・法線・リグ名を測り、正面・斜め・側面を描く検査 | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/fix-ground-contact.py` | 手書き Python：GLBのJSONのルート位置だけを動かして接地（形・材質・階層は不変） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/monster-{demon,dragon,goblin,mimic,slime}.glb`・`models/unit-dragon.glb` | 上の接地補正を適用（Blender 5.3 で最下面 y=0 を確認） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `review/battle-3d-qa/**` | 検査結果（`report.json`）・Blenderの比較画像・ゲーム画面のスクリーンショット | 本リポジトリのコードと同一 | 2026-11-23 |

@@ -1,0 +1,175 @@
+[
+ {
+  "name": "monster-demon",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 220,
+  "size_xyz_m": [
+   3.329,
+   1.047,
+   2.153
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   -0.003
+  ],
+  "materials": 3,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0955
+ },
+ {
+  "name": "monster-dragon",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 264,
+  "size_xyz_m": [
+   3.915,
+   3.207,
+   2.114
+  ],
+  "min_z_ground": -0.0,
+  "center_xy": [
+   0.0,
+   -0.144
+  ],
+  "materials": 4,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.1477
+ },
+ {
+  "name": "monster-goblin",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 216,
+  "size_xyz_m": [
+   1.464,
+   1.042,
+   1.366
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.028,
+   0.141
+  ],
+  "materials": 3,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0787
+ },
+ {
+  "name": "monster-mimic",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 128,
+  "size_xyz_m": [
+   1.22,
+   1.235,
+   1.309
+  ],
+  "min_z_ground": -0.0,
+  "center_xy": [
+   0.0,
+   -0.05
+  ],
+  "materials": 4,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.0312
+ },
+ {
+  "name": "monster-slime",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 148,
+  "size_xyz_m": [
+   1.575,
+   1.555,
+   1.41
+  ],
+  "min_z_ground": -0.0,
+  "center_xy": [
+   0.0,
+   0.0
+  ],
+  "materials": 3,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [],
+  "flipped_face_ratio": 0.1216
+ },
+ {
+  "name": "unit-dragon",
+  "meshes": 1,
+  "objects": 1,
+  "faces": 248,
+  "size_xyz_m": [
+   2.497,
+   2.34,
+   1.455
+  ],
+  "min_z_ground": 0.0,
+  "center_xy": [
+   0.0,
+   -0.08
+  ],
+  "materials": 5,
+  "meshes_without_material": [],
+  "root_rotation_deg": [],
+  "root_scale": [
+   [
+    1.0,
+    1.0,
+    1.0
+   ]
+  ],
+  "rig_missing": [
+   "Anim_Body",
+   "Anim_Head",
+   "Anim_ArmR",
+   "Anim_ArmL"
+  ],
+  "flipped_face_ratio": 0.0887
+ }
+]

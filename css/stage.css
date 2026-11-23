@@ -80,6 +80,8 @@
 #app[data-stage3d] #board:not(.plaza-board) .castle .castle-pic { opacity: 0; }
 #app[data-stage3d] #board:not(.plaza-board) .soldier .soldier-pic { opacity: 0; }
 #app[data-stage3d] #board:not(.plaza-board) .monster .monster-pic { opacity: 0; }
+/* 盤面のドラッグ（カメラ回転）・ピンチをブラウザのスクロール／拡大に取られないようにする（ボタン・手札は盤面の外なので影響なし） */
+#app[data-stage3d] #board:not(.plaza-board) { touch-action: none; }
 /* 3D カメラ回転時も違和感が出ないよう 2D の固定縦枠を消し、対象レーン選択時は 3D 射影された踏み石を光らせる */
 #app[data-stage3d] #board:not(.plaza-board) #road,
 #app[data-stage3d] #board:not(.plaza-board) #road .lane {
