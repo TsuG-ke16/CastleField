@@ -341,6 +341,7 @@ export class Animations {
       case 'weatherChanged': return this.weatherChanged(p, model);
       case 'timeChanged': return this.timeChanged(p, model);
       case 'overdriveChanged': return this.overdriveChanged(p, model);
+      case 'diceRolled': return this.diceRolled(p);
       case 'stageEruption': return this.stageEruption(p);
       case 'weatherLightning': return this.weatherLightning(p);
       case 'attackMissed': return this.attackMissed(p);
@@ -573,6 +574,7 @@ export class Animations {
 
   async roundStarted({ round }, model) {
     model.round = round;
+    if (round > 1) sound.play('roundGong');
     // 魔物の「城を攻めるまで」（attackIn）はイベントに入っていないので、演出のあとの getState で合わせる
     this.renderer.setTurnInfo(model.turn, round);
     if (round <= 1) return;
@@ -613,6 +615,15 @@ export class Animations {
     if (this.skipping) return;
     sound.play(time === 'night' ? 'freeze' : 'heal');
     await this.banner(time === 'night' ? '🌙 夜になった！ 獣と暗殺者が強くなる' : '☀️ 夜が明けた', UI_CONFIG.timing.round, 'small');
+  }
+
+  /** サイコロを振った：カラカラという音と、出た目の帯 */
+  async diceRolled({ rolls, value }) {
+    sound.play('diceRoll');
+    if (this.skipping) return;
+    const faces = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
+    const text = (rolls?.length ? rolls : [value]).map((r) => faces[r - 1] ?? r).join(' ');
+    await this.banner(`🎲 ${text}`, UI_CONFIG.timing.round * 0.7, 'small');
   }
 
   /** 背水の陣：城が赤く燃え、兵士の攻撃が上がる。BGM がピンチに変わる */
@@ -1061,6 +1072,7 @@ export class Animations {
   }
 
   async cardDiscarded({ playerId, cardIds }, model, ctx) {
+    sound.play('discard');
     const pl = model.players[playerId];
     pl.handCount = Math.max(0, pl.handCount - cardIds.length);
     if (model.deckMode === 'shared' || playerId === ctx.viewerId) {
@@ -1334,6 +1346,9 @@ export class Animations {
   /** 帰還は城へ飛んで消える。倒れた兵士はその場で消える。 */
   async soldiersDestroyed(first, queue, model) {
     const list = this.takeRun(first, queue);
+    // 倒れた・帰った音（城に着いた兵士は、城への命中の音が鳴るので鳴らさない）
+    if (list.some((d) => d.reason === 'returned')) sound.play('whoosh');
+    if (list.some((d) => ['killed', 'eliminated', 'roadClosed'].includes(d.reason))) sound.play('poof');
     await Promise.all(list.map(async d => {
       const pl = model.players[d.playerId];
       pl.soldiers = pl.soldiers.filter(x => x.soldierId !== d.soldierId);
@@ -1740,6 +1755,7 @@ export class Animations {
   }
 
   async weaponEquipped({ playerId, soldierId, type, attack, element }, model) {
+    sound.play('equip');
     const s = this.modelSoldier(model, playerId, soldierId);
     const prev = this.renderer.weaponStacks.get(soldierId) ?? { count: s?.weapon ? null : 0, bonus: 0 };
     this.renderer.weaponStacks.set(soldierId, { count: prev.count == null ? null : prev.count + 1, bonus: prev.bonus + (this.cards[type]?.attackBonus ?? 0) });
@@ -1754,6 +1770,7 @@ export class Animations {
   }
 
   async shieldAdded({ playerId, soldierId, amount, shield }, model) {
+    sound.play('shieldUp');
     const s = this.modelSoldier(model, playerId, soldierId);
     if (s) s.shield = shield;
     this.renderer.updateSoldier(soldierId, { shield });
@@ -1762,6 +1779,7 @@ export class Animations {
 
   /** とぎ石：続けて来たものはまとめて光らせる */
   async soldiersBuffed(first, queue, model) {
+    sound.play('powerUp');
     const list = this.takeRun(first, queue);
     const waits = [];
     for (const b of list) {
@@ -1789,6 +1807,7 @@ export class Animations {
   }
 
   async armorExpired({ playerId }, model) {
+    sound.play('armorDown');
     this.patchCastle(model, playerId, {armor:0});
     if (this.skipping) {
       this.renderer.setArmor(playerId, 0);
@@ -1804,6 +1823,8 @@ export class Animations {
   /** 毒・凍結がかかる：続けて来たものはまとめて見せる */
   async statusesApplied(first, queue, model) {
     const list = this.takeRun(first, queue);
+    // かかった状態ごとに1回ずつ鳴らす（魔法の霧の音と重なってもよい）
+    for (const st of new Set(list.map((a) => a.status))) sound.play({ frozen: 'freeze', poison: 'poison', burn: 'burn' }[st] ?? 'poison');
     for (const a of list) {
       const s = this.modelSoldier(model, a.playerId, a.soldierId);
       const statuses = { ...(s?.statuses ?? this.renderer.soldier(a.soldierId)?.statuses ?? { poison: null, frozen: 0 }) };
@@ -1849,6 +1870,7 @@ export class Animations {
   }
 
   async statusCleared({ playerId, soldierId, status }, model) {
+    sound.play(status === 'frozen' ? 'iceBreak' : 'cure');
     const s = this.modelSoldier(model, playerId, soldierId);
     const statuses = { ...(s?.statuses ?? this.renderer.soldier(soldierId)?.statuses ?? {}) };
     if (status === 'poison') statuses.poison = null;
@@ -1948,6 +1970,7 @@ export class Animations {
   }
 
   async monsterDefeated({ monsterId, playerId, reward, rewardRarity, baseRarity, lucky, pieceType }, model) {
+    sound.play('fanfare');
     const el = this.renderer.monsterEl(monsterId);
     if (pieceType) model.players[playerId].pendingPiece = { type: pieceType, from: el ? this.centerOf(el) : null };
     if (rewardRarity) {

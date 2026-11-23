@@ -30,7 +30,10 @@ class Sound {
         this.ctx = new AC();
         this.master = this.ctx.createGain();
         this.master.gain.value = this.sfxVolume;
-        this.master.connect(this.ctx.destination);
+        // 派手な音を重ねても割れないように、コンプレッサーを通す
+        this.limiter = this.ctx.createDynamicsCompressor();
+        this.limiter.threshold.value = -12; this.limiter.ratio.value = 6; this.limiter.attack.value = .003; this.limiter.release.value = .15;
+        this.master.connect(this.limiter).connect(this.ctx.destination);
       }
       if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
       this.music.start();
@@ -133,17 +136,22 @@ const SOUNDS = {
     s.tone({ freq: 440, endFreq: 660, dur: 0.1, type: 'triangle', gain: 0.1, at: 0.04 });
   },
   deploy: (s) => {
-    s.tone({ freq: 160, endFreq: 70, dur: 0.16, gain: 0.35 });
-    s.tone({ freq: 523, dur: 0.08, type: 'triangle', gain: 0.1, at: 0.05 });
+    s.tone({ freq: 160, endFreq: 60, dur: 0.2, gain: 0.4 });
+    s.noise({ dur: 0.18, gain: 0.14, freq: 600, endFreq: 150 });
+    [523, 659, 784].forEach((f, i) => s.tone({ freq: f, dur: 0.1, type: 'square', gain: 0.06, at: 0.04 + i * 0.045 }));
   },
   step: (s) => s.tone({ freq: 190, endFreq: 120, dur: 0.07, gain: 0.16 }),
   clash: (s) => {
-    s.noise({ dur: 0.12, gain: 0.25, freq: 3000, type: 'highpass' });
-    s.tone({ freq: 1100, endFreq: 500, dur: 0.14, type: 'square', gain: 0.1 });
+    // 剣がぶつかる「キン！」：金属の高い倍音を重ねて、少し長く響かせる
+    s.noise({ dur: 0.14, gain: 0.3, freq: 3500, type: 'highpass' });
+    [1870, 2810, 4120].forEach((f, i) => s.tone({ freq: f, endFreq: f * 0.97, dur: 0.35 - i * 0.06, type: 'triangle', gain: 0.07, attack: 0.002 }));
+    s.tone({ freq: 220, endFreq: 90, dur: 0.12, gain: 0.25 });
   },
   hit: (s, p) => {
-    s.tone({ freq: 220 - 90 * p, endFreq: 50, dur: 0.14 + 0.3 * p, gain: 0.3 + 0.4 * p });
-    s.noise({ dur: 0.1 + 0.3 * p, gain: 0.15 + 0.35 * p, freq: 1800 - 900 * p, endFreq: 200 });
+    s.tone({ freq: 220 - 90 * p, endFreq: 40, dur: 0.18 + 0.4 * p, gain: 0.35 + 0.45 * p });
+    s.noise({ dur: 0.12 + 0.4 * p, gain: 0.2 + 0.4 * p, freq: 2200 - 1000 * p, endFreq: 120 });
+    // 強い一撃ほど、低い「ドーン」の余韻を足す
+    if (p > 0.4) s.tone({ freq: 70, endFreq: 30, dur: 0.5 + 0.4 * p, gain: 0.25 * p, type: 'sine', at: 0.03 });
   },
   smallHit: (s) => {
     s.tone({ freq: 260, endFreq: 110, dur: 0.09, gain: 0.25 });
@@ -153,10 +161,15 @@ const SOUNDS = {
     s.tone({ freq: 1500, endFreq: 1300, dur: 0.16, type: 'triangle', gain: 0.16 });
     s.tone({ freq: 2250, dur: 0.1, type: 'sine', gain: 0.08 });
   },
-  fire: (s) => s.noise({ dur: 0.3, gain: 0.22, freq: 500, endFreq: 3000, type: 'bandpass', q: 0.7 }),
+  fire: (s) => {
+    s.noise({ dur: 0.45, gain: 0.26, freq: 400, endFreq: 3200, type: 'bandpass', q: 0.7 });
+    s.noise({ dur: 0.5, gain: 0.18, freq: 200, endFreq: 80, at: 0.12 });
+  },
   thunder: (s) => {
-    s.noise({ dur: 0.08, gain: 0.5, freq: 6000, type: 'highpass' });
-    s.noise({ dur: 0.5, gain: 0.4, freq: 900, endFreq: 100, at: 0.05 });
+    s.noise({ dur: 0.08, gain: 0.55, freq: 6000, type: 'highpass' });
+    s.noise({ dur: 0.06, gain: 0.35, freq: 6000, type: 'highpass', at: 0.09 });
+    s.noise({ dur: 0.8, gain: 0.45, freq: 900, endFreq: 60, at: 0.05 });
+    s.tone({ freq: 60, endFreq: 30, dur: 0.7, gain: 0.25, at: 0.05 });
   },
   heal: (s) => [523, 659, 784, 1047].forEach((f, i) => s.tone({ freq: f, dur: 0.2, type: 'sine', gain: 0.16, at: i * 0.07 })),
   equip: (s) => {
@@ -180,10 +193,65 @@ const SOUNDS = {
   },
   shuffle: (s) => [0, 0.06, 0.12, 0.18].forEach((at) => s.noise({ dur: 0.05, gain: 0.1, freq: 3500, type: 'bandpass', q: 2, at })),
   win: (s) => {
-    [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => s.tone({ freq: f, dur: 0.22, type: 'triangle', gain: 0.2, at: i * 0.11 }));
-    s.tone({ freq: 262, dur: 0.9, type: 'sine', gain: 0.18, at: 0.66 });
+    // ファンファーレ：旋律＋和音＋シンバル
+    [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) => s.tone({ freq: f, dur: 0.24, type: 'square', gain: 0.12, at: i * 0.11 }));
+    [523, 659, 784, 1047].forEach((f) => s.tone({ freq: f, dur: 1.2, type: 'sawtooth', gain: 0.05, at: 0.77 }));
+    s.tone({ freq: 131, dur: 1.2, type: 'sine', gain: 0.22, at: 0.77 });
+    s.noise({ dur: 1.1, gain: 0.16, freq: 7000, type: 'highpass', at: 0.77 });
   },
-  lose: (s) => [392, 349, 311, 262].forEach((f, i) => s.tone({ freq: f, dur: 0.3, type: 'triangle', gain: 0.16, at: i * 0.2 })),
+  lose: (s) => {
+    [392, 349, 311, 262].forEach((f, i) => s.tone({ freq: f, endFreq: f * 0.97, dur: 0.4, type: 'triangle', gain: 0.16, at: i * 0.22 }));
+    s.tone({ freq: 98, endFreq: 82, dur: 1.2, type: 'sawtooth', gain: 0.07, at: 0.66 });
+  },
+  // ---------- 新しく足した効果音 ----------
+  // 兵士が倒れる「ポンッ」
+  poof: (s) => {
+    s.noise({ dur: 0.22, gain: 0.32, freq: 1200, endFreq: 200, type: 'bandpass', q: 0.9 });
+    s.tone({ freq: 420, endFreq: 120, dur: 0.2, type: 'triangle', gain: 0.12 });
+  },
+  // 弓兵・魔法使いが帰る「ヒュン」
+  whoosh: (s) => s.noise({ dur: 0.35, gain: 0.3, freq: 600, endFreq: 3500, type: 'bandpass', q: 1.2 }),
+  // 盾をつける
+  shieldUp: (s) => {
+    s.tone({ freq: 660, endFreq: 990, dur: 0.18, type: 'triangle', gain: 0.13 });
+    s.tone({ freq: 1320, dur: 0.25, type: 'sine', gain: 0.07, at: 0.08 });
+  },
+  // やけど
+  burn: (s) => {
+    s.noise({ dur: 0.35, gain: 0.18, freq: 2500, endFreq: 700, type: 'bandpass', q: 1.5 });
+    s.tone({ freq: 300, endFreq: 520, dur: 0.15, type: 'sawtooth', gain: 0.05 });
+  },
+  // 凍結がとける「パリン」
+  iceBreak: (s) => {
+    s.noise({ dur: 0.12, gain: 0.22, freq: 5000, type: 'highpass' });
+    [2637, 3520, 2093].forEach((f, i) => s.tone({ freq: f, dur: 0.12, type: 'sine', gain: 0.07, at: 0.02 + i * 0.04 }));
+  },
+  // 毒・やけどが治る
+  cure: (s) => [784, 988, 1319].forEach((f, i) => s.tone({ freq: f, dur: 0.16, type: 'sine', gain: 0.1, at: i * 0.06 })),
+  // 周回の始めの鐘
+  roundGong: (s) => {
+    [196, 392, 588].forEach((f, i) => s.tone({ freq: f, endFreq: f * 0.995, dur: 1.1 - i * 0.25, type: 'sine', gain: 0.16 - i * 0.04, attack: 0.004 }));
+    s.noise({ dur: 0.08, gain: 0.08, freq: 3000, type: 'bandpass', q: 2 });
+  },
+  // 手札を捨てる
+  discard: (s) => {
+    s.noise({ dur: 0.12, gain: 0.12, freq: 3000, endFreq: 900, type: 'bandpass', q: 1.2 });
+    s.tone({ freq: 330, endFreq: 220, dur: 0.1, type: 'triangle', gain: 0.07, at: 0.03 });
+  },
+  // 兵士が強くなる（とぎ石・バフ）
+  powerUp: (s) => [392, 523, 659, 784, 1047].forEach((f, i) => s.tone({ freq: f, dur: 0.12, type: 'square', gain: 0.06, at: i * 0.045 })),
+  // 城壁が消える
+  armorDown: (s) => s.tone({ freq: 880, endFreq: 330, dur: 0.3, type: 'triangle', gain: 0.1 }),
+  // サイコロを振る：カラカラ → コトン
+  diceRoll: (s) => {
+    for (let i = 0; i < 7; i++) s.noise({ dur: 0.03, gain: 0.24, freq: 2600 + (i % 3) * 600, type: 'bandpass', q: 3, at: i * 0.055 });
+    s.tone({ freq: 240, endFreq: 160, dur: 0.12, gain: 0.25, at: 0.42 });
+  },
+  // 魔物を倒したファンファーレ
+  fanfare: (s) => {
+    [659, 784, 1047, 1319].forEach((f, i) => s.tone({ freq: f, dur: 0.16, type: 'square', gain: 0.08, at: i * 0.08 }));
+    [523, 659, 784].forEach((f) => s.tone({ freq: f, dur: 0.6, type: 'triangle', gain: 0.07, at: 0.32 }));
+  },
 };
 
 /** 画面全体で1つだけ使う */
