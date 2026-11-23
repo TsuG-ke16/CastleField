@@ -809,3 +809,16 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `review/home-reborn/source-factions.webp` | `exec-bb781081-7826-4f6a-a96e-d27cbeb2473b.png` | OpenAI画像生成（ChatGPT）、Pillowで切り抜き範囲・縮小・PNG圧縮 | OpenAI Terms of Use（生成出力） | 2026-11-23 |
 
 `js/ui/HomeIcons.js` の操作アイコンは本リポジトリ向けに作成したSVG。レビュー用の画面キャプチャ・HTMLモックは本ゲームを撮影・制作したもの。元の生成画像は `review/home-reborn/source-*.webp` に保存。
+
+## 追加カード8種（2026-11-22）
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 作った日 |
+|---|---|---|---|
+| `cards/card-gale-force.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-chain-blast.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-ignition-burst.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-shield-blast.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-purify-flare.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-moonrise.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-dawnbreak.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
+| `cards/card-assassin.png` | OpenAI画像生成（ChatGPT）。`style-reference.png` を参照して作成 | OpenAI Terms of Use（生成出力） | 2026-11-22 |
