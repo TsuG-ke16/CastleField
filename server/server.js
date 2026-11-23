@@ -47,6 +47,8 @@ export function loadData(dir = join(ROOT, 'data'), modeId = null) {
     gacha: optional('gacha.json'),
     missions: optional('missions.json'),
     modes,
+    // ベータ版のモード（modes.json の beta: true）。戦績・経験値・ミッションを記録しない（rooms.js の finishMatch）
+    beta: entry?.beta === true,
   };
   if (entry) {
     // レアリティを使わないモード（カードの count 枚ずつで山札を作る）。レアリティとコスト制のデッキは、このモードでは使えない

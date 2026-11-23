@@ -761,7 +761,8 @@ export class Renderer {
       weapon: st.weapon ?? null,
       element: st.element ?? null,
       shield: st.shield ?? 0,
-      statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0, burn: st.statuses?.burn ?? null },
+      statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0, burn: st.statuses?.burn ?? null, slowed: st.statuses?.slowed ?? null, blinded: st.statuses?.blinded ?? null },
+      attachments: st.attachments ?? [],
     };
     this.soldiers.set(st.soldierId, s);
     this.updateSoldierBadges(s);
@@ -806,8 +807,11 @@ export class Renderer {
     const frozen = s.statuses?.frozen > 0;
     const status = q('.soldier-status');
     const burn = s.statuses?.burn;
-    status.innerHTML = `${poison ? icon('skull') : ''}${frozen ? icon('snow') : ''}${burn ? icon('fire') : ''}`;
-    status.hidden = !poison && !frozen && !burn;
+    // 4陣営：鈍足・目くらまし・付着している属性（通常モードでは出ない）
+    const slowed = s.statuses?.slowed, blinded = s.statuses?.blinded;
+    const attached = (s.attachments ?? []).map((a) => ELEMENT_LOOK[a.element]?.icon ?? '').join('');
+    status.innerHTML = `${poison ? icon('skull') : ''}${frozen ? icon('snow') : ''}${burn ? icon('fire') : ''}${slowed ? '🐌' : ''}${blinded ? '🌫️' : ''}${attached}`;
+    status.hidden = !poison && !frozen && !burn && !slowed && !blinded && !attached;
     s.el.classList.toggle('poisoned', Boolean(poison));
     s.el.classList.toggle('burning', Boolean(burn));
     s.el.classList.toggle('frozen', frozen);
@@ -903,7 +907,8 @@ export class Renderer {
           weapon: st.weapon ?? null,
           element: st.element ?? null,
           shield: st.shield ?? 0,
-          statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0, burn: st.statuses?.burn ?? null },
+          statuses: { poison: st.statuses?.poison ?? null, frozen: st.statuses?.frozen ?? 0, burn: st.statuses?.burn ?? null, slowed: st.statuses?.slowed ?? null, blinded: st.statuses?.blinded ?? null },
+      attachments: st.attachments ?? [],
         });
         this.updateSoldierBadges(s);
         this.place(s);

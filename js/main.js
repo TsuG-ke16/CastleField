@@ -42,7 +42,7 @@ import { deckChoice, deckSlot, loadDecks, loadMyDeck } from './ui/DeckStore.js';
 import { renderDeckPreview } from './ui/DeckPreview.js';
 import { initHolograms } from './ui/Hologram.js';
 import { initCardZoom } from './ui/CardZoom.js';
-import { checkCostDeck } from './game/Setup.js';
+import { checkCostDeck, factionDecks } from './game/Setup.js';
 import { musicScene } from './ui/musicScene.js';
 import { STRATEGIES, mulliganChoice } from './game/strategies.js';
 import { checkSync } from './ui/syncCheck.js';
@@ -53,6 +53,9 @@ import { playerName, setPlayerNames, reasonText, soldierInfo, monsterInfo, GAME_
 
 const params = new URLSearchParams(location.search);
 const DEBUG = params.get('debug') === '1';
+const FACTIONS_BETA = params.get('beta') === 'factions' || params.get('mode') === 'factions';
+let factionsJson = null;     // 4陣営（ベータ）：data/factions/factions.json
+let factionCardSets = null;  // 4陣営（ベータ）：{ 陣営ID: カード表 }
 const URL_SEED = params.has('seed') ? Number(params.get('seed')) >>> 0 : null;
 
 const $ = (id) => document.getElementById(id);
@@ -212,6 +215,27 @@ async function boot() {
   try {
     // URL の ?mode=classic で、そのモード（data/modes.json）のカード・ルールを使う。省略すると今まで通り
     let cardsPath = 'data/cards.json', rulesPath = 'data/rules.json', modeEntry = null;
+    if (FACTIONS_BETA) {
+      // 4陣営（ベータ）：陣営ごとのカード表を全部合わせたものがカード定義。デッキは陣営ごと
+      const modes = await loadJson('data/modes.json');
+      const fm = modes.modes?.factions;
+      if (!fm?.factionCardSets) throw new Error('4陣営のモードがありません');
+      const names = Object.keys(fm.factionCardSets);
+      const [sets, rulesJson, elementsJson, reactionsJson, facJson] = await Promise.all([
+        Promise.all(names.map((n) => loadJson(fm.factionCardSets[n]))),
+        loadJson(fm.rulesSet), loadJson(fm.elementsSet), loadJson(fm.reactionsSet), loadJson(fm.factionsSet),
+      ]);
+      const byFaction = Object.fromEntries(names.map((n, i) => [n, sets[i]]));
+      cards = {};
+      for (const set of sets) for (const [k, v] of Object.entries(set)) if (!k.startsWith('_')) cards[k] = v;
+      rules = rulesJson; elements = elementsJson; reactions = reactionsJson;
+      factionsJson = facJson; factionCardSets = byFaction;
+      decks = factionDecks(facJson, byFaction); rarities = null;
+      [monsters, upgrades, castles, weather, stamps, stages] = await Promise.all([
+        loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/castles.json'),
+        loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'), loadOptionalJson('data/stages.json'),
+      ]);
+    } else {
     if (params.has('mode')) {
       const modes = await loadJson('data/modes.json');
       modeEntry = params.get('mode') === modes.default ? null : modes.modes?.[params.get('mode')];
@@ -228,6 +252,7 @@ async function boot() {
     if (modeEntry?.elementsSet) elements = await loadJson(modeEntry.elementsSet);
     // 属性の付着と反応（modes.json の reactionsSet があるモードだけ）
     if (modeEntry?.reactionsSet) reactions = await loadJson(modeEntry.reactionsSet);
+    }
   } catch (err) {
     console.error(err);
     hideLoading();
@@ -275,6 +300,7 @@ async function boot() {
     onAction: (method, args) => session.act(method, args), onLeave: () => showTitle(),
     onChat: () => chat?.toggle(), getUnread: () => chat?.unread ?? 0,
     onEditDeck: openDeckEditor, savedDecks, presetDeck, previewDeck,
+    factionInfo: FACTIONS_BETA ? { factions: factionsJson, cardSets: factionCardSets, rules } : null,
   });
   initHolograms(el.app);
   cardZoom = initCardZoom({ root: el.app, cards, rarities, rules });
@@ -421,6 +447,12 @@ async function boot() {
   setupTitle({ savedDecks, presetDeck, previewDeck, openDeckEditor });
   renderHelp({cards,rules,monsters,rarities});
   setupAccessibility();
+  if (FACTIONS_BETA) {
+    document.documentElement.classList.add('faction-beta');
+    const badge = document.createElement('div');
+    badge.className = 'faction-beta-badge'; badge.textContent = '4陣営（ベータ）'; badge.setAttribute('aria-hidden', 'true');
+    document.body.append(badge);
+  }
 
   if (DEBUG) {
     new DebugPanel({
@@ -516,6 +548,7 @@ function setupTitle(deckOptions) {
   $('menu-settings').addEventListener('click', () => settings.open());
   $('title-back').addEventListener('click', () => {
     leaveOnline();
+    if (FACTIONS_BETA) { openBetaTitle(); return; }
     el.titleForm.hidden = true;
     el.title.hidden = true;
     home.open();
@@ -567,7 +600,17 @@ function showTitle() {
   el.titleForm.hidden = true;
   el.titleLevels.hidden = true;
   el.title.hidden = true;
+  if (FACTIONS_BETA) { openBetaTitle(); return; }
   home.open(); // 入口はホームだけ
+}
+
+/** 4陣営（ベータ）：ホーム（ランク・ショップ・ミッションなど本番の進行につながる入口）は出さず、合言葉の画面だけを入口にする */
+function openBetaTitle() {
+  el.title.hidden = false;
+  el.titleLevels.hidden = true;
+  el.titleForm.hidden = false;
+  setTitleWaiting(false);
+  el.titleStatus.textContent = '4陣営（ベータ）：同じ合言葉を入れた人と対戦します';
 }
 
 function setTitleWaiting(waiting) {
@@ -709,6 +752,11 @@ function resetForNewGame() {
  * @param {string|null} [cpuLevel] "easy" / "normal" / "hard" なら、ひとりで遊ぶ（CPU と対戦）。省略すると2人で交代
  */
 async function startLocal(seedOverride, cpuLevel = null, options = null) {
+  if (FACTIONS_BETA) { // 4陣営（ベータ）はオンライン対戦だけ（ひとりで遊ぶ・同じ端末は未対応）
+    toast('4陣営（ベータ）はオンライン対戦だけ遊べます', 'info');
+    if (el.title.hidden) openBetaTitle();
+    return;
+  }
   const request=++startRequest;
   $('asset-loading').hidden=false;
   await prepareBattleAssets();
@@ -904,7 +952,7 @@ async function joinOnline() {
   room = null;
   connected = true;
   roomPassphrase = pass;
-  const res = await client.join(pass, name);
+  const res = await client.join(pass, name, FACTIONS_BETA ? 'factions' : undefined);
   el.titleJoin.disabled = false;
   if (session !== client) return; // 待っているあいだに「もどる」を押した
   if (!res.ok) {

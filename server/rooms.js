@@ -263,6 +263,7 @@ export class Room {
   finishMatch(game, payload) {
     const meta = this.matchMeta;
     if (!this.onMatchEnd || !meta || this.game !== game) return;
+    if (this.data.beta) return; // ベータ版のモード：本番の戦績・経験値・通貨に影響させない
     try {
       const seats = meta.seats.map((m) => {
         const won = payload.winnerTeam ? m.team === payload.winnerTeam : m.playerId === payload.winner;

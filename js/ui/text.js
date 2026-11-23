@@ -193,6 +193,9 @@ export function soldierInfo(s, { cards, rules, viewerId }) {
       : `${STATUS_ICON.poison}毒（あと${poison.turns}回）`);
   }
   if (s.statuses?.frozen > 0) parts.push(`${STATUS_ICON.frozen}凍結（あと${s.statuses.frozen}回休み）`);
+  if (s.statuses?.slowed) parts.push(`${STATUS_ICON.slowed}鈍足（速さ-${s.statuses.slowed.amount ?? ''}・あと${s.statuses.slowed.turns}回）`);
+  if (s.statuses?.blinded) parts.push(`${STATUS_ICON.blinded}目くらまし（${Math.round((s.statuses.blinded.chance ?? 0) * 100)}%で外れる・あと${s.statuses.blinded.turns}回）`);
+  if (s.attachments?.length) parts.push(`付着：${s.attachments.map((a) => `${elementName(a.element)}（あと${a.turns}ターン）`).join('・')}`);
   return parts.join('・');
 }
 

@@ -409,6 +409,17 @@ export class Animations {
         model.winnerTeam = p.winnerTeam;
         model.gameOverReason = p.reason ?? null;
         return;
+      case 'elementAttached': return this.elementAttached(p, model);
+      case 'elementCleared': return this.elementCleared(p, model);
+      case 'reactionTriggered': return this.reactionTriggered(p);
+      case 'soldierHealed': return this.soldierHealed(p, model);
+      case 'castleGuardSet': return this.factionNote('🛡️ 身代わりの兵士が城を守る', p.playerId);
+      case 'castleGuarded': return this.factionNote('🛡️ 身代わりが城への攻撃を受けた！', p.playerId, 'block');
+      case 'shieldBroken': return this.factionNote(`盾が砕けた！（${p.amount ?? 0}）`, p.playerId, 'block', p.soldierId);
+      case 'castleHealCut': return this.factionNote(`🩸 城の回復が減る（あと${p.turns}ターン）`, p.playerId);
+      case 'castleHealCutEnded': return this.factionNote('城の回復が元に戻った', p.playerId);
+      case 'collapseAnnounced': return this.banner(`⚠️ ${p.startRound ?? '?'}周目から崩壊が始まる`, UI_CONFIG.timing.shuffle, 'small');
+      case 'collapseStarted': return this.banner('💥 崩壊が始まった！', UI_CONFIG.timing.shuffle, 'small');
       default:
         // 知らないイベント（3人以上の playerEliminated など）は演出しない。最後に getState() で合わせる
         return;
@@ -728,6 +739,74 @@ export class Animations {
   }
 
   /** 霧で攻撃が外れた：外した兵士・魔物の上に「ミス！」。魔法のときは帯 */
+  // ---------- 4陣営：属性の付着・反応・回復・身代わり ----------
+
+  /** 城か兵士の上に短い文字を出す（演出は軽く） */
+  async factionNote(text, playerId, kind = 'block', soldierId = null) {
+    if (this.skipping) return;
+    const el = (soldierId && this.renderer.soldierEl(soldierId)) || this.renderer.castleEl?.(playerId);
+    if (el) {
+      const small = UI_CONFIG.smallNumber;
+      this.number(el, text, { size: small.size, duration: small.duration, kind });
+    } else {
+      this.banner(text, UI_CONFIG.timing.shuffle, 'small');
+    }
+    await this.delay(UI_CONFIG.timing.statusCleared);
+  }
+
+  patchAttachments(model, { playerId, soldierId }, fn) {
+    const s = this.modelSoldier(model, playerId, soldierId);
+    const r = this.renderer.soldier(soldierId);
+    const base = s?.attachments ?? r?.attachments ?? [];
+    const attachments = fn(base.map((a) => ({ ...a })));
+    if (s) s.attachments = attachments;
+    this.renderer.updateSoldier(soldierId, { attachments });
+  }
+
+  async elementAttached(p, model) {
+    this.patchAttachments(model, p, (list) => {
+      const found = list.find((a) => a.element === p.element);
+      if (found) found.turns = p.turns; else list.push({ element: p.element, turns: p.turns });
+      return list;
+    });
+    if (this.skipping) return;
+    const el = this.renderer.soldierEl(p.soldierId);
+    const look = ELEMENT_LOOK[p.element];
+    if (el && look) this.number(el, `${look.icon}${look.name}付着`, { size: UI_CONFIG.smallNumber.size, duration: UI_CONFIG.smallNumber.duration, kind: 'block' });
+    await this.delay(UI_CONFIG.timing.statusCleared);
+  }
+
+  async elementCleared(p, model) {
+    this.patchAttachments(model, p, (list) => list.filter((a) => a.element !== p.element));
+    await this.delay(0);
+  }
+
+  async reactionTriggered(p) {
+    if (this.skipping) return;
+    const el = this.renderer.soldierEl(p.soldierId);
+    const icons = (p.elements ?? []).map((e) => ELEMENT_LOOK[e]?.icon ?? '').join('');
+    const text = `${icons}${p.name ?? p.reaction ?? '反応'}！`;
+    sound.play('block');
+    if (el) {
+      const small = UI_CONFIG.smallNumber;
+      this.number(el, text, { size: small.size * 1.3, duration: small.duration * 1.3, kind: 'poison' });
+      this.shake(el.querySelector('.soldier-token') ?? el, 4, 240);
+    } else {
+      this.banner(text, UI_CONFIG.timing.shuffle, 'small');
+    }
+    await this.delay(UI_CONFIG.timing.afterSoldierHit);
+  }
+
+  async soldierHealed(p, model) {
+    const s = this.modelSoldier(model, p.playerId, p.soldierId);
+    if (s) s.hp = p.hp;
+    this.renderer.updateSoldier(p.soldierId, { hp: p.hp });
+    if (this.skipping) return;
+    const el = this.renderer.soldierEl(p.soldierId);
+    if (el) this.number(el, `💚+${p.amount}`, { size: UI_CONFIG.smallNumber.size, duration: UI_CONFIG.smallNumber.duration, kind: 'heal' });
+    await this.delay(UI_CONFIG.timing.statusCleared);
+  }
+
   async attackMissed({ soldierId, monsterId, kind }) {
     if (this.skipping) return;
     const el = soldierId ? this.renderer.soldierEl(soldierId) : monsterId ? this.renderer.monsterEl(monsterId) : null;
@@ -1814,6 +1893,10 @@ export class Animations {
         statuses.frozen = a.turns;
       } else if (a.status === 'burn') {
         statuses.burn = { amount: a.amount ?? null, turns: a.turns };
+      } else if (a.status === 'slowed') {
+        statuses.slowed = { amount: a.amount ?? null, turns: a.turns };
+      } else if (a.status === 'blinded') {
+        statuses.blinded = { chance: a.chance ?? null, turns: a.turns };
       }
       if (s) s.statuses = statuses;
       this.renderer.updateSoldier(a.soldierId, { statuses });
@@ -1824,7 +1907,7 @@ export class Animations {
       const el = this.renderer.soldierEl(a.soldierId);
       if (!el) continue;
       const icon = STATUS_ICON[a.status] ?? '';
-      this.number(el, `${icon}${{ poison: '毒', frozen: '凍結', burn: 'やけど' }[a.status] ?? ''}`, { size: small.size, duration: small.duration, kind: a.status });
+      this.number(el, `${icon}${{ poison: '毒', frozen: '凍結', burn: 'やけど', slowed: '鈍足', blinded: '目くらまし' }[a.status] ?? ''}`, { size: small.size, duration: small.duration, kind: a.status });
       el.classList.add(`apply-${a.status}`);
       // 凍結：氷がパキッと閉じる。毒：毒のけむりが立ちのぼる
       const c = this.centerOf(el);
@@ -1854,6 +1937,8 @@ export class Animations {
     if (status === 'poison') statuses.poison = null;
     if (status === 'frozen') statuses.frozen = 0;
     if (status === 'burn') statuses.burn = null;
+    if (status === 'slowed') statuses.slowed = null;
+    if (status === 'blinded') statuses.blinded = null;
     if (s) s.statuses = statuses;
     this.renderer.updateSoldier(soldierId, { statuses });
     // 凍結がとける：氷がくだけて、兵士がぶるっと動き出す
