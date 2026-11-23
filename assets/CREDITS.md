@@ -555,3 +555,33 @@ OpenAI画像生成（ChatGPT）で作成。利用条件は OpenAI Terms of Use�
 - `skins/back-rank-{iron,bronze,silver,gold,platinum,diamond,master,champion}-relief.png` — 自作スクリプト（`node js/ui/build-card-relief.js`）で、同じ名前のランクの裏の絵（`skins/back-rank-*.png`）から自動生成（高さ・法線・材質の地図）。3Dの拡大表示（`js/ui/CardGL.js`）で裏を本物の凹凸のメッシュにするために使う。絵柄は含まない。利用条件は元の絵と同じ
 - 2026-11-20：`cards/relief/*` と `skins/back-rank-*-relief.png` を `node js/ui/build-card-relief.js` で作り直した（宝石を部品ごとに判定して穴・破片をなくし、カットした石の形に。部品を大きさに合わせてふくらませる。裏は地の模様を低く、紋章を高く）。絵柄は変えていない
 - 2026-11-20：`cards/relief/*` と `skins/back-rank-*-relief.png` を、色ではなく形の部品（`js/ui/card-shapes.js`：枠の外形・はみ出す飾り・名前の帯・メダル・宝石・紋章の輪と葉など）から作り直した。絵柄は変えていない
+
+## 3Dフィールドモデル6種（2026-11-23）
+
+PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）および `field-layout.svg` の寸法（幅12m×奥行20m・中央 `|X| < 4.2` フラット・外周小物）に基づき、Blender 5.3 の Python スクリプト（`assets/models/make-fields.py`）でプロシージャル生成・glTF 2.0（GLB）書き出し。外部3Dアセットや外部テクスチャは不使用。地面の色むらは頂点カラー（`COLOR_0`）で表現。
+
+| ファイル | 作成ツール | 利用条件 | 作成日 |
+|---|---|---|---|
+| `models/field-meadow.glb` | Blender 5.3 / `assets/models/make-fields.py`（本格造形版：切石積み擁壁・2層段丘・板根付き大木・5弁野花・ファセット岩・768×1024プロシージャル手描き風地面テクスチャ内蔵） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-lava.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-ice.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-ruins.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-dark-forest.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-desert.glb` | Blender 5.3 / `assets/models/make-fields.py` | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/make-fields.py` | 手書き Python（bpy / bmesh） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/make-battle-models.py` | 手書き Python（bpy / bmesh）：王城・要塞・歩兵・騎士・魔法使いの高品質3D造形＆階層アニメーションリグ生成スクリプト | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/castle-{standard,fortress}.glb` | Blender 5.3 / `assets/models/make-battle-models.py`（本格造形版：切石レリーフ・翼紋章・アーチ門・ステンドグラス背面壁・8パーツ階層崩壊リグ内蔵） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/castle-{tower,barracks}.glb` | Blender 5.3 プロシージャル生成（城2種） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/field-stone.glb` | Blender 5.3 プロシージャル生成（踏み石） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/unit-{infantry,knight,mage}.glb` | Blender 5.3 / `assets/models/make-battle-models.py`（本格造形版：2頭身ちびキャラ・軍馬騎乗・発光宝玉杖・関節階層アニメーションリグ内蔵） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/unit-{spearman,heavy,archer,assassin,dragon,hero}.glb` | Blender 5.3 プロシージャル生成（兵士6種） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/monster-{slime,goblin,dragon,golem,demon,mimic}.glb` | Blender 5.3 プロシージャル生成（魔物6種） | 本リポジトリのコードと同一 | 2026-11-23 |
+
+### 通常モード3D統合での追加（2026-11-23）
+
+| ファイル | 作った道具 | ライセンス・利用条件 | 日付 |
+|---|---|---|---|
+| `models/qa-audit-glb.py` | 手書き Python（bpy）：GLBの寸法・接地・材質・法線・リグ名を測り、正面・斜め・側面を描く検査 | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/fix-ground-contact.py` | 手書き Python：GLBのJSONのルート位置だけを動かして接地（形・材質・階層は不変） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/monster-{demon,dragon,goblin,mimic,slime}.glb`・`models/unit-dragon.glb` | 上の接地補正を適用（Blender 5.3 で最下面 y=0 を確認） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `review/battle-3d-qa/**` | 検査結果（`report.json`）・Blenderの比較画像・ゲーム画面のスクリーンショット | 本リポジトリのコードと同一 | 2026-11-23 |
