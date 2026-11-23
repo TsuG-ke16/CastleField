@@ -450,6 +450,7 @@ async function boot() {
   if (FACTIONS_BETA) {
     document.documentElement.classList.add('faction-beta');
     const badge = document.createElement('div');
+    document.body.classList.add('faction-beta');
     badge.className = 'faction-beta-badge'; badge.textContent = '4陣営（ベータ）'; badge.setAttribute('aria-hidden', 'true');
     document.body.append(badge);
   }

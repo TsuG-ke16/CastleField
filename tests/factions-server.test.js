@@ -238,3 +238,25 @@ test('HTTP：/api/join に mode: "factions" を付けると4陣営の部屋に�
     server.close();
   }
 });
+
+test('ベータ分離：4陣営の試合は onMatchEnd（戦績・経験値・ミッション）に渡さない。通常モードは渡す', () => {
+  const ended = [];
+  let seed = 1;
+  const lobby = new Lobby(loadData(), () => seededRng(seed++), { cpuDelayMs: 0, modeData: loadModeData(), onMatchEnd: (m) => ended.push(m.modeId) });
+  assert.equal(loadData(undefined, 'factions').beta, true);
+  assert.equal(loadData().beta, false);
+  const play = (mode) => {
+    const r = lobby.join(`beta-${mode}`, 'A', null, mode);
+    const { room, seat } = lobby.findSeat(r.token);
+    room.connect(seat, () => {});
+    room.action(seat, 'addCpu', ['hard']);
+    room.action(seat, 'start', []);
+    // 降参で決着させる（記録の対象になる経路）
+    room.action(seat, 'surrender', []);
+    return room;
+  };
+  play('factions');
+  assert.deepEqual(ended, [], 'ベータ版の試合は記録しない');
+  play(null);
+  assert.equal(ended.length, 1, '通常モードは今までどおり記録する');
+});
