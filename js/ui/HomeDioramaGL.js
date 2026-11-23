@@ -706,7 +706,7 @@ export class HomeDioramaGL {
    * @param {string} [opts.skyMode]    'auto' | 'dawn' | 'day' | 'dusk' | 'night'
    * @param {boolean} [opts.use3D]     false=軽量Cyclesプリレンダ（デフォルト） / true=リアルタイム3D
    */
-  constructor({ skyEl, heroEl, homeEl, viewMode = 'overview', faction = 'kingdom', skyMode = 'auto', use3D = false }) {
+  constructor({ skyEl, heroEl, homeEl, viewMode = 'overview', faction = 'kingdom', skyMode = 'auto', use3D = true }) {
     this.skyEl = skyEl;
     this.heroEl = heroEl;
     this.homeEl = homeEl;
@@ -741,6 +741,7 @@ export class HomeDioramaGL {
     this.emissiveMats = [];
     this.factionLights = [];
     this.waterMats = [];
+    this.bloomAuras = [];
     this.lastClockSync = 0;
     this.rafId = 0;
     this.lastFrameTs = 0;
@@ -820,12 +821,14 @@ export class HomeDioramaGL {
         this.resize();
         if (this.visible) this.startLoop();
       } else if (!this.initializing3D) {
-        // 3D読み込み中も宇宙2D背景を出して待つ
+        // 3D初回読み込み中（一瞬の間）も背景透過Cycles画像＋2D宇宙星空を出してシームレスに繋ぐ
+        if (this.prerenderWrap) this.prerenderWrap.hidden = false;
         this.backdrop2D.mount();
         this.applySkyPhase(true);
+        this.updatePrerenderImage(true);
         if (this.visible) this.startLoop();
         this.init3D().catch((err) => {
-          console.warn('[HomeDioramaGL] 3D初期化に失敗したため高画質プリレンダへ切替えます:', err?.message ?? err);
+          console.warn('[HomeDioramaGL] 3D初期化に失敗したため省電力プリレンダへ切替えます:', err?.message ?? err);
           this.failed3D = true;
           this.use3D = false;
           this.applyRenderMode();
@@ -946,6 +949,7 @@ export class HomeDioramaGL {
     this.dioramaRoot = new THREE.Group();
     this.dioramaRoot.add(model);
     this.buildWaterfallMistParticles(THREE, this.dioramaRoot);
+    this.buildBloomAuras(THREE, this.dioramaRoot);
     this.dioramaRoot.visible = (this.activeTab === 'battle');
     scene.add(this.dioramaRoot);
 
@@ -1006,6 +1010,44 @@ export class HomeDioramaGL {
       blending: THREE.AdditiveBlending,
     });
     parent.add(new THREE.Points(geo, this.wfMistMat));
+  }
+
+  buildBloomAuras(THREE, parent) {
+    // 軽量ビルボード加算グロー（iPhone 14+ で 60fps 負荷ほぼゼロのまま Cycles の Bloom に迫る発光感を再現！）
+    const auraSpecs = [
+      // 魔族軍（東 +X）：大紫水晶コア＋門前ジオード2基
+      { pos: [20.6, 11.4, 0.0], color: '#d872ff', scale: 9.2, opacity: 0.46, kind: 'crystal', phase: 0.0 },
+      { pos: [16.2, 2.3, -3.5], color: '#c45cff', scale: 4.4, opacity: 0.34, kind: 'crystal', phase: 1.4 },
+      { pos: [16.2, 2.3, 3.5], color: '#c45cff', scale: 4.4, opacity: 0.34, kind: 'crystal', phase: 2.7 },
+      // 竜族帝国（南 +Z）：屋上4隅の篝火＋溶鉱炉ゲート
+      { pos: [-4.2, 8.1, 17.6], color: '#ff8a38', scale: 5.2, opacity: 0.46, kind: 'flame', phase: 0.3 },
+      { pos: [4.2, 8.1, 17.6], color: '#ff8a38', scale: 5.2, opacity: 0.46, kind: 'flame', phase: 1.9 },
+      { pos: [-4.2, 8.0, 23.4], color: '#ff7a2e', scale: 4.8, opacity: 0.40, kind: 'flame', phase: 3.1 },
+      { pos: [4.2, 8.0, 23.4], color: '#ff7a2e', scale: 4.8, opacity: 0.40, kind: 'flame', phase: 4.5 },
+      { pos: [0.0, 2.5, 16.5], color: '#ff9642', scale: 5.6, opacity: 0.42, kind: 'flame', phase: 0.8 },
+      // 王国（北 -Z）：金色尖塔トップ＋正門の暖かい灯り
+      { pos: [0.0, 14.2, -20.6], color: '#ffe09c', scale: 4.8, opacity: 0.28, kind: 'warm', phase: 0.5 },
+      { pos: [0.0, 2.4, -15.8], color: '#ffd484', scale: 4.2, opacity: 0.24, kind: 'warm', phase: 2.1 },
+      // 森の同盟（西 -X）：聖域の暖炉門＋苔岩の妖精蛍グロー
+      { pos: [-16.2, 2.1, 0.0], color: '#ffcf74', scale: 4.4, opacity: 0.30, kind: 'warm', phase: 1.1 },
+      { pos: [-24.5, 2.2, -6.4], color: '#8effb8', scale: 3.4, opacity: 0.26, kind: 'crystal', phase: 2.4 },
+      { pos: [-24.5, 2.2, 6.4], color: '#8effb8', scale: 3.4, opacity: 0.26, kind: 'crystal', phase: 3.8 },
+    ];
+    for (const s of auraSpecs) {
+      const mat = new THREE.SpriteMaterial({
+        map: this.dotTex,
+        color: s.color,
+        transparent: true,
+        opacity: s.opacity,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      const sp = new THREE.Sprite(mat);
+      sp.position.set(...s.pos);
+      sp.scale.set(s.scale, s.scale, 1);
+      parent.add(sp);
+      this.bloomAuras.push({ sprite: sp, mat, baseScale: s.scale, baseOpacity: s.opacity, kind: s.kind, phase: s.phase });
+    }
   }
 
   buildSkyDome(THREE, scene) {
@@ -1460,6 +1502,33 @@ export class HomeDioramaGL {
     // 動く水面＆4本の滝シェーダーの時間を進める！
     for (const wm of this.waterMats) {
       wm.uniforms.uTime.value = this.elapsed;
+    }
+
+    // ビルボード擬似Bloomオーラ＆陣営ライトの「生きている炎・魔力・ランタンのゆらぎ」
+    const pScale = this.currentPhase?.pointScale ?? 1.0;
+    const auraMult = Math.max(0.45, Math.min(1.45, (this.currentPhase?.emissiveScale ?? 1.2) * 0.68));
+    for (const a of this.bloomAuras) {
+      if (reduced) {
+        a.mat.opacity = a.baseOpacity * auraMult;
+        a.sprite.scale.set(a.baseScale, a.baseScale, 1);
+        continue;
+      }
+      let pulse = 1.0;
+      if (a.kind === 'flame') {
+        pulse = 0.88 + 0.14 * Math.sin(this.elapsed * 6.8 + a.phase) + 0.08 * Math.sin(this.elapsed * 13.4 + a.phase * 2.1);
+      } else if (a.kind === 'crystal') {
+        pulse = 0.90 + 0.14 * Math.sin(this.elapsed * 2.2 + a.phase);
+      } else {
+        pulse = 0.94 + 0.07 * Math.sin(this.elapsed * 3.1 + a.phase);
+      }
+      a.mat.opacity = a.baseOpacity * auraMult * pulse;
+      const sc = a.baseScale * (0.94 + 0.09 * pulse);
+      a.sprite.scale.set(sc, sc, 1);
+    }
+    if (!reduced && this.factionLights.length >= 5) {
+      // [3]=Demon crystal pulse, [4]=Dragon fire flicker
+      this.factionLights[3].light.intensity = this.factionLights[3].base * pScale * (0.92 + 0.12 * Math.sin(this.elapsed * 2.4));
+      this.factionLights[4].light.intensity = this.factionLights[4].base * pScale * (0.90 + 0.12 * Math.sin(this.elapsed * 7.2) + 0.06 * Math.cos(this.elapsed * 14.1));
     }
 
     // 滝壺ミスト粒のふわふわ舞い散りアニメ

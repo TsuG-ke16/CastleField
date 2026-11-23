@@ -97,7 +97,7 @@ export class Home {
    * @param {(type: string) => void} [o.onZoomCard] カードを大きく見せる（CardZoom）
    * @param {object} [o.cards] @param {object} [o.rarities] @param {object} [o.rules] @param {object} [o.decks] デッキの中身を見せるのに使う（data/ の中身）
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {}, skyMode = 'auto', home3d = false }) {
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {}, skyMode = 'auto', home3d = true }) {
     Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks, ruleset, factions, onRuleset, skyMode, home3d });
     this.deckSort = 'rarity';
     this.data = null;

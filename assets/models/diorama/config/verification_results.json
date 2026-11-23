@@ -60,14 +60,14 @@
     ]
   },
   "glb_check": {
-    "file_size_kb": 11155.3,
-    "imported_objects": 49,
+    "file_size_kb": 6482.9,
+    "imported_objects": 37,
     "imported_cameras": 10,
     "imported_materials": 18,
     "mesh_health": {
       "mesh_count": 23,
-      "total_polygons": 205112,
-      "total_triangles": 205112,
+      "total_polygons": 120652,
+      "total_triangles": 120652,
       "nan_vertices": 0,
       "degenerate_faces": 0,
       "meshes_without_material": []
@@ -75,17 +75,17 @@
     "world_bounds_min": [
       -59.392,
       -57.652,
-      -41.646
+      -41.641
     ],
     "world_bounds_max": [
       59.457,
       57.376,
-      15.096
+      15.095
     ],
     "world_size_m": [
       118.85,
       115.028,
-      56.743
+      56.736
     ]
   },
   "deliverables_check": {

@@ -571,7 +571,7 @@ def build_all():
     # Metadata JSONs
     inventory = export_metadata(scene, cam_json, mats)
 
-    # Save editable .blend (pack all Tripo PBR + Normal + Emissive textures inside .blend!)
+    # Save full-detail editable .blend (pack all Tripo PBR + Normal + Emissive textures inside .blend!)
     try:
         bpy.ops.file.pack_all()
     except Exception:
@@ -579,7 +579,30 @@ def build_all():
     blend_path = DIORAMA_DIR / 'castle_field_diorama.blend'
     bpy.ops.wm.save_as_mainfile(filepath=str(blend_path))
 
-    # Export WebGL-ready .glb (Y-up, JPEG compressed PBR textures for fast mobile web load!)
+    # Optimize in-memory copy strictly for iPhone 14+ 60fps WebGL .glb export (keeps .blend full-res!):
+    # 1. Gentle decimation on dense Tripo meshes (205k -> ~115k tris, razor-sharp on mobile Retina OLED)
+    # 2. Scale oversized Tripo 2K textures down to mobile-optimal max 1024px (island) / 768px (castles)
+    if USE_TRIPO_ISLAND:
+        tripo_targets = {
+            'Tripo_Floating_Island_Base': 0.54,
+            'Castle_Kingdom_Hero': 0.56,
+            'Castle_Forest_Hero': 0.56,
+            'Castle_Demon_Hero': 0.56,
+            'Castle_Dragon_Hero': 0.56,
+        }
+        for obj_name, ratio in tripo_targets.items():
+            o = bpy.data.objects.get(obj_name)
+            if o and o.type == 'MESH' and len(o.data.polygons) > 10000:
+                mod = o.modifiers.new(name='WebGL_Decimate', type='DECIMATE')
+                mod.ratio = ratio
+                mod.use_collapse_triangulate = True
+        for img in bpy.data.images:
+            if img.size[0] >= 2048 or img.size[1] >= 2048:
+                img.scale(1024, 1024)
+            elif img.size[0] >= 1024 or img.size[1] >= 1024:
+                img.scale(768, 768)
+
+    # Export WebGL-ready .glb (Y-up, JPEG compressed PBR textures, NO embedded Cycles lights so Three.js lighting stays exact!)
     glb_path = DIORAMA_DIR / 'castle_field_diorama.glb'
     bpy.ops.export_scene.gltf(
         filepath=str(glb_path),
@@ -587,10 +610,10 @@ def build_all():
         export_yup=True,
         export_apply=True,
         export_cameras=True,
-        export_lights=True,
+        export_lights=False,
         export_materials='EXPORT',
         export_image_format='JPEG',
-        export_image_quality=88,
+        export_image_quality=82,
         export_draco_mesh_compression_enable=False,
     )
 
