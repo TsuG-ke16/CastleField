@@ -358,12 +358,12 @@ async function boot() {
       if (res && !res.ok) toast(reasonText(res.reason));
     },
   });
-  settings = new Settings((value) => { if (!hasAccountName()) el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); });
+  settings = new Settings((value) => { if (!hasAccountName()) el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); home?.setSkyMode?.(value.homeSky); });
   // アカウント：サーバーにアカウント機能があるときだけボタンを出す（なければ今までどおり）
   const accountPanel = new AccountPanel({ toast });
   const profileView = new ProfileView({ toast, onChanged: () => home.refresh() });
   home = new Home({
-    toast, cards, rarities, rules, decks, ruleset:gameMode, factions:factionDefinitions,
+    toast, cards, rarities, rules, decks, ruleset:gameMode, factions:factionDefinitions, skyMode:settings.value.homeSky,
     onRuleset: (id) => {
       try { localStorage.setItem('cf-home-ruleset',id); } catch { /* optional */ }
       location.assign(rulesetUrl(location.href,id));

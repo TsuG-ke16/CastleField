@@ -1,17 +1,19 @@
 import { UI_CONFIG } from './config.js';
 import { sound } from './Sound.js';
+import { HOME_SKY_MODES, HOME_SKY_LABELS } from './HomeDioramaGL.js';
 const KEY = 'cf-settings-v1';
 const speeds = { normal: 1.8, fast: .65, skip: 0 };
 export class Settings {
   constructor(onChange = () => {}) {
     this.onChange = onChange;
-    this.value = { sfx: .5, bgm: .3, speed: 'normal', reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, text: 'normal', name: '' };
+    this.value = { sfx: .5, bgm: .3, speed: 'normal', reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, text: 'normal', homeSky: 'auto', name: '' };
     try {
       const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null');
       if (saved && typeof saved === 'object') {
         for (const k of ['sfx','bgm']) if (Number.isFinite(saved[k])) this.value[k] = Math.max(0,Math.min(1,saved[k]));
         if (Object.hasOwn(speeds,saved.speed)) this.value.speed = saved.speed;
         if (['small','normal','large'].includes(saved.text)) this.value.text = saved.text;
+        if (HOME_SKY_MODES.includes(saved.homeSky)) this.value.homeSky = saved.homeSky;
         if (typeof saved.reduced === 'boolean') this.value.reduced = saved.reduced;
         if (typeof saved.name === 'string') this.value.name = saved.name.slice(0,16);
       } else this.value.name = localStorage.getItem('cf-name') ?? '';
@@ -19,7 +21,7 @@ export class Settings {
     this.box = document.createElement('div'); this.box.id = 'settings'; this.box.className = 'screen dim'; this.box.hidden = true;
     this.box.setAttribute('role','dialog'); this.box.setAttribute('aria-modal','true'); this.box.setAttribute('aria-labelledby','settings-title');
     // 見た目はピル型のボタン。中身の select / checkbox は隠して残し、値の読み書きは今までどおりそこで行う
-    const pills=(name,label,options)=>`<div class="set-row"><span class="set-name">${label}</span><div class="pill-group" role="group" aria-label="${label}" data-for="${name}">${options.map(([v,t])=>`<button type="button" class="pill" data-value="${v}">${t}</button>`).join('')}</div></div>`;
+    const pills=(name,label,options,wrap=false)=>`<div class="set-row"><span class="set-name">${label}</span><div class="pill-group${wrap?' pill-wrap':''}" role="group" aria-label="${label}" data-for="${name}">${options.map(([v,t])=>`<button type="button" class="pill" data-value="${v}">${t}</button>`).join('')}</div></div>`;
     this.box.innerHTML = `<div class="screen-box parchment settings-box"><h2 id="settings-title">設定</h2>
       <div class="settings-content">
       <section class="set-group"><h3>サウンド</h3>
@@ -27,6 +29,8 @@ export class Settings {
         <label class="set-row"><span class="set-name">BGM</span><input name="bgm" type="range" min="0" max="1" step=".05"><output id="bgm-value"></output></label>
       </section>
       <section class="set-group"><h3>画面と演出</h3>
+        ${pills('homeSky','ホームの空（時間帯）',HOME_SKY_MODES.map((k)=>[k,HOME_SKY_LABELS[k]]),true)}
+        <p class="set-note">基本は現在時刻に合わせて宇宙と光が変化します。好みの時間帯に固定もできます。</p>
         ${pills('speed','演出の速さ',[['normal','ふつう'],['fast','はやい'],['skip','スキップ']])}
         ${pills('reduced','動きを減らす',[['true','ON'],['false','OFF']])}
         <p class="set-note">揺れや点滅を抑え、カードの獲得は静止画で表示します。</p>
@@ -45,6 +49,7 @@ export class Settings {
         <button type="button" class="small-btn set-record-clear">戦績をリセット</button>
       </section>
       </div>
+      <select name="homeSky" hidden>${HOME_SKY_MODES.map((k)=>`<option value="${k}"></option>`).join('')}</select>
       <select name="speed" hidden><option value="normal"></option><option value="fast"></option><option value="skip"></option></select>
       <input name="reduced" type="checkbox" hidden>
       <select name="text" hidden><option value="small"></option><option value="normal"></option><option value="large"></option></select>
