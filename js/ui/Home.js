@@ -832,7 +832,7 @@ export class Home {
     if(e.target.closest('[data-close-sheet]')) { this.closeSheets(); return; }
     const world=e.target.closest('[data-ruleset]');
     if(world?.tagName==='BUTTON') { if(world.dataset.ruleset!==this.ruleset) this.onRuleset(world.dataset.ruleset); return; }
-    const faction=e.target.closest('[data-faction]');
+    const faction=e.target.closest('.home-deck-choice[data-faction]'); // 陣営のカード（mountMiniCard）も data-faction を持つので、陣営を選ぶボタンだけに絞る
     if(faction) { this.faction=faction.dataset.faction; try{localStorage.setItem('cf-home-faction',this.faction)}catch{} this.closeSheets();this.renderDeck();return; }
     const choose=e.target.closest('[data-choose-slot]');
     if(choose) { const slot=Number(choose.dataset.chooseSlot),deck=loadDecks().slots[slot];this.closeSheets(); if(!deck || !checkCostDeck(deck.list,this.cards,this.rarities,this.rules).ok) return this.onDeck(slot);selectMyDeck(slot);this.renderDeck();return; }

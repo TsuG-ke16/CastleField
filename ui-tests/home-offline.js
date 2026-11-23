@@ -15,7 +15,7 @@ try {
   await page.waitForFunction(()=>Boolean(navigator.serviceWorker.controller));
   await context.setOffline(true);await page.reload();await page.locator('#home.home-local:not([hidden])').waitFor();
   await page.locator('.home-world[data-ruleset=factions]').click();await page.locator('#home[data-ruleset=factions]:not([hidden])').waitFor();
-  await page.locator('[data-act=chooseDeck]').first().click();await page.locator('[data-faction=dragon]').click();
+  await page.locator('[data-act=chooseDeck]').first().click();await page.locator('.home-deck-choice[data-faction=dragon]').click();
   await page.locator('.home-deck-fan-mini img').evaluate(im=>im.decode());
   await page.screenshot({path:new URL('home.png',out).pathname});
   await page.locator('[data-act=chooseMode]').click();await page.locator('.home-mode[data-mode=local]').click();

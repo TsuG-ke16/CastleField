@@ -73,8 +73,8 @@ try {
   const url=new URL(base);url.search='?home=1&debug=1&field3d=2d&seed=8';await page.goto(url.href);await ready(page);
   await page.locator('.home-world[data-ruleset=factions]').click();await ready(page);
   assert.equal(new URL(page.url()).searchParams.get('mode'),'factions');
-  await page.locator('[data-act=chooseDeck]').first().click();assert.equal(await page.locator('[data-faction]').count(),4);
-  await shot(page,'faction-sheet');await page.locator('[data-faction=dragon]').click();
+  await page.locator('[data-act=chooseDeck]').first().click();assert.equal(await page.locator('.home-deck-choice[data-faction]').count(),4);
+  await shot(page,'faction-sheet');await page.locator('.home-deck-choice[data-faction=dragon]').click();
   assert.equal(await page.locator('.home-deckpanel-name').innerText(),'竜族帝国');
   await page.locator('.home-deck-fan-mini img').evaluate(im=>im.decode());await shot(page,'factions-home');
   await page.locator('[data-act=chooseMode]').click();assert.equal(await page.locator('.home-mode[data-mode=online]').isDisabled(),true);await page.keyboard.press('Escape');
