@@ -220,9 +220,21 @@ def _raycast_surface_z(obj, x, y):
     return (obj.matrix_world @ loc).z
 
 
+def _raycast_from_outside_r(obj, ang, z):
+    inv = obj.matrix_world.inverted()
+    ca, sa = math.cos(ang), math.sin(ang)
+    p0 = Vector((42.0 * ca, 42.0 * sa, z))
+    d = Vector((-ca, -sa, 0.0))
+    ok, loc, norm, idx = obj.ray_cast(inv @ p0, (inv.to_3x3() @ d).normalized())
+    if not ok:
+        return None
+    w = obj.matrix_world @ loc
+    return math.hypot(w.x, w.y)
+
+
 def build_tripo_island_scene(cols, mats):
-    """Import optimized Tripo 4-biome floating island, rotate +45 deg onto exact N/W/E/S pads,
-    dynamically raycast each circular stone pad's exact Z height, and add subtle lantern & mist accents."""
+    """Import optimized Tripo 4-biome floating island, rotate +45 deg & center-lock onto exact N/W/E/S axes,
+    overlay crisp sculpted stone bridge stairs & parapet lanterns, and add UV-mapped animated water & waterfalls."""
     import numpy as np
 
     before = set(bpy.data.objects)
@@ -233,10 +245,10 @@ def build_tripo_island_scene(cols, mats):
         for c in list(o.users_collection):
             c.objects.unlink(o)
         if o.type == 'MESH':
-            # Clear parent while keeping world transform, then rotate +45 deg CCW so 4 circular pads align on N/W/E/S!
+            # Clear parent while keeping world transform, rotate +45 deg CCW, and lock plaza/bridge cross-center!
             wm = o.matrix_world.copy()
             o.parent = None
-            o.matrix_world = Matrix.Rotation(math.radians(45.0), 4, 'Z') @ wm
+            o.matrix_world = Matrix.Translation((-0.65, 0.65, 0.0)) @ Matrix.Rotation(math.radians(45.0), 4, 'Z') @ wm
             o.name = 'Tripo_Floating_Island_Base'
             cols['Island_Base'].objects.link(o)
             island_obj = o
@@ -277,7 +289,7 @@ def build_tripo_island_scene(cols, mats):
                 best = (sx, sy, sz)
         return best
 
-    # Subtle glowing neutral plaza lanterns perched cleanly on the actual scanned Tripo balustrade crest!
+    # 1. Neutral plaza lanterns perched cleanly on the actual scanned Tripo balustrade crest!
     bm_plaza_iron = bmesh.new()
     bm_plaza_glow = bmesh.new()
     for deg in (32, 58, 122, 148, 212, 238, 302, 328):
@@ -289,57 +301,289 @@ def build_tripo_island_scene(cols, mats):
     mesh_from_bmesh(bm_plaza_iron, 'Plaza_Lantern_Iron', cols['Central_Plaza'], mats['iron_dark'], smooth=False)
     mesh_from_bmesh(bm_plaza_glow, 'Plaza_Lantern_Glow', cols['Central_Plaza'], mats['glow_warm'], smooth=True)
 
-    # Grounded bridge-crest lanterns & carved stone road threshold bollards along the 4 cardinal bridges!
+    # 2. Crisp Sculpted Stone Bridge Steps + Approach Landings (completely replaces smeared blue Tripo stairs!)
+    bm_steps = bmesh.new()
+    bm_trim = bmesh.new()
     bm_br_iron = bmesh.new()
     bm_br_glow = bmesh.new()
     bm_rd_stone = bmesh.new()
     bm_rd_iron = bmesh.new()
     bm_rd_glow = bmesh.new()
+
     for name, cfg in LAYOUT['castles'].items():
         dx, dy = cfg['dir']
         rot_z = math.atan2(dy, dx)
         xf = Matrix.Rotation(rot_z, 4, 'Z')
+
+        # Auto-detect exact bridge lateral deck center y_c and inner parapet bounds at arch crown (r ~ 12.6)
+        y_scan = [round(-2.6 + 0.15 * i, 2) for i in range(35)]
+        deck_ys = []
+        parapet_lo = -1.6
+        parapet_hi = 1.6
+        if island_obj:
+            zs_y = []
+            for yy in y_scan:
+                pw = xf @ Vector((12.6, yy, 0.0))
+                zs_y.append((yy, _raycast_surface_z(island_obj, pw.x, pw.y)))
+            deck_ys = [yy for yy, zz in zs_y if zz is not None and 1.25 < zz < 2.15]
+            if len(deck_ys) >= 4:
+                parapet_lo = min(deck_ys)
+                parapet_hi = max(deck_ys)
+        y_mid = 0.5 * (parapet_lo + parapet_hi)
+        step_w = max(1.95, min(2.65, (parapet_hi - parapet_lo) + 0.18))
+
+        # Measure exact arch longitudinal profile z(r) along y_mid from r=8.2 to r=16.0
+        r_samples = [8.2 + 0.28 * i for i in range(29)]  # 8.2 .. 16.04
+        prof = []
+        for rr in r_samples:
+            pw = xf @ Vector((rr, y_mid, 0.0))
+            zz = _raycast_surface_z(island_obj, pw.x, pw.y) if island_obj else 0.0
+            prof.append((rr, zz if zz is not None else 0.0))
+
+        # Find arch rise start, flat crown [r_c0, r_c1], and descent end
+        z_max = max(z for _, z in prof)
+        crown_rs = [r for r, z in prof if z >= z_max - 0.16]
+        r_c0 = min(crown_rs) if crown_rs else 11.8
+        r_c1 = max(crown_rs) if crown_rs else 13.8
+        z_crown = float(np.median([z for r, z in prof if r_c0 <= r <= r_c1])) + 0.07
+
+        # Build crisp ascending steps (plaza -> crown) with overhanging nosing lips
+        r_asc_start = max(8.55, r_c0 - 2.35)
+        n_asc = 7
+        z_start = -0.02
+        for i in range(n_asc):
+            t0 = i / n_asc
+            t1 = (i + 1) / n_asc
+            rc = r_asc_start + (r_c0 - r_asc_start) * ((i + 0.5) / n_asc)
+            d_step = (r_c0 - r_asc_start) / n_asc
+            z_top = z_start + (z_crown - z_start) * t1
+            z_bot = z_start + (z_crown - z_start) * t0 - 0.55
+            h = z_top - z_bot
+            # Solid step riser + tread body
+            bmesh.ops.create_cube(
+                bm_steps, size=1.0,
+                matrix=xf @ Matrix.Translation((rc, y_mid, z_bot + h * 0.5)) @ Matrix.Diagonal((d_step * 1.12, step_w, h, 1.0)),
+            )
+            # Crisp beveled overhanging sandstone nosing lip
+            bmesh.ops.create_cube(
+                bm_trim, size=1.0,
+                matrix=xf @ Matrix.Translation((rc - d_step * 0.08, y_mid, z_top - 0.025)) @ Matrix.Diagonal((d_step * 1.08, step_w + 0.06, 0.065, 1.0)),
+            )
+
+        # Build flat sculpted crown flagstone deck (r_c0 .. r_c1)
+        crown_len = max(0.8, r_c1 - r_c0)
+        crown_mid = 0.5 * (r_c0 + r_c1)
+        bmesh.ops.create_cube(
+            bm_steps, size=1.0,
+            matrix=xf @ Matrix.Translation((crown_mid, y_mid, z_crown - 0.34)) @ Matrix.Diagonal((crown_len + 0.24, step_w + 0.04, 0.68, 1.0)),
+        )
+        n_slabs = max(3, int(round(crown_len / 0.42)))
+        slab_d = crown_len / n_slabs
+        for si in range(n_slabs):
+            sx = r_c0 + (si + 0.5) * slab_d
+            for ci in range(3):
+                sy = y_mid + (ci - 1.0) * (step_w * 0.32)
+                bmesh.ops.create_cube(
+                    bm_trim, size=1.0,
+                    matrix=xf @ Matrix.Translation((sx, sy, z_crown + 0.02)) @ Matrix.Diagonal((slab_d * 0.90, step_w * 0.30, 0.055, 1.0)),
+                )
+
+        # Build crisp descending steps (crown -> castle forecourt pad)
+        r_desc_end = min(16.1, r_c1 + 2.35)
+        n_desc = 7
+        z_end = cfg['terrace_z'] + 0.04
+        for i in range(n_desc):
+            t0 = i / n_desc
+            t1 = (i + 1) / n_desc
+            rc = r_c1 + (r_desc_end - r_c1) * ((i + 0.5) / n_desc)
+            d_step = (r_desc_end - r_c1) / n_desc
+            z_top = z_crown + (z_end - z_crown) * t0
+            z_bot = z_crown + (z_end - z_crown) * t1 - 0.55
+            h = z_top - z_bot
+            bmesh.ops.create_cube(
+                bm_steps, size=1.0,
+                matrix=xf @ Matrix.Translation((rc, y_mid, z_bot + h * 0.5)) @ Matrix.Diagonal((d_step * 1.12, step_w, h, 1.0)),
+            )
+            bmesh.ops.create_cube(
+                bm_trim, size=1.0,
+                matrix=xf @ Matrix.Translation((rc + d_step * 0.08, y_mid, z_top - 0.025)) @ Matrix.Diagonal((d_step * 1.08, step_w + 0.06, 0.065, 1.0)),
+            )
+
+        # Seamless carved stone landing apron at both plaza foot & castle gate threshold
+        bmesh.ops.create_cube(
+            bm_rd_stone, size=1.0,
+            matrix=xf @ Matrix.Translation((r_asc_start - 0.25, y_mid, z_start - 0.12)) @ Matrix.Diagonal((0.72, step_w + 0.16, 0.28, 1.0)),
+        )
+        bmesh.ops.create_cube(
+            bm_rd_stone, size=1.0,
+            matrix=xf @ Matrix.Translation((r_desc_end + 0.32, y_mid, z_end - 0.14)) @ Matrix.Diagonal((0.88, step_w + 0.24, 0.32, 1.0)),
+        )
+
+        # Perch wrought-iron bridge lanterns accurately on the actual scanned Tripo parapet coping walls!
         for side in (-1.0, 1.0):
-            # Bridge arch crest parapet lantern (scans lateral y to lock onto exact balustrade coping!)
+            # Arch crown parapet lanterns (Bridges collection)
+            y_base = parapet_hi + 0.25 if side > 0 else parapet_lo - 0.25
             br_samples = []
-            for y_off in (1.5, 1.75, 2.0, 2.25, 2.5, 2.75):
-                pw = xf @ Vector((11.2, side * y_off, 0.0))
+            for dy_off in (-0.35, -0.15, 0.0, 0.15, 0.35, 0.55):
+                pw = xf @ Vector((crown_mid, y_base + side * dy_off, 0.0))
                 br_samples.append((pw.x, pw.y))
             b_crest = _find_crest(br_samples)
-            if b_crest is not None and b_crest[2] > 0.25:
-                add_fantasy_lantern(bm_br_iron, bm_br_glow, (b_crest[0], b_crest[1], b_crest[2] - 0.04), scale=0.66)
+            if b_crest is not None and b_crest[2] > 1.8:
+                add_fantasy_lantern(bm_br_iron, bm_br_glow, (b_crest[0], b_crest[1], b_crest[2] - 0.05), scale=0.66)
 
-            # Grounded carved stone threshold bollard + warm lantern flanking each castle entrance approach
-            p_out = xf @ Vector((14.6, side * 2.45, 0.0))
-            z_out = _raycast_surface_z(island_obj, p_out.x, p_out.y) if island_obj else cfg['terrace_z']
-            z_base = (z_out if z_out is not None else cfg['terrace_z']) - 0.12
-            bmesh.ops.create_cube(
-                bm_rd_stone, size=1.0,
-                matrix=Matrix.Translation((p_out.x, p_out.y, z_base + 0.42)) @ Matrix.Rotation(rot_z, 4, 'Z') @ Matrix.Diagonal((0.44, 0.44, 0.84, 1.0)),
-            )
-            bmesh.ops.create_cube(
-                bm_rd_stone, size=1.0,
-                matrix=Matrix.Translation((p_out.x, p_out.y, z_base + 0.88)) @ Matrix.Rotation(rot_z, 4, 'Z') @ Matrix.Diagonal((0.54, 0.54, 0.12, 1.0)),
-            )
-            add_fantasy_lantern(bm_rd_iron, bm_rd_glow, (p_out.x, p_out.y, z_base + 0.94), scale=0.64)
+            # Castle-side parapet end-post lanterns (Roads collection — cleanly perched on real stone wall, never floating in grass!)
+            rd_samples = []
+            for dy_off in (-0.35, -0.15, 0.0, 0.15, 0.35, 0.55):
+                pw = xf @ Vector((r_desc_end - 0.45, y_base + side * dy_off, 0.0))
+                rd_samples.append((pw.x, pw.y))
+            r_crest = _find_crest(rd_samples)
+            if r_crest is not None and r_crest[2] > 0.75:
+                add_fantasy_lantern(bm_rd_iron, bm_rd_glow, (r_crest[0], r_crest[1], r_crest[2] - 0.05), scale=0.62)
+
+    # Warm painterly sandstone vertex colors on the new carved bridge stairs
+    c_st_hi = hex_rgba('#EDE3D1')
+    c_st_lo = hex_rgba('#BCAE96')
+    bm_steps.normal_update()
+    paint_vertex_colors(
+        bm_steps,
+        lambda co, n: lerp_rgba(c_st_lo, c_st_hi, 0.38 + 0.62 * fbm_noise(co.x * 1.15, co.y * 1.15, co.z * 1.4)),
+    )
+    mesh_from_bmesh(bm_steps, 'Bridges_Stone_Stairs', cols['Bridges'], mats['bridge_stone'], smooth=False)
+    mesh_from_bmesh(bm_trim, 'Bridges_Stone_Nosings', cols['Bridges'], mats['plaza_trim'], smooth=False)
     mesh_from_bmesh(bm_br_iron, 'Bridges_Lantern_Iron', cols['Bridges'], mats['iron_dark'], smooth=False)
     mesh_from_bmesh(bm_br_glow, 'Bridges_Lantern_Glow', cols['Bridges'], mats['glow_warm'], smooth=True)
-    mesh_from_bmesh(bm_rd_stone, 'Roads_Threshold_Bollards', cols['Roads'], mats['plaza_trim'], smooth=False)
+    mesh_from_bmesh(bm_rd_stone, 'Roads_Approach_Landings', cols['Roads'], mats['plaza_trim'], smooth=False)
     mesh_from_bmesh(bm_rd_iron, 'Roads_Threshold_Iron', cols['Roads'], mats['iron_dark'], smooth=False)
     mesh_from_bmesh(bm_rd_glow, 'Roads_Threshold_Glow', cols['Roads'], mats['glow_warm'], smooth=True)
 
-    # Subtle mist spray wisps tucked right under the bottom lip of the 4 diagonal Tripo waterfalls (Water collection!)
+    # 3. Dedicated UV-Mapped Living Water Surface (Ring Moat + 4 Diagonal Rivers -> Animated in Three.js!)
+    bm_water = bmesh.new()
+    uv_w = bm_water.loops.layers.uv.new('UVMap')
+    n_ang = 128
+    wz_moat = -1.14  # Cleanly +0.09m above Tripo painted water (-1.23m), well below bridges & banks!
+    r_moat_rings = [9.2, 10.6, 12.2, 13.8, 15.2]
+    m_rings = []
+    for ri, r in enumerate(r_moat_rings):
+        ring = []
+        for ai in range(n_ang):
+            a = 2.0 * math.pi * ai / n_ang
+            ring.append(bm_water.verts.new((r * math.cos(a), r * math.sin(a), wz_moat)))
+        m_rings.append(ring)
+    for ri in range(len(m_rings) - 1):
+        v0 = ri / (len(m_rings) - 1)
+        v1 = (ri + 1) / (len(m_rings) - 1)
+        for ai in range(n_ang):
+            an = (ai + 1) % n_ang
+            u0 = (ai / n_ang) * 8.0
+            u1 = ((ai + 1) / n_ang) * 8.0
+            f = bm_water.faces.new((m_rings[ri][ai], m_rings[ri + 1][ai], m_rings[ri + 1][an], m_rings[ri][an]))
+            uvs = [(u0, v0), (u0, v1), (u1, v1), (u1, v0)]
+            for lp, uv in zip(f.loops, uvs):
+                lp[uv_w].uv = uv
+
+    # 4 Diagonal River Channels sloping cleanly from Ring Moat -> Waterfall Lip (with flow V along river!)
+    bm_falls = bmesh.new()
+    uv_f = bm_falls.loops.layers.uv.new('UVMap')
     bm_mist = bmesh.new()
+
     for ang_deg in (45, 135, 225, 315):
         a = math.radians(ang_deg)
         xf = Matrix.Rotation(a, 4, 'Z')
+
+        # Raycast exact riverbed heights & lip radius along this diagonal
+        r_lip = 27.6
+        z_lip = -1.35
+        river_profile = []
+        for ui in range(18):
+            r = 14.5 + ui * 0.85
+            pw = xf @ Vector((r, 0.0, 0.0))
+            zh = _raycast_surface_z(island_obj, pw.x, pw.y) if island_obj else -1.25
+            if zh is None or zh < -2.4:
+                r_lip = max(24.5, r - 0.55)
+                break
+            river_profile.append((r, zh))
+        if river_profile:
+            r_lip = min(28.8, river_profile[-1][0] + 0.35)
+            z_lip = river_profile[-1][1]
+
+        # Build river ribbon with smooth monotonic slope from moat to lip
+        u_segs = 14
+        v_segs = 6
+        grid = []
+        for ui in range(u_segs + 1):
+            u = ui / u_segs
+            xl = 14.4 + (r_lip - 14.4) * u
+            pw = xf @ Vector((xl, 0.0, 0.0))
+            zh = _raycast_surface_z(island_obj, pw.x, pw.y) if island_obj else wz_moat
+            z_surf = max(wz_moat, (zh + 0.08) if (zh is not None and zh > -2.3) else wz_moat)
+            # Keep smooth level near moat, gentle drop right at the lip
+            z_surf = wz_moat * (1.0 - u * 0.35) + min(z_surf, -0.78) * (u * 0.35)
+            if zh is not None and zh > -2.1:
+                z_surf = max(z_surf, zh + 0.08)
+            # Wide enough so river edges tuck cleanly under the 4 rocky canyon banks (zero exposed edge seams!)
+            half_w = 3.95 + 0.65 * u
+            row = []
+            for vi in range(v_segs + 1):
+                vt = (vi / v_segs) * 2.0 - 1.0
+                row.append(bm_water.verts.new(xf @ Vector((xl, vt * half_w, z_surf))))
+            grid.append(row)
+        for ui in range(u_segs):
+            v0 = ui / u_segs * 2.2
+            v1 = (ui + 1) / u_segs * 2.2
+            for vi in range(v_segs):
+                u0 = vi / v_segs
+                u1 = (vi + 1) / v_segs
+                f = bm_water.faces.new((grid[ui][vi], grid[ui + 1][vi], grid[ui + 1][vi + 1], grid[ui][vi + 1]))
+                for lp, uv in zip(f.loops, [(u0, v0), (u0, v1), (u1, v1), (u1, v0)]):
+                    lp[uv_w].uv = uv
+
+        # Build UV-mapped cascading Waterfall Curtain with smooth rounded crest hugging the Tripo waterfall!
+        wf_u, wf_v = 18, 10
+        wf_grid = []
+        fall_depth = 14.2
+        z_lip_top = grid[-1][v_segs // 2].co.z
+        r_outer_mid = _raycast_from_outside_r(island_obj, a, z_lip_top - 5.0) if island_obj else r_lip
+        r_curtain_base = max(r_lip + 0.25, (r_outer_mid + 0.30) if r_outer_mid else (r_lip + 0.35))
+        for ui in range(wf_u + 1):
+            t = ui / wf_u  # 0 at lip -> 1 at bottom tip
+            zl = z_lip_top - fall_depth * (t ** 1.28)
+            r_hit = _raycast_from_outside_r(island_obj, a, zl) if island_obj else None
+            if t == 0.0:
+                xl = r_lip - 0.15
+            elif r_hit is not None and r_hit > r_lip - 4.5:
+                xl = max(r_lip + 0.95 * math.sin(t * math.pi * 0.65), r_hit + 0.24)
+            else:
+                xl = r_curtain_base + 0.55 * (t ** 0.8)
+            hw = (2.45 + 0.32 * t) * (1.0 - 0.16 * (t ** 3.0))
+            row = []
+            for vi in range(wf_v + 1):
+                vt = (vi / wf_v) * 2.0 - 1.0
+                yl = vt * hw
+                bow = 0.24 * (1.0 - vt * vt) * math.sin(t * math.pi)
+                row.append(bm_falls.verts.new(xf @ Vector((xl + bow, yl, zl))))
+            wf_grid.append(row)
+        for ui in range(wf_u):
+            v0 = ui / wf_u
+            v1 = (ui + 1) / wf_u
+            for vi in range(wf_v):
+                u0 = vi / wf_v
+                u1 = (vi + 1) / wf_v
+                f = bm_falls.faces.new((wf_grid[ui][vi], wf_grid[ui + 1][vi], wf_grid[ui + 1][vi + 1], wf_grid[ui][vi + 1]))
+                for lp, uv in zip(f.loops, [(u0, v0), (u0, v1), (u1, v1), (u1, v0)]):
+                    lp[uv_f].uv = uv
+
+        # Soft white spray wisps tucked subtly behind the waterfall bottom fade-out tip
+        z_bot_tip = z_lip_top - fall_depth
         for k in range(3):
             yk = -1.1 + 1.1 * k
             bmesh.ops.create_icosphere(
-                bm_mist, subdivisions=2, radius=0.95 + 0.15 * (k % 2),
-                matrix=xf @ Matrix.Translation((25.2, yk, -14.8)) @ Matrix.Diagonal((1.05, 1.15, 0.62, 1.0)),
+                bm_mist, subdivisions=2, radius=0.82 + 0.12 * (k % 2),
+                matrix=xf @ Matrix.Translation((r_curtain_base - 0.1, yk, z_bot_tip + 0.55)) @ Matrix.Diagonal((0.95, 1.05, 0.52, 1.0)),
             )
-    mesh_from_bmesh(bm_mist, 'Water_Waterfall_MistPlumes', cols['Water'], mats['cloud'], smooth=True)
+
+    mesh_from_bmesh(bm_water, 'Water_Moat_Animated', cols['Water'], mats['water'], smooth=True)
+    mesh_from_bmesh(bm_falls, 'Water_Waterfalls_Animated', cols['Water'], mats['waterfall'], smooth=True)
+    mesh_from_bmesh(bm_mist, 'Water_Waterfall_MistPlumes', cols['Water'], mats['foam'], smooth=True)
 
 
 def build_island_base(col, mats):

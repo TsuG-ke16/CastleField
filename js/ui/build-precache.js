@@ -10,7 +10,7 @@ const paths=['index.html','manifest.webmanifest'];
 for(const dir of ['css','js','data','assets'])for(const file of walk(join(root,dir)).sort()){
   const path=relative(root,file).replaceAll('\\','/');
   const segs=path.split('/');
-  if(segs.includes('review')||(segs.includes('diorama')&&(segs.includes('renders')||segs.includes('tripo_castles')||segs.includes('tripo_refs')||segs.includes('config')))||['style-reference.png','precache.js','build-precache.js','build-card-relief.js'].includes(segs.at(-1))||!(/\.(js|css|json|png|webp|glb)$/).test(path))continue;
+  if(segs.includes('review')||(segs.includes('diorama')&&(segs.includes('renders')||segs.includes('tripo_castles')||segs.includes('tripo_refs')||segs.includes('config')||segs.at(-1)==='castle_field_diorama.glb'))||['style-reference.png','precache.js','build-precache.js','build-card-relief.js'].includes(segs.at(-1))||!(/\.(js|css|json|png|webp|glb)$/).test(path))continue;
   paths.push(path);
 }
 const hash=createHash('sha256');

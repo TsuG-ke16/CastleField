@@ -313,7 +313,31 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 /* 宇宙に浮かぶ4陣営3Dジオラマ統合レイヤー（WebGL有効時のみ適用・?fx=lite等は従来2Dを維持） */
 #app #home.home-reborn.has-3d-diorama { background:transparent; }
 #app #home.home-reborn.has-3d-diorama .home-sky { background:#040814;overflow:hidden; }
-#app #home.home-reborn.has-3d-diorama .home-sky .home-diorama-canvas { display:block;width:100%;height:100%; }
+#app #home.home-reborn.has-3d-diorama .home-sky .home-diorama-canvas,
+#app #home.home-reborn.has-3d-diorama .home-sky .home-cosmic-2d-canvas { display:block;width:100%;height:100%; }
+#app #home.home-reborn.has-3d-diorama[data-diorama-mode="prerender"] .home-hero { cursor:default; }
+#app #home.home-reborn .home-cosmic-stage {
+  position:absolute;inset:-14% -8%;pointer-events:none;z-index:0;
+  display:grid;place-items:center;
+  filter:drop-shadow(0 18px 28px rgba(2,6,18,.68));
+  animation:home-cosmic-float 7.5s ease-in-out infinite;
+}
+#app #home.home-reborn[data-ruleset="factions"] .home-cosmic-stage {
+  -webkit-mask-image:linear-gradient(180deg, #000 0%, #000 72%, transparent 98%), linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(180deg, #000 0%, #000 72%, transparent 98%), linear-gradient(90deg, transparent 0%, #000 10%, #000 90%, transparent 100%);
+  mask-composite:intersect;
+}
+@keyframes home-cosmic-float {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-5px); }
+}
+#app #home.home-reborn .home-cosmic-stage[hidden] { display:none; }
+#app #home.home-reborn .home-cosmic-img {
+  position:absolute;inset:0;width:100%;height:100%;object-fit:contain;
+  opacity:0;transition:opacity .42s ease;
+}
+#app #home.home-reborn .home-cosmic-img.is-active { opacity:1; }
 #app #home.home-reborn.has-3d-diorama .home-sky::after {
   content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg, rgba(4,9,22,.72) 0%, rgba(4,9,22,.22) 20%, rgba(4,9,22,0) 44%, rgba(4,9,22,.42) 60%, rgba(4,9,22,.86) 76%, rgba(4,9,22,.94) 100%);
@@ -333,8 +357,7 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 }
 #app #home.home-reborn.has-3d-diorama .home-hero { cursor:grab;touch-action:pan-y; }
 #app #home.home-reborn.has-3d-diorama .home-hero:active { cursor:grabbing; }
-#app #home.home-reborn.has-3d-diorama .home-arena { transition:opacity .45s ease; }
-#app #home.home-reborn.diorama-3d-ready .home-arena { opacity:0;pointer-events:none; }
+#app #home.home-reborn.has-3d-diorama .home-arena { opacity:0;pointer-events:none; }
 #app #home.home-reborn.has-3d-diorama .home-battle-heading h1 { text-shadow:0 2px 16px rgba(2,6,18,.78); }
 #app #home.home-reborn.has-3d-diorama .home-battle-heading p { text-shadow:0 1px 10px rgba(2,6,18,.8); }
 #app #home.home-reborn.has-3d-diorama .home-top { border-bottom-color:rgba(138,215,222,.22); }

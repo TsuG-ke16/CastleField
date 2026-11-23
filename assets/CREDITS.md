@@ -844,5 +844,5 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | ファイル | 作った道具・配布元 | ライセンス・利用条件 | 日付 |
 |---|---|---|---|
 | `models/diorama/castle_field_diorama.glb`・`castle_field_diorama.blend`・`tripo_castles/*.glb` | Tripo Studio（Web生成3Dスカルプト4城＋4バイオーム浮遊島）を Blender 5.3 + Python（`scripts/prepare_tripo_*.py`, `build_diorama.py`）で最適化・発光マップ合成・空間統合 | Tripo Studio 利用規約（プロジェクト向け生成出力）＋本リポジトリのコードと同一 | 2026-11-23 |
-| `models/diorama/renders/*`・`config/*`・`scripts/*` | Blender 5.3 Cycles OPTIX レンダリングおよび手書き Python スクリプト | 本リポジトリのコードと同一 | 2026-11-23 |
-| `js/ui/HomeDioramaGL.js` | Three.js + 手書き GLSL スカイドームシェーダー（外部背景画像なし） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/diorama/renders/*`・`cosmic_home/*.webp`・`config/*`・`scripts/*` | Blender 5.3 Cycles OPTIX レンダリング（背景透過4時間帯WebP含む）および手書き Python スクリプト | 本リポジトリのコードと同一 | 2026-11-23 |
+| `js/ui/HomeDioramaGL.js` | Three.js + 手書き GLSL スカイドーム＆動く水面・滝シェーダー＋2D宇宙星空キャンバス（外部背景画像なし） | 本リポジトリのコードと同一 | 2026-11-23 |

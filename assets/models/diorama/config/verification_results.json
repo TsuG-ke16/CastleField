@@ -1,6 +1,6 @@
 {
   "blend_check": {
-    "file_size_kb": 12640.6,
+    "file_size_kb": 12726.6,
     "missing_collections": [],
     "missing_cameras": [],
     "facing_checks": {
@@ -8,7 +8,7 @@
         "location": [
           0.0,
           20.6,
-          0.188
+          0.037
         ],
         "front_dot_to_plaza": 1.0,
         "cardinal_alignment_dot": 1.0,
@@ -18,7 +18,7 @@
         "location": [
           -20.6,
           0.0,
-          0.136
+          -0.004
         ],
         "front_dot_to_plaza": 1.0,
         "cardinal_alignment_dot": 1.0,
@@ -28,7 +28,7 @@
         "location": [
           20.6,
           0.0,
-          0.097
+          -0.091
         ],
         "front_dot_to_plaza": 1.0,
         "cardinal_alignment_dot": 1.0,
@@ -38,7 +38,7 @@
         "location": [
           0.0,
           -20.6,
-          0.138
+          -0.027
         ],
         "front_dot_to_plaza": 1.0,
         "cardinal_alignment_dot": 1.0,
@@ -46,9 +46,9 @@
       }
     },
     "mesh_health": {
-      "mesh_count": 19,
-      "total_polygons": 197780,
-      "total_triangles": 199160,
+      "mesh_count": 23,
+      "total_polygons": 200772,
+      "total_triangles": 205112,
       "nan_vertices": 0,
       "degenerate_faces": 0,
       "meshes_without_material": []
@@ -56,18 +56,18 @@
     "world_size_m": [
       118.85,
       115.028,
-      56.741
+      56.743
     ]
   },
   "glb_check": {
-    "file_size_kb": 10909.9,
-    "imported_objects": 45,
+    "file_size_kb": 11155.3,
+    "imported_objects": 49,
     "imported_cameras": 10,
-    "imported_materials": 15,
+    "imported_materials": 18,
     "mesh_health": {
-      "mesh_count": 19,
-      "total_polygons": 199160,
-      "total_triangles": 199160,
+      "mesh_count": 23,
+      "total_polygons": 205112,
+      "total_triangles": 205112,
       "nan_vertices": 0,
       "degenerate_faces": 0,
       "meshes_without_material": []
@@ -75,32 +75,32 @@
     "world_bounds_min": [
       -59.392,
       -57.652,
-      -41.504
+      -41.646
     ],
     "world_bounds_max": [
       59.457,
       57.376,
-      15.236
+      15.096
     ],
     "world_size_m": [
       118.85,
       115.028,
-      56.741
+      56.743
     ]
   },
   "deliverables_check": {
     "missing_files": [],
     "render_files_kb": {
-      "01_overview.png": 1292.0,
-      "02_top.png": 1373.6,
-      "03_north.png": 1161.9,
-      "04_south.png": 1258.3,
-      "05_east.png": 1190.9,
-      "06_west.png": 1222.6,
-      "07_home_kingdom.png": 1182.0,
-      "08_home_forest.png": 1280.5,
-      "09_home_demon.png": 1186.2,
-      "10_home_dragon.png": 1177.6,
+      "01_overview.png": 751.9,
+      "02_top.png": 801.9,
+      "03_north.png": 678.2,
+      "04_south.png": 731.8,
+      "05_east.png": 694.9,
+      "06_west.png": 715.9,
+      "07_home_kingdom.png": 684.3,
+      "08_home_forest.png": 744.6,
+      "09_home_demon.png": 692.7,
+      "10_home_dragon.png": 691.4,
       "mobile_01_kingdom_9x16.png": 1163.9,
       "mobile_02_forest_9x16.png": 1343.4,
       "mobile_03_demon_9x16.png": 1203.7,

@@ -6,7 +6,7 @@ const speeds = { normal: 1.8, fast: .65, skip: 0 };
 export class Settings {
   constructor(onChange = () => {}) {
     this.onChange = onChange;
-    this.value = { sfx: .5, bgm: .3, speed: 'normal', reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, text: 'normal', homeSky: 'auto', name: '' };
+    this.value = { sfx: .5, bgm: .3, speed: 'normal', reduced: matchMedia('(prefers-reduced-motion: reduce)').matches, text: 'normal', homeSky: 'auto', home3d: false, name: '' };
     try {
       const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null');
       if (saved && typeof saved === 'object') {
@@ -14,6 +14,7 @@ export class Settings {
         if (Object.hasOwn(speeds,saved.speed)) this.value.speed = saved.speed;
         if (['small','normal','large'].includes(saved.text)) this.value.text = saved.text;
         if (HOME_SKY_MODES.includes(saved.homeSky)) this.value.homeSky = saved.homeSky;
+        if (typeof saved.home3d === 'boolean') this.value.home3d = saved.home3d;
         if (typeof saved.reduced === 'boolean') this.value.reduced = saved.reduced;
         if (typeof saved.name === 'string') this.value.name = saved.name.slice(0,16);
       } else this.value.name = localStorage.getItem('cf-name') ?? '';
@@ -31,6 +32,8 @@ export class Settings {
       <section class="set-group"><h3>画面と演出</h3>
         ${pills('homeSky','ホームの空（時間帯）',HOME_SKY_MODES.map((k)=>[k,HOME_SKY_LABELS[k]]),true)}
         <p class="set-note">基本は現在時刻に合わせて宇宙と光が変化します。好みの時間帯に固定もできます。</p>
+        ${pills('home3d','ホームの3D表示',[['false','高画質・軽量'],['true','3Dリアルタイム']])}
+        <p class="set-note">3Dリアルタイムにすると、動く水面・滝や360°回転・ドラッグ鑑賞が楽しめます。</p>
         ${pills('speed','演出の速さ',[['normal','ふつう'],['fast','はやい'],['skip','スキップ']])}
         ${pills('reduced','動きを減らす',[['true','ON'],['false','OFF']])}
         <p class="set-note">揺れや点滅を抑え、カードの獲得は静止画で表示します。</p>
@@ -50,6 +53,7 @@ export class Settings {
       </section>
       </div>
       <select name="homeSky" hidden>${HOME_SKY_MODES.map((k)=>`<option value="${k}"></option>`).join('')}</select>
+      <input name="home3d" type="checkbox" hidden>
       <select name="speed" hidden><option value="normal"></option><option value="fast"></option><option value="skip"></option></select>
       <input name="reduced" type="checkbox" hidden>
       <select name="text" hidden><option value="small"></option><option value="normal"></option><option value="large"></option></select>

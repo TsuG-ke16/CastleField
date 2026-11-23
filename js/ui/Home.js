@@ -97,8 +97,8 @@ export class Home {
    * @param {(type: string) => void} [o.onZoomCard] カードを大きく見せる（CardZoom）
    * @param {object} [o.cards] @param {object} [o.rarities] @param {object} [o.rules] @param {object} [o.decks] デッキの中身を見せるのに使う（data/ の中身）
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {}, skyMode = 'auto' }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks, ruleset, factions, onRuleset, skyMode });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {}, skyMode = 'auto', home3d = false }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks, ruleset, factions, onRuleset, skyMode, home3d });
     this.deckSort = 'rarity';
     this.data = null;
     this.mode = 'solo';
@@ -274,6 +274,7 @@ export class Home {
       viewMode: ruleset === 'factions' ? 'factions' : 'overview',
       faction: this.faction,
       skyMode,
+      use3D: home3d,
     });
     box.addEventListener('click', (e) => this.onClick(e));
     box.addEventListener('keydown', (e) => this.onKey(e));
@@ -285,6 +286,12 @@ export class Home {
   setSkyMode(mode) {
     this.skyMode = mode;
     this.diorama?.setSkyMode(mode);
+  }
+
+  /** ホームの3Dリアルタイム表示のON/OFFを更新（false=軽量高画質Cyclesプリレンダ / true=リアルタイム3D） */
+  set3DEnabled(enabled) {
+    this.home3d = Boolean(enabled);
+    this.diorama?.set3DEnabled(this.home3d);
   }
 
   /** 4陣営モード時、3Dジオラマ下部からワンタップで4城を旋回切替できるバー */

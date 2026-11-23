@@ -102,7 +102,7 @@ function readJson(req) {
 
 const STATIC_TYPES = {
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.glb': 'model/gltf-binary', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg',
+  '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp', '.glb': 'model/gltf-binary', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg',
   '.webmanifest': 'application/manifest+json; charset=utf-8',
 };
 // /sw.js と /manifest.webmanifest は、ホーム画面に追加・オフラインで遊ぶ（PWA）ために、ルートに置いて配る
