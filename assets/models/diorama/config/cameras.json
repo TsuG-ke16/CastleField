@@ -1,0 +1,361 @@
+{
+  "orbit_rule": {
+    "orbit_center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "r_back": 12.8,
+    "r_side": 3.2,
+    "orbit_radius": 13.194,
+    "cam_z": 11.4,
+    "target_dist": 16.2,
+    "target_z": 7.1,
+    "lens_mm": 24.5,
+    "sensor_width_mm": 36.0,
+    "fov_h_deg_16x9": 72.61,
+    "notes": "All 4 home faction cameras share an identical circular orbit (radius 13.194m, Z=11.4m) around Central Plaza (0,0,0), strictly inside the 17.6m gate radius of opposite castles to prevent occlusion. Generous headroom above spires/canopy and foreground plaza margin support both 9:16 mobile and 16:9 desktop UI overlays."
+  },
+  "cameras": {
+    "Camera_Overview": {
+      "description": "4陣営全体斜め俯瞰",
+      "blender_z_up": {
+        "location": [
+          11.0,
+          -76.0,
+          48.0
+        ],
+        "target": [
+          0.0,
+          0.5,
+          -1.0
+        ],
+        "rotation_euler_deg": [
+          57.63,
+          -0.0,
+          8.18
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          11.0,
+          48.0,
+          76.0
+        ],
+        "target": [
+          0.0,
+          -1.0,
+          -0.5
+        ]
+      },
+      "lens_mm": 34.0,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_Top": {
+      "description": "真上配置確認（上が北・王国）",
+      "blender_z_up": {
+        "location": [
+          0.0,
+          0.0,
+          126.0
+        ],
+        "target": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_euler_deg": [
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          0.0,
+          126.0,
+          -0.0
+        ],
+        "target": [
+          0.0,
+          0.0,
+          -0.0
+        ]
+      },
+      "lens_mm": 40.0,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_North": {
+      "description": "北側からの外観確認",
+      "blender_z_up": {
+        "location": [
+          0.0,
+          80.0,
+          24.0
+        ],
+        "target": [
+          0.0,
+          0.0,
+          -0.8
+        ],
+        "rotation_euler_deg": [
+          72.78,
+          0.0,
+          180.0
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          0.0,
+          24.0,
+          -80.0
+        ],
+        "target": [
+          0.0,
+          -0.8,
+          -0.0
+        ]
+      },
+      "lens_mm": 34.0,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_South": {
+      "description": "南側からの外観確認",
+      "blender_z_up": {
+        "location": [
+          0.0,
+          -80.0,
+          24.0
+        ],
+        "target": [
+          0.0,
+          0.0,
+          -0.8
+        ],
+        "rotation_euler_deg": [
+          72.78,
+          -0.0,
+          0.0
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          0.0,
+          24.0,
+          80.0
+        ],
+        "target": [
+          0.0,
+          -0.8,
+          -0.0
+        ]
+      },
+      "lens_mm": 34.0,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_East": {
+      "description": "東側からの外観確認",
+      "blender_z_up": {
+        "location": [
+          80.0,
+          0.0,
+          24.0
+        ],
+        "target": [
+          0.0,
+          0.0,
+          -0.8
+        ],
+        "rotation_euler_deg": [
+          72.78,
+          0.0,
+          90.0
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          80.0,
+          24.0,
+          -0.0
+        ],
+        "target": [
+          0.0,
+          -0.8,
+          -0.0
+        ]
+      },
+      "lens_mm": 34.0,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_West": {
+      "description": "西側からの外観確認",
+      "blender_z_up": {
+        "location": [
+          -80.0,
+          0.0,
+          24.0
+        ],
+        "target": [
+          0.0,
+          0.0,
+          -0.8
+        ],
+        "rotation_euler_deg": [
+          72.78,
+          -0.0,
+          -90.0
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          -80.0,
+          24.0,
+          -0.0
+        ],
+        "target": [
+          0.0,
+          -0.8,
+          -0.0
+        ]
+      },
+      "lens_mm": 34.0,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_Kingdom": {
+      "description": "王国（北）ホーム主役カメラ",
+      "blender_z_up": {
+        "location": [
+          3.2,
+          -12.8,
+          11.4
+        ],
+        "target": [
+          0.0,
+          16.2,
+          7.75
+        ],
+        "rotation_euler_deg": [
+          82.87,
+          -0.0,
+          6.3
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          3.2,
+          11.4,
+          12.8
+        ],
+        "target": [
+          0.0,
+          7.75,
+          -16.2
+        ]
+      },
+      "lens_mm": 24.5,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_Forest": {
+      "description": "森の同盟（西）ホーム主役カメラ",
+      "blender_z_up": {
+        "location": [
+          12.8,
+          3.2,
+          11.4
+        ],
+        "target": [
+          -16.2,
+          0.0,
+          7.75
+        ],
+        "rotation_euler_deg": [
+          82.87,
+          0.0,
+          96.3
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          12.8,
+          11.4,
+          -3.2
+        ],
+        "target": [
+          -16.2,
+          7.75,
+          -0.0
+        ]
+      },
+      "lens_mm": 24.5,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_Demon": {
+      "description": "魔族軍（東）ホーム主役カメラ",
+      "blender_z_up": {
+        "location": [
+          -12.8,
+          -3.2,
+          11.4
+        ],
+        "target": [
+          16.2,
+          0.0,
+          7.25
+        ],
+        "rotation_euler_deg": [
+          81.9,
+          0.0,
+          -83.7
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          -12.8,
+          11.4,
+          3.2
+        ],
+        "target": [
+          16.2,
+          7.25,
+          -0.0
+        ]
+      },
+      "lens_mm": 24.5,
+      "sensor_width_mm": 36.0
+    },
+    "Camera_Dragon": {
+      "description": "竜族帝国（南）ホーム主役カメラ",
+      "blender_z_up": {
+        "location": [
+          -3.2,
+          12.8,
+          11.4
+        ],
+        "target": [
+          0.0,
+          -16.2,
+          7.25
+        ],
+        "rotation_euler_deg": [
+          81.9,
+          0.0,
+          -173.7
+        ]
+      },
+      "threejs_y_up": {
+        "position": [
+          -3.2,
+          11.4,
+          -12.8
+        ],
+        "target": [
+          0.0,
+          7.25,
+          16.2
+        ]
+      },
+      "lens_mm": 24.5,
+      "sensor_width_mm": 36.0
+    }
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "coordinate_system": {
+    "blender": "Z-up, 1 unit = 1m, North = +Y, South = -Y, East = +X, West = -X",
+    "threejs_glb": "Y-up (exported with export_yup=True): (x, y, z)_three = (x, z, -y)_blender"
+  },
+  "central_plaza": {
+    "center": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "radius_m": 7.5,
+    "status": "Neutral zone (no faction flags or crests)"
+  },
+  "hydrology": {
+    "water_level_z": -1.65,
+    "ring_moat_radius_m": [
+      7.8,
+      11.4
+    ],
+    "diagonal_waterfalls_deg": [
+      45,
+      135,
+      225,
+      315
+    ]
+  },
+  "factions": {
+    "kingdom": {
+      "label": "北 (+Y) / 王国",
+      "collection": "Castle_Kingdom",
+      "center": [
+        0.0,
+        22.4,
+        3.0
+      ],
+      "gate_entrance": [
+        0.0,
+        17.6,
+        3.0
+      ],
+      "facing_vector": [
+        0.0,
+        -1.0,
+        0.0
+      ],
+      "terrace_z": 3.0,
+      "world_bbox_min": [
+        -7.07,
+        16.72,
+        1.175
+      ],
+      "world_bbox_max": [
+        7.07,
+        27.92,
+        18.7
+      ],
+      "size_xyz_m": [
+        14.14,
+        11.2,
+        17.525
+      ]
+    },
+    "forest": {
+      "label": "西 (-X) / 森の同盟",
+      "collection": "Castle_Forest",
+      "center": [
+        -22.2,
+        0.0,
+        2.2
+      ],
+      "gate_entrance": [
+        -17.6,
+        0.0,
+        2.2
+      ],
+      "facing_vector": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "terrace_z": 2.2,
+      "world_bbox_min": [
+        -29.351,
+        -8.327,
+        0.4
+      ],
+      "world_bbox_max": [
+        -15.7,
+        8.405,
+        17.69
+      ],
+      "size_xyz_m": [
+        13.651,
+        16.732,
+        17.29
+      ]
+    },
+    "demon": {
+      "label": "東 (+X) / 魔族軍",
+      "collection": "Castle_Demon",
+      "center": [
+        22.4,
+        0.0,
+        2.4
+      ],
+      "gate_entrance": [
+        17.6,
+        0.0,
+        2.4
+      ],
+      "facing_vector": [
+        -1.0,
+        0.0,
+        0.0
+      ],
+      "terrace_z": 2.4,
+      "world_bbox_min": [
+        16.365,
+        -7.2,
+        0.6
+      ],
+      "world_bbox_max": [
+        29.326,
+        7.316,
+        16.25
+      ],
+      "size_xyz_m": [
+        12.961,
+        14.516,
+        15.65
+      ]
+    },
+    "dragon": {
+      "label": "南 (-Y) / 竜族帝国",
+      "collection": "Castle_Dragon",
+      "center": [
+        0.0,
+        -22.4,
+        2.2
+      ],
+      "gate_entrance": [
+        0.0,
+        -17.6,
+        2.2
+      ],
+      "facing_vector": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "terrace_z": 2.2,
+      "world_bbox_min": [
+        -7.355,
+        -29.721,
+        0.4
+      ],
+      "world_bbox_max": [
+        7.355,
+        -15.679,
+        15.25
+      ],
+      "size_xyz_m": [
+        14.71,
+        14.042,
+        14.85
+      ]
+    }
+  },
+  "overall_diorama_bounds": {
+    "min_xyz": [
+      -47.935,
+      -45.8,
+      -18.8
+    ],
+    "max_xyz": [
+      48.125,
+      46.0,
+      18.7
+    ],
+    "size_xyz_m": [
+      96.06,
+      91.8,
+      37.5
+    ]
+  }
+}

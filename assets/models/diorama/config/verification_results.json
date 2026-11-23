@@ -1,0 +1,113 @@
+{
+  "blend_check": {
+    "file_size_kb": 661.8,
+    "missing_collections": [],
+    "missing_cameras": [],
+    "facing_checks": {
+      "Castle_Kingdom_Root": {
+        "location": [
+          0.0,
+          22.4,
+          3.0
+        ],
+        "front_dot_to_plaza": 1.0,
+        "cardinal_alignment_dot": 1.0,
+        "ok": true
+      },
+      "Castle_Forest_Root": {
+        "location": [
+          -22.2,
+          0.0,
+          2.2
+        ],
+        "front_dot_to_plaza": 1.0,
+        "cardinal_alignment_dot": 1.0,
+        "ok": true
+      },
+      "Castle_Demon_Root": {
+        "location": [
+          22.4,
+          0.0,
+          2.4
+        ],
+        "front_dot_to_plaza": 1.0,
+        "cardinal_alignment_dot": 1.0,
+        "ok": true
+      },
+      "Castle_Dragon_Root": {
+        "location": [
+          0.0,
+          -22.4,
+          2.2
+        ],
+        "front_dot_to_plaza": 1.0,
+        "cardinal_alignment_dot": 1.0,
+        "ok": true
+      }
+    },
+    "mesh_health": {
+      "mesh_count": 67,
+      "total_polygons": 24372,
+      "total_triangles": 39686,
+      "nan_vertices": 0,
+      "degenerate_faces": 0,
+      "meshes_without_material": []
+    },
+    "world_size_m": [
+      96.06,
+      91.8,
+      37.5
+    ]
+  },
+  "glb_check": {
+    "file_size_kb": 2011.6,
+    "imported_objects": 91,
+    "imported_cameras": 10,
+    "imported_materials": 44,
+    "mesh_health": {
+      "mesh_count": 66,
+      "total_polygons": 39686,
+      "total_triangles": 39686,
+      "nan_vertices": 0,
+      "degenerate_faces": 0,
+      "meshes_without_material": []
+    },
+    "world_bounds_min": [
+      -47.935,
+      -45.8,
+      -18.8
+    ],
+    "world_bounds_max": [
+      48.125,
+      46.0,
+      18.7
+    ],
+    "world_size_m": [
+      96.06,
+      91.8,
+      37.5
+    ]
+  },
+  "deliverables_check": {
+    "missing_files": [],
+    "render_files_kb": {
+      "01_overview.png": 1251.4,
+      "02_top.png": 1274.8,
+      "03_north.png": 1190.3,
+      "04_south.png": 1191.7,
+      "05_east.png": 1194.5,
+      "06_west.png": 1189.2,
+      "07_home_kingdom.png": 1143.8,
+      "08_home_forest.png": 1140.4,
+      "09_home_demon.png": 1132.5,
+      "10_home_dragon.png": 1126.6,
+      "mobile_01_kingdom_9x16.png": 1150.6,
+      "mobile_02_forest_9x16.png": 1164.5,
+      "mobile_03_demon_9x16.png": 1142.1,
+      "mobile_04_dragon_9x16.png": 1127.5,
+      "turntable_sheet.png": 1879.4,
+      "turntable_4factions.mp4": 862.4
+    }
+  },
+  "passed": true
+}
