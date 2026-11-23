@@ -1,3 +1,4 @@
+import { loadHomeRuleSet, rulesetUrl } from './ui/HomeRuleSet.js';
 // 起動と、Game と画面のつなぎ役。
 // - data/ の JSON を読む（monsters.json・upgrades.json は、なければ省略：魔物が出ず、強化も買えない）
 // - 同じ端末：new Game(...) を作り、LocalSession で包む。オンライン：OnlineClient（サーバーの Game を操作する）
@@ -112,6 +113,7 @@ let cardZoom = null; // カードの拡大表示（CardZoom）。ホームのデ
 let deckEditor = null; // デッキ編成の画面（コスト制の見本のデッキがあるときだけ）
 let chat = null;     // チャットとスタンプ（ChatView）
 let weather = null;  // data/weather.json（読めなければ null：天候なし）
+let gameMode = 'kingdom', factionDefinitions = null;
 let elements = null; // 属性の強弱の表（モードの elementsSet。通常モードは null：今までの4属性の輪）
 let reactions = null; // 属性の付着と反応（モードの reactionsSet。通常モードは null：付着・反応なし）
 let stages = null;  // data/stages.json（読めなければ null：ステージなし）
@@ -210,24 +212,16 @@ function hideLoading() {
 
 async function boot() {
   try {
-    // URL の ?mode=classic で、そのモード（data/modes.json）のカード・ルールを使う。省略すると今まで通り
-    let cardsPath = 'data/cards.json', rulesPath = 'data/rules.json', modeEntry = null;
-    if (params.has('mode')) {
-      const modes = await loadJson('data/modes.json');
-      modeEntry = params.get('mode') === modes.default ? null : modes.modes?.[params.get('mode')];
-      if (params.get('mode') !== modes.default && !modeEntry?.cardSet) throw new Error(`モード "${params.get('mode')}" はありません`);
-      if (modeEntry) { cardsPath = modeEntry.cardSet; rulesPath = modeEntry.rulesSet ?? rulesPath; }
-    }
-    [cards, rules, monsters, upgrades, rarities, castles, decks, weather, stamps, stages] = await Promise.all([
-      loadJson(cardsPath), loadJson(rulesPath),
+    let rememberedMode = 'kingdom';
+    try { if(localStorage.getItem('cf-home-ruleset') === 'factions') rememberedMode = 'factions'; } catch { /* optional */ }
+    gameMode = params.get('mode') ?? rememberedMode;
+    const selected = await loadHomeRuleSet(gameMode, loadJson);
+    cards = selected.cards; rules = selected.rules; elements=selected.elements; reactions=selected.reactions;
+    factionDefinitions=selected.factions;
+    [monsters, upgrades, rarities, castles, decks, weather, stamps, stages] = await Promise.all([
       loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'), loadOptionalJson('data/stages.json'),
     ]);
-    // レアリティを使わないモード（クラシック）：rarities とコスト制のデッキは使わない
-    if (modeEntry?.useRarities === false) { rarities = null; decks = null; }
-    // 属性の強弱の表（modes.json の elementsSet があるモードだけ）
-    if (modeEntry?.elementsSet) elements = await loadJson(modeEntry.elementsSet);
-    // 属性の付着と反応（modes.json の reactionsSet があるモードだけ）
-    if (modeEntry?.reactionsSet) reactions = await loadJson(modeEntry.reactionsSet);
+    if(selected.entry?.useRarities === false) { rarities=null; decks=selected.decks; }
   } catch (err) {
     console.error(err);
     hideLoading();
@@ -341,7 +335,11 @@ async function boot() {
   const accountPanel = new AccountPanel({ toast });
   const profileView = new ProfileView({ toast, onChanged: () => home.refresh() });
   home = new Home({
-    toast, cards, rarities, rules, decks,
+    toast, cards, rarities, rules, decks, ruleset:gameMode, factions:factionDefinitions,
+    onRuleset: (id) => {
+      try { localStorage.setItem('cf-home-ruleset',id); } catch { /* optional */ }
+      location.assign(rulesetUrl(location.href,id));
+    },
     onZoomCard: (type) => cardZoom?.open(type),
     onPlay: (mode) => openPlaySetup(mode),
     onDeck: (slot) => deckEditor?.open(slot),
@@ -447,12 +445,12 @@ async function boot() {
   }
 
   // デバッグ・シード指定のときは、同じ端末ですぐ始める。そうでなければタイトルを出す
-  if (DEBUG || URL_SEED !== null || params.get('local') === '1') {
+  if (!params.has('home') && (DEBUG || URL_SEED !== null || params.get('local') === '1')) {
     const level = params.get('cpu');
     startLocal(undefined, CPU_LEVELS[level] ? level : null); // ?cpu=hard で、CPU と対戦
   } else {
     showTitle();
-    resumeOnline(); // ページを読み直したとき：前の部屋が残っていれば、つなぎ直す
+    if(gameMode !== 'factions') resumeOnline(); // ページを読み直したとき：前の部屋が残っていれば、つなぎ直す
   }
   hideLoading();
   setTimeout(() => { prepareBattleAssets(); setupOffline(); }, 1000);
@@ -487,14 +485,21 @@ async function setupOffline() {
 // ---------- タイトル・メニュー ----------
 
 function setupTitle(deckOptions) {
-  localSetup = new LocalSetup({castles,decks,rules,stages,...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
+  localSetup = new LocalSetup({castles,decks,rules,stages,factionMode:gameMode==='factions',...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
+  $('prep-navigation').append($('levels-back'),$('title-back'));
+  localSetup.inputs.deck.addEventListener('change',()=>{ $('prep-deck').textContent=localSetup.inputs.deck.selectedOptions[0]?.textContent ?? ''; });
   // ホームの「対戦開始」から開く設定画面（CPUの強さ・同じ端末・合言葉）。「もどる」はホームへ戻る
   openPlaySetup = (mode) => {
     sound.play('tap');
+    $('prep-title').textContent = {solo:'ひとりで遊ぶ',online:'カジュアル対戦',local:'同じ端末で遊ぶ'}[mode];
+    $('prep-ruleset').textContent = gameMode === 'factions' ? '4陣営モード' : '通常モード';
+    $('prep-deck').textContent = home.currentDeckInfo?.name ?? '';
+    $('levels-back').hidden = mode === 'online'; $('title-back').hidden = mode !== 'online';
     home.close();
     el.title.hidden = false;
     el.titleLevels.hidden = true;
     el.titleForm.hidden = true;
+    if (mode === 'online' && gameMode==='factions') { el.title.hidden=true;home.open();toast('4陣営のオンライン対戦は準備中です','info');return; }
     if (mode === 'online') {
       el.titleForm.hidden = false;
       setTitleWaiting(false);
@@ -503,6 +508,7 @@ function setupTitle(deckOptions) {
       return;
     }
     localSetup.open(mode);
+    if(gameMode==='factions') localSetup.chooseDeck(home.faction); else localSetup.syncHomeDeck(home.currentDeckInfo);
     el.titleLevels.hidden = false;
     const first = mode === 'local' ? $('local-start') : el.titleLevels.querySelector('.level');
     first.focus({ preventScroll: true });
@@ -545,6 +551,7 @@ function leaveWithRankedWarning() {
 /** タイトルへ戻る（遊んでいた試合はやめる） */
 function showTitle() {
   startRequest++;
+  renderer.fieldGL?.setHidden(true); // ホーム・準備中は見えない3D盤面の描画を止める
   renderer.setWeather(null);
   document.documentElement.classList.add('at-title');
   setTimeout(applyWaitingWorker, 0); // 試合のあいだに新しい版が届いていたら、ここで切りかえる
@@ -780,6 +787,16 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
       const want = options?.stage && (options.stage === 'random' || Object.hasOwn(stages, options.stage)) ? options.stage : 'random';
       opts.setup = { ...(opts.setup ?? {}), stage: want };
     }
+    if(gameMode==='factions') {
+      opts.decks=structuredClone(decks); opts.castles=structuredClone(castles); opts.rules.deckMode='own';
+      const ids=Object.keys(decks), count=opts.rules.playerCount ?? 2;
+      const selected=options?.deck && decks[options.deck] ? options.deck : home.faction;
+      const seat=cpuLevel ? Math.floor(mulberry32(seed ^ 0x9e3779b9)()*count) : 0;
+      const offset=ids.indexOf(selected);
+      opts.setup={...(opts.setup ?? {}),decks:Array.from({length:count},(_,i)=>ids[(i-seat+offset+count*ids.length)%ids.length])};
+      home.faction=selected;
+      try { localStorage.setItem('cf-home-faction',selected); } catch { /* optional */ }
+    }
     game = new Game(opts);
   } catch (err) {
     console.error(err);
@@ -798,7 +815,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     setPlayerNames({ [humanId]: myName() || 'あなた', ...Object.fromEntries(cpuIds.map((id,i)=>[id,`CPU${cpuIds.length>1?i+1:''}（${CPU_LEVELS[cpuLevel].name}）`])) });
   }
   tutorial.close();
-  if (cpu && (replayTutorial || tutorial.pending())) {
+  if (gameMode !== 'factions' && cpu && (replayTutorial || tutorial.pending())) {
     const hand = game.getState(cpu.humanId).players[cpu.humanId].hand;
     game.debugSetHand(cpu.humanId, ['infantry', ...hand.slice(1).map(c => c.type)]);
     tutorial.start(cpu.humanId);

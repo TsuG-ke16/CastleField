@@ -25,13 +25,14 @@ async function expectPaint(castle) {
 }
 try {
   for (let n = 0; n < 50; n++) { try { if ((await fetch(base)).ok) break; } catch { /* 起動待ち */ } await new Promise((r) => setTimeout(r, 100)); }
-  browser = await chromium.launch();
+  browser = await chromium.launch({...(process.env.UI_TEST_CHROMIUM?{executablePath:process.env.UI_TEST_CHROMIUM}:{})});
   const ctx = await browser.newContext({ viewport: { width: 390, height: 797 }, deviceScaleFactor: 2 });
   const page = await ctx.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
-  await page.goto(base);
+  const startUrl=new URL(base);if(process.env.UI_TEST_FIELD3D)startUrl.searchParams.set('field3d',process.env.UI_TEST_FIELD3D);
+  await page.goto(startUrl.href);
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
   const id = await page.evaluate(async () => (await (await fetch('/api/me', { credentials: 'same-origin' })).json()).user.id);
   // コインを入れる（本物の入手は対戦の報酬。テストではデータベースに直接）

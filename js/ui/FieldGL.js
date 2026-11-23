@@ -1000,6 +1000,8 @@ export class FieldGL {
   }
 
   setVisible(visible) {
+    const was = this._visible;
+    this._visible = Boolean(visible);
     if (this.renderer?.domElement) {
       this.renderer.domElement.hidden = !visible;
     }
@@ -1011,6 +1013,7 @@ export class FieldGL {
       delete this.appEl.dataset.camMode;
       this.stopLoop();
     }
+    if (was !== this._visible) this.onVisibilityChange?.(this._visible);
   }
 
   mountFieldModel(sourceScene, stageId) {
@@ -1305,7 +1308,7 @@ export class FieldGL {
         type: cType, color: colorKey, side,
         shieldMesh, overdriveRing, spiritOrb,
         hitFlash: 0, recoilTime: 0, collapseProgress: 0, isCollapsed: false,
-        hpRatio: 1, baseScale: sc,
+        hpRatio: 1, baseScale: 1,
       };
       this.castleEntries.set(side, entry);
       this.entityGroup.add(group);

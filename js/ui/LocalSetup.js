@@ -2,7 +2,7 @@
 import { pillify } from './pills.js';
 import { deckChoice, deckSlot, loadDecks } from './DeckStore.js';
 export class LocalSetup {
-  constructor({castles,decks,rules,stages,onStart,savedDecks,presetDeck,previewDeck,openDeckEditor}) {
+  constructor({castles,decks,rules,stages,factionMode=false,onStart,savedDecks,presetDeck,previewDeck,openDeckEditor}) {
     const box=document.getElementById('title-levels');
     this.mode='solo';this.rules=rules;
     Object.assign(this, { savedDecks, presetDeck, previewDeck, openDeckEditor });
@@ -16,7 +16,7 @@ export class LocalSetup {
     const plain=Object.entries(decks??{}).filter(([,d])=>!d.costDeck).map(([id,d])=>[id,d.name]);
     const costs=Object.entries(decks??{}).filter(([,d])=>d.costDeck).map(([id,d])=>[id,d.name]);
     this.deckChoices={shared:plain,own:plain,cost:costs};
-    add('deckMode','山札',[['shared','みんな共通'],['own','自分のデッキ'],...(costs.length?[['cost','デッキ編成（コスト制）']]:[])]);
+    add('deckMode','山札',factionMode ? [['own','陣営の固定デッキ']] : [['shared','みんな共通'],['own','自分のデッキ'],...(costs.length?[['cost','デッキ編成（コスト制）']]:[])]);
     add('deck','自分のデッキ',plain);
     this.preview = document.createElement('div');
     this.editDeck = document.createElement('button');
@@ -72,11 +72,13 @@ export class LocalSetup {
     this.previewDeck(this.preview, deck);
   }
 
-  reset(){for(const [k,v] of Object.entries({playerCount:2,winCondition:'firstDestroy',castle:this.rules.defaultCastle??'standard',deckMode:this.deckChoices.cost.length?'cost':'shared',deck:this.deckChoices.cost.length?(this.rules.defaultCostDeck??this.deckChoices.cost[0][0]):(this.rules.defaultDeck??'balanced'),teams:'off',...(this.inputs.stage?{stage:'random'}:{})})){this.inputs[k].value=v;if(k==='deckMode')this.inputs.deckMode.onchange();}
+  reset(){for(const [k,v] of Object.entries({playerCount:2,winCondition:'firstDestroy',castle:this.rules.defaultCastle??'standard',deckMode:this.deckChoices.cost.length?'cost':this.rules.deckMode==='own'?'own':'shared',deck:this.deckChoices.cost.length?(this.rules.defaultCostDeck??this.deckChoices.cost[0][0]):(this.rules.defaultDeck??'balanced'),teams:'off',...(this.inputs.stage?{stage:'random'}:{})})){this.inputs[k].value=v;if(k==='deckMode')this.inputs.deckMode.onchange();}
     // 山札は、プレイヤーごとに別（コスト制）が最初の設定。編成したデッキがあれば、それを選んでおく
     const mine=this.inputs.deckMode.value==='cost'?this.savedDecks().find(d=>d?.valid&&d.slot===loadDecks().active):null;
     if(mine){this.inputs.deck.value=deckChoice(mine.slot);this.renderPreview();}
     for(const el of Object.values(this.inputs))el._pillSync?.();}
-  open(mode){this.mode=mode;this.title.textContent=mode==='solo'?'CPU の強さを選んではじめる':'同じ端末で遊ぶ';this.localButton.hidden=mode==='solo';for(const e of document.querySelectorAll('#title-levels .level'))e.hidden=mode!=='solo';}
+  syncHomeDeck(deck){ if(!this.deckChoices.cost.length)return;this.inputs.deckMode.value='cost';this.refreshDecks();this.inputs.deckMode._pillSync?.();this.chooseDeck(deck?.kind==='mine'?deckChoice(deck.slot):this.rules.defaultCostDeck); }
+  chooseDeck(id){ if([...this.inputs.deck.options].some(o=>o.value===id)){this.inputs.deck.value=id;this.inputs.deck._pillSync?.();this.renderPreview();} }
+  open(mode){this.mode=mode;this.title.textContent=mode==='solo'?'CPUの強さを選択':'人数やルールを確認してはじめる';this.localButton.hidden=mode==='solo';for(const e of document.querySelectorAll('#title-levels .level'))e.hidden=mode!=='solo';}
   read(){return Object.fromEntries(Object.entries(this.inputs).map(([k,el])=>[k,k==='playerCount'?Number(el.value):el.value]));}
 }

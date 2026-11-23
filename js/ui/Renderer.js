@@ -108,6 +108,8 @@ export class Renderer {
     this.buildScenery();
     this.fieldGL = new FieldGL($('app'), $('scenery'));
     this.fieldGL.onProjectOverlay = () => this.update3DOverlay();
+    // 3Dが見えなくなったとき（2D切替・読み込み失敗・広場など）は、必ず2Dの配置へ戻す
+    this.fieldGL.onVisibilityChange = (visible) => { if (!visible) this.clear3DOverlay(); };
     this.fieldGL.onCameraStateChange = (st) => this.syncCameraUI(st);
     this.buildRoad();
 
@@ -269,6 +271,7 @@ export class Renderer {
     this.teams = model.teams;
     this.playerOrder = model.playerOrder;
     this.isPlaza = model.layout === 'plaza';
+    if(this.fieldGL && this.fieldGL.hidden !== this.isPlaza) this.fieldGL.setHidden(this.isPlaza);
     this.owners = [...new Set(model.playerOrder.map(id => this.ownerOf(id)))];
     const key = JSON.stringify([this.isPlaza, this.owners, this.viewerId]);
     if (key !== this.boardKey) {
@@ -941,15 +944,20 @@ export class Renderer {
       `<div class="monster-stats"><span class="st atk">${icon('sword')}<b></b></span></div>`;
     el.querySelector('.monster-pic').innerHTML = monsterArt(st.type, def.name ?? st.type);
     this.cosmetics?.styleMonster(el, st.type);
-    el.style.top = `${this.rowCenter(this.rowOfSquare(st.square))}%`;
-    el.style.left = `${this.laneCenter(this.laneOf(st.roadId))}%`;
-    if (st.roadId === 'plaza') { el.style.top = '50%'; el.style.left = '50%'; }
+    this.placeMonsterEl(el, st);
     this.el.units.appendChild(el);
     const m = { ...st, el };
     this.monsters.set(st.monsterId, m);
     this.updateMonster(st.monsterId, {}, { instant: true });
     this.sync3D();
     return el;
+  }
+
+  /** 魔物の2D上の置き場所（％）。3D射影をやめて2Dへ戻すときにも使う */
+  placeMonsterEl(el, st) {
+    if (st.roadId === 'plaza') { el.style.top = '50%'; el.style.left = '50%'; return; }
+    el.style.top = `${this.rowCenter(this.rowOfSquare(st.square))}%`;
+    el.style.left = `${this.laneCenter(this.laneOf(st.roadId))}%`;
   }
 
   monsterEl(monsterId) {
@@ -1363,6 +1371,9 @@ export class Renderer {
         const now = performance.now();
         if (now - lastTapTime < 320 && Math.hypot(e.clientX - lastTapX, e.clientY - lastTapY) < 28) {
           lastTapTime = 0;
+          // ダブルタップは「カメラ注目」専用。2回目のタップが兵士・城の選択（click）にもならないようにする
+          this._suppressBoardClick = true;
+          setTimeout(() => { this._suppressBoardClick = false; }, 120);
           const pick = this.fieldGL.pickAtScreen(e.clientX, e.clientY);
           if (pick.primary) {
             this.fieldGL.focusOnTarget(pick.primary);
@@ -1498,15 +1509,21 @@ export class Renderer {
       }
     }
 
-    // 2. 15 Stepping Stones (.cell) in #road
+    // 2. 3レーン×5マスの踏み石（.cell）。
+    //    .cell は各レーンの .cells の中に absolute で置かれるので、座標は「道全体」ではなく
+    //    「そのレーンの .cells の左上」からのローカル座標にする（道全体の座標のままだと、2・3本目のレーンが右にずれる）
     const roadRect = this.el.road?.getBoundingClientRect?.();
     if (roadRect && roadRect.width > 0 && roadRect.height > 0) {
+      const originCache = new Map();
       for (const cell of this.el.road.querySelectorAll('.cell')) {
         const lane = Number(cell.dataset.lane);
         const row = Number(cell.dataset.row);
         if (!Number.isFinite(lane) || !Number.isFinite(row)) continue;
         const wPos = this.fieldGL.cellWorldPos(lane, row);
-        const pt = this.fieldGL.projectWorldToScreen({ x: wPos.x, y: 0.05, z: wPos.z }, roadRect);
+        const parent = cell.offsetParent ?? cell.parentElement;
+        let origin = originCache.get(parent);
+        if (!origin) { origin = parent.getBoundingClientRect(); originCache.set(parent, origin); }
+        const pt = this.fieldGL.projectWorldToScreen({ x: wPos.x, y: 0.05, z: wPos.z }, origin);
         if (!pt) continue;
         const isMid = cell.classList.contains('mid');
         const sz = Math.round((isMid ? 68 : 54) * pt.scale);
@@ -1534,14 +1551,21 @@ export class Renderer {
     }
   }
 
+  /** 3D射影で書き換えたインラインスタイルを全部消して、2Dの配置へ完全に戻す */
   clear3DOverlay() {
     for (const s of this.soldiers.values()) {
+      if (!s.el) continue;
       delete s.el.dataset.proj3d;
       s.el.style.removeProperty('left');
+      s.el.style.removeProperty('top');
+      s.el.style.removeProperty('z-index');
       this.place(s);
     }
     for (const m of this.monsters.values()) {
+      if (!m.el) continue;
       delete m.el.dataset.proj3d;
+      m.el.style.removeProperty('z-index');
+      this.placeMonsterEl(m.el, m);
     }
     for (const cell of this.el.road.querySelectorAll('.cell')) {
       delete cell.dataset.proj3d;

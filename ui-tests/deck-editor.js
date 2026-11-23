@@ -32,7 +32,9 @@ async function verify(width, height, reducedMotion) {
     const presets = await fetch('data/decks.json').then(response => response.json());
     localStorage.setItem('cf-mydeck-v1', JSON.stringify({ ...presets.costBalance.cards, oldCard: 1 }));
   });
-  await page.goto(new URL('?local=1&cpu=hard&debug=1&seed=8', base).href);
+  const matchUrl=new URL('?local=1&cpu=hard&debug=1&seed=8',base);
+  if(process.env.UI_TEST_FIELD3D)matchUrl.searchParams.set('field3d',process.env.UI_TEST_FIELD3D);
+  await page.goto(matchUrl.href);
   await page.waitForFunction(() => Boolean(window.castlefield?.game()));
   await page.evaluate(async () => { (await import('./js/ui/config.js')).UI_CONFIG.speed = .03; });
   await press('#menu-open');
@@ -113,7 +115,7 @@ async function verify(width, height, reducedMotion) {
 
   await toTitle(page);
   assert.match(await page.locator('#home [data-part="deck"]').innerText(), /確認用のデッキ/);
-  await page.click('#home .home-tab[data-tab=battle]'); await press('#home .home-mode[data-mode="local"]');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await press('#home .home-mode[data-mode="local"]');
   await page.click('#home .home-tab[data-tab=battle]'); await press('#home [data-act="start"]');
   await press('.local-options summary');
   await press('.local-options .pill[data-value="cost"]');
@@ -124,7 +126,7 @@ async function verify(width, height, reducedMotion) {
   await page.waitForFunction(() => window.castlefield?.game()?.getState(null).players.p1.deckId === 'custom');
   await page.goto(base);
   await toTitle(page);
-  await page.click('#home .home-tab[data-tab=battle]'); await press('#home .home-mode[data-mode="online"]');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await press('#home .home-mode[data-mode="online"]');
   await page.click('#home .home-tab[data-tab=battle]'); await press('#home [data-act="start"]');
   await page.locator('#title-name').fill('編成テスト');
   await page.locator('#title-pass').fill(`deck-${width}-${Date.now()}`);
