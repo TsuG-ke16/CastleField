@@ -124,19 +124,16 @@ export function attackFrames(style, ux, uy, r) {
   }
 }
 
-const INK = '#4a2e1a';
-const P = `stroke="${INK}" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"`;
-const wrap = (body) => `<svg viewBox="-50 -50 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${body}</svg>`;
-const CRESCENT = 'M-40 22 Q0 -52 40 22 Q0 -12 -40 22 Z';
-const STAR = 'M0 -44 L9 -15 L38 -24 L18 -2 L44 12 L14 14 L20 42 L0 22 L-20 42 L-14 14 L-44 12 L-18 -2 L-38 -24 L-9 -15 Z';
+const IMPACT_FILE = {
+  thrust: 'impact-thrust',
+  claw: 'impact-claw',
+  star: 'impact-star',
+  cross: 'impact-slash',
+  slash: 'impact-slash',
+};
 
-/** 当たった瞬間の印（太いこげ茶の輪郭線で、絵柄に合わせる）。右向き（0度）が攻撃の向き */
-export function impactSvg(style, color = '#fff') {
-  switch (style) {
-    case 'thrust': return wrap(`<path d="M-48 0 L8 -8 L48 0 L8 8 Z" fill="${color}" ${P}/><path d="M-30 -14 L6 -17 M-30 14 L6 17" fill="none" stroke="${color}" stroke-width="3" stroke-linecap="round" opacity=".85"/>`);
-    case 'claw': return wrap([-20, 0, 20].map((y) => `<path d="M-36 ${y - 12} Q4 ${y - 8} 36 ${y + 14} Q0 ${y + 2} -36 ${y - 12} Z" fill="${color}" ${P}/>`).join(''));
-    case 'cross': return wrap(`<g transform="rotate(90)"><path d="${CRESCENT}" fill="${color}" ${P}/></g>`);
-    case 'star': return wrap(`<path d="${STAR}" fill="${color}" ${P}/><circle r="11" fill="#fff"/>`);
-    default: return wrap(`<g transform="rotate(90)"><path d="${CRESCENT}" fill="${color}" ${P}/></g>`);
-  }
+/** 当たった瞬間の印（星雲×オーロラ発光の画像生成エフェクト）。右向き（0度）が攻撃の向き */
+export function impactArt(style) {
+  const file = IMPACT_FILE[style] ?? 'impact-slash';
+  return `<img class="impact-img impact-${file}" src="assets/ui/cosmic/${file}.webp" alt="" aria-hidden="true" decoding="async" draggable="false">`;
 }

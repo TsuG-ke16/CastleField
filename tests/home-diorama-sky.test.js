@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { HOME_SKY_MODES, HOME_SKY_LABELS, resolveSkyPhase } from '../js/ui/HomeDioramaGL.js';
+import { HOME_SKY_MODES, HOME_SKY_LABELS, resolveSkyPhase, cosmicImagePath } from '../js/ui/HomeDioramaGL.js';
 
 test('HOME_SKY_MODES に自動と4時間帯がすべて揃っている', () => {
   assert.deepEqual(HOME_SKY_MODES, ['auto', 'dawn', 'day', 'dusk', 'night']);
@@ -41,4 +41,11 @@ test('auto モードは現在時刻に応じて4時間帯へ滑らかに切り�
   // 境界時刻（16:30）は昼と黄昏の中間値へ連続補間される
   const transition = resolveSkyPhase('auto', new Date(2026, 10, 23, 16, 30, 0));
   assert.ok(transition.emissiveScale > day.emissiveScale && transition.emissiveScale < dusk.emissiveScale);
+});
+
+test('cosmicImagePath が時間帯・モード・陣営ごとのWebPパスを正しく返す', () => {
+  assert.equal(cosmicImagePath('night', 'overview', 'kingdom'), 'assets/models/diorama/cosmic_home/night_overview.webp');
+  assert.equal(cosmicImagePath('dusk', 'factions', 'dragon'), 'assets/models/diorama/cosmic_home/dusk_dragon.webp');
+  assert.equal(cosmicImagePath('dawn', 'factions', 'forest'), 'assets/models/diorama/cosmic_home/dawn_forest.webp');
+  assert.equal(cosmicImagePath('unknown', 'factions', 'unknown'), 'assets/models/diorama/cosmic_home/night_overview.webp');
 });

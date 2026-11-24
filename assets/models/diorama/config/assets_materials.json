@@ -1,19 +1,21 @@
 {
   "summary": {
-    "total_objects": 45,
-    "total_meshes": 19,
-    "total_polygons": 197780,
-    "total_triangles": 199160,
-    "total_materials": 14,
+    "total_objects": 49,
+    "total_meshes": 23,
+    "total_polygons": 200772,
+    "total_triangles": 205112,
+    "total_materials": 18,
     "external_assets_used": "Tripo Studio 3D sculpted PBR assets (4 faction hero castles + 4-biome floating island base, decimated & texture-baked with synthesized emissive maps via prepare_tripo_castles.py / prepare_tripo_island.py) + procedural Blender lanterns, bollards, waterfall mist, fireflies, clouds, lighting & 10-camera rig."
   },
   "collections": {
     "Bridges": {
-      "object_count": 2,
-      "mesh_count": 2,
-      "polygons": 272,
-      "triangles": 512,
+      "object_count": 4,
+      "mesh_count": 4,
+      "polygons": 1744,
+      "triangles": 3424,
       "objects": [
+        "Bridges_Stone_Stairs",
+        "Bridges_Stone_Nosings",
         "Bridges_Lantern_Iron",
         "Bridges_Lantern_Glow"
       ]
@@ -140,25 +142,36 @@
     "Roads": {
       "object_count": 3,
       "mesh_count": 3,
-      "polygons": 640,
-      "triangles": 1216,
+      "polygons": 592,
+      "triangles": 1120,
       "objects": [
-        "Roads_Threshold_Bollards",
+        "Roads_Approach_Landings",
         "Roads_Threshold_Iron",
         "Roads_Threshold_Glow"
       ]
     },
     "Water": {
-      "object_count": 1,
-      "mesh_count": 1,
-      "polygons": 960,
-      "triangles": 960,
+      "object_count": 3,
+      "mesh_count": 3,
+      "polygons": 2528,
+      "triangles": 4096,
       "objects": [
+        "Water_Moat_Animated",
+        "Water_Waterfalls_Animated",
         "Water_Waterfall_MistPlumes"
       ]
     }
   },
   "materials": {
+    "Mat_Bridge_Ashlar": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": true,
+      "metallic": 0.0,
+      "roughness": 0.72,
+      "emission_strength": 0.0,
+      "alpha": 1.0
+    },
     "Mat_Cloud_Mist": {
       "source": "Procedural Blender PBR",
       "uses_image_textures": false,
@@ -239,6 +252,33 @@
       "roughness": 0.5,
       "emission_strength": 0.0,
       "alpha": 1.0
+    },
+    "Mat_Water_Crystal": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.03,
+      "roughness": 0.06,
+      "emission_strength": 0.0,
+      "alpha": 0.84
+    },
+    "Mat_Water_Foam": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.48,
+      "emission_strength": 0.36,
+      "alpha": 0.92
+    },
+    "Mat_Waterfall_Stream": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.14,
+      "emission_strength": 0.42,
+      "alpha": 0.86
     },
     "tripo_material_427fa42f-41a3-46af-8d7a-d20552aeea43": {
       "source": "Tripo Studio PBR (optimized + synthesized emissive)",

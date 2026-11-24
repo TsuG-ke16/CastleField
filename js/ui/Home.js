@@ -97,8 +97,8 @@ export class Home {
    * @param {(type: string) => void} [o.onZoomCard] カードを大きく見せる（CardZoom）
    * @param {object} [o.cards] @param {object} [o.rarities] @param {object} [o.rules] @param {object} [o.decks] デッキの中身を見せるのに使う（data/ の中身）
    */
-  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {}, skyMode = 'auto' }) {
-    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks, ruleset, factions, onRuleset, skyMode });
+  constructor({ onPlay, onDeck, onCatalog, onSettings, onHelp = () => {}, getRecord = () => '', onProfile, onRanked = () => {}, onRanking = () => {}, onFriends = () => {}, onShop = () => {}, onGacha = () => {}, onGachaPull = () => {}, onSkin = () => {}, onMission = () => {}, onAccount, onZoomCard = () => {}, toast = () => {}, cards = null, rarities = null, rules = null, decks = null, ruleset = 'kingdom', factions = null, onRuleset = () => {}, skyMode = 'auto', home3d = true }) {
+    Object.assign(this, { onPlay, onDeck, onCatalog, onSettings, onHelp, getRecord, onProfile, onRanked, onRanking, onFriends, onShop, onGacha, onGachaPull, onSkin, onMission, onAccount, onZoomCard, toast, cards, rarities, rules, decks, ruleset, factions, onRuleset, skyMode, home3d });
     this.deckSort = 'rarity';
     this.data = null;
     this.mode = 'solo';
@@ -120,7 +120,7 @@ export class Home {
         </button>
         <div class="home-side">
           <span class="home-wallet-pill"><span class="home-coins" title="ゲーム内通貨（無料）" data-part="coins"><img src="assets/ui/icon-coin.png" alt="コイン" width="22" height="22"><b>0</b></span><button type="button" class="home-coin-add raw-btn" data-act="shop" data-part="coinAdd" aria-label="コインのショップを開く">+</button></span>
-          <button type="button" class="home-icon-btn raw-btn" data-act="notice" aria-label="お知らせ"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 3.2c-3.3 0-5.6 2.5-5.6 5.8v3.6L4.6 15.4c-.4.6 0 1.4.8 1.4h13.2c.8 0 1.2-.8.8-1.4l-1.8-2.8V9c0-3.3-2.3-5.8-5.6-5.8Z" fill="#ffd36b" stroke="#4d3426" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.6 18.6a2.5 2.5 0 0 0 4.8 0" fill="#ffd36b" stroke="#4d3426" stroke-width="1.8" stroke-linecap="round"/><path d="M8.6 7.6c.5-1 1.3-1.6 2.3-1.9" fill="none" stroke="#fff6cf" stroke-width="1.6" stroke-linecap="round"/></svg><i class="home-dot" data-part="dot" hidden></i></button>
+          <button type="button" class="home-icon-btn raw-btn" data-act="notice" aria-label="お知らせ">${homeIcon('notice', 24)}<i class="home-dot" data-part="dot" hidden></i></button>
         </div>
       </header>
 
@@ -132,7 +132,7 @@ export class Home {
             <b data-part="name2">—</b>
             <span class="home-titlechip" data-part="title2"></span>
           </div>
-          <button type="button" class="cf-btn cf-btn-secondary raw-btn home-profile-edit" data-act="profile"><svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M4 14.5 13.2 5.3l1.5 1.5L5.5 16H4Z" fill="#ffd36b" stroke="#4d3426" stroke-width="1.6" stroke-linejoin="round"/><path d="m12 6.5 1.5 1.5" stroke="#4d3426" stroke-width="1.6"/></svg>プロフィールを編集</button>
+          <button type="button" class="cf-btn cf-btn-secondary raw-btn home-profile-edit" data-act="profile">${homeIcon('edit', 18)}プロフィールを編集</button>
         </section>
         <section class="home-card home-rankstats" aria-label="ランクと戦績">
           <div class="home-rankstats-head">
@@ -162,7 +162,7 @@ export class Home {
         <h1 class="home-pagehead home-pagehead-cards"><span>デッキ編成</span></h1>
         <div class="home-deck-tabsrow">
           <div class="home-deck-slots" role="radiogroup" aria-label="デッキを切りかえる" data-part="deckSlots"></div>
-          <button type="button" class="home-deck-pen raw-btn" data-act="deck" aria-label="デッキを編成する"><svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M4 14.5 13.2 5.3l1.5 1.5L5.5 16H4Z" fill="#fff" stroke="#4d3426" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+          <button type="button" class="home-deck-pen raw-btn" data-act="deck" aria-label="デッキを編成する">${homeIcon('edit', 20)}</button>
         </div>
         <section class="home-deckhero" aria-labelledby="home-deck-name">
           <div class="home-deckhero-head">
@@ -274,6 +274,7 @@ export class Home {
       viewMode: ruleset === 'factions' ? 'factions' : 'overview',
       faction: this.faction,
       skyMode,
+      use3D: home3d,
     });
     box.addEventListener('click', (e) => this.onClick(e));
     box.addEventListener('keydown', (e) => this.onKey(e));
@@ -285,6 +286,12 @@ export class Home {
   setSkyMode(mode) {
     this.skyMode = mode;
     this.diorama?.setSkyMode(mode);
+  }
+
+  /** ホームの3Dリアルタイム表示のON/OFFを更新（false=軽量高画質Cyclesプリレンダ / true=リアルタイム3D） */
+  set3DEnabled(enabled) {
+    this.home3d = Boolean(enabled);
+    this.diorama?.set3DEnabled(this.home3d);
   }
 
   /** 4陣営モード時、3Dジオラマ下部からワンタップで4城を旋回切替できるバー */
@@ -780,7 +787,7 @@ export class Home {
           button.type = 'button';
           button.className = 'home-tile raw-btn';
           button.dataset.id = id;
-          // 補助メニューもナビと共通のSVGアイコンで表示する。
+          // 補助メニューもナビと共通の画像生成アイコンで表示する。
           const iconHtml = menuIcon(id, 24);
           button.innerHTML = `<span class="home-tile-icon">${iconHtml}</span><span class="home-tile-text"><span class="home-tile-label"></span>${style === 'list' ? '<small class="home-tile-note"></small>' : ''}</span>${style === 'list' ? '<span class="home-tile-chevron" aria-hidden="true"></span>' : ''}`;
           button.querySelector('.home-tile-label').textContent = MENU_IN_PAGE[tab]?.[id] ?? MENU[id];

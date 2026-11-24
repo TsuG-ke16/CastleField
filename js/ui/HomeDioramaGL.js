@@ -1,13 +1,16 @@
-// ホーム画面用 4陣営3D浮遊島ジオラマ（宇宙に浮かぶ少し寂しい箱庭＋4時間帯連続ライティング）
-// - assets/models/diorama/castle_field_diorama.glb を js/vendor/three/ でリアルタイム描画
-// - 360°宇宙スカイドーム（GLSL）・瞬く星空・遠景の輪を持つ月・漂う星屑・流れ星
-// - 4時間帯（明け方／星昼／黄昏／深宇宙）を現在時刻で連続補間、設定画面から手動固定も可能
-// - 4陣営モードでは中央広場 (0,0,0) を軸に滑らかに360°旋回（他陣営による遮蔽ゼロ）
-// - ?fx=lite / ?home3d=2d / WebGL不可時は何も描かず既存の2D背景へ安全にフォールバック
+// ホーム画面用 4陣営ジオラマ＆宇宙背景エンジン（ハイブリッド構成）
+// - デフォルト（軽量・最高画質モード / home3d: false）：
+//     Blender Cycles OPTIX＋本物Bloomで事前出力した 4時間帯×5視点のWebP画像と、
+//     超軽量2D Canvasの「瞬く星空・星雲・星屑・流れ星」を組み合わせて表示（.glb未読込・低発熱・即起動）
+// - リアルタイム3Dモード（設定「ホームの3D表示：ON」または ?home3d=3d）：
+//     assets/models/diorama/castle_field_diorama.glb を Three.js でリアルタイム描画し、
+//     360°宇宙スカイドーム・動く水面＆4本の滝シェーダー・滝壺ミスト・中央広場軸の360°旋回・ドラッグ鑑賞を提供
+// - ?fx=lite / WebGL不可時は自動的に軽量モード・2D背景へ安全にフォールバック
 
 import { UI_CONFIG } from './config.js';
 
 export const DIORAMA_GLB_PATH = 'assets/models/diorama/castle_field_diorama.glb';
+export const COSMIC_HOME_DIR = 'assets/models/diorama/cosmic_home';
 
 export const HOME_SKY_MODES = ['auto', 'dawn', 'day', 'dusk', 'night'];
 export const HOME_SKY_LABELS = {
@@ -18,8 +21,6 @@ export const HOME_SKY_LABELS = {
   night: '深宇宙',
 };
 
-// Blender Z-up -> Three.js Y-up: (x, y, z)_three = (x, z, -y)_blender
-// 角度定義（XZ平面）: angle=0 -> +X (demon), 90 -> -Z (kingdom), 180 -> -X (forest), 270 -> +Z (dragon)
 const FACTION_ANGLE_DEG = {
   demon: 0,
   kingdom: 90,
@@ -60,6 +61,9 @@ const SKY_PRESETS = {
     hemiIntensity: 0.72,
     pointScale: 0.55,
     emissiveScale: 1.05,
+    waterDeep: '#19456b',
+    waterShallow: '#58b4cc',
+    waterGlint: '#ffe4cf',
     dustColor: '#e8d8ff',
     dustOpacity: 0.52,
     planetAlpha: 0.55,
@@ -89,6 +93,9 @@ const SKY_PRESETS = {
     hemiIntensity: 0.92,
     pointScale: 0.35,
     emissiveScale: 0.82,
+    waterDeep: '#156092',
+    waterShallow: '#68d4ea',
+    waterGlint: '#ffffff',
     dustColor: '#d8f0ff',
     dustOpacity: 0.44,
     planetAlpha: 0.42,
@@ -118,6 +125,9 @@ const SKY_PRESETS = {
     hemiIntensity: 0.68,
     pointScale: 0.85,
     emissiveScale: 1.48,
+    waterDeep: '#1f2852',
+    waterShallow: '#548eb0',
+    waterGlint: '#ffbe8a',
     dustColor: '#ffd4b8',
     dustOpacity: 0.62,
     planetAlpha: 0.70,
@@ -147,6 +157,9 @@ const SKY_PRESETS = {
     hemiIntensity: 0.56,
     pointScale: 1.15,
     emissiveScale: 1.85,
+    waterDeep: '#0a2648',
+    waterShallow: '#2b7ba8',
+    waterGlint: '#b8dcff',
     dustColor: '#b8d4ff',
     dustOpacity: 0.72,
     planetAlpha: 0.85,
@@ -154,7 +167,6 @@ const SKY_PRESETS = {
   },
 };
 
-// 24時間サイクルのアンカー（時刻hとプリセット名）
 const TIME_ANCHORS = [
   { h: 0.0, key: 'night' },
   { h: 4.5, key: 'night' },
@@ -243,6 +255,13 @@ export function resolveSkyPhase(mode = 'auto', date = new Date()) {
   return { key: 'night', ...SKY_PRESETS.night };
 }
 
+/** Cycles 事前レンダリング WebP のパスを返す */
+export function cosmicImagePath(phaseKey, viewMode, faction) {
+  const phase = Object.hasOwn(SKY_PRESETS, phaseKey) ? phaseKey : 'night';
+  const view = viewMode === 'factions' && FACTION_ANGLE_DEG[faction] !== undefined ? faction : 'overview';
+  return `${COSMIC_HOME_DIR}/${phase}_${view}.webp`;
+}
+
 function querySkyOverride() {
   try {
     const q = new URLSearchParams(location.search).get('sky');
@@ -251,10 +270,18 @@ function querySkyOverride() {
   return null;
 }
 
-function isDisabledByQuery() {
+function queryHome3dOverride() {
   try {
     const q = new URLSearchParams(location.search);
-    return q.get('fx') === 'lite' || q.get('home3d') === '2d';
+    if (q.get('fx') === 'lite' || q.get('home3d') === '2d' || q.get('home3d') === '0') return false;
+    if (q.get('home3d') === '3d' || q.get('home3d') === '1') return true;
+  } catch { /* ignore */ }
+  return null;
+}
+
+function isLiteMode() {
+  try {
+    return new URLSearchParams(location.search).get('fx') === 'lite';
   } catch {
     return false;
   }
@@ -291,11 +318,11 @@ function loadDioramaGlb(GLTFLoader) {
 }
 
 function shortestAngleDiff(fromDeg, toDeg) {
-  let d = ((toDeg - fromDeg + 180) % 360 + 360) % 360 - 180;
-  return d;
+  return ((toDeg - fromDeg + 180) % 360 + 360) % 360 - 180;
 }
 
-// 360°宇宙スカイドーム用 GLSL シェーダー
+// ---------- GLSL シェーダー群 ----------
+
 const SKY_VERTEX_SHADER = /* glsl */ `
   varying vec3 vDir;
   void main() {
@@ -315,7 +342,6 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
   uniform vec3 uSunDir;
   uniform vec3 uHaloColor;
   uniform float uHaloStrength;
-  uniform float uStarVis;
   uniform float uTime;
   varying vec3 vDir;
 
@@ -361,12 +387,10 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
     vec3 d = normalize(vDir);
     float h = d.y;
 
-    // 深い宇宙の縦グラデーション
     vec3 col = mix(uAbyss, uHorizon, smoothstep(-0.55, 0.02, h));
     col = mix(col, uMid, smoothstep(0.02, 0.34, h));
     col = mix(col, uZenith, smoothstep(0.32, 0.88, h));
 
-    // 斜めに横切る静かな天の川・星雲ベール
     vec3 nebP = vec3(d.x * 2.2 + d.z * 0.9, d.y * 3.1 - d.x * 1.4, d.z * 2.2) + vec3(uTime * 0.004, 0.0, -uTime * 0.003);
     float n1 = fbm(nebP * 1.4);
     float n2 = fbm(nebP * 2.8 + vec3(3.1, -2.4, 1.7));
@@ -375,7 +399,6 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
     vec3 nebCol = mix(uNebulaA, uNebulaB, n2);
     col += nebCol * wisps * uNebulaStrength;
 
-    // 遠い恒星・月のやわらかな光輪
     float sunDot = max(0.0, dot(d, normalize(uSunDir)));
     float halo = pow(sunDot, 10.0) * 0.55 + pow(sunDot, 64.0) * 0.75;
     col += uHaloColor * halo * uHaloStrength;
@@ -384,30 +407,323 @@ const SKY_FRAGMENT_SHADER = /* glsl */ `
   }
 `;
 
+// 動く環状堀・4河川シェーダー（外向きの流れ＋星明かり波紋きらめき＋白波）
+const WATER_MOAT_VERT = /* glsl */ `
+  uniform float uTime;
+  varying vec2 vUv;
+  varying vec3 vWorldPos;
+  void main() {
+    vUv = uv;
+    vec3 pos = position;
+    pos.y += sin(pos.x * 0.75 + uTime * 1.9) * 0.035 + cos(pos.z * 0.82 - uTime * 1.55) * 0.035;
+    vec4 wp = modelMatrix * vec4(pos, 1.0);
+    vWorldPos = wp.xyz;
+    gl_Position = projectionMatrix * viewMatrix * wp;
+  }
+`;
+
+const WATER_MOAT_FRAG = /* glsl */ `
+  uniform float uTime;
+  uniform vec3 uDeep;
+  uniform vec3 uShallow;
+  uniform vec3 uGlint;
+  varying vec2 vUv;
+  varying vec3 vWorldPos;
+
+  float wavePattern(vec2 p, float t) {
+    float w1 = sin(p.x * 1.6 + t * 1.6 + sin(p.y * 1.1 - t * 0.9));
+    float w2 = cos(p.y * 1.9 - t * 2.1 + cos(p.x * 1.3 + t * 1.2));
+    float w3 = sin((p.x - p.y) * 2.4 + t * 2.5);
+    return (w1 + w2 + w3) / 3.0;
+  }
+
+  void main() {
+    float r = length(vWorldPos.xz);
+    vec2 flowUv = vec2(vUv.x * 3.5, vUv.y * 3.0 - uTime * 0.55);
+    float wA = wavePattern(flowUv * 1.8, uTime);
+    float wB = wavePattern(vWorldPos.xz * 0.42 - vec2(uTime * 0.25, uTime * 0.18), uTime * 0.85);
+    float ripples = 0.5 + 0.5 * (wA * 0.55 + wB * 0.45);
+
+    vec3 col = mix(uDeep, uShallow, smoothstep(0.20, 0.88, ripples));
+
+    // 流れ筋と微細な星明かりスペキュラ
+    float streak = smoothstep(0.68, 0.96, sin(vUv.x * 26.0 + wA * 2.0) * 0.5 + 0.5) * smoothstep(0.35, 0.85, ripples);
+    float sparkle = pow(max(0.0, wA * wB), 3.0) * 0.65;
+    col = mix(col, uGlint, streak * 0.26 + sparkle * 0.55);
+
+    // 広場縁（r ≈ 9.2〜10.0）に繊細な岸辺の波紋ハイライト
+    float shore = smoothstep(10.1, 9.2, r) * (0.45 + 0.55 * sin(r * 9.0 - uTime * 3.0));
+    col = mix(col, uGlint, clamp(shore * 0.35, 0.0, 0.4));
+
+    gl_FragColor = vec4(col, 0.92);
+  }
+`;
+
+// 流れ落ちる4本の滝シェーダー（連続落下スクロール＋白波リボン＋下端の宇宙霧フェード）
+const WATERFALL_VERT = /* glsl */ `
+  uniform float uTime;
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    vec3 pos = position;
+    float sway = sin(uv.y * 8.0 - uTime * 4.2 + uv.x * 6.0) * 0.08 * sin(uv.y * 3.14159);
+    pos.x += sway;
+    pos.z += sway;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  }
+`;
+
+const WATERFALL_FRAG = /* glsl */ `
+  uniform float uTime;
+  uniform vec3 uDeep;
+  uniform vec3 uShallow;
+  uniform vec3 uGlint;
+  varying vec2 vUv;
+
+  void main() {
+    // 上(v=0)から下(v=1)へ絶えず流れ落ちる二重スクロール
+    float flow1 = vUv.y * 4.5 - uTime * 1.45;
+    float flow2 = vUv.y * 8.0 - uTime * 2.25;
+
+    float s1 = 0.5 + 0.5 * sin(vUv.x * 22.0 + sin(flow1 * 2.6) * 1.4);
+    float s2 = 0.5 + 0.5 * sin(vUv.x * 40.0 - flow2 * 1.2 + cos(flow1 * 3.2));
+    float foamRibbon = smoothstep(0.58, 0.92, s1 * 0.6 + s2 * 0.4);
+
+    // 落ち口の白波クレスト（vUv.y < 0.16）
+    float crestFoam = smoothstep(0.18, 0.0, vUv.y) * (0.55 + 0.45 * s2);
+
+    vec3 col = mix(uDeep, uShallow, 0.35 + 0.45 * s1);
+    col = mix(col, uGlint, clamp(foamRibbon * 0.58 + crestFoam * 0.72, 0.0, 0.92));
+
+    // 左右端と下端が宇宙の霧へふわりと溶ける
+    float edgeFade = smoothstep(0.0, 0.12, vUv.x) * smoothstep(1.0, 0.88, vUv.x);
+    float bottomFade = smoothstep(1.0, 0.72, vUv.y);
+    float alpha = (0.78 + foamRibbon * 0.20) * edgeFade * bottomFade;
+    gl_FragColor = vec4(col, alpha);
+  }
+`;
+
+// ---------- 軽量2D宇宙星空キャンバス（デフォルト：Cyclesプリレンダ背景の土台） ----------
+
+class CosmicBackdrop2D {
+  constructor(skyEl) {
+    this.skyEl = skyEl;
+    this.canvas = document.createElement('canvas');
+    this.canvas.className = 'home-cosmic-2d-canvas';
+    this.canvas.setAttribute('aria-hidden', 'true');
+    this.ctx = this.canvas.getContext('2d');
+    this.phase = resolveSkyPhase('night');
+    this.stars = [];
+    this.dust = [];
+    this.meteor = null;
+    this.meteorCooldown = 5.0;
+    this.elapsed = 0;
+
+    let seed = 4242;
+    const rand = () => {
+      seed = (seed * 16807) % 2147483647;
+      return (seed - 1) / 2147483646;
+    };
+    const tints = ['#ffffff', '#cce2ff', '#ffe8c6', '#b8ccff'];
+    for (let i = 0; i < 220; i++) {
+      this.stars.push({
+        x: rand(),
+        y: rand() * 0.86,
+        r: 0.55 + Math.pow(rand(), 2.2) * 1.75,
+        phase: rand() * Math.PI * 2,
+        speed: 0.9 + rand() * 2.1,
+        tint: tints[Math.floor(rand() * tints.length)],
+        alpha: 0.35 + rand() * 0.65,
+      });
+    }
+    for (let i = 0; i < 48; i++) {
+      this.dust.push({
+        x: rand(),
+        y: 0.15 + rand() * 0.75,
+        r: 1.0 + rand() * 1.8,
+        vx: (rand() - 0.5) * 0.008,
+        vy: -(0.004 + rand() * 0.008),
+        phase: rand() * Math.PI * 2,
+      });
+    }
+  }
+
+  mount() {
+    this.skyEl.replaceChildren(this.canvas);
+    this.resize();
+  }
+
+  resize() {
+    const rect = this.skyEl.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = Math.max(1, Math.round(rect.width || window.innerWidth));
+    const h = Math.max(1, Math.round(rect.height || window.innerHeight));
+    this.w = w;
+    this.h = h;
+    this.canvas.width = Math.round(w * dpr);
+    this.canvas.height = Math.round(h * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  setPhase(p) {
+    this.phase = p;
+  }
+
+  draw(dt, reduced) {
+    if (!this.ctx || !this.w || !this.h) return;
+    if (!reduced) this.elapsed += dt;
+    const ctx = this.ctx;
+    const w = this.w;
+    const h = this.h;
+    const p = this.phase;
+
+    // 1. 深い宇宙の縦グラデーション
+    const bg = ctx.createLinearGradient(0, 0, 0, h);
+    bg.addColorStop(0.0, p.zenith);
+    bg.addColorStop(0.36, p.mid);
+    bg.addColorStop(0.68, p.horizon);
+    bg.addColorStop(1.0, p.abyss);
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, w, h);
+
+    // 2. 柔らかな星雲グロー（2層）
+    const drawNebula = (cx, cy, rad, hex, alpha) => {
+      const [r, g, b] = hexToRgb(hex);
+      const gr = ctx.createRadialGradient(cx, cy, 0, cx, cy, rad);
+      gr.addColorStop(0.0, `rgba(${r},${g},${b},${alpha.toFixed(3)})`);
+      gr.addColorStop(0.55, `rgba(${r},${g},${b},${(alpha * 0.36).toFixed(3)})`);
+      gr.addColorStop(1.0, `rgba(${r},${g},${b},0)`);
+      ctx.fillStyle = gr;
+      ctx.fillRect(0, 0, w, h);
+    };
+    const drift = Math.sin(this.elapsed * 0.12) * w * 0.03;
+    drawNebula(w * 0.28 + drift, h * 0.34, Math.max(w, h) * 0.58, p.nebulaA, p.nebulaStrength * 0.42);
+    drawNebula(w * 0.74 - drift, h * 0.28, Math.max(w, h) * 0.52, p.nebulaB, p.nebulaStrength * 0.36);
+
+    // 3. 瞬く星空
+    const sv = Math.max(0.22, p.starVisibility);
+    for (const s of this.stars) {
+      const tw = reduced ? 0.85 : (0.58 + 0.42 * Math.sin(this.elapsed * s.speed + s.phase));
+      ctx.globalAlpha = s.alpha * tw * sv;
+      ctx.fillStyle = s.tint;
+      ctx.beginPath();
+      ctx.arc(s.x * w, s.y * h, s.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 4. 遠くに佇む淡い輪を持つ惑星（右上/左上奥に控えめに）
+    const px = w * 0.17;
+    const py = h * 0.22;
+    const pr = Math.min(w, h) * 0.028;
+    ctx.save();
+    ctx.globalAlpha = p.planetAlpha * 0.45;
+    ctx.strokeStyle = '#9db8df';
+    ctx.lineWidth = Math.max(1.2, pr * 0.16);
+    ctx.beginPath();
+    ctx.ellipse(px, py, pr * 2.1, pr * 0.52, -0.32, 0, Math.PI * 2);
+    ctx.stroke();
+    const pg = ctx.createRadialGradient(px - pr * 0.35, py - pr * 0.35, pr * 0.1, px, py, pr);
+    pg.addColorStop(0, '#8ba4cc');
+    pg.addColorStop(1, '#1a2744');
+    ctx.fillStyle = pg;
+    ctx.beginPath();
+    ctx.arc(px, py, pr, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // 5. 漂う微細な星屑パーティクル
+    const [dr, dg, db] = hexToRgb(p.dustColor);
+    for (const d of this.dust) {
+      if (!reduced) {
+        d.x = (d.x + d.vx * dt + 1) % 1;
+        d.y = d.y + d.vy * dt;
+        if (d.y < 0.08) d.y = 0.88;
+      }
+      const pulse = 0.45 + 0.55 * Math.sin(this.elapsed * 1.1 + d.phase);
+      ctx.globalAlpha = p.dustOpacity * 0.48 * pulse;
+      ctx.fillStyle = `rgb(${dr},${dg},${db})`;
+      ctx.beginPath();
+      ctx.arc(d.x * w, d.y * h, d.r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 6. 控えめな流れ星（夜間・黄昏のみ）
+    if (!reduced && sv > 0.48) {
+      if (this.meteor) {
+        this.meteor.t += dt;
+        const u = this.meteor.t / this.meteor.dur;
+        if (u >= 1) {
+          this.meteor = null;
+          this.meteorCooldown = 9 + Math.random() * 14;
+        } else {
+          const mx = (this.meteor.x + this.meteor.dx * u) * w;
+          const my = (this.meteor.y + this.meteor.dy * u) * h;
+          const tail = Math.min(w, h) * 0.12;
+          const grad = ctx.createLinearGradient(mx, my, mx - this.meteor.dx * tail, my - this.meteor.dy * tail);
+          const al = Math.sin(u * Math.PI) * 0.65 * sv;
+          grad.addColorStop(0, `rgba(225,240,255,${al.toFixed(3)})`);
+          grad.addColorStop(1, 'rgba(225,240,255,0)');
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = 1.6;
+          ctx.beginPath();
+          ctx.moveTo(mx, my);
+          ctx.lineTo(mx - this.meteor.dx * tail, my - this.meteor.dy * tail);
+          ctx.stroke();
+        }
+      } else {
+        this.meteorCooldown -= dt;
+        if (this.meteorCooldown <= 0) {
+          this.meteor = {
+            x: 0.25 + Math.random() * 0.65,
+            y: 0.06 + Math.random() * 0.22,
+            dx: -0.24 - Math.random() * 0.12,
+            dy: 0.12 + Math.random() * 0.08,
+            t: 0,
+            dur: 0.95,
+          };
+        }
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  destroy() {
+    this.canvas.remove();
+  }
+}
+
+// ---------- ハイブリッド統合コントローラ（案2プリレンダ＋案1リアルタイム3D） ----------
+
 export class HomeDioramaGL {
   /**
    * @param {object} opts
-   * @param {HTMLElement} opts.skyEl   全画面キャンバスを置く .home-sky
-   * @param {HTMLElement} opts.heroEl  城・浮遊島を中心に収める .home-hero
-   * @param {HTMLElement} opts.homeEl  #home ルート（状態クラス付与用）
+   * @param {HTMLElement} opts.skyEl
+   * @param {HTMLElement} opts.heroEl
+   * @param {HTMLElement} opts.homeEl
    * @param {string} [opts.viewMode]   'factions' | 'overview'
    * @param {string} [opts.faction]    'kingdom' | 'forest' | 'demon' | 'dragon'
    * @param {string} [opts.skyMode]    'auto' | 'dawn' | 'day' | 'dusk' | 'night'
+   * @param {boolean} [opts.use3D]     false=軽量Cyclesプリレンダ（デフォルト） / true=リアルタイム3D
    */
-  constructor({ skyEl, heroEl, homeEl, viewMode = 'overview', faction = 'kingdom', skyMode = 'auto' }) {
+  constructor({ skyEl, heroEl, homeEl, viewMode = 'overview', faction = 'kingdom', skyMode = 'auto', use3D = true }) {
     this.skyEl = skyEl;
     this.heroEl = heroEl;
     this.homeEl = homeEl;
     this.viewMode = viewMode;
     this.faction = FACTION_ANGLE_DEG[faction] !== undefined ? faction : 'kingdom';
     this.skyMode = querySkyOverride() ?? (HOME_SKY_MODES.includes(skyMode) ? skyMode : 'auto');
+    const q3d = queryHome3dOverride();
+    this.use3D = q3d !== null ? q3d : Boolean(use3D);
+
     this.activeTab = 'battle';
     this.visible = false;
     this.destroyed = false;
-    this.ready = false;
-    this.failed = false;
+    this.ready3D = false;
+    this.initializing3D = false;
+    this.failed3D = false;
 
-    // カメラ軌道状態
+    // カメラ軌道状態（3Dモード用）
     this.orbitAngleDeg = FACTION_ANGLE_DEG[this.faction] ?? 90;
     this.targetOrbitDeg = this.orbitAngleDeg;
     this.overviewAngleDeg = 7.0;
@@ -418,31 +734,118 @@ export class HomeDioramaGL {
     this.lastPointerY = 0;
     this.currentTargetY = FACTION_TARGET_Y[this.faction] ?? 5.25;
 
-    // 流れ星状態
     this.meteorTimer = 6.0;
     this.meteorLife = -1;
     this.meteorDuration = 1.1;
 
     this.emissiveMats = [];
     this.factionLights = [];
+    this.waterMats = [];
+    this.bloomAuras = [];
     this.lastClockSync = 0;
     this.rafId = 0;
     this.lastFrameTs = 0;
     this.elapsed = 0;
 
-    if (isDisabledByQuery()) {
-      this.failed = true;
+    if (isLiteMode()) {
+      this.disabled = true;
       return;
     }
 
-    this.initPromise = this.init().catch((err) => {
-      console.warn('[HomeDioramaGL] 3D背景をスキップして2Dへフォールバックします:', err?.message ?? err);
-      this.failed = true;
-      this.homeEl?.classList.remove('has-3d-diorama', 'diorama-3d-ready');
-    });
+    // プリレンダ用クロスフェード画像スロットを .home-hero 内に用意
+    this.setupPrerenderLayer();
+    // 2D宇宙星空キャンバスを用意
+    this.backdrop2D = new CosmicBackdrop2D(this.skyEl);
+    this.bindEvents();
+    this.applyRenderMode();
   }
 
-  async init() {
+  setupPrerenderLayer() {
+    if (!this.heroEl) return;
+    const wrap = document.createElement('div');
+    wrap.className = 'home-cosmic-stage';
+    wrap.setAttribute('aria-hidden', 'true');
+    const imgA = new Image();
+    imgA.className = 'home-cosmic-img is-active';
+    imgA.decoding = 'async';
+    imgA.draggable = false;
+    const imgB = new Image();
+    imgB.className = 'home-cosmic-img';
+    imgB.decoding = 'async';
+    imgB.draggable = false;
+    wrap.append(imgA, imgB);
+    this.heroEl.prepend(wrap);
+    this.prerenderWrap = wrap;
+    this.prerenderImgs = [imgA, imgB];
+    this.prerenderFront = 0;
+    this.currentImgSrc = '';
+  }
+
+  updatePrerenderImage(force = false) {
+    if (!this.prerenderWrap || this.use3D) return;
+    const phase = this.currentPhase?.key ?? resolveSkyPhase(this.skyMode).key;
+    const nextSrc = cosmicImagePath(phase, this.viewMode, this.faction);
+    if (!force && nextSrc === this.currentImgSrc) return;
+    this.currentImgSrc = nextSrc;
+
+    const backIdx = 1 - this.prerenderFront;
+    const backImg = this.prerenderImgs[backIdx];
+    const frontImg = this.prerenderImgs[this.prerenderFront];
+    const commit = () => {
+      if (this.destroyed || this.use3D || this.currentImgSrc !== nextSrc) return;
+      backImg.classList.add('is-active');
+      frontImg.classList.remove('is-active');
+      this.prerenderFront = backIdx;
+      this.homeEl.classList.add('diorama-3d-ready');
+    };
+    backImg.onload = commit;
+    backImg.onerror = () => {
+      // 画像が見つからない場合は既存の2Dアリーナ画像を維持
+      if (!this.currentImgSrc) this.homeEl.classList.remove('diorama-3d-ready');
+    };
+    backImg.src = nextSrc;
+    if (backImg.complete && backImg.naturalWidth > 0) commit();
+  }
+
+  applyRenderMode() {
+    if (this.disabled || this.destroyed) return;
+    this.homeEl.classList.add('has-3d-diorama');
+    this.homeEl.dataset.dioramaMode = this.use3D ? '3d' : 'prerender';
+
+    if (this.use3D && !this.failed3D) {
+      if (this.prerenderWrap) this.prerenderWrap.hidden = true;
+      if (this.ready3D && this.renderer) {
+        this.skyEl.replaceChildren(this.renderer.domElement);
+        this.homeEl.classList.add('diorama-3d-ready');
+        this.applySkyPhase(true);
+        this.resize();
+        if (this.visible) this.startLoop();
+      } else if (!this.initializing3D) {
+        // 3D初回読み込み中（一瞬の間）も背景透過Cycles画像＋2D宇宙星空を出してシームレスに繋ぐ
+        if (this.prerenderWrap) this.prerenderWrap.hidden = false;
+        this.backdrop2D.mount();
+        this.applySkyPhase(true);
+        this.updatePrerenderImage(true);
+        if (this.visible) this.startLoop();
+        this.init3D().catch((err) => {
+          console.warn('[HomeDioramaGL] 3D初期化に失敗したため省電力プリレンダへ切替えます:', err?.message ?? err);
+          this.failed3D = true;
+          this.use3D = false;
+          this.applyRenderMode();
+        });
+      }
+    } else {
+      // デフォルト：超軽量・Cycles最高画質プリレンダ＋2D星空アニメ
+      if (this.prerenderWrap) this.prerenderWrap.hidden = false;
+      this.backdrop2D.mount();
+      this.applySkyPhase(true);
+      this.resize();
+      if (this.visible) this.startLoop();
+    }
+  }
+
+  async init3D() {
+    this.initializing3D = true;
     const { THREE, GLTFLoader } = await loadLibs();
     if (this.destroyed) return;
     this.THREE = THREE;
@@ -455,7 +858,7 @@ export class HomeDioramaGL {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 0.96;
     renderer.domElement.className = 'home-diorama-canvas';
     renderer.domElement.setAttribute('aria-hidden', 'true');
     this.renderer = renderer;
@@ -463,32 +866,45 @@ export class HomeDioramaGL {
     const scene = new THREE.Scene();
     this.scene = scene;
 
-    const camera = new THREE.PerspectiveCamera(46, 1, 0.5, 650);
+    const camera = new THREE.PerspectiveCamera(45.5, 1, 0.5, 650);
     this.camera = camera;
 
-    // 1. 360°宇宙スカイドーム
     this.buildSkyDome(THREE, scene);
-    // 2. 瞬く3D星空・遠景の輪を持つ月・漂う星屑・流れ星
     this.buildCosmicElements(THREE, scene);
-    // 3. ライティング構築
     this.buildLights(THREE, scene);
 
-    // キャンバスを .home-sky へマウント（GLBロード中も美しい宇宙空が即座に表示される！）
-    this.skyEl.replaceChildren(renderer.domElement);
-    this.homeEl.classList.add('has-3d-diorama');
-
-    this.bindEvents();
-    this.applySkyPhase(true);
-    this.resize();
-    if (this.visible) this.startLoop();
-
-    // 4. 4陣営3Dジオラマ GLB を非同期ロード
     const gltf = await loadDioramaGlb(GLTFLoader);
     if (this.destroyed) return;
 
+    // 動く水面・滝の専用GLSLマテリアルを作成
+    const pInit = resolveSkyPhase(this.skyMode);
+    const moatMat = new THREE.ShaderMaterial({
+      vertexShader: WATER_MOAT_VERT,
+      fragmentShader: WATER_MOAT_FRAG,
+      transparent: true,
+      uniforms: {
+        uTime: { value: 0 },
+        uDeep: { value: new THREE.Color(pInit.waterDeep) },
+        uShallow: { value: new THREE.Color(pInit.waterShallow) },
+        uGlint: { value: new THREE.Color(pInit.waterGlint) },
+      },
+    });
+    const fallMat = new THREE.ShaderMaterial({
+      vertexShader: WATERFALL_VERT,
+      fragmentShader: WATERFALL_FRAG,
+      transparent: true,
+      side: THREE.DoubleSide,
+      depthWrite: false,
+      uniforms: {
+        uTime: { value: 0 },
+        uDeep: { value: new THREE.Color(pInit.waterDeep) },
+        uShallow: { value: new THREE.Color(pInit.waterShallow) },
+        uGlint: { value: new THREE.Color(pInit.waterGlint) },
+      },
+    });
+    this.waterMats = [moatMat, fallMat];
+
     const model = gltf.scene.clone(true);
-    // GLB に同梱された Blender Cycles 用の高出力ライトは無効化し、Three.js の時間帯ライトのみで正確に制御する！
-    // 併せて昼用雲リングを非表示にし、発光マップの強度を時間帯連動へ正規化
     const embeddedLights = [];
     model.traverse((obj) => {
       if (obj.isLight) {
@@ -502,14 +918,16 @@ export class HomeDioramaGL {
         obj.visible = false;
         return;
       }
+      if (obj.name === 'Water_Moat_Animated') {
+        obj.material = moatMat;
+        return;
+      }
+      if (obj.name === 'Water_Waterfalls_Animated') {
+        obj.material = fallMat;
+        return;
+      }
       if (obj.name === 'Water_Waterfall_MistPlumes') {
-        const m = obj.material?.clone?.();
-        if (m) {
-          m.transparent = true;
-          m.opacity = 0.22;
-          m.depthWrite = false;
-          obj.material = m;
-        }
+        obj.visible = false; // 3Dモードでは動的な滝壺霧パーティクルで表現
         return;
       }
       const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
@@ -518,7 +936,6 @@ export class HomeDioramaGL {
         const m = mat.clone();
         const hasEmissive = Boolean(m.emissiveMap) || (m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.05);
         if (hasEmissive) {
-          // Blender の Emission Strength (3.0+) をそのまま掛けると白飛びするため 1.0 基準へ正規化
           const baseInt = m.emissiveMap ? 0.95 : 1.15;
           m.emissiveIntensity = baseInt;
           this.emissiveMats.push({ mat: m, base: baseInt });
@@ -531,13 +948,106 @@ export class HomeDioramaGL {
 
     this.dioramaRoot = new THREE.Group();
     this.dioramaRoot.add(model);
+    this.buildWaterfallMistParticles(THREE, this.dioramaRoot);
+    this.buildBloomAuras(THREE, this.dioramaRoot);
+    this.dioramaRoot.visible = (this.activeTab === 'battle');
     scene.add(this.dioramaRoot);
 
-    this.ready = true;
-    this.homeEl.classList.add('diorama-3d-ready');
-    this.applySkyPhase(true);
-    this.resize();
-    this.renderOnce();
+    this.ready3D = true;
+    this.initializing3D = false;
+
+    if (this.use3D) {
+      if (this.prerenderWrap) this.prerenderWrap.hidden = true;
+      this.skyEl.replaceChildren(renderer.domElement);
+      this.homeEl.classList.add('diorama-3d-ready');
+      this.applySkyPhase(true);
+      this.resize();
+      if (this.visible) {
+        this.renderOnce3D();
+        this.startLoop();
+      }
+    }
+  }
+
+  buildWaterfallMistParticles(THREE, parent) {
+    // 4本の滝の下端（斜め45°/135°/225°/315°）から宇宙へ舞い散る霧の粒
+    const count = 84;
+    const pos = new Float32Array(count * 3);
+    this.wfMistData = new Float32Array(count * 4); // x0, y0, z0, phase
+    const diagAngles = [45, 135, 225, 315];
+    let idx = 0;
+    for (const deg of diagAngles) {
+      const a = (deg * Math.PI) / 180;
+      const ca = Math.cos(a);
+      const sa = Math.sin(a);
+      for (let k = 0; k < 21; k++) {
+        const spread = ((k % 7) - 3) * 0.72;
+        const rad = 28.4 + ((k * 13) % 5) * 0.35;
+        // Three.js Y-up: x = x_bl, y = z_bl, z = -y_bl
+        const x = ca * rad - sa * spread;
+        const z = -(sa * rad + ca * spread);
+        const y = -15.8 + ((k * 7) % 5) * 0.45;
+        pos[idx * 3] = x;
+        pos[idx * 3 + 1] = y;
+        pos[idx * 3 + 2] = z;
+        this.wfMistData[idx * 4] = x;
+        this.wfMistData[idx * 4 + 1] = y;
+        this.wfMistData[idx * 4 + 2] = z;
+        this.wfMistData[idx * 4 + 3] = (k / 21) * Math.PI * 2 + deg;
+        idx++;
+      }
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    this.wfMistGeo = geo;
+    this.wfMistMat = new THREE.PointsMaterial({
+      size: 2.4,
+      map: this.dotTex,
+      color: '#bfe8ff',
+      transparent: true,
+      opacity: 0.32,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    parent.add(new THREE.Points(geo, this.wfMistMat));
+  }
+
+  buildBloomAuras(THREE, parent) {
+    // 軽量ビルボード加算グロー（iPhone 14+ で 60fps 負荷ほぼゼロのまま Cycles の Bloom に迫る発光感を再現！）
+    const auraSpecs = [
+      // 魔族軍（東 +X）：大紫水晶コア＋門前ジオード2基
+      { pos: [20.6, 11.4, 0.0], color: '#d872ff', scale: 9.2, opacity: 0.46, kind: 'crystal', phase: 0.0 },
+      { pos: [16.2, 2.3, -3.5], color: '#c45cff', scale: 4.4, opacity: 0.34, kind: 'crystal', phase: 1.4 },
+      { pos: [16.2, 2.3, 3.5], color: '#c45cff', scale: 4.4, opacity: 0.34, kind: 'crystal', phase: 2.7 },
+      // 竜族帝国（南 +Z）：屋上4隅の篝火＋溶鉱炉ゲート
+      { pos: [-4.2, 8.1, 17.6], color: '#ff8a38', scale: 5.2, opacity: 0.46, kind: 'flame', phase: 0.3 },
+      { pos: [4.2, 8.1, 17.6], color: '#ff8a38', scale: 5.2, opacity: 0.46, kind: 'flame', phase: 1.9 },
+      { pos: [-4.2, 8.0, 23.4], color: '#ff7a2e', scale: 4.8, opacity: 0.40, kind: 'flame', phase: 3.1 },
+      { pos: [4.2, 8.0, 23.4], color: '#ff7a2e', scale: 4.8, opacity: 0.40, kind: 'flame', phase: 4.5 },
+      { pos: [0.0, 2.5, 16.5], color: '#ff9642', scale: 5.6, opacity: 0.42, kind: 'flame', phase: 0.8 },
+      // 王国（北 -Z）：金色尖塔トップ＋正門の暖かい灯り
+      { pos: [0.0, 14.2, -20.6], color: '#ffe09c', scale: 4.8, opacity: 0.28, kind: 'warm', phase: 0.5 },
+      { pos: [0.0, 2.4, -15.8], color: '#ffd484', scale: 4.2, opacity: 0.24, kind: 'warm', phase: 2.1 },
+      // 森の同盟（西 -X）：聖域の暖炉門＋苔岩の妖精蛍グロー
+      { pos: [-16.2, 2.1, 0.0], color: '#ffcf74', scale: 4.4, opacity: 0.30, kind: 'warm', phase: 1.1 },
+      { pos: [-24.5, 2.2, -6.4], color: '#8effb8', scale: 3.4, opacity: 0.26, kind: 'crystal', phase: 2.4 },
+      { pos: [-24.5, 2.2, 6.4], color: '#8effb8', scale: 3.4, opacity: 0.26, kind: 'crystal', phase: 3.8 },
+    ];
+    for (const s of auraSpecs) {
+      const mat = new THREE.SpriteMaterial({
+        map: this.dotTex,
+        color: s.color,
+        transparent: true,
+        opacity: s.opacity,
+        depthWrite: false,
+        blending: THREE.AdditiveBlending,
+      });
+      const sp = new THREE.Sprite(mat);
+      sp.position.set(...s.pos);
+      sp.scale.set(s.scale, s.scale, 1);
+      parent.add(sp);
+      this.bloomAuras.push({ sprite: sp, mat, baseScale: s.scale, baseOpacity: s.opacity, kind: s.kind, phase: s.phase });
+    }
   }
 
   buildSkyDome(THREE, scene) {
@@ -558,14 +1068,13 @@ export class HomeDioramaGL {
         uSunDir: { value: new THREE.Vector3(-0.42, 0.62, -0.66).normalize() },
         uHaloColor: { value: new THREE.Color('#98bef8') },
         uHaloStrength: { value: 0.26 },
-        uStarVis: { value: 1.0 },
         uTime: { value: 0.0 },
       },
     });
     this.skyMat = mat;
-    this.skyMesh = new THREE.Mesh(geo, mat);
-    this.skyMesh.renderOrder = -10;
-    scene.add(this.skyMesh);
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.renderOrder = -10;
+    scene.add(mesh);
   }
 
   createSoftDotTexture(THREE) {
@@ -588,7 +1097,6 @@ export class HomeDioramaGL {
     const dotTex = this.createSoftDotTexture(THREE);
     this.dotTex = dotTex;
 
-    // 1. 瞬く3D星空（2層：極小の遠星 1,100個 + ほのかに輝く主星 280個。すべて滑らかな円形グロー）
     let seed = 1337;
     const rand = () => {
       seed = (seed * 16807) % 2147483647;
@@ -638,7 +1146,6 @@ export class HomeDioramaGL {
     this.starMats = [faintStars.mat, brightStars.mat];
     scene.add(this.starField);
 
-    // 2. 遠くに佇む淡い輪を持つ惑星（寂しさと宇宙スケールの象徴）
     const planetGroup = new THREE.Group();
     planetGroup.position.set(-145, 92, -210);
     const planetMat = new THREE.MeshStandardMaterial({
@@ -661,15 +1168,13 @@ export class HomeDioramaGL {
     const ringMesh = new THREE.Mesh(new THREE.RingGeometry(20, 31, 48), ringMat);
     ringMesh.rotation.set(Math.PI * 0.37, 0.25, -0.32);
     planetGroup.add(planetMesh, ringMesh);
-    this.planetGroup = planetGroup;
     this.planetMat = planetMat;
     this.ringMat = ringMat;
     scene.add(planetGroup);
 
-    // 3. 浮遊島の周囲をゆっくり漂う微細な星屑パーティクル（180個）
     const dustCount = 180;
     const dustPos = new Float32Array(dustCount * 3);
-    this.dustBase = new Float32Array(dustCount * 4); // x, y, z, phase
+    this.dustBase = new Float32Array(dustCount * 4);
     for (let i = 0; i < dustCount; i++) {
       const ang = rand() * Math.PI * 2;
       const rad = 16 + rand() * 52;
@@ -696,10 +1201,8 @@ export class HomeDioramaGL {
       depthWrite: false,
       blending: THREE.AdditiveBlending,
     });
-    this.dustPoints = new THREE.Points(dustGeo, this.dustMat);
-    scene.add(this.dustPoints);
+    scene.add(new THREE.Points(dustGeo, this.dustMat));
 
-    // 4. 時折遠くの夜空を横切る控えめな流れ星（1本を再利用）
     const meteorGeo = new THREE.BufferGeometry().setFromPoints([
       new THREE.Vector3(0, 0, 0),
       new THREE.Vector3(-18, 5, 0),
@@ -718,29 +1221,27 @@ export class HomeDioramaGL {
   }
 
   buildLights(THREE, scene) {
-    this.hemiLight = new THREE.HemisphereLight('#5874ad', '#0d1326', 0.65);
+    this.hemiLight = new THREE.HemisphereLight('#5874ad', '#0d1326', 0.56);
     scene.add(this.hemiLight);
 
-    this.keyLight = new THREE.DirectionalLight('#a6c2f5', 1.5);
+    this.keyLight = new THREE.DirectionalLight('#a6c2f5', 1.25);
     this.keyLight.position.set(-40, 60, -60);
     scene.add(this.keyLight);
 
-    this.rimLight = new THREE.DirectionalLight('#5c7fd6', 0.9);
+    this.rimLight = new THREE.DirectionalLight('#5c7fd6', 0.76);
     this.rimLight.position.set(55, 36, 52);
     scene.add(this.rimLight);
 
-    // 浮遊島裏面の彫刻岩盤が闇に沈みきらないための淡い星雲照り返し
-    this.underLight = new THREE.DirectionalLight('#36508a', 0.48);
+    this.underLight = new THREE.DirectionalLight('#36508a', 0.42);
     this.underLight.position.set(12, -75, 24);
     scene.add(this.underLight);
 
-    // 4陣営＋中央広場のローカル灯り（Three.js Y-up座標・物理減衰バランス調整済み）
     const pointSpecs = [
-      { pos: [0, 4.8, 0], color: '#ffd894', intensity: 16, distance: 26 },         // 中央広場ランタン
-      { pos: [0, 6.2, -16.0], color: '#ffe0a8', intensity: 18, distance: 22 },     // 王国（北 -Z）
-      { pos: [-16.0, 4.5, 0], color: '#a8ff90', intensity: 15, distance: 20 },     // 森の同盟（西 -X）
-      { pos: [20.6, 11.0, 0], color: '#c464ff', intensity: 28, distance: 26 },     // 魔族軍（東 +X）
-      { pos: [0, 4.8, 17.0], color: '#ff7030', intensity: 24, distance: 24 },      // 竜族帝国（南 +Z）
+      { pos: [0, 4.8, 0], color: '#ffd894', intensity: 16, distance: 26 },
+      { pos: [0, 6.2, -16.0], color: '#ffe0a8', intensity: 18, distance: 22 },
+      { pos: [-16.0, 4.5, 0], color: '#a8ff90', intensity: 15, distance: 20 },
+      { pos: [20.6, 11.0, 0], color: '#c464ff', intensity: 28, distance: 26 },
+      { pos: [0, 4.8, 17.0], color: '#ff7030', intensity: 24, distance: 24 },
     ];
     for (const s of pointSpecs) {
       const pl = new THREE.PointLight(s.color, s.intensity, s.distance, 1.45);
@@ -756,10 +1257,20 @@ export class HomeDioramaGL {
     this.lastClockSync = now;
 
     const p = resolveSkyPhase(this.skyMode, new Date());
+    const phaseChanged = this.currentPhase?.key !== p.key;
     this.currentPhase = p;
     if (this.homeEl) this.homeEl.dataset.skyPhase = p.key;
 
-    if (!this.skyMat || !this.THREE) return;
+    this.backdrop2D?.setPhase(p);
+    if (!this.use3D && (force || phaseChanged)) {
+      this.updatePrerenderImage(force);
+    }
+
+    if (!this.skyMat || !this.THREE) {
+      if (this.visible && isReducedMotion()) this.backdrop2D?.draw(0, true);
+      return;
+    }
+
     const u = this.skyMat.uniforms;
     u.uZenith.value.set(p.zenith);
     u.uMid.value.set(p.mid);
@@ -771,13 +1282,19 @@ export class HomeDioramaGL {
     u.uSunDir.value.set(p.sunDir[0], p.sunDir[1], p.sunDir[2]).normalize();
     u.uHaloColor.value.set(p.haloColor);
     u.uHaloStrength.value = p.haloStrength;
-    u.uStarVis.value = p.starVisibility;
 
     for (const sm of this.starMats ?? []) sm.opacity = Math.max(0.18, p.starVisibility * 0.92);
     this.dustMat.color.set(p.dustColor);
     this.dustMat.opacity = p.dustOpacity;
     this.planetMat.opacity = p.planetAlpha;
     this.ringMat.opacity = p.planetAlpha * 0.34;
+
+    for (const wm of this.waterMats) {
+      wm.uniforms.uDeep.value.set(p.waterDeep);
+      wm.uniforms.uShallow.value.set(p.waterShallow);
+      wm.uniforms.uGlint.value.set(p.waterGlint);
+    }
+    if (this.wfMistMat) this.wfMistMat.color.set(p.waterGlint);
 
     this.keyLight.color.set(p.keyColor);
     this.keyLight.intensity = p.keyIntensity;
@@ -792,14 +1309,10 @@ export class HomeDioramaGL {
     this.hemiLight.groundColor.set(p.hemiGround);
     this.hemiLight.intensity = p.hemiIntensity;
 
-    for (const item of this.factionLights) {
-      item.light.intensity = item.base * p.pointScale;
-    }
-    for (const item of this.emissiveMats) {
-      item.mat.emissiveIntensity = item.base * p.emissiveScale;
-    }
+    for (const item of this.factionLights) item.light.intensity = item.base * p.pointScale;
+    for (const item of this.emissiveMats) item.mat.emissiveIntensity = item.base * p.emissiveScale;
     if (this.renderer) this.renderer.toneMappingExposure = p.exposure;
-    if (this.visible && isReducedMotion()) this.renderOnce();
+    if (this.visible && this.use3D && isReducedMotion()) this.renderOnce3D();
   }
 
   bindEvents() {
@@ -816,17 +1329,16 @@ export class HomeDioramaGL {
       this.ro.observe(this.heroEl);
     }
 
-    // .home-hero 上での軽いドラッグ鑑賞（指・マウスで左右に少し覗き込める）
     if (this.heroEl) {
       this.onPointerDown = (e) => {
-        if (e.target.closest('button')) return;
+        if (!this.use3D || e.target.closest('button')) return;
         this.dragging = true;
         this.lastPointerX = e.clientX;
         this.lastPointerY = e.clientY;
         this.heroEl.setPointerCapture?.(e.pointerId);
       };
       this.onPointerMove = (e) => {
-        if (!this.dragging) return;
+        if (!this.dragging || !this.use3D) return;
         const dx = e.clientX - this.lastPointerX;
         const dy = e.clientY - this.lastPointerY;
         this.lastPointerX = e.clientX;
@@ -850,6 +1362,7 @@ export class HomeDioramaGL {
   }
 
   resize() {
+    this.backdrop2D?.resize();
     if (!this.renderer || !this.camera || !this.skyEl) return;
     const rect = this.skyEl.getBoundingClientRect();
     const w = Math.max(1, Math.round(rect.width || window.innerWidth));
@@ -858,7 +1371,6 @@ export class HomeDioramaGL {
     this.viewH = h;
     this.renderer.setSize(w, h, false);
 
-    // 縦長スマホでも城の横幅が途切れないようFOVを動的に調整
     const aspect = w / h;
     let fov = 45.5;
     if (this.viewMode === 'factions' && aspect < 0.9) {
@@ -871,7 +1383,6 @@ export class HomeDioramaGL {
     this.camera.fov = fov;
     this.camera.aspect = aspect;
 
-    // .home-hero の実位置を測って setViewOffset で中央へ綺麗に配置（全画面は宇宙背景のまま！）
     if (this.activeTab === 'battle' && this.heroEl) {
       const hr = this.heroEl.getBoundingClientRect();
       if (hr.width > 40 && hr.height > 40) {
@@ -879,9 +1390,7 @@ export class HomeDioramaGL {
         const cy = hr.top - rect.top + hr.height * 0.5;
         this.heroW = hr.width;
         this.heroH = hr.height;
-        const offX = w * 0.5 - cx;
-        const offY = h * 0.5 - cy;
-        this.camera.setViewOffset(w, h, offX, offY, w, h);
+        this.camera.setViewOffset(w, h, w * 0.5 - cx, h * 0.5 - cy, w, h);
       } else {
         this.camera.clearViewOffset();
       }
@@ -889,12 +1398,12 @@ export class HomeDioramaGL {
       this.camera.clearViewOffset();
     }
     this.camera.updateProjectionMatrix();
-    if (this.visible) this.renderOnce();
+    if (this.visible && this.use3D && this.ready3D) this.renderOnce3D();
   }
 
   setVisible(on) {
     this.visible = Boolean(on);
-    if (this.failed) return;
+    if (this.disabled) return;
     if (this.visible) {
       this.applySkyPhase(true);
       this.resize();
@@ -906,9 +1415,7 @@ export class HomeDioramaGL {
 
   setTab(tab) {
     this.activeTab = tab;
-    if (this.dioramaRoot) {
-      this.dioramaRoot.visible = (tab === 'battle');
-    }
+    if (this.dioramaRoot) this.dioramaRoot.visible = (tab === 'battle');
     this.resize();
   }
 
@@ -918,6 +1425,7 @@ export class HomeDioramaGL {
     this.viewMode = next;
     this.dragYawDeg = 0;
     this.dragPitchDeg = 0;
+    this.updatePrerenderImage(true);
     this.resize();
   }
 
@@ -926,25 +1434,32 @@ export class HomeDioramaGL {
     this.faction = faction;
     this.targetOrbitDeg = FACTION_ANGLE_DEG[faction];
     this.dragYawDeg = 0;
-    if (this.visible && isReducedMotion()) {
+    this.updatePrerenderImage(true);
+    if (this.visible && this.use3D && this.ready3D && isReducedMotion()) {
       this.orbitAngleDeg = this.targetOrbitDeg;
       this.currentTargetY = FACTION_TARGET_Y[faction];
-      this.renderOnce();
+      this.renderOnce3D();
     }
   }
 
   setSkyMode(mode) {
-    const override = querySkyOverride();
     const next = HOME_SKY_MODES.includes(mode) ? mode : 'auto';
-    // ユーザーが設定UIから明示的に変えた場合は即反映
     this.skyMode = next;
-    if (!mode && override) this.skyMode = override;
     this.applySkyPhase(true);
-    if (this.visible) this.renderOnce();
+    if (this.visible && this.use3D && this.ready3D) this.renderOnce3D();
+  }
+
+  set3DEnabled(enabled) {
+    if (this.disabled) return;
+    const next = Boolean(enabled);
+    if (this.use3D === next) return;
+    this.use3D = next;
+    if (next) this.failed3D = false;
+    this.applyRenderMode();
   }
 
   startLoop() {
-    if (this.rafId || this.destroyed || !this.renderer) return;
+    if (this.rafId || this.destroyed || this.disabled) return;
     this.lastFrameTs = performance.now();
     const tick = (ts) => {
       if (!this.visible || this.destroyed) {
@@ -953,8 +1468,15 @@ export class HomeDioramaGL {
       }
       const dt = Math.min(0.05, Math.max(0.001, (ts - this.lastFrameTs) / 1000));
       this.lastFrameTs = ts;
-      this.update(dt);
-      this.renderer.render(this.scene, this.camera);
+      const reduced = isReducedMotion();
+      if (this.skyMode === 'auto') this.applySkyPhase(false);
+
+      if (this.use3D && this.ready3D && this.renderer) {
+        this.update3D(dt, reduced);
+        this.renderer.render(this.scene, this.camera);
+      } else {
+        this.backdrop2D?.draw(dt, reduced);
+      }
       this.rafId = requestAnimationFrame(tick);
     };
     this.rafId = requestAnimationFrame(tick);
@@ -967,48 +1489,84 @@ export class HomeDioramaGL {
     }
   }
 
-  renderOnce() {
+  renderOnce3D() {
     if (!this.renderer || !this.scene || !this.camera) return;
     this.updateCamera(0.016, true);
     this.renderer.render(this.scene, this.camera);
   }
 
-  update(dt) {
-    const reduced = isReducedMotion();
+  update3D(dt, reduced) {
     if (!reduced) this.elapsed += dt;
-
-    if (this.skyMode === 'auto') this.applySkyPhase(false);
     if (this.skyMat) this.skyMat.uniforms.uTime.value = this.elapsed;
 
-    // 浮遊島のゆったりとした呼吸のような上下浮遊
-    if (this.dioramaRoot) {
-      this.dioramaRoot.position.y = reduced ? 0 : Math.sin(this.elapsed * 0.65) * 0.38;
+    // 動く水面＆4本の滝シェーダーの時間を進める！
+    for (const wm of this.waterMats) {
+      wm.uniforms.uTime.value = this.elapsed;
     }
 
-    // 星空の極めてゆっくりとした回転
+    // ビルボード擬似Bloomオーラ＆陣営ライトの「生きている炎・魔力・ランタンのゆらぎ」
+    const pScale = this.currentPhase?.pointScale ?? 1.0;
+    const auraMult = Math.max(0.45, Math.min(1.45, (this.currentPhase?.emissiveScale ?? 1.2) * 0.68));
+    for (const a of this.bloomAuras) {
+      if (reduced) {
+        a.mat.opacity = a.baseOpacity * auraMult;
+        a.sprite.scale.set(a.baseScale, a.baseScale, 1);
+        continue;
+      }
+      let pulse = 1.0;
+      if (a.kind === 'flame') {
+        pulse = 0.88 + 0.14 * Math.sin(this.elapsed * 6.8 + a.phase) + 0.08 * Math.sin(this.elapsed * 13.4 + a.phase * 2.1);
+      } else if (a.kind === 'crystal') {
+        pulse = 0.90 + 0.14 * Math.sin(this.elapsed * 2.2 + a.phase);
+      } else {
+        pulse = 0.94 + 0.07 * Math.sin(this.elapsed * 3.1 + a.phase);
+      }
+      a.mat.opacity = a.baseOpacity * auraMult * pulse;
+      const sc = a.baseScale * (0.94 + 0.09 * pulse);
+      a.sprite.scale.set(sc, sc, 1);
+    }
+    if (!reduced && this.factionLights.length >= 5) {
+      // [3]=Demon crystal pulse, [4]=Dragon fire flicker
+      this.factionLights[3].light.intensity = this.factionLights[3].base * pScale * (0.92 + 0.12 * Math.sin(this.elapsed * 2.4));
+      this.factionLights[4].light.intensity = this.factionLights[4].base * pScale * (0.90 + 0.12 * Math.sin(this.elapsed * 7.2) + 0.06 * Math.cos(this.elapsed * 14.1));
+    }
+
+    // 滝壺ミスト粒のふわふわ舞い散りアニメ
+    if (this.wfMistGeo && !reduced) {
+      const attr = this.wfMistGeo.getAttribute('position');
+      const arr = attr.array;
+      const d = this.wfMistData;
+      const t = this.elapsed;
+      for (let i = 0; i < arr.length / 3; i++) {
+        const ph = d[i * 4 + 3];
+        const cycle = ((t * 0.55 + ph) % 1 + 1) % 1;
+        arr[i * 3] = d[i * 4] + Math.sin(t * 1.1 + ph) * 0.7;
+        arr[i * 3 + 1] = d[i * 4 + 1] - cycle * 2.4 + Math.sin(cycle * Math.PI) * 1.1;
+        arr[i * 3 + 2] = d[i * 4 + 2] + Math.cos(t * 0.9 + ph) * 0.7;
+      }
+      attr.needsUpdate = true;
+    }
+
+    if (this.dioramaRoot) {
+      this.dioramaRoot.position.y = reduced ? 0 : Math.sin(this.elapsed * 0.65) * 0.36;
+    }
     if (this.starField && !reduced) {
       this.starField.rotation.y = this.elapsed * 0.004;
     }
-
-    // 周囲の星屑パーティクルの穏やかな浮遊
     if (this.dustGeo && !reduced) {
       const attr = this.dustGeo.getAttribute('position');
       const arr = attr.array;
       const base = this.dustBase;
       const t = this.elapsed;
       for (let i = 0; i < arr.length / 3; i++) {
-        const bx = base[i * 4];
-        const by = base[i * 4 + 1];
-        const bz = base[i * 4 + 2];
         const ph = base[i * 4 + 3];
-        arr[i * 3] = bx + Math.sin(t * 0.35 + ph) * 0.9;
-        arr[i * 3 + 1] = by + Math.sin(t * 0.55 + ph * 1.7) * 1.1;
-        arr[i * 3 + 2] = bz + Math.cos(t * 0.32 + ph) * 0.9;
+        arr[i * 3] = base[i * 4] + Math.sin(t * 0.35 + ph) * 0.9;
+        arr[i * 3 + 1] = base[i * 4 + 1] + Math.sin(t * 0.55 + ph * 1.7) * 1.1;
+        arr[i * 3 + 2] = base[i * 4 + 2] + Math.cos(t * 0.32 + ph) * 0.9;
       }
       attr.needsUpdate = true;
     }
 
-    // 夜間・黄昏の控えめな流れ星
     if (this.meteorLine && !reduced) {
       const starVis = this.currentPhase?.starVisibility ?? 0.8;
       if (this.meteorLife >= 0) {
@@ -1042,7 +1600,6 @@ export class HomeDioramaGL {
     const damp = snap ? 1 : 1 - Math.exp(-5.4 * dt);
 
     if (this.viewMode === 'factions') {
-      // 4陣営ホームカメラ：中央広場 (0,0,0) を軸に滑らかに360°旋回！
       const diff = shortestAngleDiff(this.orbitAngleDeg, this.targetOrbitDeg);
       this.orbitAngleDeg += diff * damp;
       if (!this.dragging) {
@@ -1053,7 +1610,6 @@ export class HomeDioramaGL {
       this.currentTargetY += (wantY - this.currentTargetY) * damp;
 
       const ang = ((this.orbitAngleDeg + this.dragYawDeg) * Math.PI) / 180;
-      // Three.js Y-up: dir = (cos(ang), 0, -sin(ang)), right-perp = (sin(ang), 0, cos(ang))
       const dx = Math.cos(ang);
       const dz = -Math.sin(ang);
       const px = Math.sin(ang);
@@ -1063,8 +1619,6 @@ export class HomeDioramaGL {
       const rSide = 2.6;
       const camY = 8.4 + this.dragPitchDeg * 0.35;
       const targetDist = 16.0;
-
-      // 城の上端が見出しと重ならないよう .home-hero の高さ比に応じて自然に距離を調整
       const heroFrac = (this.heroH && this.viewH) ? (this.heroH / this.viewH) : 0.45;
       const pull = heroFrac < 0.48 ? (0.48 - heroFrac) * 18.0 : 0;
 
@@ -1075,10 +1629,7 @@ export class HomeDioramaGL {
       );
       this.camera.lookAt(dx * targetDist, this.currentTargetY + 0.55, dz * targetDist);
     } else {
-      // 通常モード：4陣営の浮遊島全体が宇宙にぽつんと浮かぶ斜め俯瞰（見出し・下部UIに被らない余裕ある距離）
-      if (!this.dragging && !snap) {
-        this.overviewAngleDeg += dt * 1.45;
-      }
+      if (!this.dragging && !snap) this.overviewAngleDeg += dt * 1.45;
       const rad = (this.overviewAngleDeg * Math.PI) / 180;
       const heroFrac = (this.heroH && this.viewH) ? (this.heroH / this.viewH) : 0.42;
       const heroWFrac = (this.heroW && this.viewW) ? (this.heroW / this.viewW) : 0.85;
@@ -1107,6 +1658,8 @@ export class HomeDioramaGL {
       this.heroEl.removeEventListener('pointerup', this.onPointerUp);
       this.heroEl.removeEventListener('pointercancel', this.onPointerUp);
     }
+    this.backdrop2D?.destroy();
+    this.prerenderWrap?.remove();
     this.dotTex?.dispose();
     this.renderer?.dispose();
     this.renderer?.domElement?.remove();

@@ -322,16 +322,6 @@ async function readyImage(img) {
   if (!img.complete) await new Promise((resolve) => { img.addEventListener('load', resolve, { once: true }); img.addEventListener('error', resolve, { once: true }); });
   return img.naturalWidth ? img : null;
 }
-/** インラインの SVG を画像にする（色は今の見た目に合わせて固定する） */
-async function svgImage(svg, width, height) {
-  const clone = svg.cloneNode(true);
-  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  clone.setAttribute('width', Math.max(1, Math.round(width)));
-  clone.setAttribute('height', Math.max(1, Math.round(height)));
-  clone.style.color = getComputedStyle(svg).color;
-  const text = new XMLSerializer().serializeToString(clone).replaceAll('currentColor', getComputedStyle(svg).color);
-  return loadImage(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(text)}`);
-}
 
 /** img を、object-fit に合わせて枠（x, y, w, h）の中に描く */
 function drawFitted(ctx, image, fit, x, y, w, h) {
@@ -386,11 +376,6 @@ async function paintFace(card) {
     if (img) {
       const at = place(img);
       drawFitted(ctx, img, getComputedStyle(img).objectFit, at.x, at.y, at.w, at.h);
-    } else {
-      const svg = windowEl.querySelector('svg');
-      const at = svg && place(svg);
-      const drawn = svg && await svgImage(svg, at.w, at.h);
-      if (drawn) ctx.drawImage(drawn, at.x, at.y, at.w, at.h);
     }
     ctx.restore();
   }
@@ -416,12 +401,6 @@ async function paintFace(card) {
       const r = place(img);
       drawFitted(ctx, img, getComputedStyle(img).objectFit, r.x, r.y, r.w, r.h);
       continue;
-    }
-    const svg = el.querySelector('svg');
-    if (svg) {
-      const r = place(svg);
-      const drawn = await svgImage(svg, r.w, r.h);
-      if (drawn) { ctx.drawImage(drawn, r.x, r.y, r.w, r.h); continue; }
     }
     const text = el.textContent.trim();
     if (text) {

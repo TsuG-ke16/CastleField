@@ -844,5 +844,18 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | ファイル | 作った道具・配布元 | ライセンス・利用条件 | 日付 |
 |---|---|---|---|
 | `models/diorama/castle_field_diorama.glb`・`castle_field_diorama.blend`・`tripo_castles/*.glb` | Tripo Studio（Web生成3Dスカルプト4城＋4バイオーム浮遊島）を Blender 5.3 + Python（`scripts/prepare_tripo_*.py`, `build_diorama.py`）で最適化・発光マップ合成・空間統合 | Tripo Studio 利用規約（プロジェクト向け生成出力）＋本リポジトリのコードと同一 | 2026-11-23 |
-| `models/diorama/renders/*`・`config/*`・`scripts/*` | Blender 5.3 Cycles OPTIX レンダリングおよび手書き Python スクリプト | 本リポジトリのコードと同一 | 2026-11-23 |
-| `js/ui/HomeDioramaGL.js` | Three.js + 手書き GLSL スカイドームシェーダー（外部背景画像なし） | 本リポジトリのコードと同一 | 2026-11-23 |
+| `models/diorama/renders/*`・`cosmic_home/*.webp`・`config/*`・`scripts/*` | Blender 5.3 Cycles OPTIX レンダリング（背景透過4時間帯WebP含む）および手書き Python スクリプト | 本リポジトリのコードと同一 | 2026-11-23 |
+| `js/ui/HomeDioramaGL.js` | Three.js + 手書き GLSL スカイドーム＆動く水面・滝シェーダー＋2D宇宙星空キャンバス（外部背景画像なし） | 本リポジトリのコードと同一 | 2026-11-23 |
+
+### 星雲×オーロラ発光UI・SVG完全廃止アセット（2026-11-24）
+
+Google DeepMind 画像生成モデル（`image-generator`）で本ゲーム向けに新規生成したオリジナルUI素材。外部の配布素材は不使用。生成後に Blender 5.3 + numpy で背景透過切り出し・リサイズ・WebP圧縮（全45ファイル、すべて300KB以下）を実施。
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 日付 |
+|---|---|---|---|
+| `ui/cosmic/icon-{profile,deck,rank,gacha,settings,catalog,help,solo,online,local,ranking,mission}.webp` | AI画像生成（4×3シート）→ 透過切り出し・128×128 WebP圧縮（各4–10KB） | AI生成出力・本リポジトリ利用条件に準拠 | 2026-11-24 |
+| `ui/cosmic/icon-{friend,shop,skin,notice,edit,close,check,arrow,down,more,crown,rates}.webp` | AI画像生成（4×3シート）→ 透過切り出し・128×128 WebP圧縮（各4–9KB） | 同上 | 2026-11-24 |
+| `ui/cosmic/icon-{return,surrender,sword,shield,boot,target,wall,skull,snow,hammer,sound,mute}.webp` | AI画像生成（4×3シート）→ 透過切り出し・128×128 WebP圧縮（各6–10KB） | 同上 | 2026-11-24 |
+| `ui/cosmic/cta-aurora-primary.webp`・`ui/cosmic/btn-nebula-glass.webp` | AI画像生成（クリスタルCTA・ガラスボタンプレート）→ 透過切り出し・WebP圧縮（29KB / 42KB） | 同上 | 2026-11-24 |
+| `ui/cosmic/cosmic-magic-crest.webp`・`ui/cosmic/rank-unranked.webp`・`ui/cosmic/laurel-aurora.webp` | AI画像生成（星雲アストロラーベ魔法陣・未確定クリスタル盾・オーロラ月桂冠）→ 透過切り出し・WebP圧縮（164KB / 19KB / 29KB） | 同上 | 2026-11-24 |
+| `ui/cosmic/impact-{slash,thrust,claw,star}.webp` | AI画像生成（斬撃・突き・爪痕・星光ヒットエフェクト）→ 透過切り出し・256×256 WebP圧縮（各13–25KB） | 同上 | 2026-11-24 |

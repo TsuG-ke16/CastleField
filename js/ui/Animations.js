@@ -10,7 +10,7 @@ import { cardArt, icon, imageArt, weatherIcon } from './art.js';
 import { frameAsset } from './cardFrame.js';
 import { playerName } from './text.js';
 import { mountMiniCard } from './cardView.js';
-import { attackOf, attackFrames, impactSvg } from './motion.js';
+import { attackOf, attackFrames, impactArt } from './motion.js';
 import { ELEMENT_BEATS } from '../game/Game.js';
 
 const $ = (id) => document.getElementById(id);
@@ -252,7 +252,7 @@ export class Animations {
     if (this.skipping) return;
     const el = this.fx('fx-impact', { x, y });
     el.style.width = el.style.height = `${size}px`;
-    el.innerHTML = impactSvg(style, color);
+    el.innerHTML = impactArt(style);
     const base = `translate(-50%, -50%) rotate(${angle}deg)`;
     const frames = style === 'thrust'
       ? [{ transform: `${base} translateX(-30%) scale(.2, 1)`, opacity: 1 }, { transform: `${base} scale(1.15, 1)`, opacity: 1, offset: .45 }, { transform: `${base} translateX(25%) scale(1.3, .25)`, opacity: 0 }]

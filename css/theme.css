@@ -168,7 +168,7 @@ button:focus-visible, .card:focus-visible { outline: 3px solid #d49c30; outline-
   html, body { height: auto; min-height: 100%; overflow-y: auto; }
   #app { height: 660px; min-height: 100dvh; }
 }
-.mode-symbol svg { display: block; width: 25px; height: 25px; margin: auto; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.mode-symbol img { display: block; width: 25px; height: 25px; margin: auto; object-fit: contain; }
 .screen { align-items: safe center; }
 @media (max-width: 899px) { #debug-toggle { top: auto; bottom: 5px; right: 5px; opacity: .7; font-size: 8px; } }
 .plank-btn.ready, #upgrade-open.ready { animation: none; box-shadow: 0 0 0 2px #d8ae5a45, 0 3px 0 #bf9147; }

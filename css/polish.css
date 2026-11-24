@@ -71,10 +71,10 @@
 }
 #app select {
   padding-right: 36px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%238a5a24' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-image: url("../assets/ui/cosmic/icon-down.webp");
   background-repeat: no-repeat;
-  background-position: right 12px center;
-  background-size: 12px 8px;
+  background-position: right 10px center;
+  background-size: 16px 16px;
   cursor: pointer;
 }
 #app select:disabled { opacity: .5; cursor: default; }
@@ -128,7 +128,7 @@
 .mode-choice.alt strong, .mode-choice.alt2 strong { text-shadow: 0 2px 0 #0000004d; }
 .mode-choice .mode-arrow { font-size: 18px; font-weight: 900; opacity: .7; }
 .mode-symbol, .mode-choice.alt .mode-symbol, .mode-choice.alt2 .mode-symbol { width: 48px; height: 48px; background: center / contain no-repeat; filter: drop-shadow(0 2px 0 #0000003d); }
-.mode-symbol svg { display: none; }
+.mode-symbol img { display: none; }
 #title-solo .mode-symbol { background-image: url('../assets/ui/icon-mode-solo.png'); }
 #title-local .mode-symbol { background-image: url('../assets/ui/icon-mode-local.png'); }
 #title-online .mode-symbol { background-image: url('../assets/ui/icon-mode-online.png'); }
@@ -306,14 +306,14 @@
 #menu-surrender { order: 8; grid-column: 1 / -1; justify-self: center; width: 62%; }
 #menu-close { order: 9; }
 .menu-box .small-btn.wide { min-width: 0; min-height: 46px; padding: 8px 12px; gap: 7px; font-size: 14px; white-space: nowrap; }
-.menu-box .small-btn.wide::before { content: ''; flex: none; width: 18px; height: 18px; background: currentColor; -webkit-mask: var(--ico) center / contain no-repeat; mask: var(--ico) center / contain no-repeat; opacity: .85; }
+.menu-box .small-btn.wide::before { content: ''; flex: none; width: 20px; height: 20px; background: var(--ico) center / contain no-repeat; }
 #menu-sound::before { display: none; }
-#menu-settings { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 2h4l.6 3 2.5 1.4 2.9-1 2 3.5-2.3 2v2.2l2.3 2-2 3.5-2.9-1-2.5 1.400-.6 3h-4l-.6-3-2.500-1.400-2.900 1-2-3.500 2.300-2v-2.200l-2.300-2 2-3.500 2.900 1 2.500-1.400zM12 8.500a3.500 3.500 0 1 0 0 7 3.500 3.500 0 0 0 0-7z' fill-rule='evenodd'/%3E%3C/svg%3E"); }
-#menu-catalog { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M3 4h7a2 2 0 0 1 2 2 2 2 0 0 1 2-2h7v15h-7a2 2 0 0 0-2 2 2 2 0 0 0-2-2H3zm8 3H5v10h6zm2 0v10h6V7z' fill-rule='evenodd'/%3E%3C/svg%3E"); }
-#menu-rates { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2l2.900 6.300 6.900.800-5.100 4.700 1.400 6.800L12 17.200 5.900 20.600l1.400-6.800L2.200 9.100l6.900-.8z'/%3E%3C/svg%3E"); }
-#menu-help { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm-1.200 13.500h2.400v2.400h-2.400zM12 6c2.300 0 4 1.500 4 3.500 0 1.600-.9 2.400-1.800 3-.7.500-1 .8-1 1.700h-2.400c0-1.800.8-2.600 1.700-3.200.7-.5 1.100-.8 1.100-1.500 0-.7-.6-1.200-1.600-1.200-.9 0-1.600.5-1.900 1.400L8 8.900C8.600 7.100 10.100 6 12 6z' fill-rule='evenodd'/%3E%3C/svg%3E"); }
-#menu-title-btn { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M10 4v4h5a6 6 0 0 1 0 12H7v-3h8a3 3 0 0 0 0-6h-5v4l-7-5.500z'/%3E%3C/svg%3E"); }
-#menu-surrender { --ico: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M5 2h2v20H5zm4 2c4-2 6 2 10 0v9c-4 2-6-2-10 0z'/%3E%3C/svg%3E"); }
+#menu-settings { --ico: url("../assets/ui/cosmic/icon-settings.webp"); }
+#menu-catalog { --ico: url("../assets/ui/cosmic/icon-catalog.webp"); }
+#menu-rates { --ico: url("../assets/ui/cosmic/icon-rates.webp"); }
+#menu-help { --ico: url("../assets/ui/cosmic/icon-help.webp"); }
+#menu-title-btn { --ico: url("../assets/ui/cosmic/icon-return.webp"); }
+#menu-surrender { --ico: url("../assets/ui/cosmic/icon-surrender.webp"); }
 .menu-box .plank-btn { margin-top: 0; }
 
 /* ---------- 設定：項目ごとの帯・ピル型の切り替え・木のスライダー ---------- */
