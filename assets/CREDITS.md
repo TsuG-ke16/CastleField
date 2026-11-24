@@ -859,3 +859,12 @@ Google DeepMind 画像生成モデル（`image-generator`）で本ゲーム向�
 | `ui/cosmic/cta-aurora-primary.webp`・`ui/cosmic/btn-nebula-glass.webp` | AI画像生成（クリスタルCTA・ガラスボタンプレート）→ 透過切り出し・WebP圧縮（29KB / 42KB） | 同上 | 2026-11-24 |
 | `ui/cosmic/cosmic-magic-crest.webp`・`ui/cosmic/rank-unranked.webp`・`ui/cosmic/laurel-aurora.webp` | AI画像生成（星雲アストロラーベ魔法陣・未確定クリスタル盾・オーロラ月桂冠）→ 透過切り出し・WebP圧縮（164KB / 19KB / 29KB） | 同上 | 2026-11-24 |
 | `ui/cosmic/impact-{slash,thrust,claw,star}.webp` | AI画像生成（斬撃・突き・爪痕・星光ヒットエフェクト）→ 透過切り出し・256×256 WebP圧縮（各13–25KB） | 同上 | 2026-11-24 |
+
+### 通常モード専用「王国＋城下町」ジオラマ＆ドラゴン・精霊・街灯装飾（2026-11-24）
+
+| ファイル | 作った道具・配布元 | ライセンス・利用条件 | 日付 |
+|---|---|---|---|
+| `models/diorama/kingdom_town_diorama.glb`・`kingdom_town_diorama.blend`・`scripts/build_kingdom_town.py` | Blender 5.3 + 手書き Python（Tripo 王国城＋城下町16棟・噴水広場・風車・時計塔・街灯22基・動く運河＆滝） | Tripo Studio 利用規約（王国城）＋本リポジトリのコードと同一 | 2026-11-24 |
+| `models/diorama/sky_dragon.glb`・`scripts/build_sky_dragon.py` | Blender 5.3 + 手書き Python（左右翼分割・リアルタイム羽ばたき対応の空飛ぶ3Dドラゴン、294KB） | 本リポジトリのコードと同一 | 2026-11-24 |
+| `models/diorama/cosmic_home/{dawn,day,dusk,night}_kingdom_town.webp` | Blender 5.3 Cycles OPTIX レンダリング（通常モード省電力フォールバック用透過WebP、各45–52KB） | 本リポジトリのコードと同一 | 2026-11-24 |
+| `models/diorama/castle_field_diorama.glb`（街灯24基追加更新）・`js/ui/HomeDioramaGL.js`（4属性精霊・ドラゴン飛行・風車回転・街灯グロー） | Blender 5.3 + Three.js プロシージャル演出（外部素材追加なし） | 本リポジトリのコードと同一 | 2026-11-24 |
