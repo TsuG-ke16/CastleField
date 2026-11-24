@@ -411,6 +411,62 @@ def build_tripo_props_only(col_props, col_nature, mats):
         bmesh.ops.create_icosphere(bm_ff, subdivisions=2, radius=0.075, matrix=Matrix.Translation((fx, fy, fz)))
     mesh_from_bmesh(bm_ff, 'Nature_Forest_Fireflies', col_nature, mats['glow_forest_spore'], smooth=True)
 
+    # Ornate tall fantasy streetlamps lining the Central Plaza ring & all 4 biome castle approaches!
+    island_obj = bpy.data.objects.get('Tripo_Floating_Island_Base')
+
+    def _ray_z(rx, ry, fallback=0.0):
+        if island_obj is None:
+            return fallback
+        inv = island_obj.matrix_world.inverted()
+        ok, loc, _, _ = island_obj.ray_cast(inv @ Vector((rx, ry, 80.0)), (inv.to_3x3() @ Vector((0.0, 0.0, -1.0))).normalized())
+        return (island_obj.matrix_world @ loc).z if ok else fallback
+
+    def _add_tall_lamp(bm_i, bm_g, lx, ly, lz, rot_z, h=2.15, sc=0.88):
+        xf = Matrix.Translation((lx, ly, lz - 0.05)) @ Matrix.Rotation(rot_z, 4, 'Z')
+        bmesh.ops.create_cone(bm_i, cap_ends=True, cap_tris=False, segments=8, radius1=0.22 * sc, radius2=0.14 * sc, depth=0.34 * sc, matrix=xf @ Matrix.Translation((0.0, 0.0, 0.17 * sc)))
+        bmesh.ops.create_cone(bm_i, cap_ends=True, cap_tris=False, segments=8, radius1=0.085 * sc, radius2=0.052 * sc, depth=h * sc, matrix=xf @ Matrix.Translation((0.0, 0.0, 0.28 * sc + h * sc * 0.5)))
+        arm_z = 0.28 * sc + h * sc
+        bmesh.ops.create_cube(bm_i, size=1.0, matrix=xf @ Matrix.Translation((0.18 * sc, 0.0, arm_z + 0.05 * sc)) @ Matrix.Rotation(-0.22, 4, 'Y') @ Matrix.Diagonal((0.46 * sc, 0.07 * sc, 0.07 * sc, 1.0)))
+        bmesh.ops.create_cone(bm_i, cap_ends=True, cap_tris=False, segments=6, radius1=0.08 * sc, radius2=0.01 * sc, depth=0.22 * sc, matrix=xf @ Matrix.Translation((0.0, 0.0, arm_z + 0.14 * sc)))
+        gx, gz = 0.36 * sc, arm_z - 0.14 * sc
+        bmesh.ops.create_cone(bm_i, cap_ends=True, cap_tris=False, segments=6, radius1=0.22 * sc, radius2=0.03 * sc, depth=0.16 * sc, matrix=xf @ Matrix.Translation((gx, 0.0, gz + 0.22 * sc)))
+        bmesh.ops.create_cone(bm_i, cap_ends=True, cap_tris=False, segments=6, radius1=0.03 * sc, radius2=0.15 * sc, depth=0.10 * sc, matrix=xf @ Matrix.Translation((gx, 0.0, gz - 0.18 * sc)))
+        bmesh.ops.create_cone(bm_g, cap_ends=True, cap_tris=False, segments=6, radius1=0.13 * sc, radius2=0.17 * sc, depth=0.28 * sc, matrix=xf @ Matrix.Translation((gx, 0.0, gz)))
+
+    bm_lamp_iron = bmesh.new()
+    bm_lamp_warm = bmesh.new()
+    bm_lamp_violet = bmesh.new()
+    bm_lamp_ember = bmesh.new()
+    bm_lamp_emerald = bmesh.new()
+
+    # 8 Plaza Perimeter Streetlamps (facing inward toward the plaza center)
+    for deg in (22, 68, 112, 158, 202, 248, 292, 338):
+        a = math.radians(deg)
+        lx, ly = 7.4 * math.cos(a), 7.4 * math.sin(a)
+        _add_tall_lamp(bm_lamp_iron, bm_lamp_warm, lx, ly, _ray_z(lx, ly, 0.0), a + math.pi, h=2.05, sc=0.84)
+
+    # 4 Pairs of Tall Approach Streetlamps flanking each faction's outer bridge entrance!
+    faction_lamp_cfg = [
+        ('kingdom', (0.0, 1.0), bm_lamp_warm),
+        ('forest', (-1.0, 0.0), bm_lamp_emerald),
+        ('demon', (1.0, 0.0), bm_lamp_violet),
+        ('dragon', (0.0, -1.0), bm_lamp_ember),
+    ]
+    for fname, (dx, dy), bm_g in faction_lamp_cfg:
+        px, py = -dy, dx
+        for dist in (15.4, 17.8):
+            for side in (-1.0, 1.0):
+                lx = dx * dist + px * (side * 3.15)
+                ly = dy * dist + py * (side * 3.15)
+                inward_ang = math.atan2(-py * side, -px * side)
+                _add_tall_lamp(bm_lamp_iron, bm_g, lx, ly, _ray_z(lx, ly, 0.1), inward_ang, h=2.15, sc=0.88)
+
+    mesh_from_bmesh(bm_lamp_iron, 'Props_Streetlamps_Iron', col_props, mats['iron_dark'], smooth=False)
+    mesh_from_bmesh(bm_lamp_warm, 'Props_Streetlamps_Glow_Warm', col_props, mats['glow_warm'], smooth=True)
+    mesh_from_bmesh(bm_lamp_emerald, 'Props_Streetlamps_Glow_Forest', col_props, mats['glow_forest_spore'], smooth=True)
+    mesh_from_bmesh(bm_lamp_violet, 'Props_Streetlamps_Glow_Demon', col_props, mats['glow_demon'], smooth=True)
+    mesh_from_bmesh(bm_lamp_ember, 'Props_Streetlamps_Glow_Dragon', col_props, mats['glow_dragon'], smooth=True)
+
 
 def build_props(col, mats):
     """Build ornate neutral plaza benches & planters + multi-lobe painterly floating cloud banks."""

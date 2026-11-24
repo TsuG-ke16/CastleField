@@ -10,6 +10,8 @@
 import { UI_CONFIG } from './config.js';
 
 export const DIORAMA_GLB_PATH = 'assets/models/diorama/castle_field_diorama.glb';
+export const KINGDOM_TOWN_GLB_PATH = 'assets/models/diorama/kingdom_town_diorama.glb';
+export const SKY_DRAGON_GLB_PATH = 'assets/models/diorama/sky_dragon.glb';
 export const COSMIC_HOME_DIR = 'assets/models/diorama/cosmic_home';
 
 export const HOME_SKY_MODES = ['auto', 'dawn', 'day', 'dusk', 'night'];
@@ -255,10 +257,10 @@ export function resolveSkyPhase(mode = 'auto', date = new Date()) {
   return { key: 'night', ...SKY_PRESETS.night };
 }
 
-/** Cycles 事前レンダリング WebP のパスを返す */
+/** Cycles 事前レンダリング WebP のパスを返す（通常モードは王国＋城下町、4陣営は各陣営） */
 export function cosmicImagePath(phaseKey, viewMode, faction) {
   const phase = Object.hasOwn(SKY_PRESETS, phaseKey) ? phaseKey : 'night';
-  const view = viewMode === 'factions' && FACTION_ANGLE_DEG[faction] !== undefined ? faction : 'overview';
+  const view = viewMode === 'factions' && FACTION_ANGLE_DEG[faction] !== undefined ? faction : 'kingdom_town';
   return `${COSMIC_HOME_DIR}/${phase}_${view}.webp`;
 }
 
@@ -297,7 +299,7 @@ function isReducedMotion() {
 }
 
 let libsPromise = null;
-let glbPromise = null;
+const glbCache = new Map();
 
 function loadLibs() {
   return (libsPromise ??= Promise.all([
@@ -306,15 +308,16 @@ function loadLibs() {
   ]).then(([THREE, { GLTFLoader }]) => ({ THREE, GLTFLoader })));
 }
 
-function loadDioramaGlb(GLTFLoader) {
-  if (!glbPromise) {
-    const url = typeof document !== 'undefined' ? new URL(DIORAMA_GLB_PATH, document.baseURI).href : DIORAMA_GLB_PATH;
-    glbPromise = new GLTFLoader().loadAsync(url).catch((err) => {
-      glbPromise = null;
+function loadGlbAsset(GLTFLoader, relPath) {
+  if (!glbCache.has(relPath)) {
+    const url = typeof document !== 'undefined' ? new URL(relPath, document.baseURI).href : relPath;
+    const p = new GLTFLoader().loadAsync(url).catch((err) => {
+      glbCache.delete(relPath);
       throw err;
     });
+    glbCache.set(relPath, p);
   }
-  return glbPromise;
+  return glbCache.get(relPath);
 }
 
 function shortestAngleDiff(fromDeg, toDeg) {
@@ -726,7 +729,7 @@ export class HomeDioramaGL {
     // カメラ軌道状態（3Dモード用）
     this.orbitAngleDeg = FACTION_ANGLE_DEG[this.faction] ?? 90;
     this.targetOrbitDeg = this.orbitAngleDeg;
-    this.overviewAngleDeg = 7.0;
+    this.overviewAngleDeg = -20.0;
     this.dragYawDeg = 0;
     this.dragPitchDeg = 0;
     this.dragging = false;
@@ -742,6 +745,14 @@ export class HomeDioramaGL {
     this.factionLights = [];
     this.waterMats = [];
     this.bloomAuras = [];
+    this.animatedDragons = [];
+    this.animatedSpirits = [];
+    this.windmillBlades = null;
+    this.classicGroup = null;
+    this.factionsGroup = null;
+    this.loadingClassic = false;
+    this.loadingFactions = false;
+    this.GLTFLoader = null;
     this.lastClockSync = 0;
     this.rafId = 0;
     this.lastFrameTs = 0;
@@ -849,6 +860,7 @@ export class HomeDioramaGL {
     const { THREE, GLTFLoader } = await loadLibs();
     if (this.destroyed) return;
     this.THREE = THREE;
+    this.GLTFLoader = GLTFLoader;
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -873,10 +885,7 @@ export class HomeDioramaGL {
     this.buildCosmicElements(THREE, scene);
     this.buildLights(THREE, scene);
 
-    const gltf = await loadDioramaGlb(GLTFLoader);
-    if (this.destroyed) return;
-
-    // 動く水面・滝の専用GLSLマテリアルを作成
+    // 動く水面・滝の専用GLSLマテリアルを作成（通常モード・4陣営モードで共用）
     const pInit = resolveSkyPhase(this.skyMode);
     const moatMat = new THREE.ShaderMaterial({
       vertexShader: WATER_MOAT_VERT,
@@ -904,54 +913,13 @@ export class HomeDioramaGL {
     });
     this.waterMats = [moatMat, fallMat];
 
-    const model = gltf.scene.clone(true);
-    const embeddedLights = [];
-    model.traverse((obj) => {
-      if (obj.isLight) {
-        obj.intensity = 0;
-        obj.visible = false;
-        embeddedLights.push(obj);
-        return;
-      }
-      if (!obj.isMesh) return;
-      if (obj.name === 'Props_Floating_Cloud_Ring') {
-        obj.visible = false;
-        return;
-      }
-      if (obj.name === 'Water_Moat_Animated') {
-        obj.material = moatMat;
-        return;
-      }
-      if (obj.name === 'Water_Waterfalls_Animated') {
-        obj.material = fallMat;
-        return;
-      }
-      if (obj.name === 'Water_Waterfall_MistPlumes') {
-        obj.visible = false; // 3Dモードでは動的な滝壺霧パーティクルで表現
-        return;
-      }
-      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
-      const cloned = mats.map((mat) => {
-        if (!mat) return mat;
-        const m = mat.clone();
-        const hasEmissive = Boolean(m.emissiveMap) || (m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.05);
-        if (hasEmissive) {
-          const baseInt = m.emissiveMap ? 0.95 : 1.15;
-          m.emissiveIntensity = baseInt;
-          this.emissiveMats.push({ mat: m, base: baseInt });
-        }
-        return m;
-      });
-      obj.material = Array.isArray(obj.material) ? cloned : cloned[0];
-    });
-    for (const l of embeddedLights) l.parent?.remove(l);
-
     this.dioramaRoot = new THREE.Group();
-    this.dioramaRoot.add(model);
-    this.buildWaterfallMistParticles(THREE, this.dioramaRoot);
-    this.buildBloomAuras(THREE, this.dioramaRoot);
     this.dioramaRoot.visible = (this.activeTab === 'battle');
     scene.add(this.dioramaRoot);
+
+    await this.ensureDioramaLoaded(this.viewMode);
+    if (this.destroyed) return;
+    this.syncActiveDioramaGroup();
 
     this.ready3D = true;
     this.initializing3D = false;
@@ -966,6 +934,260 @@ export class HomeDioramaGL {
         this.renderOnce3D();
         this.startLoop();
       }
+    }
+  }
+
+  prepareModelMeshes(model) {
+    const [moatMat, fallMat] = this.waterMats;
+    const embeddedLights = [];
+    model.traverse((obj) => {
+      if (obj.isLight) {
+        obj.intensity = 0;
+        obj.visible = false;
+        embeddedLights.push(obj);
+        return;
+      }
+      if (!obj.isMesh) return;
+      if (obj.name === 'Props_Floating_Cloud_Ring' || obj.name === 'Water_Waterfall_MistPlumes') {
+        obj.visible = false;
+        return;
+      }
+      if (obj.name === 'Water_Moat_Animated') {
+        obj.material = moatMat;
+        return;
+      }
+      if (obj.name === 'Water_Waterfalls_Animated') {
+        obj.material = fallMat;
+        return;
+      }
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      const cloned = mats.map((mat) => {
+        if (!mat) return mat;
+        const m = mat.clone();
+        const hasEmissive = Boolean(m.emissiveMap) || (m.emissive && (m.emissive.r + m.emissive.g + m.emissive.b) > 0.05);
+        if (hasEmissive) {
+          const baseInt = m.emissiveMap ? 0.95 : 1.2;
+          m.emissiveIntensity = baseInt;
+          this.emissiveMats.push({ mat: m, base: baseInt });
+        }
+        return m;
+      });
+      obj.material = Array.isArray(obj.material) ? cloned : cloned[0];
+    });
+    for (const l of embeddedLights) l.parent?.remove(l);
+  }
+
+  async ensureDioramaLoaded(mode) {
+    if (!this.THREE || !this.GLTFLoader || !this.dioramaRoot || this.destroyed) return;
+    const THREE = this.THREE;
+    if (mode === 'factions') {
+      if (this.factionsGroup || this.loadingFactions) return;
+      this.loadingFactions = true;
+      try {
+        const [gltf, dragonGltf] = await Promise.all([
+          loadGlbAsset(this.GLTFLoader, DIORAMA_GLB_PATH),
+          loadGlbAsset(this.GLTFLoader, SKY_DRAGON_GLB_PATH).catch(() => null),
+        ]);
+        if (this.destroyed) return;
+        const group = new THREE.Group();
+        const model = gltf.scene.clone(true);
+        this.prepareModelMeshes(model);
+        group.add(model);
+        this.buildWaterfallMistParticles(THREE, group);
+        this.buildBloomAuras(THREE, group, 'factions');
+        this.buildElementalSpirits(THREE, group, 'factions');
+        if (dragonGltf) {
+          this.buildSkyDragon(THREE, group, dragonGltf, {
+            mode: 'factions',
+            scale: 0.92,
+            center: [0, 14.5, 0],
+            rx: 25.5,
+            rz: 23.5,
+            bobAmp: 2.2,
+            speed: 0.24,
+            phase: 0.4,
+            scaleColor: '#9c1b28',
+            membraneColor: '#ff5228',
+            membraneEmit: '#ff6620',
+            eyeColor: '#ffdf44',
+          });
+        }
+        this.factionsGroup = group;
+        this.dioramaRoot.add(group);
+        this.syncActiveDioramaGroup();
+        this.applySkyPhase(true);
+      } finally {
+        this.loadingFactions = false;
+      }
+    } else {
+      if (this.classicGroup || this.loadingClassic) return;
+      this.loadingClassic = true;
+      try {
+        const [gltf, dragonGltf] = await Promise.all([
+          loadGlbAsset(this.GLTFLoader, KINGDOM_TOWN_GLB_PATH),
+          loadGlbAsset(this.GLTFLoader, SKY_DRAGON_GLB_PATH).catch(() => null),
+        ]);
+        if (this.destroyed) return;
+        const group = new THREE.Group();
+        const model = gltf.scene.clone(true);
+        this.prepareModelMeshes(model);
+        const blades = model.getObjectByName('Town_Windmill_Blades');
+        if (blades) this.windmillBlades = blades;
+        group.add(model);
+        this.buildBloomAuras(THREE, group, 'classic');
+        this.buildElementalSpirits(THREE, group, 'classic');
+        if (dragonGltf) {
+          this.buildSkyDragon(THREE, group, dragonGltf, {
+            mode: 'classic',
+            scale: 0.72,
+            center: [0, 18.8, -3.0],
+            rx: 21.0,
+            rz: 18.5,
+            bobAmp: 1.9,
+            speed: 0.22,
+            phase: 1.8,
+            scaleColor: '#2d6be6',
+            membraneColor: '#4cf2ff',
+            membraneEmit: '#38d8ff',
+            eyeColor: '#fff288',
+          });
+        }
+        this.classicGroup = group;
+        this.dioramaRoot.add(group);
+        this.syncActiveDioramaGroup();
+        this.applySkyPhase(true);
+      } finally {
+        this.loadingClassic = false;
+      }
+    }
+  }
+
+  syncActiveDioramaGroup() {
+    const isFactions = this.viewMode === 'factions';
+    if (this.classicGroup) this.classicGroup.visible = !isFactions;
+    if (this.factionsGroup) this.factionsGroup.visible = isFactions;
+  }
+
+  buildSkyDragon(THREE, parent, dragonGltf, cfg) {
+    const pivot = new THREE.Group();
+    const model = dragonGltf.scene.clone(true);
+    model.rotation.y = Math.PI; // Blender +Y forward -> glTF -Z -> rotate PI so head points along +Z for lookAt()!
+    model.scale.setScalar(cfg.scale);
+
+    model.traverse((obj) => {
+      if (!obj.isMesh) return;
+      const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+      const next = mats.map((m) => {
+        if (!m) return m;
+        const c = m.clone();
+        if (c.name === 'Mat_Dragon_Scales') {
+          c.color.set(cfg.scaleColor);
+        } else if (c.name === 'Mat_Dragon_WingMembrane') {
+          c.color.set(cfg.membraneColor);
+          c.emissive.set(cfg.membraneEmit);
+          c.emissiveIntensity = 0.65;
+          c.side = THREE.DoubleSide;
+          this.emissiveMats.push({ mat: c, base: 0.65 });
+        } else if (c.name === 'Mat_Dragon_EyeGlow') {
+          c.color.set(cfg.eyeColor);
+          c.emissive.set(cfg.eyeColor);
+          c.emissiveIntensity = 2.4;
+          this.emissiveMats.push({ mat: c, base: 2.4 });
+        }
+        return c;
+      });
+      obj.material = Array.isArray(obj.material) ? next : next[0];
+    });
+
+    const wingL = model.getObjectByName('Dragon_Wing_L');
+    const wingR = model.getObjectByName('Dragon_Wing_R');
+    // Subtle glowing aura halo around the soaring dragon
+    const auraMat = new THREE.SpriteMaterial({
+      map: this.dotTex,
+      color: cfg.membraneEmit,
+      transparent: true,
+      opacity: 0.32,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+    });
+    const aura = new THREE.Sprite(auraMat);
+    aura.scale.set(6.5, 6.5, 1);
+    pivot.add(model, aura);
+    parent.add(pivot);
+    this.animatedDragons.push({ pivot, model, wingL, wingR, cfg, nextPos: new THREE.Vector3() });
+  }
+
+  buildElementalSpirits(THREE, parent, mode) {
+    // 4属性の精霊（火・水・風・土）：輝くクリスタル核＋2重魔法陣リング＋オーラ＋軌跡パーティクル
+    const specs = mode === 'classic'
+      ? [
+          { name: 'water', color: '#4cf2ff', core: '#e4ffff', cx: 0.0, cy: 4.8, cz: 5.8, rx: 4.4, rz: 4.4, speed: 0.72, phase: 0.0, bob: 0.75 },
+          { name: 'fire',  color: '#ff7b3b', core: '#fff1b8', cx: 8.5, cy: 7.4, cz: -2.0, rx: 5.2, rz: 4.6, speed: 0.62, phase: 1.6, bob: 0.95 },
+          { name: 'wind',  color: '#6effb8', core: '#eafff4', cx: -11.5, cy: 8.6, cz: -2.2, rx: 4.8, rz: 4.2, speed: 0.85, phase: 3.1, bob: 1.05 },
+          { name: 'earth', color: '#ffd86b', core: '#fff8d6', cx: 0.0, cy: 11.8, cz: -9.0, rx: 6.4, rz: 5.4, speed: 0.48, phase: 4.7, bob: 0.85 },
+        ]
+      : [
+          { name: 'water', color: '#4cf2ff', core: '#e4ffff', cx: 0.0, cy: 9.2, cz: -18.5, rx: 5.6, rz: 5.2, speed: 0.64, phase: 0.2, bob: 0.9 },
+          { name: 'wind',  color: '#6effb8', core: '#eafff4', cx: -19.5, cy: 9.8, cz: 0.0, rx: 5.8, rz: 5.4, speed: 0.78, phase: 1.8, bob: 1.0 },
+          { name: 'earth', color: '#c978ff', core: '#f6e4ff', cx: 19.5, cy: 11.2, cz: 0.0, rx: 5.2, rz: 5.2, speed: 0.56, phase: 3.3, bob: 0.85 },
+          { name: 'fire',  color: '#ff7b3b', core: '#fff1b8', cx: 0.0, cy: 8.6, cz: 19.0, rx: 5.8, rz: 5.2, speed: 0.70, phase: 4.9, bob: 0.95 },
+        ];
+
+    const coreGeo = new THREE.OctahedronGeometry(0.42, 0);
+    const ringGeoA = new THREE.TorusGeometry(0.76, 0.045, 8, 28);
+    const ringGeoB = new THREE.TorusGeometry(1.02, 0.032, 8, 28);
+
+    for (const s of specs) {
+      const group = new THREE.Group();
+      const coreMesh = new THREE.Mesh(
+        coreGeo,
+        new THREE.MeshBasicMaterial({ color: s.core }),
+      );
+      const ringA = new THREE.Mesh(
+        ringGeoA,
+        new THREE.MeshBasicMaterial({ color: s.color, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false }),
+      );
+      const ringB = new THREE.Mesh(
+        ringGeoB,
+        new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false }),
+      );
+      ringA.rotation.x = Math.PI * 0.35;
+      ringB.rotation.y = Math.PI * 0.42;
+
+      const auraSprite = new THREE.Sprite(
+        new THREE.SpriteMaterial({
+          map: this.dotTex,
+          color: s.color,
+          transparent: true,
+          opacity: 0.72,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        }),
+      );
+      auraSprite.scale.set(3.4, 3.4, 1);
+      group.add(coreMesh, ringA, ringB, auraSprite);
+      parent.add(group);
+
+      // 10粒のきらめく軌跡パーティクル
+      const trailCount = 10;
+      const trailPos = new Float32Array(trailCount * 3);
+      const trailGeo = new THREE.BufferGeometry();
+      trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+      const trailPts = new THREE.Points(
+        trailGeo,
+        new THREE.PointsMaterial({
+          size: 0.88,
+          map: this.dotTex,
+          color: s.color,
+          transparent: true,
+          opacity: 0.72,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        }),
+      );
+      parent.add(trailPts);
+
+      this.animatedSpirits.push({ group, coreMesh, ringA, ringB, auraSprite, trailGeo, trailCount, spec: s });
     }
   }
 
@@ -1012,27 +1234,53 @@ export class HomeDioramaGL {
     parent.add(new THREE.Points(geo, this.wfMistMat));
   }
 
-  buildBloomAuras(THREE, parent) {
-    // 軽量ビルボード加算グロー（iPhone 14+ で 60fps 負荷ほぼゼロのまま Cycles の Bloom に迫る発光感を再現！）
-    const auraSpecs = [
-      // 魔族軍（東 +X）：大紫水晶コア＋門前ジオード2基
-      { pos: [20.6, 11.4, 0.0], color: '#d872ff', scale: 9.2, opacity: 0.46, kind: 'crystal', phase: 0.0 },
-      { pos: [16.2, 2.3, -3.5], color: '#c45cff', scale: 4.4, opacity: 0.34, kind: 'crystal', phase: 1.4 },
-      { pos: [16.2, 2.3, 3.5], color: '#c45cff', scale: 4.4, opacity: 0.34, kind: 'crystal', phase: 2.7 },
-      // 竜族帝国（南 +Z）：屋上4隅の篝火＋溶鉱炉ゲート
-      { pos: [-4.2, 8.1, 17.6], color: '#ff8a38', scale: 5.2, opacity: 0.46, kind: 'flame', phase: 0.3 },
-      { pos: [4.2, 8.1, 17.6], color: '#ff8a38', scale: 5.2, opacity: 0.46, kind: 'flame', phase: 1.9 },
-      { pos: [-4.2, 8.0, 23.4], color: '#ff7a2e', scale: 4.8, opacity: 0.40, kind: 'flame', phase: 3.1 },
-      { pos: [4.2, 8.0, 23.4], color: '#ff7a2e', scale: 4.8, opacity: 0.40, kind: 'flame', phase: 4.5 },
-      { pos: [0.0, 2.5, 16.5], color: '#ff9642', scale: 5.6, opacity: 0.42, kind: 'flame', phase: 0.8 },
-      // 王国（北 -Z）：金色尖塔トップ＋正門の暖かい灯り
-      { pos: [0.0, 14.2, -20.6], color: '#ffe09c', scale: 4.8, opacity: 0.28, kind: 'warm', phase: 0.5 },
-      { pos: [0.0, 2.4, -15.8], color: '#ffd484', scale: 4.2, opacity: 0.24, kind: 'warm', phase: 2.1 },
-      // 森の同盟（西 -X）：聖域の暖炉門＋苔岩の妖精蛍グロー
-      { pos: [-16.2, 2.1, 0.0], color: '#ffcf74', scale: 4.4, opacity: 0.30, kind: 'warm', phase: 1.1 },
-      { pos: [-24.5, 2.2, -6.4], color: '#8effb8', scale: 3.4, opacity: 0.26, kind: 'crystal', phase: 2.4 },
-      { pos: [-24.5, 2.2, 6.4], color: '#8effb8', scale: 3.4, opacity: 0.26, kind: 'crystal', phase: 3.8 },
-    ];
+  buildBloomAuras(THREE, parent, mode = 'factions') {
+    // 軽量ビルボード加算グロー（城の灯り＋街灯の暖かい光輪を60fps負荷ほぼゼロで再現！）
+    const auraSpecs = mode === 'classic'
+      ? [
+          // 王国城トップ・正門・城下町広場＆街灯の暖かい光輪
+          { pos: [0.0, 17.5, -9.2], color: '#ffe6a8', scale: 5.5, opacity: 0.34, kind: 'warm', phase: 0.2 },
+          { pos: [0.0, 6.2, -3.5], color: '#ffd584', scale: 4.2, opacity: 0.30, kind: 'warm', phase: 1.1 },
+          { pos: [-2.4, 5.4, -1.9], color: '#ffc96e', scale: 2.5, opacity: 0.42, kind: 'warm', phase: 0.4 },
+          { pos: [2.4, 5.4, -1.9], color: '#ffc96e', scale: 2.5, opacity: 0.42, kind: 'warm', phase: 1.5 },
+          { pos: [-2.5, 2.2, 1.9], color: '#ffc96e', scale: 2.6, opacity: 0.45, kind: 'warm', phase: 2.2 },
+          { pos: [2.5, 2.2, 1.9], color: '#ffc96e', scale: 2.6, opacity: 0.45, kind: 'warm', phase: 3.1 },
+          { pos: [-5.3, 2.2, 4.4], color: '#ffc96e', scale: 2.5, opacity: 0.42, kind: 'warm', phase: 0.9 },
+          { pos: [5.3, 2.2, 4.4], color: '#ffc96e', scale: 2.5, opacity: 0.42, kind: 'warm', phase: 2.0 },
+          { pos: [-5.4, 2.2, 7.2], color: '#ffc96e', scale: 2.5, opacity: 0.42, kind: 'warm', phase: 2.8 },
+          { pos: [5.4, 2.2, 7.2], color: '#ffc96e', scale: 2.5, opacity: 0.42, kind: 'warm', phase: 3.9 },
+          { pos: [-2.5, 2.2, 10.9], color: '#ffc96e', scale: 2.4, opacity: 0.40, kind: 'warm', phase: 1.4 },
+          { pos: [2.5, 2.2, 10.9], color: '#ffc96e', scale: 2.4, opacity: 0.40, kind: 'warm', phase: 4.2 },
+          { pos: [-3.5, 2.3, 17.6], color: '#ffc96e', scale: 2.6, opacity: 0.44, kind: 'warm', phase: 0.6 },
+          { pos: [3.5, 2.3, 17.6], color: '#ffc96e', scale: 2.6, opacity: 0.44, kind: 'warm', phase: 2.6 },
+          { pos: [13.4, 4.8, -4.6], color: '#ffe090', scale: 3.8, opacity: 0.36, kind: 'warm', phase: 1.7 },
+          { pos: [0.0, 2.5, 5.8], color: '#78eeff', scale: 3.6, opacity: 0.32, kind: 'crystal', phase: 0.5 },
+        ]
+      : [
+          // 魔族軍（東 +X）：大紫水晶コア＋門前ジオード＋紫街灯
+          { pos: [20.6, 11.4, 0.0], color: '#d872ff', scale: 9.2, opacity: 0.46, kind: 'crystal', phase: 0.0 },
+          { pos: [16.2, 2.3, -3.5], color: '#c45cff', scale: 4.4, opacity: 0.38, kind: 'crystal', phase: 1.4 },
+          { pos: [16.2, 2.3, 3.5], color: '#c45cff', scale: 4.4, opacity: 0.38, kind: 'crystal', phase: 2.7 },
+          // 竜族帝国（南 +Z）：屋上4隅の篝火＋溶鉱炉ゲート＋炎街灯
+          { pos: [-4.2, 8.1, 17.6], color: '#ff8a38', scale: 5.2, opacity: 0.46, kind: 'flame', phase: 0.3 },
+          { pos: [4.2, 8.1, 17.6], color: '#ff8a38', scale: 5.2, opacity: 0.46, kind: 'flame', phase: 1.9 },
+          { pos: [-4.2, 8.0, 23.4], color: '#ff7a2e', scale: 4.8, opacity: 0.40, kind: 'flame', phase: 3.1 },
+          { pos: [4.2, 8.0, 23.4], color: '#ff7a2e', scale: 4.8, opacity: 0.40, kind: 'flame', phase: 4.5 },
+          { pos: [0.0, 2.5, 16.5], color: '#ff9642', scale: 5.6, opacity: 0.42, kind: 'flame', phase: 0.8 },
+          // 王国（北 -Z）：金色尖塔トップ＋正門街灯
+          { pos: [0.0, 14.2, -20.6], color: '#ffe09c', scale: 4.8, opacity: 0.30, kind: 'warm', phase: 0.5 },
+          { pos: [-3.1, 2.4, -15.4], color: '#ffc96e', scale: 2.6, opacity: 0.40, kind: 'warm', phase: 1.3 },
+          { pos: [3.1, 2.4, -15.4], color: '#ffc96e', scale: 2.6, opacity: 0.40, kind: 'warm', phase: 2.4 },
+          // 森の同盟（西 -X）：聖域の暖炉門＋翠街灯
+          { pos: [-16.2, 2.1, 0.0], color: '#ffcf74', scale: 4.4, opacity: 0.30, kind: 'warm', phase: 1.1 },
+          { pos: [-15.4, 2.3, -3.1], color: '#8effb8', scale: 2.6, opacity: 0.38, kind: 'crystal', phase: 2.2 },
+          { pos: [-15.4, 2.3, 3.1], color: '#8effb8', scale: 2.6, opacity: 0.38, kind: 'crystal', phase: 3.5 },
+          // 中央広場リング街灯（4隅）
+          { pos: [5.4, 2.2, 5.4], color: '#ffd07a', scale: 2.4, opacity: 0.38, kind: 'warm', phase: 0.7 },
+          { pos: [-5.4, 2.2, 5.4], color: '#ffd07a', scale: 2.4, opacity: 0.38, kind: 'warm', phase: 1.8 },
+          { pos: [5.4, 2.2, -5.4], color: '#ffd07a', scale: 2.4, opacity: 0.38, kind: 'warm', phase: 2.9 },
+          { pos: [-5.4, 2.2, -5.4], color: '#ffd07a', scale: 2.4, opacity: 0.38, kind: 'warm', phase: 4.1 },
+        ];
     for (const s of auraSpecs) {
       const mat = new THREE.SpriteMaterial({
         map: this.dotTex,
@@ -1426,6 +1674,12 @@ export class HomeDioramaGL {
     this.dragYawDeg = 0;
     this.dragPitchDeg = 0;
     this.updatePrerenderImage(true);
+    if (this.use3D && this.ready3D) {
+      this.syncActiveDioramaGroup();
+      this.ensureDioramaLoaded(next).catch((err) => {
+        console.warn('[HomeDioramaGL] ジオラマ切替ロードに失敗:', err?.message ?? err);
+      });
+    }
     this.resize();
   }
 
@@ -1547,6 +1801,66 @@ export class HomeDioramaGL {
       attr.needsUpdate = true;
     }
 
+    // 風車の羽根のゆるやかな回転（通常モード：王国＋城下町）
+    if (this.windmillBlades && !reduced) {
+      this.windmillBlades.rotation.z -= dt * 0.58;
+    }
+
+    // 空を舞うドラゴン（羽ばたき＋滑らかな周回飛行＆バンク角）
+    for (const d of this.animatedDragons) {
+      const c = d.cfg;
+      const t = reduced ? 0.8 : this.elapsed;
+      const ang = t * c.speed + c.phase;
+      const x = c.center[0] + Math.cos(ang) * c.rx;
+      const z = c.center[2] + Math.sin(ang) * c.rz;
+      const y = c.center[1] + Math.sin(ang * 2.0 + 0.5) * c.bobAmp;
+      d.pivot.position.set(x, y, z);
+
+      const ang2 = ang + 0.04;
+      d.nextPos.set(
+        c.center[0] + Math.cos(ang2) * c.rx,
+        c.center[1] + Math.sin(ang2 * 2.0 + 0.5) * c.bobAmp,
+        c.center[2] + Math.sin(ang2) * c.rz,
+      );
+      d.pivot.lookAt(d.nextPos);
+      // 旋回内側への自然なロール傾き
+      d.model.rotation.z = reduced ? 0 : 0.24 + Math.sin(t * 1.4 + c.phase) * 0.06;
+
+      // 羽ばたきモーション（力強く羽ばたき、時おり優雅に滑空）
+      const flapCycle = Math.sin(t * 3.6 + c.phase * 2.0);
+      const flapAngle = reduced ? 0.14 : flapCycle * 0.42 + 0.06;
+      if (d.wingL) d.wingL.rotation.z = flapAngle;
+      if (d.wingR) d.wingR.rotation.z = -flapAngle;
+    }
+
+    // 4属性の精霊（周回浮遊＋2重魔法陣リング回転＋軌跡パーティクル）
+    for (const sp of this.animatedSpirits) {
+      const s = sp.spec;
+      const t = reduced ? 0.5 : this.elapsed;
+      const a = t * s.speed + s.phase;
+      const sx = s.cx + Math.cos(a) * s.rx;
+      const sz = s.cz + Math.sin(a) * s.rz;
+      const sy = s.cy + Math.sin(t * 1.7 + s.phase) * s.bob;
+      sp.group.position.set(sx, sy, sz);
+      if (!reduced) {
+        sp.coreMesh.rotation.y = t * 1.6 + s.phase;
+        sp.ringA.rotation.z = t * 2.2;
+        sp.ringB.rotation.x = -t * 1.8;
+        const pulse = 0.88 + 0.18 * Math.sin(t * 3.4 + s.phase);
+        sp.auraSprite.scale.set(3.4 * pulse, 3.4 * pulse, 1);
+      }
+      const attr = sp.trailGeo.getAttribute('position');
+      const arr = attr.array;
+      for (let i = 0; i < sp.trailCount; i++) {
+        const lag = (i + 1) * 0.16;
+        const ta = (t - lag) * s.speed + s.phase;
+        arr[i * 3] = s.cx + Math.cos(ta) * s.rx;
+        arr[i * 3 + 1] = s.cy + Math.sin((t - lag) * 1.7 + s.phase) * s.bob;
+        arr[i * 3 + 2] = s.cz + Math.sin(ta) * s.rz;
+      }
+      attr.needsUpdate = true;
+    }
+
     if (this.dioramaRoot) {
       this.dioramaRoot.position.y = reduced ? 0 : Math.sin(this.elapsed * 0.65) * 0.36;
     }
@@ -1629,20 +1943,21 @@ export class HomeDioramaGL {
       );
       this.camera.lookAt(dx * targetDist, this.currentTargetY + 0.55, dz * targetDist);
     } else {
-      if (!this.dragging && !snap) this.overviewAngleDeg += dt * 1.45;
+      // 通常モード：王国＋城下町の浮遊島を迫力よく見せる3/4斜め俯瞰
+      if (!this.dragging && !snap) this.overviewAngleDeg += dt * 1.65;
       const rad = (this.overviewAngleDeg * Math.PI) / 180;
       const heroFrac = (this.heroH && this.viewH) ? (this.heroH / this.viewH) : 0.42;
       const heroWFrac = (this.heroW && this.viewW) ? (this.heroW / this.viewW) : 0.85;
-      const distByH = 68 / Math.max(0.24, heroFrac * 0.92);
-      const distByW = 72 / Math.max(0.45, heroWFrac * 0.95);
-      const dist = Math.max(128, Math.min(215, Math.max(distByH * 0.72, distByW * 0.82)));
+      const distByH = 44 / Math.max(0.24, heroFrac * 0.92);
+      const distByW = 48 / Math.max(0.45, heroWFrac * 0.95);
+      const dist = Math.max(70, Math.min(126, Math.max(distByH * 0.68, distByW * 0.78)));
 
-      const pitchRad = ((23 + this.dragPitchDeg) * Math.PI) / 180;
+      const pitchRad = ((24 + this.dragPitchDeg) * Math.PI) / 180;
       const horiz = dist * Math.cos(pitchRad);
-      const camY = dist * Math.sin(pitchRad) - 5.0;
+      const camY = dist * Math.sin(pitchRad) + 1.5;
 
       this.camera.position.set(Math.sin(rad) * horiz, camY, Math.cos(rad) * horiz);
-      this.camera.lookAt(0, -11.5, 0);
+      this.camera.lookAt(0, -1.6, -0.5);
     }
   }
 

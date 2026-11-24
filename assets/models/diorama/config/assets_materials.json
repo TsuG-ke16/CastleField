@@ -1,10 +1,10 @@
 {
   "summary": {
-    "total_objects": 49,
-    "total_meshes": 23,
-    "total_polygons": 200772,
-    "total_triangles": 205112,
-    "total_materials": 18,
+    "total_objects": 54,
+    "total_meshes": 28,
+    "total_polygons": 202164,
+    "total_triangles": 208664,
+    "total_materials": 20,
     "external_assets_used": "Tripo Studio 3D sculpted PBR assets (4 faction hero castles + 4-biome floating island base, decimated & texture-baked with synthesized emissive maps via prepare_tripo_castles.py / prepare_tripo_island.py) + procedural Blender lanterns, bollards, waterfall mist, fireflies, clouds, lighting & 10-camera rig."
   },
   "collections": {
@@ -131,12 +131,17 @@
       ]
     },
     "Props": {
-      "object_count": 1,
-      "mesh_count": 1,
-      "polygons": 5760,
-      "triangles": 5760,
+      "object_count": 6,
+      "mesh_count": 6,
+      "polygons": 7152,
+      "triangles": 9312,
       "objects": [
-        "Props_Floating_Cloud_Ring"
+        "Props_Floating_Cloud_Ring",
+        "Props_Streetlamps_Iron",
+        "Props_Streetlamps_Glow_Warm",
+        "Props_Streetlamps_Glow_Forest",
+        "Props_Streetlamps_Glow_Demon",
+        "Props_Streetlamps_Glow_Dragon"
       ]
     },
     "Roads": {
@@ -215,6 +220,24 @@
       "metallic": 0.0,
       "roughness": 0.8,
       "emission_strength": 0.0,
+      "alpha": 1.0
+    },
+    "Mat_Glow_Demon_Violet": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.14,
+      "emission_strength": 3.4,
+      "alpha": 1.0
+    },
+    "Mat_Glow_Dragon_FlameOuter": {
+      "source": "Procedural Blender PBR",
+      "uses_image_textures": false,
+      "uses_vertex_color": false,
+      "metallic": 0.0,
+      "roughness": 0.22,
+      "emission_strength": 3.3,
       "alpha": 1.0
     },
     "Mat_Glow_Forest_Emerald": {
