@@ -297,7 +297,7 @@
 .fx-puff .asset-art, .fx-status-stamp .asset-art { display: block; width: 100%; height: 100%; }
 .fx-puff .asset-image, .fx-status-stamp .asset-image { width: 100%; height: 100%; object-fit: contain; }
 .fx-puff .asset-wait, .fx-status-stamp .asset-wait { display: none; }
-.fx-impact svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.fx-impact img { display: block; width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
 .fx-impact { filter: drop-shadow(0 2px 0 rgba(74, 46, 26, .25)); }
 .fx-ring { border: 5px solid #fff; border-radius: 50%; box-shadow: 0 0 0 2px rgba(74, 46, 26, .35), inset 0 0 0 2px rgba(74, 46, 26, .2); }
 .fx-debris { border: 2px solid var(--ink); border-radius: 30% 45% 35% 50%; }

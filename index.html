@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/ui/apple-touch-icon.png">
-  <meta name="theme-color" content="#386cd8">
+  <meta name="theme-color" content="#090d28">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="キャッスル">
@@ -51,12 +51,14 @@
   <link rel="stylesheet" href="css/fit.css">
   <link rel="stylesheet" href="css/home-reborn.css">
   <link rel="stylesheet" href="css/faction-beta.css">
+  <link rel="stylesheet" href="css/cosmic-ui.css">
 </head>
 <body>
   <div id="app" data-home-theme="battle-station">
     <!-- 読み込み中の画面：画像とデータがそろうまで、組みかけの盤面を見せないために出す（起動が終わったら main.js が消す） -->
     <div id="loading" role="status" aria-live="polite">
       <div class="loading-box">
+        <img class="loading-crest" src="assets/ui/cosmic/cosmic-magic-crest.webp" width="112" height="112" alt="" aria-hidden="true" decoding="async">
         <div class="loading-name">キャッスルフィールド</div>
         <div class="loading-bar" aria-hidden="true"><span id="loading-fill"></span></div>
         <div class="loading-text" id="loading-text">読み込み中…</div>

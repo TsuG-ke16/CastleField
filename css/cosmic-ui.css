@@ -1,0 +1,1173 @@
+/* ==========================================================================
+   Castle Field — Nebula x Aurora Cosmic UI/UX Theme
+   星雲×オーロラ発光（青紫グラデ・光るクリスタル・魔法陣クレスト・完全SVG不使用）
+   対象：対戦外UI（ローディング・ホーム全タブ・シート・準備・編成・図鑑・設定・
+         プロフィール・ショップ・ガチャ・ランク・ランキング・ミッション・フレンド・
+         ルーム・アカウント・ヘルプ・メニュー）
+   ※バトル盤面・カード本体イラストは既存アートを保持する。
+   ========================================================================== */
+
+:root {
+  --nebula-void: #050819;
+  --nebula-deep: #0a1030;
+  --nebula-glass: rgba(13, 18, 52, 0.84);
+  --nebula-glass-strong: rgba(11, 15, 44, 0.93);
+  --nebula-surface: rgba(24, 30, 82, 0.78);
+  --nebula-raised: rgba(38, 44, 118, 0.86);
+  --nebula-line: rgba(118, 198, 255, 0.28);
+  --nebula-line-hi: rgba(76, 242, 255, 0.68);
+  --aurora-cyan: #4cf2ff;
+  --aurora-mint: #5affd8;
+  --astral-violet: #9c6bff;
+  --astral-magenta: #d47bff;
+  --starlight-gold: #ffd97a;
+  --cosmic-ink: #f3f7ff;
+  --cosmic-muted: #b0c0ea;
+  --cosmic-danger: #ff7a96;
+  --cosmic-ok: #63f5be;
+  --cosmic-shadow: 0 18px 54px rgba(2, 4, 20, 0.78), 0 0 28px rgba(120, 76, 255, 0.2);
+}
+
+#app[data-home-theme="battle-station"] {
+  --lobby-bg: #070b22;
+  --lobby-surface: rgba(22, 27, 74, 0.78);
+  --lobby-raised: rgba(38, 43, 114, 0.86);
+  --lobby-line: rgba(114, 200, 255, 0.3);
+  --lobby-text: #f3f7ff;
+  --lobby-muted: #b0c0ea;
+  --lobby-accent: #4cf2ff;
+  --lobby-action: #7a52ff;
+  --lobby-ink: #080d28;
+}
+
+html.at-title,
+html.at-title body {
+  background: radial-gradient(ellipse at 50% 18%, #1a1956 0%, #090d28 52%, #040615 100%);
+  color: var(--cosmic-ink);
+}
+
+/* ---------- 共通：画像生成アイコンの基本挙動 ---------- */
+.cosmic-icon {
+  display: block;
+  object-fit: contain;
+  flex: none;
+  pointer-events: none;
+  filter: drop-shadow(0 0 6px rgba(76, 242, 255, 0.28));
+  transition: transform 180ms cubic-bezier(.3, 1.5, .5, 1), filter 180ms ease;
+}
+.art-text-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-weight: 900;
+  color: var(--cosmic-ink);
+  background: radial-gradient(circle, #2a2f7a, #121742);
+}
+
+/* ---------- ローディング画面：魔法陣クレスト＋オーロラバー ---------- */
+#loading {
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 34%, rgba(124, 77, 255, 0.34), transparent 64%),
+    radial-gradient(ellipse 65% 40% at 30% 72%, rgba(76, 242, 255, 0.18), transparent 62%),
+    linear-gradient(180deg, #06091e 0%, #0d1238 55%, #050819 100%) !important;
+  color: var(--cosmic-ink);
+}
+#loading .loading-box {
+  width: min(90vw, 320px);
+  padding: 28px 24px 24px;
+  border-radius: 22px;
+  border: 1px solid var(--nebula-line-hi);
+  background: linear-gradient(160deg, rgba(20, 24, 72, 0.88), rgba(9, 12, 38, 0.94));
+  box-shadow: var(--cosmic-shadow), inset 0 1px 0 rgba(164, 232, 255, 0.32);
+  justify-items: center;
+  gap: 14px;
+}
+#loading .loading-crest {
+  width: 112px;
+  height: 112px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 18px rgba(76, 242, 255, 0.55));
+  animation: cosmic-crest-spin 26s linear infinite;
+}
+#loading .loading-name {
+  font-weight: 900;
+  letter-spacing: .1em;
+  background: linear-gradient(90deg, #ffffff 0%, #b7f7ff 50%, #ffd97a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+#loading .loading-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(6, 10, 32, 0.9);
+  border: 1px solid rgba(110, 212, 255, 0.45);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+#loading #loading-fill {
+  background: linear-gradient(90deg, #7c4dff 0%, #4cf2ff 55%, #ffd97a 100%);
+  box-shadow: 0 0 14px rgba(76, 242, 255, 0.75);
+}
+#loading .loading-text {
+  color: var(--cosmic-muted);
+  opacity: 1;
+}
+@keyframes cosmic-crest-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   ホーム画面（#home.home-reborn）— 星雲×オーロラ発光UI
+   ========================================================================== */
+#app #home.home-reborn {
+  background:
+    radial-gradient(ellipse 85% 50% at 50% 18%, rgba(114, 72, 255, 0.28), transparent 62%),
+    radial-gradient(ellipse 60% 42% at 80% 78%, rgba(76, 242, 255, 0.14), transparent 58%),
+    #06091f;
+  color: var(--cosmic-ink);
+}
+#app #home.home-reborn.has-3d-diorama {
+  background: transparent;
+}
+#app #home.home-reborn:not(.has-3d-diorama) .home-sky {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 30%, rgba(128, 76, 255, 0.38), transparent 62%),
+    radial-gradient(ellipse 65% 40% at 22% 72%, rgba(76, 242, 255, 0.2), transparent 60%),
+    linear-gradient(180deg, #06091e 0%, #101642 52%, #070a22 100%);
+}
+#app #home.home-reborn.has-3d-diorama:not([data-tab="battle"]) .home-sky::after {
+  background:
+    radial-gradient(ellipse 90% 45% at 50% 12%, rgba(112, 66, 248, 0.26), transparent 65%),
+    rgba(6, 9, 28, 0.84);
+}
+
+/* ヘッダー（フロスト星雲ガラスバー） */
+#app #home.home-reborn .home-top {
+  position: relative;
+  padding: 6px 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(118, 206, 255, 0.28);
+  background: linear-gradient(135deg, rgba(16, 22, 62, 0.72), rgba(26, 22, 76, 0.62));
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px rgba(3, 5, 22, 0.45), inset 0 1px 0 rgba(160, 236, 255, 0.26);
+}
+#app #home.home-reborn .home-avatar {
+  border: 1.5px solid rgba(76, 242, 255, 0.75);
+  background: radial-gradient(circle at 35% 30%, #3a3a98, #141848);
+  box-shadow: 0 0 12px rgba(76, 242, 255, 0.35);
+}
+#app #home.home-reborn .home-who strong {
+  color: #ffffff;
+  text-shadow: 0 0 12px rgba(124, 198, 255, 0.35);
+}
+#app #home.home-reborn .home-who small {
+  color: var(--starlight-gold);
+}
+#app #home.home-reborn .home-xp {
+  background: rgba(8, 12, 36, 0.85);
+  border: 1px solid rgba(124, 190, 255, 0.28);
+  height: 5px;
+}
+#app #home.home-reborn .home-xp i {
+  background: linear-gradient(90deg, #8b5cf6, #4cf2ff);
+  box-shadow: 0 0 8px rgba(76, 242, 255, 0.65);
+}
+#app #home.home-reborn .home-wallet-pill {
+  padding: 0 6px 0 10px;
+  border-radius: 999px;
+  background: rgba(9, 13, 40, 0.68);
+  border: 1px solid rgba(255, 217, 122, 0.32);
+  min-height: 38px;
+}
+#app #home.home-reborn .home-coins {
+  color: var(--starlight-gold);
+  font-weight: 800;
+}
+#app #home.home-reborn .home-coin-add {
+  height: 38px;
+  width: 34px;
+  color: var(--aurora-cyan);
+  font-size: 18px;
+  font-weight: 900;
+}
+#app #home.home-reborn .home-icon-btn {
+  border-radius: 12px;
+  transition: background 160ms ease, transform 140ms ease;
+}
+#app #home.home-reborn .home-icon-btn:hover {
+  background: rgba(114, 196, 255, 0.14);
+}
+#app #home.home-reborn .home-icon-btn:hover .cosmic-icon {
+  transform: scale(1.08);
+  filter: drop-shadow(0 0 10px rgba(76, 242, 255, 0.68));
+}
+
+/* ルール切替ピル（通常モード / 4陣営モード） */
+#app #home.home-reborn .home-worlds {
+  gap: 8px;
+  align-items: center;
+}
+#app #home.home-reborn .home-world {
+  min-height: 36px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 196, 255, 0.24);
+  background: rgba(12, 17, 50, 0.56);
+  backdrop-filter: blur(8px);
+  color: var(--cosmic-muted);
+  font-weight: 800;
+  transition: all 180ms ease;
+}
+#app #home.home-reborn .home-world:hover {
+  color: #fff;
+  border-color: rgba(114, 216, 255, 0.5);
+}
+#app #home.home-reborn .home-world[aria-pressed="true"] {
+  color: #ffffff;
+  border: 1px solid rgba(76, 242, 255, 0.82);
+  background: linear-gradient(135deg, rgba(116, 74, 255, 0.72), rgba(40, 178, 224, 0.52));
+  box-shadow: 0 0 16px rgba(76, 242, 255, 0.32), inset 0 1px 0 rgba(210, 248, 255, 0.45);
+}
+
+/* 見出し */
+#app #home.home-reborn .home-battle-heading p {
+  color: var(--aurora-cyan);
+  letter-spacing: .24em;
+  text-shadow: 0 0 12px rgba(76, 242, 255, 0.6);
+}
+#app #home.home-reborn .home-battle-heading h1 {
+  background: linear-gradient(180deg, #ffffff 15%, #c8f3ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 14px rgba(8, 14, 46, 0.92));
+}
+
+/* 4陣営3Dジオラマ旋回バー */
+#app #home.home-reborn .home-faction-bar {
+  background: linear-gradient(135deg, rgba(12, 16, 50, 0.78), rgba(26, 20, 74, 0.72));
+  border: 1px solid rgba(110, 212, 255, 0.42);
+  box-shadow: 0 8px 24px rgba(3, 5, 20, 0.62), 0 0 18px rgba(124, 77, 255, 0.24);
+}
+#app #home.home-reborn .home-faction-chip {
+  color: var(--cosmic-muted);
+}
+#app #home.home-reborn .home-faction-chip[aria-pressed="true"] {
+  background: linear-gradient(135deg, rgba(124, 77, 255, 0.65), rgba(76, 242, 255, 0.38));
+  border-color: rgba(76, 242, 255, 0.88);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(76, 242, 255, 0.4);
+}
+
+/* 対戦コンソール（星雲フロストガラス＋画像生成クリスタルCTA） */
+#app #home.home-reborn .home-battle-console {
+  background: linear-gradient(160deg, rgba(14, 19, 58, 0.78), rgba(24, 18, 68, 0.74));
+  border: 1px solid rgba(114, 204, 255, 0.34);
+  border-radius: 18px;
+  padding: 8px 14px 12px;
+  backdrop-filter: blur(14px);
+  box-shadow: 0 14px 36px rgba(3, 5, 22, 0.62), inset 0 1px 0 rgba(164, 238, 255, 0.3), 0 0 26px rgba(116, 74, 255, 0.16);
+}
+#app #home.home-reborn .home-battle-console::before {
+  color: #ffffff;
+  letter-spacing: .06em;
+  text-shadow: 0 0 14px rgba(76, 242, 255, 0.42);
+}
+#app #home.home-reborn .home-deckpanel {
+  border-top: 0;
+  border-bottom: 1px solid rgba(124, 196, 255, 0.24);
+  padding: 8px 0 10px;
+}
+#app #home.home-reborn .home-eyebrow {
+  color: var(--aurora-cyan);
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+#app #home.home-reborn .home-deckpanel-name {
+  color: #ffffff;
+}
+#app #home.home-reborn .home-mode-picker {
+  border-radius: 12px;
+  padding: 8px 4px;
+  transition: background 150ms ease;
+}
+#app #home.home-reborn .home-mode-picker:hover {
+  background: rgba(112, 196, 255, 0.08);
+}
+#app #home.home-reborn .home-mode-picker strong {
+  color: #ffffff;
+}
+#app #home.home-reborn .home-mode-change {
+  color: var(--aurora-cyan);
+  font-weight: 700;
+}
+
+/* プライマリCTAボタン（画像生成オーロラクリスタルプレート） */
+#app #home.home-reborn .home-start {
+  min-height: 62px;
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: url("../assets/ui/cosmic/cta-aurora-primary.webp") center / 100% 100% no-repeat !important;
+  color: #ffffff !important;
+  font: 900 19px/1.2 var(--font) !important;
+  letter-spacing: .1em;
+  text-shadow: 0 1px 10px rgba(8, 12, 42, 0.95), 0 0 16px rgba(76, 242, 255, 0.72) !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 6px 18px rgba(76, 242, 255, 0.34)) drop-shadow(0 0 20px rgba(132, 76, 255, 0.34));
+  transition: transform 140ms cubic-bezier(.3, 1.5, .5, 1), filter 180ms ease;
+}
+#app #home.home-reborn .home-start:hover {
+  transform: translateY(-1px) scale(1.01);
+  filter: brightness(1.1) drop-shadow(0 8px 22px rgba(76, 242, 255, 0.55)) drop-shadow(0 0 26px rgba(156, 107, 255, 0.45)) !important;
+}
+#app #home.home-reborn .home-start:active {
+  transform: translateY(2px) scale(0.99);
+  filter: brightness(0.96) drop-shadow(0 3px 10px rgba(76, 242, 255, 0.3)) !important;
+}
+#app #home.home-reborn .home-start .cosmic-icon {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 0 8px rgba(76, 242, 255, 0.85));
+}
+
+/* ショートカットバー（ガラスチップ） */
+#app #home.home-reborn .home-shortcuts {
+  gap: 10px;
+}
+#app #home.home-reborn .home-shortcuts button {
+  min-height: 40px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(124, 198, 255, 0.24);
+  background: rgba(12, 17, 50, 0.62);
+  backdrop-filter: blur(8px);
+  color: var(--cosmic-ink);
+  transition: border-color 160ms ease, background 160ms ease, transform 140ms ease;
+}
+#app #home.home-reborn .home-shortcuts button:hover {
+  border-color: rgba(76, 242, 255, 0.65);
+  background: rgba(34, 40, 108, 0.72);
+  transform: translateY(-1px);
+}
+#app #home.home-reborn .home-rank-chip {
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 217, 122, 0.28);
+  background: rgba(14, 18, 54, 0.68);
+  backdrop-filter: blur(8px);
+}
+#app #home.home-reborn .home-season {
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(118, 206, 255, 0.26);
+  background: rgba(10, 14, 42, 0.72);
+  backdrop-filter: blur(8px);
+  color: #dce8ff;
+}
+
+/* ナビゲーションバー（ボトムドック / デスクトップ左レール） */
+#app #home.home-reborn .home-tabbar {
+  background: linear-gradient(180deg, rgba(12, 16, 48, 0.88), rgba(7, 10, 30, 0.96));
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(110, 206, 255, 0.34);
+  box-shadow: 0 -8px 32px rgba(3, 5, 20, 0.65);
+}
+#app #home.home-reborn .home-tab {
+  color: #99abd6;
+  transition: color 160ms ease, background 160ms ease;
+}
+#app #home.home-reborn .home-tab .cosmic-icon {
+  opacity: 0.78;
+  filter: drop-shadow(0 0 4px rgba(100, 140, 255, 0.22));
+}
+#app #home.home-reborn .home-tab[aria-selected="true"] {
+  color: #ffffff;
+  background: linear-gradient(180deg, rgba(124, 77, 255, 0.32), rgba(76, 242, 255, 0.08));
+  box-shadow: inset 0 3px 0 var(--aurora-cyan);
+  text-shadow: 0 0 10px rgba(76, 242, 255, 0.7);
+}
+#app #home.home-reborn .home-tab[aria-selected="true"] .cosmic-icon {
+  opacity: 1;
+  transform: translateY(-2px) scale(1.1);
+  filter: drop-shadow(0 0 10px rgba(76, 242, 255, 0.85));
+}
+@media (min-width: 1000px) and (min-height: 650px) {
+  #app #home.home-reborn .home-tabbar {
+    background: linear-gradient(180deg, rgba(15, 20, 58, 0.76), rgba(9, 12, 38, 0.84));
+    border: 1px solid rgba(114, 204, 255, 0.32);
+    border-radius: 16px;
+    padding: 6px;
+    box-shadow: 0 14px 36px rgba(2, 4, 18, 0.65);
+  }
+  #app #home.home-reborn .home-tab {
+    border-radius: 12px;
+  }
+  #app #home.home-reborn .home-tab[aria-selected="true"] {
+    box-shadow: inset 3px 0 0 var(--aurora-cyan), 0 0 18px rgba(124, 77, 255, 0.3);
+    background: linear-gradient(135deg, rgba(124, 77, 255, 0.44), rgba(50, 174, 224, 0.24));
+  }
+}
+
+/* シート（対戦形式・使用デッキ・バトル補助） */
+#app #home.home-reborn .home-sheet {
+  border: 1px solid rgba(118, 212, 255, 0.45);
+  background:
+    radial-gradient(ellipse 90% 40% at 50% 0%, rgba(124, 77, 255, 0.26), transparent 65%),
+    linear-gradient(175deg, rgba(16, 21, 62, 0.96), rgba(8, 11, 34, 0.98));
+  color: var(--cosmic-ink);
+  box-shadow: 0 -14px 60px rgba(2, 4, 20, 0.85), 0 0 32px rgba(76, 242, 255, 0.16);
+}
+#app #home.home-reborn .home-sheet::backdrop {
+  background: rgba(4, 6, 22, 0.76);
+  backdrop-filter: blur(6px);
+}
+#app #home.home-reborn .home-sheet-heading {
+  background: rgba(15, 20, 58, 0.94);
+  border-bottom: 1px solid rgba(118, 208, 255, 0.28);
+}
+#app #home.home-reborn .home-sheet-heading h2 {
+  background: linear-gradient(90deg, #ffffff, #a8f4ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#app #home.home-reborn .home-mode,
+#app #home.home-reborn .home-deck-choice,
+#app #home.home-reborn .home-tile {
+  border-bottom-color: rgba(118, 198, 255, 0.2);
+  border-radius: 10px;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+#app #home.home-reborn .home-mode:hover,
+#app #home.home-reborn .home-deck-choice:hover,
+#app #home.home-reborn .home-tile:hover {
+  background: rgba(120, 180, 255, 0.1);
+}
+#app #home.home-reborn .home-mode[aria-pressed="true"] {
+  border-left: 3px solid var(--aurora-cyan);
+  background: linear-gradient(90deg, rgba(76, 242, 255, 0.18), rgba(124, 77, 255, 0.14));
+  box-shadow: inset 0 0 0 1px rgba(76, 242, 255, 0.28);
+}
+#app #home.home-reborn .home-sheet-edit {
+  min-height: 52px;
+  border-radius: 12px;
+  background: url("../assets/ui/cosmic/cta-aurora-primary.webp") center / 100% 100% no-repeat;
+  color: #ffffff;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-shadow: 0 1px 8px rgba(8, 12, 42, 0.9);
+  filter: drop-shadow(0 4px 14px rgba(76, 242, 255, 0.35));
+}
+
+/* ホーム補助ページ（アカウント・デッキ・ショップ・設定） */
+#app #home.home-reborn .home-pagehead {
+  background: linear-gradient(90deg, #ffffff 0%, #9ff2ff 65%, #d6b8ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: .04em;
+  filter: drop-shadow(0 2px 10px rgba(76, 242, 255, 0.28));
+}
+#app #home.home-reborn .home-card,
+#app #home.home-reborn .home-deckhero,
+#app #home.home-reborn .home-gacha {
+  background: linear-gradient(155deg, rgba(20, 25, 72, 0.78), rgba(11, 15, 44, 0.84));
+  border: 1px solid rgba(118, 204, 255, 0.28);
+  border-radius: 16px;
+  padding: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 30px rgba(3, 5, 22, 0.5), inset 0 1px 0 rgba(164, 232, 255, 0.22);
+}
+#app #home.home-reborn .home-profilecard {
+  border-bottom: 1px solid rgba(118, 204, 255, 0.28);
+}
+#app #home.home-reborn .home-bigavatar {
+  border: 2px solid var(--aurora-cyan);
+  background: radial-gradient(circle at 35% 30%, #4a40b8, #14194d);
+  box-shadow: 0 0 22px rgba(76, 242, 255, 0.36);
+}
+#app #home.home-reborn .home-titlechip {
+  padding: 4px 12px 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 217, 122, 0.14);
+  border: 1px solid rgba(255, 217, 122, 0.4);
+  color: var(--starlight-gold);
+}
+#app #home.home-reborn .home-stats {
+  background: rgba(9, 13, 38, 0.72);
+  border: 1px solid rgba(118, 204, 255, 0.22);
+  border-radius: 12px;
+}
+#app #home.home-reborn .home-stats b {
+  color: #ffffff;
+}
+#app #home.home-reborn .home-stats span {
+  color: var(--aurora-cyan);
+}
+#app #home.home-reborn .home-levelcard-badge {
+  background: linear-gradient(180deg, #4cf2ff, #9c6bff);
+}
+#app #home.home-reborn .home-levelcard-badge::before {
+  background: linear-gradient(180deg, #1d2268, #0f133e);
+}
+#app #home.home-reborn .home-slot[aria-checked="true"] {
+  color: #ffffff;
+  box-shadow: inset 0 -2px 0 var(--aurora-cyan);
+  text-shadow: 0 0 10px rgba(76, 242, 255, 0.55);
+}
+#app #home.home-reborn .home-deck-pen {
+  background: rgba(30, 36, 98, 0.8);
+  border: 1px solid rgba(114, 212, 255, 0.42);
+  border-radius: 12px;
+}
+#app #home.home-reborn .home-deck-stage {
+  position: relative;
+  background:
+    url("../assets/ui/cosmic/cosmic-magic-crest.webp") center / 210px 210px no-repeat,
+    radial-gradient(ellipse at 50% 55%, rgba(124, 77, 255, 0.36), rgba(14, 18, 52, 0) 70%);
+  border-radius: 12px;
+}
+#app #home.home-reborn .home-deck-sort {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  padding: 0 34px 0 12px !important;
+  line-height: 1.2 !important;
+  border-radius: 10px !important;
+  border: 1px solid rgba(118, 208, 255, 0.42) !important;
+  border-image: none !important;
+  background-color: rgba(12, 16, 48, 0.92) !important;
+  background-image: url("../assets/ui/cosmic/icon-down.webp") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 15px 15px !important;
+  color: #f3f7ff !important;
+  box-shadow: none !important;
+}
+#app #home.home-reborn .home-gacha {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 24%, rgba(148, 86, 255, 0.42), transparent 64%),
+    radial-gradient(ellipse 60% 45% at 50% 80%, rgba(76, 242, 255, 0.16), transparent 65%),
+    linear-gradient(160deg, rgba(19, 23, 72, 0.9), rgba(10, 13, 40, 0.94));
+}
+#app #home.home-reborn .home-gacha-show {
+  min-height: 156px;
+  gap: 2px;
+}
+#app #home.home-reborn .home-gacha-item {
+  margin: 0 -4px;
+}
+#app #home.home-reborn .home-gacha-item img {
+  width: 96px;
+  height: 96px;
+}
+#app #home.home-reborn .home-gacha-item:nth-child(1) img {
+  width: 128px;
+  height: 128px;
+}
+#app #home.home-reborn .home-gacha-show::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: 240px;
+  height: 240px;
+  translate: -50% -50%;
+  background: url("../assets/ui/cosmic/cosmic-magic-crest.webp") center / contain no-repeat;
+  opacity: 0.28;
+  pointer-events: none;
+  animation: cosmic-crest-spin 42s linear infinite;
+}
+#app #home.home-reborn .home-points li {
+  background: rgba(16, 22, 64, 0.72);
+  border: 1px solid rgba(114, 200, 255, 0.24);
+  border-radius: 12px;
+}
+#app #home.home-reborn .home-points li::before {
+  background: linear-gradient(135deg, #7c4dff, #4cf2ff);
+  border: 1px solid #d6f8ff;
+  color: #06091f;
+}
+#app #home.home-reborn .cf-btn {
+  min-height: 46px;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(36, 44, 114, 0.86), rgba(20, 25, 74, 0.92));
+  color: #f4f8ff;
+  border: 1px solid rgba(116, 208, 255, 0.42);
+  box-shadow: 0 4px 14px rgba(3, 6, 24, 0.45), inset 0 1px 0 rgba(180, 238, 255, 0.25);
+  transition: transform 140ms ease, filter 160ms ease, border-color 160ms ease;
+}
+#app #home.home-reborn .cf-btn:hover:not(:disabled) {
+  border-color: var(--aurora-cyan);
+  filter: brightness(1.1);
+}
+#app #home.home-reborn .cf-btn-primary {
+  border: 0;
+  background: url("../assets/ui/cosmic/cta-aurora-primary.webp") center / 100% 100% no-repeat;
+  color: #ffffff;
+  font-weight: 900;
+  text-shadow: 0 1px 8px rgba(6, 10, 36, 0.92), 0 0 12px rgba(76, 242, 255, 0.65);
+  box-shadow: none;
+  filter: drop-shadow(0 4px 12px rgba(76, 242, 255, 0.34));
+}
+
+/* ==========================================================================
+   対戦準備画面（#title — CPU / ローカル / オンライン）
+   ========================================================================== */
+#app[data-home-theme] #title {
+  background:
+    radial-gradient(ellipse 85% 50% at 50% 10%, rgba(132, 78, 255, 0.36), transparent 62%),
+    radial-gradient(ellipse 65% 45% at 85% 82%, rgba(76, 242, 255, 0.2), transparent 60%),
+    linear-gradient(180deg, #06091e 0%, #101542 52%, #06091c 100%);
+  color: var(--cosmic-ink);
+}
+#app[data-home-theme] #title::before {
+  content: '';
+  position: fixed;
+  right: -90px;
+  top: -70px;
+  width: 340px;
+  height: 340px;
+  background: url("../assets/ui/cosmic/cosmic-magic-crest.webp") center / contain no-repeat;
+  opacity: 0.14;
+  pointer-events: none;
+}
+#app[data-home-theme] #title .prep-brand {
+  color: var(--aurora-cyan);
+  letter-spacing: .24em;
+}
+#app[data-home-theme] #title .prep-heading h1 {
+  background: linear-gradient(90deg, #ffffff 0%, #aef4ff 70%, #d8bcff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#app[data-home-theme] #title #prep-navigation button {
+  padding: 6px 14px 6px 10px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(118, 208, 255, 0.32) !important;
+  background: rgba(16, 22, 62, 0.72) !important;
+  color: var(--cosmic-ink) !important;
+  backdrop-filter: blur(8px);
+}
+#app[data-home-theme] #title #prep-navigation button:hover {
+  border-color: var(--aurora-cyan) !important;
+}
+#app[data-home-theme] #title button.level[data-ui-skin] {
+  border-radius: 16px !important;
+  background: linear-gradient(145deg, rgba(24, 30, 86, 0.84), rgba(14, 18, 56, 0.9)) !important;
+  border: 1px solid rgba(116, 206, 255, 0.38) !important;
+  color: #ffffff !important;
+  box-shadow: 0 10px 26px rgba(3, 5, 22, 0.55), inset 0 1px 0 rgba(176, 236, 255, 0.24) !important;
+  transition: transform 150ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+#app[data-home-theme] #title button.level[data-ui-skin]:hover {
+  transform: translateY(-2px);
+  border-color: var(--aurora-cyan) !important;
+  box-shadow: 0 14px 32px rgba(3, 5, 22, 0.65), 0 0 22px rgba(76, 242, 255, 0.26) !important;
+}
+#app[data-home-theme] #title .local-options[data-ui-frame] {
+  background: rgba(16, 21, 62, 0.82) !important;
+  border: 1px solid rgba(116, 204, 255, 0.34) !important;
+  border-radius: 14px !important;
+}
+#app[data-home-theme] #title .local-options button[data-ui-skin] {
+  background: rgba(30, 37, 98, 0.84) !important;
+  color: var(--cosmic-ink) !important;
+  border: 1px solid rgba(116, 204, 255, 0.36) !important;
+  border-radius: 10px !important;
+}
+#app[data-home-theme] #title .local-options button[data-ui-skin].on {
+  background: linear-gradient(135deg, #7c4dff, #34d6f5) !important;
+  color: #ffffff !important;
+  border-color: #9bf6ff !important;
+  box-shadow: 0 0 14px rgba(76, 242, 255, 0.4) !important;
+}
+#app[data-home-theme] #title #local-start,
+#app[data-home-theme] #title #title-join {
+  border: 0 !important;
+  border-radius: 14px !important;
+  background: url("../assets/ui/cosmic/cta-aurora-primary.webp") center / 100% 100% no-repeat !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  letter-spacing: .08em;
+  text-shadow: 0 1px 10px rgba(6, 10, 36, 0.92), 0 0 14px rgba(76, 242, 255, 0.65) !important;
+  filter: drop-shadow(0 6px 16px rgba(76, 242, 255, 0.35));
+}
+#app[data-home-theme] #title #title-form input,
+#app[data-home-theme] #title .local-options select {
+  background: rgba(10, 14, 44, 0.88) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(118, 208, 255, 0.42) !important;
+  border-radius: 10px !important;
+}
+
+/* ==========================================================================
+   デッキ編成（#deck-editor）— 星雲アトリエ
+   ========================================================================== */
+#app[data-home-theme] #deck-editor {
+  --deck-night: #090e2c;
+  --deck-night-light: #22296e;
+  --deck-gold: #ffd97a;
+  --deck-cream: #f3f7ff;
+  border: 1px solid rgba(114, 210, 255, 0.48);
+  border-radius: 18px;
+  background: #090e2c;
+  box-shadow: var(--cosmic-shadow);
+}
+#app[data-home-theme] #deck-editor::backdrop {
+  background: rgba(4, 6, 22, 0.78);
+  backdrop-filter: blur(6px);
+}
+#app[data-home-theme] #deck-editor .deck-box {
+  background:
+    radial-gradient(ellipse 85% 42% at 80% 0%, rgba(132, 78, 255, 0.34), transparent 60%),
+    radial-gradient(ellipse 60% 38% at 15% 90%, rgba(76, 242, 255, 0.16), transparent 62%),
+    #090e2c;
+}
+#app[data-home-theme] #deck-editor .deck-heading h2 {
+  background: linear-gradient(90deg, #ffffff, #9ef3ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#app[data-home-theme] #deck-editor :is(.deck-tray, .deck-grid-item) {
+  background: rgba(18, 23, 66, 0.84);
+  border: 1px solid rgba(116, 204, 255, 0.3);
+  border-radius: 14px;
+}
+#app[data-home-theme] #deck-editor :is(.deck-button, .deck-icon, select, input) {
+  background: rgba(28, 34, 92, 0.88);
+  border: 1px solid rgba(118, 208, 255, 0.42);
+  color: #f3f7ff;
+  border-radius: 10px;
+}
+#app[data-home-theme] #deck-editor .deck-button:hover,
+#app[data-home-theme] #deck-editor .deck-icon:hover {
+  border-color: var(--aurora-cyan);
+  background: rgba(46, 54, 134, 0.92);
+}
+#app[data-home-theme] #deck-editor .deck-meter-bar {
+  background: rgba(7, 10, 32, 0.9);
+  border-radius: 999px;
+}
+#app[data-home-theme] #deck-editor .deck-meter-fill {
+  background: linear-gradient(90deg, #8b5cf6, #4cf2ff);
+}
+#app[data-home-theme] #deck-editor .deck-meter-bar[data-state="ok"] .deck-meter-fill {
+  background: linear-gradient(90deg, #4cf2ff, #63f5be);
+}
+#app[data-home-theme] #deck-editor .deck-limit {
+  background: rgba(24, 30, 82, 0.9);
+  color: var(--cosmic-ink);
+}
+#app[data-home-theme] #deck-editor .deck-card-info {
+  background: rgba(12, 16, 48, 0.92);
+  border-color: rgba(118, 208, 255, 0.32);
+  color: var(--cosmic-ink);
+}
+#app[data-home-theme] #deck-editor .deck-subdialog {
+  background: linear-gradient(160deg, rgba(16, 21, 64, 0.96), rgba(9, 12, 38, 0.98));
+  border: 1px solid rgba(118, 212, 255, 0.45);
+  color: var(--cosmic-ink);
+  border-radius: 16px;
+}
+
+/* ==========================================================================
+   全アウトゲームモーダル＆サブ画面の共通星雲×オーロラフレーム
+   （設定・図鑑・ヘルプ・メニュー・プロフィール・ショップ・ガチャ・
+     ランク・ランキング・ミッション・フレンド・ルーム・アカウント・ランク報酬）
+   ========================================================================== */
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #menu, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account,
+  #rank-rewards, #progress-screen, #asset-loading
+) {
+  background: rgba(4, 6, 22, 0.74);
+  backdrop-filter: blur(7px);
+}
+
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #menu, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account,
+  #rank-rewards, #progress-screen, #asset-loading
+) :is(.screen-box, .parchment, .guide-box, .settings-box, .profile-box, .collection-box, .ranked-box, .ranking-box, .social-box, .account-box, .rank-rewards-box, .menu-box, .help-box, .screen-box[data-ui-frame]) {
+  border: 1px solid rgba(118, 210, 255, 0.44) !important;
+  border-image: none !important;
+  border-image-source: none !important;
+  border-radius: 20px !important;
+  background-color: #0b1032 !important;
+  background-image:
+    radial-gradient(ellipse 90% 35% at 50% 0%, rgba(132, 78, 255, 0.28), transparent 64%),
+    linear-gradient(168deg, rgba(16, 21, 62, 0.96) 0%, rgba(8, 12, 36, 0.99) 100%) !important;
+  background-size: auto !important;
+  background-repeat: no-repeat !important;
+  color: var(--cosmic-ink) !important;
+  box-shadow: var(--cosmic-shadow), inset 0 1px 0 rgba(174, 240, 255, 0.3) !important;
+}
+
+/* モーダル内の [data-ui-frame] 子要素（設定グループなど）も羊皮紙タイル・木枠を完全解除 */
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #menu, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account,
+  #rank-rewards, #progress-screen
+) [data-ui-frame]:not(.screen-box) {
+  border: 1px solid rgba(116, 204, 255, 0.3) !important;
+  border-image: none !important;
+  border-image-source: none !important;
+  border-radius: 14px !important;
+  background-color: rgba(15, 20, 58, 0.86) !important;
+  background-image: none !important;
+  color: var(--cosmic-ink) !important;
+  box-shadow: inset 0 1px 0 rgba(164, 232, 255, 0.16) !important;
+}
+
+/* モーダル見出し */
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #menu, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account,
+  #rank-rewards, #progress-screen
+) :is(h2, .menu-title) {
+  color: #ffffff !important;
+  background: linear-gradient(90deg, #ffffff 0%, #9ef3ff 65%, #d6b6ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: none !important;
+  letter-spacing: .08em;
+}
+
+/* モーダル内のボタン（共通ガラス＆プライマリオーロラプレート） */
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #menu, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account,
+  #rank-rewards, #progress-screen
+) :is(.small-btn, button[data-ui-skin], .social-tab, .collection-slot, .pill) {
+  background: linear-gradient(145deg, rgba(32, 39, 104, 0.88), rgba(18, 23, 66, 0.92)) !important;
+  color: var(--cosmic-ink) !important;
+  border: 1px solid rgba(118, 206, 255, 0.38) !important;
+  border-image: none !important;
+  border-radius: 12px !important;
+  box-shadow: 0 3px 12px rgba(2, 5, 20, 0.45), inset 0 1px 0 rgba(170, 236, 255, 0.22) !important;
+  text-shadow: none !important;
+}
+
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #menu, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account,
+  #rank-rewards, #progress-screen
+) :is(.small-btn, button[data-ui-skin], .social-tab, .collection-slot, .pill):is(.on, [aria-selected="true"], [aria-pressed="true"]) {
+  background: linear-gradient(135deg, #7a4bff 0%, #34c7f2 100%) !important;
+  color: #ffffff !important;
+  border-color: #9bf6ff !important;
+  box-shadow: 0 0 16px rgba(76, 242, 255, 0.42), inset 0 1px 0 rgba(235, 252, 255, 0.55) !important;
+}
+
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #menu, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account,
+  #rank-rewards, #progress-screen
+) :is(.plank-btn, button[data-ui-tone="primary"]) {
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 14px !important;
+  background: url("../assets/ui/cosmic/cta-aurora-primary.webp") center / 100% 100% no-repeat !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+  text-shadow: 0 1px 10px rgba(6, 10, 36, 0.94), 0 0 14px rgba(76, 242, 255, 0.65) !important;
+  box-shadow: none !important;
+  filter: drop-shadow(0 5px 14px rgba(76, 242, 255, 0.34));
+}
+
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #menu, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account,
+  #rank-rewards, #progress-screen
+) :is(.small-btn.danger, .danger) {
+  border-color: rgba(255, 114, 148, 0.58) !important;
+  color: #ffb8c8 !important;
+}
+
+/* モーダル内の入力・セレクト・スライダー（materials.css の羊皮紙タイル・木枠を上書き） */
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account, #home, #title
+) :is(input[type="text"], input[type="email"], input[type="password"], input[type="search"], input:not([type])) {
+  background-color: rgba(10, 14, 44, 0.92) !important;
+  background-image: none !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(118, 208, 255, 0.44) !important;
+  border-image: none !important;
+  border-image-source: none !important;
+  border-radius: 10px !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.48) !important;
+  color-scheme: dark;
+}
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account, #home, #title
+) input::placeholder {
+  color: #8ea4d6 !important;
+}
+#app[data-home-theme] :is(
+  #settings, #card-guide, #help, #profile, #collection,
+  #ranked, #ranking, #missions, #social, #room-screen, #account, #title
+) select:not(.pill-source) {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  background-color: rgba(11, 16, 48, 0.94) !important;
+  background-image: url("../assets/ui/cosmic/icon-down.webp") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 10px center !important;
+  background-size: 15px 15px !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(118, 208, 255, 0.44) !important;
+  border-image: none !important;
+  border-image-source: none !important;
+  border-radius: 10px !important;
+  padding: 6px 32px 6px 10px !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.42) !important;
+  color-scheme: dark;
+}
+#app[data-home-theme] input[type="range"],
+#app[data-home-theme] input[type="checkbox"] {
+  accent-color: #4cf2ff;
+}
+#app[data-home-theme] #settings input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(118, 208, 255, 0.48);
+  background: linear-gradient(90deg, rgba(124, 77, 255, 0.72), rgba(76, 242, 255, 0.52));
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.6);
+}
+#app[data-home-theme] #settings input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -7px;
+  border-radius: 50%;
+  border: 2px solid #e6fcff;
+  background: radial-gradient(circle at 35% 30%, #ffffff, #4cf2ff 55%, #7c4dff 100%);
+  box-shadow: 0 0 12px rgba(76, 242, 255, 0.85);
+}
+
+/* ---------- 設定（#settings） ---------- */
+#app[data-home-theme] #settings .set-group {
+  border: 1px solid rgba(116, 204, 255, 0.34) !important;
+  border-image: none !important;
+  border-radius: 14px !important;
+  background: rgba(15, 20, 58, 0.86) !important;
+}
+#app[data-home-theme] #settings .set-group h3 {
+  background: linear-gradient(90deg, rgba(124, 77, 255, 0.45), rgba(52, 198, 242, 0.26)) !important;
+  border-bottom: 1px solid rgba(116, 204, 255, 0.3) !important;
+  color: #e6fbff !important;
+}
+#app[data-home-theme] #settings .set-row,
+#app[data-home-theme] #settings label {
+  color: var(--cosmic-ink) !important;
+}
+#app[data-home-theme] #settings .set-row output {
+  color: var(--aurora-cyan) !important;
+}
+#app[data-home-theme] #settings .set-note,
+#app[data-home-theme] #settings .settings-status {
+  color: var(--cosmic-muted) !important;
+}
+#app[data-home-theme] #settings .check-label {
+  background: rgba(22, 28, 78, 0.78) !important;
+  border: 1px solid rgba(114, 200, 255, 0.24) !important;
+}
+
+/* ---------- カード・魔物図鑑（#card-guide） ---------- */
+#app[data-home-theme] #card-guide .guide-group-title,
+#app[data-home-theme] #card-guide .guide-note,
+#app[data-home-theme] #card-guide .guide-family-info,
+#app[data-home-theme] #card-guide .guide-movement,
+#app[data-home-theme] #card-guide .guide-count,
+#app[data-home-theme] #card-guide .guide-meta,
+#app[data-home-theme] #card-guide label {
+  color: var(--cosmic-muted) !important;
+}
+#app[data-home-theme] #card-guide .guide-group-title {
+  color: #a6f2ff;
+  border-bottom-color: rgba(116, 204, 255, 0.28);
+}
+#app[data-home-theme] #card-guide .guide-card,
+#app[data-home-theme] #card-guide .guide-monster,
+#app[data-home-theme] #card-guide .guide-entry,
+#app[data-home-theme] #card-guide .guide-story {
+  background: rgba(18, 24, 68, 0.82) !important;
+  border: 1px solid rgba(116, 204, 255, 0.3) !important;
+  color: var(--cosmic-ink) !important;
+  border-radius: 12px;
+}
+#app[data-home-theme] #card-guide .guide-story {
+  border-left: 4px solid var(--aurora-cyan) !important;
+}
+#app[data-home-theme] #card-guide .guide-story > summary {
+  color: var(--aurora-cyan) !important;
+}
+
+/* ---------- 遊び方（#help） ---------- */
+#app[data-home-theme] #help .help-flow span,
+#app[data-home-theme] #help .help-plaza span {
+  background: rgba(24, 30, 84, 0.84) !important;
+  border-color: rgba(116, 206, 255, 0.34) !important;
+  color: var(--cosmic-ink) !important;
+}
+#app[data-home-theme] #help .plaza-center {
+  background: linear-gradient(135deg, rgba(124, 77, 255, 0.55), rgba(76, 242, 255, 0.35)) !important;
+  border-color: var(--aurora-cyan) !important;
+}
+#app[data-home-theme] #help .help-road > b,
+#app[data-home-theme] #help .help-short,
+#app[data-home-theme] #help .help-note,
+#app[data-home-theme] #help .help-more summary,
+#app[data-home-theme] #help .help-more p {
+  color: var(--cosmic-muted);
+}
+#app[data-home-theme] #help .help-road-cells span {
+  background: rgba(22, 28, 80, 0.88);
+  border-color: rgba(116, 204, 255, 0.45);
+  color: #fff;
+}
+#app[data-home-theme] #help .help-road-cells .middle {
+  background: linear-gradient(135deg, #7c4dff, #34c7f2);
+  color: #ffffff;
+}
+#app[data-home-theme] #help .help-more {
+  border-top-color: rgba(118, 204, 255, 0.24);
+}
+#app[data-home-theme] #help .element-guide {
+  background: rgba(18, 24, 68, 0.8);
+  border: 1px solid rgba(116, 204, 255, 0.3);
+  border-radius: 12px;
+  padding: 8px 10px;
+  color: var(--cosmic-ink);
+}
+
+/* ---------- プロフィール・ランク・ランキング・ミッション・フレンド・ショップ・アカウント・報酬 ---------- */
+#app[data-home-theme] :is(
+  #profile .profile-head,
+  #ranked .ranked-hero,
+  #collection .gacha-head
+) {
+  background: linear-gradient(135deg, rgba(112, 68, 244, 0.56), rgba(34, 152, 214, 0.38)) !important;
+  border: 1px solid rgba(114, 224, 255, 0.55) !important;
+  box-shadow: inset 0 1px 0 rgba(210, 248, 255, 0.42), 0 8px 24px rgba(4, 6, 24, 0.5) !important;
+  color: #ffffff !important;
+}
+#app[data-home-theme] :is(
+  #profile .profile-stats > div,
+  #profile .profile-history li,
+  #profile .profile-icon,
+  #ranking .ranking-list li,
+  #ranked .ranked-season,
+  #ranking .ranking-season,
+  #ranked .ranked-wait,
+  #missions .mission-row,
+  #social .social-row,
+  #social .social-code,
+  #collection .item-card,
+  #collection .gacha-rates,
+  #collection .gacha-exchange,
+  #collection .gacha-history,
+  #account .account-card,
+  #account .account-conflict,
+  #rank-rewards .rank-reward-row
+) {
+  background: rgba(19, 25, 70, 0.82) !important;
+  border: 1px solid rgba(116, 204, 255, 0.3) !important;
+  color: var(--cosmic-ink) !important;
+  box-shadow: none !important;
+}
+#app[data-home-theme] #ranking .ranking-list li:nth-child(-n+3) {
+  background: linear-gradient(135deg, rgba(124, 77, 255, 0.34), rgba(255, 217, 122, 0.16)) !important;
+  border-color: rgba(255, 217, 122, 0.56) !important;
+}
+#app[data-home-theme] #ranking .ranking-list li:nth-child(-n+3) b,
+#app[data-home-theme] #missions .mission-reward,
+#app[data-home-theme] #collection .collection-coin {
+  color: var(--starlight-gold) !important;
+}
+#app[data-home-theme] #collection .collection-coin {
+  background: rgba(8, 12, 38, 0.88) !important;
+  border: 1px solid rgba(255, 217, 122, 0.42);
+}
+#app[data-home-theme] #collection .item-preview {
+  background: radial-gradient(circle at 50% 45%, rgba(114, 74, 255, 0.34), rgba(10, 14, 42, 0.92)) !important;
+  border: 1px solid rgba(116, 204, 255, 0.25);
+}
+#app[data-home-theme] #collection .item-card.owned,
+#app[data-home-theme] #missions .mission-row.done {
+  background: linear-gradient(145deg, rgba(24, 62, 84, 0.84), rgba(18, 36, 76, 0.88)) !important;
+  border-color: rgba(90, 255, 216, 0.52) !important;
+}
+#app[data-home-theme] #collection .gacha-reveal {
+  background:
+    radial-gradient(ellipse 80% 50% at 50% 30%, rgba(138, 82, 255, 0.52), rgba(14, 18, 56, 0.96) 65%) !important;
+}
+#app[data-home-theme] #collection .gacha-card {
+  background: rgba(16, 21, 64, 0.92) !important;
+  color: #ffffff !important;
+}
+#app[data-home-theme] #missions .mission-bar,
+#app[data-home-theme] #ranked .ranked-rp {
+  background: rgba(6, 10, 32, 0.9) !important;
+  border: 1px solid rgba(116, 204, 255, 0.25);
+}
+#app[data-home-theme] #missions .mission-bar i,
+#app[data-home-theme] #ranked .ranked-rp i {
+  background: linear-gradient(90deg, #7c4dff, #4cf2ff, #63f5be) !important;
+}
+#app[data-home-theme] :is(
+  #profile, #ranked, #ranking, #missions, #social, #collection, #account, #rank-rewards
+) :is(small, .profile-note, .profile-stats dt, .mission-reset, .social-empty, .social-note, .collection-note, .collection-empty, .collection-points, .item-desc, .item-note, .ranked-rules, .ranking-empty, .account-or, .account-sync, .rank-rewards-note, .rank-reward-item figcaption, .skin-group-title) {
+  color: var(--cosmic-muted) !important;
+}
+#app[data-home-theme] #rank-rewards .rank-reward-name,
+#app[data-home-theme] #collection .collection-wallet {
+  color: #ffffff !important;
+}
+#app[data-home-theme] #social .social-party {
+  background: linear-gradient(145deg, rgba(66, 42, 152, 0.72), rgba(20, 28, 78, 0.88)) !important;
+  border-color: rgba(118, 212, 255, 0.5) !important;
+}
+#app[data-home-theme] #social-banner .social-banner-row {
+  background: linear-gradient(135deg, rgba(24, 28, 86, 0.94), rgba(14, 18, 52, 0.96)) !important;
+  border: 1px solid var(--aurora-cyan) !important;
+  color: #ffffff !important;
+  box-shadow: 0 8px 26px rgba(3, 5, 22, 0.72), 0 0 18px rgba(76, 242, 255, 0.3) !important;
+}
+#app[data-home-theme] #menu .menu-box::after {
+  color: var(--aurora-cyan);
+  background:
+    linear-gradient(90deg, transparent, rgba(76, 242, 255, 0.65)) left center / calc(50% - 14px) 1.5px no-repeat,
+    linear-gradient(90deg, rgba(76, 242, 255, 0.65), transparent) right center / calc(50% - 14px) 1.5px no-repeat;
+}
+
+/* ---------- フォーカス可視性・動き低減対応 ---------- */
+#app[data-home-theme] :is(button, a, input, select, summary):focus-visible {
+  outline: 2px solid var(--aurora-cyan) !important;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(10, 14, 44, 0.9), 0 0 14px rgba(76, 242, 255, 0.55) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #loading .loading-crest,
+  #app #home.home-reborn .home-gacha-show::before {
+    animation: none !important;
+  }
+}
+.reduced-motion #loading .loading-crest,
+.reduced-motion #app #home.home-reborn .home-gacha-show::before {
+  animation: none !important;
+}
