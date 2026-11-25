@@ -240,6 +240,9 @@ export class Card {
       if (def.rangeBonus !== undefined && (def.kind !== 'weapon' || !isPositive(def.rangeBonus))) {
         throw new Error(`${where}: rangeBonus（射程+）は武器にだけ、1以上の整数で書けます`);
       }
+      if (def.lifesteal !== undefined && (def.kind !== 'weapon' || !(typeof def.lifesteal === 'number' && def.lifesteal > 0 && def.lifesteal <= 1))) {
+        throw new Error(`${where}: lifesteal（与えたダメージのうち自分の城を回復する割合）は武器だけに書ける、0より大きく1以下の数です`);
+      }
       if (def.freezeOnHit !== undefined && (def.kind !== 'weapon' || !isPositive(def.freezeOnHit))) {
         throw new Error(`${where}: freezeOnHit（当たった相手を休ませる回数）は武器にだけ、1以上の整数で書けます`);
       }

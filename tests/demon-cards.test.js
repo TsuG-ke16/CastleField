@@ -294,3 +294,33 @@ test('封魔：相手のターンの始めの MP 回復−1（2ターン）。�
   assert.equal(game.players.p2.mpSeal, null);
   assert.equal(events('mpSealEnded').length, 1);
 });
+
+// ---------------- 吸命の剣（武器の lifesteal） ----------------
+
+test('吸命の剣：戦いで減らした相手のHPの半分（切り捨て）だけ自分の城が回復。盾が受けたぶんは数えない', () => {
+  const { game, play, events } = setup({ hands: { p1: ['striker', 'fac_demon_drain_blade'], p2: ['wall'] }, reactions: null });
+  const a = play('p1', 'striker');
+  play('p1', 'fac_demon_drain_blade', { soldierId: a.soldierId });
+  assert.equal(a.attack, 6);
+  const w = play('p2', 'wall');
+  w.shield = 1;
+  game.players.p1.castle.hp = 10;
+  game.fight(game.players.p1, a, game.players.p2, w);
+  assert.equal(w.hp, 35, '6 − 盾1');
+  assert.equal(game.players.p1.castle.hp, 12, 'floor(5 × 0.5)');
+  assert.deepEqual(events('castleHealed').at(-1).source, { kind: 'lifesteal', soldierId: a.soldierId });
+});
+
+test('吸命の剣：城に着いたときも、城HPが減ったぶん（城壁が受けたぶんは数えない）の半分を回復', () => {
+  const { game, play } = setup({ hands: { p1: ['striker', 'fac_demon_drain_blade'] }, reactions: null });
+  const a = play('p1', 'striker');
+  play('p1', 'fac_demon_drain_blade', { soldierId: a.soldierId });
+  a.position = game.rules.laneLength - 1;
+  game.players.p2.armor = 2;
+  game.players.p1.castle.hp = 10;
+  const hp2 = game.players.p2.castle.hp;
+  march(game, 'p1');
+  const lost = hp2 - game.players.p2.castle.hp;
+  assert.ok(lost > 0);
+  assert.equal(game.players.p1.castle.hp, 10 + Math.floor(lost / 2));
+});

@@ -65,6 +65,15 @@
     "mpCost": 2,
     "count": 2
   },
+  "fac_demon_drain_blade": {
+    "name": "吸命の剣",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "lifesteal": 0.5,
+    "description": "攻撃+1。この兵士の攻撃が敵の兵士・城に当たると、減らしたHPの半分（切り捨て）だけ自分の城が回復する",
+    "mpCost": 2,
+    "count": 2
+  },
   "fac_demon_shadow": {
     "name": "シャドウ",
     "kind": "spell",

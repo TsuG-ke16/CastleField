@@ -12,7 +12,7 @@ import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptional
 import { runMatch } from './sim/sim.js';
 
 const MODE = 'factions';
-const FACTIONS = { kingdom: 17, forest: 14, demon: 18, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
+const FACTIONS = { kingdom: 17, forest: 14, demon: 19, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
 const ELEMENTS = loadOptionalData(MODE).elements;
 
 // ================= データ =================
@@ -677,7 +677,7 @@ const PLAN = {
     ['骸骨兵', 2, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 2, S(4, 3, 3, { innateElement: 'dark' })],
     ['呪術師', 3, S(2, 3, 0, { role: 'mage', spellBoost: { elements: ['dark', 'ice', 'chaos'], amount: 1 } })],
     ['シャドウサイズ', 2, { kind: 'weapon', attackBonus: 2, element: 'dark' }], ['フロストブレード', 2, { kind: 'weapon', attackBonus: 1, element: 'ice', freezeOnHit: 1 }],
-    ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos' }],
+    ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos' }], ['吸命の剣', 2, { kind: 'weapon', attackBonus: 1, lifesteal: 0.5 }],
     ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
     ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
     ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 8 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 2, soldiers: 3 }],

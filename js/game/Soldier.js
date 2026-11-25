@@ -36,6 +36,8 @@ export class Soldier {
     this.rangeBonus = 0;
     /** 武器の「当たった相手を休ませる」回数（freezeOnHit。いちばん大きいもの。0 ならなし） */
     this.freezeOnHit = 0;
+    /** 武器の吸命（lifesteal。いちばん大きいもの。0 ならなし）：当たって与えたダメージ × lifesteal（切り捨て）だけ持ち主の城が回復する */
+    this.lifesteal = 0;
     /** 鈍足 { amount, turns }（泥の反応。速さが amount 下がる。最低1）か null */
     this.slowed = null;
     /** 目くらまし { chance, turns }（霧・砂嵐の反応。攻撃が chance の確率で外れる）か null */

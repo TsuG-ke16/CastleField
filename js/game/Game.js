@@ -1337,6 +1337,7 @@ export class Game {
     const armorBefore = owner.armor;
     const blocked = ignoreArmor ? 0 : Math.min(owner.armor, amount);
     owner.armor -= blocked;
+    const hpBefore = castle.hp;
     castle.takeDamage(amount - blocked);
     this.emit('castleDamaged', { playerId: owner.id, amount, blocked, hp: castle.hp, source, ...(ignoreArmor ? { ignoreArmor: true } : {}), ...(vulnerable > 0 ? { vulnerable } : {}) });
     if (castle.bloodArmor > 0) {
@@ -1349,7 +1350,11 @@ export class Game {
         if (healed > 0) this.emit('castleHealed', { playerId: owner.id, amount: healed, hp: castle.hp, source: { kind: 'bloodArmor' } });
       }
     }
-    // 4陣営の魔族：闇の侵食（城壁が全部受けても起きる。城に付着・反応するより前）
+    // 4陣営の魔族：吸命の剣（城HPが減ったぶん）・闇の侵食（城壁が全部受けても起きる。城に付着・反応するより前）
+    if (!raw && source?.kind === 'soldier' && hpBefore > castle.hp) {
+      const hit = this.castleHitBy(source);
+      if (hit?.soldier) this.lifestealBy(hit.attacker, hit.soldier, hpBefore - castle.hp);
+    }
     if (!raw) this.darkErosionHit(owner, source);
     // 4陣営（試作）：属性つきの攻撃が城に当たったら、城に付着か反応（城壁が全部受けても付く）
     if (!raw) this.castleElementHit(owner, this.castleHitElement(source), source);
@@ -1970,10 +1975,13 @@ export class Game {
       const miss = this.rollMiss() || this.rollBlind(soldier);
       const amount = miss ? 0 : this.fightDamage(soldier, victim);
       this.emit('soldierShot', { ...shot, target: { kind: 'soldier', playerId: owner.id, soldierId: victim.soldierId }, amount });
+      const hp0 = victim.hp;
       if (miss) this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
       else if (this.damageSoldier(owner, victim, amount, 'shot')) {
         this.raiseOnKill(player, soldier); // 魔族のパッシブ（死者を従える）
+        this.lifestealBy(player, soldier, hp0); // 吸命の剣
       } else {
+        this.lifestealBy(player, soldier, hp0 - victim.hp); // 吸命の剣
         this.elementHit(owner, victim, soldier.element, { damage: amount });
         this.freezeOnHitBy(soldier, owner, victim);
         if (this.reactionDefs) over = this.checkGameOver();
@@ -2878,6 +2886,8 @@ export class Game {
     // 守る側では効かない（人間の指示）
     const noCounterA = !missD && this.firstStrikes(attacker, defender, toDefender); // 攻める側が先に倒す：守る側の攻撃は当たらない
     if (noCounterA) toAttacker = 0;
+    const hpD0 = defender.hp;
+    const hpA0 = attacker.hp;
     const blockedD = defender.takeDamage(toDefender);
     const blockedA = attacker.takeDamage(toAttacker);
     this.emit('soldierDamaged', {
@@ -2907,6 +2917,19 @@ export class Game {
     // フロストブレード：当たって生き残った相手を休ませる
     if (hitD) this.freezeOnHitBy(attacker, enemy, defender);
     if (hitA) this.freezeOnHitBy(defender, player, attacker);
+    // 吸命の剣：与えたダメージ（HPが減ったぶん）の一部で自分の城を回復
+    if (hitD) this.lifestealBy(player, attacker, hpD0 - defender.hp);
+    if (hitA) this.lifestealBy(enemy, defender, hpA0 - attacker.hp);
+  }
+
+  /** 4陣営の魔族：武器の lifesteal（吸命の剣）。hitter が dealt（HPが減ったぶん）を与えたら、持ち主の城を dealt × lifesteal（切り捨て）回復 */
+  lifestealBy(owner, hitter, dealt) {
+    if (!hitter.lifesteal || dealt <= 0) return;
+    const side = this.players[this.side(owner.id)];
+    const amount = Math.floor(dealt * hitter.lifesteal);
+    if (amount <= 0 || side.castle.isDestroyed || side.eliminated) return;
+    const healed = side.castle.heal(amount);
+    if (healed > 0) this.emit('castleHealed', { playerId: side.id, amount: healed, hp: side.castle.hp, source: { kind: 'lifesteal', soldierId: hitter.soldierId } });
   }
 
   /** 神盾（shieldSoldier の statusWard）：盾が残っている間は、状態異常（毒・凍結・やけど・呪い・鈍足・目くらまし・砂・凍傷）を受けない */
@@ -4263,6 +4286,7 @@ export class Game {
         // 4陣営：射程+（重ねると足し算）と、当たった相手を休ませる（いちばん大きいもの）
         soldier.rangeBonus += def.rangeBonus ?? 0;
         soldier.freezeOnHit = Math.max(soldier.freezeOnHit, def.freezeOnHit ?? 0);
+        soldier.lifesteal = Math.max(soldier.lifesteal, def.lifesteal ?? 0);
         this.emit('weaponEquipped', {
           playerId: player.id, soldierId: soldier.soldierId, type: card.type, attack: soldier.attack, element: soldier.element,
         });
