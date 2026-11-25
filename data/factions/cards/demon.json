@@ -119,6 +119,18 @@
     "mpCost": 2,
     "count": 2
   },
+  "fac_demon_vulnerable": {
+    "name": "脆弱",
+    "kind": "spell",
+    "effect": "vulnerableCastle",
+    "ratio": 0.25,
+    "maxRatio": 0.5,
+    "turns": 3,
+    "maxTurns": 6,
+    "description": "相手の城を脆くする：城が受ける攻撃のダメージ+25%（切り上げ。+50%まで）。相手のターンの始め3回で消える（自分の進軍2回に効く）。重ねると回数だけ延びる（6回まで）",
+    "mpCost": 3,
+    "count": 2
+  },
   "fac_demon_soul_shard": {
     "name": "魂の欠片",
     "kind": "spell",

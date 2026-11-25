@@ -123,3 +123,45 @@ test('呪いの印：相手を選び、自分の城に近い順に3体の攻撃�
   game.tickWeakened(game.players.p2);
   assert.equal(xs[1].weakened, null);
 });
+
+// ---------------- 脆弱（vulnerableCastle） ----------------
+
+test('脆弱：相手の城が受ける攻撃のダメージ+25%（切り上げ・+50%まで）。毒・自分で払うコストには効かない', () => {
+  const { game, play, events } = setup({ hands: { p1: ['fac_demon_vulnerable', 'bolt', 'mist'] } });
+  play('p1', 'fac_demon_vulnerable', { playerId: 'p2' });
+  assert.deepEqual(game.players.p2.castle.vulnerable, { ratio: 0.25, maxRatio: 0.5, turns: 3 });
+  assert.deepEqual(game.getState('p1').players.p2.castleVulnerable, { ratio: 0.25, maxRatio: 0.5, turns: 3 });
+  assert.deepEqual(events('castleVulnerable').at(-1), { event: 'castleVulnerable', playerId: 'p2', ratio: 0.25, turns: 3 });
+  const hp = game.players.p2.castle.hp;
+  game.damageCastle(game.players.p2, 5, { kind: 'spell', type: 'bolt' });
+  assert.equal(game.players.p2.castle.hp, hp - 7, '5 + ceil(1.25)=2');
+  assert.equal(events('castleDamaged').at(-1).vulnerable, 2);
+  game.damageCastle(game.players.p2, 1, { kind: 'soldier', soldierId: 'x' });
+  assert.equal(game.players.p2.castle.hp, hp - 8, '1 は +50%（切り捨て0）までなので増えない');
+  game.damageCastle(game.players.p2, 4, { kind: 'self', type: 'x' });
+  assert.equal(game.players.p2.castle.hp, hp - 12, '自分で払うコストには効かない');
+  play('p1', 'mist', { playerId: 'p2' });
+  game.tickCastlePoison(game.players.p2);
+  assert.equal(game.players.p2.castle.hp, hp - 14, '毒には効かない');
+});
+
+test('脆弱：城の持ち主のターンの始めに1減って、3回で消える。重ねがけは回数だけ延びる（6回まで）。上限なら出せない', () => {
+  const { game, play, can, events } = setup({ hands: { p1: ['fac_demon_vulnerable', 'fac_demon_vulnerable', 'fac_demon_vulnerable'] } });
+  play('p1', 'fac_demon_vulnerable', { playerId: 'p2' });
+  game.tickVulnerable(game.players.p2);
+  play('p1', 'fac_demon_vulnerable', { playerId: 'p2' });
+  assert.equal(game.players.p2.castle.vulnerable.turns, 5);
+  assert.equal(game.players.p2.castle.vulnerable.ratio, 0.25, '割合は増えない');
+  game.players.p2.castle.vulnerable.turns = 6;
+  assert.equal(can('p1', 'fac_demon_vulnerable', { playerId: 'p2' }).ok, false);
+  game.players.p2.castle.vulnerable.turns = 1;
+  game.tickVulnerable(game.players.p2);
+  assert.equal(game.players.p2.castle.vulnerable, null);
+  assert.equal(events('castleVulnerableEnded').length, 1);
+});
+
+test('脆弱のカードがないモードでは getState に castleVulnerable のキーがない', () => {
+  const game = new Game({ cards: loadFixture('cards-step2.json'), rules: loadFixture('rules.json'), rng: seededRng(1) });
+  game.start();
+  assert.equal('castleVulnerable' in game.getState(null).players.p1, false);
+});

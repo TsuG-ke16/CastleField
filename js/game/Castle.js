@@ -16,6 +16,8 @@ export class Castle {
     this.bloodArmor = 0;
     /** 4陣営：回復量減少（深淵侵食）{ ratio, turns } か null。回復が ratio の割合だけ減る（切り捨て） */
     this.healCut = null;
+    /** 4陣営の魔族：脆弱 { ratio, maxRatio, turns } か null。攻撃のダメージが ratio の割合だけ増える（切り上げ。増える量は maxRatio の割合（切り捨て）まで） */
+    this.vulnerable = null;
     /** 4陣営（試作）：城に付いている属性 [{ element, turns }]（rules.castleAttach のときだけ使う） */
     this.attachments = [];
     /** 4陣営（試作）：城で反応が起きた周回と、その周回に起きた回数（castleReactionPerRound の歯止め） */

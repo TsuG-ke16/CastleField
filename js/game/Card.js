@@ -53,6 +53,7 @@ export const EFFECTS = {
     healCastleAndSoldiers: ['amount', 'soldierHeal'], // 生命の雫：自分の城HPを amount、傷ついた自分の兵士全員のHPを soldierHeal 回復
     healSoldier: ['amount'], // 竜血の雫：傷ついた自分の兵士1体のHPを amount 回復（対象 { soldierId }）
     breathAttack: ['amount', 'castleAmount'], // 火炎の吐息：選んだ道の相手の兵士全員に amount、相手の城に城壁を無視して castleAmount
+    vulnerableCastle: ['turns'], // 脆弱（魔族）：相手の城が受ける攻撃のダメージが ratio の割合だけ増える（turns。重ねがけは回数だけ延びる（maxTurns まで）。増える量は maxRatio まで）
     poisonEnemyCastle: ['amount', 'turns'], // 毒の霧（魔族）：相手の城だけを毒にする（毎ターン amount・turns 回。重ねがけは回数だけ延びる（maxTurns まで））
   },
   defense: {
@@ -83,7 +84,7 @@ export const BASIC_DICE = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff'];
 /** メインを使わず何枚でも出せるサイコロ（ほかはメイン） */
 export const SUPPORT_DICE = ['mana', 'coin', 'shield', 'buff'];
 
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack', 'poisonEnemyCastle'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack', 'poisonEnemyCastle', 'vulnerableCastle'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
@@ -266,8 +267,14 @@ export class Card {
       if (def.turns !== undefined && def.effect === 'poisonEnemy' && !isPositive(def.turns)) {
         throw new Error(`${where}: 毒（poisonEnemy）の turns は1以上の整数にしてください（書かなければ rules.poisonTurns）`);
       }
-      if (def.maxTurns !== undefined && (!['poisonEnemyCastle'].includes(def.effect) || !isPositive(def.maxTurns) || def.maxTurns < def.turns)) {
+      if (def.maxTurns !== undefined && (!['poisonEnemyCastle', 'vulnerableCastle'].includes(def.effect) || !isPositive(def.maxTurns) || def.maxTurns < def.turns)) {
         throw new Error(`${where}: maxTurns（重ねがけで延びる回数の上限）は poisonEnemyCastle などに書ける、turns 以上の整数です`);
+      }
+      if (def.effect === 'vulnerableCastle') {
+        const rate = (v) => typeof v === 'number' && v > 0 && v <= 1;
+        if (!rate(def.ratio) || !rate(def.maxRatio ?? def.ratio) || def.ratio > (def.maxRatio ?? def.ratio)) {
+          throw new Error(`${where}: 脆弱（vulnerableCastle）の ratio・maxRatio は0より大きく1以下で、ratio は maxRatio 以下にしてください`);
+        }
       }
       if (def.soldiers !== undefined && (!['weakenAttack'].includes(def.effect) || !isPositive(def.soldiers))) {
         throw new Error(`${where}: soldiers（効く兵士の数）は weakenAttack などに書ける1以上の整数です`);

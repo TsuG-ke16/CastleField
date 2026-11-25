@@ -12,12 +12,12 @@ import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptional
 import { runMatch } from './sim/sim.js';
 
 const MODE = 'factions';
-const FACTIONS = { kingdom: 17, forest: 14, demon: 15, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
+const FACTIONS = { kingdom: 17, forest: 14, demon: 16, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
 const ELEMENTS = loadOptionalData(MODE).elements;
 
 // ================= データ =================
 
-test('データ：4陣営のカード表は王国17・森14・魔族15・竜12種。各陣営のカード表がそのままその陣営のデッキになる', () => {
+test('データ：4陣営のカード表は王国17・森14・魔族（FACTIONS の数）・竜12種。各陣営のカード表がそのままその陣営のデッキになる', () => {
   const { cards } = buildData({ mode: MODE });
   const opts = loadOptionalData(MODE);
   assert.deepEqual(Object.keys(opts.decks), Object.keys(FACTIONS));
@@ -681,6 +681,7 @@ const PLAN = {
     ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
     ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
     ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 8 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 2, soldiers: 3 }],
+    ['脆弱', 3, { effect: 'vulnerableCastle', ratio: 0.25, maxRatio: 0.5, turns: 3, maxTurns: 6 }],
     ['魂の欠片', 3, { effect: 'damageCastleAndHeal', amount: 3, heal: 3 }], ['残響の魂', 4, { effect: 'reviveFallen', amount: 0.5 }],
     ['血の膜', 2, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
   ],

@@ -109,6 +109,8 @@ export const EVENT_TYPES = [
   'shieldBroken',
   'castleHealCut',
   'castleHealCutEnded',
+  'castleVulnerable',
+  'castleVulnerableEnded',
   // 4陣営：城の付着と反応（rules.castleAttach。試作）
   'castleElementAttached',
   'castleElementCleared',
@@ -324,6 +326,7 @@ export class Game {
       guard: cardList.some((d) => d.effect === 'guardCastle'),
       blood: cardList.some((d) => d.bloodArmor),
       dots: [...new Set(reactionList.filter((r) => r.dot).map((r) => r.dot.status))],
+      vulnerable: cardList.some((d) => d.effect === 'vulnerableCastle'),
     };
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
@@ -1077,6 +1080,8 @@ export class Game {
     if (this.tickCastlePoison(player)) return;
     // 回復量減少（深淵侵食）：城の持ち主のターンの始めに残りを1減らす
     this.tickHealCut(player);
+    // 脆弱（魔族）：同じく、城の持ち主のターンの始めに残りを1減らす
+    this.tickVulnerable(player);
     if (player.eliminated) {
       this.beginTurn(this.nextPlayerAfter(playerId), { continueRound: true });
       return;
@@ -1315,13 +1320,16 @@ export class Game {
   damageCastle(owner, amount, source, { ignoreArmor = false, raw = false } = {}) {
     // raw：城に起きた反応のダメージ（身代わり・土の精霊を通さない。城壁は先に受ける）
     if (!raw && owner.castle.guard && GUARDED_SOURCES.includes(source?.kind) && this.guardCastleHit(owner, amount)) return;
+    // 脆弱（魔族）：相手からの攻撃（兵士・魔法・精霊・反応）のダメージが増える（軽くする前に足す）
+    const vulnerable = this.vulnerableBonus(owner, amount, source);
+    amount += vulnerable;
     if (!raw) amount = this.reduceDamage(owner, amount, 'castle');
     const castle = owner.castle;
     const armorBefore = owner.armor;
     const blocked = ignoreArmor ? 0 : Math.min(owner.armor, amount);
     owner.armor -= blocked;
     castle.takeDamage(amount - blocked);
-    this.emit('castleDamaged', { playerId: owner.id, amount, blocked, hp: castle.hp, source, ...(ignoreArmor ? { ignoreArmor: true } : {}) });
+    this.emit('castleDamaged', { playerId: owner.id, amount, blocked, hp: castle.hp, source, ...(ignoreArmor ? { ignoreArmor: true } : {}), ...(vulnerable > 0 ? { vulnerable } : {}) });
     if (castle.bloodArmor > 0) {
       // 血の膜：城壁のうち血の膜のぶん（ほかの城壁より先に削れる）が受けた量だけ回復（城が落ちたら回復しない）
       castle.bloodArmor = Math.min(castle.bloodArmor, armorBefore);
@@ -1763,6 +1771,23 @@ export class Game {
         this.emit('statusCleared', { playerId: player.id, soldierId: soldier.soldierId, status });
       }
     }
+  }
+
+  /** 脆弱：owner の城が攻撃（GUARDED_SOURCES）を amount 受けるときに増える量（切り上げ。maxRatio の割合（切り捨て）まで）。脆弱でなければ0 */
+  vulnerableBonus(owner, amount, source) {
+    const v = this.players[this.side(owner.id)]?.castle.vulnerable;
+    if (!v || amount <= 0 || !GUARDED_SOURCES.includes(source?.kind)) return 0;
+    return Math.min(Math.ceil(amount * v.ratio), Math.floor(amount * v.maxRatio));
+  }
+
+  /** 脆弱：城の持ち主（チーム戦なら代表）のターンの始めに残りを1減らす（0で終わる） */
+  tickVulnerable(player) {
+    const c = player.castle;
+    if (!c.vulnerable || this.side(player.id) !== player.id) return;
+    c.vulnerable.turns -= 1;
+    if (c.vulnerable.turns > 0) return;
+    c.vulnerable = null;
+    this.emit('castleVulnerableEnded', { playerId: player.id });
   }
 
   /** 回復量減少：城の持ち主（チーム戦なら代表）のターンの始めに残りを1減らす（0で終わる） */
@@ -2958,6 +2983,12 @@ export class Game {
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
         return { targets: playerTargets(foes), reason: '相手がいません' };
       }
+      case 'vulnerableCastle': {
+        // 脆弱（魔族）：相手の城。もう上限の回数まで脆弱な城は選べない
+        const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
+        const max = def.maxTurns ?? def.turns;
+        return { targets: playerTargets(foes.filter((p) => (p.castle.vulnerable?.turns ?? 0) < max)), reason: foes.length ? 'その城はもう上限まで脆弱です' : '相手がいません' };
+      }
       case 'poisonEnemyCastle': {
         // 毒の霧（魔族）：相手の城。もう上限の回数まで毒が続く城（と、永続の毒の城）は、出しても変わらないので選べない
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
@@ -3754,6 +3785,22 @@ export class Game {
         break;
       }
 
+      case 'vulnerableCastle': {
+        // 脆弱（魔族）：相手の城が受ける攻撃のダメージが増える。重ねがけは割合を増やさず、残りの回数に turns を足す（maxTurns まで。永続にしない）。
+        // 霧で外れず、防御も聞かない（ダメージではないため）
+        const side = this.players[this.side(enemy.id)];
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: side.id, targetKind: 'player' });
+        const c = side.castle;
+        const maxRatio = card.def.maxRatio ?? card.def.ratio;
+        c.vulnerable = {
+          ratio: Math.min(maxRatio, Math.max(card.def.ratio, c.vulnerable?.ratio ?? 0)),
+          maxRatio,
+          turns: Math.min(card.def.maxTurns ?? card.def.turns, (c.vulnerable?.turns ?? 0) + card.def.turns),
+        };
+        this.emit('castleVulnerable', { playerId: side.id, ratio: c.vulnerable.ratio, turns: c.vulnerable.turns });
+        break;
+      }
+
       case 'poisonEnemyCastle': {
         // 毒の霧（魔族）：相手の城だけを毒にする。城壁・土の精霊・盾・身代わりは効かない（毒のダメージは tickCastlePoison）。霧で外れず、防御も聞かない。
         // 重ねがけ：毎ターンの量は増やさず（大きい方）、残りの回数だけ turns 延びる（maxTurns まで。永続にはしない）
@@ -4520,6 +4567,7 @@ export class Game {
         // 4陣営の森：常時の精霊（だれかが持つゲームだけキーを足す）。次に動く精霊と、動く順
         ...(this.extState.passiveSpirits ? { passiveSpirit: this.passiveSpiritState(p) } : {}),
         ...(this.extState.healCut ? { castleHealCut: p.castle.healCut ? { ...p.castle.healCut } : null } : {}),
+        ...(this.extState.vulnerable ? { castleVulnerable: p.castle.vulnerable ? { ...p.castle.vulnerable } : null } : {}),
         // 4陣営（試作）：城に付いている属性（castleAttach のゲームだけキーを足す。チーム戦は城を共有）
         ...(this.rules.castleAttach && this.reactionDefs ? { castleAttachments: p.castle.attachments.map((a) => ({ ...a })) } : {}),
         // 強化の今の値段（costs で買うたびに上がる強化があるので、人ごと）
