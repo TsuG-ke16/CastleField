@@ -165,3 +165,56 @@ test('脆弱のカードがないモードでは getState に castleVulnerable �
   game.start();
   assert.equal('castleVulnerable' in game.getState(null).players.p1, false);
 });
+
+// ---------------- 闇の侵食（passive.darkErosion） ----------------
+
+const EROSION = { darkErosion: { element: 'dark', ratio: 0.25, turns: 2, maxTurns: 4 } };
+
+test('闇の侵食：魔族の闇の兵士が敵の城に着くと、敵の城の回復量−25%（2。持ち主のターンの始めに1減る）。重ねがけは延びるだけ（4まで）', () => {
+  const { game, play, events } = setup({ passive: EROSION, hands: { p1: ['fac_demon_imp', 'fac_demon_imp', 'fac_demon_imp'] } });
+  const L = game.rules.laneLength;
+  const a = play('p1', 'fac_demon_imp');
+  a.position = L - 1;
+  march(game, 'p1');
+  assert.deepEqual(game.players.p2.castle.healCut, { ratio: 0.25, turns: 2 });
+  assert.deepEqual(events('castleHealCut').at(-1), { event: 'castleHealCut', playerId: 'p2', ratio: 0.25, turns: 2, source: 'erosion' });
+  game.players.p2.castle.hp = game.players.p2.castle.maxHp - 10;
+  assert.equal(game.players.p2.castle.heal(4), 3, '4 × 0.75 の切り捨て');
+  for (let i = 0; i < 2; i++) {
+    const b = play('p1', 'fac_demon_imp');
+    b.position = L - 1;
+    march(game, 'p1');
+  }
+  assert.equal(game.players.p2.castle.healCut.turns, 4, '2＋2＋2 は 4 まで');
+  game.tickHealCut(game.players.p2);
+  game.tickHealCut(game.players.p2);
+  game.tickHealCut(game.players.p2);
+  game.tickHealCut(game.players.p2);
+  assert.equal(game.players.p2.castle.healCut, null);
+});
+
+test('闇の侵食：深淵侵食（半分）がかかっていれば割合はそのまま。闇でない兵士・パッシブのない陣営では起きない', () => {
+  const { game, play } = setup({ passive: EROSION, hands: { p1: ['fac_demon_imp', 'weakling'] } });
+  const L = game.rules.laneLength;
+  game.players.p2.castle.healCut = { ratio: 0.5, turns: 1 };
+  const a = play('p1', 'fac_demon_imp');
+  a.position = L - 1;
+  march(game, 'p1');
+  assert.deepEqual(game.players.p2.castle.healCut, { ratio: 0.5, turns: 2 });
+  game.players.p2.castle.healCut = null;
+  const w = play('p1', 'weakling');
+  w.position = L - 1;
+  march(game, 'p1');
+  assert.equal(game.players.p2.castle.healCut, null, '闇でない兵士');
+  const other = setup({ hands: { p1: ['fac_demon_imp'] } });
+  const b = other.play('p1', 'fac_demon_imp');
+  b.position = L - 1;
+  march(other.game, 'p1');
+  assert.equal(other.game.players.p2.castle.healCut, null, 'パッシブがない');
+});
+
+test('パッシブのチェック：darkErosion の書き間違いは new Game() が例外', () => {
+  assert.throws(() => setup({ passive: { darkErosion: { element: 'void', ratio: 0.25, turns: 2 } } }), /darkErosion\.element/);
+  assert.throws(() => setup({ passive: { darkErosion: { element: 'dark', ratio: 2, turns: 2 } } }), /ratio/);
+  assert.throws(() => setup({ passive: { darkErosion: { element: 'dark', ratio: 0.25, turns: 2, maxTurns: 1 } } }), /maxTurns/);
+});

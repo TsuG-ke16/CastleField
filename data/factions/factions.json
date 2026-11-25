@@ -50,7 +50,8 @@
       "raiseOnKill": {
         "soldier": { "name": "骸骨兵", "hp": 2, "attack": 2, "speed": 2, "element": "dark" },
         "perTurn": 1
-      }
+      },
+      "darkErosion": { "element": "dark", "ratio": 0.25, "turns": 2, "maxTurns": 4 }
     }
   },
   "dragon": {

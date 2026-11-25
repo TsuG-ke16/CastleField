@@ -1340,8 +1340,43 @@ export class Game {
         if (healed > 0) this.emit('castleHealed', { playerId: owner.id, amount: healed, hp: castle.hp, source: { kind: 'bloodArmor' } });
       }
     }
+    // 4陣営の魔族：闇の侵食（城壁が全部受けても起きる。城に付着・反応するより前）
+    if (!raw) this.darkErosionHit(owner, source);
     // 4陣営（試作）：属性つきの攻撃が城に当たったら、城に付着か反応（城壁が全部受けても付く）
     if (!raw) this.castleElementHit(owner, this.castleHitElement(source), source);
+  }
+
+  /**
+   * 城に当たった攻撃の、撃った側の兵士か魔法：{ attacker（プレイヤー）, element }。兵士（城に着いた・魔法使いの射撃）は兵士の持ち主と属性、
+   * 魔法は手番の人とカードの属性。分からなければ null（castleAttach を使わないゲームでも使う）
+   */
+  castleHitBy(source) {
+    if (source?.kind === 'soldier') {
+      for (const p of Object.values(this.players)) {
+        const x = p.soldiers.find((s) => s.soldierId === source.soldierId);
+        if (x) return { attacker: p, soldier: x, element: x.element ?? null };
+      }
+      return null;
+    }
+    if (source?.kind === 'spell') return { attacker: this.players[this.currentPlayer], soldier: null, element: this.cardDefs[source.type]?.element ?? null };
+    return null;
+  }
+
+  /**
+   * 魔族の闇の侵食（席のデッキの passive.darkErosion）：その陣営の、element（闇）の兵士・魔法の攻撃が敵の城に当たると、城の回復量が ratio 減る
+   * （深淵侵食と同じ castle.healCut。残りは城の持ち主のターンの始めに1減る）。重ねがけ：割合は増やさず、残りに turns を足す（maxTurns まで）。
+   * もっと強い回復量減少（深淵侵食）がかかっていれば、割合はそのまま、残りは長い方にそろえる。castleHealCut（source "erosion"）を出す
+   */
+  darkErosionHit(owner, source) {
+    const hit = this.castleHitBy(source);
+    const def = hit?.attacker?.passive?.darkErosion;
+    if (!def || hit.element !== def.element || this.side(hit.attacker.id) === this.side(owner.id)) return;
+    const side = this.players[this.side(owner.id)];
+    if (side.castle.isDestroyed) return;
+    const cur = side.castle.healCut;
+    if (cur && cur.ratio > def.ratio) cur.turns = Math.max(cur.turns, def.turns);
+    else side.castle.healCut = { ratio: def.ratio, turns: Math.min(def.maxTurns ?? def.turns, (cur?.turns ?? 0) + def.turns) };
+    this.emit('castleHealCut', { playerId: side.id, ratio: side.castle.healCut.ratio, turns: side.castle.healCut.turns, source: 'erosion' });
   }
 
   // ================= 城の付着と反応（4陣営・試作。rules.castleAttach と reactions を渡したゲームだけ） =================
