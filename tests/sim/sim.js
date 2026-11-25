@@ -33,12 +33,37 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
     mainTurns: 0,
     played: {},
     reactions: {}, // 属性の反応（reactionTriggered）の回数。反応のID → 回数
+    // 4陣営（試作）：城の付着と反応。castleReactions は城に起きた反応のID → 回数、castleReactionDamage は城に起きた反応で城HPに入ったダメージ、
+    // castleHpDamage は城HPに入ったダメージの合計（城壁が受けたぶん・自分で払ったコストは含まない）。firstReactionBy / firstCastleReactionBy は最初の反応を起こした人（2人のとき。当たった側の相手）
+    castleReactions: {},
+    castleReactionDamage: 0,
+    castleHpDamage: 0,
+    firstReactionBy: null,
+    firstCastleReactionBy: null,
     errors: 0,
     events: {},
   };
+  const order = game.getState(null).playerOrder;
+  const otherOf = (pid) => (order.length === 2 ? order.find((x) => x !== pid) : null);
+  let castleReactionPending = false;
   for (const type of EVENT_TYPES) {
     game.on(type, (e) => {
       stats.events[type] = (stats.events[type] || 0) + 1;
+      if (type === 'castleReactionTriggered') {
+        stats.castleReactions[e.reaction] = (stats.castleReactions[e.reaction] || 0) + 1;
+        stats.firstReactionBy ??= otherOf(e.playerId);
+        stats.firstCastleReactionBy ??= otherOf(e.playerId);
+        castleReactionPending = e.damage > 0;
+      }
+      if (type === 'reactionTriggered') stats.firstReactionBy ??= otherOf(e.playerId);
+      if (type === 'castleDamaged') {
+        const hpLoss = e.amount - (e.blocked ?? 0);
+        if (!['self', 'sacrifice'].includes(e.source?.kind)) stats.castleHpDamage += hpLoss;
+        if (castleReactionPending && e.source?.kind === 'reaction') {
+          stats.castleReactionDamage += hpLoss;
+          castleReactionPending = false;
+        }
+      }
       if (type === 'castleDamaged') {
         const kind = e.source?.kind ?? 'other';
         const key = kind in stats.castleDamage ? kind : 'other';

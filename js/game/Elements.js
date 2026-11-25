@@ -83,6 +83,10 @@ export function validateReactions(data, ids) {
     if (r.splash !== undefined && !(obj(r.splash) && posInt(r.splash.amount) && [undefined, 'lane'].includes(r.splash.scope))) throw new Error(`${where}: splash（同じ道のほかの兵士へのダメージ）は { amount: 1以上の整数, scope?: "lane" } にしてください`);
     if (r.castleDamage !== undefined && !posInt(r.castleDamage)) throw new Error(`${where}: castleDamage（城へのダメージ）は1以上の整数にしてください`);
     if (r.shieldBreak !== undefined && !(obj(r.shieldBreak) && nonNegInt(r.shieldBreak.bonus))) throw new Error(`${where}: shieldBreak（盾を壊す）は { bonus: 0以上の整数 } にしてください`);
+    // 4陣営（試作）：城に起きた反応の効果（rules.castleAttach）。damage は城へのダメージ、armorBreak はその前に追加で削る城壁
+    if (r.castle !== undefined && !(obj(r.castle) && nonNegInt(r.castle.damage) && (r.castle.armorBreak === undefined || posInt(r.castle.armorBreak)))) {
+      throw new Error(`${where}: castle（城に起きた反応）は { damage: 0以上の整数, armorBreak?: 1以上の整数 } にしてください`);
+    }
     if (r.healCut !== undefined && !(obj(r.healCut) && rate(r.healCut.ratio) && posInt(r.healCut.turns))) throw new Error(`${where}: healCut（回復量減少）は { ratio: 0より大きく1以下, turns: 1以上の整数 } にしてください`);
   }
   if (data.chaos !== undefined) {
@@ -93,5 +97,6 @@ export function validateReactions(data, ids) {
     if (typeof c.name !== 'string' || c.name === '') throw new Error(`${where}: name（表示名）を書いてください`);
     if (!nonNegInt(c.damagePerElement)) throw new Error(`${where}: damagePerElement は0以上の整数にしてください`);
     if (!Number.isInteger(c.minElements) || c.minElements < 2) throw new Error(`${where}: minElements は2以上の整数にしてください`);
+    if (c.castleDamagePerElement !== undefined && !nonNegInt(c.castleDamagePerElement)) throw new Error(`${where}: castleDamagePerElement（城に起きた混沌反応の、種類ごとのダメージ）は0以上の整数にしてください`);
   }
 }

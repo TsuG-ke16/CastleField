@@ -4,7 +4,8 @@
 //   --with kingdom：その陣営と、ほかの陣営との組み合わせだけ（同じ陣営どうしは回さない）
 //   --rules '{"lightFirstStrike":false}'・--cards '{"fac_king_god_sword":{"attackBonus":6}}'：data/ を書き換えずに一部の値だけ試す（run.js と同じ）
 //   --decks '{"kingdom":{"fac_king_hero":0}}'：陣営のデッキの枚数だけ変える（0 で抜く）
-//   --spirit-every 2：森の常時の精霊の動く間隔（passiveSpirits.everyTurns）だけ変える
+//   --spirit-every 2・--spirit-attach-to castle：森の常時の精霊の everyTurns / spiritAttachTo だけ変える
+//   --rules '{"castleAttach":true}'：城の付着と反応（試作）を試す。表に城の反応の回数・ダメージの割合・先に反応した側の勝率も出す
 //   表の下に、切り札（カードの trump）の1試合あたりの使用回数と、光の先制が起きた回数を出す
 // 同じ引数なら、誰が回しても同じ結果になる。
 import { buildData, loadOptionalData } from '../helpers.js';
@@ -42,9 +43,15 @@ for (const [f, patch] of Object.entries(json('decks'))) {
   }
   opts.decks = { ...opts.decks, [f]: { ...opts.decks[f], cards: deck } };
 }
-if (opt('spirit-every', null)) {
-  for (const [f, d] of Object.entries(opts.decks)) {
-    if (d.passiveSpirits) opts.decks = { ...opts.decks, [f]: { ...d, passiveSpirits: { ...d.passiveSpirits, everyTurns: Number(opt('spirit-every')) } } };
+// 森の常時の精霊の上書き（試すだけ。data/ は変えない）
+const spiritEvery = opt('spirit-every', null);
+const spiritAttachTo = opt('spirit-attach-to', null);
+if (spiritEvery !== null || spiritAttachTo !== null) {
+  opts.decks = structuredClone(opts.decks);
+  for (const d of Object.values(opts.decks)) {
+    if (!d.passiveSpirits) continue;
+    if (spiritEvery !== null) d.passiveSpirits.everyTurns = Number(spiritEvery);
+    if (spiritAttachTo !== null) d.passiveSpirits.spiritAttachTo = spiritAttachTo;
   }
 }
 const factions = Object.keys(opts.decks);
@@ -79,6 +86,16 @@ for (let i = 0; i < factions.length; i++) {
     for (const r of all) reasons[r.reason ?? 'none'] = (reasons[r.reason ?? 'none'] || 0) + 1;
     const reactions = {};
     for (const r of all) for (const [k, v] of Object.entries(r.reactions)) reactions[k] = (reactions[k] || 0) + v;
+    // 城の付着と反応（試作）
+    const castleReactions = {};
+    for (const r of all) for (const [k, v] of Object.entries(r.castleReactions)) castleReactions[k] = (castleReactions[k] || 0) + v;
+    const hpDamage = all.reduce((x, r) => x + r.castleHpDamage, 0);
+    const reactionDamage = all.reduce((x, r) => x + r.castleReactionDamage, 0);
+    // 先に反応を起こした側が勝つ割合（反応が1回以上あった試合のうち。勝者がいる試合だけ）
+    const firstWin = (key) => {
+      const list = all.filter((r) => r[key] && r.winner);
+      return list.length ? { games: list.length, rate: list.filter((r) => r.winner === r[key]).length / list.length } : null;
+    };
     const turns = decided.map((r) => r.turns);
     rows.push({
       a, b, games: all.length, decided: decided.length,
@@ -91,6 +108,11 @@ for (let i = 0; i < factions.length; i++) {
       reactions,
       trumpsPerGame: Object.fromEntries(trumps.map((t) => [t, all.reduce((x, r) => x + (r.played[t] || 0), 0) / all.length])),
       firstStrikesPerGame: firstStrikes / all.length,
+      castleReactionsPerGame: Object.values(castleReactions).reduce((x, y) => x + y, 0) / all.length,
+      castleReactions,
+      castleReactionDamageShare: hpDamage ? reactionDamage / hpDamage : 0,
+      firstReactorWin: firstWin('firstReactionBy'),
+      firstCastleReactorWin: firstWin('firstCastleReactionBy'),
     });
   }
 }
@@ -100,15 +122,18 @@ if (args.includes('--json')) {
   console.log(JSON.stringify(rows, null, 2));
 } else {
   console.log(`4陣営モード・${strategy} 同士・各組み合わせ ${games}×2 試合（席を入れかえ）・シード ${seed}`);
-  console.log('| 陣営A × 陣営B | 決着 | A の勝率 | 先攻の勝率 | 平均手番（最大） | 決着の理由 | 反応/試合 |');
-  console.log('|---|---|---|---|---|---|---|');
+  console.log('| 陣営A × 陣営B | 決着 | A の勝率 | 先攻の勝率 | 平均手番（最大） | 決着の理由 | 反応/試合 | 城の反応/試合 | 城の反応のダメージの割合 | 先に反応した側の勝率 | 先に城で反応した側の勝率 |');
+  console.log('|---|---|---|---|---|---|---|---|---|---|---|');
+  const fw = (x) => (x ? `${pct(x.rate)}（${x.games}）` : '—');
   const name = (f) => opts.decks[f].name;
   for (const r of rows) {
     const reasons = Object.entries(r.reasons).map(([k, v]) => `${k} ${v}`).join('・');
-    console.log(`| ${name(r.a)} × ${name(r.b)} | ${r.decided}/${r.games} | ${r.a === r.b ? '—' : pct(r.aWinRate)} | ${pct(r.firstPlayerWinRate)} | ${r.avgTurns?.toFixed(1)}（${r.maxTurns}） | ${reasons} | ${r.reactionsPerGame.toFixed(2)} |`);
+    console.log(`| ${name(r.a)} × ${name(r.b)} | ${r.decided}/${r.games} | ${r.a === r.b ? '—' : pct(r.aWinRate)} | ${pct(r.firstPlayerWinRate)} | ${r.avgTurns?.toFixed(1)}（${r.maxTurns}） | ${reasons} | ${r.reactionsPerGame.toFixed(2)} | ${r.castleReactionsPerGame.toFixed(2)} | ${pct(r.castleReactionDamageShare)} | ${fw(r.firstReactorWin)} | ${fw(r.firstCastleReactorWin)} |`);
   }
   console.log('\n切り札（1試合あたりの使用回数）・光の先制（1試合あたり）');
   for (const r of rows) console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.trumpsPerGame).map(([k, v]) => `${cards[k].name} ${v.toFixed(2)}`).join('・') || '切り札なし'}・先制 ${r.firstStrikesPerGame.toFixed(2)}`);
   console.log('\n反応の回数（全試合）');
   for (const r of rows) console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.reactions).map(([k, v]) => `${k} ${v}`).join('・') || 'なし'}`);
+  console.log('\n城に起きた反応の回数（全試合）');
+  for (const r of rows) console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.castleReactions).map(([k, v]) => `${k} ${v}`).join('・') || 'なし'}`);
 }
