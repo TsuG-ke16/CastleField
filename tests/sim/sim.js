@@ -32,12 +32,20 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
     choiceTurns: 0, // 出せるカードが2種類以上あったターン（「迷う場面」そのものではない。目安）
     mainTurns: 0,
     played: {},
+    raised: 0, // 死者を従える（魔族のパッシブ）で骸骨兵が生まれた回数
+    raisedCastleDamage: 0, // 骸骨兵が敵の城に与えたダメージ（城壁が受けたぶんは除く）
     reactions: {}, // 属性の反応（reactionTriggered）の回数。反応のID → 回数
     errors: 0,
     events: {},
   };
+  const raisedIds = new Set();
   for (const type of EVENT_TYPES) {
     game.on(type, (e) => {
+      if (type === 'soldierDeployed' && e.raised) {
+        stats.raised += 1;
+        raisedIds.add(e.soldierId);
+      }
+      if (type === 'castleDamaged' && e.source?.kind === 'soldier' && raisedIds.has(e.source.soldierId)) stats.raisedCastleDamage += e.amount - (e.blocked ?? 0);
       stats.events[type] = (stats.events[type] || 0) + 1;
       if (type === 'castleDamaged') {
         const kind = e.source?.kind ?? 'other';

@@ -55,6 +55,9 @@ export class Soldier {
     this.weakened = null;
     /** 付着している属性 [{ element, turns }]（種類ごとに1つ。reactions を渡したゲームだけで使う。武器の属性は element に別に持つ） */
     this.attachments = [];
+    /** トークン（魔族の「死者を従える」で生まれた骸骨兵）。カードではない。tokenName は表示名（なければ null） */
+    this.token = false;
+    this.tokenName = null;
   }
 
   /** 弓兵・魔法使い（動かずに撃つ） */
@@ -107,6 +110,7 @@ export class Soldier {
 
   toState() {
     return {
+      ...(this.token ? { token: true, name: this.tokenName, speed: this.speed } : {}),
       soldierId: this.soldierId,
       type: this.type,
       hp: this.hp,

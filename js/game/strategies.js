@@ -462,7 +462,7 @@ function smartStep(game, pid, ctx) {
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;
-  const threat = enemy && enemy.soldiers.some((s) => s.position + ctx.cards[s.type].speed >= L);
+  const threat = enemy && enemy.soldiers.some((s) => s.position + (ctx.cards[s.type]?.speed ?? s.speed ?? 0) >= L);
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'freezeEnemySoldiers'))) return true;
   // 凍結がなければ、突風で押し戻す
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'pushBackEnemySoldiers'))) return true;
