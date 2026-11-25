@@ -19,6 +19,38 @@
     "mpCost": 2,
     "count": 2
   },
+  "fac_demon_zombie": {
+    "name": "ゾンビ",
+    "kind": "soldier",
+    "hp": 9,
+    "attack": 2,
+    "speed": 1,
+    "innateElement": "dark",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_ice_wraith": {
+    "name": "氷の亡者",
+    "kind": "soldier",
+    "hp": 6,
+    "attack": 2,
+    "speed": 2,
+    "innateElement": "ice",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_chaos_spawn": {
+    "name": "混沌の落とし子",
+    "kind": "soldier",
+    "hp": 4,
+    "attack": 3,
+    "speed": 2,
+    "innateElement": "chaos",
+    "attachRandomElement": true,
+    "description": "生まれつき混沌。戦って攻撃が当たった相手には、混沌に加えて火・水・風・土のどれか1つも付く（反応はしない）",
+    "mpCost": 2,
+    "count": 2
+  },
   "fac_demon_curser": {
     "name": "呪術師",
     "kind": "soldier",

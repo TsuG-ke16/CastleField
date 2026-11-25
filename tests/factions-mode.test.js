@@ -12,7 +12,7 @@ import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptional
 import { runMatch } from './sim/sim.js';
 
 const MODE = 'factions';
-const FACTIONS = { kingdom: 17, forest: 14, demon: 19, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
+const FACTIONS = { kingdom: 17, forest: 14, demon: 22, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
 const ELEMENTS = loadOptionalData(MODE).elements;
 
 // ================= データ =================
@@ -675,6 +675,8 @@ const PLAN = {
   ],
   demon: [
     ['骸骨兵', 2, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 2, S(4, 3, 3, { innateElement: 'dark' })],
+    ['ゾンビ', 3, S(2, 9, 1, { innateElement: 'dark' })], ['氷の亡者', 2, S(2, 6, 2, { innateElement: 'ice' })],
+    ['混沌の落とし子', 2, S(3, 4, 2, { innateElement: 'chaos', attachRandomElement: true })],
     ['呪術師', 3, S(2, 3, 0, { role: 'mage', spellBoost: { elements: ['dark', 'ice', 'chaos'], amount: 1 } })],
     ['シャドウサイズ', 2, { kind: 'weapon', attackBonus: 2, element: 'dark' }], ['フロストブレード', 2, { kind: 'weapon', attackBonus: 1, element: 'ice', freezeOnHit: 1 }],
     ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos', attachRandomElement: true }], ['吸命の剣', 2, { kind: 'weapon', attackBonus: 1, lifesteal: 0.5 }],

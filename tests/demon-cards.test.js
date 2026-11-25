@@ -348,3 +348,19 @@ test('混沌の付着の倍率は城にも効く（castleAttach）。混沌反�
   assert.deepEqual(game.players.p2.castle.attachments, [{ element: 'chaos', turns: 8 }]);
   assert.equal(REACTIONS.chaos.damagePerElement, 3);
 });
+
+// ---------------- 属性持ちの兵士（ゾンビ・氷の亡者・混沌の落とし子） ----------------
+
+test('属性持ちの兵士：ゾンビ（闇）・氷の亡者（氷）・混沌の落とし子（混沌）。戦うと相手に属性が付く。落とし子はランダム属性も付ける', () => {
+  const { game, play } = setup({ hands: { p1: ['fac_demon_zombie', 'fac_demon_ice_wraith', 'fac_demon_chaos_spawn'], p2: ['wall', 'wall', 'wall'] } });
+  const want = { fac_demon_zombie: ['dark', 9, 2, 1], fac_demon_ice_wraith: ['ice', 6, 2, 2], fac_demon_chaos_spawn: ['chaos', 4, 3, 2] };
+  for (const [type, [element, hp, attack, speed]] of Object.entries(want)) {
+    const s = play('p1', type);
+    assert.deepEqual([s.element, s.hp, s.attack, s.speed], [element, hp, attack, speed], type);
+    const w = play('p2', 'wall');
+    game.fight(game.players.p1, s, game.players.p2, w);
+    const on = w.attachments.map((x) => x.element);
+    assert.equal(on[0], element, `${type} の属性が付く`);
+    assert.equal(on.length, type === 'fac_demon_chaos_spawn' ? 2 : 1);
+  }
+});
