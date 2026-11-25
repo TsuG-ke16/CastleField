@@ -62,6 +62,8 @@
     "kind": "weapon",
     "attackBonus": 1,
     "element": "chaos",
+    "attachRandomElement": true,
+    "description": "攻撃+1・混沌。この兵士の攻撃が当たった相手には、混沌に加えて火・水・風・土のどれか1つも付く（反応はしない）",
     "mpCost": 2,
     "count": 2
   },

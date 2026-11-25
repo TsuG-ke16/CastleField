@@ -1749,6 +1749,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **血の契約**（新カード `fac_demon_blood_pact`。魔法・`effect: "bloodPact"`：`selfDamage`・`amount`・`soldiers`。今は 6・3・2、MP3）：自分の城HPを `selfDamage` 払って（城壁・土の精霊・魔の血・脆弱は通さない。`castleDamaged` の `source: { kind: "self" }`）、**自分の城に近い順**（`position` が小さい順。同じなら先に出された方）に自分の兵士 `soldiers` 体の攻撃を +`amount`（兵士の攻撃力そのものが上がるので、その兵士が消えるまで。`soldierBuffed`）。対象は自分（`{ playerId }`）。**城HPが `selfDamage`+1（7）以下・自分の兵士がいないときは出せない**（理由を返す）。CPU：自分の城HPが半分より多く、自分の兵士が2体以上いるとき（最後の優先リスト）
 - **封魔**（新カード `fac_demon_mana_seal`。魔法・`effect: "sealMp"`：`amount`・`turns`・`maxTurns`。今は 1・2・4、MP2）：相手（プレイヤー）の**自分のターンの始めの MP 回復**が −`amount`（0より少なくはしない）。残りはかけられた人のターンの始め（MP の回復のあと）に1減る（`turns` 2 なら回復2回ぶん）。**重ねがけは量を増やさず、残りに `turns` を足す（`maxTurns` まで）**。上限まで封じた相手は選べない。霧で外れず、防御も聞かない。イベント `mpSealed`（`playerId`・`amount`・`turns`）/ `mpSealEnded`（`playerId`）。`getState().players.pX.mpSeal`（`{ amount, turns }` か null。このカードがあるゲームだけ）。CPU：まだ封じていない相手に（最後の優先リストの終わりのほう）
 - **吸命の剣**（新カード `fac_demon_drain_blade`。武器・`attackBonus` 1・`lifesteal` 0.5・属性なし、MP2）：武器の `lifesteal`（0より大きく1以下。重ねると大きい方）。その兵士の攻撃が**敵の兵士（戦い・射撃）か城（着いた・魔法使いの射撃）に当たると**、減らしたHP（盾・城壁が受けたぶんは数えない）× `lifesteal`（切り捨て）だけ持ち主の城が回復する（回復量減少は効く）。持っていた兵士が相打ちで倒れても回復する。イベント `castleHealed`（`source: { kind: "lifesteal", soldierId }`）。CPU：ほかの武器と同じ（まだ武器のない、いちばん前の兵士）
+- **混沌を使いやすく（案A）**：①**カオスロッド**（`fac_demon_chaos_rod`）に `attachRandomElement: true`（武器か兵士に書ける）：その兵士の攻撃（戦い・射撃）が当たって生き残った相手に、混沌（武器の属性）の付着・反応のあと、**火・水・風・土のうちランダムな1つも付ける**（反応は起こさない。`elementAttached` の `source: "chaos"`。同じ属性がもう付いていれば残りは長い方）。準備1手で、相手の属性（生まれつき・武器）＋混沌＋ランダムの3種類がそろい、次の攻撃で混沌反応が起きやすくなる。乱数はこのフラグの兵士が当たったときだけ使う。②混沌反応のダメージを `reactions.json` の `chaos.damagePerElement` 4 → **3**×種類（城に起きた混沌反応の `castleDamagePerElement` は4のまま）。③`chaos.attachTurnsMultiplier`（1以上の整数。省略すると1）：混沌が付着したときの残りを2倍（兵士は `attachTurns` 5 → 10、城は `castleAttachTurns` 4 → 8。城の付着（`castleAttach`）は有効にしたので、混沌の攻撃は城にも付く）。カオスパルス（`randomElementDamage`）は、当たった兵士に付くのは今までどおり混沌だけ（撃つ属性は付かない）
 
 ### 砂・凍傷（反応の継続ダメージ。人間の指示）
 - 砂嵐・黒氷の「やけど」は不自然だったので、やけどとは別の状態にした：反応の `dot: { status: "sand" | "frostbite", amount, turns }`（チェックは `validateReactions`）
@@ -1784,7 +1785,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | 霧 | 風＋水 | 目くらまし30%×2 |
 | 溶岩 | 火＋土 | 盾を全部壊して、壊した量＋2 |
 | 轟雷爆炎 | 火＋雷 | 追加4・同じ道のほかの兵士に2・相手の城に3 |
-| 混沌反応 | 混沌を含む3種以上 | 4×種類の数（クラシックと同じ） |
+| 混沌反応 | 混沌を含む3種以上 | 3×種類の数（人間の指示で4から下げた。クラシックは4のまま）。混沌の付着は残り2倍（`chaos.attachTurnsMultiplier`） |
 
 - 森の5反応は #163 の `data/reactions.json`（a352658）の効果を、今の形に直した（`dot` はやけど、`blind` は目くらまし、`slow` は鈍足。霧の「水霧」の付着は、属性の表にないので入れない）。そのあと人間の指示で、砂嵐・黒氷のやけどを砂・凍傷に変えた（上の「砂・凍傷」）
 

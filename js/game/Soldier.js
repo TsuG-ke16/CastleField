@@ -36,6 +36,8 @@ export class Soldier {
     this.rangeBonus = 0;
     /** 武器の「当たった相手を休ませる」回数（freezeOnHit。いちばん大きいもの。0 ならなし） */
     this.freezeOnHit = 0;
+    /** 当たった相手に、属性に加えて火・水・風・土のどれか1つも付ける（武器か兵士の attachRandomElement。4陣営の混沌） */
+    this.attachRandomElement = Boolean(card.def.attachRandomElement);
     /** 武器の吸命（lifesteal。いちばん大きいもの。0 ならなし）：当たって与えたダメージ × lifesteal（切り捨て）だけ持ち主の城が回復する */
     this.lifesteal = 0;
     /** 鈍足 { amount, turns }（泥の反応。速さが amount 下がる。最低1）か null */

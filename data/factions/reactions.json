@@ -1,5 +1,5 @@
 {
-  "_note": "4陣営モードだけの属性の付着と反応（数値はすべて仮）。決まりはクラシックと同じ（attachTurns・randomAttach・chaos の意味は data/classic/reactions.json の _note）。4陣営で足した効果：multiplier（当たった攻撃のダメージを倍にする。足すのは ceil(ダメージ ×（倍率−1）)）、dot（継続ダメージ。status \"sand\"（砂）/ \"frostbite\"（凍傷）。やけどとは別の状態で、盾は効かない）、burn（やけど。scope \"adjacent\" なら同じ道の前後1マスの同じ陣地の兵士にも）、slow（鈍足：速さが下がる。最低1）、blind（目くらまし：攻撃が chance の確率で外れる）、splash（同じ道の同じ陣地のほかの兵士にダメージ）、castleDamage（当たった兵士の陣地の城にダメージ）、shieldBreak（盾を全部壊して、壊した量＋bonus のダメージ）、healCut（当たった兵士の陣地の城の回復量が ratio の割合だけ減る）。castle（試作。rules.castleAttach のときだけ使う）は、城に起きた反応の効果：damage は城へのダメージ（城壁が先に受ける。身代わり・土の精霊・防御カードは効かない）、armorBreak はその前に追加で削る城壁。chaos.castleDamagePerElement は城に起きた混沌反応の種類ごとのダメージ。城に起きた反応では healCut だけが効き、凍結・やけど・鈍足などの状態は付けない。森の5反応は #163 の data/reactions.json（a352658）の効果を、この形に直したもの",
+  "_note": "4陣営モードだけの属性の付着と反応（数値はすべて仮）。決まりはクラシックと同じ（attachTurns・randomAttach・chaos の意味は data/classic/reactions.json の _note）。4陣営で足した効果：multiplier（当たった攻撃のダメージを倍にする。足すのは ceil(ダメージ ×（倍率−1）)）、dot（継続ダメージ。status \"sand\"（砂）/ \"frostbite\"（凍傷）。やけどとは別の状態で、盾は効かない）、burn（やけど。scope \"adjacent\" なら同じ道の前後1マスの同じ陣地の兵士にも）、slow（鈍足：速さが下がる。最低1）、blind（目くらまし：攻撃が chance の確率で外れる）、splash（同じ道の同じ陣地のほかの兵士にダメージ）、castleDamage（当たった兵士の陣地の城にダメージ）、shieldBreak（盾を全部壊して、壊した量＋bonus のダメージ）、healCut（当たった兵士の陣地の城の回復量が ratio の割合だけ減る）。castle（試作。rules.castleAttach のときだけ使う）は、城に起きた反応の効果：damage は城へのダメージ（城壁が先に受ける。身代わり・土の精霊・防御カードは効かない）、armorBreak はその前に追加で削る城壁。chaos.castleDamagePerElement は城に起きた混沌反応の種類ごとのダメージ。chaos.attachTurnsMultiplier は混沌が付着したときの残りの倍率（兵士は attachTurns、城は rules.castleAttachTurns に掛ける。4陣営の魔族の強化で2）。城に起きた反応では healCut だけが効き、凍結・やけど・鈍足などの状態は付けない。森の5反応は #163 の data/reactions.json（a352658）の効果を、この形に直したもの",
   "attachTurns": 5,
   "randomAttach": { "turns": 1 },
   "reactions": {
@@ -15,5 +15,5 @@
     "lava": { "name": "溶岩", "elements": ["fire", "earth"], "damage": 0, "shieldBreak": { "bonus": 2 }, "castle": { "damage": 4, "armorBreak": 2 } },
     "thunderBlaze": { "name": "轟雷爆炎", "elements": ["fire", "thunder"], "damage": 4, "splash": { "amount": 2, "scope": "lane" }, "castleDamage": 3, "castle": { "damage": 6 } }
   },
-  "chaos": { "element": "chaos", "name": "混沌反応", "damagePerElement": 4, "minElements": 3, "castleDamagePerElement": 4 }
+  "chaos": { "element": "chaos", "name": "混沌反応", "damagePerElement": 3, "minElements": 3, "castleDamagePerElement": 4, "attachTurnsMultiplier": 2 }
 }

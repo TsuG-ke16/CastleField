@@ -1429,7 +1429,7 @@ export class Game {
         return;
       }
     }
-    const t = turns ?? this.rules.castleAttachTurns;
+    const t = (turns ?? this.rules.castleAttachTurns) * (element === this.reactionDefs.chaos?.element ? this.reactionDefs.chaos.attachTurnsMultiplier ?? 1 : 1);
     const found = castle.attachments.find((a) => a.element === element);
     if (found) found.turns = Math.max(found.turns, t);
     else castle.attachments.push({ element, turns: t });
@@ -1575,12 +1575,27 @@ export class Game {
         return;
       }
     }
-    // 付着が残る回数（水流のように、魔法の attachTurns で長くできる）
-    const turns = attachTurns ?? defs.attachTurns;
+    // 付着が残る回数（水流のように、魔法の attachTurns で長くできる）。4陣営：混沌は chaos.attachTurnsMultiplier 倍
+    const turns = (attachTurns ?? defs.attachTurns) * (element === defs.chaos?.element ? defs.chaos.attachTurnsMultiplier ?? 1 : 1);
     const found = soldier.attachments.find((a) => a.element === element);
     if (found) found.turns = turns; // 同じ属性がまた付いたら、残りを戻す
     else soldier.attachments.push({ element, turns });
     this.emit('elementAttached', { playerId: owner.id, soldierId: soldier.soldierId, element, turns });
+  }
+
+  /**
+   * 4陣営の混沌（attachRandomElement）：当たって生き残った兵士に、火・水・風・土のうちランダムな1つを付ける（反応は起こさない。次の攻撃で反応する「準備」）。
+   * 同じ属性がもう付いていれば、残りは長い方にそろえる。reactions を渡していない・忍者・もう場にいない兵士なら何もしない（乱数も使わない）
+   */
+  attachRandomBasic(owner, soldier) {
+    const defs = this.reactionDefs;
+    if (!defs || soldier.stealth || !owner.soldiers.includes(soldier)) return;
+    const element = ELEMENTS[Math.floor(this.rng() * ELEMENTS.length)];
+    const turns = defs.attachTurns;
+    const found = soldier.attachments.find((a) => a.element === element);
+    if (found) found.turns = Math.max(found.turns, turns);
+    else soldier.attachments.push({ element, turns });
+    this.emit('elementAttached', { playerId: owner.id, soldierId: soldier.soldierId, element, turns: (found ?? soldier.attachments.at(-1)).turns, source: 'chaos' });
   }
 
   /**
@@ -1983,6 +1998,7 @@ export class Game {
       } else {
         this.lifestealBy(player, soldier, hp0 - victim.hp); // 吸命の剣
         this.elementHit(owner, victim, soldier.element, { damage: amount });
+        if (soldier.attachRandomElement) this.attachRandomBasic(owner, victim);
         this.freezeOnHitBy(soldier, owner, victim);
         if (this.reactionDefs) over = this.checkGameOver();
       }
@@ -2914,6 +2930,9 @@ export class Game {
     const hitA = !missA && !noCounterA;
     if (hitD) this.elementHit(enemy, defender, elementA, { damage: toDefender });
     if (hitA) this.elementHit(player, attacker, elementD, { damage: toAttacker });
+    // 混沌（カオスロッド・混沌の落とし子）：火・水・風・土のどれかも付ける
+    if (hitD && attacker.attachRandomElement) this.attachRandomBasic(enemy, defender);
+    if (hitA && defender.attachRandomElement) this.attachRandomBasic(player, attacker);
     // フロストブレード：当たって生き残った相手を休ませる
     if (hitD) this.freezeOnHitBy(attacker, enemy, defender);
     if (hitA) this.freezeOnHitBy(defender, player, attacker);
@@ -4287,6 +4306,7 @@ export class Game {
         soldier.rangeBonus += def.rangeBonus ?? 0;
         soldier.freezeOnHit = Math.max(soldier.freezeOnHit, def.freezeOnHit ?? 0);
         soldier.lifesteal = Math.max(soldier.lifesteal, def.lifesteal ?? 0);
+        if (def.attachRandomElement) soldier.attachRandomElement = true;
         this.emit('weaponEquipped', {
           playerId: player.id, soldierId: soldier.soldierId, type: card.type, attack: soldier.attack, element: soldier.element,
         });

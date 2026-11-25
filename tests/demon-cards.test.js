@@ -324,3 +324,27 @@ test('吸命の剣：城に着いたときも、城HPが減ったぶん（城壁
   assert.ok(lost > 0);
   assert.equal(game.players.p1.castle.hp, 10 + Math.floor(lost / 2));
 });
+
+// ---------------- 混沌（attachRandomElement・chaos.attachTurnsMultiplier） ----------------
+
+test('カオスロッド：当たった兵士に混沌（残り2倍）と、火・水・風・土のどれか1つが付く（反応はしない）', () => {
+  const { game, play, events } = setup({ hands: { p1: ['striker', 'fac_demon_chaos_rod'], p2: ['wall'] } });
+  const a = play('p1', 'striker');
+  play('p1', 'fac_demon_chaos_rod', { soldierId: a.soldierId });
+  const w = play('p2', 'wall');
+  game.fight(game.players.p1, a, game.players.p2, w);
+  const on = w.attachments.map((x) => x.element);
+  assert.equal(on[0], 'chaos');
+  assert.equal(w.attachments[0].turns, REACTIONS.attachTurns * 2, '混沌は残り2倍');
+  assert.equal(on.length, 2);
+  assert.ok(['fire', 'water', 'wind', 'earth'].includes(on[1]));
+  assert.equal(events('elementAttached').at(-1).source, 'chaos');
+  assert.equal(events('reactionTriggered').length, 0, '付けるだけで反応しない');
+});
+
+test('混沌の付着の倍率は城にも効く（castleAttach）。混沌反応は 3×種類', () => {
+  const { game } = setup({ rules: { castleAttach: true, castleAttachTurns: 4, castleReactionPerRound: 1 } });
+  game.castleElementHit(game.players.p2, 'chaos', null);
+  assert.deepEqual(game.players.p2.castle.attachments, [{ element: 'chaos', turns: 8 }]);
+  assert.equal(REACTIONS.chaos.damagePerElement, 3);
+});

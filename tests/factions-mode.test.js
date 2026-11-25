@@ -677,7 +677,7 @@ const PLAN = {
     ['骸骨兵', 2, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 2, S(4, 3, 3, { innateElement: 'dark' })],
     ['呪術師', 3, S(2, 3, 0, { role: 'mage', spellBoost: { elements: ['dark', 'ice', 'chaos'], amount: 1 } })],
     ['シャドウサイズ', 2, { kind: 'weapon', attackBonus: 2, element: 'dark' }], ['フロストブレード', 2, { kind: 'weapon', attackBonus: 1, element: 'ice', freezeOnHit: 1 }],
-    ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos' }], ['吸命の剣', 2, { kind: 'weapon', attackBonus: 1, lifesteal: 0.5 }],
+    ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos', attachRandomElement: true }], ['吸命の剣', 2, { kind: 'weapon', attackBonus: 1, lifesteal: 0.5 }],
     ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
     ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
     ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 8 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 2, soldiers: 3 }],
@@ -812,7 +812,7 @@ test('本物の反応：全部の組で起きて、それぞれの効果が出�
   t.attachments = [{ element: 'chaos', turns: 5 }, { element: 'water', turns: 5 }];
   c.play('p1', 'thunderTap', { soldierId: t.soldierId });
   assert.equal(c.events('reactionTriggered')[0].reaction, 'chaos');
-  assert.equal(c.events('reactionTriggered')[0].damage, 12);
+  assert.equal(c.events('reactionTriggered')[0].damage, 9); // 3×3種（人間の指示で 4×種類 → 3×種類）
 });
 
 test('身代わり：兵士の突入・精霊・反応からの城への攻撃を受ける。攻撃を受けたときの防御（defend）には出せない', () => {

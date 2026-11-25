@@ -240,6 +240,9 @@ export class Card {
       if (def.rangeBonus !== undefined && (def.kind !== 'weapon' || !isPositive(def.rangeBonus))) {
         throw new Error(`${where}: rangeBonus（射程+）は武器にだけ、1以上の整数で書けます`);
       }
+      if (def.attachRandomElement !== undefined && ((def.kind !== 'weapon' && def.kind !== 'soldier') || typeof def.attachRandomElement !== 'boolean')) {
+        throw new Error(`${where}: attachRandomElement（当たった相手に火・水・風・土のどれかも付ける）は武器か兵士に書ける true / false です`);
+      }
       if (def.lifesteal !== undefined && (def.kind !== 'weapon' || !(typeof def.lifesteal === 'number' && def.lifesteal > 0 && def.lifesteal <= 1))) {
         throw new Error(`${where}: lifesteal（与えたダメージのうち自分の城を回復する割合）は武器だけに書ける、0より大きく1以下の数です`);
       }
