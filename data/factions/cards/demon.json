@@ -26,7 +26,7 @@
     "attack": 2,
     "speed": 1,
     "innateElement": "dark",
-    "mpCost": 3,
+    "mpCost": 4,
     "count": 2
   },
   "fac_demon_ice_wraith": {
@@ -36,7 +36,7 @@
     "attack": 2,
     "speed": 2,
     "innateElement": "ice",
-    "mpCost": 2,
+    "mpCost": 3,
     "count": 2
   },
   "fac_demon_chaos_spawn": {
@@ -48,7 +48,7 @@
     "innateElement": "chaos",
     "attachRandomElement": true,
     "description": "生まれつき混沌。戦って攻撃が当たった相手には、混沌に加えて火・水・風・土のどれか1つも付く（反応はしない）",
-    "mpCost": 2,
+    "mpCost": 3,
     "count": 2
   },
   "fac_demon_curser": {
@@ -146,9 +146,9 @@
     "kind": "spell",
     "effect": "poisonEnemyCastle",
     "amount": 2,
-    "turns": 4,
-    "maxTurns": 4,
-    "description": "相手の城を毒にする（相手のターンの始めに2ダメージ・4回）。城壁・身代わりは効かない。重ねると残りが4回に戻る（量は増えない）。浄化で治る",
+    "turns": 3,
+    "maxTurns": 3,
+    "description": "相手の城を毒にする（相手のターンの始めに2ダメージ・3回）。城壁・身代わりは効かない。重ねると残りが3回に戻る（量は増えない）。浄化で治る",
     "mpCost": 3,
     "count": 2
   },

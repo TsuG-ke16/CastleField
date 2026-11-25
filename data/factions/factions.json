@@ -16,7 +16,7 @@
           "name": "イフリート",
           "element": "fire",
           "effect": "castleDamage",
-          "amount": 2
+          "amount": 4
         },
         {
           "spirit": "water",
@@ -38,7 +38,7 @@
           "name": "タイタン",
           "element": "earth",
           "effect": "castleDamage",
-          "amount": 5
+          "amount": 7
         }
       ]
     }
@@ -52,7 +52,7 @@
         "perTurn": 1
       },
       "darkErosion": { "element": "dark", "ratio": 0.25, "turns": 2, "maxTurns": 4 },
-      "magicBlood": { "spellReduce": 1, "mpBonus": 1 }
+      "magicBlood": { "spellReduce": 1, "mpBonus": 0 }
     }
   },
   "dragon": {

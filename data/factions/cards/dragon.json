@@ -5,7 +5,7 @@
     "hp": 5,
     "attack": 4,
     "speed": 2,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_dragon_dragoon": {
@@ -61,7 +61,7 @@
     "effect": "damageEnemyCastle",
     "element": "fire",
     "amount": 5,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_dragon_bolt": {
@@ -71,7 +71,7 @@
     "element": "thunder",
     "amount": 3,
     "scope": "lane",
-    "mpCost": 3,
+    "mpCost": 4,
     "count": 2
   },
   "fac_dragon_flame_breath": {

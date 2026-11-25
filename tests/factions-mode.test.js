@@ -681,14 +681,14 @@ const PLAN = {
   ],
   demon: [
     ['骸骨兵', 2, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 2, S(4, 3, 3, { innateElement: 'dark' })],
-    ['ゾンビ', 3, S(2, 9, 1, { innateElement: 'dark' })], ['氷の亡者', 2, S(2, 6, 2, { innateElement: 'ice' })],
-    ['混沌の落とし子', 2, S(3, 4, 2, { innateElement: 'chaos', attachRandomElement: true })],
+    ['ゾンビ', 4, S(2, 9, 1, { innateElement: 'dark' })], ['氷の亡者', 3, S(2, 6, 2, { innateElement: 'ice' })],
+    ['混沌の落とし子', 3, S(3, 4, 2, { innateElement: 'chaos', attachRandomElement: true })],
     ['呪術師', 3, S(2, 3, 0, { role: 'mage', spellBoost: { elements: ['dark', 'ice', 'chaos'], amount: 1 } })],
     ['シャドウサイズ', 2, { kind: 'weapon', attackBonus: 2, element: 'dark' }], ['フロストブレード', 2, { kind: 'weapon', attackBonus: 1, element: 'ice', freezeOnHit: 1 }],
     ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos', attachRandomElement: true }], ['吸命の剣', 2, { kind: 'weapon', attackBonus: 1, lifesteal: 0.5, keepElement: true }],
     ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
     ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
-    ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 4 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 2, soldiers: 3 }],
+    ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 3, maxTurns: 3 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 2, soldiers: 3 }],
     ['脆弱', 3, { effect: 'vulnerableCastle', ratio: 0.25, maxRatio: 0.5, turns: 3, maxTurns: 6 }],
     ['血の契約', 3, { effect: 'bloodPact', selfDamage: 6, amount: 3, soldiers: 2 }],
     ['封魔', 2, { effect: 'sealMp', amount: 1, turns: 2, maxTurns: 4 }],
@@ -696,9 +696,9 @@ const PLAN = {
     ['血の膜', 2, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
   ],
   dragon: [
-    ['竜人の新兵', 3, S(4, 5, 2)], ['竜騎兵', 3, S(5, 3, 3)], ['幼炎竜', 4, S(5, 5, 2, { innateElement: 'fire' })], ['幼雷竜', 4, S(4, 4, 3, { innateElement: 'thunder' })],
+    ['竜人の新兵', 2, S(4, 5, 2)], ['竜騎兵', 3, S(5, 3, 3)], ['幼炎竜', 4, S(5, 5, 2, { innateElement: 'fire' })], ['幼雷竜', 4, S(4, 4, 3, { innateElement: 'thunder' })],
     ['竜牙剣', 2, { kind: 'weapon', attackBonus: 2, element: 'fire' }], ['雷牙槍', 2, { kind: 'weapon', attackBonus: 2, element: 'thunder', rangeBonus: 1 }],
-    ['ファイアボール', 3, { effect: 'damageEnemyCastle', amount: 5, element: 'fire' }], ['雷光', 3, { effect: 'damageEnemySoldiers', amount: 3, element: 'thunder', scope: 'lane' }],
+    ['ファイアボール', 2, { effect: 'damageEnemyCastle', amount: 5, element: 'fire' }], ['雷光', 4, { effect: 'damageEnemySoldiers', amount: 3, element: 'thunder', scope: 'lane' }],
     ['火炎の吐息', 4, { effect: 'breathAttack', amount: 4, castleAmount: 4, element: 'fire' }], ['竜血の雫', 2, { effect: 'healSoldier' }],
     ['火山灰の幕', 2, { effect: 'armorCastle', amount: 3 }], ['幼竜の鱗', 1, { effect: 'shieldSoldier', amount: 2 }],
     // 新カード
@@ -733,7 +733,7 @@ test('本物のカード：森には精霊のカード（summonSpirit）がな�
   }
   const decks = loadOptionalData(MODE).decks;
   assert.deepEqual(decks.forest.passiveSpirits.spirits.map((x) => [x.name, x.element, x.effect, x.amount]), [
-    ['イフリート', 'fire', 'castleDamage', 2], ['ウンディーネ', 'water', 'soldiersDamage', 1], ['シルフ', 'wind', 'pushFront', 2], ['タイタン', 'earth', 'castleDamage', 5],
+    ['イフリート', 'fire', 'castleDamage', 4], ['ウンディーネ', 'water', 'soldiersDamage', 1], ['シルフ', 'wind', 'pushFront', 2], ['タイタン', 'earth', 'castleDamage', 7],
   ]);
   assert.equal(decks.forest.passiveSpirits.spirits[3].ignoreArmor, undefined, 'タイタンは城壁を無視しない（人間の指示）');
   assert.equal(decks.forest.passiveSpirits.spirits[2].push, 1);
@@ -742,7 +742,7 @@ test('本物のカード：森には精霊のカード（summonSpirit）がな�
   for (const f of ['kingdom', 'demon', 'dragon']) assert.equal(decks[f].passiveSpirits, undefined, f);
 });
 
-test('本物のカード：魂の欠片・残響の魂・カオスパルス・氷の息・呪いの印・毒の霧（城だけ・2×4回。人間の指示で兵士の毒から変えた）', () => {
+test('本物のカード：魂の欠片・残響の魂・カオスパルス・氷の息・呪いの印・毒の霧（城だけ・2×3回。人間の指示で兵士の毒から変えた。回数は調整）', () => {
   const { game, play } = setupReal({ hands: { p1: ['fac_demon_soul_shard', 'fac_demon_echo_soul', 'fac_demon_chaos_pulse', 'fac_demon_frost_breath', 'fac_demon_curse_mark', 'fac_demon_poison_mist', 'fragile'], p2: ['tank', 'fireTap'] }, reactions: null });
   game.debugSetCastleHp('p1', 10);
   const hp2 = game.players.p2.castle.hp;
@@ -768,7 +768,7 @@ test('本物のカード：魂の欠片・残響の魂・カオスパルス・�
   play('p1', 'fac_demon_poison_mist', { playerId: 'p2' });
   assert.equal(t.poison, null, '兵士は毒にしない');
   assert.equal(game.players.p2.castle.poison, 2);
-  assert.equal(game.players.p2.castle.poisonTurns, 4);
+  assert.equal(game.players.p2.castle.poisonTurns, 3);
 });
 
 test('本物のカード：竜のファイアボールは先頭の兵士に当たり、兵士がいなければ城に当たる', () => {

@@ -379,7 +379,7 @@ test('本物のデータ：魔族の特性は 死者を従える・闇の侵食�
   const decks = loadOptionalData(MODE).decks;
   assert.deepEqual(Object.keys(decks.demon.passive), ['raiseOnKill', 'darkErosion', 'magicBlood']);
   assert.deepEqual(decks.demon.passive.darkErosion, { element: 'dark', ratio: 0.25, turns: 2, maxTurns: 4 });
-  assert.deepEqual(decks.demon.passive.magicBlood, { spellReduce: 1, mpBonus: 1 });
+  assert.deepEqual(decks.demon.passive.magicBlood, { spellReduce: 1, mpBonus: 0 });
   for (const f of ['kingdom', 'forest', 'dragon']) assert.equal(decks[f].passive, undefined, f);
   assert.equal(decks.forest.passiveSpirits.everyTurns, 2);
   const demon = loadFactionCards(MODE, 'demon');
