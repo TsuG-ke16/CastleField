@@ -6,6 +6,8 @@
 //   takeTurn(game, pid, rng, ctx)      … メインでカードを出す（出さなくてもよい）
 //   chooseDiscard(game, pid, rng, ctx) … ctx.discardCount 枚の cardId を返す
 
+import { availableSkillNodes } from './SkillTree.js';
+
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 
 function view(game, pid) {
@@ -598,7 +600,9 @@ function smartTurn(game, pid, ctx) {
  * 上限を超えて無駄にしないよう、回復量が入る分だけの余裕があるカードを、小さいものから出す
  */
 function refillMp(game, pid, ctx) {
-  const maxMp = game.getState(null).maxMp;
+  const state = game.getState(null);
+  // スキル（maxMp）で上限が人ごとに違うときは、その人の上限（getState の players[pid].maxMp）
+  const maxMp = state.players[pid].maxMp ?? state.maxMp;
   if (!maxMp) return;
   const types = typesWithEffect(ctx, 'gainMp').sort((a, b) => ctx.cards[a].amount - ctx.cards[b].amount);
   if (!types.length) return;
@@ -639,3 +643,37 @@ export const STRATEGIES = Object.fromEntries(
     },
   ]),
 );
+
+// ================= スキルツリー（クラシック）：試合の前に CPU が選ぶビルド =================
+
+/**
+ * 戦い方ごとの、おすすめのビルド（skilltree.json の presets のID）。ないプリセットは何も取らない。
+ * 攻め（aggro・rush）は剣、守り（defensive・guard）は盾、smart はまんべんなく、random はランダム、pass は何も取らない
+ */
+export const SKILL_STYLE_OF = {
+  random: 'random', aggro: 'blade', rush: 'blade', smart: 'hybrid', defensive: 'shield', guard: 'shield', pass: 'none',
+};
+
+/**
+ * ビルドを選ぶ（スキルツリーのデータだけを使う。Game は使わない）。
+ * style："none"（何も取らない）／"random"（取れるノードからランダムに、ポイントがなくなるまで）／presets のID（おすすめ）
+ * 戦い方の名前（smart など）を渡すと SKILL_STYLE_OF のおすすめにする
+ * @returns {string[]} ノードのIDの配列（checkSkillBuild に合う）
+ */
+export function chooseSkillBuild(tree, rng, style = 'random') {
+  const s = SKILL_STYLE_OF[style] ?? style;
+  if (s === 'none') return [];
+  // "keenBlade+siegecraft"：ノードのIDを + でつないだビルド（シミュレーションで1つずつ測るとき）
+  if (s.includes('+') || Object.hasOwn(tree.nodes, s)) return s.split('+');
+  if (s === 'random') {
+    const build = [];
+    for (;;) {
+      const next = availableSkillNodes(tree, build);
+      if (next.length === 0) return build;
+      build.push(pick(next, rng));
+    }
+  }
+  const preset = tree.presets?.[s];
+  if (!preset) throw new Error(`スキルのビルド "${style}" はありません（none / random / ${Object.keys(tree.presets ?? {}).join(' / ')}）`);
+  return [...preset.nodes];
+}

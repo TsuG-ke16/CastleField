@@ -1,0 +1,229 @@
+{
+  "_note": "クラシックのスキルツリー（数値はすべて仮。docs/classic-skilltree.md）。試合の前に points のポイントでノードを選ぶ（両者同じ・試合中は育たない）。cost の合計が points 以下。requires のノードを先に取る。effects はプラスが長所・マイナスが短所（どのノードにも両方ある）。キーの意味は js/game/SkillTree.js の SKILL_EFFECTS。presets はおすすめのビルド（CPU とはじめての人向け）",
+  "points": 6,
+  "branches": {
+    "blade": {
+      "name": "剣（攻め）"
+    },
+    "shield": {
+      "name": "盾（守り）"
+    },
+    "element": {
+      "name": "属性（反応）"
+    },
+    "mana": {
+      "name": "魔力（経済）"
+    }
+  },
+  "nodes": {
+    "keenBlade": {
+      "name": "鍛えた刃",
+      "branch": "blade",
+      "tier": 1,
+      "cost": 1,
+      "effects": {
+        "soldierAttack": 1,
+        "castleHp": -6
+      },
+      "description": "出した兵士の攻撃+1。城HP−6"
+    },
+    "siegecraft": {
+      "name": "攻城術",
+      "branch": "blade",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "keenBlade"
+      ],
+      "effects": {
+        "soldierAttack": 1,
+        "castleSpell": 2,
+        "castleHp": -8,
+        "maxHand": -1
+      },
+      "description": "出した兵士の攻撃さらに+1・城への魔法が城に当たると+2。城HP−8・手札の上限−1"
+    },
+    "warcry": {
+      "name": "鬨の声",
+      "branch": "blade",
+      "tier": 3,
+      "cost": 3,
+      "requires": [
+        "siegecraft"
+      ],
+      "effects": {
+        "initialHand": 2,
+        "initialMp": 5,
+        "castleHp": -8
+      },
+      "description": "最初の手札+2・最初のMP+5（速攻）。城HP−8"
+    },
+    "stoneWall": {
+      "name": "石垣",
+      "branch": "shield",
+      "tier": 1,
+      "cost": 1,
+      "effects": {
+        "armor": 6,
+        "initialMp": -3
+      },
+      "description": "最初から城壁6。最初のMP−3"
+    },
+    "stronghold": {
+      "name": "堅城",
+      "branch": "shield",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "stoneWall"
+      ],
+      "effects": {
+        "castleHp": 8,
+        "initialHand": -1
+      },
+      "description": "城HP+8。最初の手札−1"
+    },
+    "bastion": {
+      "name": "不落の砦",
+      "branch": "shield",
+      "tier": 3,
+      "cost": 3,
+      "requires": [
+        "stronghold"
+      ],
+      "effects": {
+        "castleHp": 10,
+        "armor": 6,
+        "initialMp": -4,
+        "maxHand": -1
+      },
+      "description": "城HP+10・城壁+6。最初のMP−4・手札の上限−1"
+    },
+    "chaosEye": {
+      "name": "混沌の目",
+      "branch": "element",
+      "tier": 1,
+      "cost": 1,
+      "effects": {
+        "randomAttach": true,
+        "castleHp": -2
+      },
+      "description": "自分のターンの始めに、敵の兵士1体にランダムな属性を付着させる（反応の準備）。城HP−2"
+    },
+    "resonance": {
+      "name": "共鳴",
+      "branch": "element",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "chaosEye"
+      ],
+      "effects": {
+        "reactionDamage": 4,
+        "maxMp": -3
+      },
+      "description": "自分の攻撃で起きた反応の追加ダメージ+4。MPの上限−3"
+    },
+    "echo": {
+      "name": "残響",
+      "branch": "element",
+      "tier": 3,
+      "cost": 3,
+      "requires": [
+        "resonance"
+      ],
+      "effects": {
+        "randomAttachTurns": 2,
+        "reactionDamage": 3,
+        "castleHp": -3
+      },
+      "description": "ランダム付着が2回ぶん長く残る・反応の追加ダメージさらに+3。城HP−3"
+    },
+    "manaSpring": {
+      "name": "魔力の泉",
+      "branch": "mana",
+      "tier": 1,
+      "cost": 1,
+      "effects": {
+        "initialMp": 5,
+        "maxMp": 4,
+        "maxHand": -1
+      },
+      "description": "最初のMP+5・MPの上限+4。手札の上限−1"
+    },
+    "deepVessel": {
+      "name": "大きな器",
+      "branch": "mana",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "manaSpring"
+      ],
+      "effects": {
+        "coinPerTurn": 1,
+        "castleHp": -6
+      },
+      "description": "自分のターンの始めにもらうコイン+1。城HP−6"
+    },
+    "archmage": {
+      "name": "大魔導",
+      "branch": "mana",
+      "tier": 3,
+      "cost": 3,
+      "requires": [
+        "deepVessel"
+      ],
+      "effects": {
+        "maxMp": 8,
+        "initialMp": 8,
+        "maxHand": 2,
+        "castleHp": -10
+      },
+      "description": "MPの上限+8・最初のMP+8・手札の上限+2（ためて一気に使う）。城HP−10"
+    }
+  },
+  "presets": {
+    "blade": {
+      "name": "攻め（剣を極める）",
+      "nodes": [
+        "keenBlade",
+        "siegecraft",
+        "warcry"
+      ]
+    },
+    "shield": {
+      "name": "守り（盾を極める）",
+      "nodes": [
+        "stoneWall",
+        "stronghold",
+        "bastion"
+      ]
+    },
+    "element": {
+      "name": "反応（属性を極める）",
+      "nodes": [
+        "chaosEye",
+        "resonance",
+        "echo"
+      ]
+    },
+    "mana": {
+      "name": "魔力（経済を極める）",
+      "nodes": [
+        "manaSpring",
+        "deepVessel",
+        "archmage"
+      ]
+    },
+    "hybrid": {
+      "name": "まんべんなく",
+      "nodes": [
+        "keenBlade",
+        "stoneWall",
+        "chaosEye",
+        "manaSpring",
+        "resonance"
+      ]
+    }
+  }
+}

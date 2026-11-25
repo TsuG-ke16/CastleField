@@ -28,6 +28,7 @@ import { Road } from './Road.js';
 import { Castle } from './Castle.js';
 import { validateWeather } from './Weather.js';
 import { validateStages, pickStage } from './Stage.js';
+import { validateSkillTree, checkSkillBuild, skillMods, REACTION_SKILL_EFFECTS } from './SkillTree.js';
 
 /** 身代わり（guardCastle）が代わりに受ける、城へのダメージの出どころ（相手からの攻撃）。自分で払うコスト・崩壊・天候・毒は受けない */
 /** 4陣営の反応の継続ダメージ（reactions.json の dot.status） */
@@ -257,6 +258,22 @@ export const PLAZA = 'plaza';
 /** 兵士IDの番号（"s12" → 12）。先に出された兵士ほど小さい */
 const soldierNumber = (s) => Number(s.soldierId.slice(1));
 
+/**
+ * スキルの効果（skillMods の結果）を、城の種類の補正に足した新しいオブジェクトにする（元の castles.json の中身は変えない）。
+ * スキルがなければ元のまま返す（今までのゲームと同じオブジェクト）
+ */
+function withSkillBonuses(cdef, mods) {
+  if (!mods) return cdef;
+  const add = (key, v) => (v ? { [key]: (cdef[key] ?? 0) + v } : {});
+  return {
+    ...cdef,
+    ...add('hpBonus', mods.castleHp),
+    ...add('maxHandBonus', mods.maxHand),
+    ...add('soldierAttackBonus', mods.soldierAttack),
+    ...add('castleSpellBonus', mods.castleSpell),
+  };
+}
+
 const ok = () => ({ ok: true });
 const fail = (reason) => ({ ok: false, reason });
 
@@ -287,9 +304,10 @@ export class Game {
    * @param {object} [options.decks] data/decks.json の中身（deckMode "own" のときに使う）
    * @param {object} [options.elements] 属性の強弱の表（data/classic/elements.json の中身）。省略すると今までの4属性の輪
    * @param {object} [options.reactions] 属性の付着と反応（data/classic/reactions.json の中身）。省略すると付着・反応は起きない
-   * @param {{castles?: string[], decks?: string[]}} [options.setup] 席ごとの城の種類・デッキ
+   * @param {object} [options.skillTree] スキルツリー（data/classic/skilltree.json の中身）。省略するとスキルなし（setup.skills も使えない）
+   * @param {{castles?: string[], decks?: string[], skills?: string[][]}} [options.setup] 席ごとの城の種類・デッキ・スキルのビルド（ノードのIDの配列）
    */
-  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, reactions = null, setup: setupArg = {} } = {}) {
+  constructor({ cards, rules, rng = Math.random, monsters = null, upgrades = null, castles = null, decks = null, rarities = null, weather = null, stages = null, elements = null, reactions = null, skillTree = null, setup: setupArg = {} } = {}) {
     const setup = setupArg ?? {};
     // elements（data/classic/elements.json の中身）：属性の強弱の表。省略すると今までの4属性の輪
     if (elements !== null) validateElements(elements);
@@ -308,6 +326,8 @@ export class Game {
     if (stages !== null) validateStages(stages, allowedElements);
     if (upgrades !== null) validateUpgrades(upgrades);
     if (castles !== null) validateCastles(castles);
+    // スキルツリー（クラシック）：席ごとのビルドの効果（プレイヤーID の順。スキルを使わないゲームは null）
+    const seatSkills = this.resolveSkills(skillTree, setup.skills, reactions, rules);
     if (decks !== null) {
       validateDecks(decks, cards);
       for (const [id, d] of Object.entries(decks)) if (d.passiveSpirits !== undefined) validatePassiveSpirits(d.passiveSpirits, allowedElements, `decks の "${id}"`);
@@ -379,11 +399,16 @@ export class Game {
     this.playerOrder.forEach((id, seat) => {
       // 後ろの席ほど城HPが少し多い（先攻有利をやわらげるため）
       const castleType = castleTypes ? castleTypes[seat] : null;
-      const cdef = castleType ? castles[castleType] : {};
+      // スキルの城HP・手札の上限・兵士の攻撃・城への魔法は、城の種類の補正（hpBonus など）に足す（城の種類と同じ所で効く）
+      const skill = seatSkills?.[seat] ?? null;
+      const cdef = withSkillBonuses(castleType ? castles[castleType] : {}, skill?.mods);
       const maxHp = Math.max(1, this.rules.castleMaxHp + this.seatBonus(seat) + (cdef.hpBonus ?? 0));
       const player = new Player(id, maxHp);
       player.coins = this.rules.initialCoins;
-      player.mp = Math.min(this.rules.initialMp, this.rules.maxMp);
+      /** スキルのビルド（ノードのIDの配列）と効果の合計（スキルを使わないゲームは null） */
+      player.skills = skill?.build ?? null;
+      player.skillMods = skill?.mods ?? null;
+      player.mp = Math.max(0, Math.min(this.rules.initialMp + (player.skillMods?.initialMp ?? 0), this.maxMpOf(player)));
       player.castleType = castleType;
       player.castleDef = cdef;
       player.maxHand = Math.max(0, this.rules.maxHand + (cdef.maxHandBonus ?? 0));
@@ -465,7 +490,9 @@ export class Game {
     // 初期手札（ゲーム開始前なのでイベントは出さない）
     for (const id of this.playerOrder) {
       const pile = this.piles.get(id);
-      for (let i = 0; i < this.rules.initialHand; i++) {
+      // スキルの initialHand で増減する（0より少なくはしない）
+      const handSize = Math.max(0, this.rules.initialHand + (this.players[id].skillMods?.initialHand ?? 0));
+      for (let i = 0; i < handSize; i++) {
         const card = pile.deck.shift();
         if (!card) break;
         this.players[id].hand.push(card);
@@ -493,9 +520,16 @@ export class Game {
         }
         // 後攻のマナ：最初の MP が secondPlayerMp だけ多い（上限まで。イベントは出さない）
         if (this.rules.secondPlayerMp > 0) {
-          this.players[id].mp = Math.min(this.rules.maxMp, this.players[id].mp + this.rules.secondPlayerMp);
+          this.players[id].mp = Math.min(this.maxMpOf(this.players[id]), this.players[id].mp + this.rules.secondPlayerMp);
         }
       }
+    }
+    // スキルの城壁：最初から持っている城壁に足す（後攻の城壁のあと。armorMax まで。チーム戦は城を共有するので、メンバーの分を足す）
+    for (const id of this.playerOrder) {
+      const add = this.players[id].skillMods?.armor ?? 0;
+      if (add <= 0) continue;
+      const owner = this.players[this.side(id)];
+      owner.armor = this.rules.armorMax ? Math.min(this.rules.armorMax, owner.armor + add) : owner.armor + add;
     }
     /** 背水の陣になっている城（城の持ち主のID） */
     this.overdrive = new Set();
@@ -584,6 +618,38 @@ export class Game {
   /** その人が使う山札 */
   pileOf(playerId) {
     return this.piles.get(playerId);
+  }
+
+  /**
+   * スキルツリー：データと setup.skills（席ごとのビルド）を確かめて、席ごとの { build, mods } にする。
+   * skillTree を渡さなければ null（スキルなし。setup.skills を書いたらエラー）。setup.skills を省略した席は何も取らない（[]）
+   */
+  resolveSkills(skillTree, skills, reactions, rules) {
+    this.skillTree = skillTree;
+    if (skillTree === null) {
+      if (skills !== undefined && skills !== null) throw new Error('setup.skills を使うときは skillTree（data/classic/skilltree.json）を渡してください');
+      return null;
+    }
+    validateSkillTree(skillTree);
+    if (reactions === null) {
+      const needs = Object.entries(skillTree.nodes).find(([, n]) => REACTION_SKILL_EFFECTS.some((k) => Object.hasOwn(n.effects, k)));
+      if (needs) throw new Error(`スキル「${needs[1].name}」は属性の反応を使います。reactions（属性の付着と反応）を渡すモードで使ってください`);
+    }
+    const n = rules.playerCount ?? 2;
+    const list = skills ?? [];
+    if (!Array.isArray(list) || list.length > n) throw new Error(`setup.skills は人数ぶん（${n}個）までの配列にしてください（1人ぶんはノードのIDの配列）`);
+    return Array.from({ length: n }, (_, seat) => {
+      const build = list[seat] ?? [];
+      const check = checkSkillBuild(skillTree, build);
+      if (!check.ok) throw new Error(`席${seat + 1}のスキルが決まりに合いません：${check.reason}`);
+      return { build: [...build], mods: skillMods(skillTree, build) };
+    });
+  }
+
+  /** その人の MP の上限（rules.maxMp ＋ スキルの maxMp。最低1）。MP を使わないルール（maxMp が0）は0 */
+  maxMpOf(player) {
+    if (this.rules.maxMp <= 0) return 0;
+    return Math.max(1, this.rules.maxMp + (player.skillMods?.maxMp ?? 0));
   }
 
   static validateRules(rules) {
@@ -1091,14 +1157,17 @@ export class Game {
     }
 
     // コイン：自分のターンの始めに coinPerTurn 枚もらえる
-    if (this.rules.coinPerTurn > 0) this.changeCoins(player, this.rules.coinPerTurn, 'turn');
+    // スキルの coinPerTurn で増減する（0より少なくはしない）
+    const turnCoins = Math.max(0, this.rules.coinPerTurn + (player.skillMods?.coinPerTurn ?? 0));
+    if (turnCoins > 0) this.changeCoins(player, turnCoins, 'turn');
     // コインの雨：自分のターンの始めにコインがもらえる
     const rainCoins = this.weatherDef()?.coinPerTurn ?? 0;
     if (rainCoins > 0) this.changeCoins(player, rainCoins, 'weather');
     // MP の自然回復：自分のターンの始めに mpPerTurn 増える（上限まで）
     // 魔族の魔の血：MP の回復が mpBonus 多い。封魔をかけられていれば amount 少ない（0より少なくはしない）
     if (this.rules.mpPerTurn > 0 && this.rules.maxMp > 0) {
-      const regen = Math.max(0, this.rules.mpPerTurn + (player.passive?.magicBlood?.mpBonus ?? 0) - (player.mpSeal?.amount ?? 0));
+      // スキルの mpPerTurn で増減する
+      const regen = Math.max(0, this.rules.mpPerTurn + (player.passive?.magicBlood?.mpBonus ?? 0) + (player.skillMods?.mpPerTurn ?? 0) - (player.mpSeal?.amount ?? 0));
       if (regen > 0) this.changeMp(player, regen, 'turn');
     }
     this.tickMpSeal(player);
@@ -1555,12 +1624,14 @@ export class Game {
    * 反応の表で組になる属性が付いていれば反応する（1回の攻撃で1つ。3種類以上で混沌が入っていれば混沌反応が先、次に表の順）。反応しなければ付着する。
    * reactions を渡していない・属性なし・忍者・もう場にいない兵士なら何もしない（乱数も使わない）
    */
-  elementHit(owner, soldier, element, { damage = 0, turns: attachTurns } = {}) {
+  elementHit(owner, soldier, element, { damage = 0, turns: attachTurns, by = null } = {}) {
     const defs = this.reactionDefs;
     if (!defs || !element || soldier.stealth || !owner.soldiers.includes(soldier)) return;
     const reaction = this.findReaction(soldier, element);
     if (reaction) {
       reaction.hit = damage; // 蒸発（multiplier）が使う、当たった攻撃のダメージ
+      // 攻撃した人（スキルの反応ダメージに使う）：by を渡さなければ手番の人（魔法・射撃・進軍した側の攻撃）
+      reaction.by = by ?? this.players[this.currentPlayer];
       this.triggerReaction(owner, soldier, reaction);
       return;
     }
@@ -1601,23 +1672,25 @@ export class Game {
   /**
    * 自分のターンの始め：敵の見える兵士（忍者は除く）からランダムに1体を選び、ランダムな属性を1つ付着させる（反応は起こさない）。
    * rules.randomAttachTurnStart が true で reactions を渡したゲームだけ。敵の兵士がいなければ何もしない（乱数も使わない）。
-   * 将来スキルツリーが入ったら、ここの先頭の条件を「player がこの能力を持っているか」に変える
+   * スキルツリー：rules.randomAttachTurnStart が false でも、スキル（randomAttach）を持っているプレイヤーには効く。
+   * そのときは elementAttached に skill: true を付け、残る回数にスキルの randomAttachTurns を足す
    */
   randomAttachAtTurnStart(player) {
     const defs = this.reactionDefs;
-    if (!defs || !this.rules.randomAttachTurnStart) return;
+    const bySkill = !this.rules.randomAttachTurnStart && Boolean(player.skillMods?.randomAttach);
+    if (!defs || !(this.rules.randomAttachTurnStart || bySkill)) return;
     const targets = [];
     for (const enemy of this.opponentsOf(player.id)) for (const s of enemy.visibleSoldiers) targets.push({ enemy, s });
     if (targets.length === 0) return;
     const { enemy, s } = targets[Math.floor(this.rng() * targets.length)];
     const ids = elementIds(this.elementDefs);
     const element = ids[Math.floor(this.rng() * ids.length)];
-    const turns = defs.randomAttach?.turns ?? defs.attachTurns;
+    const turns = (defs.randomAttach?.turns ?? defs.attachTurns) + Math.max(0, player.skillMods?.randomAttachTurns ?? 0);
     const found = s.attachments.find((a) => a.element === element);
     // 同じ属性がもう付いていたら、残りは長い方にそろえる（武器・魔法で付いた長い残りを、短いランダム付着で縮めない）
     if (found) found.turns = Math.max(found.turns, turns);
     else s.attachments.push({ element, turns });
-    this.emit('elementAttached', { playerId: enemy.id, soldierId: s.soldierId, element, turns: (found ?? s.attachments.at(-1)).turns, source: 'turnStart' });
+    this.emit('elementAttached', { playerId: enemy.id, soldierId: s.soldierId, element, turns: (found ?? s.attachments.at(-1)).turns, source: 'turnStart', ...(bySkill ? { skill: true } : {}) });
   }
 
   /**
@@ -1739,10 +1812,15 @@ export class Game {
     if (def.multiplier !== undefined) damage += Math.ceil((reaction.hit ?? 0) * (def.multiplier - 1));
     const broken = def.shieldBreak ? soldier.shield : 0;
     if (def.shieldBreak) damage += broken + def.shieldBreak.bonus;
+    // スキル（共鳴・残響）：反応を起こした人（敵の兵士に当てた人）の reactionDamage を足す。自分・味方の兵士への反応には足さない
+    const by = reaction.by;
+    const skillBonus = by && this.side(by.id) !== this.side(owner.id) ? Math.max(0, by.skillMods?.reactionDamage ?? 0) : 0;
+    damage += skillBonus;
     const playerId = owner.id;
     const { soldierId } = soldier;
     this.emit('reactionTriggered', {
       reaction: reaction.id, name: reaction.name, soldierId, playerId, elements: [...reaction.elements], damage, consumed: [...reaction.consumed],
+      ...(skillBonus > 0 ? { skillBonus } : {}),
     });
     for (const element of reaction.consumed) {
       // 凍結由来だけの氷（実際の付着も武器の属性もない）は、elementCleared を出さない（凍結は下で解く）
@@ -1997,7 +2075,7 @@ export class Game {
         this.lifestealBy(player, soldier, hp0); // 吸命の剣
       } else {
         this.lifestealBy(player, soldier, hp0 - victim.hp); // 吸命の剣
-        this.elementHit(owner, victim, soldier.element, { damage: amount });
+        this.elementHit(owner, victim, soldier.element, { damage: amount, by: player });
         if (soldier.attachRandomElement) this.attachRandomBasic(owner, victim);
         this.freezeOnHitBy(soldier, owner, victim);
         if (this.reactionDefs) over = this.checkGameOver();
@@ -2049,7 +2127,7 @@ export class Game {
       case 'heal':
         return { targets: player.castle.isFull ? [] : self, reason: '城のHPが満タンです' };
       case 'mana':
-        return { targets: this.rules.maxMp > 0 && player.mp < this.rules.maxMp ? self : [], reason: this.rules.maxMp > 0 ? 'MPが満タンです' : 'このルールではMPを使いません' };
+        return { targets: this.rules.maxMp > 0 && player.mp < this.maxMpOf(player) ? self : [], reason: this.rules.maxMp > 0 ? 'MPが満タンです' : 'このルールではMPを使いません' };
       case 'coin':
         return { targets: self, reason: '' };
       case 'shield':
@@ -2427,7 +2505,7 @@ export class Game {
 
   changeMp(player, delta, reason) {
     const before = player.mp;
-    player.mp = Math.max(0, Math.min(this.rules.maxMp, player.mp + delta));
+    player.mp = Math.max(0, Math.min(this.maxMpOf(player), player.mp + delta));
     if (player.mp !== before) this.emit('mpChanged', { playerId: player.id, delta: player.mp - before, mp: player.mp, reason });
     return player.mp - before;
   }
@@ -2932,7 +3010,7 @@ export class Game {
     const hitD = !missD;
     const hitA = !missA && !noCounterA;
     if (hitD) this.elementHit(enemy, defender, elementA, { damage: toDefender });
-    if (hitA) this.elementHit(player, attacker, elementD, { damage: toAttacker });
+    if (hitA) this.elementHit(player, attacker, elementD, { damage: toAttacker, by: enemy });
     // 混沌（カオスロッド・混沌の落とし子）：火・水・風・土のどれかも付ける
     if (hitD && attacker.attachRandomElement) this.attachRandomBasic(enemy, defender);
     if (hitA && defender.attachRandomElement) this.attachRandomBasic(player, attacker);
@@ -3039,7 +3117,7 @@ export class Game {
       case 'healCastleOrMp':
         // スライム：城HPと MP のどちらかがまだ増えるなら出せる（どちらになるかはランダム）
         return {
-          targets: !player.castle.isFull || (this.rules.maxMp > 0 && player.mp < this.rules.maxMp) ? [{ playerId: player.id }] : [],
+          targets: !player.castle.isFull || (this.rules.maxMp > 0 && player.mp < this.maxMpOf(player)) ? [{ playerId: player.id }] : [],
           reason: '城のHPもMPも満タンです',
         };
       case 'healAndArmor':
@@ -3186,7 +3264,7 @@ export class Game {
       case 'gainCoins':
         return { targets: [{ playerId: player.id }], reason: '' };
       case 'gainMp':
-        return { targets: this.rules.maxMp > 0 && player.mp < this.rules.maxMp ? [{ playerId: player.id }] : [], reason: this.rules.maxMp > 0 ? 'MPが満タンです' : 'このルールではMPを使いません' };
+        return { targets: this.rules.maxMp > 0 && player.mp < this.maxMpOf(player) ? [{ playerId: player.id }] : [], reason: this.rules.maxMp > 0 ? 'MPが満タンです' : 'このルールではMPを使いません' };
       case 'redrawHand':
         return {
           targets: player.hand.some((c) => c.cardId !== card.cardId) ? [{ playerId: player.id }] : [],
@@ -4134,7 +4212,7 @@ export class Game {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         const options = [];
         if (!player.castle.isFull) options.push('hp');
-        if (this.rules.maxMp > 0 && player.mp < this.rules.maxMp) options.push('mp');
+        if (this.rules.maxMp > 0 && player.mp < this.maxMpOf(player)) options.push('mp');
         const pick = options.length === 1 ? options[0] : options[Math.floor(this.rng() * options.length)];
         if (pick === 'hp') {
           const healed = player.castle.heal(amount);
@@ -4701,6 +4779,8 @@ export class Game {
         overdrive: this.overdrive.has(this.side(id)),
         castleType: p.castleType,
         maxHand: p.maxHand,
+        // スキルツリー（skillTree を渡したゲームだけキーを足す）：選んだノード（相手にも見せる）と、その人の MP の上限
+        ...(this.skillTree ? { skills: [...p.skills], maxMp: this.maxMpOf(p) } : {}),
         deckId: p.deckId ?? null,
         deckCount: own ? pile.deck.length : null,
         discardCount: own ? pile.discard.length : null,
