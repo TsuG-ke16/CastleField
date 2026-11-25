@@ -12,12 +12,12 @@ import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptional
 import { runMatch } from './sim/sim.js';
 
 const MODE = 'factions';
-const FACTIONS = { kingdom: 17, forest: 14, demon: 22, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
+const FACTIONS = { kingdom: 20, forest: 18, demon: 22, dragon: 16 }; // 新カード（王国3・森4・竜4）を足した // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
 const ELEMENTS = loadOptionalData(MODE).elements;
 
 // ================= データ =================
 
-test('データ：4陣営のカード表は王国17・森14・魔族（FACTIONS の数）・竜12種。各陣営のカード表がそのままその陣営のデッキになる', () => {
+test('データ：4陣営のカード表は FACTIONS の種類数。各陣営のカード表がそのままその陣営のデッキになる', () => {
   const { cards } = buildData({ mode: MODE });
   const opts = loadOptionalData(MODE);
   assert.deepEqual(Object.keys(opts.decks), Object.keys(FACTIONS));
@@ -662,6 +662,9 @@ const PLAN = {
     ['ヒール', 4, { effect: 'healOwnCastle', amount: 10 }],
     ['盾', 1, { effect: 'shieldSoldier', amount: 3 }], ['神盾', 5, { effect: 'shieldSoldier', amount: 15, statusWard: true, count: 1, maxCopies: 1 }], ['城壁', 2, { effect: 'armorCastle', amount: 5 }], ['身代わり', 3, { effect: 'guardCastle' }],
     ['浄化', 2, { effect: 'purifyFlare', amount: 0, clearEnemyAttachments: true }],
+    // 新カード（docs/new-cards-proposal.md）
+    ['攻城兵', 3, S(6, 4, 1)], ['天罰の光', 5, { effect: 'damageEnemyCastle', amount: 9, element: 'light', exhaust: true, count: 1, maxCopies: 1 }],
+    ['聖鎖の剣', 3, { kind: 'weapon', attackBonus: 1, element: 'light', freezeOnHit: 1, count: 1, maxCopies: 1 }],
   ],
   forest: [
     ['獣人', 2, S(4, 5, 2)], ['エルフ', 3, S(3, 3, 0, { role: 'archer' })], ['ドルイド', 4, S(2, 4, 0, { role: 'mage', spellBoost: { elements: ['fire', 'water', 'wind', 'earth'], amount: 1 } })],
@@ -672,6 +675,9 @@ const PLAN = {
     ['フレアシード', 3, { effect: 'singleDamage', amount: 4, element: 'fire' }], ['スプリングウェーブ', 3, { effect: 'singleDamage', amount: 3, element: 'water', attachTurns: 8 }],
     ['リーフストーム', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'wind', scope: 'lane' }], ['ルートバインド', 3, { effect: 'singleDamage', amount: 3, element: 'earth', freezeTurns: 1 }],
     ['生命の雫', 3, { effect: 'healCastleAndSoldiers' }], ['茨の壁', 2, { effect: 'armorCastle', amount: 4 }], ['樹皮の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
+    // 新カード
+    ['森の番人', 3, S(2, 8, 0, { role: 'guard', stay: 3 })], ['樹人', 4, S(3, 7, 1, { count: 1, maxCopies: 1 })],
+    ['薬草の湿布', 3, { effect: 'healOwnCastle', amount: 5, count: 1, maxCopies: 1 }], ['古木の根', 4, { effect: 'armorCastle', amount: 9, count: 1, maxCopies: 1 }],
   ],
   demon: [
     ['骸骨兵', 2, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 2, S(4, 3, 3, { innateElement: 'dark' })],
@@ -695,6 +701,9 @@ const PLAN = {
     ['ファイアボール', 3, { effect: 'damageEnemyCastle', amount: 5, element: 'fire' }], ['雷光', 3, { effect: 'damageEnemySoldiers', amount: 3, element: 'thunder', scope: 'lane' }],
     ['火炎の吐息', 4, { effect: 'breathAttack', amount: 4, castleAmount: 4, element: 'fire' }], ['竜血の雫', 2, { effect: 'healSoldier' }],
     ['火山灰の幕', 2, { effect: 'armorCastle', amount: 3 }], ['幼竜の鱗', 1, { effect: 'shieldSoldier', amount: 2 }],
+    // 新カード
+    ['竜術師', 4, S(3, 4, 0, { role: 'mage', innateElement: 'fire', spellBoost: { elements: ['fire', 'thunder'], amount: 1 } })], ['竜鱗兵', 4, S(3, 9, 1, { count: 1, maxCopies: 1 })],
+    ['古竜の障壁', 4, { effect: 'armorCastle', amount: 8, count: 1, maxCopies: 1 }], ['竜翼の身代わり', 3, { effect: 'guardCastle', count: 1, maxCopies: 1 }],
   ],
 };
 
