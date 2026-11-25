@@ -200,6 +200,10 @@ const OPTIONAL_RULES = {
   castleSpellHitsFront: false,
   // 属性の付着（reactions を渡したゲームだけ）：true なら、自分のターンの始めに、敵の見える兵士1体にランダムな属性を付着させる（反応は起こさない）
   randomAttachTurnStart: false,
+  // 4陣営：光の先制。光属性の兵士が兵士と戦うとき、自分の攻撃で相手を倒せるなら、相手の反撃を受けない
+  lightFirstStrike: false,
+  // 4陣営（実験用）：光の触媒。光の攻撃が、属性の付いた敵兵士に当たると、その属性（光以外）を消して、1種類ごとに追加ダメージ（0 なら使わない）
+  lightCatalyst: 0,
   // 崩壊の刻：collapseStartRound（0 なら使わない）の周回から、周回の始めに全員の城に collapseDamage × (始まってからの周回の数) のダメージ。
   // collapseAnnounceRound（0 なら予告しない）の周回で予告する
   collapseStartRound: 0,
@@ -588,6 +592,8 @@ export class Game {
     }
     if (rules.castleSpellHitsFront !== undefined && typeof rules.castleSpellHitsFront !== 'boolean') throw new Error('rules.json の castleSpellHitsFront は true か false にしてください');
     if (rules.randomAttachTurnStart !== undefined && typeof rules.randomAttachTurnStart !== 'boolean') throw new Error('rules.json の randomAttachTurnStart は true か false にしてください（書かなければ false）');
+    if (rules.lightFirstStrike !== undefined && typeof rules.lightFirstStrike !== 'boolean') throw new Error('rules.json の lightFirstStrike は true か false にしてください（書かなければ false）');
+    if (rules.lightCatalyst !== undefined && (!Number.isInteger(rules.lightCatalyst) || rules.lightCatalyst < 0)) throw new Error('rules.json の lightCatalyst は 0 以上の整数にしてください（書かなければ 0）');
     if (rules.mpAllCards !== undefined && typeof rules.mpAllCards !== 'boolean') throw new Error('rules.json の mpAllCards は true か false にしてください（書かなければ false）');
     for (const key of ['monsterLateBias', 'monsterEvolveMultiplier']) {
       const v = rules[key];
@@ -1387,6 +1393,17 @@ export class Game {
       this.triggerReaction(owner, soldier, reaction);
       return;
     }
+    // 4陣営（実験用）：光の触媒（rules.lightCatalyst）。反応が起きなかった光の攻撃が、光以外の属性（武器・生まれつき・付着）を持つ兵士に当たると、
+    // その属性を全部消して、1種類ごとに lightCatalyst の追加ダメージ（反応と同じイベント。reaction は "lightCatalyst"。光は付着しない）
+    if (element === 'light' && this.rules.lightCatalyst > 0) {
+      const consumed = [...new Set([soldier.element, ...soldier.attachments.map((a) => a.element)])].filter((e) => e && e !== 'light');
+      if (consumed.length > 0) {
+        this.triggerReaction(owner, soldier, {
+          id: 'lightCatalyst', name: '光の触媒', def: {}, damage: this.rules.lightCatalyst * consumed.length, elements: [...consumed, 'light'], consumed,
+        });
+        return;
+      }
+    }
     // 付着が残る回数（水流のように、魔法の attachTurns で長くできる）
     const turns = attachTurns ?? defs.attachTurns;
     const found = soldier.attachments.find((a) => a.element === element);
@@ -1544,7 +1561,7 @@ export class Game {
       this.emit('shieldBroken', { playerId, soldierId, amount: broken });
     }
     const alive = !(damage > 0 && this.damageSoldier(owner, soldier, damage, 'reaction'));
-    if (alive && def.frozenTurns !== undefined && soldier.frozen < def.frozenTurns) {
+    if (alive && def.frozenTurns !== undefined && soldier.frozen < def.frozenTurns && !this.wardsStatus(soldier)) {
       soldier.frozen = def.frozenTurns;
       this.emit('statusApplied', { playerId, soldierId, status: 'frozen', turns: soldier.frozen });
     }
@@ -1571,16 +1588,16 @@ export class Game {
       for (const x of list) this.burnSoldier(x.owner, x.soldier, def.burn);
     }
     // 継続ダメージ（砂・凍傷）：やけどとは別の状態。量・回数は大きい方にそろえる
-    if (alive && def.dot) {
+    if (alive && def.dot && !this.wardsStatus(soldier)) {
       const { status } = def.dot;
       soldier[status] = { amount: Math.max(def.dot.amount, soldier[status]?.amount ?? 0), turns: Math.max(def.dot.turns, soldier[status]?.turns ?? 0) };
       this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status, turns: soldier[status].turns, amount: soldier[status].amount });
     }
-    if (alive && def.slow) {
+    if (alive && def.slow && !this.wardsStatus(soldier)) {
       soldier.slowed = { amount: Math.max(def.slow.amount, soldier.slowed?.amount ?? 0), turns: Math.max(def.slow.turns, soldier.slowed?.turns ?? 0) };
       this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status: 'slowed', turns: soldier.slowed.turns, amount: soldier.slowed.amount });
     }
-    if (alive && def.blind) {
+    if (alive && def.blind && !this.wardsStatus(soldier)) {
       soldier.blinded = { chance: Math.max(def.blind.chance, soldier.blinded?.chance ?? 0), turns: Math.max(def.blind.turns, soldier.blinded?.turns ?? 0) };
       this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status: 'blinded', turns: soldier.blinded.turns, chance: soldier.blinded.chance });
     }
@@ -1600,7 +1617,7 @@ export class Game {
 
   /** やけど（量・回数を大きい方にそろえる。重ねがけで増えない）。statusApplied を出す */
   burnSoldier(owner, soldier, burn) {
-    if (!owner.soldiers.includes(soldier)) return;
+    if (!owner.soldiers.includes(soldier) || this.wardsStatus(soldier)) return;
     const turns = Math.max(burn.turns, soldier.burn?.turns ?? 0);
     soldier.burn = { amount: Math.max(burn.amount, soldier.burn?.amount ?? 0), turns };
     this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status: 'burn', turns, amount: soldier.burn.amount });
@@ -1662,7 +1679,8 @@ export class Game {
     owner.removeSoldier(soldier.soldierId);
     // 蘇生（reviveFallen）のために、HPが0になって倒れた（killed）兵士を持ち主ごとに1体だけ覚えておく（getState には出さない）。
     // 魔物のカードの駒は山札に戻らない特別なカードなので、生き返らせない
-    if (reason === 'killed' && this.cardDefs[soldier.type]?.monster === undefined) {
+    // 4陣営の勇者（noRevive）も生き返らせない（記録しないので、前に倒れた兵士の記録はそのまま残る）
+    if (reason === 'killed' && this.cardDefs[soldier.type]?.monster === undefined && !this.cardDefs[soldier.type]?.noRevive) {
       owner.lastFallen = { type: soldier.type, roadId: soldier.roadId, targetId: soldier.targetId, maxHp: soldier.maxHp };
     }
     this.emit('soldierDestroyed', { playerId: owner.id, soldierId: soldier.soldierId, reason });
@@ -2407,7 +2425,7 @@ export class Game {
   /** やけどにする（重ねがけでは増えない：量・残りの回数を大きい方にそろえる） */
   applyBurn(owner, soldier) {
     const burn = this.stageDef()?.burn;
-    if (!burn || !owner.soldiers.includes(soldier)) return;
+    if (!burn || !owner.soldiers.includes(soldier) || this.wardsStatus(soldier)) return;
     const turns = Math.max(burn.turns, soldier.burn?.turns ?? 0);
     soldier.burn = { amount: Math.max(burn.amount, soldier.burn?.amount ?? 0), turns };
     this.emit('statusApplied', { playerId: owner.id, soldierId: soldier.soldierId, status: 'burn', turns, amount: soldier.burn.amount });
@@ -2585,7 +2603,7 @@ export class Game {
   /** 進軍中の attacker と、相手の defender が戦う。お互いに攻撃力ぶんのダメージを同時に与える */
   /** 4陣営：武器の freezeOnHit（フロストブレード）。当たって生き残った相手を休ませる */
   freezeOnHitBy(hitter, owner, victim) {
-    if (!hitter.freezeOnHit || !owner.soldiers.includes(victim) || victim.frozen >= hitter.freezeOnHit) return;
+    if (!hitter.freezeOnHit || !owner.soldiers.includes(victim) || victim.frozen >= hitter.freezeOnHit || this.wardsStatus(victim)) return;
     victim.frozen = hitter.freezeOnHit;
     this.emit('statusApplied', { playerId: owner.id, soldierId: victim.soldierId, status: 'frozen', turns: victim.frozen });
   }
@@ -2608,15 +2626,19 @@ export class Game {
     const elementD = defender.element;
     if (missD) this.emitMiss(player.id, 'fight', { soldierId: attacker.soldierId });
     if (missA && !reach) this.emitMiss(enemy.id, 'fight', { soldierId: defender.soldierId });
-    const toDefender = missD ? 0 : this.reduceDamage(enemy, this.fightDamage(attacker, defender));
-    const toAttacker = missA ? 0 : this.reduceDamage(player, this.fightDamage(defender, attacker));
+    let toDefender = missD ? 0 : this.reduceDamage(enemy, this.fightDamage(attacker, defender));
+    let toAttacker = missA ? 0 : this.reduceDamage(player, this.fightDamage(defender, attacker));
+    // 4陣営：光の先制（rules.lightFirstStrike）。攻める側（進軍している側）の光の兵士の攻撃が当たり、相手の HP＋盾 以上なら、相手の反撃を受けない。
+    // 守る側では効かない（人間の指示）
+    const noCounterA = !missD && this.firstStrikes(attacker, defender, toDefender); // 攻める側が先に倒す：守る側の攻撃は当たらない
+    if (noCounterA) toAttacker = 0;
     const blockedD = defender.takeDamage(toDefender);
     const blockedA = attacker.takeDamage(toAttacker);
     this.emit('soldierDamaged', {
       playerId: enemy.id, soldierId: defender.soldierId, amount: toDefender, hp: defender.hp, cause: 'fight', blocked: blockedD,
     });
-    // 突き（reach）：守る側の攻撃は届かないので、攻める側の soldierDamaged は出さない
-    if (!reach) {
+    // 突き（reach）・光の先制：守る側の攻撃は当たらないので、攻める側の soldierDamaged は出さない
+    if (!reach && !noCounterA) {
       this.emit('soldierDamaged', {
         playerId: player.id, soldierId: attacker.soldierId, amount: toAttacker, hp: attacker.hp, cause: 'fight', blocked: blockedA,
       });
@@ -2627,11 +2649,23 @@ export class Game {
       if (s.isDead) this.removeSoldier(owner, s, 'killed');
     }
     // 付着・反応（reactions を渡したときだけ）：当たった攻撃の属性（武器の属性）。外れた攻撃は付かない。同じ順番（守る側 → 攻める側）
-    if (!missD) this.elementHit(enemy, defender, elementA, { damage: toDefender });
-    if (!missA) this.elementHit(player, attacker, elementD, { damage: toAttacker });
+    const hitD = !missD;
+    const hitA = !missA && !noCounterA;
+    if (hitD) this.elementHit(enemy, defender, elementA, { damage: toDefender });
+    if (hitA) this.elementHit(player, attacker, elementD, { damage: toAttacker });
     // フロストブレード：当たって生き残った相手を休ませる
-    if (!missD) this.freezeOnHitBy(attacker, enemy, defender);
-    if (!missA) this.freezeOnHitBy(defender, player, attacker);
+    if (hitD) this.freezeOnHitBy(attacker, enemy, defender);
+    if (hitA) this.freezeOnHitBy(defender, player, attacker);
+  }
+
+  /** 神盾（shieldSoldier の statusWard）：盾が残っている間は、状態異常（毒・凍結・やけど・呪い・鈍足・目くらまし・砂・凍傷）を受けない */
+  wardsStatus(soldier) {
+    return Boolean(soldier.statusWard) && soldier.shield > 0;
+  }
+
+  /** 光の先制（rules.lightFirstStrike）：光の兵士 s の攻撃 amount で、相手 victim を倒せるか（盾も数える） */
+  firstStrikes(s, victim, amount) {
+    return Boolean(this.rules.lightFirstStrike) && s.element === 'light' && amount > 0 && amount >= victim.hp + victim.shield;
   }
 
   // ================= カードを出す =================
@@ -3174,7 +3208,7 @@ export class Game {
         this.spellHit(owner, soldier, amount, card);
         // 地割れ（freezeTurns）：生き残れば休ませる
         const turns = card.def.freezeTurns;
-        if (turns && owner.soldiers.includes(soldier) && soldier.frozen < turns) {
+        if (turns && owner.soldiers.includes(soldier) && soldier.frozen < turns && !this.wardsStatus(soldier)) {
           soldier.frozen = turns;
           this.emit('statusApplied', { playerId: owner.id, soldierId, status: 'frozen', turns });
         }
@@ -3208,8 +3242,10 @@ export class Game {
     this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId });
     const amount = Math.max(card.def.amount, soldier.weakened?.amount ?? 0);
     const turns = Math.max(card.def.turns, soldier.weakened?.turns ?? 0);
-    soldier.weakened = { amount, turns };
-    this.emit('statusApplied', { playerId: owner.id, soldierId, status: 'weakened', turns, amount });
+    if (!this.wardsStatus(soldier)) {
+      soldier.weakened = { amount, turns };
+      this.emit('statusApplied', { playerId: owner.id, soldierId, status: 'weakened', turns, amount });
+    }
     this.elementHit(owner, soldier, card.def.element);
   }
 
@@ -3453,7 +3489,9 @@ export class Game {
         const status = effect === 'poisonEnemySoldiers' ? 'poison' : 'frozen';
         for (const soldier of victims()) {
           // 重ねがけでは増えない：残りの回数を長い方にそろえる
-          if (status === 'poison') {
+          if (this.wardsStatus(soldier)) {
+            // 神盾：盾が残っている間は状態異常を受けない（付着は下で付く）
+          } else if (status === 'poison') {
             const turns = Math.max(card.def.turns, soldier.poison?.turns ?? 0);
             soldier.poison = { amount: Math.max(amount, soldier.poison?.amount ?? 0), turns };
             this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status, turns });
@@ -3488,6 +3526,10 @@ export class Game {
         // 毒の回数：カードの turns（4陣営の毒の霧）か rules.poisonTurns（0 は永続）
         const poisonTurns = card.def.turns ?? (this.rules.poisonTurns || null);
         for (const soldier of enemy.visibleSoldiers) {
+          if (this.wardsStatus(soldier)) {
+            this.elementHit(enemy, soldier, card.def.element);
+            continue;
+          }
           const total = this.capPoison(amount + (soldier.poison?.amount ?? 0));
           const turns = poisonTurns; // 重ねがけで残りターンも延びる
           soldier.poison = { amount: total, turns };
@@ -3858,6 +3900,8 @@ export class Game {
         // 氷のステージ：盾が厚くなる
         const amount = def.amount + this.stageEffectBonus(def.effect);
         soldier.shield += amount;
+        // 4陣営の神盾（statusWard）：盾が残っている間、その兵士は状態異常を受けない
+        if (def.statusWard) soldier.statusWard = true;
         this.emit('shieldAdded', { playerId: player.id, soldierId: soldier.soldierId, amount, shield: soldier.shield });
       }
       return;
@@ -4226,6 +4270,8 @@ export class Game {
         // 4陣営：継続ダメージ（砂・凍傷。反応で使うときだけキーを足す）
         for (const status of this.extState.dots) st.statuses[status] = soldier[status] ? { ...soldier[status] } : null;
         if (soldier.rangeBonus > 0) st.rangeBonus = soldier.rangeBonus;
+        // 4陣営の神盾：盾が残っている間は状態異常を受けない（そのときだけキーを足す）
+        if (soldier.statusWard && soldier.shield > 0) st.statusWard = true;
       }
       players[id] = {
         ...base,

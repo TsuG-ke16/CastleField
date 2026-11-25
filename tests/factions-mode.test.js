@@ -12,12 +12,12 @@ import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptional
 import { runMatch } from './sim/sim.js';
 
 const MODE = 'factions';
-const FACTIONS = { kingdom: 15, forest: 14, demon: 15, dragon: 12 };
+const FACTIONS = { kingdom: 17, forest: 14, demon: 15, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
 const ELEMENTS = loadOptionalData(MODE).elements;
 
 // ================= データ =================
 
-test('データ：4陣営のカード表は王国15・森14・魔族15・竜12種。各陣営のカード表がそのままその陣営のデッキになる', () => {
+test('データ：4陣営のカード表は王国17・森14・魔族15・竜12種。各陣営のカード表がそのままその陣営のデッキになる', () => {
   const { cards } = buildData({ mode: MODE });
   const opts = loadOptionalData(MODE);
   assert.deepEqual(Object.keys(opts.decks), Object.keys(FACTIONS));
@@ -649,11 +649,14 @@ const S = (attack, hp, speed, extra = {}) => ({ kind: 'soldier', attack, hp, ...
 const PLAN = {
   kingdom: [
     ['歩兵', 2, S(3, 5, 2)], ['騎兵', 3, S(4, 4, 3)], ['弓兵', 3, S(3, 3, 0, { role: 'archer' })], ['重装兵', 4, S(2, 9, 1)],
+    // 切り札（神剣・勇者・神盾）：各1枚・MP5（人間の指示。数値は仮）。小回復は外した
+    ['勇者', 5, S(10, 14, 2, { innateElement: 'light', noRevive: true, count: 1, maxCopies: 1 })],
     ['聖術師', 4, S(2, 4, 0, { role: 'mage', innateElement: 'light' })],
     ['聖鉄の剣', 2, { kind: 'weapon', attackBonus: 2, element: 'light' }], ['ルミナスランス', 2, { kind: 'weapon', attackBonus: 1, element: 'light', rangeBonus: 1 }],
+    ['神剣', 5, { kind: 'weapon', attackBonus: 9, element: 'light', count: 1, maxCopies: 1 }],
     ['ルミナ', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'light', scope: 'lane' }], ['ホーリーレイ', 4, { effect: 'singleDamage', amount: 5, element: 'light' }],
-    ['小回復', 2, { effect: 'healOwnCastle', amount: 5 }], ['ヒール', 4, { effect: 'healOwnCastle', amount: 10 }],
-    ['盾', 1, { effect: 'shieldSoldier', amount: 3 }], ['城壁', 2, { effect: 'armorCastle', amount: 5 }], ['身代わり', 3, { effect: 'guardCastle' }],
+    ['ヒール', 4, { effect: 'healOwnCastle', amount: 10 }],
+    ['盾', 1, { effect: 'shieldSoldier', amount: 3 }], ['神盾', 5, { effect: 'shieldSoldier', amount: 15, statusWard: true, count: 1, maxCopies: 1 }], ['城壁', 2, { effect: 'armorCastle', amount: 5 }], ['身代わり', 3, { effect: 'guardCastle' }],
     ['浄化', 2, { effect: 'purifyFlare', amount: 0, clearEnemyAttachments: true }],
   ],
   forest: [
@@ -686,7 +689,7 @@ const PLAN = {
   ],
 };
 
-test('カード表：56枚の名前・攻撃・HP・足・MP・効果量・属性が案の表と同じ', () => {
+test('カード表：58種の名前・攻撃・HP・足・MP・効果量・属性が案の表と同じ', () => {
   for (const [f, rows] of Object.entries(PLAN)) {
     const set = Object.values(loadFactionCards(MODE, f));
     assert.deepEqual(set.map((d) => d.name), rows.map((r) => r[0]), `${f} のカードの並び`);

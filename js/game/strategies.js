@@ -179,6 +179,43 @@ function playSupports(game, pid, ctx, { chargeArmor = false } = {}) {
   }
 }
 
+/**
+ * 切り札（カードの trump。4陣営の王国の勇者・神剣・神盾）を、MP が足りるうちに先に出す（smart・guard）。
+ * trump のカードがないモードでは何もしない（乱数も使わない）。
+ *   勇者：兵士としていちばん先に出す
+ *   神剣：武器を持っていても重ねて持たせる。進む兵士（勇者があれば勇者）のうち、いちばん前の兵士
+ *   神盾：次の進軍で城に着きそうな兵士か、近くの相手の兵士に倒されそうな兵士（攻撃力のいちばん高い兵士）
+ */
+function playTrumps(game, pid, ctx) {
+  for (let guard = 0; guard < 5; guard++) {
+    const { me, enemies, playable } = view(game, pid);
+    const trumps = playable.filter((c) => ctx.cards[c.type]?.trump);
+    if (trumps.length === 0) return;
+    const L = ctx.rules?.laneLength ?? 5;
+    let played = false;
+    for (const c of trumps) {
+      const def = ctx.cards[c.type];
+      if (def.kind === 'soldier') {
+        played = playFirst(game, [c], [c.type]);
+      } else if (def.kind === 'weapon') {
+        const melee = me.soldiers.filter((x) => x.role === 'melee');
+        const pool = melee.length ? melee : me.soldiers;
+        const target = [...pool].sort((a, b) => Number(Boolean(ctx.cards[b.type]?.trump)) - Number(Boolean(ctx.cards[a.type]?.trump)) || b.position - a.position || b.hp - a.hp)[0];
+        if (target) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === target.soldierId));
+      } else if (def.effect === 'shieldSoldier') {
+        const foes = enemies.flatMap((e) => e.soldiers);
+        const reaching = (x) => x.role === 'melee' && x.position + (ctx.cards[x.type]?.speed ?? 0) >= L;
+        // 同じ道で、2マス以内にいて、HP＋盾を削り切れる相手の兵士がいる
+        const endangered = (x) => foes.some((f) => f.roadId === x.roadId && Math.abs(L - 1 - f.position - x.position) <= 2 && f.attack >= x.hp + x.shield);
+        const target = me.soldiers.filter((x) => reaching(x) || endangered(x)).sort((a, b) => b.attack - a.attack || b.position - a.position)[0];
+        if (target) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === target.soldierId));
+      }
+      if (played) break;
+    }
+    if (!played) return;
+  }
+}
+
 function randomDiscard(game, pid, rng, ctx) {
   const hand = [...game.getState(pid).players[pid].hand];
   const out = [];
@@ -273,7 +310,9 @@ const RAW_STRATEGIES = {
   smart: {
     takeTurn(game, pid, rng, ctx) {
       buyUpgrades(game, pid, ctx);
+      playTrumps(game, pid, ctx);
       smartTurn(game, pid, ctx);
+      playTrumps(game, pid, ctx); // 神剣・神盾は、出した兵士にも
       playSupports(game, pid, ctx, { chargeArmor: true });
     },
     respond(game, pid, rng, ctx) {
@@ -328,7 +367,9 @@ const RAW_STRATEGIES = {
       const L = ctx.rules.laneLength;
       const near = enemies.some((e) => e.soldiers.some((s) => s.position >= L - 3));
       buyUpgrades(game, pid, ctx);
+      playTrumps(game, pid, ctx);
       if (!(near && playFirst(game, playable, soldierTypes(ctx)))) smartTurn(game, pid, ctx);
+      playTrumps(game, pid, ctx);
       playSupports(game, pid, ctx, { chargeArmor: true });
     },
     respond(game, pid, rng, ctx) {

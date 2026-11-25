@@ -231,6 +231,8 @@ export function factionDecks(factions, cardSets) {
     const cards = {};
     for (const [type, card] of Object.entries(set)) {
       if (type.startsWith('_')) continue;
+      // 切り札（maxCopies。4陣営の王国の神剣・勇者・神盾）は、デッキに maxCopies 枚まで
+      if (card.maxCopies !== undefined && card.count > card.maxCopies) throw new Error(`陣営 "${id}" の「${card.name ?? type}」は${card.maxCopies}枚までです（count ${card.count}）`);
       if (card.count > 0) cards[type] = card.count;
     }
     decks[id] = { name: def.name, cards };
