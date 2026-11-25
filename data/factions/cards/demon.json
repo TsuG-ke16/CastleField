@@ -142,6 +142,17 @@
     "mpCost": 3,
     "count": 2
   },
+  "fac_demon_mana_seal": {
+    "name": "封魔",
+    "kind": "spell",
+    "effect": "sealMp",
+    "amount": 1,
+    "turns": 2,
+    "maxTurns": 4,
+    "description": "相手のターンの始めの MP 回復−1（2ターン）。重ねると回数だけ延びる（4ターンまで。量は増えない）",
+    "mpCost": 2,
+    "count": 2
+  },
   "fac_demon_soul_shard": {
     "name": "魂の欠片",
     "kind": "spell",

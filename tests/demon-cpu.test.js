@@ -14,6 +14,8 @@ function demonGame(rulesPatch = {}) {
   const opts = loadOptionalData('factions');
   const game = new Game({ cards, rules, rng: seededRng(5), ...opts, setup: { decks: ['demon', 'kingdom'] } });
   game.start();
+  // 相手（王国）の手札は空にする（防御カードを引いていると防御待ちで止まる。魔族のカードが増えて山札の並びが変わったため）
+  game.debugSetHand('p2', []);
   return { game, cards, rules };
 }
 

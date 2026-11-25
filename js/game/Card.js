@@ -55,6 +55,7 @@ export const EFFECTS = {
     breathAttack: ['amount', 'castleAmount'], // 火炎の吐息：選んだ道の相手の兵士全員に amount、相手の城に城壁を無視して castleAmount
     vulnerableCastle: ['turns'], // 脆弱（魔族）：相手の城が受ける攻撃のダメージが ratio の割合だけ増える（turns。重ねがけは回数だけ延びる（maxTurns まで）。増える量は maxRatio まで）
     poisonEnemyCastle: ['amount', 'turns'],
+    sealMp: ['amount', 'turns'], // 封魔（魔族）：相手の、自分のターンの始めの MP 回復を amount 減らす（turns 回。重ねがけは回数だけ延びる（maxTurns まで））
     bloodPact: ['amount', 'selfDamage', 'soldiers'], // 血の契約（魔族）：自分の城HPを selfDamage 払って、自分の城に近い自分の兵士 soldiers 体の攻撃を amount 上げる（その兵士が消えるまで） // 毒の霧（魔族）：相手の城だけを毒にする（毎ターン amount・turns 回。重ねがけは回数だけ延びる（maxTurns まで））
   },
   defense: {
@@ -85,7 +86,7 @@ export const BASIC_DICE = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff'];
 /** メインを使わず何枚でも出せるサイコロ（ほかはメイン） */
 export const SUPPORT_DICE = ['mana', 'coin', 'shield', 'buff'];
 
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack', 'poisonEnemyCastle', 'vulnerableCastle', 'bloodPact'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack', 'poisonEnemyCastle', 'vulnerableCastle', 'bloodPact', 'sealMp'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
@@ -268,7 +269,7 @@ export class Card {
       if (def.turns !== undefined && def.effect === 'poisonEnemy' && !isPositive(def.turns)) {
         throw new Error(`${where}: 毒（poisonEnemy）の turns は1以上の整数にしてください（書かなければ rules.poisonTurns）`);
       }
-      if (def.maxTurns !== undefined && (!['poisonEnemyCastle', 'vulnerableCastle'].includes(def.effect) || !isPositive(def.maxTurns) || def.maxTurns < def.turns)) {
+      if (def.maxTurns !== undefined && (!['poisonEnemyCastle', 'vulnerableCastle', 'sealMp'].includes(def.effect) || !isPositive(def.maxTurns) || def.maxTurns < def.turns)) {
         throw new Error(`${where}: maxTurns（重ねがけで延びる回数の上限）は poisonEnemyCastle などに書ける、turns 以上の整数です`);
       }
       if (def.effect === 'vulnerableCastle') {

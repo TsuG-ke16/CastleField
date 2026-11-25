@@ -111,6 +111,8 @@ export const EVENT_TYPES = [
   'castleHealCutEnded',
   'castleVulnerable',
   'castleVulnerableEnded',
+  'mpSealed',
+  'mpSealEnded',
   // 4陣営：城の付着と反応（rules.castleAttach。試作）
   'castleElementAttached',
   'castleElementCleared',
@@ -327,6 +329,7 @@ export class Game {
       blood: cardList.some((d) => d.bloodArmor),
       dots: [...new Set(reactionList.filter((r) => r.dot).map((r) => r.dot.status))],
       vulnerable: cardList.some((d) => d.effect === 'vulnerableCastle'),
+      mpSeal: cardList.some((d) => d.effect === 'sealMp'),
     };
     this.rarityDefs = rarities;
     this.monsterDefs = monsters;
@@ -1093,8 +1096,12 @@ export class Game {
     const rainCoins = this.weatherDef()?.coinPerTurn ?? 0;
     if (rainCoins > 0) this.changeCoins(player, rainCoins, 'weather');
     // MP の自然回復：自分のターンの始めに mpPerTurn 増える（上限まで）
-    // 魔族の魔の血：MP の回復が mpBonus 多い
-    if (this.rules.mpPerTurn > 0 && this.rules.maxMp > 0) this.changeMp(player, this.rules.mpPerTurn + (player.passive?.magicBlood?.mpBonus ?? 0), 'turn');
+    // 魔族の魔の血：MP の回復が mpBonus 多い。封魔をかけられていれば amount 少ない（0より少なくはしない）
+    if (this.rules.mpPerTurn > 0 && this.rules.maxMp > 0) {
+      const regen = Math.max(0, this.rules.mpPerTurn + (player.passive?.magicBlood?.mpBonus ?? 0) - (player.mpSeal?.amount ?? 0));
+      if (regen > 0) this.changeMp(player, regen, 'turn');
+    }
+    this.tickMpSeal(player);
     // 古代遺跡：自分のターンの始めに MP が増える
     const stageMp = this.stageDef()?.mpPerTurn ?? 0;
     if (stageMp > 0 && this.rules.maxMp > 0) this.changeMp(player, stageMp, 'stage');
@@ -1816,6 +1823,15 @@ export class Game {
     const v = this.players[this.side(owner.id)]?.castle.vulnerable;
     if (!v || amount <= 0 || !GUARDED_SOURCES.includes(source?.kind)) return 0;
     return Math.min(Math.ceil(amount * v.ratio), Math.floor(amount * v.maxRatio));
+  }
+
+  /** 封魔：かけられた人のターンの始め（MP の回復のあと）に残りを1減らす（0で終わる。mpSealEnded） */
+  tickMpSeal(player) {
+    if (!player.mpSeal) return;
+    player.mpSeal.turns -= 1;
+    if (player.mpSeal.turns > 0) return;
+    player.mpSeal = null;
+    this.emit('mpSealEnded', { playerId: player.id });
   }
 
   /** 脆弱：城の持ち主（チーム戦なら代表）のターンの始めに残りを1減らす（0で終わる） */
@@ -3021,6 +3037,13 @@ export class Game {
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
         return { targets: playerTargets(foes), reason: '相手がいません' };
       }
+      case 'sealMp': {
+        // 封魔（魔族）：相手（プレイヤーごと）。もう上限の回数まで封じられている相手は選べない
+        if (this.rules.maxMp <= 0) return { targets: [], reason: 'このルールではMPを使いません' };
+        const max = def.maxTurns ?? def.turns;
+        const foes = this.opponentsOf(player.id);
+        return { targets: playerTargets(foes.filter((p) => (p.mpSeal?.turns ?? 0) < max)), reason: foes.length ? 'もう上限まで封じています' : '相手がいません' };
+      }
       case 'bloodPact':
         // 血の契約（魔族）：払うと自分の城HPが selfDamage+1 以下になるなら出せない（自滅させない）。強化できる自分の兵士がいなければ出せない
         if (player.castle.hp <= def.selfDamage + 1) return { targets: [], reason: `城のHPが足りません（${def.selfDamage + 2}以上必要）` };
@@ -3827,6 +3850,17 @@ export class Game {
         break;
       }
 
+      case 'sealMp': {
+        // 封魔（魔族）：相手の MP の回復を減らす。重ねがけは量を増やさず、残りに turns を足す（maxTurns まで）。霧で外れず、防御も聞かない
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        enemy.mpSeal = {
+          amount: Math.max(card.def.amount, enemy.mpSeal?.amount ?? 0),
+          turns: Math.min(card.def.maxTurns ?? card.def.turns, (enemy.mpSeal?.turns ?? 0) + card.def.turns),
+        };
+        this.emit('mpSealed', { playerId: enemy.id, amount: enemy.mpSeal.amount, turns: enemy.mpSeal.turns });
+        break;
+      }
+
       case 'bloodPact': {
         // 血の契約（魔族）：自分の城HPを払う（城壁・土の精霊・魔の血は通さない）→ 自分の城に近い順（position が小さい順。同じなら先に出された方）に
         // soldiers 体の攻撃を amount 上げる（兵士の攻撃力そのものが上がるので、その兵士が消えるまで続く）
@@ -4630,6 +4664,7 @@ export class Game {
         ...(this.extState.passiveSpirits ? { passiveSpirit: this.passiveSpiritState(p) } : {}),
         ...(this.extState.healCut ? { castleHealCut: p.castle.healCut ? { ...p.castle.healCut } : null } : {}),
         ...(this.extState.vulnerable ? { castleVulnerable: p.castle.vulnerable ? { ...p.castle.vulnerable } : null } : {}),
+        ...(this.extState.mpSeal ? { mpSeal: p.mpSeal ? { ...p.mpSeal } : null } : {}),
         // 4陣営（試作）：城に付いている属性（castleAttach のゲームだけキーを足す。チーム戦は城を共有）
         ...(this.rules.castleAttach && this.reactionDefs ? { castleAttachments: p.castle.attachments.map((a) => ({ ...a })) } : {}),
         // 強化の今の値段（costs で買うたびに上がる強化があるので、人ごと）

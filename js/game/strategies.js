@@ -555,8 +555,10 @@ function smartStep(game, pid, ctx) {
     ...(enemy && me.castleHp * 2 > me.castleMaxHp && me.soldiers.length >= 2 ? demonTypes(ctx, 'bloodPact') : []),
     // 魔族の脆弱：自分の兵士が相手の城の手前2マス以内にいるか、相手の城HPが半分以下なら（城に当たるダメージが増える）
     ...(vulnTime ? demonTypes(ctx, 'vulnerableCastle') : []),
-    // 魔族の毒の霧（城の毒）：防げない継続ダメージなので、ほかの魔法がなければ出す（もう上限まで続く城は対象にならない）
-    ...demonTypes(ctx, 'poisonEnemyCastle'),
+    // 魔族の毒の霧（城の毒）：防げない継続ダメージ。相手の城の毒が切れそう（残り1回以下）なら出す（重ねても量は増えず、回数が延びるだけ）
+    ...(enemy && (enemy.castlePoisonTurns ?? 0) <= 1 ? demonTypes(ctx, 'poisonEnemyCastle') : []),
+    // 魔族の封魔：まだ封じていない相手に
+    ...(enemy && !enemy.mpSeal ? demonTypes(ctx, 'sealMp') : []),
     ...soulShards,
   ]);
   if (played) return true;

@@ -272,3 +272,25 @@ test('血の契約：自城HPを6払い（城壁は通さない）、自分の�
   assert.equal(events('soldierBuffed').length, 2);
   assert.equal(events('castleDamaged').at(-1).source.kind, 'self');
 });
+
+// ---------------- 封魔（sealMp） ----------------
+
+test('封魔：相手のターンの始めの MP 回復−1（2ターン）。重ねがけは回数だけ延びる（4まで）。getState に mpSeal', () => {
+  const { game, play, can, events } = setup({ hands: { p1: ['fac_demon_mana_seal', 'fac_demon_mana_seal', 'fac_demon_mana_seal'] }, rules: { maxMp: 20, mpPerTurn: 3, initialMp: 10 } });
+  play('p1', 'fac_demon_mana_seal', { playerId: 'p2' });
+  assert.deepEqual(game.players.p2.mpSeal, { amount: 1, turns: 2 });
+  assert.deepEqual(game.getState('p1').players.p2.mpSeal, { amount: 1, turns: 2 });
+  assert.deepEqual(events('mpSealed').at(-1), { event: 'mpSealed', playerId: 'p2', amount: 1, turns: 2 });
+  play('p1', 'fac_demon_mana_seal', { playerId: 'p2' });
+  assert.deepEqual(game.players.p2.mpSeal, { amount: 1, turns: 4 }, '量は増えず、回数だけ延びる');
+  assert.equal(can('p1', 'fac_demon_mana_seal', { playerId: 'p2' }).ok, false, 'もう上限');
+  game.players.p2.mpSeal.turns = 2;
+  const turnMp = () => events('mpChanged').filter((e) => e.playerId === 'p2' && e.reason === 'turn').map((e) => e.delta);
+  for (let i = 0; i < 3; i++) {
+    game.endTurn(); // p2 のターン
+    game.endTurn(); // p1 のターン
+  }
+  assert.deepEqual(turnMp(), [2, 2, 3], '2ターンは 3−1、そのあと元に戻る');
+  assert.equal(game.players.p2.mpSeal, null);
+  assert.equal(events('mpSealEnded').length, 1);
+});
