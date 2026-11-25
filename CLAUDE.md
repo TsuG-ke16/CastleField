@@ -1689,7 +1689,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **切り札**（王国。レアリティなし・デッキに1枚まで（`count: 1`・`maxCopies: 1`。`factionDecks` が count が maxCopies を超えるとエラーにする）・MP5）：神剣（`fac_king_god_sword`。武器・光・攻撃+9）／勇者（`fac_king_hero`。兵士・光・HP14・攻撃10・速さ2。`noRevive: true`：倒れても蘇生の記録に残らない）／神盾（`fac_king_god_shield`。盾15・`statusWard: true`：盾が残っている間、その兵士は状態異常（毒・凍結・やけど・呪い・鈍足・目くらまし・砂・凍傷）を受けない。付着は付く。ダメージ反射はなし。`getState()` の兵士に `statusWard: true`（効いているときだけ））
 - 守りが厚くなりすぎないよう、王国から**小回復を外した**（15種 → 17種・31枚）。光の反応は対消滅だけのまま
 - **光の触媒**（実験用。`rules.lightCatalyst`：0以上の整数。省略すると0＝使わない。どのデータにも書いていない）：光の攻撃が当たったとき、反応が起きず、兵士に光以外の属性（武器・生まれつき・付着）があれば、それを全部消して1種類ごとに lightCatalyst の追加ダメージ（反応と同じイベント。`reactionTriggered` の `reaction` は `"lightCatalyst"`。光は付着しない）
-- シミュレーション：`node tests/sim/factions.js --with kingdom`（王国とほかの陣営だけ）・`--rules` / `--cards` / `--decks`（`data/` を書き換えずに試す）
+- シミュレーション：`node tests/sim/factions.js --with kingdom`（王国とほかの陣営だけ）・`--rules` / `--cards` / `--decks`（`data/` を書き換えずに試す）・`--passive '{"demon":{"magicBlood":null}}'`（陣営の特性の一部だけ変える。null で外す）。表の下に、魔族のカードの1試合あたりの使用回数と、魔族の強化の効き目（毒の霧の城ダメージ・脆弱で増えたダメージ・闇の侵食・魔の血で減ったダメージ・封魔・吸命の回復・血の契約・呪い・混沌のランダム付着）も出す
 - **CPU**（`js/game/strategies.js` の `playTrumps`。smart・guard だけ。カードの `trump: true` で見分けるので、ほかの陣営・モードの CPU は変わらない）：ターンの最初（とメインのあと）に、MP が足りれば切り札を先に出す。勇者は兵士としていちばん先に。神剣は武器を持っていても重ねて、進む兵士（勇者がいれば勇者）のいちばん前の兵士に。神盾は、次の進軍で城に着きそうな兵士か、同じ道の2マス以内に HP＋盾 を削り切れる相手の兵士がいる兵士（攻撃力の高い方）に
 - 確かめたこと（`node tests/sim/factions.js --games 200 --with kingdom --spirit-every <1|2>`、シード1、smart 同士・席を入れかえて各400試合。先制は攻める側だけ・CPU は切り札を出す）：全試合決着。王国の勝率（括弧は平均手番・崩壊の刻で決着した割合）
 

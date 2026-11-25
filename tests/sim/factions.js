@@ -4,9 +4,11 @@
 //   --with kingdom：その陣営と、ほかの陣営との組み合わせだけ（同じ陣営どうしは回さない）
 //   --rules '{"lightFirstStrike":false}'・--cards '{"fac_king_god_sword":{"attackBonus":6}}'：data/ を書き換えずに一部の値だけ試す（run.js と同じ）
 //   --decks '{"kingdom":{"fac_king_hero":0}}'：陣営のデッキの枚数だけ変える（0 で抜く）
+//   --passive '{"demon":{"magicBlood":null}}'：陣営の特性（passive）の一部だけ変える（null で外す）
 //   --spirit-every 2・--spirit-attach-to castle：森の常時の精霊の everyTurns / spiritAttachTo だけ変える
 //   --rules '{"castleAttach":true}'：城の付着と反応（試作）を試す。表に城の反応の回数・ダメージの割合・先に反応した側の勝率も出す
 //   表の下に、切り札（カードの trump）の1試合あたりの使用回数と、光の先制が起きた回数を出す
+//   魔族のカードの1試合あたりの使用回数と、魔族の強化（毒の霧・脆弱・闇の侵食・魔の血・封魔・吸命・血の契約・呪い・混沌）の効き目も出す
 // 同じ引数なら、誰が回しても同じ結果になる。
 import { buildData, loadOptionalData } from '../helpers.js';
 import { runMatch } from './sim.js';
@@ -21,6 +23,32 @@ if (Game.prototype.firstStrikes) {
     if (r) firstStrikeCount += 1;
     return r;
   };
+}
+
+// 魔族の強化（第2弾）の効き目：イベントから数える（組み合わせごとに0に戻す）。どの陣営が起こしたかは見ない（今は魔族だけが持つ仕組み）
+const EFFECT_KEYS = ['poisonDamage', 'vulnerableBonus', 'erosion', 'magicBloodReduced', 'mpSealed', 'lifestealHeal', 'pactBuffs', 'curses', 'chaosAttach'];
+let effects = Object.fromEntries(EFFECT_KEYS.map((k) => [k, 0]));
+{
+  const origEmit = Game.prototype.emit;
+  Game.prototype.emit = function (type, payload) {
+    if (type === 'castleDamaged' && payload.source?.kind === 'poison') effects.poisonDamage += payload.amount;
+    if (type === 'castleDamaged' && payload.vulnerable) effects.vulnerableBonus += payload.vulnerable;
+    if (type === 'castleHealCut' && payload.source === 'erosion') effects.erosion += 1;
+    if (type === 'mpSealed') effects.mpSealed += 1;
+    if (type === 'castleHealed' && payload.source?.kind === 'lifesteal') effects.lifestealHeal += payload.amount;
+    if (type === 'soldierBuffed') effects.pactBuffs += 1;
+    if (type === 'statusApplied' && payload.status === 'weakened') effects.curses += 1;
+    if (type === 'elementAttached' && payload.source === 'chaos') effects.chaosAttach += 1;
+    return origEmit.call(this, type, payload);
+  };
+  if (Game.prototype.magicBloodReduce) {
+    const orig = Game.prototype.magicBloodReduce;
+    Game.prototype.magicBloodReduce = function (owner, amount) {
+      const r = orig.call(this, owner, amount);
+      effects.magicBloodReduced += amount - r;
+      return r;
+    };
+  }
 }
 
 const args = process.argv.slice(2);
@@ -43,6 +71,15 @@ for (const [f, patch] of Object.entries(json('decks'))) {
   }
   opts.decks = { ...opts.decks, [f]: { ...opts.decks[f], cards: deck } };
 }
+// 陣営の特性（passive）の一部だけ変える（試すだけ。data/ は変えない）：--passive '{"demon":{"magicBlood":null}}'（null で外す）
+for (const [f, patch] of Object.entries(json('passive'))) {
+  const passive = { ...(opts.decks[f].passive ?? {}) };
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === null) delete passive[k];
+    else passive[k] = v;
+  }
+  opts.decks = { ...opts.decks, [f]: { ...opts.decks[f], passive } };
+}
 // 森の常時の精霊の上書き（試すだけ。data/ は変えない）
 const spiritEvery = opt('spirit-every', null);
 const spiritAttachTo = opt('spirit-attach-to', null);
@@ -56,6 +93,7 @@ if (spiritEvery !== null || spiritAttachTo !== null) {
 }
 const factions = Object.keys(opts.decks);
 const trumps = Object.keys(cards).filter((t) => cards[t].trump);
+const demonCards = Object.keys(opts.decks.demon?.cards ?? {});
 const only = opt('with', null);
 
 /** a（席1）と b（席2）で games 試合。結果の一覧 */
@@ -74,6 +112,7 @@ for (let i = 0; i < factions.length; i++) {
     const b = factions[j];
     if (only && (a === b || (a !== only && b !== only))) continue;
     firstStrikeCount = 0;
+    effects = Object.fromEntries(EFFECT_KEYS.map((k) => [k, 0]));
     const ab = play(a, b, seed);
     const ba = play(b, a, seed + 1);
     const firstStrikes = firstStrikeCount;
@@ -111,6 +150,8 @@ for (let i = 0; i < factions.length; i++) {
       reactions,
       trumpsPerGame: Object.fromEntries(trumps.map((t) => [t, all.reduce((x, r) => x + (r.played[t] || 0), 0) / all.length])),
       firstStrikesPerGame: firstStrikes / all.length,
+      demonPlayedPerGame: Object.fromEntries(demonCards.map((t) => [t, all.reduce((x, r) => x + (r.played[t] || 0), 0) / all.length])),
+      effectsPerGame: Object.fromEntries(EFFECT_KEYS.map((k) => [k, effects[k] / all.length])),
       castleReactionsPerGame: Object.values(castleReactions).reduce((x, y) => x + y, 0) / all.length,
       castleReactions,
       castleReactionDamageShare: hpDamage ? reactionDamage / hpDamage : 0,
@@ -135,6 +176,10 @@ if (args.includes('--json')) {
   }
   console.log('\n切り札（1試合あたりの使用回数）・光の先制（1試合あたり）');
   for (const r of rows) console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.trumpsPerGame).map(([k, v]) => `${cards[k].name} ${v.toFixed(2)}`).join('・') || '切り札なし'}・先制 ${r.firstStrikesPerGame.toFixed(2)}`);
+  console.log('\n魔族のカード（1試合あたりの使用回数。両方の席の合計）');
+  for (const r of rows) if (r.a === 'demon' || r.b === 'demon') console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.demonPlayedPerGame).map(([k, v]) => `${cards[k].name} ${v.toFixed(2)}`).join('・')}`);
+  console.log('\n魔族の強化の効き目（1試合あたり）：毒の霧の城ダメージ・脆弱で増えたダメージ・闇の侵食の回数・魔の血で減ったダメージ・封魔の回数・吸命の回復・血の契約で強化した兵士・呪われた兵士・混沌のランダム付着');
+  for (const r of rows) if (r.a === 'demon' || r.b === 'demon') console.log(`- ${name(r.a)} × ${name(r.b)}：${EFFECT_KEYS.map((k) => `${k} ${r.effectsPerGame[k].toFixed(2)}`).join('・')}`);
   console.log('\n骸骨兵（死者を従える）');
   for (const r of rows) if (r.raisedPerGame > 0) console.log(`- ${name(r.a)} × ${name(r.b)}：生まれた回数 ${r.raisedPerGame.toFixed(2)}/試合・骸骨兵が城に与えたダメージ ${pct(r.raisedCastleDamage / (r.castleDamageTotal || 1))}（全員が城に与えたダメージに対する割合）`);
   console.log('\n反応の回数（全試合）');
