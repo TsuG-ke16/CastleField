@@ -57,6 +57,7 @@
   "overdriveHpRatio": 0.3333,
   "overdriveAttack": 10,
   "castleSpellHitsFront": true,
+  "frozenCountsAsIce": true,
   "collapseAnnounceRound": 50,
   "collapseStartRound": 60,
   "collapseDamage": 1

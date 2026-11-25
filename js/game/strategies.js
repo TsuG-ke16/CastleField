@@ -119,6 +119,8 @@ const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'wate
 export function canReact(reactions, element, s) {
   if (!element || !reactions) return false;
   const on = [...new Set([s.element, ...(s.attachments ?? []).map((a) => a.element)].filter(Boolean))];
+  // 4陣営の frozenCountsAsIce：凍結中の兵士は氷が付いている扱い（getState().reactions.frozenCountsAsIce）
+  if (reactions.frozenCountsAsIce && (s.statuses?.frozen ?? 0) > 0 && !on.includes('ice')) on.push('ice');
   const all = on.includes(element) ? on : [...on, element];
   const chaos = reactions.chaos;
   if (chaos && all.includes(chaos.element) && all.length >= chaos.minElements) return true;
