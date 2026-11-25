@@ -551,6 +551,8 @@ function smartStep(game, pid, ctx) {
     ...revives,
     // 魔族：兵士・ほかの魔法を出したあと、MP が余っていれば出す（先に出すと、ほかの魔法の MP とメインの枠を食う）
     ...(lasting ? demonTypes(ctx, 'poisonEnemySoldiers') : []),
+    // 魔族の血の契約：自分の城HPが半分より多く、自分の兵士が2体以上いれば（城HPを払うので、守りが苦しいときは出さない）
+    ...(enemy && me.castleHp * 2 > me.castleMaxHp && me.soldiers.length >= 2 ? demonTypes(ctx, 'bloodPact') : []),
     // 魔族の脆弱：自分の兵士が相手の城の手前2マス以内にいるか、相手の城HPが半分以下なら（城に当たるダメージが増える）
     ...(vulnTime ? demonTypes(ctx, 'vulnerableCastle') : []),
     // 魔族の毒の霧（城の毒）：防げない継続ダメージなので、ほかの魔法がなければ出す（もう上限まで続く城は対象にならない）

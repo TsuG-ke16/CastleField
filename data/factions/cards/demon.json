@@ -131,6 +131,17 @@
     "mpCost": 3,
     "count": 2
   },
+  "fac_demon_blood_pact": {
+    "name": "血の契約",
+    "kind": "spell",
+    "effect": "bloodPact",
+    "selfDamage": 6,
+    "amount": 3,
+    "soldiers": 2,
+    "description": "自分の城HPを6払って（城壁は通さない）、自分の城に近い自分の兵士2体の攻撃+3（その兵士が消えるまで）。城HPが7以下・自分の兵士がいないときは出せない",
+    "mpCost": 3,
+    "count": 2
+  },
   "fac_demon_soul_shard": {
     "name": "魂の欠片",
     "kind": "spell",

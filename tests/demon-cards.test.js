@@ -253,3 +253,22 @@ test('魔の血：自分のターンの始めの MP 回復が +1（ほかの陣�
   assert.deepEqual(turnMp('p2'), [3], 'ふつうの陣営は +3');
   assert.deepEqual(turnMp('p1').at(-1), 4, '魔族は +4');
 });
+
+// ---------------- 血の契約（bloodPact） ----------------
+
+test('血の契約：自城HPを6払い（城壁は通さない）、自分の城に近い2体の攻撃+3（ずっと）。HP7以下・兵士なしでは出せない', () => {
+  const { game, play, can, events } = setup({ hands: { p1: ['fac_demon_blood_pact', 'weakling', 'weakling', 'weakling'] } });
+  assert.match(can('p1', 'fac_demon_blood_pact').reason, /自分の兵士がいません/);
+  const xs = [play('p1', 'weakling'), play('p1', 'weakling'), play('p1', 'weakling')];
+  [xs[0].position, xs[1].position, xs[2].position] = [2, 0, 1];
+  game.players.p1.armor = 10;
+  game.players.p1.castle.hp = 7;
+  assert.match(can('p1', 'fac_demon_blood_pact').reason, /城のHPが足りません（8以上必要）/);
+  game.players.p1.castle.hp = 20;
+  play('p1', 'fac_demon_blood_pact');
+  assert.equal(game.players.p1.castle.hp, 14);
+  assert.equal(game.players.p1.armor, 10, '城壁は通さない');
+  assert.deepEqual(xs.map((x) => x.attack), [1, 4, 4], 'position 0・1 の2体');
+  assert.equal(events('soldierBuffed').length, 2);
+  assert.equal(events('castleDamaged').at(-1).source.kind, 'self');
+});

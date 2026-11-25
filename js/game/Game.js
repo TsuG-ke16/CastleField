@@ -3021,6 +3021,10 @@ export class Game {
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
         return { targets: playerTargets(foes), reason: '相手がいません' };
       }
+      case 'bloodPact':
+        // 血の契約（魔族）：払うと自分の城HPが selfDamage+1 以下になるなら出せない（自滅させない）。強化できる自分の兵士がいなければ出せない
+        if (player.castle.hp <= def.selfDamage + 1) return { targets: [], reason: `城のHPが足りません（${def.selfDamage + 2}以上必要）` };
+        return { targets: player.soldiers.length ? [{ playerId: player.id }] : [], reason: '道の上に自分の兵士がいません' };
       case 'vulnerableCastle': {
         // 脆弱（魔族）：相手の城。もう上限の回数まで脆弱な城は選べない
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
@@ -3820,6 +3824,20 @@ export class Game {
         enemy.castle.poison = this.capPoison(amount + (enemy.castle.poison ?? 0));
         enemy.castle.poisonTurns = poisonTurns;
         this.emit('castlePoisoned', { playerId: enemy.id, amount: enemy.castle.poison });
+        break;
+      }
+
+      case 'bloodPact': {
+        // 血の契約（魔族）：自分の城HPを払う（城壁・土の精霊・魔の血は通さない）→ 自分の城に近い順（position が小さい順。同じなら先に出された方）に
+        // soldiers 体の攻撃を amount 上げる（兵士の攻撃力そのものが上がるので、その兵士が消えるまで続く）
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        player.castle.takeDamage(card.def.selfDamage);
+        this.emit('castleDamaged', { playerId: player.id, amount: card.def.selfDamage, blocked: 0, hp: player.castle.hp, source: { kind: 'self', type: card.type } });
+        const picks = [...player.soldiers].sort((a, b) => a.position - b.position || soldierNumber(a) - soldierNumber(b)).slice(0, card.def.soldiers);
+        for (const s of picks) {
+          s.baseAttack += card.def.amount;
+          this.emit('soldierBuffed', { playerId: player.id, soldierId: s.soldierId, attack: s.attack });
+        }
         break;
       }
 

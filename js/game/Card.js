@@ -54,7 +54,8 @@ export const EFFECTS = {
     healSoldier: ['amount'], // 竜血の雫：傷ついた自分の兵士1体のHPを amount 回復（対象 { soldierId }）
     breathAttack: ['amount', 'castleAmount'], // 火炎の吐息：選んだ道の相手の兵士全員に amount、相手の城に城壁を無視して castleAmount
     vulnerableCastle: ['turns'], // 脆弱（魔族）：相手の城が受ける攻撃のダメージが ratio の割合だけ増える（turns。重ねがけは回数だけ延びる（maxTurns まで）。増える量は maxRatio まで）
-    poisonEnemyCastle: ['amount', 'turns'], // 毒の霧（魔族）：相手の城だけを毒にする（毎ターン amount・turns 回。重ねがけは回数だけ延びる（maxTurns まで））
+    poisonEnemyCastle: ['amount', 'turns'],
+    bloodPact: ['amount', 'selfDamage', 'soldiers'], // 血の契約（魔族）：自分の城HPを selfDamage 払って、自分の城に近い自分の兵士 soldiers 体の攻撃を amount 上げる（その兵士が消えるまで） // 毒の霧（魔族）：相手の城だけを毒にする（毎ターン amount・turns 回。重ねがけは回数だけ延びる（maxTurns まで））
   },
   defense: {
     shieldSoldier: ['amount'],
@@ -84,7 +85,7 @@ export const BASIC_DICE = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff'];
 /** メインを使わず何枚でも出せるサイコロ（ほかはメイン） */
 export const SUPPORT_DICE = ['mana', 'coin', 'shield', 'buff'];
 
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack', 'poisonEnemyCastle', 'vulnerableCastle'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack', 'poisonEnemyCastle', 'vulnerableCastle', 'bloodPact'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
@@ -276,7 +277,7 @@ export class Card {
           throw new Error(`${where}: 脆弱（vulnerableCastle）の ratio・maxRatio は0より大きく1以下で、ratio は maxRatio 以下にしてください`);
         }
       }
-      if (def.soldiers !== undefined && (!['weakenAttack'].includes(def.effect) || !isPositive(def.soldiers))) {
+      if (def.soldiers !== undefined && (!['weakenAttack', 'bloodPact'].includes(def.effect) || !isPositive(def.soldiers))) {
         throw new Error(`${where}: soldiers（効く兵士の数）は weakenAttack などに書ける1以上の整数です`);
       }
       if (def.clearEnemyAttachments !== undefined && (def.effect !== 'purifyFlare' || typeof def.clearEnemyAttachments !== 'boolean')) {
