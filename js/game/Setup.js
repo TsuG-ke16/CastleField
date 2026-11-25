@@ -238,6 +238,8 @@ export function factionDecks(factions, cardSets) {
     decks[id] = { name: def.name, cards };
     // 陣営の特性（森の常時の精霊）は、デッキに付けて Game に渡す（Game は席のデッキから読む）
     if (def.passiveSpirits !== undefined) decks[id].passiveSpirits = def.passiveSpirits;
+    // 陣営のパッシブ（魔族の「死者を従える」など）も同じ
+    if (def.passive !== undefined) decks[id].passive = def.passive;
   }
   return decks;
 }
@@ -272,4 +274,31 @@ export function validatePassiveSpirits(data, elementIds, where) {
     if (sp.ignoreArmor !== undefined && (typeof sp.ignoreArmor !== 'boolean' || sp.effect !== 'castleDamage')) throw new Error(`${w}: ignoreArmor は castleDamage の精霊だけに、true / false で書けます`);
     if (sp.effect === 'pushFront' ? !posInt(sp.push) : sp.push !== undefined) throw new Error(`${w}: push（押し戻すマス数）は pushFront の精霊だけに、1以上の整数で書いてください`);
   });
+}
+
+/**
+ * 陣営のパッシブ（デッキの passive。4陣営の魔族）のチェック。間違っていれば Error を投げる。
+ * 形：{ raiseOnKill: { soldier: { name, hp, attack, speed, element? }, perTurn } }
+ *   raiseOnKill：魔族の兵士が、戦い・射撃で敵の兵士のHPを0にしたとき、骸骨兵（soldier）が魔族の城の前に1体生まれる。
+ *   perTurn は1ターン（通算）に生まれる回数の上限
+ * @param {object} data passive
+ * @param {string[]} elementIds 使える属性ID
+ * @param {string} where エラーの文の頭
+ */
+export function validatePassive(data, elementIds, where) {
+  const posInt = (v) => Number.isInteger(v) && v > 0;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(`${where}: passive は { raiseOnKill } のオブジェクトにしてください`);
+  for (const key of Object.keys(data)) if (key !== 'raiseOnKill') throw new Error(`${where}: passive の "${key}" は知らないパッシブです（raiseOnKill だけ）`);
+  const r = data.raiseOnKill;
+  if (r === undefined) return;
+  const w = `${where}: passive.raiseOnKill`;
+  if (!r || typeof r !== 'object' || Array.isArray(r)) throw new Error(`${w} は { soldier, perTurn } のオブジェクトにしてください`);
+  if (!posInt(r.perTurn)) throw new Error(`${w}.perTurn（1ターンに生まれる回数の上限）は1以上の整数にしてください`);
+  const s = r.soldier;
+  if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error(`${w}.soldier は { name, hp, attack, speed } のオブジェクトにしてください`);
+  if (typeof s.name !== 'string' || s.name === '') throw new Error(`${w}.soldier.name（表示名）を書いてください`);
+  if (!posInt(s.hp)) throw new Error(`${w}.soldier.hp は1以上の整数にしてください`);
+  if (!posInt(s.attack)) throw new Error(`${w}.soldier.attack は1以上の整数にしてください`);
+  if (!posInt(s.speed)) throw new Error(`${w}.soldier.speed は1以上の整数にしてください`);
+  if (s.element !== undefined && s.element !== null && !elementIds.includes(s.element)) throw new Error(`${w}.soldier.element の "${s.element}" は属性の表にありません`);
 }

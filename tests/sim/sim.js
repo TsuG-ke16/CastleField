@@ -32,6 +32,8 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
     choiceTurns: 0, // 出せるカードが2種類以上あったターン（「迷う場面」そのものではない。目安）
     mainTurns: 0,
     played: {},
+    raised: 0, // 死者を従える（魔族のパッシブ）で骸骨兵が生まれた回数
+    raisedCastleDamage: 0, // 骸骨兵が敵の城に与えたダメージ（城壁が受けたぶんは除く）
     reactions: {}, // 属性の反応（reactionTriggered）の回数。反応のID → 回数
     // 4陣営（試作）：城の付着と反応。castleReactions は城に起きた反応のID → 回数、castleReactionDamage は城に起きた反応で城HPに入ったダメージ、
     // castleHpDamage は城HPに入ったダメージの合計（城壁が受けたぶん・自分で払ったコストは含まない）。firstReactionBy / firstCastleReactionBy は最初の反応を起こした人（2人のとき。当たった側の相手）
@@ -46,8 +48,14 @@ export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, game
   const order = game.getState(null).playerOrder;
   const otherOf = (pid) => (order.length === 2 ? order.find((x) => x !== pid) : null);
   let castleReactionPending = false;
+  const raisedIds = new Set();
   for (const type of EVENT_TYPES) {
     game.on(type, (e) => {
+      if (type === 'soldierDeployed' && e.raised) {
+        stats.raised += 1;
+        raisedIds.add(e.soldierId);
+      }
+      if (type === 'castleDamaged' && e.source?.kind === 'soldier' && raisedIds.has(e.source.soldierId)) stats.raisedCastleDamage += e.amount - (e.blocked ?? 0);
       stats.events[type] = (stats.events[type] || 0) + 1;
       if (type === 'castleReactionTriggered') {
         stats.castleReactions[e.reaction] = (stats.castleReactions[e.reaction] || 0) + 1;

@@ -519,7 +519,7 @@ function smartStep(game, pid, ctx) {
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;
-  const threat = enemy && enemy.soldiers.some((s) => s.position + ctx.cards[s.type].speed >= L);
+  const threat = enemy && enemy.soldiers.some((s) => s.position + (ctx.cards[s.type]?.speed ?? s.speed ?? 0) >= L);
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'freezeEnemySoldiers'))) return true;
   // 魔族の氷の息：脅威がなくても、敵の兵士が自分の城の手前2マス以内まで来ていれば、凍結で進軍を1回止める
   const closeIn = enemy && enemy.soldiers.some((s) => s.position >= L - 2);
@@ -528,7 +528,7 @@ function smartStep(game, pid, ctx) {
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'pushBackEnemySoldiers'))) return true;
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'poisonEnemySoldiers'))) return true;
   // 魔族の毒の霧：1体でも、HPが高く（4以上）まだ進軍で城に届かない兵士がいれば、毒を入れる（長く効く）
-  const lasting = enemy && enemy.soldiers.some((s) => s.hp + s.shield >= 4 && s.position + ctx.cards[s.type].speed < L);
+  const lasting = enemy && enemy.soldiers.some((s) => s.hp + s.shield >= 4 && s.position + (ctx.cards[s.type]?.speed ?? s.speed ?? 0) < L);
   // 魔族の残響の魂：MP に余裕（コスト＋3）があれば、最後の手段にせず出す（倒れた兵士がいなければ playable に入らない）
   const revives = demonTypes(ctx, 'reviveFallen').filter((t) => me.mp >= (ctx.cards[t].mpCost ?? 0) + 3);
   const played = playFirst(game, playable, [

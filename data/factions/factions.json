@@ -1,5 +1,5 @@
 {
-  "_note": "4陣営モードの陣営（名前と、陣営の特性。数値はすべて仮）。陣営ごとのカード表は data/modes.json の factions.factionCardSets。陣営のカード表のカード全部（count 枚ずつ）が、その陣営のデッキになる（deckMode \"own\"。Setup.js の factionDecks）。passiveSpirits（森）は陣営の特性：自分のターンの始め（コイン・MP の回復のあと、ドローの前）に、spirits の精霊が順に1体ずつ動く（CLAUDE.md「4陣営モード」の「森の常時の精霊」）。effect は castleDamage（敵城に amount。ignoreArmor なら城壁を無視）／soldiersDamage（敵の見える兵士全員に amount）／pushFront（敵の先頭の見える兵士を push マス押し戻して amount）。動いた精霊の element が、敵の見える兵士全員に attachTurns 回付く。everyTurns は自分の何ターンに1回動くか（省略すると1＝毎ターン。1ターン目に動き、間のターンは休む。順番は動いたときだけ進む）",
+  "_note": "4陣営モードの陣営（名前と、陣営の特性。数値はすべて仮）。陣営ごとのカード表は data/modes.json の factions.factionCardSets。陣営のカード表のカード全部（count 枚ずつ）が、その陣営のデッキになる（deckMode \"own\"。Setup.js の factionDecks）。passiveSpirits（森）は陣営の特性：自分のターンの始め（コイン・MP の回復のあと、ドローの前）に、spirits の精霊が順に1体ずつ動く（CLAUDE.md「4陣営モード」の「森の常時の精霊」）。passive.raiseOnKill（魔族）は、魔族の兵士が戦い・射撃で敵の兵士を倒したとき、soldier の骸骨兵が魔族の城の前に1体生まれる（perTurn は1ターンに生まれる回数の上限。「魔族の死者を従える」）。effect は castleDamage（敵城に amount。ignoreArmor なら城壁を無視）／soldiersDamage（敵の見える兵士全員に amount）／pushFront（敵の先頭の見える兵士を push マス押し戻して amount）。動いた精霊の element が、敵の見える兵士全員に attachTurns 回付く。everyTurns は自分の何ターンに1回動くか（省略すると1＝毎ターン。1ターン目に動き、間のターンは休む。順番は動いたときだけ進む）",
   "kingdom": {
     "name": "王国",
     "description": "守りと回復で粘り、光で押し切る。"
@@ -45,7 +45,13 @@
   },
   "demon": {
     "name": "魔族軍",
-    "description": "毒・呪い・吸収で守りを貫き、倒れても蘇る。"
+    "description": "毒・呪い・吸収で守りを貫き、倒れても蘇る。",
+    "passive": {
+      "raiseOnKill": {
+        "soldier": { "name": "骸骨兵", "hp": 2, "attack": 2, "speed": 2, "element": "dark" },
+        "perTurn": 1
+      }
+    }
   },
   "dragon": {
     "name": "竜族帝国",

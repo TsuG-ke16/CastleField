@@ -104,6 +104,9 @@ for (let i = 0; i < factions.length; i++) {
       avgTurns: turns.length ? turns.reduce((x, y) => x + y, 0) / turns.length : null,
       maxTurns: turns.length ? Math.max(...turns) : null,
       reasons,
+      raisedPerGame: all.reduce((x, r) => x + r.raised, 0) / all.length,
+      raisedCastleDamage: all.reduce((x, r) => x + r.raisedCastleDamage, 0),
+      castleDamageTotal: all.reduce((x, r) => x + r.castleDamage.soldier + r.castleDamage.spell + r.castleDamage.other, 0),
       reactionsPerGame: Object.values(reactions).reduce((x, y) => x + y, 0) / all.length,
       reactions,
       trumpsPerGame: Object.fromEntries(trumps.map((t) => [t, all.reduce((x, r) => x + (r.played[t] || 0), 0) / all.length])),
@@ -132,6 +135,8 @@ if (args.includes('--json')) {
   }
   console.log('\n切り札（1試合あたりの使用回数）・光の先制（1試合あたり）');
   for (const r of rows) console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.trumpsPerGame).map(([k, v]) => `${cards[k].name} ${v.toFixed(2)}`).join('・') || '切り札なし'}・先制 ${r.firstStrikesPerGame.toFixed(2)}`);
+  console.log('\n骸骨兵（死者を従える）');
+  for (const r of rows) if (r.raisedPerGame > 0) console.log(`- ${name(r.a)} × ${name(r.b)}：生まれた回数 ${r.raisedPerGame.toFixed(2)}/試合・骸骨兵が城に与えたダメージ ${pct(r.raisedCastleDamage / (r.castleDamageTotal || 1))}（全員が城に与えたダメージに対する割合）`);
   console.log('\n反応の回数（全試合）');
   for (const r of rows) console.log(`- ${name(r.a)} × ${name(r.b)}：${Object.entries(r.reactions).map(([k, v]) => `${k} ${v}`).join('・') || 'なし'}`);
   console.log('\n城に起きた反応の回数（全試合）');

@@ -273,6 +273,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
         element: "water",      // "fire" | "water" | "wind" | "earth" | null
         shield: 0,             // 盾の残り
         statuses: { poison: { amount: 1, turns: 2 } /* か null */, frozen: 0 /* 凍結の残り回数 */, burn: null /* やけど */, weakened: null /* 呪い { amount, turns } か null */ },
+        token: true, name: "骸骨兵", speed: 2,  // 魔族の骸骨兵（トークン）のときだけ付くキー
         attachments: [{ element: "light", turns: 5 }]  // 付着（reactions を渡したゲームだけ。渡さなければこのキー自体がない）
       }]
     },
@@ -308,7 +309,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `cardsFused` | `{ playerId, cardIds: [a, b], cardId, from, to }` … 手札の2枚（`from` の種類）が、1枚（`to` の種類）になった。オンラインでは本人以外に `{ playerId }` だけ送る |
 | `discardRequired` | `{ playerId, count }` … 捨てる必要がある枚数 |
 | `cardDiscarded` | `{ playerId, cardIds }` |
-| `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack, revived? }` … `hp` / `attack` は出した時点の値。`revived: true` は蘇生（`reviveFallen`）で生き返った兵士 |
+| `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack, revived?, raised?, name? }` … `raised: true` は魔族の「死者を従える」で生まれた骸骨兵（`type` は `"raisedSoldier"`、`name` は表示名。「魔族の死者を従える」）。`hp` / `attack` は出した時点の値。`revived: true` は蘇生（`reviveFallen`）で生き返った兵士 |
 | `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause?, slipped? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい）。`slipped: true` は氷のステージで滑って1マス余分に進んだとき |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
 | `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）/ `"reaction"`（属性の反応の追加ダメージ。クラシック）/ `"guard"`（身代わりとして城への攻撃を受けた。4陣営）/ `"spirit"`（森の常時の精霊。4陣営）/ `"sand"`・`"frostbite"`（砂・凍傷の継続ダメージ。4陣営）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
@@ -1712,6 +1713,17 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - 敵の兵士がいなければ、水・風は何もしない（付着もなし。`passiveSpiritActed` は `soldierIds: []` で出る）。火・土の城ダメージは、兵士がいなくても入る。忍者（見えない兵士）は対象にならない
 - 精霊のダメージで城が落ちたら、そこで決着（ドローしない）
 - イベント `passiveSpiritActed`、`getState().players.pX.passiveSpirit`（「ロジックとUIの約束」）。カードの精霊（`summonSpirit`）の仕組みは、ほかのモードが使うので残してある
+
+### 魔族の死者を従える（人間の指示で足した。数値は仮）
+魔族の固有能力（パッシブ）。魔族の兵士が敵の兵士を倒すと、**骸骨兵**が魔族の城の前に1体生まれる（敵そのものを奪うのではなく、固定の弱い兵士。強い敵を奪って雪だるまになるのを避けるため）。
+
+- **置き場**：`data/factions/factions.json` の魔族の `passive.raiseOnKill`（`{ soldier: { name, hp, attack, speed, element? }, perTurn }`。今は骸骨兵 HP2・攻撃2・速さ2・闇、`perTurn` 1）。`factionDecks` がデッキに写し、Game は席のデッキの `passive` を読む（チェックは `js/game/Setup.js` の `validatePassive`。書き間違いは `new Game()` が例外）。書かない陣営・モードは今までどおり
+- **起きるとき**：魔族の陣営の兵士が、**戦い（`soldiersClashed`）か射撃（弓兵・魔法使いの `soldierShot`）**で、敵の兵士のHPを0にしたとき。攻める側・守る側は問わない。魔法・毒・凍傷・やけど・天候・反応などで倒れたときと、魔物を倒したときは起きない。忍者・暗殺者は戦いも射撃も受けないので、倒して生まれることはない（骸骨兵のイベントは見えない兵士のものではなく、どちらの陣地にも送られる。位置が漏れることはない）
+- **歯止め**：①1ターン（通算 `turn`）に `perTurn` 回まで ②**骸骨兵（トークン）が倒した敵では起きない**（連鎖を断つ） ③生まれた骸骨兵は、倒れても蘇生（`reviveFallen`）の「最後に倒れた兵士」の記録に残さない ④出したターンは動かない（兵士を出したときと同じ）
+- **生まれる場所**：倒した魔族の兵士の道（`roadId`・`targetId`）の、魔族の城の前（position 0）。広場・チーム戦も、倒した兵士の道に合わせる（兵士を出す処理と同じ）。骸骨兵の攻撃・HP は固定（兵舎・訓練・鍛錬は乗らない）
+- **イベント**：`soldierDeployed`（`raised: true`、`type: "raisedSoldier"`、`name`）。新しいイベントはない。`getState()` の兵士には、骸骨兵のときだけ `token: true`・`name`・`speed` が付く（カードではないので `type` は `cardDefs` にない。画面は `name` を出す）
+- CPU：変更なし（自動で起きる。`js/game/strategies.js` は、骸骨兵の速さを兵士の `speed` から読む）
+- テスト：`tests/demon-raise.test.js`
 
 ### 砂・凍傷（反応の継続ダメージ。人間の指示）
 - 砂嵐・黒氷の「やけど」は不自然だったので、やけどとは別の状態にした：反応の `dot: { status: "sand" | "frostbite", amount, turns }`（チェックは `validateReactions`）

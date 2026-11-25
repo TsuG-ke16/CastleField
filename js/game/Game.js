@@ -21,7 +21,7 @@
 import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
 import { validateElements, elementIds, beatsElement, validateReactions } from './Elements.js';
 import { Monster, validateUpgrades } from './Monster.js';
-import { Pile, validatePassiveSpirits, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
+import { Pile, validatePassiveSpirits, validatePassive, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
 import { Soldier } from './Soldier.js';
 import { Player } from './Player.js';
 import { Road } from './Road.js';
@@ -262,6 +262,9 @@ const isCoinCard = (def) => def.effect === 'gainCoins' || (def.effect === 'dice'
 
 /** 城HPが変わるイベント（このあと背水の陣を確かめる） */
 const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttackedCastle']);
+/** 死者を従える（魔族のパッシブ）で生まれた骸骨兵の type（カードではない。cardDefs にはない） */
+const RAISED_TYPE = 'raisedSoldier';
+
 const STEALTH_EVENTS = new Set([
   'soldierDeployed', 'soldierMoved', 'soldierDamaged', 'soldierDestroyed', 'statusApplied', 'statusCleared',
   'weaponEquipped', 'shieldAdded', 'soldierBuffed', 'monsterClashed',
@@ -304,6 +307,7 @@ export class Game {
     if (decks !== null) {
       validateDecks(decks, cards);
       for (const [id, d] of Object.entries(decks)) if (d.passiveSpirits !== undefined) validatePassiveSpirits(d.passiveSpirits, allowedElements, `decks の "${id}"`);
+      for (const [id, d] of Object.entries(decks)) if (d.passive !== undefined) validatePassive(d.passive, allowedElements, `decks の "${id}"`);
     }
 
     this.cardDefs = cards;
@@ -411,6 +415,7 @@ export class Game {
         this.players[id].deckId = deckIds[seat];
         // 4陣営：陣営の特性（森の常時の精霊）
         this.players[id].passiveSpirits = decks[deckIds[seat]].passiveSpirits ?? null;
+        this.players[id].passive = decks[deckIds[seat]].passive ?? null;
         this.piles.set(id, pile);
       });
       // getState に常時の精霊のキーを足すのは、だれかが常時の精霊を持つゲームだけ
@@ -1801,7 +1806,8 @@ export class Game {
     // 蘇生（reviveFallen）のために、HPが0になって倒れた（killed）兵士を持ち主ごとに1体だけ覚えておく（getState には出さない）。
     // 魔物のカードの駒は山札に戻らない特別なカードなので、生き返らせない
     // 4陣営の勇者（noRevive）も生き返らせない（記録しないので、前に倒れた兵士の記録はそのまま残る）
-    if (reason === 'killed' && this.cardDefs[soldier.type]?.monster === undefined && !this.cardDefs[soldier.type]?.noRevive) {
+    // 骸骨兵（トークン）も記録に残さない（蘇生で骸骨兵が生き返らないように）
+    if (reason === 'killed' && !soldier.token && this.cardDefs[soldier.type]?.monster === undefined && !this.cardDefs[soldier.type]?.noRevive) {
       owner.lastFallen = { type: soldier.type, roadId: soldier.roadId, targetId: soldier.targetId, maxHp: soldier.maxHp };
     }
     this.emit('soldierDestroyed', { playerId: owner.id, soldierId: soldier.soldierId, reason });
@@ -1883,7 +1889,9 @@ export class Game {
       const amount = miss ? 0 : this.fightDamage(soldier, victim);
       this.emit('soldierShot', { ...shot, target: { kind: 'soldier', playerId: owner.id, soldierId: victim.soldierId }, amount });
       if (miss) this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
-      else if (!this.damageSoldier(owner, victim, amount, 'shot')) {
+      else if (this.damageSoldier(owner, victim, amount, 'shot')) {
+        this.raiseOnKill(player, soldier); // 魔族のパッシブ（死者を従える）
+      } else {
         this.elementHit(owner, victim, soldier.element, { damage: amount });
         this.freezeOnHitBy(soldier, owner, victim);
         if (this.reactionDefs) over = this.checkGameOver();
@@ -2722,6 +2730,41 @@ export class Game {
   }
 
   /** 進軍中の attacker と、相手の defender が戦う。お互いに攻撃力ぶんのダメージを同時に与える */
+  /**
+   * 魔族のパッシブ「死者を従える」（席のデッキの passive.raiseOnKill）：owner の兵士 killer が、戦い・射撃で敵の兵士のHPを0にしたとき、
+   * 骸骨兵（トークン）が killer の道の owner の城の前（マス0）に1体生まれる（soldierDeployed に raised: true）。
+   * 歯止め：1ターン（通算 turn）に perTurn 回まで／骸骨兵（トークン）が倒したときは起きない／蘇生の記録には残さない／出したターンは動かない。
+   * 魔法・毒・天候・反応などで倒れたときと、魔物を倒したときは呼ばれない。数値はデータ（factions.json）
+   */
+  raiseOnKill(owner, killer) {
+    const def = owner.passive?.raiseOnKill;
+    if (!def || killer.token || !owner.soldiers.includes(killer) || this.phase === 'gameOver') return;
+    if (owner.lastRaiseTurn !== this.turn) {
+      owner.lastRaiseTurn = this.turn;
+      owner.raisedThisTurn = 0;
+    }
+    if (owner.raisedThisTurn >= def.perTurn) return;
+    owner.raisedThisTurn += 1;
+    const sdef = def.soldier;
+    const soldierId = `s${String(this.nextSoldierNumber++).padStart(2, '0')}`;
+    const soldier = new Soldier(soldierId, { type: RAISED_TYPE, def: { hp: sdef.hp, attack: sdef.attack, speed: sdef.speed, innateElement: sdef.element ?? null } }, killer.roadId, killer.targetId);
+    soldier.token = true;
+    soldier.tokenName = sdef.name;
+    owner.soldiers.push(soldier);
+    this.emit('soldierDeployed', {
+      playerId: owner.id,
+      soldierId,
+      type: RAISED_TYPE,
+      roadId: killer.roadId,
+      targetId: killer.targetId,
+      position: soldier.position,
+      hp: soldier.hp,
+      attack: soldier.attack,
+      raised: true,
+      name: sdef.name,
+    });
+  }
+
   /** 4陣営：武器の freezeOnHit（フロストブレード）。当たって生き残った相手を休ませる */
   freezeOnHitBy(hitter, owner, victim) {
     if (!hitter.freezeOnHit || !owner.soldiers.includes(victim) || victim.frozen >= hitter.freezeOnHit || this.wardsStatus(victim)) return;
@@ -2766,9 +2809,14 @@ export class Game {
     }
 
     // 消える順番は soldierDamaged と同じ（守る側 → 攻める側）
+    const deadD = defender.isDead;
+    const deadA = attacker.isDead;
     for (const [owner, s] of [[enemy, defender], [player, attacker]]) {
       if (s.isDead) this.removeSoldier(owner, s, 'killed');
     }
+    // 魔族のパッシブ（死者を従える）：戦いで敵を倒した側（守る側 → 攻める側の順）
+    if (deadD) this.raiseOnKill(player, attacker);
+    if (deadA) this.raiseOnKill(enemy, defender);
     // 付着・反応（reactions を渡したときだけ）：当たった攻撃の属性（武器の属性）。外れた攻撃は付かない。同じ順番（守る側 → 攻める側）
     const hitD = !missD;
     const hitA = !missA && !noCounterA;
