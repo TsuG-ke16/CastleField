@@ -680,7 +680,7 @@ const PLAN = {
     ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos' }],
     ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
     ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
-    ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 8 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 3 }],
+    ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 8 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 2, soldiers: 3 }],
     ['魂の欠片', 3, { effect: 'damageCastleAndHeal', amount: 3, heal: 3 }], ['残響の魂', 4, { effect: 'reviveFallen', amount: 0.5 }],
     ['血の膜', 2, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
   ],
@@ -749,8 +749,8 @@ test('本物のカード：魂の欠片・残響の魂・カオスパルス・�
   assert.ok(t.hp <= 57);
   play('p1', 'fac_demon_frost_breath');
   assert.equal(t.frozen, 1);
-  play('p1', 'fac_demon_curse_mark', { soldierId: t.soldierId });
-  assert.deepEqual(t.weakened, { amount: 2, turns: 3 });
+  play('p1', 'fac_demon_curse_mark', { playerId: 'p2' });
+  assert.deepEqual(t.weakened, { amount: 2, turns: 2 });
   play('p1', 'fac_demon_poison_mist', { playerId: 'p2' });
   assert.equal(t.poison, null, '兵士は毒にしない');
   assert.equal(game.players.p2.castle.poison, 2);

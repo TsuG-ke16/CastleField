@@ -504,6 +504,16 @@ function smartStep(game, pid, ctx) {
       if (playWith(game, c.cardId, pickFront)) return true;
     }
     for (const c of playable.filter((x) => ctx.cards[x.type].effect === 'weakenAttack')) {
+      // 魔族の呪いの印（soldiers：手前の何体か）：呪われていない相手の兵士が2体以上か、攻撃4以上の兵士がいれば、その数がいちばん多い相手に
+      if (ctx.cards[c.type].soldiers) {
+        const fresh = (pidT) => enemies.find((e) => e.id === pidT)?.soldiers.filter((s) => !s.statuses?.weakened) ?? [];
+        const best = (targets) => [...targets].sort((a, b) => fresh(b.playerId).length - fresh(a.playerId).length)[0];
+        const ts = game.getTargets(c.cardId);
+        const t = ts.length ? best(ts) : null;
+        const worth = t && (fresh(t.playerId).length >= 2 || fresh(t.playerId).some((s) => s.attack >= 4));
+        if (worth && playWith(game, c.cardId, () => t)) return true;
+        continue;
+      }
       const strongest = (targets) => targets
         .map((t) => ({ t, s: byId.get(t.soldierId) })).filter((x) => x.s)
         .sort((a, b) => b.s.attack - a.s.attack || b.s.position - a.s.position)[0]?.t;

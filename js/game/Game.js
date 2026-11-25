@@ -2991,6 +2991,14 @@ export class Game {
         return { targets: this.findRoad(fallen.roadId) ? [{ playerId: player.id }] : [], reason: '倒れた兵士の道がもうありません' };
       }
       case 'weakenAttack': {
+        // 呪いの印（4陣営の魔族。soldiers）：相手を選ぶ。まだ呪われていない見える兵士がいる相手だけ（同じ兵士に重ねがけしない）
+        if (def.soldiers) {
+          const withSoldiers = this.opponentsOf(player.id).filter(hasSoldiers);
+          return {
+            targets: playerTargets(withSoldiers.filter((p) => this.curseVictims(player, p, def.soldiers).length > 0)),
+            reason: withSoldiers.length ? 'もう全員に呪いがかかっています' : '道の上に相手の兵士がいません',
+          };
+        }
         // 呪い：相手の兵士1体。もう同じか強い呪いがかかっている兵士は選べない（出しても何も変わらないため）
         const all = this.opponentsOf(player.id).flatMap((p) => p.visibleSoldiers);
         const changes = (x) => !x.weakened || x.weakened.amount < def.amount || x.weakened.turns < def.turns;
@@ -3428,6 +3436,27 @@ export class Game {
     this.elementHit(owner, soldier, card.def.element);
   }
 
+  /**
+   * 呪いの印（weakenAttack の soldiers。4陣営の魔族）：enemy の、まだ呪われていない見える兵士のうち、撃った人の城に近い順（position が大きい順。
+   * 同じなら先に出された方。道はまたぐ）に n 体。神盾で状態異常を受けない兵士は数えない
+   */
+  curseVictims(player, enemy, n) {
+    return enemy.visibleSoldiers
+      .filter((x) => !x.weakened && !this.wardsStatus(x))
+      .sort((a, b) => b.position - a.position || soldierNumber(a) - soldierNumber(b))
+      .slice(0, n);
+  }
+
+  /** 呪いの印：手前の兵士 soldiers 体の攻撃を amount 下げる（turns 回の進軍のあいだ）。spellCast は1回。霧で外れず、防御も聞かない */
+  curseFront(player, card, enemy) {
+    this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+    for (const soldier of this.curseVictims(player, enemy, card.def.soldiers)) {
+      soldier.weakened = { amount: card.def.amount, turns: card.def.turns };
+      this.emit('statusApplied', { playerId: enemy.id, soldierId: soldier.soldierId, status: 'weakened', turns: card.def.turns, amount: card.def.amount });
+      this.elementHit(enemy, soldier, card.def.element);
+    }
+  }
+
   /** 呪い：持ち主の進軍が終わったら、残りを1減らす（0で治る） */
   tickWeakened(player) {
     for (const soldier of player.soldiers) {
@@ -3518,6 +3547,10 @@ export class Game {
     const victims = () => enemy.visibleSoldiers.filter((x) => roadId === undefined || x.roadId === roadId);
 
     switch (effect) {
+      case 'weakenAttack':
+        this.curseFront(player, card, enemy);
+        break;
+
       case 'singleDamage':
       case 'randomElementDamage': {
         // 先頭の兵士に当たる1体への魔法（target "front"）：選んだ道の先頭の兵士に、1体への魔法と同じように当てる

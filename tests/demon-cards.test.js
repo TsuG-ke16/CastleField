@@ -98,3 +98,28 @@ test('毒の霧：王国の浄化で城の毒が治る', () => {
   play('p2', 'fac_king_purify');
   assert.equal(game.players.p2.castle.poison, null);
 });
+
+// ---------------- 呪いの印（weakenAttack の soldiers） ----------------
+
+test('呪いの印：相手を選び、自分の城に近い順に3体の攻撃−2（2回の進軍）。道はまたぐ。呪われた兵士には重ねない', () => {
+  const { game, play, can, events } = setup({ hands: { p1: ['fac_demon_curse_mark', 'fac_demon_curse_mark'], p2: ['striker', 'striker', 'striker', 'striker'] } });
+  const xs = [];
+  for (let i = 0; i < 4; i++) xs.push(play('p2', 'striker'));
+  [xs[0].position, xs[1].position, xs[2].position, xs[3].position] = [1, 3, 0, 2];
+  xs[2].roadId = game.players.p2.soldiers[0].roadId;
+  play('p1', 'fac_demon_curse_mark', { playerId: 'p2' });
+  assert.deepEqual(xs.map((x) => Boolean(x.weakened)), [true, true, false, true], 'position 3・2・1 の3体');
+  assert.deepEqual(xs[1].weakened, { amount: 2, turns: 2 });
+  assert.equal(game.getState('p1').players.p2.soldiers.find((s) => s.soldierId === xs[1].soldierId).attack, 5, 'getState の attack は武器の足し算だけ（呪いは戦いで引く）');
+  assert.equal(events('spellCast').filter((e) => e.type === 'fac_demon_curse_mark').length, 1);
+  // 2枚目：まだ呪われていない1体だけにかかる
+  play('p1', 'fac_demon_curse_mark', { playerId: 'p2' });
+  assert.equal(xs[2].weakened.turns, 2);
+  assert.equal(xs[1].weakened.turns, 2, '重ねがけで延びない');
+  game.players.p1.hand.push(game.createCard('fac_demon_curse_mark'));
+  assert.equal(can('p1', 'fac_demon_curse_mark', { playerId: 'p2' }).ok, false, '全員呪われていれば出せない');
+  // 2回の進軍で治る
+  game.tickWeakened(game.players.p2);
+  game.tickWeakened(game.players.p2);
+  assert.equal(xs[1].weakened, null);
+});

@@ -22,7 +22,7 @@ export const EFFECTS = {
     curePoison: [], // 解毒薬：自分の毒状態（兵士・城）をすべて治す
     freezeEnemySoldiers: ['turns'],
     singleDamage: ['amount'], // 敵兵士1体に amount ダメージ（対象 { soldierId }。盾が先に受ける）
-    weakenAttack: ['amount', 'turns'], // 呪い：敵兵士1体の攻撃力を amount 下げる（最低1）。持ち主の進軍 turns 回ぶん続く
+    weakenAttack: ['amount', 'turns'], // 呪い：敵兵士1体の攻撃力を amount 下げる（最低1）。持ち主の進軍 turns 回ぶん続く。soldiers を書くと、相手を選んで手前の soldiers 体（4陣営の呪いの印）
     randomElementDamage: ['amount'], // 敵兵士1体に amount ダメージ。火・水・風・土のうちランダムな属性で撃ち、強い属性なら elementBonus 増える
     reviveFallen: [], // 蘇生：最後に倒れた自分の兵士1体を、HP を最大HPの amount 倍（0より大きく1以下の数。下でチェック）で生き返らせる
     chainBlast: ['amount'], // チェーン・ブラスト：相手の兵士1体に amount、まわり（同じ道の前後1マス・となりの道の同じマス）に半分（切り上げ）
@@ -268,6 +268,9 @@ export class Card {
       }
       if (def.maxTurns !== undefined && (!['poisonEnemyCastle'].includes(def.effect) || !isPositive(def.maxTurns) || def.maxTurns < def.turns)) {
         throw new Error(`${where}: maxTurns（重ねがけで延びる回数の上限）は poisonEnemyCastle などに書ける、turns 以上の整数です`);
+      }
+      if (def.soldiers !== undefined && (!['weakenAttack'].includes(def.effect) || !isPositive(def.soldiers))) {
+        throw new Error(`${where}: soldiers（効く兵士の数）は weakenAttack などに書ける1以上の整数です`);
       }
       if (def.clearEnemyAttachments !== undefined && (def.effect !== 'purifyFlare' || typeof def.clearEnemyAttachments !== 'boolean')) {
         throw new Error(`${where}: clearEnemyAttachments は浄化（purifyFlare）にだけ、true か false で書けます`);
