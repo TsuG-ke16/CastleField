@@ -537,8 +537,6 @@ function smartStep(game, pid, ctx) {
   // 凍結がなければ、突風で押し戻す
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'pushBackEnemySoldiers'))) return true;
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'poisonEnemySoldiers'))) return true;
-  // 魔族の毒の霧：1体でも、HPが高く（4以上）まだ進軍で城に届かない兵士がいれば、毒を入れる（長く効く）
-  const lasting = enemy && enemy.soldiers.some((s) => s.hp + s.shield >= 4 && s.position + (ctx.cards[s.type]?.speed ?? s.speed ?? 0) < L);
   const vulnTime = enemy && (me.soldiers.some((s) => s.role === 'melee' && s.position >= L - 2) || enemy.castleHp * 2 <= enemy.castleMaxHp);
   // 魔族の残響の魂：MP に余裕（コスト＋3）があれば、最後の手段にせず出す（倒れた兵士がいなければ playable に入らない）
   const revives = demonTypes(ctx, 'reviveFallen').filter((t) => me.mp >= (ctx.cards[t].mpCost ?? 0) + 3);
@@ -550,7 +548,6 @@ function smartStep(game, pid, ctx) {
     ...typesWithEffect(ctx, 'healOwnCastle'),
     ...revives,
     // 魔族：兵士・ほかの魔法を出したあと、MP が余っていれば出す（先に出すと、ほかの魔法の MP とメインの枠を食う）
-    ...(lasting ? demonTypes(ctx, 'poisonEnemySoldiers') : []),
     // 魔族の血の契約：自分の城HPが半分より多く、自分の兵士が2体以上いれば（城HPを払うので、守りが苦しいときは出さない）
     ...(enemy && me.castleHp * 2 > me.castleMaxHp && me.soldiers.length >= 2 ? demonTypes(ctx, 'bloodPact') : []),
     // 魔族の脆弱：自分の兵士が相手の城の手前2マス以内にいるか、相手の城HPが半分以下なら（城に当たるダメージが増える）

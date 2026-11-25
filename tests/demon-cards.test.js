@@ -16,7 +16,12 @@ const EXTRA = {
   wall: { name: '壁兵', kind: 'soldier', hp: 40, attack: 1, speed: 1, count: 1 },
   tap: { name: '火の粉', kind: 'spell', effect: 'singleDamage', amount: 3, count: 1 },
   bolt: { name: '雷', kind: 'spell', effect: 'damageEnemyCastle', amount: 5, count: 1 },
-  mist: { name: '毒霧', kind: 'spell', effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 8, count: 1 },
+  mist: { name: '毒霧', kind: 'spell', effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 4, count: 1 },
+  darkBolt: { name: '闇の矢', kind: 'spell', effect: 'damageEnemyCastle', element: 'dark', amount: 3, count: 1 },
+  fireBolt: { name: '火の矢', kind: 'spell', effect: 'damageEnemyCastle', element: 'fire', amount: 3, count: 1 },
+  waterBolt: { name: '水の矢', kind: 'spell', effect: 'damageEnemyCastle', element: 'water', amount: 3, count: 1 },
+  rain: { name: '雨', kind: 'spell', effect: 'damageEnemySoldiers', amount: 3, count: 1 },
+  mirror: { name: '反射', kind: 'defense', effect: 'reflectSpell', count: 1 },
 };
 
 /**
@@ -81,15 +86,18 @@ test('毒の霧：相手の城だけを毒にする（兵士は毒にしない�
   assert.equal(events('castleCured').length, 1);
 });
 
-test('毒の霧：重ねがけは回数だけ延びる（量は増えない）。maxTurns まで。上限なら出せない', () => {
+test('毒の霧：重ねがけは量を増やさず、残りを maxTurns（4）に戻すだけ。残り4なら出せない。1回の毒は2×4＝8を超えない', () => {
   const { game, play, can } = setup({ hands: { p1: ['mist', 'mist', 'mist'] } });
   play('p1', 'mist', { playerId: 'p2' });
+  assert.equal(can('p1', 'mist', { playerId: 'p2' }).ok, false, '残り4（上限）なら出せない');
   game.tickCastlePoison(game.players.p2); // 残り3
   play('p1', 'mist', { playerId: 'p2' });
   assert.equal(game.players.p2.castle.poison, 2, '量は増えない');
-  assert.equal(game.players.p2.castle.poisonTurns, 7, '3＋4');
-  game.players.p2.castle.poisonTurns = 8;
-  assert.equal(can('p1', 'mist', { playerId: 'p2' }).ok, false, 'もう上限まで続く');
+  assert.equal(game.players.p2.castle.poisonTurns, 4, '3＋4 は 4 まで（残りを戻すだけ）');
+  // 出し直しても、2枚で入るダメージは 2×(1＋4)＝10 で、2枚ぶんの上限 16 より少ない（重ねがけで得をしない）
+  const hp = game.players.p2.castle.hp;
+  for (let i = 0; i < 6; i++) game.tickCastlePoison(game.players.p2);
+  assert.equal(hp - game.players.p2.castle.hp, 8, '残り4回で止まる');
 });
 
 test('毒の霧：王国の浄化で城の毒が治る', () => {
@@ -376,4 +384,116 @@ test('本物のデータ：魔族の特性は 死者を従える・闇の侵食�
   assert.equal(decks.forest.passiveSpirits.everyTurns, 2);
   const demon = loadFactionCards(MODE, 'demon');
   for (const t of ['fac_demon_vulnerable', 'fac_demon_blood_pact', 'fac_demon_mana_seal', 'fac_demon_drain_blade', 'fac_demon_zombie', 'fac_demon_ice_wraith', 'fac_demon_chaos_spawn']) assert.ok(demon[t], t);
+});
+
+// ---------------- レビューで足したテスト ----------------
+
+test('吸命の剣（keepElement）：闇の兵士に持たせても闇のまま。戦うと相手に闇が付き、城に着くと闇の侵食が起きる', () => {
+  const { game, play } = setup({ passive: EROSION, hands: { p1: ['fac_demon_imp', 'fac_demon_drain_blade', 'fac_demon_imp', 'fac_demon_drain_blade'], p2: ['wall'] } });
+  const a = play('p1', 'fac_demon_imp');
+  play('p1', 'fac_demon_drain_blade', { soldierId: a.soldierId });
+  assert.equal(a.element, 'dark', '属性は消えない');
+  assert.equal(a.attack, 5);
+  const w = play('p2', 'wall');
+  game.fight(game.players.p1, a, game.players.p2, w);
+  assert.deepEqual(w.attachments.map((x) => x.element), ['dark']);
+  const b = play('p1', 'fac_demon_imp');
+  play('p1', 'fac_demon_drain_blade', { soldierId: b.soldierId });
+  b.position = game.rules.laneLength - 1;
+  game.players.p2.soldiers.length = 0;
+  march(game, 'p1');
+  assert.equal(game.players.p2.castle.healCut?.ratio, 0.25, '闇の侵食');
+});
+
+test('吸命の剣：戦いのあとの反応のダメージは回復に数えない（対消滅の追加8は数えない）', () => {
+  const { game, play } = setup({ hands: { p1: ['fac_demon_imp', 'fac_demon_drain_blade'], p2: ['wall'] } });
+  const a = play('p1', 'fac_demon_imp');
+  play('p1', 'fac_demon_drain_blade', { soldierId: a.soldierId });
+  const w = play('p2', 'wall');
+  w.attachments = [{ element: 'light', turns: 5 }];
+  game.players.p1.castle.hp = 10;
+  game.fight(game.players.p1, a, game.players.p2, w);
+  assert.equal(w.hp, 40 - 5 - 8, '戦い5＋対消滅8');
+  assert.equal(game.players.p1.castle.hp, 12, 'floor(5 × 0.5)。反応の8は数えない');
+});
+
+test('吸命の剣：射撃でも回復する。1しか減らせなければ回復0（イベントなし）。回復量減少は効く', () => {
+  const { game, play, events } = setup({ hands: { p1: ['fac_demon_curser', 'fac_demon_drain_blade', 'striker', 'fac_demon_drain_blade'], p2: ['wall', 'wall'] }, reactions: null });
+  const m = play('p1', 'fac_demon_curser');
+  play('p1', 'fac_demon_drain_blade', { soldierId: m.soldierId }); // 攻撃3
+  const w = play('p2', 'wall');
+  w.roadId = m.roadId;
+  w.position = game.rules.laneLength - 1; // 呪術師のすぐ前
+  game.players.p1.castle.hp = 10;
+  game.shoot(game.players.p1, m);
+  assert.equal(w.hp, 37);
+  assert.equal(game.players.p1.castle.hp, 11, '射撃：floor(3 × 0.5)');
+  // 1しか減らせない（盾5で6のうち5を受ける）
+  const a = play('p1', 'striker');
+  play('p1', 'fac_demon_drain_blade', { soldierId: a.soldierId }); // 攻撃6
+  const w2 = play('p2', 'wall');
+  w2.shield = 5;
+  const healedBefore = events('castleHealed').length;
+  game.fight(game.players.p1, a, game.players.p2, w2);
+  assert.equal(w2.hp, 39);
+  assert.equal(events('castleHealed').length, healedBefore, '回復0ならイベントなし');
+  // 回復量減少：6減らして3回復 → 半分で1
+  w2.shield = 0;
+  game.players.p1.castle.healCut = { ratio: 0.5, turns: 2 };
+  const hp = game.players.p1.castle.hp;
+  game.fight(game.players.p1, a, game.players.p2, w2);
+  assert.equal(game.players.p1.castle.hp, hp + 1);
+});
+
+test('血の契約：城HPがちょうど8なら出せて、2になる', () => {
+  const { game, play } = setup({ hands: { p1: ['fac_demon_blood_pact', 'weakling'] } });
+  play('p1', 'weakling');
+  game.players.p1.castle.hp = 8;
+  play('p1', 'fac_demon_blood_pact');
+  assert.equal(game.players.p1.castle.hp, 2);
+  assert.equal(game.players.p1.castle.isDestroyed, false);
+});
+
+test('闇の侵食：闇の魔法が敵の城に当たったときも起きる（闇でない魔法では起きない）', () => {
+  const { game, play, events } = setup({ passive: EROSION, hands: { p1: ['fireBolt', 'darkBolt'] } });
+  play('p1', 'fireBolt', { playerId: 'p2' });
+  assert.equal(game.players.p2.castle.healCut, null);
+  play('p1', 'darkBolt', { playerId: 'p2' });
+  assert.deepEqual(game.players.p2.castle.healCut, { ratio: 0.25, turns: 2 });
+  assert.equal(events('castleHealCut').at(-1).source, 'erosion');
+});
+
+test('魔の血：全体魔法（兵士全員）も1体ごとに−1。反射された魔法も魔法として−1。魔法使いの射撃は軽くしない', () => {
+  const { game, play } = setup({ passive: BLOOD, hands: { p1: ['wall', 'wall', 'bolt'], p2: ['rain', 'mirror', 'fac_demon_curser'] }, rules: { defenseReaction: true }, reactions: null });
+  const a = play('p1', 'wall');
+  const b = play('p1', 'wall');
+  play('p2', 'rain', { playerId: 'p1' });
+  assert.deepEqual([a.hp, b.hp], [38, 38], '3 − 1 ずつ');
+  // p1（魔族）の魔法を p2 が反射 → p1 の城に返ってくる 5 は −1
+  const hp1 = game.players.p1.castle.hp;
+  play('p1', 'bolt', { playerId: 'p2' });
+  assert.equal(game.getState(null).phase, 'defend');
+  const mirror = game.players.p2.hand.find((c) => c.type === 'mirror');
+  assert.equal(game.defend(mirror.cardId).ok, true);
+  assert.equal(game.players.p1.castle.hp, hp1 - 4, '反射された 5 は魔法なので −1');
+  // 魔法使いの射撃（兵士の攻撃）は軽くしない
+  game.players.p1.soldiers.length = 0;
+  const m = play('p2', 'fac_demon_curser');
+  const hp2 = game.players.p1.castle.hp;
+  game.shoot(game.players.p2, m);
+  assert.equal(game.players.p1.castle.hp, hp2 - 2, '攻撃2のまま');
+});
+
+test('脆弱と城の反応：城で起きた反応のダメージにも脆弱が乗る', () => {
+  const { game, play, events } = setup({ hands: { p1: ['fac_demon_vulnerable', 'fireBolt', 'waterBolt'] }, rules: { castleAttach: true, castleAttachTurns: 4, castleReactionPerRound: 1 } });
+  play('p1', 'fac_demon_vulnerable', { playerId: 'p2' });
+  play('p1', 'fireBolt', { playerId: 'p2' }); // 火が付く
+  assert.deepEqual(game.players.p2.castle.attachments.map((a) => a.element), ['fire']);
+  const hp = game.players.p2.castle.hp;
+  play('p1', 'waterBolt', { playerId: 'p2' }); // 3＋1、蒸発（城4）＋1
+  const reaction = events('castleDamaged').at(-1);
+  assert.equal(reaction.source.kind, 'reaction');
+  assert.equal(reaction.amount, 5);
+  assert.equal(reaction.vulnerable, 1);
+  assert.equal(game.players.p2.castle.hp, hp - 4 - 5);
 });

@@ -54,9 +54,9 @@ export const EFFECTS = {
     healSoldier: ['amount'], // 竜血の雫：傷ついた自分の兵士1体のHPを amount 回復（対象 { soldierId }）
     breathAttack: ['amount', 'castleAmount'], // 火炎の吐息：選んだ道の相手の兵士全員に amount、相手の城に城壁を無視して castleAmount
     vulnerableCastle: ['turns'], // 脆弱（魔族）：相手の城が受ける攻撃のダメージが ratio の割合だけ増える（turns。重ねがけは回数だけ延びる（maxTurns まで）。増える量は maxRatio まで）
-    poisonEnemyCastle: ['amount', 'turns'],
+    poisonEnemyCastle: ['amount', 'turns'], // 毒の霧（魔族）：相手の城だけを毒にする（毎ターン amount・turns 回。重ねがけは量を増やさず、残りを maxTurns まで戻す・延ばす）
     sealMp: ['amount', 'turns'], // 封魔（魔族）：相手の、自分のターンの始めの MP 回復を amount 減らす（turns 回。重ねがけは回数だけ延びる（maxTurns まで））
-    bloodPact: ['amount', 'selfDamage', 'soldiers'], // 血の契約（魔族）：自分の城HPを selfDamage 払って、自分の城に近い自分の兵士 soldiers 体の攻撃を amount 上げる（その兵士が消えるまで） // 毒の霧（魔族）：相手の城だけを毒にする（毎ターン amount・turns 回。重ねがけは回数だけ延びる（maxTurns まで））
+    bloodPact: ['amount', 'selfDamage', 'soldiers'], // 血の契約（魔族）：自分の城HPを selfDamage 払って、自分の城に近い自分の兵士 soldiers 体の攻撃を amount 上げる（その兵士が消えるまで）
   },
   defense: {
     shieldSoldier: ['amount'],
@@ -242,6 +242,9 @@ export class Card {
       }
       if (def.attachRandomElement !== undefined && ((def.kind !== 'weapon' && def.kind !== 'soldier') || typeof def.attachRandomElement !== 'boolean')) {
         throw new Error(`${where}: attachRandomElement（当たった相手に火・水・風・土のどれかも付ける）は武器か兵士に書ける true / false です`);
+      }
+      if (def.keepElement !== undefined && (def.kind !== 'weapon' || def.element !== undefined || typeof def.keepElement !== 'boolean')) {
+        throw new Error(`${where}: keepElement（持たせても兵士の今の属性を消さない）は、element のない武器だけに書ける true / false です`);
       }
       if (def.lifesteal !== undefined && (def.kind !== 'weapon' || !(typeof def.lifesteal === 'number' && def.lifesteal > 0 && def.lifesteal <= 1))) {
         throw new Error(`${where}: lifesteal（与えたダメージのうち自分の城を回復する割合）は武器だけに書ける、0より大きく1以下の数です`);

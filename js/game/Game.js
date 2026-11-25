@@ -2906,6 +2906,9 @@ export class Game {
     const hpA0 = attacker.hp;
     const blockedD = defender.takeDamage(toDefender);
     const blockedA = attacker.takeDamage(toAttacker);
+    // 吸命の剣が数える「与えたダメージ」：戦いのダメージで HP が減ったぶんだけ（あとの反応のダメージは数えない）
+    const dealtD = hpD0 - defender.hp;
+    const dealtA = hpA0 - attacker.hp;
     this.emit('soldierDamaged', {
       playerId: enemy.id, soldierId: defender.soldierId, amount: toDefender, hp: defender.hp, cause: 'fight', blocked: blockedD,
     });
@@ -2937,8 +2940,8 @@ export class Game {
     if (hitD) this.freezeOnHitBy(attacker, enemy, defender);
     if (hitA) this.freezeOnHitBy(defender, player, attacker);
     // 吸命の剣：与えたダメージ（HPが減ったぶん）の一部で自分の城を回復
-    if (hitD) this.lifestealBy(player, attacker, hpD0 - defender.hp);
-    if (hitA) this.lifestealBy(enemy, defender, hpA0 - attacker.hp);
+    if (hitD) this.lifestealBy(player, attacker, dealtD);
+    if (hitA) this.lifestealBy(enemy, defender, dealtA);
   }
 
   /** 4陣営の魔族：武器の lifesteal（吸命の剣）。hitter が dealt（HPが減ったぶん）を与えたら、持ち主の城を dealt × lifesteal（切り捨て）回復 */
@@ -4301,7 +4304,8 @@ export class Game {
         // 攻撃力は足し算（重ねるほど強くなる）。属性は上書き（最後の武器の属性。属性なしの武器なら属性が消える）
         soldier.weapon = card.type;
         soldier.weaponBonus += def.attackBonus;
-        soldier.element = def.element ?? null;
+        // 4陣営：keepElement の武器（吸命の剣）は属性を持たず、今の属性（生まれつき・前の武器）を消さない
+        if (!def.keepElement) soldier.element = def.element ?? null;
         // 4陣営：射程+（重ねると足し算）と、当たった相手を休ませる（いちばん大きいもの）
         soldier.rangeBonus += def.rangeBonus ?? 0;
         soldier.freezeOnHit = Math.max(soldier.freezeOnHit, def.freezeOnHit ?? 0);
