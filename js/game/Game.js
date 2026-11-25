@@ -2958,6 +2958,13 @@ export class Game {
         const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
         return { targets: playerTargets(foes), reason: '相手がいません' };
       }
+      case 'poisonEnemyCastle': {
+        // 毒の霧（魔族）：相手の城。もう上限の回数まで毒が続く城（と、永続の毒の城）は、出しても変わらないので選べない
+        const foes = this.rules.castleSpellRange === 'neighbors' ? this.neighborsOf(player.id) : this.enemySides(player.id);
+        const max = def.maxTurns ?? def.turns;
+        const changes = (p) => !p.castle.poison || (p.castle.poisonTurns !== null && p.castle.poisonTurns < max) || p.castle.poison < def.amount;
+        return { targets: playerTargets(foes.filter(changes)), reason: foes.length ? 'その城の毒はもう上限まで続きます' : '相手がいません' };
+      }
       case 'curePoison':
         return {
           targets: player.castle.poison || player.soldiers.some((x) => x.poison) ? [{ playerId: player.id }] : [],
@@ -3711,6 +3718,21 @@ export class Game {
         enemy.castle.poison = this.capPoison(amount + (enemy.castle.poison ?? 0));
         enemy.castle.poisonTurns = poisonTurns;
         this.emit('castlePoisoned', { playerId: enemy.id, amount: enemy.castle.poison });
+        break;
+      }
+
+      case 'poisonEnemyCastle': {
+        // 毒の霧（魔族）：相手の城だけを毒にする。城壁・土の精霊・盾・身代わりは効かない（毒のダメージは tickCastlePoison）。霧で外れず、防御も聞かない。
+        // 重ねがけ：毎ターンの量は増やさず（大きい方）、残りの回数だけ turns 延びる（maxTurns まで。永続にはしない）
+        const side = this.players[this.side(enemy.id)];
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: side.id, targetKind: 'player' });
+        const c = side.castle;
+        const max = card.def.maxTurns ?? card.def.turns;
+        const permanent = Boolean(c.poison) && c.poisonTurns === null;
+        const left = c.poison ? c.poisonTurns ?? 0 : 0;
+        c.poison = Math.max(card.def.amount, c.poison ?? 0);
+        if (!permanent) c.poisonTurns = Math.min(max, left + card.def.turns);
+        this.emit('castlePoisoned', { playerId: side.id, amount: c.poison, turns: c.poisonTurns });
         break;
       }
 

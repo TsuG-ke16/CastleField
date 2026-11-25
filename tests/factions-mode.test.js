@@ -680,7 +680,7 @@ const PLAN = {
     ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos' }],
     ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
     ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
-    ['毒の霧', 3, { effect: 'poisonEnemySoldiers', amount: 1, turns: 3 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 3 }],
+    ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 4, maxTurns: 8 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 3 }],
     ['魂の欠片', 3, { effect: 'damageCastleAndHeal', amount: 3, heal: 3 }], ['残響の魂', 4, { effect: 'reviveFallen', amount: 0.5 }],
     ['血の膜', 2, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
   ],
@@ -728,7 +728,7 @@ test('本物のカード：森には精霊のカード（summonSpirit）がな�
   for (const f of ['kingdom', 'demon', 'dragon']) assert.equal(decks[f].passiveSpirits, undefined, f);
 });
 
-test('本物のカード：魂の欠片・残響の魂・カオスパルス・氷の息・呪いの印・毒の霧（兵士だけ・3ターン・城は毒にしない）', () => {
+test('本物のカード：魂の欠片・残響の魂・カオスパルス・氷の息・呪いの印・毒の霧（城だけ・2×4回。人間の指示で兵士の毒から変えた）', () => {
   const { game, play } = setupReal({ hands: { p1: ['fac_demon_soul_shard', 'fac_demon_echo_soul', 'fac_demon_chaos_pulse', 'fac_demon_frost_breath', 'fac_demon_curse_mark', 'fac_demon_poison_mist', 'fragile'], p2: ['tank', 'fireTap'] }, reactions: null });
   game.debugSetCastleHp('p1', 10);
   const hp2 = game.players.p2.castle.hp;
@@ -751,9 +751,10 @@ test('本物のカード：魂の欠片・残響の魂・カオスパルス・�
   assert.equal(t.frozen, 1);
   play('p1', 'fac_demon_curse_mark', { soldierId: t.soldierId });
   assert.deepEqual(t.weakened, { amount: 2, turns: 3 });
-  play('p1', 'fac_demon_poison_mist');
-  assert.deepEqual(t.poison, { amount: 1, turns: 3 });
-  assert.equal(game.players.p2.castle.poison, null, '城は毒にしない');
+  play('p1', 'fac_demon_poison_mist', { playerId: 'p2' });
+  assert.equal(t.poison, null, '兵士は毒にしない');
+  assert.equal(game.players.p2.castle.poison, 2);
+  assert.equal(game.players.p2.castle.poisonTurns, 4);
 });
 
 test('本物のカード：竜のファイアボールは先頭の兵士に当たり、兵士がいなければ城に当たる', () => {

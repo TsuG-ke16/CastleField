@@ -540,6 +540,8 @@ function smartStep(game, pid, ctx) {
     ...revives,
     // 魔族：兵士・ほかの魔法を出したあと、MP が余っていれば出す（先に出すと、ほかの魔法の MP とメインの枠を食う）
     ...(lasting ? demonTypes(ctx, 'poisonEnemySoldiers') : []),
+    // 魔族の毒の霧（城の毒）：防げない継続ダメージなので、ほかの魔法がなければ出す（もう上限まで続く城は対象にならない）
+    ...demonTypes(ctx, 'poisonEnemyCastle'),
     ...soulShards,
   ]);
   if (played) return true;
