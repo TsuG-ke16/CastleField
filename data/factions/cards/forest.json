@@ -139,5 +139,47 @@
     "amount": 3,
     "mpCost": 1,
     "count": 2
+  },
+  "fac_forest_warden": {
+    "name": "森の番人",
+    "kind": "soldier",
+    "role": "guard",
+    "hp": 8,
+    "attack": 2,
+    "stay": 3,
+    "description": "城の護衛。自分の城の前から動かず、出した道と左右のとなりの道に来た相手の兵士を止めて戦う。3ターンで帰る。城は攻めない",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_forest_treant": {
+    "name": "樹人",
+    "kind": "soldier",
+    "hp": 7,
+    "attack": 3,
+    "speed": 1,
+    "description": "ゆっくり進む、がんじょうな木の兵士。HP7・速さ1（遅い）。デッキに1枚だけ",
+    "mpCost": 4,
+    "count": 1,
+    "maxCopies": 1
+  },
+  "fac_forest_herb": {
+    "name": "薬草の湿布",
+    "kind": "spell",
+    "effect": "healOwnCastle",
+    "amount": 5,
+    "description": "自分の城HP+5。ヒールより少ない回復で、デッキに1枚だけ",
+    "mpCost": 3,
+    "count": 1,
+    "maxCopies": 1
+  },
+  "fac_forest_old_root": {
+    "name": "古木の根",
+    "kind": "defense",
+    "effect": "armorCastle",
+    "amount": 9,
+    "description": "城壁9。MPが重く、デッキに1枚だけ",
+    "mpCost": 4,
+    "count": 1,
+    "maxCopies": 1
   }
 }
