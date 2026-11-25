@@ -213,6 +213,8 @@ const OPTIONAL_RULES = {
   castleAttach: false,
   castleAttachTurns: 4,
   castleReactionPerRound: 1,
+  // 4陣営：true なら、凍結中（frozen > 0）の兵士は氷（ice）が付着している扱いで反応を判定する（実際の付着は足さない）。false なら今までどおり
+  frozenCountsAsIce: false,
   // 崩壊の刻：collapseStartRound（0 なら使わない）の周回から、周回の始めに全員の城に collapseDamage × (始まってからの周回の数) のダメージ。
   // collapseAnnounceRound（0 なら予告しない）の周回で予告する
   collapseStartRound: 0,
@@ -606,6 +608,7 @@ export class Game {
     if (rules.castleAttach !== undefined && typeof rules.castleAttach !== 'boolean') throw new Error('rules.json の castleAttach は true か false にしてください（書かなければ false）');
     if (rules.castleAttachTurns !== undefined && (!Number.isInteger(rules.castleAttachTurns) || rules.castleAttachTurns < 1)) throw new Error('rules.json の castleAttachTurns は 1 以上の整数にしてください（書かなければ 4）');
     if (rules.castleReactionPerRound !== undefined && (!Number.isInteger(rules.castleReactionPerRound) || rules.castleReactionPerRound < 0)) throw new Error('rules.json の castleReactionPerRound は 0 以上の整数にしてください（0 は上限なし。書かなければ 1）');
+    if (rules.frozenCountsAsIce !== undefined && typeof rules.frozenCountsAsIce !== 'boolean') throw new Error('rules.json の frozenCountsAsIce は true か false にしてください（書かなければ false）');
     if (rules.mpAllCards !== undefined && typeof rules.mpAllCards !== 'boolean') throw new Error('rules.json の mpAllCards は true か false にしてください（書かなければ false）');
     for (const key of ['monsterLateBias', 'monsterEvolveMultiplier']) {
       const v = rules[key];
@@ -1616,7 +1619,10 @@ export class Game {
 
   /** 起こる反応（なければ null）。{ id, name, elements（反応した属性）, consumed（兵士から消える属性）, damage, def } */
   findReaction(soldier, element) {
-    return this.matchReaction(this.elementsOn(soldier), element);
+    const on = this.elementsOn(soldier);
+    // frozenCountsAsIce：凍結中の兵士には、氷が付着している扱い（判定用の仮想の付着。実際の付着と重ねて数えない）
+    if (this.rules.frozenCountsAsIce && soldier.frozen > 0 && !on.includes('ice')) on.push('ice');
+    return this.matchReaction(on, element);
   }
 
   /** 付いている属性 on に、属性 element が当たったときに起こる反応（なければ null）。兵士にも城にも使う */
@@ -1658,13 +1664,16 @@ export class Game {
       reaction: reaction.id, name: reaction.name, soldierId, playerId, elements: [...reaction.elements], damage, consumed: [...reaction.consumed],
     });
     for (const element of reaction.consumed) {
+      // 凍結由来だけの氷（実際の付着も武器の属性もない）は、elementCleared を出さない（凍結は下で解く）
+      if (element === 'ice' && soldier.element !== 'ice' && !soldier.attachments.some((a) => a.element === 'ice')) continue;
       // 武器の属性が反応で消えたときだけ weapon: true（生まれつきの属性＝武器を持っていない兵士の属性には付けない）
       const weapon = soldier.element === element && soldier.weapon !== null;
       if (soldier.element === element) soldier.element = null;
       soldier.attachments = soldier.attachments.filter((a) => a.element !== element);
       this.emit('elementCleared', { playerId, soldierId, element, reason: 'reaction', ...(weapon ? { weapon: true } : {}) });
     }
-    if (shatter) {
+    // 氷が使われたら凍結も解ける（frozenCountsAsIce。凍結中の氷は反応で使われる）。砕氷は今までどおり解ける
+    if (shatter || (this.rules.frozenCountsAsIce && reaction.consumed.includes('ice') && soldier.frozen > 0)) {
       soldier.frozen = 0;
       this.emit('statusCleared', { playerId, soldierId, status: 'frozen' });
     }
@@ -4419,7 +4428,7 @@ export class Game {
       // MP を使うカードの種類 → 必要な MP（UI が手札に表示する）
       mpCosts: Object.fromEntries(Object.entries(this.cardDefs).map(([t, d]) => [t, this.mpCostOf({ def: d })]).filter(([, c]) => c > 0)),
       // 属性の反応の定義（reactions を渡したゲームだけ。キーごと足さない）。CPU・画面が、ゲームの内部を読まずに反応を調べるため
-      ...(this.reactionDefs ? { reactions: structuredClone(this.reactionDefs) } : {}),
+      ...(this.reactionDefs ? { reactions: { ...structuredClone(this.reactionDefs), ...(this.rules.frozenCountsAsIce ? { frozenCountsAsIce: true } : {}) } } : {}),
       layout: this.plaza ? 'plaza' : 'lanes',
       // チーム戦のとき { t1: { members, castleOwner, size } … }（チームの順）。チーム戦でなければ null
       teams: this.teamOrder
