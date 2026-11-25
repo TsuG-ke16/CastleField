@@ -287,9 +287,16 @@ export function validatePassiveSpirits(data, elementIds, where) {
  */
 export function validatePassive(data, elementIds, where) {
   const posInt = (v) => Number.isInteger(v) && v > 0;
-  const KEYS = ['raiseOnKill', 'darkErosion'];
+  const KEYS = ['raiseOnKill', 'darkErosion', 'magicBlood'];
   if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(`${where}: passive は { ${KEYS.join(', ')} } のオブジェクトにしてください`);
   for (const key of Object.keys(data)) if (!KEYS.includes(key)) throw new Error(`${where}: passive の "${key}" は知らないパッシブです（${KEYS.join(' / ')}）`);
+  const m = data.magicBlood;
+  if (m !== undefined) {
+    // 魔の血：攻撃魔法で受けるダメージ −spellReduce（最低1）・自分のターンの始めの MP 回復 +mpBonus
+    const w = `${where}: passive.magicBlood`;
+    if (!m || typeof m !== 'object' || Array.isArray(m)) throw new Error(`${w} は { spellReduce, mpBonus } のオブジェクトにしてください`);
+    for (const k of ['spellReduce', 'mpBonus']) if (!Number.isInteger(m[k]) || m[k] < 0) throw new Error(`${w}.${k} は0以上の整数にしてください`);
+  }
   const e = data.darkErosion;
   if (e !== undefined) {
     // 闇の侵食：element の攻撃が敵の城に当たると、その城の回復量が ratio 減る（turns。重ねがけは maxTurns まで延びる）

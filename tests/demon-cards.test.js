@@ -218,3 +218,38 @@ test('パッシブのチェック：darkErosion の書き間違いは new Game()
   assert.throws(() => setup({ passive: { darkErosion: { element: 'dark', ratio: 2, turns: 2 } } }), /ratio/);
   assert.throws(() => setup({ passive: { darkErosion: { element: 'dark', ratio: 0.25, turns: 2, maxTurns: 1 } } }), /maxTurns/);
 });
+
+// ---------------- 魔の血（passive.magicBlood） ----------------
+
+const BLOOD = { magicBlood: { spellReduce: 1, mpBonus: 1 } };
+
+test('魔の血：魔族の兵士・城が攻撃魔法で受けるダメージ−1（最低1）。戦い・毒・反応は軽くしない', () => {
+  const { game, play } = setup({ passive: BLOOD, hands: { p1: ['wall', 'weakling'], p2: ['tap', 'bolt', 'striker', 'mist'] }, reactions: null });
+  const w = play('p1', 'wall');
+  play('p2', 'tap', { soldierId: w.soldierId });
+  assert.equal(w.hp, 40 - 2, '3 − 1');
+  const hp = game.players.p1.castle.hp;
+  play('p2', 'bolt', { playerId: 'p1' });
+  assert.equal(game.players.p1.castle.hp, hp - 4, '5 − 1');
+  game.damageCastle(game.players.p1, 1, { kind: 'spell', type: 'bolt' });
+  assert.equal(game.players.p1.castle.hp, hp - 5, '最低1');
+  game.damageCastle(game.players.p1, 3, { kind: 'reaction', reaction: 'x' }, { raw: true });
+  assert.equal(game.players.p1.castle.hp, hp - 8, '反応は軽くしない');
+  play('p2', 'mist', { playerId: 'p1' });
+  game.tickCastlePoison(game.players.p1);
+  assert.equal(game.players.p1.castle.hp, hp - 10, '毒は軽くしない');
+  // 戦い：弱兵（攻撃1）と強兵（攻撃5）
+  const k = play('p1', 'weakling');
+  const s = play('p2', 'striker');
+  game.fight(game.players.p1, k, game.players.p2, s);
+  assert.equal(k.hp, 0, '戦いは軽くしない（3 − 5）');
+});
+
+test('魔の血：自分のターンの始めの MP 回復が +1（ほかの陣営は今までどおり）', () => {
+  const { game, events } = setup({ passive: BLOOD, rules: { maxMp: 20, mpPerTurn: 3, initialMp: 5, secondPlayerMp: 0 } });
+  game.endTurn(); // p2 のターン
+  game.endTurn(); // p1 のターン
+  const turnMp = (pid) => events('mpChanged').filter((e) => e.playerId === pid && e.reason === 'turn').map((e) => e.delta);
+  assert.deepEqual(turnMp('p2'), [3], 'ふつうの陣営は +3');
+  assert.deepEqual(turnMp('p1').at(-1), 4, '魔族は +4');
+});

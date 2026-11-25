@@ -1093,7 +1093,8 @@ export class Game {
     const rainCoins = this.weatherDef()?.coinPerTurn ?? 0;
     if (rainCoins > 0) this.changeCoins(player, rainCoins, 'weather');
     // MP の自然回復：自分のターンの始めに mpPerTurn 増える（上限まで）
-    if (this.rules.mpPerTurn > 0 && this.rules.maxMp > 0) this.changeMp(player, this.rules.mpPerTurn, 'turn');
+    // 魔族の魔の血：MP の回復が mpBonus 多い
+    if (this.rules.mpPerTurn > 0 && this.rules.maxMp > 0) this.changeMp(player, this.rules.mpPerTurn + (player.passive?.magicBlood?.mpBonus ?? 0), 'turn');
     // 古代遺跡：自分のターンの始めに MP が増える
     const stageMp = this.stageDef()?.mpPerTurn ?? 0;
     if (stageMp > 0 && this.rules.maxMp > 0) this.changeMp(player, stageMp, 'stage');
@@ -1324,6 +1325,7 @@ export class Game {
     const vulnerable = this.vulnerableBonus(owner, amount, source);
     amount += vulnerable;
     if (!raw) amount = this.reduceDamage(owner, amount, 'castle');
+    if (source?.kind === 'spell') amount = this.magicBloodReduce(this.players[this.side(owner.id)], amount); // 魔族の魔の血
     const castle = owner.castle;
     const armorBefore = owner.armor;
     const blocked = ignoreArmor ? 0 : Math.min(owner.armor, amount);
@@ -1521,6 +1523,7 @@ export class Game {
    * reactions を渡していないゲームでは damageSoldier と同じ。消えたら true
    */
   spellHit(owner, soldier, amount, card) {
+    amount = this.magicBloodReduce(owner, amount); // 魔族の魔の血
     if (this.damageSoldier(owner, soldier, amount, 'spell')) return true;
     this.elementHit(owner, soldier, card.def?.element ?? null, { damage: amount, turns: card.def?.attachTurns });
     return !owner.soldiers.includes(soldier);
@@ -4158,6 +4161,12 @@ export class Game {
     // 鈍足（泥の反応）：速さが下がる（最低1）
     if (soldier.slowed) speed = Math.max(1, speed - soldier.slowed.amount);
     return speed;
+  }
+
+  /** 魔族の魔の血（席のデッキの passive.magicBlood）：owner の兵士・城が攻撃魔法で受けるダメージを spellReduce 軽くする（0はそのまま。1より小さくはならない） */
+  magicBloodReduce(owner, amount) {
+    const r = owner?.passive?.magicBlood?.spellReduce ?? 0;
+    return r > 0 && amount > 0 ? Math.max(1, amount - r) : amount;
   }
 
   /** 土の精霊：owner が受けるダメージを軽くする（0のダメージはそのまま。1より小さくはならない） */
