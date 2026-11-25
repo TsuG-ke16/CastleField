@@ -290,7 +290,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   - 道の `players[0]` の兵士：道のマス番号 = `position`
   - 道の `players[1]` の兵士：道のマス番号 = `laneLength - 1 - position`
 - 兵士の `targetId` は、その兵士が向かっている相手（道の向こうの人）
-- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.castleAttachments`（城に付いている属性 `[{ element, turns }]`。`rules.castleAttach` のゲームだけ。試作）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）。くわしくは「4陣営モード」
+- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.castleAttachments`（城に付いている属性 `[{ element, turns }]`。`rules.castleAttach` のゲームだけ。試作）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）、`players.pX.castleVulnerable`（魔族の脆弱 `{ ratio, maxRatio, turns }` か null。脆弱のカードがあるゲームだけ）・`players.pX.mpSeal`（魔族の封魔 `{ amount, turns }` か null。封魔のカードがあるゲームだけ）。くわしくは「4陣営モード」
 
 ### Gameが出すイベント
 
@@ -358,8 +358,12 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `castleGuardSet` | `{ playerId, soldierId }` … 身代わり（`guardCastle`）を置いた |
 | `castleGuarded` | `{ playerId, soldierId, guardOwnerId, amount }` … 城への攻撃を身代わりの兵士が受けた。このあと `soldierDamaged`（`cause: "guard"`） |
 | `shieldBroken` | `{ playerId, soldierId, amount }` … 溶岩の反応で盾が全部壊れた |
-| `castleHealCut` | `{ playerId, ratio, turns }` … 深淵侵食で城の回復量が減る |
+| `castleHealCut` | `{ playerId, ratio, turns, source? }` … 深淵侵食で城の回復量が減る（魔族の闇の侵食のときは `source: "erosion"`） |
 | `castleHealCutEnded` | `{ playerId }` … 回復量減少が終わった |
+| `castleVulnerable` | `{ playerId, ratio, turns }` … 魔族の脆弱で、城が受ける攻撃のダメージが増える（4陣営。このあとの `castleDamaged` に増えた量 `vulnerable`） |
+| `castleVulnerableEnded` | `{ playerId }` … 脆弱が終わった |
+| `mpSealed` | `{ playerId, amount, turns }` … 魔族の封魔で、ターンの始めの MP 回復が減る（4陣営） |
+| `mpSealEnded` | `{ playerId }` … 封魔が終わった |
 | `castleElementAttached` | `{ playerId, element, turns, source }` … 城に属性が付いた（4陣営・試作。`rules.castleAttach`）。`playerId` は城の持ち主（チーム戦は代表）。`source` は当たった攻撃の `castleDamaged.source`（森の精霊の付着は `{ kind: "passiveSpirit", spirit }`）。同じ属性なら残りは長い方 |
 | `castleElementCleared` | `{ playerId, element, reason }` … 城の属性が消えた。`reason` は `"reaction"`（反応で使われた）か `"expired"`（城の持ち主のターンの終わりに残りが0） |
 | `castleReactionTriggered` | `{ playerId, reaction, name, elements, damage, consumed, armorBroken? }` … 城で反応が起きた（4陣営・試作）。このあと `castleElementCleared`（`"reaction"`）…→（`healCut` なら `castleHealCut`）→ `castleDamaged`（`source: { kind: "reaction", reaction }`）。`armorBroken` は溶岩が追加で削った城壁 |
@@ -1751,6 +1755,9 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **吸命の剣**（新カード `fac_demon_drain_blade`。武器・`attackBonus` 1・`lifesteal` 0.5・属性なし、MP2）：武器の `lifesteal`（0より大きく1以下。重ねると大きい方）。その兵士の攻撃が**敵の兵士（戦い・射撃）か城（着いた・魔法使いの射撃）に当たると**、減らしたHP（盾・城壁が受けたぶんは数えない）× `lifesteal`（切り捨て）だけ持ち主の城が回復する（回復量減少は効く）。持っていた兵士が相打ちで倒れても回復する。イベント `castleHealed`（`source: { kind: "lifesteal", soldierId }`）。CPU：ほかの武器と同じ（まだ武器のない、いちばん前の兵士）
 - **混沌を使いやすく（案A）**：①**カオスロッド**（`fac_demon_chaos_rod`）に `attachRandomElement: true`（武器か兵士に書ける）：その兵士の攻撃（戦い・射撃）が当たって生き残った相手に、混沌（武器の属性）の付着・反応のあと、**火・水・風・土のうちランダムな1つも付ける**（反応は起こさない。`elementAttached` の `source: "chaos"`。同じ属性がもう付いていれば残りは長い方）。準備1手で、相手の属性（生まれつき・武器）＋混沌＋ランダムの3種類がそろい、次の攻撃で混沌反応が起きやすくなる。乱数はこのフラグの兵士が当たったときだけ使う。②混沌反応のダメージを `reactions.json` の `chaos.damagePerElement` 4 → **3**×種類（城に起きた混沌反応の `castleDamagePerElement` は4のまま）。③`chaos.attachTurnsMultiplier`（1以上の整数。省略すると1）：混沌が付着したときの残りを2倍（兵士は `attachTurns` 5 → 10、城は `castleAttachTurns` 4 → 8。城の付着（`castleAttach`）は有効にしたので、混沌の攻撃は城にも付く）。カオスパルス（`randomElementDamage`）は、当たった兵士に付くのは今までどおり混沌だけ（撃つ属性は付かない）
 - **属性持ちの兵士3種**（新カード。生まれつきの属性 `innateElement` で、戦い・射撃で当たった相手に属性が付く今までの仕組み）：ゾンビ（`fac_demon_zombie`。闇・HP9/攻撃2/速さ1・MP3。遅くて固い壁）・氷の亡者（`fac_demon_ice_wraith`。氷・HP6/攻撃2/速さ2・MP2。闇と組んで黒氷）・混沌の落とし子（`fac_demon_chaos_spawn`。混沌・HP4/攻撃3/速さ2・`attachRandomElement`・MP2。当たった相手に混沌とランダム属性）。MP は「ゾンビ2・ほか3」と比べて勝率がほぼ同じ（±2%）だったので、固いゾンビを3にした（仮）。CPU：ほかの兵士と同じ（攻撃＋速さの順）。ネクロマンサーは「死者を従える」で代わりになるので作らない（人間の指示）
+- 確かめたこと（`node tests/sim/factions.js --games 100 --seed 1`。smart 同士・各組み合わせ席を入れかえて200試合。森の精霊2ターンに1回・城の付着ありも含めた変更前後）：全2000試合が決着。陣営の平均勝率（王国・森・魔族・竜）は **変更前 50%・85%・30%・34% → 変更後 46%・28%・93%・34%**。魔族は 王国に 38→92%・森に 10→96%・竜に 44→92%（**強くなりすぎ**）。平均手番は魔族の試合で短くなった（王国×魔族 96→75、魔族×竜 85→59）。新しいカードはどれも1試合1.7〜4.8回使われ、効き目も出ている（1試合あたり：毒の霧の城ダメージ 13〜19・魔の血で減ったダメージ 12〜17・血の契約で強化した兵士 5.6〜6.6・吸命の回復 2〜3.5・脆弱で増えたダメージ 1.7〜3.5・封魔 2.6〜3.4回・呪われた兵士 2〜4・闇の侵食 0.9〜1.2回・混沌のランダム付着 0.4〜1.5回）。城の反応は魔族の試合で1試合0.3〜0.7回（変更前0）。混沌反応の回数はほぼ変わらない（1試合0.35〜0.99回）
+  - どれが効いているか（`--with demon --games 50`。魔族の勝率 王国・森・竜）：全部 92%・96%・92% ／毒の霧を2×3 90%・95%・89% ／毒の霧なし 92%・95%・94% ／新しい魔法4枚なし 98%・99%・100%（CPU が魔法の枠を使うぶん弱くなる）／新しい兵士3種なし 78%・88%・76% ／**魔の血なし 65%・73%・61%**（魔法の軽減だけ 66%・89%・69%、**MP+1 だけ 87%・95%・90%**）／新しい兵士3種と魔の血なし 44%・46%・37%。**MP+1（魔の血）と兵士3種がいちばん効いている**。数値は人間と決める（毒の霧は 2×4 のまま。2×3 にしても勝率はほぼ変わらない）
+- 画面（UI担当にお願いしたいこと）：新しいカード7枚（脆弱・血の契約・封魔・吸命の剣・ゾンビ・氷の亡者・混沌の落とし子）の絵、新しいイベント `castleVulnerable` / `castleVulnerableEnded` / `mpSealed` / `mpSealEnded` と `castleDamaged.vulnerable`・`castleHealCut.source: "erosion"`・`castleHealed.source.kind: "lifesteal"`・`elementAttached.source: "chaos"` の演出、`players.pX.castleVulnerable` / `mpSeal` の表示。説明文はカードの `description` に書いた
 
 ### 砂・凍傷（反応の継続ダメージ。人間の指示）
 - 砂嵐・黒氷の「やけど」は不自然だったので、やけどとは別の状態にした：反応の `dot: { status: "sand" | "frostbite", amount, turns }`（チェックは `validateReactions`）

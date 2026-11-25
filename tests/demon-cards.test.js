@@ -364,3 +364,16 @@ test('属性持ちの兵士：ゾンビ（闇）・氷の亡者（氷）・混�
     assert.equal(on.length, type === 'fac_demon_chaos_spawn' ? 2 : 1);
   }
 });
+
+// ---------------- 本物のデータ ----------------
+
+test('本物のデータ：魔族の特性は 死者を従える・闇の侵食・魔の血。ほかの陣営は持たない。森の精霊は2ターンに1回', () => {
+  const decks = loadOptionalData(MODE).decks;
+  assert.deepEqual(Object.keys(decks.demon.passive), ['raiseOnKill', 'darkErosion', 'magicBlood']);
+  assert.deepEqual(decks.demon.passive.darkErosion, { element: 'dark', ratio: 0.25, turns: 2, maxTurns: 4 });
+  assert.deepEqual(decks.demon.passive.magicBlood, { spellReduce: 1, mpBonus: 1 });
+  for (const f of ['kingdom', 'forest', 'dragon']) assert.equal(decks[f].passive, undefined, f);
+  assert.equal(decks.forest.passiveSpirits.everyTurns, 2);
+  const demon = loadFactionCards(MODE, 'demon');
+  for (const t of ['fac_demon_vulnerable', 'fac_demon_blood_pact', 'fac_demon_mana_seal', 'fac_demon_drain_blade', 'fac_demon_zombie', 'fac_demon_ice_wraith', 'fac_demon_chaos_spawn']) assert.ok(demon[t], t);
+});
