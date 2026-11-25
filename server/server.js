@@ -57,6 +57,8 @@ export function loadData(dir = join(ROOT, 'data'), modeId = null) {
     if (entry.elementsSet) data.elements = JSON.parse(readFileSync(inDir(entry.elementsSet), 'utf8'));
     // 属性の付着と反応（reactionsSet）。書いてあるモードだけ new Game({ reactions }) に渡す。通常モードには渡さない（付着・反応なし）
     if (entry.reactionsSet) data.reactions = JSON.parse(readFileSync(inDir(entry.reactionsSet), 'utf8'));
+    // スキルツリー（skillTreeSet）。書いてあるモードだけ new Game({ skillTree }) に渡す。部屋は席ごとにビルド（setSeat の skills）を選べる
+    if (entry.skillTreeSet) data.skillTree = JSON.parse(readFileSync(inDir(entry.skillTreeSet), 'utf8'));
     // 4陣営モード：陣営ごとのカード表（factionCardSets）を全部合わせたものがカード定義。各陣営のカード表がその陣営のデッキ（decks）。
     // 部屋は data.factions（陣営の一覧）があるときだけ、席ごとに陣営を選べる
     if (entry.factionDecks) {

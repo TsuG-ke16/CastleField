@@ -8,6 +8,7 @@
 //   node tests/sim/run.js --json                … 結果を JSON で出す
 //   node tests/sim/run.js --no-monsters         … 魔物と強化なしで回す
 //   node tests/sim/run.js --mode classic        … クラシックモードのカード・ルールで回す（省略すると通常モード）
+//   node tests/sim/run.js --mode classic --skills blade,shield … 席ごとのスキルのビルド（none / random / プリセットのID / auto＝戦い方のおすすめ）
 // 同じ引数なら、誰が回しても同じ結果になる。
 import { buildData, loadOptionalData } from '../helpers.js';
 import { runMany } from './sim.js';
@@ -51,7 +52,20 @@ try {
 // --stage lava：ステージを1つに決める（省略すると毎試合ランダム。--no-stages でステージなし）
 if (args.includes('--no-stages')) delete gameOptions.stages;
 else if (opt('stage', null)) gameOptions.setup = { ...(gameOptions.setup ?? {}), stage: opt('stage') };
-const rows = matches.map((m) => runMany({ games, seed, cards, rules, gameOptions, strategies: m.split(',') }));
+// --skills blade,shield：席ごとのスキルのビルド（スキルツリーのあるモードだけ）。auto は戦い方ごとのおすすめ
+const skillsOpt = opt('skills', null);
+if (skillsOpt && !gameOptions.skillTree) die('--skills は、スキルツリーのあるモード（--mode classic）で使ってください');
+const skillsFor = (strategies) => {
+  if (!skillsOpt) return null;
+  const list = skillsOpt.split(',');
+  return strategies.map((s, i) => (list[i] ?? list[0]) === 'auto' ? s : list[i] ?? list[0]);
+};
+let rows;
+try {
+  rows = matches.map((m) => runMany({ games, seed, cards, rules, gameOptions, strategies: m.split(','), skills: skillsFor(m.split(',')) }));
+} catch (err) {
+  die(err.message);
+}
 
 const pct = (x) => `${Math.round(x * 100)}%`;
 if (args.includes('--json')) {
