@@ -38,6 +38,15 @@ export class Player {
     this.spirit = null;
     /** 最後に倒れた（HPが0になった）自分の兵士 { type, roadId, targetId, maxHp } か null。蘇生（reviveFallen）が使う。相手に見せない（toState に入れない） */
     this.lastFallen = null;
+    /** 常時の精霊（4陣営の森。席のデッキの passiveSpirits）か null。passiveSpiritIndex は次に動く精霊の番号 */
+    this.passiveSpirits = null;
+    this.passiveSpiritIndex = 0;
+    /** 常時の精霊が次に動くまでに休む自分のターンの数（0 なら次の自分のターンの始めに動く） */
+    this.passiveSpiritWait = 0;
+    /** 陣営のパッシブ（席のデッキの passive。魔族の raiseOnKill）か null。lastRaiseTurn は最後に骸骨兵を生んだ通算ターン */
+    this.passive = null;
+    this.lastRaiseTurn = null;
+    this.raisedThisTurn = 0;
   }
 
   /** 城壁の残り。次の自分のターンの始めに消える（城に置く。チーム戦では城を共有するので、城壁もチームで共有） */
