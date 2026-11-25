@@ -724,7 +724,7 @@ test('本物のカード：森には精霊のカード（summonSpirit）がな�
   assert.equal(decks.forest.passiveSpirits.spirits[3].ignoreArmor, undefined, 'タイタンは城壁を無視しない（人間の指示）');
   assert.equal(decks.forest.passiveSpirits.spirits[2].push, 1);
   assert.equal(decks.forest.passiveSpirits.attachTurns, 1);
-  assert.equal(decks.forest.passiveSpirits.everyTurns, 1, '動く間隔はいったん毎ターン');
+  assert.equal(decks.forest.passiveSpirits.everyTurns, 2, '動く間隔は2ターンに1回（人間の指示）');
   for (const f of ['kingdom', 'demon', 'dragon']) assert.equal(decks[f].passiveSpirits, undefined, f);
 });
 

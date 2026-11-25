@@ -1712,7 +1712,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 - **置き場**：`data/factions/factions.json` の森の `passiveSpirits`（`{ attachTurns, everyTurns?, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }`。`ignoreArmor: true` は城壁を無視する（仕組みは残してあるが、今の精霊は使っていない））。`factionDecks` がデッキに写し、Game は席のデッキの `passiveSpirits` を読む（チェックは `js/game/Setup.js` の `validatePassiveSpirits`）。書かない陣営・モードは今までどおり
 - **いつ**：自分のターンの始め（コイン・MP の回復のあと、ドローの前。`randomAttachTurnStart` と同じ位置）に、`spirits` の順（火 → 水 → 風 → 土 → 火 …）に1体ずつ動く（1ターン目は火）
-- **動く間隔**（`everyTurns`。省略すると1＝毎ターン。今のデータも1）：自分の `everyTurns` ターンに1回だけ動く。1ターン目に動き、間の自分のターンは休む（イベントなし）。順番は動いたときだけ1つ進む。`getState()` の `passiveSpirit.turnsUntilAct` で、次に動くまでの自分のターンの数が分かる
+- **動く間隔**（`everyTurns`。省略すると1＝毎ターン。**今のデータは2**（人間の指示で 1 → 2。2ターンに1回））：自分の `everyTurns` ターンに1回だけ動く。1ターン目に動き、間の自分のターンは休む（イベントなし）。順番は動いたときだけ1つ進む。`getState()` の `passiveSpirit.turnsUntilAct` で、次に動くまでの自分のターンの数が分かる
 
 | 精霊 | 属性 | 効果（`effect`） |
 |---|---|---|

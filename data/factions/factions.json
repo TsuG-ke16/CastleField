@@ -9,7 +9,7 @@
     "description": "4つの属性の精霊がいつもそばにいて、反応をいちばん起こしやすい。",
     "passiveSpirits": {
       "attachTurns": 1,
-      "everyTurns": 1,
+      "everyTurns": 2,
       "spirits": [
         {
           "spirit": "fire",
