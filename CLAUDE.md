@@ -105,6 +105,7 @@ js/
     Monster.js     … 魔物と、強化のデータのチェック
     Weather.js     … 天候のデータのチェック
     Stage.js       … ステージ（マップ）のデータのチェックと選び方
+    SkillTree.js   … スキルツリー（クラシック）のデータのチェック・ビルドの決まり・効果の合計
     Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
     strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
@@ -150,6 +151,7 @@ tests/             … 自動テスト（node --test）。Node.js だけで動�
     castles.js     … 城の種類・デッキの勝率
     teams.js       … チーム戦の分け方ごとの勝率と長さ
     factions.js    … 4陣営モードの陣営どうしの勝率と長さ
+    skills.js      … クラシックのスキルツリーのビルドどうしの勝率と長さ
 server/            … オンライン対戦のサーバー（Node.js だけ。ロジック担当）
   server.js        … HTTP（合言葉で入る・操作を受ける・SSE で送る）。node server/server.js で起動
   rooms.js         … 部屋と席。Game を動かし、プレイヤーごとに隠して送る
@@ -290,6 +292,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   - 道の `players[0]` の兵士：道のマス番号 = `position`
   - 道の `players[1]` の兵士：道のマス番号 = `laneLength - 1 - position`
 - 兵士の `targetId` は、その兵士が向かっている相手（道の向こうの人）
+- スキルツリー（`skillTree` を渡したゲームだけ）：`players.pX.skills`（選んだノードのIDの配列。相手にも見せる）・`players.pX.maxMp`（その人の MP の上限）。「クラシックのスキルツリー」
 - 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.castleAttachments`（城に付いている属性 `[{ element, turns }]`。`rules.castleAttach` のゲームだけ。試作）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）、`players.pX.castleVulnerable`（魔族の脆弱 `{ ratio, maxRatio, turns }` か null。脆弱のカードがあるゲームだけ）・`players.pX.mpSeal`（魔族の封魔 `{ amount, turns }` か null。封魔のカードがあるゲームだけ）。くわしくは「4陣営モード」
 
 ### Gameが出すイベント
@@ -351,9 +354,9 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `monsterEvolved` | `{ monsterId, rewardRarity, hp, maxHp, attack, castleAttack, count }` … 放置された魔物が強くなった（`count` は強くなった回数）。`monsterAppeared` の後の周回の始め、魔物の城への攻撃のあと |
 | `collapseAnnounced` | `{ round, startRound }` … 崩壊の刻の予告（`rules.collapseAnnounceRound` の周回の始め。`roundStarted` のあと） |
 | `collapseStarted` | `{ round }` … 崩壊の刻が始まった（`rules.collapseStartRound` の周回の始め）。このあと全員の城の `castleDamaged`（`source: { kind: "collapse" }`） |
-| `elementAttached` | `{ playerId, soldierId, element, turns, source? }` … 兵士に属性が付着した（同じ属性がまた付いて残りが戻ったときも出る）。`source: "turnStart"` は自分のターンの始めのランダム付着（「クラシックの属性：ターン開始時のランダム付着」）、`source: "passiveSpirit"` は森の常時の精霊の付着（4陣営）、`source: "chaos"` はカオスロッド・混沌の落とし子が当たった相手に付けたランダム属性（4陣営の魔族。反応は起こさない）。`reactions` を渡したゲームだけ（「クラシックの付着と反応」） |
+| `elementAttached` | `{ playerId, soldierId, element, turns, source? }` … 兵士に属性が付着した（同じ属性がまた付いて残りが戻ったときも出る）。`source: "turnStart"` は自分のターンの始めのランダム付着（「クラシックの属性：ターン開始時のランダム付着」。スキルの混沌の目によるときは `skill: true` も付く）、`source: "passiveSpirit"` は森の常時の精霊の付着（4陣営）、`source: "chaos"` はカオスロッド・混沌の落とし子が当たった相手に付けたランダム属性（4陣営の魔族。反応は起こさない）。`reactions` を渡したゲームだけ（「クラシックの付着と反応」） |
 | `elementCleared` | `{ playerId, soldierId, element, reason, weapon? }` … 兵士の属性が消えた。`reason` は `"reaction"`（反応で使われた）か `"expired"`（付着の残りが0）か `"purified"`（4陣営の浄化で消された）。`weapon: true` は武器の属性が反応で外れたとき（武器の攻撃ボーナスは残る。生まれつきの属性が消えたときは付かない） |
-| `reactionTriggered` | `{ reaction, name, soldierId, playerId, elements, damage, consumed }` … 属性の反応が起きた。`reaction` は反応のID（`"chaos"` は混沌反応）、`elements` は反応した属性（当たった攻撃の属性も含む）、`consumed` は兵士から消える属性、`damage` は追加ダメージ（砕氷の凍結中の上乗せ込み）。このあと `elementCleared` …（`"reaction"`）→ 追加ダメージの `soldierDamaged`（`cause: "reaction"`） |
+| `reactionTriggered` | `{ reaction, name, soldierId, playerId, elements, damage, consumed, skillBonus? }` … 属性の反応が起きた（`skillBonus` はスキルの共鳴・残響で増えた量。増えたときだけ）。`reaction` は反応のID（`"chaos"` は混沌反応）、`elements` は反応した属性（当たった攻撃の属性も含む）、`consumed` は兵士から消える属性、`damage` は追加ダメージ（砕氷の凍結中の上乗せ込み）。このあと `elementCleared` …（`"reaction"`）→ 追加ダメージの `soldierDamaged`（`cause: "reaction"`） |
 | `soldierHealed` | `{ playerId, soldierId, amount, hp }` … 兵士が回復した（4陣営の竜血の雫・生命の雫） |
 | `castleGuardSet` | `{ playerId, soldierId }` … 身代わり（`guardCastle`）を置いた |
 | `castleGuarded` | `{ playerId, soldierId, guardOwnerId, amount }` … 城への攻撃を身代わりの兵士が受けた。このあと `soldierDamaged`（`cause: "guard"`） |
@@ -1542,7 +1545,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ## クラシックの属性：ターン開始時のランダム付着（人間の指示。仮）
 
-`rules.randomAttachTurnStart: true`（省略すると `false`）で有効。`reactions` を渡したゲーム（クラシック）だけ。スキルツリーはまだないので、今は有効にすると全プレイヤーに効く。処理は `Game.js` の `randomAttachAtTurnStart(player)` の1か所（スキルツリーが入ったら、ここの先頭の条件を「そのプレイヤーが持っているか」に変える）。
+`rules.randomAttachTurnStart: true`（省略すると `false`）で有効。`reactions` を渡したゲーム（クラシック）だけ。有効にすると全プレイヤーに効く。**スキルツリーの「混沌の目」（`randomAttach`）を持つプレイヤーには、ルールが `false` でも効く**（下の「クラシックのスキルツリー」）。処理は `Game.js` の `randomAttachAtTurnStart(player)` の1か所。
 
 - **いつ**：自分のターンの始め。コイン・MP の回復のあと、ドローの前（自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる）
 - **何を**：敵（チーム戦なら相手チーム）の**見える兵士**（忍者・暗殺者は除く）からランダムに1体を選び、`elements` の表の全属性（混沌を含む）から等確率で1つ付着させる（`rng` を2回使う）。自分の兵士には付かない。**付着だけで、その場で反応は起こさない**。同じ属性がもう付いていれば、残りは**長い方にそろえる**（武器・魔法で付いた長い残りが縮まない）
@@ -1559,6 +1562,24 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
   1ターンを採用（5ターンは反応が増えすぎ）。1ターンでも目安（1〜3回）をやや超える。`data/classic/rules.json` にはまだ書いていない（スキルツリーで一部のプレイヤーだけに渡す想定のため。書くときは遊んで確かめる）
 - 画面（UI担当にお願いしたいこと）：`elementAttached.source: "turnStart"` のとき、付着の演出を目立たせるか（スキルの発動として見せる）
+
+## クラシックのスキルツリー（人間の指示：「スキルツリーも必須。全部考えておいて」。方式は既定で決めた。数値はすべて仮）
+
+設計書：`docs/classic-skilltree.md`（目的・ツリーの図・ノード表・データの形・バランスの結果・UI担当への依頼・人間が決める点）。
+
+- **方式**：試合の前に、決まったポイント（`points`：6。両者同じ）でノードを選ぶビルド。試合中は育たない・メタ進行なし。4つの枝（剣＝攻め・盾＝守り・属性＝反応・魔力＝経済）×3段＝12ノード、コストは段ごとに1・2・3。2段目は1段目、3段目は2段目を先に取る（`requires`）。全部は取れない（合計24）。何も取らないのもよい
+- **どのノードにも長所と短所**（`effects` のプラスとマイナス。両方ないとデータのチェックでエラー。上位互換がないことは `tests/classic-skilltree.test.js` が確かめる）
+- **データ**：`data/classic/skilltree.json`（`{ points, branches, nodes: { <id>: { name, branch, tier, cost, requires?, effects, description } }, presets }`）。`data/modes.json` のモードに `skillTreeSet` を書くと、サーバー（`server/server.js` の `loadData`）・テスト（`tests/helpers.js` の `loadOptionalData(mode)`）が読んで `new Game({ skillTree })` に渡す。**4陣営には今は書いていない**（書けばそのまま使える）。画面（`js/main.js`）はまだ渡さない
+- **効果のキー**（`js/game/SkillTree.js` の `SKILL_EFFECTS`）：`castleHp`・`maxHand`・`soldierAttack`・`castleSpell`（城の種類の `hpBonus`・`maxHandBonus`・`soldierAttackBonus`・`castleSpellBonus` に足す）、`armor`（最初の城壁。後攻の城壁に足す）、`initialMp`・`maxMp`（人ごとの MP の上限 `maxMpOf`）・`mpPerTurn`・`coinPerTurn`（ターンの始めの回復に足す）、`initialHand`、`reactionDamage`（自分の攻撃で起きた反応の追加ダメージ。反応を起こした人は `elementHit` の `by`、省略すると手番の人）、`randomAttach`（ターン開始時のランダム付着をその人だけに）・`randomAttachTurns`（その付着の残りに足す）。反応のキーを使うツリーは `reactions` のないゲームではエラー
+- **`new Game({ skillTree, setup: { skills: [[...], [...]] } })`**：席ごとのビルド（ノードのIDの配列）。`skillTree` を渡さなければ今までどおり（`setup.skills` を書くとエラー）。省略した席は何も取らない。決まりに合わなければ例外（「席2のスキルが決まりに合いません：…」）
+- **getState**（`skillTree` を渡したゲームだけ）：`players.pX.skills`（選んだノード。**相手にも見せる**）・`players.pX.maxMp`（その人の MP の上限）。イベントは増やしていない：`elementAttached` に `skill: true`（スキルのランダム付着）、`reactionTriggered` に `skillBonus`（スキルで増えた量）が付くだけ
+- **オンライン**：部屋の席に `skills`（`setSeat({ skills })`。CPU は戦い方のおすすめ）。`roomInfo().players[].skills`・`choices.skillTree`
+- **CPU**（`js/game/strategies.js`）：`chooseSkillBuild(tree, rng, style)`（`none` / `random` / プリセットのID / 戦い方の名前（`SKILL_STYLE_OF`）/ `"a+b"`）。試合中の戦い方は変えていない
+- **MP の回復+1とコイン+2は強すぎるので、ツリーに入れていない**（クラシックは全カードに MP を使うので、回復+1だけで勝率81%）
+- 確かめたこと（`node tests/sim/skills.js --games 100`。smart 同士・席を入れかえて各200試合）：全試合決着。ビルドごとの平均の勝率 剣50%・盾55%・属性44%・魔力44%・まんべんなく56%・なし48%・ランダム53%。同じビルドどうしの先攻の勝率 43〜55%。通常モード・4陣営・スキルなしのクラシックのシミュレーションは変更前と完全に一致
+- シミュレーション：`node tests/sim/skills.js`（`--builds`・`--vs none`・`--tree`・`--strategy`・`--json`）、`node tests/sim/run.js --mode classic --skills blade,shield`（`auto` は戦い方のおすすめ）
+- 画面（UI担当にお願いしたいこと）：スキルを選ぶ画面、試合中のビルドの表示、`skill: true` / `skillBonus` の演出、`players.pX.maxMp`、`loadHomeRuleSet` で `skillTreeSet` を読む、precache（くわしくは設計書の「UI担当への依頼」）
+- 人間が決める点：設計書の最後（ポイントと数値・城の種類と一本化するか・ビルドを見せるか・火水風土の反応とカード・4陣営に入れるか）
 
 ## クラシック：王国の「守りを貫く手段」（案A 聖壁の号砲。人間の指示。数値は仮）
 
