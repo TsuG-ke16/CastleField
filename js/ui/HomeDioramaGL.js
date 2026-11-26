@@ -1,7 +1,7 @@
-// ホーム画面用 4陣営3D浮遊島ジオラマ（宇宙に浮かぶ少し寂しい箱庭＋4時間帯連続ライティング）
+// ホーム画面用 4陣営3D浮遊島ジオラマ（王国の空に浮かぶ箱庭＋4時間帯連続ライティング）
 // - assets/models/diorama/castle_field_diorama.glb を js/vendor/three/ でリアルタイム描画
-// - 360°宇宙スカイドーム（GLSL）・瞬く星空・遠景の輪を持つ月・漂う星屑・流れ星
-// - 4時間帯（明け方／星昼／黄昏／深宇宙）を現在時刻で連続補間、設定画面から手動固定も可能
+// - 自然な空のグラデーション（GLSL）。惑星・星雲・星屑は表示せず、夜だけ控えめな星空。
+// - 4時間帯（明け方／昼／黄昏／夜）を現在時刻で連続補間、設定画面から手動固定も可能
 // - 4陣営モードでは中央広場 (0,0,0) を軸に滑らかに360°旋回（他陣営による遮蔽ゼロ）
 // - ?fx=lite / ?home3d=2d / WebGL不可時は何も描かず既存の2D背景へ安全にフォールバック
 
@@ -13,9 +13,9 @@ export const HOME_SKY_MODES = ['auto', 'dawn', 'day', 'dusk', 'night'];
 export const HOME_SKY_LABELS = {
   auto: '自動（時刻）',
   dawn: '明け方',
-  day: '星昼',
+  day: '昼',
   dusk: '黄昏',
-  night: '深宇宙',
+  night: '夜',
 };
 
 // Blender Z-up -> Three.js Y-up: (x, y, z)_three = (x, z, -y)_blender
@@ -34,18 +34,18 @@ const FACTION_TARGET_Y = {
   dragon: 3.05,
 };
 
-// 「宇宙に浮かぶ寂しい箱庭」を保った4時間帯キーフレーム
+// 王国の空の4時間帯キーフレーム。既存の時刻補間とモデル照明を維持する。
 const SKY_PRESETS = {
   dawn: {
-    label: '星の夜明け',
-    zenith: '#081024',
-    mid: '#162547',
-    horizon: '#3c3a5e',
-    abyss: '#050814',
+    label: '王国の夜明け',
+    zenith: '#a6c9ef',
+    mid: '#f3d5b2',
+    horizon: '#ffe9c3',
+    abyss: '#e7c99c',
     nebulaA: '#8e6c96',
     nebulaB: '#537ea8',
-    nebulaStrength: 0.42,
-    starVisibility: 0.58,
+    nebulaStrength: 0,
+    starVisibility: 0.02,
     haloColor: '#f6c8b2',
     haloStrength: 0.42,
     sunDir: [0.76, 0.30, -0.58],
@@ -61,20 +61,20 @@ const SKY_PRESETS = {
     pointScale: 0.55,
     emissiveScale: 1.05,
     dustColor: '#e8d8ff',
-    dustOpacity: 0.52,
-    planetAlpha: 0.55,
+    dustOpacity: 0,
+    planetAlpha: 0,
     exposure: 0.96,
   },
   day: {
-    label: '蒼い星昼',
-    zenith: '#0a1936',
-    mid: '#163566',
-    horizon: '#2d598a',
-    abyss: '#071124',
+    label: '王国の昼',
+    zenith: '#83c9ff',
+    mid: '#bfe5ff',
+    horizon: '#edf7ff',
+    abyss: '#c7dcbb',
     nebulaA: '#4f82bd',
     nebulaB: '#7ab3d8',
-    nebulaStrength: 0.36,
-    starVisibility: 0.34,
+    nebulaStrength: 0,
+    starVisibility: 0,
     haloColor: '#d9ecff',
     haloStrength: 0.34,
     sunDir: [0.46, 0.74, 0.49],
@@ -90,20 +90,20 @@ const SKY_PRESETS = {
     pointScale: 0.35,
     emissiveScale: 0.82,
     dustColor: '#d8f0ff',
-    dustOpacity: 0.44,
-    planetAlpha: 0.42,
+    dustOpacity: 0,
+    planetAlpha: 0,
     exposure: 1.0,
   },
   dusk: {
-    label: '茜の星雲',
-    zenith: '#09091c',
-    mid: '#23193b',
-    horizon: '#5c2f44',
-    abyss: '#060512',
+    label: '王国の黄昏',
+    zenith: '#9a91c0',
+    mid: '#ecaf92',
+    horizon: '#ffe1a4',
+    abyss: '#bba385',
     nebulaA: '#b85c60',
     nebulaB: '#593d80',
-    nebulaStrength: 0.52,
-    starVisibility: 0.72,
+    nebulaStrength: 0,
+    starVisibility: 0.08,
     haloColor: '#ff9c6e',
     haloStrength: 0.52,
     sunDir: [-0.78, 0.24, 0.58],
@@ -119,20 +119,20 @@ const SKY_PRESETS = {
     pointScale: 0.85,
     emissiveScale: 1.48,
     dustColor: '#ffd4b8',
-    dustOpacity: 0.62,
-    planetAlpha: 0.70,
+    dustOpacity: 0,
+    planetAlpha: 0,
     exposure: 0.96,
   },
   night: {
-    label: '静寂の深宇宙',
-    zenith: '#02040d',
-    mid: '#081024',
-    horizon: '#12203e',
-    abyss: '#010309',
+    label: '王国の夜',
+    zenith: '#334e7b',
+    mid: '#516e9e',
+    horizon: '#8cacc8',
+    abyss: '#526c7c',
     nebulaA: '#2d4b7a',
     nebulaB: '#3e326e',
-    nebulaStrength: 0.46,
-    starVisibility: 1.0,
+    nebulaStrength: 0,
+    starVisibility: 0.18,
     haloColor: '#98bef8',
     haloStrength: 0.26,
     sunDir: [-0.42, 0.62, -0.66],
@@ -148,8 +148,8 @@ const SKY_PRESETS = {
     pointScale: 1.15,
     emissiveScale: 1.85,
     dustColor: '#b8d4ff',
-    dustOpacity: 0.72,
-    planetAlpha: 0.85,
+    dustOpacity: 0,
+    planetAlpha: 0,
     exposure: 0.96,
   },
 };
@@ -220,7 +220,7 @@ function blendPresets(a, b, rawT, dominantKey) {
 }
 
 /**
- * 指定モード（auto / dawn / day / dusk / night）と時刻から現在の宇宙ライティング状態を求める。
+ * 指定モード（auto / dawn / day / dusk / night）と時刻から現在の空のライティング状態を求める。
  * @param {string} mode
  * @param {Date} [date]
  */
@@ -664,6 +664,7 @@ export class HomeDioramaGL {
     this.planetGroup = planetGroup;
     this.planetMat = planetMat;
     this.ringMat = ringMat;
+    planetGroup.visible = false; // 王国の空に惑星・環は置かない
     scene.add(planetGroup);
 
     // 3. 浮遊島の周囲をゆっくり漂う微細な星屑パーティクル（180個）
@@ -773,7 +774,7 @@ export class HomeDioramaGL {
     u.uHaloStrength.value = p.haloStrength;
     u.uStarVis.value = p.starVisibility;
 
-    for (const sm of this.starMats ?? []) sm.opacity = Math.max(0.18, p.starVisibility * 0.92);
+    for (const sm of this.starMats ?? []) sm.opacity = p.starVisibility * 0.5;
     this.dustMat.color.set(p.dustColor);
     this.dustMat.opacity = p.dustOpacity;
     this.planetMat.opacity = p.planetAlpha;
@@ -991,7 +992,7 @@ export class HomeDioramaGL {
     }
 
     // 周囲の星屑パーティクルの穏やかな浮遊
-    if (this.dustGeo && !reduced) {
+    if (this.dustGeo && this.currentPhase?.dustOpacity > 0 && !reduced) {
       const attr = this.dustGeo.getAttribute('position');
       const arr = attr.array;
       const base = this.dustBase;

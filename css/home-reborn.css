@@ -1,16 +1,16 @@
 /* Castle Field / Battle Station. 実アート・情報・操作を別の層で扱う。 */
 #app[data-home-theme="battle-station"] {
-  --lobby-bg:#102631; --lobby-surface:#193742; --lobby-raised:#234550;
-  --lobby-line:#3b5661; --lobby-text:#f0f4ef; --lobby-muted:#b0c4ca;
-  --lobby-accent:#8ad7de; --lobby-action:#f2a347; --lobby-ink:#192f38;
+  --lobby-bg:#fff2d2; --lobby-surface:#fffaf0; --lobby-raised:#f4e1b5;
+  --lobby-line:#997344; --lobby-text:#3f2511; --lobby-muted:#6b4a2e;
+  --lobby-accent:#2a52b0; --lobby-action:#ffbf52; --lobby-ink:#3f2511;
 }
-html.at-title,html.at-title body { background:#0c202a; }
+html.at-title,html.at-title body { background:#eee0ba; }
 html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh;min-height:0;margin:0;border:0;border-radius:0;box-shadow:none; }
 #app #home.home-reborn {
   --home-ink:var(--lobby-text);--home-ink-muted:var(--lobby-muted);--home-line:var(--lobby-line);
   --home-paper:var(--lobby-surface);--home-panel:var(--lobby-surface);--ink-royal:var(--lobby-text);
   --royal:var(--lobby-raised);--royal-lo:var(--lobby-bg);--royal-hi:var(--lobby-raised);
-  --focus-outline:var(--lobby-accent);--focus-halo:#102631;
+  --focus-outline:var(--lobby-accent);--focus-halo:#fff2d2;
   --font:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,system-ui,sans-serif;
   display:block;background:var(--lobby-bg);color:var(--lobby-text);
   padding:max(10px,env(safe-area-inset-top)) max(20px,env(safe-area-inset-right)) calc(88px + env(safe-area-inset-bottom)) max(20px,env(safe-area-inset-left));
@@ -20,20 +20,20 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-wrap { width:min(100%,660px);height:100%;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:64px minmax(0,1fr);gap:8px;margin:0 auto; }
 #app #home.home-reborn .home-top { position:static;display:flex;gap:8px;align-items:center;padding:4px 0 10px;min-width:0;background:none;border:0;border-radius:0;box-shadow:none;border-bottom:1px solid var(--lobby-line); }
 #app #home.home-reborn .home-player { gap:10px;min-height:44px;color:var(--lobby-text); }
-#app #home.home-reborn .home-avatar { flex-basis:38px;height:38px;border:1px solid #70909b;outline:0;box-shadow:none;background:#315461; }
+#app #home.home-reborn .home-avatar { flex-basis:38px;height:38px;border:1px solid #70909b;outline:0;box-shadow:none;background:#dce8ff; }
 #app #home.home-reborn .home-who { gap:1px; }
 #app #home.home-reborn .home-who strong { color:var(--lobby-text);font-size:14px;text-shadow:none; }
 #app #home.home-reborn .home-who small { color:var(--lobby-muted);font-size:11px; }
 #app #home.home-reborn .home-level { display:flex;gap:6px;margin:0; }
 #app #home.home-reborn .home-level b { color:var(--lobby-muted);font-size:10px;border:0;background:none;padding:0; }
-#app #home.home-reborn .home-xp { background:#314953;border:0;height:4px;box-shadow:none; }
-#app #home.home-reborn .home-xp i { background:#88bbc4;box-shadow:none; }
+#app #home.home-reborn .home-xp { background:#e2c98f;border:0;height:4px;box-shadow:none; }
+#app #home.home-reborn .home-xp i { background:#386cd8;box-shadow:none; }
 #app #home.home-reborn .home-xp-text { display:none; }
 #app #home.home-reborn .home-level .home-xp { max-width:90px; }
 #app #home.home-reborn .home-side { gap:2px; }
 #app #home.home-reborn .home-wallet-pill { background:none;border:0;box-shadow:none;min-height:44px;padding:0;gap:0; }
 #app #home.home-reborn .home-wallet-pill:has(.home-coins[hidden]) { display:none; }
-#app #home.home-reborn .home-coins { color:#f5cb80;font-size:13px;gap:3px; }
+#app #home.home-reborn .home-coins { color:#805319;font-size:13px;gap:3px; }
 #app #home.home-reborn .home-coins img { width:20px;height:20px;filter:none; }
 #app #home.home-reborn .home-coin-add { height:44px;width:30px;background:none;border:0;box-shadow:none;color:var(--lobby-muted); }
 #app #home.home-reborn .home-icon-btn { height:44px;width:44px;background:none;border:0;box-shadow:none; }
@@ -97,9 +97,9 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-tab-label { letter-spacing:0;white-space:nowrap; }
 #app #home.home-reborn .home-tab-dot { top:9px;right:calc(50% - 20px);width:8px;height:8px;border:1px solid #0c202b; }
 /* 新しい対戦形式・デッキ・補助メニューのシート */
-#app #home.home-reborn .home-sheet { position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,660px);max-width:100%;max-height:85dvh;overflow:auto;padding:4px 20px max(20px,env(safe-area-inset-bottom));border:1px solid #617b84;border-bottom:0;border-radius:16px 16px 0 0;background:#16313e;color:var(--lobby-text);box-shadow:0 -12px 60px #06151b66; }
+#app #home.home-reborn .home-sheet { position:fixed;inset:auto 0 0;margin:0 auto;width:min(100%,660px);max-width:100%;max-height:85dvh;overflow:auto;padding:4px 20px max(20px,env(safe-area-inset-bottom));border:1px solid #617b84;border-bottom:0;border-radius:16px 16px 0 0;background:#fffaf0;color:var(--lobby-text);box-shadow:0 -12px 60px #06151b66; }
 #app #home.home-reborn .home-sheet::backdrop { background:#03141bb3;backdrop-filter:blur(3px); }
-#app #home.home-reborn .home-sheet-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-4px;z-index:3;background:#16313e;border-bottom:1px solid var(--lobby-line);padding:10px 0; }
+#app #home.home-reborn .home-sheet-heading { display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:-4px;z-index:3;background:#fffaf0;border-bottom:1px solid var(--lobby-line);padding:10px 0; }
 #app #home.home-reborn .home-sheet-heading h2 { margin:0;font-size:20px;color:var(--lobby-text); }
 #app #home.home-reborn .home-sheet-close { width:44px;min-height:44px;display:grid;place-items:center;background:none;border:0;color:var(--lobby-muted);cursor:pointer; }
 #app #home.home-reborn .home-modes { display:grid;grid-template-columns:minmax(0,1fr);gap:0; }
@@ -157,11 +157,11 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-deckhero-head { padding:14px;background:none;border:0;border-bottom:1px solid var(--lobby-line);box-shadow:none; }
 #app #home.home-reborn .home-deckhero-head h2 { color:var(--lobby-text);text-shadow:none; }
 #app #home.home-reborn .home-deck-state { color:var(--lobby-muted);background:none;border:0;padding:0;box-shadow:none; }
-#app #home.home-reborn .home-deck-stage { background:radial-gradient(ellipse at 50% 60%,#315760,transparent 70%);border:0; }
+#app #home.home-reborn .home-deck-stage { background:radial-gradient(ellipse at 50% 60%,#e2c98f,transparent 70%);border:0; }
 #app #home.home-reborn .home-deck-stage::before,#app #home.home-reborn .home-deck-stage::after { display:none; }
 #app #home.home-reborn .home-deck-cards { border-top:1px solid var(--lobby-line);padding:16px 0; }
 #app #home.home-reborn .home-deck-strip { gap:10px; }
-#app #home.home-reborn select { background:var(--lobby-surface);color:var(--lobby-text);border:1px solid var(--lobby-line);border-image:none;border-radius:4px;color-scheme:dark;min-height:44px; }
+#app #home.home-reborn select { background:var(--lobby-surface);color:var(--lobby-text);border:1px solid var(--lobby-line);border-image:none;border-radius:4px;color-scheme:light;min-height:44px; }
 #app #home.home-reborn .cf-btn { min-height:44px;padding:10px 14px;background:var(--lobby-raised);color:var(--lobby-text);border:1px solid #5b7883;border-radius:5px;box-shadow:none;text-shadow:none;font:700 13px var(--font); }
 #app #home.home-reborn .cf-btn-primary { background:var(--lobby-accent);color:var(--lobby-ink);border-color:var(--lobby-accent); }
 #app #home.home-reborn .cf-btn:disabled { opacity:.5; }
@@ -173,7 +173,7 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-gacha-banner p { color:var(--lobby-muted);font-size:13px; }
 #app #home.home-reborn .home-wallet { background:none;border:0;box-shadow:none;color:var(--lobby-text);padding:0; }
 #app #home.home-reborn .home-wallet small { color:var(--lobby-muted); }
-#app #home.home-reborn .home-wallet b { background:none;padding:0;color:#f5cb80; }
+#app #home.home-reborn .home-wallet b { background:none;padding:0;color:#805319; }
 #app #home.home-reborn .home-gacha-pool { margin-top:0;padding:10px 0;border-top:1px solid var(--lobby-line); }
 #app #home.home-reborn .home-plaque { position:static;margin:0 0 12px;padding:0;background:none;border:0;border-radius:0;box-shadow:none;color:var(--lobby-text);font-size:16px; }
 #app #home.home-reborn .home-points { margin-top:0;padding:0; }
@@ -181,11 +181,11 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-points li::before { background:var(--lobby-raised);border:1px solid var(--lobby-line);box-shadow:none; }
 #app #home.home-reborn .home-guest-note { color:var(--lobby-muted);font-size:12px; }
 /* ホームから進む準備・図鑑・設定の共通面。カード本体と戦闘盤面は既存アートを保つ。 */
-#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) .screen-box[data-ui-frame] { border:1px solid #637b84 !important;border-image:none !important;background:#f1f3ed !important;box-shadow:0 16px 70px #07151e66 !important;border-radius:10px !important;color:#203b48; }
-#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-skin] { background:#e5ebe6 !important;color:#203b48 !important;border:1px solid #9db1b3 !important;border-image:none !important;border-radius:5px !important;box-shadow:0 2px 0 #687f8226 !important;text-shadow:none !important; }
-#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-tone="primary"] { background:#f2a347 !important;border-color:#bd752b !important; }
-#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-skin]:is(.on,[aria-selected="true"],[aria-pressed="true"]) { background:#234d60 !important;color:#f2f6ef !important; }
-#app[data-home-theme] #title .title-box { background:#f1f3ed; }
+#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) .screen-box[data-ui-frame] { border:1px solid #637b84 !important;border-image:none !important;background:#fffaf0 !important;box-shadow:0 16px 70px #07151e66 !important;border-radius:10px !important;color:#3f2511; }
+#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-skin] { background:#fff2d2 !important;color:#3f2511 !important;border:1px solid #9db1b3 !important;border-image:none !important;border-radius:5px !important;box-shadow:0 2px 0 #687f8226 !important;text-shadow:none !important; }
+#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-tone="primary"] { background:#ffbf52 !important;border-color:#bd752b !important; }
+#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-skin]:is(.on,[aria-selected="true"],[aria-pressed="true"]) { background:#2a52b0 !important;color:#fffaf0 !important; }
+#app[data-home-theme] #title .title-box { background:#fffaf0; }
 @media(min-width:1000px) and (min-height:650px) {
   #app #home.home-reborn { padding:20px 44px 28px 148px; }
   #app #home.home-reborn .home-wrap { width:min(100%,1160px);grid-template-rows:68px minmax(0,1fr);gap:20px; }
@@ -211,7 +211,7 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
   #app #home.home-reborn .home-shortcuts { grid-area:shortcuts;justify-content:start;margin-top:0; }
   #app #home.home-reborn .home-tabbar { left:24px;top:142px;bottom:auto;right:auto;grid-template-columns:1fr;width:88px;gap:4px;border:0;padding:0;background:none; }
   #app #home.home-reborn .home-tab { min-height:76px;border-radius:5px; }
-  #app #home.home-reborn .home-tab[aria-selected="true"] { box-shadow:inset 3px 0 var(--lobby-accent);background:#24434e; }
+  #app #home.home-reborn .home-tab[aria-selected="true"] { box-shadow:inset 3px 0 var(--lobby-accent);background:#dce8ff; }
   #app #home.home-reborn .home-sheet { inset:0;margin:auto;width:480px;height:max-content;max-height:80dvh;border:1px solid #617b84;border-radius:12px;padding:4px 24px 24px; }
   #app #home.home-reborn .home-page[data-page="account"],#app #home.home-reborn .home-page[data-page="deck"] { grid-template-columns:1fr 1fr;gap:20px 30px; }
   #app #home.home-reborn .home-page[data-page="account"] > :is(.home-pagehead,.home-actions),#app #home.home-reborn .home-page[data-page="deck"] > :is(.home-pagehead,.home-deck-tabsrow,.home-menu) { grid-column:1/-1; }
@@ -251,14 +251,14 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-progress-line { min-height:44px; }
 #app #home.home-reborn .home-rank-chip { min-height:44px; }
 #app #home.home-reborn .home-page[data-page="battle"] { grid-template-rows:44px 62px minmax(110px,1fr) 44px auto 44px; }
-#app[data-home-theme] #deck-editor { --deck-night:#102631;--deck-night-light:#244c5c;--deck-gold:#e6bf83;--deck-cream:#edf3f0;border-color:#617c85;background:var(--deck-night);border-radius:10px; }
+#app[data-home-theme] #deck-editor { --deck-night:#fff2d2;--deck-night-light:#f3dfb0;--deck-gold:#e6bf83;--deck-cream:#3f2511;border-color:#617c85;background:var(--deck-night);border-radius:10px; }
 #app[data-home-theme] #deck-editor .deck-box { background:var(--deck-night); }
-#app[data-home-theme] #deck-editor :is(.deck-tray,.deck-grid-item) { background:#1a3a48;border-color:#4f6c78;box-shadow:none; }
-#app[data-home-theme] #deck-editor :is(.deck-button,.deck-icon,select,input) { background:#244c5c;border-color:#6b8994;color:#edf3f0;border-radius:5px; }
-#app[data-home-theme] #deck-editor .deck-card-info { background:#142f3c;border-color:#4f6c78;color:#edf3f0; }
-#app[data-home-theme] #deck-editor .deck-card-info span { color:#b8c9cd; }
-#app[data-home-theme] #deck-editor .deck-limit { background:#254953; }
-#app[data-home-theme] #title :is(.title-choices,#title-levels) { border:1px solid #91a9aa !important;border-image:none !important;background:#f1f3ed !important;border-radius:8px !important;box-shadow:none !important;color:#203b48; }
+#app[data-home-theme] #deck-editor :is(.deck-tray,.deck-grid-item) { background:#fffaf0;border-color:#4f6c78;box-shadow:none; }
+#app[data-home-theme] #deck-editor :is(.deck-button,.deck-icon,select,input) { background:#f3dfb0;border-color:#6b8994;color:#3f2511;border-radius:5px; }
+#app[data-home-theme] #deck-editor .deck-card-info { background:#fff2d2;border-color:#4f6c78;color:#3f2511; }
+#app[data-home-theme] #deck-editor .deck-card-info span { color:#6b4a2e; }
+#app[data-home-theme] #deck-editor .deck-limit { background:#ecd39d; }
+#app[data-home-theme] #title :is(.title-choices,#title-levels) { border:1px solid #91a9aa !important;border-image:none !important;background:#fffaf0 !important;border-radius:8px !important;box-shadow:none !important;color:#3f2511; }
 @media(min-width:1000px) and (min-height:650px) {
   #app #home.home-reborn .home-page[data-page="battle"] { grid-template-rows:44px 100px minmax(180px,1fr) 44px 52px; }
 }
@@ -289,8 +289,8 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app[data-home-theme] #title .local-options summary { min-height:52px;padding:14px;color:var(--lobby-muted);font:700 12px/1.5 var(--font); }
 #app[data-home-theme] #title .local-fields { padding:0 14px 14px; }
 #app[data-home-theme] #title .local-field > span,#app[data-home-theme] #title .local-note { color:var(--lobby-muted); }
-#app[data-home-theme] #title .local-options button[data-ui-skin] { background:#254755 !important;color:#edf3f0 !important;border-color:#6a8490 !important; }
-#app[data-home-theme] #title .local-options button[data-ui-skin].on { background:#8ad7de !important;color:#192f38 !important;border-color:#8ad7de !important; }
+#app[data-home-theme] #title .local-options button[data-ui-skin] { background:#f3dfb0 !important;color:#3f2511 !important;border-color:#6a8490 !important; }
+#app[data-home-theme] #title .local-options button[data-ui-skin].on { background:#2a52b0 !important;color:#3f2511 !important;border-color:#2a52b0 !important; }
 #app[data-home-theme] #title button.level[data-ui-skin] { position:relative;display:flex;flex-direction:column;align-items:start;justify-content:center;gap:6px;min-height:76px;width:100%;padding:16px 20px !important;background:var(--lobby-surface) !important;color:var(--lobby-text) !important;border:1px solid #617e88 !important;box-shadow:none !important;font:800 18px/1.3 var(--font) !important;text-align:left; }
 #app[data-home-theme] #title button.level small { color:var(--lobby-muted);font:500 13px/1.4 var(--font); }
 #app[data-home-theme] #title button.level::after { content:'›';position:absolute;right:20px;top:50%;translate:0 -50%;color:var(--lobby-accent);font-size:28px; }
@@ -364,3 +364,42 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-faction-chip[aria-pressed="true"] {
   background:rgba(138,215,222,.22);border-color:rgba(138,215,222,.72);color:#ffffff;
 }
+
+/* 王国ファンタジーの共通仕上げ。現行の画面構成・カード絵は維持する。 */
+#app #home.home-reborn { --font:"Hiragino Maru Gothic ProN","Yu Gothic",Meiryo,sans-serif; --focus-halo:#fffaf0; background:var(--cream); }
+#app #home.home-reborn .home-sky { background:linear-gradient(#edf7ff88,#fff2d2dd),url('../assets/ui/natural/paper-tile.png') repeat; }
+#app #home.home-reborn :is(.home-card,.home-deckpanel,.home-mode-picker,.home-gacha,.home-sheet,.home-deckhero,.home-stats) {
+ background:var(--cream-hi); border:2px solid var(--line-outline); border-radius:var(--radius-panel); box-shadow:var(--shadow-raised); padding:12px;
+}
+#app #home.home-reborn :is(.home-top,.home-tabbar) { background:linear-gradient(var(--royal),var(--royal-lo)); border:2px solid var(--wood-dark); border-radius:var(--radius-panel); box-shadow:inset 0 -2px var(--gold-line),var(--shadow-soft); padding:8px; }
+#app #home.home-reborn .home-top :is(strong,small,b,.home-coins,.home-coin-add) { color:var(--cream-hi); }
+#app #home.home-reborn .home-tab { color:var(--cream); border-radius:8px; }
+#app #home.home-reborn .home-tab[aria-selected="true"] { background:var(--cream); color:var(--royal-deep); box-shadow:inset 0 -4px var(--gold-d); }
+#app #home.home-reborn :is(.cf-btn,.home-mode-picker,.home-world,.home-deck-pen,.home-shortcuts button) { border:2px solid var(--wood-dark); border-radius:var(--radius-control); background:linear-gradient(#fffaf0,#f7e9c3); color:var(--wood-dark); box-shadow:0 3px 0 #8b623b; }
+#app #home.home-reborn :is(.home-start,.cf-btn-primary) { background:linear-gradient(var(--gold-hi),var(--gold-main),var(--gold-lo)) !important; color:var(--wood-dark) !important; border:2px solid var(--wood-dark) !important; box-shadow:0 3px 0 #8b623b !important; }
+#app #home.home-reborn .home-world { padding-inline:12px; }
+#app #home.home-reborn .home-world[aria-pressed="true"],#app #home.home-reborn .home-slot[aria-checked="true"] { background:var(--royal-lo); color:var(--cream-hi); border-color:var(--wood-dark); }
+#app #home.home-reborn :is(.home-avatar,.home-bigavatar,.home-tile-icon) { border:2px solid var(--wood-dark); background:var(--cream); border-radius:10px; box-shadow:inset 0 0 0 2px var(--gold-line); }
+#app #home.home-reborn :is(.home-menu-group h2,.home-pagehead) { color:var(--wood-dark); border-bottom:2px solid var(--gold-d); padding-bottom:8px; }
+#app #home.home-reborn :is(.home-titlechip,.home-wallet b,.home-coins) { color:#805319; }
+#app #home.home-reborn .home-sheet { color:var(--wood-dark); }
+#app #home.home-reborn .home-deck-stage { background:radial-gradient(ellipse,#ecd39d,transparent 70%); }
+#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-skin] { border:2px solid var(--wood-dark) !important; border-radius:var(--radius-control) !important; background:linear-gradient(var(--cream-hi),var(--parch-deep)) !important; color:var(--wood-dark) !important; box-shadow:0 3px 0 #8b623b !important; }
+#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-tone="primary"] { background:linear-gradient(var(--gold-hi),var(--gold-main),var(--gold-lo)) !important; }
+#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) button[data-ui-skin]:is(.on,[aria-selected="true"],[aria-pressed="true"]) { background:var(--royal-lo) !important; color:var(--cream-hi) !important; }
+#app[data-home-theme] :is(#title,#card-guide,#settings,#help,#collection,#profile) .screen-box[data-ui-frame] { border:3px solid var(--wood-dark) !important; background:var(--cream-hi) !important; color:var(--wood-dark); box-shadow:var(--shadow-panel) !important; }
+#app #home.home-reborn.has-3d-diorama .home-sky::after { background:linear-gradient(#fff2d240,transparent 40%,#fff2d2dd 80%); }
+#app #home.home-reborn.has-3d-diorama:not([data-tab="battle"]) .home-sky::after { background:#fff2d2ed; }
+#app #home.home-reborn.has-3d-diorama :is(.home-progress-line,.home-battle-console,.home-shortcuts,.home-battle-heading h1,.home-battle-heading p) { text-shadow:none; }
+#app #home.home-reborn.has-3d-diorama .home-battle-console { background:#fff2d2f5; border:2px solid var(--wood-dark); backdrop-filter:none; box-shadow:var(--shadow-raised); padding:12px; }
+#app #home.home-reborn .home-faction-bar { background:var(--cream); border:2px solid var(--wood-dark); backdrop-filter:none; }
+#app #home.home-reborn .home-faction-chip { min-height:44px; color:var(--wood-dark); }
+#app #home.home-reborn .home-faction-chip[aria-pressed="true"] { background:var(--royal-lo); color:#fffaf0; border-color:var(--wood-dark); }
+#app #home.home-reborn { --royal:#386cd8; --royal-lo:#2a52b0; --royal-hi:#5b8df0; --royal-deep:#1f3f8f; }
+#app #home.home-reborn .home-top,#app #home.home-reborn .home-tabbar { background:linear-gradient(#386cd8,#2a52b0); }
+#app #home.home-reborn .home-world[aria-pressed="true"] { background:#2a52b0; color:#fffaf0; }
+#app #home.home-reborn .home-mode[aria-pressed="true"] { background:#dce8ff; color:#3f2511; }
+#app #home.home-reborn .home-note { color:#6b4a2e; }
+#app #home.home-reborn.has-3d-diorama .home-top,#app #home.home-reborn.has-3d-diorama .home-tabbar { background:linear-gradient(#386cd8,#2a52b0); border-color:#3f2511; backdrop-filter:none; }
+#app #home.home-reborn.has-3d-diorama .home-deckpanel { border-color:#3f2511; }
+#app[data-home-theme] #title .local-options button[data-ui-skin].on { color:#fffaf0 !important; }

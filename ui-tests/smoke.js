@@ -57,6 +57,7 @@ try{
   // debugは公開状態を読むためだけに使用。Gameの変更メソッドはテストから呼ばない。
   // 既存のdebug起動からメニューでホーム（入口）へ戻り、以降は実際のUIで開始する。
   const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8';
+  if(process.env.UI_TEST_FX)url.searchParams.set('fx',process.env.UI_TEST_FX);
   if(process.env.UI_TEST_FIELD3D)url.searchParams.set('field3d',process.env.UI_TEST_FIELD3D);
   await page.goto(url.href);await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:60000});
   await page.evaluate(async()=>{(await import('./js/ui/config.js')).UI_CONFIG.speed=.03});

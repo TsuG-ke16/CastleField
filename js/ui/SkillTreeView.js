@@ -4,9 +4,9 @@
 // - ノードをタップすると詳細（名前・効果・条件・回数・取得できるかと理由）。取得・解除・E04/X25 の選択
 // - おすすめ（data の presets）・全リセット。変えるたびに localStorage へ保存（SkillTree.serializeBuild の版つき）
 // ルールはすべて js/game/SkillTree.js（skillTreeModel.js 経由）。この画面で別の決まりを作らない。
-// 見た目・操作は PR #200 の独立プレビュー（previews/skill-tree/）を土台にした：深い青緑の配色、系統アイコン（既存の assets/ui）、
-// 奥義＝大きな菱形、取得済み＝水色＋チェック、取得できる＝金の輪郭、選択＝金の点線の輪、ミニマップ（Canvas）、系統名のラベル。
-// ノードの種類（START＝紋章の大きな円・通常＝円・奥義＝大きな菱形・横断＝六角形）と状態（取得済み＝水色の塗り＋✓／
+// 見た目・操作は PR #200 の独立プレビュー（previews/skill-tree/）を土台にした：羊皮紙とロイヤルブルーの配色、系統アイコン（既存の assets/ui）、
+// 奥義＝大きな菱形、取得済み＝ロイヤルブルー＋チェック、取得できる＝金の輪郭、選択＝金の点線の輪、ミニマップ（Canvas）、系統名のラベル。
+// ノードの種類（START＝紋章の大きな円・通常＝円・奥義＝大きな菱形・横断＝六角形）と状態（取得済み＝ロイヤルブルーの塗り＋✓／
 // 取得できる＝金の太い輪郭＋「＋」／条件不足＝破線＋「!」／未接続＝点線・暗い・アイコン灰色）は、色だけでなく形・明暗・線種・記号で区別する。
 
 import { treeIndex } from '../game/SkillTree.js';
@@ -68,6 +68,7 @@ export class SkillTreeView {
     this.handlers = { onDone, onCancel };
     this.box.querySelector('.st-title').textContent = title;
     this.box.querySelector('.st-done').textContent = doneLabel;
+    this.previousFocus = document.activeElement;
     this.box.hidden = false;
     document.documentElement.classList.add('skilltree-open');
     if (this.notice) {
@@ -75,12 +76,14 @@ export class SkillTreeView {
       this.notice = null;
     }
     this.render();
-    requestAnimationFrame(() => { this.initialView(); this.box.querySelector('.st-search').focus({ preventScroll: true }); });
+    requestAnimationFrame(() => { this.initialView(); this.box.querySelector('.st-back').focus({ preventScroll: true }); });
   }
 
   close() {
+    clearTimeout(this.tapTimer);
     this.box.hidden = true;
     document.documentElement.classList.remove('skilltree-open');
+    this.previousFocus?.focus?.({ preventScroll: true });
   }
 
   // ================= DOM =================
@@ -109,20 +112,20 @@ export class SkillTreeView {
       <div class="st-groups" role="toolbar" aria-label="系統で絞り込む"></div>
       <ul class="st-results" aria-label="見つかったノード" hidden></ul>
       <div class="st-stage">
-        <svg class="st-svg" role="group" aria-label="スキルツリーの図（ドラッグで移動・ホイールかピンチで拡大）"><defs><pattern id="st-dots" width="60" height="60" patternUnits="userSpaceOnUse"><circle cx="0" cy="0" r="1.4" fill="#8ad7de" opacity=".15"/></pattern></defs><rect class="st-bg" x="-5000" y="-5000" width="10000" height="10000" fill="url(#st-dots)"/><g class="st-labels"></g><g class="st-edges"></g><g class="st-route"></g><g class="st-nodes"></g></svg>
+        <svg class="st-svg" role="group" aria-label="スキルツリーの図（ドラッグで移動・ホイールかピンチで拡大）"><defs><pattern id="st-dots" width="60" height="60" patternUnits="userSpaceOnUse"><circle cx="0" cy="0" r="1.4" fill="#997344" opacity=".18"/></pattern></defs><rect class="st-bg" x="-5000" y="-5000" width="10000" height="10000" fill="url(#st-dots)"/><g class="st-labels"></g><g class="st-edges"></g><g class="st-route"></g><g class="st-nodes"></g></svg>
         <div class="st-minimap" aria-hidden="true"><canvas width="180" height="180"></canvas><span>全体マップ</span></div>
         <div class="st-zoom" role="group" aria-label="拡大縮小">
-          <button type="button" data-zoom="in" aria-label="拡大">＋</button><button type="button" data-zoom="out" aria-label="縮小">−</button><button type="button" data-zoom="fit" aria-label="全体を表示">全体</button>
+          <button type="button" data-zoom="in" aria-label="拡大">＋</button><button type="button" data-zoom="out" aria-label="縮小">−</button><button type="button" data-zoom="fit" aria-label="全体を表示">全体</button><button type="button" data-zoom="current" aria-label="選択中のノードまたはSTARTへ戻る">現在地</button>
         </div>
         <details class="st-legend"><summary>凡例</summary>
           <ul>
             <li><span class="lg lg-start">◎</span>START（紋章・0pt）</li>
             <li><span class="lg lg-normal">●</span>通常 ／ <span class="lg lg-ult">◆</span>奥義（大きな菱形・1つまで） ／ <span class="lg lg-cross">⬢</span>横断（六角形）</li>
-            <li><span class="lg lg-owned">✓</span>取得済み（水色の塗り・チェック）</li>
+            <li><span class="lg lg-owned">✓</span>取得済み（ロイヤルブルーの塗り・チェック）</li>
             <li><span class="lg lg-avail">＋</span>取得できる（金の太い輪郭）</li>
             <li><span class="lg lg-blocked">!</span>条件不足（破線：必須ノード・奥義・ポイント）</li>
             <li><span class="lg lg-unconn"> </span>未接続（点線・暗い・灰色のアイコン）</li>
-            <li>水色の太線＝取得済みの経路／金の線＝次に取れるノードへの線／点線＝横断の線</li>
+            <li>ロイヤルブルーの太線＝取得済みの経路／金の線＝次に取れるノードへの線／点線＝横断の線</li>
           </ul>
         </details>
       </div>
@@ -187,9 +190,16 @@ export class SkillTreeView {
     box.querySelector('.st-zoom').addEventListener('click', (e) => {
       const z = e.target.closest('[data-zoom]')?.dataset.zoom;
       if (z === 'fit') this.fit();
+      else if (z === 'current') this.centerOn(this.selected ?? this.build.ids.at(-1) ?? this.ix.startId);
       else if (z) this.zoomAt(z === 'in' ? 1.4 : 1 / 1.4);
     });
     box.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        const items = [...box.querySelectorAll('button,input,select,summary,[tabindex="0"]')].filter(el => !el.disabled && el.getClientRects().length);
+        const first = items[0], last = items.at(-1);
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last?.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first?.focus(); }
+      }
       if (e.key === 'Escape') {
         if (!this.detail.hidden) { this.select(null); e.stopPropagation(); }
       }
@@ -209,6 +219,10 @@ export class SkillTreeView {
   /** 画面上の座標（データの layout × SCALE） */
   pos(id) {
     const l = id === this.ix.startId ? this.tree.start.layout ?? { x: 0, y: 0 } : this.ix.byId.get(id)?.layout;
+    // 表示座標だけを調整。元データの START と重なる横断ノードを左右へ逃がす。
+    // 接続・条件・保存には元の ID をそのまま使用する。
+    if (id === 'X21') return { x: 95, y: -55 };
+    if (id === 'X27') return { x: -95, y: -55 };
     return l ? { x: l.x * SCALE, y: l.y * SCALE } : null;
   }
 
@@ -248,7 +262,7 @@ export class SkillTreeView {
       g.dataset.id = id;
       g.setAttribute('transform', `translate(${p.x} ${p.y})`);
       g.setAttribute('role', 'button');
-      g.setAttribute('tabindex', '-1');
+      g.setAttribute('tabindex', id === this.ix.startId ? '0' : '-1');
       g.style.setProperty('--gc', color);
       const r = R[kind];
       const pts = shapePath(kind, r);
@@ -284,7 +298,10 @@ export class SkillTreeView {
       name.classList.add('st-name');
       name.setAttribute('y', below + 27);
       name.textContent = node ? node.name : '';
-      g.append(ring, shape, img, badge, idText, name);
+      const hit = document.createElementNS(SVG, 'circle');
+      hit.classList.add('st-hit');
+      hit.setAttribute('r', Math.max(r + 5, 24));
+      g.append(hit, ring, shape, img, badge, idText, name);
       this.gNodes.append(g);
       this.nodeEls.set(id, { g, mark, node });
     }
@@ -312,6 +329,8 @@ export class SkillTreeView {
       g.classList.toggle('dim', dim);
       g.classList.toggle('hit', Boolean(matches?.has(id) && this.query.trim()));
       g.classList.toggle('selected', this.selected === id);
+      g.setAttribute('tabindex', id === (this.selected ?? this.ix.startId) ? '0' : '-1');
+      g.setAttribute('aria-pressed', String(this.selected === id));
     }
     for (const e of this.edgeEls) {
       e.el.classList.remove('path', 'next', 'plain', 'dim');
@@ -324,6 +343,7 @@ export class SkillTreeView {
     this.renderResults(matches);
     this.renderRoute();
     this.renderDetail();
+    if (this.view) this.applyView();
   }
 
   renderSummary() {
@@ -432,6 +452,7 @@ export class SkillTreeView {
     this.selected = id;
     this.render();
     if (id && center) this.centerOn(id);
+    else this.applyView();
     if (id) this.nodeEls.get(id)?.g.focus({ preventScroll: true });
   }
 
@@ -445,16 +466,16 @@ export class SkillTreeView {
   /** 開いたとき：取得済みがあればその周り、なければ START の周りを読める大きさで（全体は「全体」ボタン） */
   initialView() {
     this.fit();
-    if (this.build.ids.length) this.jumpToIds(this.build.ids);
-    else this.view = { cx: 0, cy: 0, k: Math.max(this.view.k, 0.45) };
-    this.view.k = Math.max(this.view.k, Math.min(0.45, this.view.k * 2.5));
-    this.applyView();
+    if (this.size().w < 900) {
+      if (this.build.ids.length) this.centerOn(this.build.ids.at(-1));
+      else this.centerOn(this.ix.startId);
+    }
   }
 
   fit() {
     const all = this.tree.nodes.map((n) => this.pos(n.id));
     const xs = all.map((p) => p.x), ys = all.map((p) => p.y);
-    const pad = 60;
+    const pad = 120;
     const minX = Math.min(...xs) - pad, maxX = Math.max(...xs) + pad, minY = Math.min(...ys) - pad, maxY = Math.max(...ys) + pad;
     const { w, h } = this.size();
     this.view = { cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, k: Math.min(w / (maxX - minX), h / (maxY - minY)) };
@@ -466,7 +487,11 @@ export class SkillTreeView {
     const { w, h } = this.size();
     const k = this.view.k;
     this.svg.setAttribute('viewBox', `${this.view.cx - w / (2 * k)} ${this.view.cy - h / (2 * k)} ${w / k} ${h / k}`);
-    this.svg.classList.toggle('zoom-names', k >= 0.6);
+    this.svg.classList.toggle('zoom-names', k >= 1.6);
+    // CSS pixels: every node has a hit disc at least 48px wide at every zoom.
+    for (const { g, node } of this.nodeEls.values()) {
+      g.querySelector('.st-hit').setAttribute('r', Math.max(R[nodeKind(node)] + 5, 24 / k));
+    }
     this.svg.classList.toggle('zoom-far', k < 0.3);
     this.drawMinimap();
   }
@@ -481,19 +506,19 @@ export class SkillTreeView {
     const tx = (x) => W / 2 + x * sc, ty = (y) => H / 2 + y * sc;
     ctx.clearRect(0, 0, W, H);
     ctx.lineWidth = 0.6;
-    ctx.strokeStyle = '#57757e';
+    ctx.strokeStyle = '#997344';
     ctx.beginPath();
     for (const e of this.edgeEls) { const a = this.pos(e.a), b = this.pos(e.b); ctx.moveTo(tx(a.x), ty(a.y)); ctx.lineTo(tx(b.x), ty(b.y)); }
     ctx.stroke();
     for (const [id, { node }] of this.nodeEls) {
       const p = this.pos(id);
       const st = this.statuses?.get(id)?.state;
-      ctx.fillStyle = st === 'owned' || st === 'start' ? '#b4e8dd' : st === 'available' ? '#f5cb80' : node?.ultimate ? '#f2a347' : '#6c939f';
+      ctx.fillStyle = st === 'owned' || st === 'start' ? '#2a52b0' : st === 'available' ? '#946014' : node?.ultimate ? '#f2a347' : '#8c7556';
       const s = st === 'owned' || st === 'available' ? 3 : 2;
       ctx.fillRect(tx(p.x) - s / 2, ty(p.y) - s / 2, s, s);
     }
     const { w, h } = this.size();
-    ctx.strokeStyle = '#8ad7de';
+    ctx.strokeStyle = '#2a52b0';
     ctx.lineWidth = 1;
     const vw = (w / this.view.k) * sc, vh = (h / this.view.k) * sc;
     ctx.strokeRect(tx(this.view.cx) - vw / 2, ty(this.view.cy) - vh / 2, vw, vh);
@@ -534,15 +559,29 @@ export class SkillTreeView {
   setupGestures() {
     const svg = this.svg;
     const pts = new Map();
-    let moved = 0, pinch = null, downTarget = null;
+    let moved = 0, pinch = null, downTarget = null, lastTap = null;
+    // At overview zoom hit discs can overlap: resolve to the nearest centre, never SVG paint order.
+    const nearest = (e) => {
+      const { w, h, left, top } = this.size();
+      const x = this.view.cx + (e.clientX - left - w / 2) / this.view.k;
+      const y = this.view.cy + (e.clientY - top - h / 2) / this.view.k;
+      let best = null, distance = Infinity;
+      for (const [id, { node }] of this.nodeEls) {
+        const p = this.pos(id), d = Math.hypot(p.x - x, p.y - y);
+        const r = Math.max(R[nodeKind(node)] + 5, 24 / this.view.k);
+        if (d <= r && d < distance) { best = id; distance = d; }
+      }
+      return best;
+    };
     svg.addEventListener('pointerdown', (e) => {
       svg.setPointerCapture?.(e.pointerId);
       pts.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (pts.size === 1) { moved = 0; downTarget = e.target.closest?.('.st-node')?.dataset.id ?? null; }
+      if (pts.size === 1) { moved = 0; downTarget = nearest(e); }
       if (pts.size === 2) {
         const [a, b] = [...pts.values()];
         pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), k: this.view.k };
         moved = 99;
+        clearTimeout(this.tapTimer); lastTap = null;
       }
     });
     svg.addEventListener('pointermove', (e) => {
@@ -560,6 +599,7 @@ export class SkillTreeView {
       const dx = cur.x - prev.x, dy = cur.y - prev.y;
       moved += Math.abs(dx) + Math.abs(dy);
       if (moved > 6) {
+        clearTimeout(this.tapTimer); lastTap = null;
         this.view.cx -= dx / this.view.k;
         this.view.cy -= dy / this.view.k;
         this.applyView();
@@ -569,7 +609,18 @@ export class SkillTreeView {
       if (!pts.has(e.pointerId)) return;
       pts.delete(e.pointerId);
       if (pts.size < 2) pinch = null;
-      if (pts.size === 0 && moved <= 6 && e.type === 'pointerup') this.select(downTarget, {});
+      if (pts.size === 0 && moved <= 6 && e.type === 'pointerup') {
+        const now = performance.now();
+        if (lastTap && now - lastTap.time < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 28) {
+          clearTimeout(this.tapTimer);
+          this.zoomAt(1.6, e.clientX, e.clientY); lastTap = null;
+        } else {
+          const id = downTarget;
+          clearTimeout(this.tapTimer);
+          this.tapTimer = setTimeout(() => { if (!this.box.hidden) this.select(id); }, 320);
+          lastTap = { time: now, x: e.clientX, y: e.clientY };
+        }
+      }
     };
     svg.addEventListener('pointerup', up);
     this.minimap?.addEventListener('click', (e) => {
@@ -586,9 +637,19 @@ export class SkillTreeView {
       e.preventDefault();
       this.zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX, e.clientY);
     }, { passive: false });
+    svg.addEventListener('dblclick', (e) => { if (e.detail) e.preventDefault(); });
     // キーボード：フォーカスのあるノードで Enter／Space
     svg.addEventListener('keydown', (e) => {
       const id = e.target.closest?.('.st-node')?.dataset.id;
+      if (id && ['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const p = this.pos(id), dx = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0, dy = e.key === 'ArrowUp' ? -1 : e.key === 'ArrowDown' ? 1 : 0;
+        const next = [...this.nodeEls.keys()].filter(n => n !== id).map(n => {
+          const q = this.pos(n), x = q.x - p.x, y = q.y - p.y;
+          return { id:n, forward:x*dx+y*dy, score:Math.hypot(x,y)+Math.abs(x*dy-y*dx)*2 };
+        }).filter(n => n.forward > 0).sort((a,b) => a.score-b.score)[0];
+        if (next) this.select(next.id, { center:true });
+      }
       if (id && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); this.select(id); }
     });
   }

@@ -846,3 +846,7 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `models/diorama/castle_field_diorama.glb`・`castle_field_diorama.blend`・`tripo_castles/*.glb` | Tripo Studio（Web生成3Dスカルプト4城＋4バイオーム浮遊島）を Blender 5.3 + Python（`scripts/prepare_tripo_*.py`, `build_diorama.py`）で最適化・発光マップ合成・空間統合 | Tripo Studio 利用規約（プロジェクト向け生成出力）＋本リポジトリのコードと同一 | 2026-11-23 |
 | `models/diorama/renders/*`・`config/*`・`scripts/*` | Blender 5.3 Cycles OPTIX レンダリングおよび手書き Python スクリプト | 本リポジトリのコードと同一 | 2026-11-23 |
 | `js/ui/HomeDioramaGL.js` | Three.js + 手書き GLSL スカイドームシェーダー（外部背景画像なし） | 本リポジトリのコードと同一 | 2026-11-23 |
+
+## 王国UI監査（2026-11-26）
+
+`assets/review/kingdom-fantasy/` はこのリポジトリの画面をPlaywright/Chromiumで撮影した比較画像・検証記録と、既存素材を並べた確認用コンタクトシート。新規の画像生成・外部素材の追加はなし。元の素材の利用条件は各項目に従う。
