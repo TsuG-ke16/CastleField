@@ -8,6 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { Game, EVENT_TYPES } from '../js/game/Game.js';
+import { Monster } from '../js/game/Monster.js';
 import { validateSkillTree, checkSkillBuild, skillMods, availableSkillNodes, dominatedPairs, SKILL_EFFECTS } from '../js/game/SkillTree.js';
 import { chooseSkillBuild, SKILL_STYLE_OF, STRATEGIES } from '../js/game/strategies.js';
 import { buildData, loadOptionalData, seededRng, recordEvents } from './helpers.js';
@@ -59,14 +60,44 @@ test('上位互換のノードがない（効果がほかのノードをすべ�
   validateSkillTree(tree);
 });
 
-test('ポイントでは全部取れない（全ノードの合計 > points）。どの枝も奥まで取れる', () => {
+/** そのノードを取るのにいちばん安いビルド（requires は全部、requiresAny は最初の1つをたどる） */
+function minimalBuild(tree, id, out = []) {
+  const n = tree.nodes[id];
+  for (const r of n.requires ?? []) minimalBuild(tree, r, out);
+  if (n.requiresAny && !n.requiresAny.some((r) => out.includes(r))) minimalBuild(tree, n.requiresAny[0], out);
+  if (!out.includes(id)) out.push(id);
+  return out;
+}
+
+test('ポイントでは全部取れない。どの奥義（いちばん上の段）も取れるが、奥義は2つ取れない', () => {
   const tree = TREE();
   const total = Object.values(tree.nodes).reduce((n, x) => n + x.cost, 0);
   assert.ok(total > tree.points);
-  for (const b of Object.keys(tree.branches)) {
-    const chain = Object.entries(tree.nodes).filter(([, n]) => n.branch === b).sort((x, y) => x[1].tier - y[1].tier).map(([id]) => id);
-    assert.equal(checkSkillBuild(tree, chain).ok, true, b);
+  assert.ok(Object.keys(tree.nodes).length >= 24 && Object.keys(tree.branches).length >= 6);
+  const top = Object.keys(tree.nodes).filter((id) => tree.nodes[id].tier === Math.max(...Object.values(tree.nodes).filter((n) => n.branch === tree.nodes[id].branch).map((n) => n.tier)));
+  assert.equal(top.length, Object.keys(tree.branches).length);
+  for (const id of top) assert.equal(checkSkillBuild(tree, minimalBuild(tree, id)).ok, true, id);
+  for (const a of top) for (const b of top) {
+    if (a >= b) continue;
+    const both = [...new Set([...minimalBuild(tree, a), ...minimalBuild(tree, b)])];
+    assert.match(checkSkillBuild(tree, both).reason ?? '', /ポイントが足りません/, `${a}+${b}`);
   }
+});
+
+test('強すぎる効果は入れない：MP の回復（mpPerTurn）はどのノードにもなく、コイン/ターンは全部合わせても+1まで', () => {
+  const nodes = Object.values(TREE().nodes);
+  assert.ok(nodes.every((n) => !n.effects.mpPerTurn));
+  assert.ok(nodes.reduce((sum, n) => sum + (n.effects.coinPerTurn ?? 0), 0) <= 1);
+  // 兵士の攻撃+1も、ノードを増やしたときに強すぎた（ポイントが多いと何も取らない相手に66%）ので入れていない
+  assert.ok(nodes.every((n) => !n.effects.soldierAttack));
+});
+
+test('requiresAny：同じ段の選択肢のどれか1つがあれば取れる', () => {
+  const tree = TREE();
+  assert.match(checkSkillBuild(tree, ['chaosEye', 'echo']).reason, /先に「光と闇の共鳴」か「黒氷の呪い」か「砕氷の槌」か「混沌の渦」が要ります/);
+  assert.equal(checkSkillBuild(tree, ['chaosEye', 'shatter', 'echo']).ok, true);
+  assert.ok(availableSkillNodes(tree, ['chaosEye', 'maelstrom']).includes('echo'));
+  assert.ok(!availableSkillNodes(tree, ['chaosEye']).includes('echo'));
 });
 
 // ================= (2) ビルドの決まり・不正な入力 =================
@@ -77,7 +108,7 @@ test('checkSkillBuild：知らないノード・2回・先のノードがない�
   assert.match(checkSkillBuild(tree, ['nothing']).reason, /ありません/);
   assert.match(checkSkillBuild(tree, ['keenBlade', 'keenBlade']).reason, /2回/);
   assert.match(checkSkillBuild(tree, ['warcry']).reason, /先に「攻城術」/);
-  assert.match(checkSkillBuild(tree, ['keenBlade', 'siegecraft', 'warcry', 'stoneWall']).reason, /ポイントが足りません（7使う・使えるのは6）/);
+  assert.match(checkSkillBuild(tree, ['keenBlade', 'siegecraft', 'warcry', 'stoneWall', 'stronghold']).reason, new RegExp(`ポイントが足りません（9使う・使えるのは${tree.points}）`));
   assert.match(checkSkillBuild(tree, 'keenBlade').reason, /配列/);
   // 順番は問わない（先のノードがビルドのどこかにあればよい）
   assert.equal(checkSkillBuild(tree, ['warcry', 'siegecraft']).ok, true);
@@ -97,6 +128,7 @@ test('validateSkillTree：形の間違いを分かりやすく止める', () => 
   bad({ nodes: { n: { ...good.nodes.n, effects: { randomAttach: false, castleHp: -1 } } } }, /true だけ/);
   bad({ nodes: { n: { ...good.nodes.n, branch: 'x' } } }, /branch/);
   bad({ nodes: { n: { ...good.nodes.n, requires: ['n'] } } }, /requires/);
+  bad({ nodes: { n: { ...good.nodes.n, requiresAny: [] } } }, /requiresAny/);
   bad({ nodes: { a: { ...good.nodes.n, requires: ['c'] }, c: { ...good.nodes.n, requires: ['a'] } } }, /輪/);
   bad({ presets: { p: { name: 'P', nodes: ['zzz'] } } }, /presets の "p"/);
   bad({ presets: { n: { name: 'P', nodes: [] } } }, /ノードと同じID/);
@@ -119,10 +151,10 @@ test('new Game：不正な setup.skills は分かりやすい例外。skillTree 
 // ================= (3) ノードの効果 =================
 
 test('castleHp・armor・initialMp・maxMp・initialHand・maxHand：試合の始めの状態に入る（getState に skills・maxMp）', () => {
-  const { game } = classicGame({ skills: [['stoneWall', 'stronghold', 'bastion'], ['manaSpring', 'deepVessel', 'alchemy']] });
+  const { game } = classicGame({ skills: [['stoneWall', 'stronghold', 'bastion'], ['arcana', 'deepVessel', 'manaSpring', 'siegecraft', 'warcry']] });
   const tree = TREE();
   const m1 = skillMods(tree, ['stoneWall', 'stronghold', 'bastion']);
-  const m2 = skillMods(tree, ['manaSpring', 'deepVessel', 'alchemy']);
+  const m2 = skillMods(tree, ['arcana', 'deepVessel', 'manaSpring', 'siegecraft', 'warcry']);
   const { rules } = buildData({ mode: 'classic' });
   const s = game.getState(null).players;
   assert.deepEqual(s.p1.skills, ['stoneWall', 'stronghold', 'bastion']);
@@ -187,7 +219,7 @@ test('soldierAttack：出した兵士の攻撃が増える（兵舎と同じ）�
 });
 
 test('randomAttach：ルールが false でも、スキルを持つ人のターンの始めだけ付着する（skill: true）。randomAttachTurns で長く残る', () => {
-  const { game, log } = classicGame({ skills: [['chaosEye', 'resonance', 'echo'], []] });
+  const { game, log } = classicGame({ skills: [['chaosEye', 'lightDark', 'echo'], []] });
   // 両者の兵士を置いてから、お互いのターンの始めを見る
   game.start();
   game.players.p1.mp = 20;
@@ -205,8 +237,8 @@ test('randomAttach：ルールが false でも、スキルを持つ人のター�
   assert.equal(att[0].turns, 1 + skillMods(TREE(), ['echo']).randomAttachTurns); // reactions.json の randomAttach.turns（1）＋ 残響
 });
 
-test('reactionDamage：自分の攻撃で起きた反応だけ追加ダメージが増える（skillBonus）。相手の攻撃の反応には付かない', () => {
-  const { game, log } = classicGame({ skills: [['chaosEye', 'resonance'], []] });
+test('反応ごとのダメージ（annihilationDamage など）：自分の攻撃で起きた、その反応だけ追加ダメージが増える（skillBonus）。相手の攻撃の反応には付かない', () => {
+  const { game, log } = classicGame({ skills: [['chaosEye', 'lightDark', 'blackIce'], []] });
   game.start();
   game.players.p1.mp = 20;
   game.debugSetHand('p1', ['classic_king_heavy']);
@@ -225,9 +257,99 @@ test('reactionDamage：自分の攻撃で起きた反応だけ追加ダメージ
   // p1 の攻撃が p2 の兵士に反応：+4
   theirs.attachments.push({ element: 'dark', turns: 3 });
   game.elementHit(game.players.p2, theirs, 'light', { by: game.players.p1 });
-  const bonus = skillMods(TREE(), ['resonance']).reactionDamage;
+  // 対消滅（光＋闇）なので、光と闇の共鳴だけが乗る（黒氷の呪いは乗らない）
+  const bonus = skillMods(TREE(), ['lightDark']).annihilationDamage;
   const rs = log.filter((e) => e.event === 'reactionTriggered');
   assert.deepEqual(rs.map((e) => [e.playerId, e.damage, e.skillBonus]), [['p1', 8, undefined], ['p2', 8 + bonus, bonus]]);
+});
+
+test('spellDamage・healBonus：兵士へのダメージの魔法・城の回復の魔法の数値が増える', () => {
+  const tree = tinyTree({ spellDamage: 2, healBonus: 3 });
+  const { game, log } = classicGame({ skillTree: tree, skills: [['n'], []], rules: { maxHand: 99 } });
+  game.start();
+  game.endTurn();
+  game.players.p2.mp = 20;
+  game.debugSetHand('p2', ['classic_king_heavy']);
+  game.playCard(game.players.p2.hand[0].cardId, { playerId: 'p1', roadId: game.getState(null).roads[0].roadId });
+  game.endTurn();
+  const target = game.players.p2.soldiers[0];
+  target.hp = target.maxHp = 50;
+  game.players.p1.mp = 20;
+  game.debugSetHand('p1', ['classic_king_holy_ray', 'classic_king_minor_heal']);
+  const [ray, heal] = game.players.p1.hand.map((c) => c.cardId);
+  assert.equal(game.playCard(ray, { soldierId: target.soldierId }).ok, true);
+  if (game.getState(null).phase === 'defend') game.passDefense();
+  const { cards } = buildData({ mode: 'classic' });
+  const dmg = log.filter((e) => e.event === 'soldierDamaged' && e.cause === 'spell').at(-1);
+  assert.equal(dmg.amount, cards.classic_king_holy_ray.amount + 2);
+  // 回復もメインの1枚なので、次の自分のターンに出す
+  game.endTurn();
+  game.endTurn();
+  game.players.p1.castle.hp = 10;
+  game.players.p1.mp = 20;
+  const hr = game.playCard(heal, { playerId: 'p1' });
+  assert.equal(hr.ok, true, hr.reason);
+  const healed = log.filter((e) => e.event === 'castleHealed').at(-1);
+  assert.equal(healed.amount, cards.classic_king_minor_heal.amount + 3);
+});
+
+test('castleRegen・armorFloor：自分のターンの始めに城HPが回復し、城壁が決まった値まで戻る（相手は何も起きない）', () => {
+  const tree = tinyTree({ castleRegen: 2, armorFloor: 3 });
+  const { game, log } = classicGame({ skillTree: tree, skills: [['n'], []], rules: { maxHand: 99 } });
+  game.players.p1.castle.hp = 20;
+  game.players.p2.castle.hp = 20;
+  game.start();
+  assert.equal(game.players.p1.castle.hp, 22);
+  assert.equal(game.players.p1.armor, 3);
+  game.players.p1.armor = 5; // 多いときは減らさない
+  game.endTurn();
+  game.endTurn();
+  assert.equal(game.players.p1.armor, 5);
+  assert.equal(game.players.p2.castle.hp, 20);
+  const heals = log.filter((e) => e.event === 'castleHealed' && e.source?.kind === 'skill').map((e) => e.playerId);
+  assert.deepEqual(heals, ['p1', 'p1']);
+  const armored = log.filter((e) => e.event === 'castleArmored' && e.skill);
+  assert.deepEqual(armored.map((e) => [e.playerId, e.armor]), [['p1', 3]]);
+});
+
+test('soldiersPerTurn・archerRange・soldierHp：出せる兵士の数・弓兵の射程・兵士のHPが増える', () => {
+  const tree = tinyTree({ soldiersPerTurn: 1, archerRange: 1, soldierHp: 2 });
+  const { game } = classicGame({ skillTree: tree, skills: [['n'], []] });
+  const { cards, rules } = buildData({ mode: 'classic' });
+  game.start();
+  game.players.p1.mp = 99;
+  const n = rules.soldiersPerTurn + 1;
+  game.debugSetHand('p1', [...Array(n).fill('classic_king_archer'), 'classic_king_infantry']);
+  const road = game.getState(null).roads[0].roadId;
+  for (let i = 0; i < n; i++) assert.equal(game.playCard(game.players.p1.hand[0].cardId, { playerId: 'p2', roadId: road }).ok, true, `兵士${i + 1}`);
+  assert.match(game.canPlayCard(game.players.p1.hand[0].cardId).reason, new RegExp(`${n}枚まで`));
+  const archer = game.players.p1.soldiers[0];
+  assert.equal(archer.rangeBonus, 1);
+  assert.equal(archer.maxHp, cards.classic_king_archer.hp + 2);
+  // 相手（スキルなし）は今までどおり
+  game.endTurn();
+  game.players.p2.mp = 99;
+  game.debugSetHand('p2', ['classic_king_archer']);
+  game.playCard(game.players.p2.hand[0].cardId, { playerId: 'p1', roadId: road });
+  assert.equal(game.players.p2.soldiers[0].rangeBonus, 0);
+  assert.equal(game.players.p2.soldiers[0].maxHp, cards.classic_king_archer.hp);
+});
+
+test('monsterCoins：魔物にとどめを刺すと、もらうコインが増える', () => {
+  const tree = tinyTree({ monsterCoins: 2 });
+  const { game, log } = classicGame({ skillTree: tree, skills: [['n'], []] });
+  const monsters = loadOptionalData('classic').monsters;
+  const [type, def] = Object.entries(monsters)[0];
+  const base = def.reward ?? 0;
+  game.start();
+  for (const pid of ['p1', 'p2']) {
+    const m = new Monster(`mx${pid}`, type, def, game.getState(null).roads[0].roadId, 2);
+    game.monsters.push(m);
+    m.hp = 0;
+    game.defeatMonsterIfDead(m, pid);
+  }
+  const coins = log.filter((e) => e.event === 'coinsChanged' && e.reason === 'reward').map((e) => [e.playerId, e.delta]);
+  assert.deepEqual(coins, [['p1', base + 2], ...(base ? [['p2', base]] : [])]);
 });
 
 // ================= (4) 先攻と後攻 =================

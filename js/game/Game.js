@@ -28,7 +28,7 @@ import { Road } from './Road.js';
 import { Castle } from './Castle.js';
 import { validateWeather } from './Weather.js';
 import { validateStages, pickStage } from './Stage.js';
-import { validateSkillTree, checkSkillBuild, skillMods, REACTION_SKILL_EFFECTS } from './SkillTree.js';
+import { validateSkillTree, checkSkillBuild, skillMods, REACTION_SKILL_EFFECTS, REACTION_DAMAGE_KEYS } from './SkillTree.js';
 
 /** 身代わり（guardCastle）が代わりに受ける、城へのダメージの出どころ（相手からの攻撃）。自分で払うコスト・崩壊・天候・毒は受けない */
 /** 4陣営の反応の継続ダメージ（reactions.json の dot.status） */
@@ -36,6 +36,8 @@ export const DOT_STATUSES = ['sand', 'frostbite'];
 const GUARDED_SOURCES = ['soldier', 'spell', 'spirit', 'reaction', 'passiveSpirit'];
 /** ドルイド・呪術師（spellBoost）で強くなる、ダメージの魔法 */
 const BOOSTED_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'breathAttack'];
+/** スキルの spellDamage が乗る魔法（兵士へのダメージ）。healBonus は healOwnCastle に乗る */
+const SKILL_SPELL_EFFECTS = ['damageEnemySoldiers', 'singleDamage', 'randomElementDamage'];
 
 /** 2人のときのプレイヤーID（人数は rules.playerCount。3人以上は p3〜p8 が続く） */
 export const PLAYER_IDS = ['p1', 'p2'];
@@ -408,6 +410,8 @@ export class Game {
       /** スキルのビルド（ノードのIDの配列）と効果の合計（スキルを使わないゲームは null） */
       player.skills = skill?.build ?? null;
       player.skillMods = skill?.mods ?? null;
+      // スキルの soldierHp：コインの強化「鍛錬」と同じ値（armyHp）の最初の値にする
+      if (player.skillMods?.soldierHp > 0) player.armyHp = player.skillMods.soldierHp;
       player.mp = Math.max(0, Math.min(this.rules.initialMp + (player.skillMods?.initialMp ?? 0), this.maxMpOf(player)));
       player.castleType = castleType;
       player.castleDef = cdef;
@@ -644,6 +648,20 @@ export class Game {
       if (!check.ok) throw new Error(`席${seat + 1}のスキルが決まりに合いません：${check.reason}`);
       return { build: [...build], mods: skillMods(skillTree, build) };
     });
+  }
+
+  /** スキルで魔法の数値に足す量：兵士へのダメージの魔法は spellDamage、城の回復の魔法は healBonus（スキルがなければ0） */
+  skillSpellBonus(player, effect) {
+    const m = player.skillMods;
+    if (!m) return 0;
+    if (SKILL_SPELL_EFFECTS.includes(effect)) return m.spellDamage;
+    if (effect === 'healOwnCastle') return m.healBonus;
+    return 0;
+  }
+
+  /** その人が1ターンに出せる兵士の枚数（rules.soldiersPerTurn ＋ スキルの soldiersPerTurn） */
+  soldiersPerTurnOf(player) {
+    return this.rules.soldiersPerTurn + Math.max(0, player.skillMods?.soldiersPerTurn ?? 0);
   }
 
   /** その人の MP の上限（rules.maxMp ＋ スキルの maxMp。最低1）。MP を使わないルール（maxMp が0）は0 */
@@ -1174,6 +1192,8 @@ export class Game {
     // 古代遺跡：自分のターンの始めに MP が増える
     const stageMp = this.stageDef()?.mpPerTurn ?? 0;
     if (stageMp > 0 && this.rules.maxMp > 0) this.changeMp(player, stageMp, 'stage');
+    // スキル：城の小回復（castleRegen）と、城壁を戻す（armorFloor）。スキルのないゲームでは何もしない
+    this.skillTurnStart(player);
 
     // 属性のランダム付着：コイン・MP のあと、ドローの前（手札を引く前に盤面の状態が決まる）。
     // 自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる
@@ -1670,6 +1690,24 @@ export class Game {
   }
 
   /**
+   * スキルのターンの始め：castleRegen（城HPを回復。上限まで。castleHealed の source { kind: "skill" }）、
+   * armorFloor（城壁がその値より少なければ、その値まで戻す。armorMax まで。castleArmored に skill: true）
+   */
+  skillTurnStart(player) {
+    const m = player.skillMods;
+    if (!m) return;
+    if (m.castleRegen > 0 && !player.castle.isFull) {
+      const healed = player.castle.heal(m.castleRegen);
+      if (healed > 0) this.emit('castleHealed', { playerId: player.id, amount: healed, hp: player.castle.hp, source: { kind: 'skill' } });
+    }
+    const floor = this.rules.armorMax ? Math.min(this.rules.armorMax, m.armorFloor) : m.armorFloor;
+    if (floor > 0 && player.armor < floor) {
+      player.armor = floor;
+      this.emit('castleArmored', { playerId: player.id, armor: player.armor, skill: true });
+    }
+  }
+
+  /**
    * 自分のターンの始め：敵の見える兵士（忍者は除く）からランダムに1体を選び、ランダムな属性を1つ付着させる（反応は起こさない）。
    * rules.randomAttachTurnStart が true で reactions を渡したゲームだけ。敵の兵士がいなければ何もしない（乱数も使わない）。
    * スキルツリー：rules.randomAttachTurnStart が false でも、スキル（randomAttach）を持っているプレイヤーには効く。
@@ -1814,7 +1852,8 @@ export class Game {
     if (def.shieldBreak) damage += broken + def.shieldBreak.bonus;
     // スキル（共鳴・残響）：反応を起こした人（敵の兵士に当てた人）の reactionDamage を足す。自分・味方の兵士への反応には足さない
     const by = reaction.by;
-    const skillBonus = by && this.side(by.id) !== this.side(owner.id) ? Math.max(0, by.skillMods?.reactionDamage ?? 0) : 0;
+    const skillBonus = by?.skillMods && this.side(by.id) !== this.side(owner.id)
+      ? Math.max(0, by.skillMods.reactionDamage + (by.skillMods[REACTION_DAMAGE_KEYS[reaction.id]] ?? 0)) : 0;
     damage += skillBonus;
     const playerId = owner.id;
     const { soldierId } = soldier;
@@ -2466,7 +2505,9 @@ export class Game {
       this.players[playerId].hand.push(piece);
       this.emit('cardDrawn', { playerId, cardIds: [piece.cardId] });
     }
-    if (reward) this.changeCoins(this.players[playerId], reward, 'reward');
+    // スキルの monsterCoins：とどめを刺した人のコインに足す
+    const coins = (reward ?? 0) + Math.max(0, this.players[playerId].skillMods?.monsterCoins ?? 0);
+    if (coins) this.changeCoins(this.players[playerId], coins, 'reward');
     // ごほうびのカード：そのレアリティのカードが1枚、手札に入る（カードがなければ何も起きない）
     if (rewardRarity) {
       const type = sampleTypeOfRarity(this.cardDefs, rewardRarity, this.rng);
@@ -3361,8 +3402,8 @@ export class Game {
     // 適応は合成専用。枠の決まりより先に答える（「もうメインを出しました」だと、次のターンなら出せるように読めてしまう）
     if (card.def.effect === 'wild') return fail('適応は合成に使うカードです（出せません）');
     // 兵士は1ターン soldiersPerTurn 枚、メイン（攻撃の魔法）は1枚。付加（武器）・防御・回復や精霊などは何枚でも
-    if (card.slot === 'soldier' && player.soldiersPlayedThisTurn >= this.rules.soldiersPerTurn) {
-      return fail(`このターンに出せる兵士は${this.rules.soldiersPerTurn}枚までです`);
+    if (card.slot === 'soldier' && player.soldiersPlayedThisTurn >= this.soldiersPerTurnOf(player)) {
+      return fail(`このターンに出せる兵士は${this.soldiersPerTurnOf(player)}枚までです`);
     }
     if (card.slot === 'main' && player.playedThisTurn) return fail('このターンはもうメインのカードを出しました');
     if (isCoinCard(card.def) && this.rules.coinCardsPerTurn && player.coinCardsPlayedThisTurn >= this.rules.coinCardsPerTurn) {
@@ -3458,6 +3499,7 @@ export class Game {
       const soldier = new Soldier(soldierId, card, road.roadId, targetId);
       soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
       soldier.baseAttack += player.armyAttack; // 訓練（コインで買う）
+      if (soldier.range > 0) soldier.rangeBonus += Math.max(0, player.skillMods?.archerRange ?? 0); // スキルの長弓
       soldier.hp += player.armyHp;
       soldier.maxHp += player.armyHp;
       player.soldiers.push(soldier);
@@ -3547,7 +3589,7 @@ export class Game {
     const element = ELEMENTS[Math.floor(this.rng() * ELEMENTS.length)];
     const strong = beatsElement(this.elementDefs, element, soldier.element);
     // 4陣営：呪術師（混沌）などの属性魔法の強化は、カードの属性で乗る（撃つランダムな属性ではない）
-    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + (strong ? this.rules.elementBonus : 0) + this.spellBonus(player, card.def.element);
+    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + (strong ? this.rules.elementBonus : 0) + this.spellBonus(player, card.def.element) + this.skillSpellBonus(player, card.def.effect);
     this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId, element });
     if (this.rollMiss()) {
       this.emitMiss(player.id, 'spell', { type: card.type });
@@ -3601,7 +3643,7 @@ export class Game {
   singleDamage(player, card, soldierId) {
     const owner = this.opponentsOf(player.id).find((p) => p.soldiers.some((x) => x.soldierId === soldierId));
     const soldier = owner.soldiers.find((x) => x.soldierId === soldierId);
-    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + this.spellBonus(player, card.def.element);
+    const amount = card.def.amount + this.stageEffectBonus(card.def.effect) + this.spellBonus(player, card.def.element) + this.skillSpellBonus(player, card.def.effect);
     this.emit('spellCast', { playerId: player.id, type: card.type, target: owner.id, targetKind: 'player', roadId: soldier.roadId, soldierId });
     if (this.rollMiss()) {
       this.emitMiss(player.id, 'spell', { type: card.type });
@@ -3760,7 +3802,9 @@ export class Game {
     // ステージで、魔法の数値が増える（溶岩・遺跡）
     const amount = card.def.amount === undefined ? undefined : card.def.amount + this.stageEffectBonus(effect)
       // 4陣営：ドルイド・呪術師がいれば、その属性のダメージの魔法が強くなる（兵士がいなければ0）
-      + (BOOSTED_EFFECTS.includes(effect) ? this.spellBonus(player, card.def.element) : 0);
+      + (BOOSTED_EFFECTS.includes(effect) ? this.spellBonus(player, card.def.element) : 0)
+      // スキル：兵士へのダメージの魔法（spellDamage）・城の回復（healBonus）
+      + this.skillSpellBonus(player, effect);
     // レーンを選んだ魔法は、その道の兵士だけに効く（spellCast にも roadId を入れる）
     const lane = roadId === undefined ? {} : { roadId };
     const victims = () => enemy.visibleSoldiers.filter((x) => roadId === undefined || x.roadId === roadId);

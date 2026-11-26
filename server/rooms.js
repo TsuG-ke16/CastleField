@@ -900,7 +900,7 @@ export class Room {
         costDecks: Object.entries(this.costDecks() ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),
         // スキルツリー（使えるポイントとノード・おすすめ。スキルツリーのないモードは null）
-        skillTree: this.data.skillTree ? { points: this.data.skillTree.points, nodes: Object.fromEntries(Object.entries(this.data.skillTree.nodes).map(([id, n]) => [id, { name: n.name, branch: n.branch, tier: n.tier, cost: n.cost, requires: n.requires ?? [], description: n.description ?? '' }])), presets: Object.fromEntries(Object.entries(this.data.skillTree.presets ?? {}).map(([id, p]) => [id, { name: p.name, nodes: [...p.nodes] }])) } : null,
+        skillTree: this.data.skillTree ? { points: this.data.skillTree.points, nodes: Object.fromEntries(Object.entries(this.data.skillTree.nodes).map(([id, n]) => [id, { name: n.name, branch: n.branch, tier: n.tier, cost: n.cost, requires: n.requires ?? [], requiresAny: n.requiresAny ?? [], description: n.description ?? '' }])), presets: Object.fromEntries(Object.entries(this.data.skillTree.presets ?? {}).map(([id, p]) => [id, { name: p.name, nodes: [...p.nodes] }])) } : null,
         castleHpRange: { min: CASTLE_HP_MIN, max: CASTLE_HP_MAX },
         teamModes: Object.entries(TEAM_MODES).map(([id, name]) => ({ id, name })),
         // ステージ（stages.json がなければ空）。最初は「ランダム」

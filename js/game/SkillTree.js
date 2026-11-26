@@ -22,16 +22,32 @@ export const SKILL_EFFECTS = {
   randomAttach: 'flag', // ターン開始時のランダム付着（rules.randomAttachTurnStart をこのプレイヤーだけに効かせる）
   randomAttachTurns: 'up', // ランダム付着の残る回数に足す
   coinPerTurn: 'up', // 自分のターンの始めにもらうコイン（rules.coinPerTurn に足す。0より少なくはならない）
+  // ---- ノードを増やしたときに足したキー（どれも今ある処理に足すだけ）----
+  spellDamage: 'up', // 兵士へのダメージの魔法（damageEnemySoldiers・singleDamage・randomElementDamage）のダメージ
+  healBonus: 'up', // 城を回復する魔法（healOwnCastle）の回復量
+  castleRegen: 'up', // 自分のターンの始めに、城HPがこれだけ回復する（上限まで。castleHealed の source.kind "skill"）
+  armorFloor: 'up', // 自分のターンの始めに、城壁がこれより少なければ、この値まで戻る（castleArmored に skill: true）
+  soldiersPerTurn: 'up', // 1ターンに出せる兵士の枚数（rules.soldiersPerTurn に足す）
+  archerRange: 'up', // 出した弓兵・魔法使い（射程のある兵士）の射程（rangeBonus に足す）
+  soldierHp: 'up', // 出した兵士のHP（コインの強化「鍛錬」と同じ armyHp の最初の値）
+  monsterCoins: 'up', // 魔物にとどめを刺したときにもらうコインに足す
+  annihilationDamage: 'up', // 自分の攻撃で起きた対消滅（光＋闇）の追加ダメージ
+  blackIceDamage: 'up', // 同じく黒氷（闇＋氷）
+  shatterDamage: 'up', // 同じく砕氷（氷＋混沌）
+  chaosDamage: 'up', // 同じく混沌反応
 };
+/** 反応ごとのダメージのキー（反応のID → キー）。reactionDamage（どの反応にも）に足す */
+export const REACTION_DAMAGE_KEYS = { annihilation: 'annihilationDamage', blackIce: 'blackIceDamage', shatter: 'shatterDamage', chaos: 'chaosDamage' };
 /** 属性の反応があるゲーム（reactions を渡したゲーム）でしか意味のない効果 */
-export const REACTION_SKILL_EFFECTS = ['reactionDamage', 'randomAttach', 'randomAttachTurns'];
+export const REACTION_SKILL_EFFECTS = ['reactionDamage', 'randomAttach', 'randomAttachTurns', ...Object.values(REACTION_DAMAGE_KEYS)];
 
 const isObj = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 const posInt = (v) => Number.isInteger(v) && v > 0;
 
 /**
  * スキルツリーのデータのチェック。間違っていれば Error を投げる（Setup.js と同じ流儀：どこが・どう直すかを書く）。
- * 形：{ points, branches: { <id>: { name } }, nodes: { <id>: { name, branch, tier, cost, requires?, effects, description? } }, presets?: { <id>: { name, nodes } } }
+ * 形：{ points, branches: { <id>: { name } }, nodes: { <id>: { name, branch, tier, cost, requires?, requiresAny?, effects, description? } }, presets?: { <id>: { name, nodes } } }
+ * - requires は全部、requiresAny はどれか1つを先に取る（同じ段に選択肢があるとき）
  * - どのノードにも効果が1つ以上ある。マイナスの値（短所）も書けるが、必須ではない（人間の決定：クラシックは短所なし・ポイントだけで制限する）
  * - requires は同じツリーのノード。輪にならない
  * - presets（おすすめのビルド）は、それ自体が決まりに合う
@@ -52,8 +68,10 @@ export function validateSkillTree(tree) {
     if (!Object.hasOwn(tree.branches, n.branch)) throw new Error(`${w}: branch の "${n.branch}" は branches にありません`);
     if (!posInt(n.tier)) throw new Error(`${w}: tier（段）は1以上の整数にしてください`);
     if (!posInt(n.cost)) throw new Error(`${w}: cost（使うポイント）は1以上の整数にしてください`);
-    if (n.requires !== undefined && (!Array.isArray(n.requires) || n.requires.some((r) => !Object.hasOwn(tree.nodes, r) || r === id))) {
-      throw new Error(`${w}: requires（先に取るノード）は、ほかのノードのIDの配列にしてください`);
+    for (const key of ['requires', 'requiresAny']) {
+      if (n[key] !== undefined && (!Array.isArray(n[key]) || n[key].length === 0 || n[key].some((r) => !Object.hasOwn(tree.nodes, r) || r === id))) {
+        throw new Error(`${w}: ${key}（先に取るノード。requires は全部、requiresAny はどれか1つ）は、ほかのノードのIDの配列にしてください`);
+      }
     }
     if (!isObj(n.effects)) throw new Error(`${w}: effects（効果）を { キー: 値 } で書いてください`);
     if (Object.keys(n.effects).length === 0) throw new Error(`${w}: effects（効果）を1つ以上書いてください`);
@@ -77,7 +95,7 @@ export function validateSkillTree(tree) {
     if (done.has(id)) return;
     if (visiting.has(id)) throw new Error(`${where}: nodes の requires が輪になっています（"${id}"）`);
     visiting.add(id);
-    for (const r of tree.nodes[id].requires ?? []) walk(r);
+    for (const r of [...(tree.nodes[id].requires ?? []), ...(tree.nodes[id].requiresAny ?? [])]) walk(r);
     visiting.delete(id);
     done.add(id);
   };
@@ -130,6 +148,10 @@ export function checkSkillBuild(tree, build) {
     for (const r of tree.nodes[id].requires ?? []) {
       if (!seen.has(r)) return { ok: false, reason: `「${tree.nodes[id].name}」を取るには、先に「${tree.nodes[r].name}」が要ります` };
     }
+    const any = tree.nodes[id].requiresAny;
+    if (any && !any.some((r) => seen.has(r))) {
+      return { ok: false, reason: `「${tree.nodes[id].name}」を取るには、先に${any.map((r) => `「${tree.nodes[r].name}」`).join('か')}が要ります` };
+    }
   }
   if (spent > tree.points) return { ok: false, reason: `ポイントが足りません（${spent}使う・使えるのは${tree.points}）` };
   return { ok: true, spent };
@@ -156,5 +178,6 @@ export function availableSkillNodes(tree, build) {
   const left = tree.points - build.reduce((n, id) => n + tree.nodes[id].cost, 0);
   return Object.keys(tree.nodes).filter((id) => !have.has(id)
     && tree.nodes[id].cost <= left
-    && (tree.nodes[id].requires ?? []).every((r) => have.has(r)));
+    && (tree.nodes[id].requires ?? []).every((r) => have.has(r))
+    && (!tree.nodes[id].requiresAny || tree.nodes[id].requiresAny.some((r) => have.has(r))));
 }

@@ -56,6 +56,7 @@ test('部屋：クラシックでは席ごとにスキルを選べる（不正�
   const info = room.roomInfo();
   assert.deepEqual(info.players.map((p) => p.skills), [['siegecraft', 'warcry'], TREE().presets[SKILL_STYLE_OF.smart].nodes]);
   assert.equal(info.choices.skillTree.points, TREE().points);
+  assert.deepEqual(info.choices.skillTree.nodes.echo.requiresAny, TREE().nodes.echo.requiresAny);
   room.startGame();
   assert.deepEqual(room.game.getState(null).players.p1.skills, ['siegecraft', 'warcry']);
   // 通常モード

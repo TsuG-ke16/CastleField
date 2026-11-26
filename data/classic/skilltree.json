@@ -1,12 +1,21 @@
 {
-  "_note": "クラシックのスキルツリー（数値はすべて仮。docs/classic-skilltree.md）。試合の前に points のポイントでノードを選ぶ（両者同じ・試合中は育たない）。cost の合計が points 以下。requires のノードを先に取る。人間の決定で、ノードは短所のない強化だけ（効果を小さくし、ポイントとコストで制限する）。キーの意味は js/game/SkillTree.js の SKILL_EFFECTS（マイナスも書ける仕組みは残してある）。presets はおすすめのビルド（CPU とはじめての人向け）",
-  "points": 6,
+  "_note": "クラシックのスキルツリー（数値はすべて仮。docs/classic-skilltree.md）。試合の前に points のポイントでノードを選ぶ（両者同じ・試合中は育たない）。cost の合計が points 以下。requires のノードは全部、requiresAny のノードはどれか1つを先に取る。人間の決定で、ノードは短所のない強化だけ（効果を小さくし、ポイントとコストで制限する）。奥義（3段目・コスト3）は、ポイントの都合で1つしか取れない。キーの意味は js/game/SkillTree.js の SKILL_EFFECTS。presets はおすすめのビルド（CPU とはじめての人向け）",
+  "points": 7,
   "branches": {
     "blade": {
       "name": "剣（攻め）"
     },
+    "troops": {
+      "name": "兵士（隊列）"
+    },
+    "magic": {
+      "name": "魔法（魔術）"
+    },
     "shield": {
       "name": "盾（守り）"
+    },
+    "heal": {
+      "name": "回復（癒し）"
     },
     "element": {
       "name": "属性（反応）"
@@ -22,9 +31,9 @@
       "tier": 1,
       "cost": 1,
       "effects": {
-        "castleSpell": 1
+        "castleSpell": 2
       },
-      "description": "城への魔法が城に当たると+1（先頭の兵士に当たったときは増えない）"
+      "description": "城への魔法が城に当たると+2（先頭の兵士に当たったときは増えない）"
     },
     "warcry": {
       "name": "鬨の声",
@@ -35,22 +44,99 @@
         "siegecraft"
       ],
       "effects": {
-        "initialHand": 1
+        "initialHand": 1,
+        "initialMp": 1
       },
-      "description": "最初の手札+1"
+      "description": "最初の手札+1・最初のMP+1"
     },
     "keenBlade": {
-      "name": "鍛えた刃",
+      "name": "必殺の号令",
       "branch": "blade",
       "tier": 3,
       "cost": 3,
-      "effects": {
-        "soldierAttack": 1
-      },
-      "description": "出した兵士の攻撃+1",
       "requires": [
         "warcry"
+      ],
+      "effects": {
+        "castleSpell": 3,
+        "initialHand": 1
+      },
+      "description": "城への魔法が城に当たるとさらに+3（攻城術と合わせて+5）・最初の手札さらに+1（奥義）"
+    },
+    "reinforce": {
+      "name": "増援",
+      "branch": "troops",
+      "tier": 1,
+      "cost": 1,
+      "effects": {
+        "soldiersPerTurn": 1
+      },
+      "description": "1ターンに出せる兵士+1枚"
+    },
+    "longbow": {
+      "name": "長弓",
+      "branch": "troops",
+      "tier": 2,
+      "cost": 2,
+      "effects": {
+        "archerRange": 1
+      },
+      "description": "出した弓兵・魔法使いの射程+1",
+      "requires": [
+        "reinforce"
       ]
+    },
+    "ironArmor": {
+      "name": "隊列の極意",
+      "branch": "troops",
+      "tier": 3,
+      "cost": 3,
+      "requires": [
+        "longbow"
+      ],
+      "effects": {
+        "archerRange": 1,
+        "soldiersPerTurn": 1
+      },
+      "description": "弓兵・魔法使いの射程さらに+1・出せる兵士さらに+1枚（奥義）"
+    },
+    "arcana": {
+      "name": "魔術の心得",
+      "branch": "magic",
+      "tier": 1,
+      "cost": 1,
+      "effects": {
+        "spellDamage": 1
+      },
+      "description": "兵士へのダメージの魔法（ルミナ・ホーリーレイ・シャドウ・カオスパルス）+1"
+    },
+    "deepVessel": {
+      "name": "大きな器",
+      "branch": "magic",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "arcana"
+      ],
+      "effects": {
+        "maxMp": 3,
+        "initialMp": 1
+      },
+      "description": "MPの上限+3・最初のMP+1"
+    },
+    "archmagic": {
+      "name": "大魔術",
+      "branch": "magic",
+      "tier": 3,
+      "cost": 3,
+      "requires": [
+        "deepVessel"
+      ],
+      "effects": {
+        "spellDamage": 1,
+        "maxMp": 2
+      },
+      "description": "兵士へのダメージの魔法さらに+1（心得と合わせて+2）・MPの上限+2（奥義）"
     },
     "stoneWall": {
       "name": "石垣",
@@ -58,9 +144,9 @@
       "tier": 1,
       "cost": 1,
       "effects": {
-        "armor": 6
+        "armor": 4
       },
-      "description": "最初から城壁6"
+      "description": "最初から城壁4"
     },
     "stronghold": {
       "name": "堅城",
@@ -71,9 +157,9 @@
         "stoneWall"
       ],
       "effects": {
-        "castleHp": 5
+        "castleHp": 3
       },
-      "description": "城HP+5"
+      "description": "城HP+3"
     },
     "bastion": {
       "name": "不落の砦",
@@ -84,10 +170,47 @@
         "stronghold"
       ],
       "effects": {
-        "castleHp": 4,
-        "armor": 4
+        "castleHp": 3,
+        "armor": 3
       },
-      "description": "城HP+4・城壁+4"
+      "description": "城HP+3・城壁+3（奥義）"
+    },
+    "prayer": {
+      "name": "癒しの祈り",
+      "branch": "heal",
+      "tier": 1,
+      "cost": 1,
+      "effects": {
+        "healBonus": 1
+      },
+      "description": "城を回復する魔法（小回復・ヒール）の回復量+1"
+    },
+    "mending": {
+      "name": "城壁の修繕",
+      "branch": "heal",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "prayer"
+      ],
+      "effects": {
+        "armorFloor": 1
+      },
+      "description": "自分のターンの始めに、城壁が1より少なければ1まで戻る"
+    },
+    "regen": {
+      "name": "癒しの聖域",
+      "branch": "heal",
+      "tier": 3,
+      "cost": 3,
+      "requires": [
+        "mending"
+      ],
+      "effects": {
+        "healBonus": 1,
+        "castleHp": 1
+      },
+      "description": "城を回復する魔法さらに+1（祈りと合わせて+2）・城HP+1（奥義）"
     },
     "chaosEye": {
       "name": "混沌の目",
@@ -97,10 +220,10 @@
       "effects": {
         "randomAttach": true
       },
-      "description": "自分のターンの始めに、敵の兵士1体にランダムな属性を付着させる（反応の準備）"
+      "description": "自分のターンの始めに、敵の兵士1体にランダムな属性を付着させる（反応の準備）。これを取った人だけが使える"
     },
-    "resonance": {
-      "name": "共鳴",
+    "lightDark": {
+      "name": "光と闇の共鳴",
       "branch": "element",
       "tier": 2,
       "cost": 2,
@@ -108,23 +231,65 @@
         "chaosEye"
       ],
       "effects": {
-        "reactionDamage": 5
+        "annihilationDamage": 4
       },
-      "description": "自分の攻撃で起きた反応の追加ダメージ+5"
+      "description": "自分の攻撃で起きた対消滅（光＋闇）の追加ダメージ+4"
+    },
+    "blackIce": {
+      "name": "黒氷の呪い",
+      "branch": "element",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "chaosEye"
+      ],
+      "effects": {
+        "blackIceDamage": 4
+      },
+      "description": "自分の攻撃で起きた黒氷（闇＋氷）の追加ダメージ+4"
+    },
+    "shatter": {
+      "name": "砕氷の槌",
+      "branch": "element",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "chaosEye"
+      ],
+      "effects": {
+        "shatterDamage": 4
+      },
+      "description": "自分の攻撃で起きた砕氷（氷＋混沌）の追加ダメージ+4"
+    },
+    "maelstrom": {
+      "name": "混沌の渦",
+      "branch": "element",
+      "tier": 2,
+      "cost": 2,
+      "requires": [
+        "chaosEye"
+      ],
+      "effects": {
+        "chaosDamage": 5
+      },
+      "description": "自分の攻撃で起きた混沌反応の追加ダメージ+5"
     },
     "echo": {
       "name": "残響",
       "branch": "element",
       "tier": 3,
       "cost": 3,
-      "requires": [
-        "resonance"
+      "requiresAny": [
+        "lightDark",
+        "blackIce",
+        "shatter",
+        "maelstrom"
       ],
       "effects": {
         "randomAttachTurns": 1,
-        "reactionDamage": 3
+        "reactionDamage": 2
       },
-      "description": "ランダム付着が1回ぶん長く残る・反応の追加ダメージさらに+3"
+      "description": "ランダム付着が1回ぶん長く残る・どの反応の追加ダメージも+2（奥義）"
     },
     "manaSpring": {
       "name": "魔力の泉",
@@ -132,12 +297,12 @@
       "tier": 1,
       "cost": 1,
       "effects": {
-        "initialMp": 4
+        "initialMp": 2
       },
-      "description": "最初のMP+4"
+      "description": "最初のMP+2"
     },
-    "deepVessel": {
-      "name": "大きな器",
+    "hunter": {
+      "name": "魔物狩り",
       "branch": "mana",
       "tier": 2,
       "cost": 2,
@@ -145,23 +310,23 @@
         "manaSpring"
       ],
       "effects": {
-        "maxMp": 4,
-        "initialMp": 2
+        "monsterCoins": 1
       },
-      "description": "MPの上限+4・最初のMP+2"
+      "description": "魔物にとどめを刺すと、コインがさらに+1"
     },
     "alchemy": {
-      "name": "錬金術",
+      "name": "魔力の宝物庫",
       "branch": "mana",
       "tier": 3,
       "cost": 3,
       "requires": [
-        "deepVessel"
+        "hunter"
       ],
       "effects": {
-        "coinPerTurn": 1
+        "initialMp": 2,
+        "maxMp": 1
       },
-      "description": "自分のターンの始めにもらうコイン+1"
+      "description": "最初のMP+2・MPの上限+1（奥義）"
     }
   },
   "presets": {
@@ -170,7 +335,26 @@
       "nodes": [
         "siegecraft",
         "warcry",
-        "keenBlade"
+        "keenBlade",
+        "stoneWall"
+      ]
+    },
+    "troops": {
+      "name": "隊列（兵士を極める）",
+      "nodes": [
+        "reinforce",
+        "longbow",
+        "ironArmor",
+        "manaSpring"
+      ]
+    },
+    "magic": {
+      "name": "魔術（魔法を極める）",
+      "nodes": [
+        "arcana",
+        "deepVessel",
+        "archmagic",
+        "chaosEye"
       ]
     },
     "shield": {
@@ -178,32 +362,45 @@
       "nodes": [
         "stoneWall",
         "stronghold",
-        "bastion"
+        "bastion",
+        "prayer"
+      ]
+    },
+    "heal": {
+      "name": "癒し（回復を極める）",
+      "nodes": [
+        "prayer",
+        "mending",
+        "regen",
+        "stoneWall"
       ]
     },
     "element": {
       "name": "反応（属性を極める）",
       "nodes": [
         "chaosEye",
-        "resonance",
-        "echo"
+        "lightDark",
+        "echo",
+        "manaSpring"
       ]
     },
     "mana": {
-      "name": "魔力（経済を極める）",
+      "name": "経済（魔力を極める）",
       "nodes": [
         "manaSpring",
-        "deepVessel",
-        "alchemy"
+        "hunter",
+        "alchemy",
+        "chaosEye"
       ]
     },
     "hybrid": {
       "name": "まんべんなく",
       "nodes": [
         "siegecraft",
+        "reinforce",
+        "arcana",
         "stoneWall",
-        "chaosEye",
-        "manaSpring",
+        "prayer",
         "stronghold"
       ]
     }

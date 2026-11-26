@@ -648,10 +648,10 @@ export const STRATEGIES = Object.fromEntries(
 
 /**
  * 戦い方ごとの、おすすめのビルド（skilltree.json の presets のID）。ないプリセットは何も取らない。
- * 攻め（aggro・rush）は剣、守り（defensive・guard）は盾、smart はまんべんなく、random はランダム、pass は何も取らない
+ * aggro は剣、rush は兵士、defensive は盾、guard は回復、smart はまんべんなく、random はランダム、pass は何も取らない
  */
 export const SKILL_STYLE_OF = {
-  random: 'random', aggro: 'blade', rush: 'blade', smart: 'hybrid', defensive: 'shield', guard: 'shield', pass: 'none',
+  random: 'random', aggro: 'blade', rush: 'troops', smart: 'hybrid', defensive: 'shield', guard: 'heal', pass: 'none',
 };
 
 /**
