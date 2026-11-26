@@ -10,7 +10,8 @@ const ROOM_DECK_KEY = 'cf-room-deck-v1';
 const RULE_ROWS = [['winCondition','勝ち方','winConditions'],['deckMode','山札','deckModes'],['teams','チームの分け方','teamModes'],['stage','ステージ','stages']];
 
 export class RoomView {
-  constructor({ onAction, onLeave, onChat, getUnread, onEditDeck, savedDecks, presetDeck, previewDeck, factionInfo = null }) {
+  constructor({ onAction, onLeave, onChat, getUnread, onEditDeck, savedDecks, presetDeck, previewDeck, factionInfo = null, onSkills = null }) {
+    this.onSkills = onSkills; // クラシック：自分の席のスキルツリーを開く（main.js が SkillTreeView を開き、setSeat({ skills }) を送る）
     this.factionInfo = factionInfo; // 4陣営（ベータ）：{ factions, cardSets, rules }。通常モードは null
     this.onAction = onAction;
     this.onChat = onChat;           // チャットを開く・閉じる（部屋の画面からも話せる）
@@ -301,6 +302,11 @@ export class RoomView {
         }
       }
       if (!fac && room.settings.teams === 'choose') this.select(seat, 'チーム', choices.teams, p.team, edit, v => set({team:v}), `${p.playerId}:team`);
+      // クラシック：席のスキル（取得したノードは相手にも見える）。自分の席だけスキルツリーで変えられる
+      if (choices.skillTree && p.skills) {
+        seat.append(this.node('p', `スキル：${p.skills.ids.length}個（${p.skills.ids.length ? p.skills.ids.join('・') : 'なし'}）`, 'room-note room-skills'));
+        if (p.playerId === room.you && this.onSkills) this.button(acts, 'スキルツリー', () => this.onSkills());
+      }
       if (host && p.playerId === room.you) this.button(acts, 'ルールを変更', () => { this.rulesOpen = true; this.render(this.room, this.passphrase); });
       if (host && !p.cpu && p.playerId !== room.you && !p.left) this.button(acts, '部屋主を譲る', () => this.act('transferHost', [p.playerId]));
       if (host && p.cpu) this.button(acts, 'CPUを外す', () => this.act('removeCpu', [p.playerId]));

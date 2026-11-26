@@ -12,12 +12,12 @@ import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptional
 import { runMatch } from './sim/sim.js';
 
 const MODE = 'factions';
-const FACTIONS = { kingdom: 17, forest: 14, demon: 15, dragon: 12 }; // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
+const FACTIONS = { kingdom: 20, forest: 18, demon: 22, dragon: 16 }; // 新カード（王国3・森4・竜4）を足した // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
 const ELEMENTS = loadOptionalData(MODE).elements;
 
 // ================= データ =================
 
-test('データ：4陣営のカード表は王国17・森14・魔族15・竜12種。各陣営のカード表がそのままその陣営のデッキになる', () => {
+test('データ：4陣営のカード表は FACTIONS の種類数。各陣営のカード表がそのままその陣営のデッキになる', () => {
   const { cards } = buildData({ mode: MODE });
   const opts = loadOptionalData(MODE);
   assert.deepEqual(Object.keys(opts.decks), Object.keys(FACTIONS));
@@ -662,6 +662,9 @@ const PLAN = {
     ['ヒール', 4, { effect: 'healOwnCastle', amount: 10 }],
     ['盾', 1, { effect: 'shieldSoldier', amount: 3 }], ['神盾', 5, { effect: 'shieldSoldier', amount: 15, statusWard: true, count: 1, maxCopies: 1 }], ['城壁', 2, { effect: 'armorCastle', amount: 5 }], ['身代わり', 3, { effect: 'guardCastle' }],
     ['浄化', 2, { effect: 'purifyFlare', amount: 0, clearEnemyAttachments: true }],
+    // 新カード（docs/new-cards-proposal.md）
+    ['攻城兵', 3, S(6, 4, 1)], ['天罰の光', 5, { effect: 'damageEnemyCastle', amount: 9, element: 'light', exhaust: true, count: 1, maxCopies: 1 }],
+    ['聖鎖の剣', 3, { kind: 'weapon', attackBonus: 1, element: 'light', freezeOnHit: 1, count: 1, maxCopies: 1 }],
   ],
   forest: [
     ['獣人', 2, S(4, 5, 2)], ['エルフ', 3, S(3, 3, 0, { role: 'archer' })], ['ドルイド', 4, S(2, 4, 0, { role: 'mage', spellBoost: { elements: ['fire', 'water', 'wind', 'earth'], amount: 1 } })],
@@ -672,24 +675,35 @@ const PLAN = {
     ['フレアシード', 3, { effect: 'singleDamage', amount: 4, element: 'fire' }], ['スプリングウェーブ', 3, { effect: 'singleDamage', amount: 3, element: 'water', attachTurns: 8 }],
     ['リーフストーム', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'wind', scope: 'lane' }], ['ルートバインド', 3, { effect: 'singleDamage', amount: 3, element: 'earth', freezeTurns: 1 }],
     ['生命の雫', 3, { effect: 'healCastleAndSoldiers' }], ['茨の壁', 2, { effect: 'armorCastle', amount: 4 }], ['樹皮の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
+    // 新カード
+    ['森の番人', 3, S(2, 8, 0, { role: 'guard', stay: 3 })], ['樹人', 4, S(3, 7, 1, { count: 1, maxCopies: 1 })],
+    ['薬草の湿布', 3, { effect: 'healOwnCastle', amount: 5, count: 1, maxCopies: 1 }], ['古木の根', 4, { effect: 'armorCastle', amount: 9, count: 1, maxCopies: 1 }],
   ],
   demon: [
     ['骸骨兵', 2, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 2, S(4, 3, 3, { innateElement: 'dark' })],
+    ['ゾンビ', 4, S(2, 9, 1, { innateElement: 'dark' })], ['氷の亡者', 3, S(2, 6, 2, { innateElement: 'ice' })],
+    ['混沌の落とし子', 3, S(3, 4, 2, { innateElement: 'chaos', attachRandomElement: true })],
     ['呪術師', 3, S(2, 3, 0, { role: 'mage', spellBoost: { elements: ['dark', 'ice', 'chaos'], amount: 1 } })],
     ['シャドウサイズ', 2, { kind: 'weapon', attackBonus: 2, element: 'dark' }], ['フロストブレード', 2, { kind: 'weapon', attackBonus: 1, element: 'ice', freezeOnHit: 1 }],
-    ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos' }],
+    ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos', attachRandomElement: true }], ['吸命の剣', 2, { kind: 'weapon', attackBonus: 1, lifesteal: 0.5, keepElement: true }],
     ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
     ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
-    ['毒の霧', 3, { effect: 'poisonEnemySoldiers', amount: 1, turns: 3 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 3 }],
+    ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 3, maxTurns: 3 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 2, soldiers: 3 }],
+    ['脆弱', 3, { effect: 'vulnerableCastle', ratio: 0.25, maxRatio: 0.5, turns: 3, maxTurns: 6 }],
+    ['血の契約', 3, { effect: 'bloodPact', selfDamage: 6, amount: 3, soldiers: 2 }],
+    ['封魔', 2, { effect: 'sealMp', amount: 1, turns: 2, maxTurns: 4 }],
     ['魂の欠片', 3, { effect: 'damageCastleAndHeal', amount: 3, heal: 3 }], ['残響の魂', 4, { effect: 'reviveFallen', amount: 0.5 }],
     ['血の膜', 2, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
   ],
   dragon: [
-    ['竜人の新兵', 3, S(4, 5, 2)], ['竜騎兵', 3, S(5, 3, 3)], ['幼炎竜', 4, S(5, 5, 2, { innateElement: 'fire' })], ['幼雷竜', 4, S(4, 4, 3, { innateElement: 'thunder' })],
+    ['竜人の新兵', 2, S(4, 5, 2)], ['竜騎兵', 3, S(5, 3, 3)], ['幼炎竜', 4, S(5, 5, 2, { innateElement: 'fire' })], ['幼雷竜', 4, S(4, 4, 3, { innateElement: 'thunder' })],
     ['竜牙剣', 2, { kind: 'weapon', attackBonus: 2, element: 'fire' }], ['雷牙槍', 2, { kind: 'weapon', attackBonus: 2, element: 'thunder', rangeBonus: 1 }],
-    ['ファイアボール', 3, { effect: 'damageEnemyCastle', amount: 5, element: 'fire' }], ['雷光', 3, { effect: 'damageEnemySoldiers', amount: 3, element: 'thunder', scope: 'lane' }],
+    ['ファイアボール', 2, { effect: 'damageEnemyCastle', amount: 5, element: 'fire' }], ['雷光', 4, { effect: 'damageEnemySoldiers', amount: 3, element: 'thunder', scope: 'lane' }],
     ['火炎の吐息', 4, { effect: 'breathAttack', amount: 4, castleAmount: 4, element: 'fire' }], ['竜血の雫', 2, { effect: 'healSoldier' }],
     ['火山灰の幕', 2, { effect: 'armorCastle', amount: 3 }], ['幼竜の鱗', 1, { effect: 'shieldSoldier', amount: 2 }],
+    // 新カード
+    ['竜術師', 4, S(3, 4, 0, { role: 'mage', innateElement: 'fire', spellBoost: { elements: ['fire', 'thunder'], amount: 1 } })], ['竜鱗兵', 4, S(3, 9, 1, { count: 1, maxCopies: 1 })],
+    ['古竜の障壁', 4, { effect: 'armorCastle', amount: 8, count: 1, maxCopies: 1 }], ['竜翼の身代わり', 3, { effect: 'guardCastle', count: 1, maxCopies: 1 }],
   ],
 };
 
@@ -719,16 +733,16 @@ test('本物のカード：森には精霊のカード（summonSpirit）がな�
   }
   const decks = loadOptionalData(MODE).decks;
   assert.deepEqual(decks.forest.passiveSpirits.spirits.map((x) => [x.name, x.element, x.effect, x.amount]), [
-    ['イフリート', 'fire', 'castleDamage', 2], ['ウンディーネ', 'water', 'soldiersDamage', 1], ['シルフ', 'wind', 'pushFront', 2], ['タイタン', 'earth', 'castleDamage', 5],
+    ['イフリート', 'fire', 'castleDamage', 4], ['ウンディーネ', 'water', 'soldiersDamage', 1], ['シルフ', 'wind', 'pushFront', 2], ['タイタン', 'earth', 'castleDamage', 7],
   ]);
   assert.equal(decks.forest.passiveSpirits.spirits[3].ignoreArmor, undefined, 'タイタンは城壁を無視しない（人間の指示）');
   assert.equal(decks.forest.passiveSpirits.spirits[2].push, 1);
   assert.equal(decks.forest.passiveSpirits.attachTurns, 1);
-  assert.equal(decks.forest.passiveSpirits.everyTurns, 1, '動く間隔はいったん毎ターン');
+  assert.equal(decks.forest.passiveSpirits.everyTurns, 2, '動く間隔は2ターンに1回（人間の指示）');
   for (const f of ['kingdom', 'demon', 'dragon']) assert.equal(decks[f].passiveSpirits, undefined, f);
 });
 
-test('本物のカード：魂の欠片・残響の魂・カオスパルス・氷の息・呪いの印・毒の霧（兵士だけ・3ターン・城は毒にしない）', () => {
+test('本物のカード：魂の欠片・残響の魂・カオスパルス・氷の息・呪いの印・毒の霧（城だけ・2×3回。人間の指示で兵士の毒から変えた。回数は調整）', () => {
   const { game, play } = setupReal({ hands: { p1: ['fac_demon_soul_shard', 'fac_demon_echo_soul', 'fac_demon_chaos_pulse', 'fac_demon_frost_breath', 'fac_demon_curse_mark', 'fac_demon_poison_mist', 'fragile'], p2: ['tank', 'fireTap'] }, reactions: null });
   game.debugSetCastleHp('p1', 10);
   const hp2 = game.players.p2.castle.hp;
@@ -749,11 +763,12 @@ test('本物のカード：魂の欠片・残響の魂・カオスパルス・�
   assert.ok(t.hp <= 57);
   play('p1', 'fac_demon_frost_breath');
   assert.equal(t.frozen, 1);
-  play('p1', 'fac_demon_curse_mark', { soldierId: t.soldierId });
-  assert.deepEqual(t.weakened, { amount: 2, turns: 3 });
-  play('p1', 'fac_demon_poison_mist');
-  assert.deepEqual(t.poison, { amount: 1, turns: 3 });
-  assert.equal(game.players.p2.castle.poison, null, '城は毒にしない');
+  play('p1', 'fac_demon_curse_mark', { playerId: 'p2' });
+  assert.deepEqual(t.weakened, { amount: 2, turns: 2 });
+  play('p1', 'fac_demon_poison_mist', { playerId: 'p2' });
+  assert.equal(t.poison, null, '兵士は毒にしない');
+  assert.equal(game.players.p2.castle.poison, 2);
+  assert.equal(game.players.p2.castle.poisonTurns, 3);
 });
 
 test('本物のカード：竜のファイアボールは先頭の兵士に当たり、兵士がいなければ城に当たる', () => {
@@ -808,7 +823,7 @@ test('本物の反応：全部の組で起きて、それぞれの効果が出�
   t.attachments = [{ element: 'chaos', turns: 5 }, { element: 'water', turns: 5 }];
   c.play('p1', 'thunderTap', { soldierId: t.soldierId });
   assert.equal(c.events('reactionTriggered')[0].reaction, 'chaos');
-  assert.equal(c.events('reactionTriggered')[0].damage, 12);
+  assert.equal(c.events('reactionTriggered')[0].damage, 9); // 3×3種（人間の指示で 4×種類 → 3×種類）
 });
 
 test('身代わり：兵士の突入・精霊・反応からの城への攻撃を受ける。攻撃を受けたときの防御（defend）には出せない', () => {

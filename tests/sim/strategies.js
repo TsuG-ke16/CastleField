@@ -1,2 +1,2 @@
 // 戦い方は js/game/strategies.js にある（ひとりで遊ぶモードの CPU でも使うため、画面から読める場所に置いた）。
-export { STRATEGIES, mulliganChoice } from '../../js/game/strategies.js';
+export { STRATEGIES, mulliganChoice, chooseSkillBuild } from '../../js/game/strategies.js';

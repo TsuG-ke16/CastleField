@@ -2,7 +2,7 @@
 // 乱数はすべてシード付きなので、同じ引数なら誰が回しても同じ結果になる。
 import { Game, EVENT_TYPES } from '../../js/game/Game.js';
 import { seededRng } from '../helpers.js';
-import { STRATEGIES, mulliganChoice } from './strategies.js';
+import { STRATEGIES, mulliganChoice, chooseSkillBuild } from './strategies.js';
 
 /**
  * 1試合を回す。
@@ -13,8 +13,15 @@ import { STRATEGIES, mulliganChoice } from './strategies.js';
  * @param {number} o.seed
  * @param {number} [o.maxTurns] これを超えたら「決着しない」とする（通算ターン数）
  * @param {object} [o.gameOptions] new Game() に追加で渡すもの
+ * @param {string[]} [o.skills] 席ごとのスキルのビルドの選び方（chooseSkillBuild の style：none / random / プリセットのID / 戦い方の名前）。
+ *   gameOptions.skillTree があるときだけ使う。省略するとスキルなし（今までと同じ）
  */
-export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, gameOptions = {} }) {
+export function runMatch({ cards, rules, strategies, seed, maxTurns = 3000, gameOptions = {}, skills = null }) {
+  if (skills && gameOptions.skillTree) {
+    // ビルドの乱数は試合の乱数と別にする（スキルを選んでも山札の並びは同じシードで同じ）
+    const buildRng = seededRng(seed ^ 0x5bd1e995);
+    gameOptions = { ...gameOptions, setup: { ...(gameOptions.setup ?? {}), skills: skills.map((style) => chooseSkillBuild(gameOptions.skillTree, buildRng, style)) } };
+  }
   const game = new Game({ cards, rules, rng: seededRng(seed), ...gameOptions });
   const playerCount = game.getState(null).playerOrder.length;
   if (strategies.length !== playerCount) throw new Error(`戦い方は人数ぶん（${playerCount}個）必要です`);

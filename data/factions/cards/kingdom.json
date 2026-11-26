@@ -166,5 +166,38 @@
     "description": "自分の兵士の毒・やけど・凍結と城の毒をすべて治し、相手の兵士に付いている属性（付着）をすべて消す",
     "mpCost": 2,
     "count": 2
+  },
+  "fac_king_siege": {
+    "name": "攻城兵",
+    "kind": "soldier",
+    "hp": 4,
+    "attack": 6,
+    "speed": 1,
+    "description": "のろい（速さ1）が、城に着けば攻撃6×2の大ダメージ。HPが低く、着くまでに倒されやすい",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_king_judgement": {
+    "name": "天罰の光",
+    "kind": "spell",
+    "effect": "damageEnemyCastle",
+    "element": "light",
+    "amount": 9,
+    "description": "決め手の1枚（デッキに1枚まで）。相手の城に9ダメージ（光。先頭の兵士がいればそちらに当たる）。1試合1回きり（使うと山札に戻らない）。MP5",
+    "exhaust": true,
+    "mpCost": 5,
+    "count": 1,
+    "maxCopies": 1
+  },
+  "fac_king_chain_sword": {
+    "name": "聖鎖の剣",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "element": "light",
+    "freezeOnHit": 1,
+    "description": "攻撃+1・光。当てて生き残った相手の兵士は1回休み（足止めして、後ろの兵士で押し切る）。攻撃はルミナスランスや聖鉄の剣より控えめ",
+    "mpCost": 3,
+    "count": 1,
+    "maxCopies": 1
   }
 }

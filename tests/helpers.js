@@ -72,6 +72,7 @@ export const PLAIN_START = { mulligan: false, secondPlayerHandBonus: 0, secondPl
  * data/ の魔物と強化（STEP 3）。ファイルがなければ null
  * mode を渡して、そのモードがレアリティを使わない（useRarities: false）なら、rarities と decks は null にする
  * そのモードに elementsSet（属性の表）があれば、elements に入れる。reactionsSet（付着と反応）があれば、reactions に入れる
+ * skillTreeSet（スキルツリー）があれば、skillTree に入れる
  */
 export function loadOptionalData(mode = null) {
   const read = (name) => {
@@ -88,6 +89,8 @@ export function loadOptionalData(mode = null) {
   if (entry?.elementsSet) data.elements = loadModeFile(entry.elementsSet);
   // 属性の付着と反応（reactionsSet があるモードだけ。通常モードには渡さない）
   if (entry?.reactionsSet) data.reactions = loadModeFile(entry.reactionsSet);
+  // スキルツリー（skillTreeSet があるモードだけ。席ごとのビルドは setup.skills で渡す。渡さなければ全員なし）
+  if (entry?.skillTreeSet) data.skillTree = loadModeFile(entry.skillTreeSet);
   // 4陣営モード：陣営ごとのカード表が、その陣営のデッキ（deckMode "own"。setup.decks に陣営のIDを渡す）
   if (entry?.factionDecks) {
     const sets = Object.fromEntries(Object.entries(entry.factionCardSets).map(([f, path]) => [f, loadModeFile(path)]));

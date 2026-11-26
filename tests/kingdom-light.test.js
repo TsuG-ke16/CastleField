@@ -149,9 +149,9 @@ test('光の先制：通常モード・クラシックのルールには書い�
 
 // ================= 切り札 =================
 
-test('切り札：王国は小回復を外して17種。神剣・勇者・神盾は各1枚・MP5・maxCopies 1', () => {
+test('切り札：王国は小回復を外して20種（新カード3種を足した）。神剣・勇者・神盾は各1枚・MP5・maxCopies 1', () => {
   const set = loadFactionCards(MODE, 'kingdom');
-  assert.equal(Object.keys(set).length, 17);
+  assert.equal(Object.keys(set).length, 20);
   assert.equal(Object.values(set).some((d) => d.name === '小回復'), false);
   const deck = loadOptionalData(MODE).decks.kingdom.cards;
   for (const t of ['fac_king_god_sword', 'fac_king_hero', 'fac_king_god_shield']) {

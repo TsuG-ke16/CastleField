@@ -144,7 +144,15 @@ export class OnlineClient {
   }
 
   fuse(a, b) { return this.act('fuse', [a, b]); }
-  playCard(cardId, target) { return this.act('playCard', target ? [cardId, target] : [cardId]); }
+  playCard(cardId, target, skillOptions) {
+    // クラシックのスキルの選択（HP置換の量など）は playCard の第3引数でサーバーの Game にそのまま渡る
+    if (skillOptions !== undefined) return this.act('playCard', [cardId, target ?? null, skillOptions]);
+    return this.act('playCard', target ? [cardId, target] : [cardId]);
+  }
+  /** スキルの任意アクションの一覧：サーバーが送る自分の状態（skillState.actions）をそのまま読む */
+  listSkillActions(playerId) { return this.state?.players?.[playerId]?.skillState?.actions ?? []; }
+  /** スキルの任意アクション：今のサーバーは受け付けない（server/rooms.js の操作に未追加。段階D1 の範囲外） */
+  async skillAction() { return { ok: false, reason: 'オンラインの部屋では、任意スキルはまだ使えません' }; }
   buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
   endTurn() { return this.act('endTurn'); }
   /** 攻撃を受けたとき、防御カードを出す／防御しない（自分の番でなくても送れる） */

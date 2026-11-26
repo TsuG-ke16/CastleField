@@ -287,8 +287,26 @@ export function validatePassiveSpirits(data, elementIds, where) {
  */
 export function validatePassive(data, elementIds, where) {
   const posInt = (v) => Number.isInteger(v) && v > 0;
-  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(`${where}: passive は { raiseOnKill } のオブジェクトにしてください`);
-  for (const key of Object.keys(data)) if (key !== 'raiseOnKill') throw new Error(`${where}: passive の "${key}" は知らないパッシブです（raiseOnKill だけ）`);
+  const KEYS = ['raiseOnKill', 'darkErosion', 'magicBlood'];
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(`${where}: passive は { ${KEYS.join(', ')} } のオブジェクトにしてください`);
+  for (const key of Object.keys(data)) if (!KEYS.includes(key)) throw new Error(`${where}: passive の "${key}" は知らないパッシブです（${KEYS.join(' / ')}）`);
+  const m = data.magicBlood;
+  if (m !== undefined) {
+    // 魔の血：攻撃魔法で受けるダメージ −spellReduce（最低1）・自分のターンの始めの MP 回復 +mpBonus
+    const w = `${where}: passive.magicBlood`;
+    if (!m || typeof m !== 'object' || Array.isArray(m)) throw new Error(`${w} は { spellReduce, mpBonus } のオブジェクトにしてください`);
+    for (const k of ['spellReduce', 'mpBonus']) if (!Number.isInteger(m[k]) || m[k] < 0) throw new Error(`${w}.${k} は0以上の整数にしてください`);
+  }
+  const e = data.darkErosion;
+  if (e !== undefined) {
+    // 闇の侵食：element の攻撃が敵の城に当たると、その城の回復量が ratio 減る（turns。重ねがけは maxTurns まで延びる）
+    const w = `${where}: passive.darkErosion`;
+    if (!e || typeof e !== 'object' || Array.isArray(e)) throw new Error(`${w} は { element, ratio, turns, maxTurns? } のオブジェクトにしてください`);
+    if (!elementIds.includes(e.element)) throw new Error(`${w}.element の "${e.element}" は属性の表にありません`);
+    if (!(typeof e.ratio === 'number' && e.ratio > 0 && e.ratio <= 1)) throw new Error(`${w}.ratio は0より大きく1以下にしてください`);
+    if (!posInt(e.turns)) throw new Error(`${w}.turns は1以上の整数にしてください`);
+    if (e.maxTurns !== undefined && !(posInt(e.maxTurns) && e.maxTurns >= e.turns)) throw new Error(`${w}.maxTurns は turns 以上の整数にしてください`);
+  }
   const r = data.raiseOnKill;
   if (r === undefined) return;
   const w = `${where}: passive.raiseOnKill`;

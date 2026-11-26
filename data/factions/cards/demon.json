@@ -19,6 +19,38 @@
     "mpCost": 2,
     "count": 2
   },
+  "fac_demon_zombie": {
+    "name": "ゾンビ",
+    "kind": "soldier",
+    "hp": 9,
+    "attack": 2,
+    "speed": 1,
+    "innateElement": "dark",
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_demon_ice_wraith": {
+    "name": "氷の亡者",
+    "kind": "soldier",
+    "hp": 6,
+    "attack": 2,
+    "speed": 2,
+    "innateElement": "ice",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_chaos_spawn": {
+    "name": "混沌の落とし子",
+    "kind": "soldier",
+    "hp": 4,
+    "attack": 3,
+    "speed": 2,
+    "innateElement": "chaos",
+    "attachRandomElement": true,
+    "description": "生まれつき混沌。戦って攻撃が当たった相手には、混沌に加えて火・水・風・土のどれか1つも付く（反応はしない）",
+    "mpCost": 3,
+    "count": 2
+  },
   "fac_demon_curser": {
     "name": "呪術師",
     "kind": "soldier",
@@ -62,6 +94,18 @@
     "kind": "weapon",
     "attackBonus": 1,
     "element": "chaos",
+    "attachRandomElement": true,
+    "description": "攻撃+1・混沌。この兵士の攻撃が当たった相手には、混沌に加えて火・水・風・土のどれか1つも付く（反応はしない）",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_drain_blade": {
+    "name": "吸命の剣",
+    "kind": "weapon",
+    "attackBonus": 1,
+    "lifesteal": 0.5,
+    "keepElement": true,
+    "description": "攻撃+1（属性なし。兵士の今の属性は消さない）。この兵士の攻撃が敵の兵士・城に当たると、減らしたHPの半分（切り捨て）だけ自分の城が回復する",
     "mpCost": 2,
     "count": 2
   },
@@ -100,10 +144,11 @@
   "fac_demon_poison_mist": {
     "name": "毒の霧",
     "kind": "spell",
-    "effect": "poisonEnemySoldiers",
-    "amount": 1,
+    "effect": "poisonEnemyCastle",
+    "amount": 2,
     "turns": 3,
-    "description": "相手の兵士全員を毒にする（毎ターン1・3ターン）。盾は効かない。城は毒にしない",
+    "maxTurns": 3,
+    "description": "相手の城を毒にする（相手のターンの始めに2ダメージ・3回）。城壁・身代わりは効かない。重ねると残りが3回に戻る（量は増えない）。浄化で治る",
     "mpCost": 3,
     "count": 2
   },
@@ -112,7 +157,43 @@
     "kind": "spell",
     "effect": "weakenAttack",
     "amount": 2,
+    "turns": 2,
+    "soldiers": 3,
+    "description": "相手を選ぶ。その相手の兵士のうち、自分の城に近い3体の攻撃−2（最低1。持ち主の進軍2回のあいだ）。もう呪われている兵士にはかからない",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_demon_vulnerable": {
+    "name": "脆弱",
+    "kind": "spell",
+    "effect": "vulnerableCastle",
+    "ratio": 0.25,
+    "maxRatio": 0.5,
     "turns": 3,
+    "maxTurns": 6,
+    "description": "相手の城を脆くする：城が受ける攻撃のダメージ+25%（切り上げ。+50%まで）。相手のターンの始め3回で消える（自分の進軍2回に効く）。重ねると回数だけ延びる（6回まで）",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_blood_pact": {
+    "name": "血の契約",
+    "kind": "spell",
+    "effect": "bloodPact",
+    "selfDamage": 6,
+    "amount": 3,
+    "soldiers": 2,
+    "description": "自分の城HPを6払って（城壁は通さない）、自分の城に近い自分の兵士2体の攻撃+3（その兵士が消えるまで）。城HPが7以下・自分の兵士がいないときは出せない",
+    "mpCost": 3,
+    "count": 2
+  },
+  "fac_demon_mana_seal": {
+    "name": "封魔",
+    "kind": "spell",
+    "effect": "sealMp",
+    "amount": 1,
+    "turns": 2,
+    "maxTurns": 4,
+    "description": "相手のターンの始めの MP 回復−1（2ターン）。重ねると回数だけ延びる（4ターンまで。量は増えない）",
     "mpCost": 2,
     "count": 2
   },

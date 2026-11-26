@@ -44,8 +44,33 @@ export class LocalSession {
     return this.game.canBuyUpgrade(upgradeId);
   }
 
-  async playCard(cardId, target) {
+  /** skillOptions：クラシックのスキルの任意の選択（HP置換の量など）。渡さなければ今までと同じ呼び方 */
+  async playCard(cardId, target, skillOptions) {
+    if (skillOptions !== undefined) return this.game.playCard(cardId, target, skillOptions);
     return target ? this.game.playCard(cardId, target) : this.game.playCard(cardId);
+  }
+
+  /** スキルの任意アクションの一覧（Game.listSkillActions） */
+  listSkillActions(playerId) {
+    return this.game.listSkillActions(playerId);
+  }
+
+  /** スキルの任意アクションを使う（Game.skillAction） */
+  async skillAction(playerId, actionId, args) {
+    return this.game.skillAction(playerId, actionId, args);
+  }
+
+  /**
+   * 手札のカードの実際の支払い（MP・城HP）の見積もり。Game の費用計画（スキルの MP軽減→HP置換）を乱数なしで呼ぶだけ。
+   * スキルのないゲームでは null。{ ok, mp, hp, reason }
+   */
+  previewCardCost(cardId, skillOptions = {}) {
+    const g = this.game;
+    if (!g.skillRt) return null;
+    const player = g.players[g.currentPlayer];
+    const card = player?.hand.find((c) => c.cardId === cardId);
+    if (!card) return { ok: false, reason: 'そのカードは手札にありません' };
+    return g.skillRt.planCardCost(player, card, g.mpCostOf(card), skillOptions, { preview: true }) ?? null;
   }
 
   /** 攻撃を受けたとき、防御カードを出す */

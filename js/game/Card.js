@@ -22,7 +22,7 @@ export const EFFECTS = {
     curePoison: [], // 解毒薬：自分の毒状態（兵士・城）をすべて治す
     freezeEnemySoldiers: ['turns'],
     singleDamage: ['amount'], // 敵兵士1体に amount ダメージ（対象 { soldierId }。盾が先に受ける）
-    weakenAttack: ['amount', 'turns'], // 呪い：敵兵士1体の攻撃力を amount 下げる（最低1）。持ち主の進軍 turns 回ぶん続く
+    weakenAttack: ['amount', 'turns'], // 呪い：敵兵士1体の攻撃力を amount 下げる（最低1）。持ち主の進軍 turns 回ぶん続く。soldiers を書くと、相手を選んで手前の soldiers 体（4陣営の呪いの印）
     randomElementDamage: ['amount'], // 敵兵士1体に amount ダメージ。火・水・風・土のうちランダムな属性で撃ち、強い属性なら elementBonus 増える
     reviveFallen: [], // 蘇生：最後に倒れた自分の兵士1体を、HP を最大HPの amount 倍（0より大きく1以下の数。下でチェック）で生き返らせる
     chainBlast: ['amount'], // チェーン・ブラスト：相手の兵士1体に amount、まわり（同じ道の前後1マス・となりの道の同じマス）に半分（切り上げ）
@@ -53,6 +53,10 @@ export const EFFECTS = {
     healCastleAndSoldiers: ['amount', 'soldierHeal'], // 生命の雫：自分の城HPを amount、傷ついた自分の兵士全員のHPを soldierHeal 回復
     healSoldier: ['amount'], // 竜血の雫：傷ついた自分の兵士1体のHPを amount 回復（対象 { soldierId }）
     breathAttack: ['amount', 'castleAmount'], // 火炎の吐息：選んだ道の相手の兵士全員に amount、相手の城に城壁を無視して castleAmount
+    vulnerableCastle: ['turns'], // 脆弱（魔族）：相手の城が受ける攻撃のダメージが ratio の割合だけ増える（turns。重ねがけは回数だけ延びる（maxTurns まで）。増える量は maxRatio まで）
+    poisonEnemyCastle: ['amount', 'turns'], // 毒の霧（魔族）：相手の城だけを毒にする（毎ターン amount・turns 回。重ねがけは量を増やさず、残りを maxTurns まで戻す・延ばす）
+    sealMp: ['amount', 'turns'], // 封魔（魔族）：相手の、自分のターンの始めの MP 回復を amount 減らす（turns 回。重ねがけは回数だけ延びる（maxTurns まで））
+    bloodPact: ['amount', 'selfDamage', 'soldiers'], // 血の契約（魔族）：自分の城HPを selfDamage 払って、自分の城に近い自分の兵士 soldiers 体の攻撃を amount 上げる（その兵士が消えるまで）
   },
   defense: {
     shieldSoldier: ['amount'],
@@ -82,7 +86,7 @@ export const BASIC_DICE = ['attack', 'heal', 'mana', 'coin', 'shield', 'buff'];
 /** メインを使わず何枚でも出せるサイコロ（ほかはメイン） */
 export const SUPPORT_DICE = ['mana', 'coin', 'shield', 'buff'];
 
-export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack'];
+export const MP_EFFECTS = ['damageEnemyCastle', 'damageEnemySoldiers', 'poisonEnemySoldiers', 'poisonEnemy', 'freezeEnemySoldiers', 'pushBackEnemySoldiers', 'chainBlast', 'singleDamage', 'weakenAttack', 'randomElementDamage', 'ignitionBurst', 'armorBlast', 'purifyFlare', 'summonSpirit', 'drainCastle', 'sacrificeAttack', 'damageAllSoldiers', 'breathAttack', 'poisonEnemyCastle', 'vulnerableCastle', 'bloodPact', 'sealMp'];
 
 /**
  * kind → 出し方（slot）。soldier は1ターン rules.soldiersPerTurn 枚、main（攻撃の魔法など）は1ターン1枚、
@@ -132,7 +136,8 @@ export class Card {
   }
 
   toState() {
-    return { cardId: this.cardId, type: this.type };
+    // スキルの一時コピー（js/game/skills/Cards.js）だけ copy: true を足す（ほかのカードの形は変えない）
+    return this.skillCopy ? { cardId: this.cardId, type: this.type, copy: true } : { cardId: this.cardId, type: this.type };
   }
 
   /**
@@ -236,6 +241,15 @@ export class Card {
       if (def.rangeBonus !== undefined && (def.kind !== 'weapon' || !isPositive(def.rangeBonus))) {
         throw new Error(`${where}: rangeBonus（射程+）は武器にだけ、1以上の整数で書けます`);
       }
+      if (def.attachRandomElement !== undefined && ((def.kind !== 'weapon' && def.kind !== 'soldier') || typeof def.attachRandomElement !== 'boolean')) {
+        throw new Error(`${where}: attachRandomElement（当たった相手に火・水・風・土のどれかも付ける）は武器か兵士に書ける true / false です`);
+      }
+      if (def.keepElement !== undefined && (def.kind !== 'weapon' || def.element !== undefined || typeof def.keepElement !== 'boolean')) {
+        throw new Error(`${where}: keepElement（持たせても兵士の今の属性を消さない）は、element のない武器だけに書ける true / false です`);
+      }
+      if (def.lifesteal !== undefined && (def.kind !== 'weapon' || !(typeof def.lifesteal === 'number' && def.lifesteal > 0 && def.lifesteal <= 1))) {
+        throw new Error(`${where}: lifesteal（与えたダメージのうち自分の城を回復する割合）は武器だけに書ける、0より大きく1以下の数です`);
+      }
       if (def.freezeOnHit !== undefined && (def.kind !== 'weapon' || !isPositive(def.freezeOnHit))) {
         throw new Error(`${where}: freezeOnHit（当たった相手を休ませる回数）は武器にだけ、1以上の整数で書けます`);
       }
@@ -264,6 +278,18 @@ export class Card {
       }
       if (def.turns !== undefined && def.effect === 'poisonEnemy' && !isPositive(def.turns)) {
         throw new Error(`${where}: 毒（poisonEnemy）の turns は1以上の整数にしてください（書かなければ rules.poisonTurns）`);
+      }
+      if (def.maxTurns !== undefined && (!['poisonEnemyCastle', 'vulnerableCastle', 'sealMp'].includes(def.effect) || !isPositive(def.maxTurns) || def.maxTurns < def.turns)) {
+        throw new Error(`${where}: maxTurns（重ねがけで延びる回数の上限）は poisonEnemyCastle などに書ける、turns 以上の整数です`);
+      }
+      if (def.effect === 'vulnerableCastle') {
+        const rate = (v) => typeof v === 'number' && v > 0 && v <= 1;
+        if (!rate(def.ratio) || !rate(def.maxRatio ?? def.ratio) || def.ratio > (def.maxRatio ?? def.ratio)) {
+          throw new Error(`${where}: 脆弱（vulnerableCastle）の ratio・maxRatio は0より大きく1以下で、ratio は maxRatio 以下にしてください`);
+        }
+      }
+      if (def.soldiers !== undefined && (!['weakenAttack', 'bloodPact'].includes(def.effect) || !isPositive(def.soldiers))) {
+        throw new Error(`${where}: soldiers（効く兵士の数）は weakenAttack などに書ける1以上の整数です`);
       }
       if (def.clearEnemyAttachments !== undefined && (def.effect !== 'purifyFlare' || typeof def.clearEnemyAttachments !== 'boolean')) {
         throw new Error(`${where}: clearEnemyAttachments は浄化（purifyFlare）にだけ、true か false で書けます`);

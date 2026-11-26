@@ -296,3 +296,10 @@ test('データのチェック：reactions の castle・chaos.castleDamagePerEle
   const real = loadOptionalData('factions');
   validateReactions(real.reactions, elementIds(real.elements));
 });
+
+test('本物のデータ：4陣営の rules.json は城の付着を使う（castleAttach: true。人間の指示）。通常モード・クラシックは使わない', async () => {
+  const { buildData } = await import('./helpers.js');
+  assert.equal(buildData({ mode: 'factions' }).rules.castleAttach, true);
+  assert.ok(!buildData({}).rules.castleAttach);
+  assert.ok(!buildData({ mode: 'classic' }).rules.castleAttach);
+});

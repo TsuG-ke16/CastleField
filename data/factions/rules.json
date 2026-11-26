@@ -62,7 +62,7 @@
   "collapseStartRound": 60,
   "collapseDamage": 1,
   "lightFirstStrike": true,
-  "castleAttach": false,
+  "castleAttach": true,
   "castleAttachTurns": 4,
   "castleReactionPerRound": 1
 }

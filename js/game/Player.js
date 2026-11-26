@@ -29,6 +29,8 @@ export class Player {
     this.luck = null;
     /** MP（攻撃の魔法・精霊を使うと減り、マナ回復のカードで増える）。rules.maxMp が上限 */
     this.mp = 0;
+    /** 4陣営の魔族の封魔：{ amount, turns }（自分のターンの始めの MP 回復が amount 減る）か null */
+    this.mpSeal = null;
     /** 排出率の恒久強化（コインで買う）：ドローのたびに chance の確率で、排出率を boost 倍（from 以上）にして引き当てる。{ chance, boost, from } か null */
     this.permLuck = null;
     /** 軍の訓練：これから出す兵士と、いる兵士の攻撃力・HPが、ずっと増える（コインで買う） */

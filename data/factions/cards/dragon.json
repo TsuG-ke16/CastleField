@@ -5,7 +5,7 @@
     "hp": 5,
     "attack": 4,
     "speed": 2,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_dragon_dragoon": {
@@ -61,7 +61,7 @@
     "effect": "damageEnemyCastle",
     "element": "fire",
     "amount": 5,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_dragon_bolt": {
@@ -71,7 +71,7 @@
     "element": "thunder",
     "amount": 3,
     "scope": "lane",
-    "mpCost": 3,
+    "mpCost": 4,
     "count": 2
   },
   "fac_dragon_flame_breath": {
@@ -109,5 +109,55 @@
     "amount": 2,
     "mpCost": 1,
     "count": 2
+  },
+  "fac_dragon_mage": {
+    "name": "竜術師",
+    "kind": "soldier",
+    "role": "mage",
+    "hp": 4,
+    "attack": 3,
+    "range": 2,
+    "stay": 2,
+    "innateElement": "fire",
+    "spellBoost": {
+      "elements": [
+        "fire",
+        "thunder"
+      ],
+      "amount": 1
+    },
+    "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る。火で撃つ。場にいるあいだ、自分の火・雷の魔法のダメージ+1",
+    "mpCost": 4,
+    "count": 2
+  },
+  "fac_dragon_scale_guard": {
+    "name": "竜鱗兵",
+    "kind": "soldier",
+    "hp": 9,
+    "attack": 3,
+    "speed": 1,
+    "description": "分厚い鱗で前に立つ兵士。HP9・速さ1（遅い）。デッキに1枚だけ",
+    "mpCost": 4,
+    "count": 1,
+    "maxCopies": 1
+  },
+  "fac_dragon_ancient_barrier": {
+    "name": "古竜の障壁",
+    "kind": "defense",
+    "effect": "armorCastle",
+    "amount": 8,
+    "description": "城壁8。MPが重く、デッキに1枚だけ",
+    "mpCost": 4,
+    "count": 1,
+    "maxCopies": 1
+  },
+  "fac_dragon_wing_decoy": {
+    "name": "竜翼の身代わり",
+    "kind": "defense",
+    "effect": "guardCastle",
+    "description": "自分の兵士1体を選ぶ。次に城が受ける攻撃を、その兵士が代わりに受ける（盾は効く。城壁は使わない）",
+    "mpCost": 3,
+    "count": 1,
+    "maxCopies": 1
   }
 }

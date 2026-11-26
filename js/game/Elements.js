@@ -97,6 +97,7 @@ export function validateReactions(data, ids) {
     if (typeof c.name !== 'string' || c.name === '') throw new Error(`${where}: name（表示名）を書いてください`);
     if (!nonNegInt(c.damagePerElement)) throw new Error(`${where}: damagePerElement は0以上の整数にしてください`);
     if (!Number.isInteger(c.minElements) || c.minElements < 2) throw new Error(`${where}: minElements は2以上の整数にしてください`);
+    if (c.attachTurnsMultiplier !== undefined && !(Number.isInteger(c.attachTurnsMultiplier) && c.attachTurnsMultiplier >= 1)) throw new Error(`${where}: attachTurnsMultiplier（混沌の付着の残りを何倍にするか）は1以上の整数にしてください`);
     if (c.castleDamagePerElement !== undefined && !nonNegInt(c.castleDamagePerElement)) throw new Error(`${where}: castleDamagePerElement（城に起きた混沌反応の、種類ごとのダメージ）は0以上の整数にしてください`);
   }
 }

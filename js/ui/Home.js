@@ -723,11 +723,11 @@ export class Home {
 
   renderWorlds() {
     const wrap = this.part('worlds'); wrap.replaceChildren();
-    for (const [id,label] of [['kingdom','通常モード'],['factions','4陣営モード']]) {
+    for (const [id,label] of [['kingdom','通常モード'],['factions','4陣営モード'],['classic','クラシック']]) {
       const b=document.createElement('button'); b.type='button'; b.className='home-world raw-btn'; b.dataset.ruleset=id;
       b.textContent=label; b.setAttribute('aria-pressed',String(id===this.ruleset)); wrap.append(b);
     }
-    this.part('worldName').textContent = this.ruleset === 'factions' ? '四つの陣営、激突。' : '城を落とせ。';
+    this.part('worldName').textContent = this.ruleset === 'factions' ? '四つの陣営、激突。' : this.ruleset === 'classic' ? 'スキルを選んで、城を落とせ。' : '城を落とせ。';
   }
 
   renderModes() {
@@ -921,11 +921,15 @@ export class Home {
     const act = tile ? tile.dataset.id : e.target.closest('[data-act]')?.dataset.act;
     if (!act) return;
     if(act==='chooseMode') return this.openSheet('mode');
+    if(act==='chooseDeck' && this.ruleset==='classic') return this.toast('クラシックは共通の山札です。対戦の準備でスキルツリーを選べます。','info');
     if(act==='chooseDeck') { this.renderDeckChoices(); return this.openSheet('deck'); }
     if(act==='more') return this.openSheet('more');
     this.closeSheets();
     if(this.ruleset==='factions' && ['rank','ranking','friend','mission'].includes(act)) return this.toast('この機能は通常モードで利用できます。4陣営は、ひとりで遊ぶ・カジュアル対戦（合言葉）・同じ端末で遊べます。','info');
     if(this.ruleset==='factions' && act==='deck') { this.renderDeckChoices();return this.openSheet('deck'); }
+    // クラシック：対戦前にスキルツリーを選ぶ（共通の山札）。ランク・ミッションなどは通常モードだけ
+    if(this.ruleset==='classic' && ['rank','ranking','friend','mission'].includes(act)) return this.toast('この機能は通常モードで利用できます。クラシックは、ひとりで遊ぶ・カジュアル対戦（合言葉）・同じ端末で遊べます。','info');
+    if(this.ruleset==='classic' && act==='deck') return this.toast('クラシックは共通の山札です。対戦の準備でスキルツリーを選べます。','info');
     sound.play('tap');
     if (act === 'account') return this.onAccount();
     if (act === 'retry') return this.refresh();

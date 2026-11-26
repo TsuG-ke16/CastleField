@@ -71,3 +71,19 @@ test('部屋: mode を選ぶと、その部屋はクラシックのカードで�
   assert.equal(lobby.findSeat(n.token).room.modeId, null);
   assert.ok(lobby.findSeat(n.token).room.data.cards.infantry);
 });
+
+test('クラシックの3人以上・チーム戦も決着する（広場・輪。CPU の smart で数試合）', async () => {
+  const { runMatch } = await import('./sim/sim.js');
+  const cases = [
+    { playerCount: 4, roadLayout: 'plaza', setup: { teams: ['t1', 't2', 't1', 't2'] } },
+    { playerCount: 3, roadLayout: 'plaza', winCondition: 'lastStanding' },
+    { playerCount: 4, roadLayout: 'ring', winCondition: 'lastStanding' },
+  ];
+  for (const { setup, ...patch } of cases) {
+    const { cards, rules } = buildData({ mode: 'classic', rules: patch });
+    for (const seed of [1, 2]) {
+      const r = runMatch({ cards, rules, strategies: Array(patch.playerCount).fill('smart'), seed, gameOptions: { ...loadOptionalData('classic'), ...(setup ? { setup } : {}) } });
+      assert.ok(r.winner, `${JSON.stringify(patch)} seed ${seed}`);
+    }
+  }
+});
