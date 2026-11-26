@@ -1567,19 +1567,20 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 設計書：`docs/classic-skilltree.md`（目的・ツリーの図・ノード表・データの形・バランスの結果・UI担当への依頼・人間が決める点）。
 
-- **方式**：試合の前に、決まったポイント（`points`：6。両者同じ）でノードを選ぶビルド。試合中は育たない・メタ進行なし。4つの枝（剣＝攻め・盾＝守り・属性＝反応・魔力＝経済）×3段＝12ノード、コストは段ごとに1・2・3。2段目は1段目、3段目は2段目を先に取る（`requires`）。全部は取れない（合計24）。何も取らないのもよい
-- **どのノードにも長所と短所**（`effects` のプラスとマイナス。両方ないとデータのチェックでエラー。上位互換がないことは `tests/classic-skilltree.test.js` が確かめる）
+- **方式**：試合の前に、決まったポイント（`points`：6。両者同じ）でノードを選ぶビルド。試合中は育たない・メタ進行なし。4つの枝（剣＝攻め・盾＝守り・属性＝反応・魔力＝経済）×3段＝12ノード、コストは段ごとに1・2・3。2段目は1段目、3段目は2段目を先に取る（`requires`）。全部は取れない（合計24）。奥義（3段目）は1つだけ。何も取らないのもよい
+- **短所なし・ポイントだけで制限する（人間の決定：案B）**：どのノードも小さな強化だけ（城HPの減点などはない）。強さは効果の大きさとコストで合わせる。データのチェックは「効果が1つ以上」「上位互換（効果がほかのノードをすべて含み、コストが同じか安い）がない」。マイナスの値も書ける仕組みは残した（今は使っていない）
+- **ノード**（数値は仮）：剣＝攻城術（城への魔法が城に当たると+1）→鬨の声（最初の手札+1）→鍛えた刃（兵士の攻撃+1）／盾＝石垣（最初の城壁6）→堅城（城HP+5）→不落の砦（城HP+4・城壁+4）／属性＝混沌の目（ランダム付着。取った人だけ）→共鳴（反応の追加ダメージ+5）→残響（付着の残り+1・反応+3）／魔力＝魔力の泉（最初のMP+4）→大きな器（MPの上限+4・最初のMP+2）→錬金術（コイン+1/ターン）
 - **データ**：`data/classic/skilltree.json`（`{ points, branches, nodes: { <id>: { name, branch, tier, cost, requires?, effects, description } }, presets }`）。`data/modes.json` のモードに `skillTreeSet` を書くと、サーバー（`server/server.js` の `loadData`）・テスト（`tests/helpers.js` の `loadOptionalData(mode)`）が読んで `new Game({ skillTree })` に渡す。**4陣営には今は書いていない**（書けばそのまま使える）。画面（`js/main.js`）はまだ渡さない
 - **効果のキー**（`js/game/SkillTree.js` の `SKILL_EFFECTS`）：`castleHp`・`maxHand`・`soldierAttack`・`castleSpell`（城の種類の `hpBonus`・`maxHandBonus`・`soldierAttackBonus`・`castleSpellBonus` に足す）、`armor`（最初の城壁。後攻の城壁に足す）、`initialMp`・`maxMp`（人ごとの MP の上限 `maxMpOf`）・`mpPerTurn`・`coinPerTurn`（ターンの始めの回復に足す）、`initialHand`、`reactionDamage`（自分の攻撃で起きた反応の追加ダメージ。反応を起こした人は `elementHit` の `by`、省略すると手番の人）、`randomAttach`（ターン開始時のランダム付着をその人だけに）・`randomAttachTurns`（その付着の残りに足す）。反応のキーを使うツリーは `reactions` のないゲームではエラー
 - **`new Game({ skillTree, setup: { skills: [[...], [...]] } })`**：席ごとのビルド（ノードのIDの配列）。`skillTree` を渡さなければ今までどおり（`setup.skills` を書くとエラー）。省略した席は何も取らない。決まりに合わなければ例外（「席2のスキルが決まりに合いません：…」）
 - **getState**（`skillTree` を渡したゲームだけ）：`players.pX.skills`（選んだノード。**相手にも見せる**）・`players.pX.maxMp`（その人の MP の上限）。イベントは増やしていない：`elementAttached` に `skill: true`（スキルのランダム付着）、`reactionTriggered` に `skillBonus`（スキルで増えた量）が付くだけ
 - **オンライン**：部屋の席に `skills`（`setSeat({ skills })`。CPU は戦い方のおすすめ）。`roomInfo().players[].skills`・`choices.skillTree`
 - **CPU**（`js/game/strategies.js`）：`chooseSkillBuild(tree, rng, style)`（`none` / `random` / プリセットのID / 戦い方の名前（`SKILL_STYLE_OF`）/ `"a+b"`）。試合中の戦い方は変えていない
-- **MP の回復+1とコイン+2は強すぎるので、ツリーに入れていない**（クラシックは全カードに MP を使うので、回復+1だけで勝率81%）
-- 確かめたこと（`node tests/sim/skills.js --games 100`。smart 同士・席を入れかえて各200試合）：全試合決着。ビルドごとの平均の勝率 剣50%・盾55%・属性44%・魔力44%・まんべんなく56%・なし48%・ランダム53%。同じビルドどうしの先攻の勝率 43〜55%。通常モード・4陣営・スキルなしのクラシックのシミュレーションは変更前と完全に一致
+- **兵士の攻撃+1がいちばん重い**（それだけで何も取らない相手に約58%）ので、剣の奥義（コスト3）にした。MP の回復+1（勝率81%）とコイン+2（90%）は強すぎるので入れていない
+- 確かめたこと（`node tests/sim/skills.js --games 100 --seed 1`・2・3。smart 同士・席を入れかえて各200試合×3シード）：全試合決着。ビルドごとの平均の勝率 剣55%・盾50〜51%・属性47〜49%・魔力52〜54%・まんべんなく51〜53%・なし41〜44%。何も取らない相手に、剣59%・魔力58%・まんべんなく58%（3シードの平均）。先攻の勝率は平均44〜53%。通常モード・4陣営・スキルなしのクラシックのシミュレーションは変更前と完全に一致
 - シミュレーション：`node tests/sim/skills.js`（`--builds`・`--vs none`・`--tree`・`--strategy`・`--json`）、`node tests/sim/run.js --mode classic --skills blade,shield`（`auto` は戦い方のおすすめ）
 - 画面（UI担当にお願いしたいこと）：スキルを選ぶ画面、試合中のビルドの表示、`skill: true` / `skillBonus` の演出、`players.pX.maxMp`、`loadHomeRuleSet` で `skillTreeSet` を読む、precache（くわしくは設計書の「UI担当への依頼」）
-- 人間が決める点：設計書の最後（ポイントと数値・城の種類と一本化するか・ビルドを見せるか・火水風土の反応とカード・4陣営に入れるか）
+- 人間が決める点：設計書の最後（剣の奥義の重さ・城の種類と一本化するか・火水風土の反応とカード・ビルドを見せるか・4陣営に入れるか）
 
 ## クラシック：王国の「守りを貫く手段」（案A 聖壁の号砲。人間の指示。数値は仮）
 
