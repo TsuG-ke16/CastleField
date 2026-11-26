@@ -40,8 +40,13 @@ export class Soldier {
     this.slowed = null;
     /** 目くらまし { chance, turns }（霧・砂嵐の反応。攻撃が chance の確率で外れる）か null */
     this.blinded = null;
+    /** 継続ダメージ（4陣営の反応）：砂（砂嵐）・凍傷（黒氷）{ amount, turns } か null。持ち主の進軍の前にダメージ（盾は効かない） */
+    this.sand = null;
+    this.frostbite = null;
     /** 盾の残り。ダメージは先に盾が受ける */
     this.shield = 0;
+    /** 4陣営の神盾：true なら、盾が残っている間は状態異常を受けない */
+    this.statusWard = false;
     /** 毒 { amount, turns }（なければ null） */
     this.poison = null;
     /** 凍結の残り回数（0 なら凍結していない） */
@@ -52,6 +57,9 @@ export class Soldier {
     this.weakened = null;
     /** 付着している属性 [{ element, turns }]（種類ごとに1つ。reactions を渡したゲームだけで使う。武器の属性は element に別に持つ） */
     this.attachments = [];
+    /** トークン（魔族の「死者を従える」で生まれた骸骨兵）。カードではない。tokenName は表示名（なければ null） */
+    this.token = false;
+    this.tokenName = null;
   }
 
   /** 弓兵・魔法使い（動かずに撃つ） */
@@ -104,6 +112,7 @@ export class Soldier {
 
   toState() {
     return {
+      ...(this.token ? { token: true, name: this.tokenName, speed: this.speed } : {}),
       soldierId: this.soldierId,
       type: this.type,
       hp: this.hp,

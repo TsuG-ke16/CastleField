@@ -119,6 +119,8 @@ const ELEMENT_BEATS = { water: 'fire', fire: 'wind', wind: 'earth', earth: 'wate
 export function canReact(reactions, element, s) {
   if (!element || !reactions) return false;
   const on = [...new Set([s.element, ...(s.attachments ?? []).map((a) => a.element)].filter(Boolean))];
+  // 4陣営の frozenCountsAsIce：凍結中の兵士は氷が付いている扱い（getState().reactions.frozenCountsAsIce）
+  if (reactions.frozenCountsAsIce && (s.statuses?.frozen ?? 0) > 0 && !on.includes('ice')) on.push('ice');
   const all = on.includes(element) ? on : [...on, element];
   const chaos = reactions.chaos;
   if (chaos && all.includes(chaos.element) && all.length >= chaos.minElements) return true;
@@ -171,7 +173,47 @@ function playSupports(game, pid, ctx, { chargeArmor = false } = {}) {
         // ただし chargeArmor（smart・guard）で、城への魔法が兵士に止められるルール（castleSpellHitsFront）のとき、城壁をぶつける魔法（armorBlast）を持っていれば、
         // 城壁を弾として貯める（ARMOR_CHARGE まで。ぶつけるのは smartStep：城壁10以上か、相手の城を落とせるとき）
         const charging = chargeArmor && Boolean(ctx.rules?.castleSpellHitsFront) && me.armor < ARMOR_CHARGE && me.hand.some((h) => ctx.cards[h.type]?.effect === 'armorBlast');
-        if (me.castleHp * 2 <= me.castleMaxHp || charging) played = playWith(game, c.cardId);
+        // 魔族の血の膜：敵の兵士が城の手前2マス以内まで来ていて、城壁が薄い（8未満）ときも出す（削られたぶん城が回復する）
+        const L2 = ctx.rules?.laneLength ?? 5;
+        const bloodNear = Boolean(def.bloodArmor) && isDemonCard(c.type) && me.armor < 8 && enemySoldiers.some((s) => s.position >= L2 - 2);
+        if (me.castleHp * 2 <= me.castleMaxHp || charging || bloodNear) played = playWith(game, c.cardId);
+      }
+      if (played) break;
+    }
+    if (!played) return;
+  }
+}
+
+/**
+ * 切り札（カードの trump。4陣営の王国の勇者・神剣・神盾）を、MP が足りるうちに先に出す（smart・guard）。
+ * trump のカードがないモードでは何もしない（乱数も使わない）。
+ *   勇者：兵士としていちばん先に出す
+ *   神剣：武器を持っていても重ねて持たせる。進む兵士（勇者があれば勇者）のうち、いちばん前の兵士
+ *   神盾：次の進軍で城に着きそうな兵士か、近くの相手の兵士に倒されそうな兵士（攻撃力のいちばん高い兵士）
+ */
+function playTrumps(game, pid, ctx) {
+  for (let guard = 0; guard < 5; guard++) {
+    const { me, enemies, playable } = view(game, pid);
+    const trumps = playable.filter((c) => ctx.cards[c.type]?.trump);
+    if (trumps.length === 0) return;
+    const L = ctx.rules?.laneLength ?? 5;
+    let played = false;
+    for (const c of trumps) {
+      const def = ctx.cards[c.type];
+      if (def.kind === 'soldier') {
+        played = playFirst(game, [c], [c.type]);
+      } else if (def.kind === 'weapon') {
+        const melee = me.soldiers.filter((x) => x.role === 'melee');
+        const pool = melee.length ? melee : me.soldiers;
+        const target = [...pool].sort((a, b) => Number(Boolean(ctx.cards[b.type]?.trump)) - Number(Boolean(ctx.cards[a.type]?.trump)) || b.position - a.position || b.hp - a.hp)[0];
+        if (target) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === target.soldierId));
+      } else if (def.effect === 'shieldSoldier') {
+        const foes = enemies.flatMap((e) => e.soldiers);
+        const reaching = (x) => x.role === 'melee' && x.position + (ctx.cards[x.type]?.speed ?? 0) >= L;
+        // 同じ道で、2マス以内にいて、HP＋盾を削り切れる相手の兵士がいる
+        const endangered = (x) => foes.some((f) => f.roadId === x.roadId && Math.abs(L - 1 - f.position - x.position) <= 2 && f.attack >= x.hp + x.shield);
+        const target = me.soldiers.filter((x) => reaching(x) || endangered(x)).sort((a, b) => b.attack - a.attack || b.position - a.position)[0];
+        if (target) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === target.soldierId));
       }
       if (played) break;
     }
@@ -195,6 +237,10 @@ function soldierTypes(ctx) {
 }
 const typesWithEffect = (ctx, effect) =>
   Object.entries(ctx.cards).filter(([, d]) => d.effect === effect).map(([t]) => t);
+
+/** 魔族（4陣営モード）のカードか。カードの種類（キー）が fac_demon_ で始まるものだけ。通常モード・クラシック・ほかの陣営のカードには当たらない */
+const isDemonCard = (type) => type.startsWith('fac_demon_');
+const demonTypes = (ctx, effect) => typesWithEffect(ctx, effect).filter(isDemonCard);
 
 /**
  * 攻撃を受けたときの返事（防御カードを出す。出さなくてもよい）。
@@ -273,7 +319,9 @@ const RAW_STRATEGIES = {
   smart: {
     takeTurn(game, pid, rng, ctx) {
       buyUpgrades(game, pid, ctx);
+      playTrumps(game, pid, ctx);
       smartTurn(game, pid, ctx);
+      playTrumps(game, pid, ctx); // 神剣・神盾は、出した兵士にも
       playSupports(game, pid, ctx, { chargeArmor: true });
     },
     respond(game, pid, rng, ctx) {
@@ -328,7 +376,9 @@ const RAW_STRATEGIES = {
       const L = ctx.rules.laneLength;
       const near = enemies.some((e) => e.soldiers.some((s) => s.position >= L - 3));
       buyUpgrades(game, pid, ctx);
+      playTrumps(game, pid, ctx);
       if (!(near && playFirst(game, playable, soldierTypes(ctx)))) smartTurn(game, pid, ctx);
+      playTrumps(game, pid, ctx);
       playSupports(game, pid, ctx, { chargeArmor: true });
     },
     respond(game, pid, rng, ctx) {
@@ -408,6 +458,13 @@ function smartStep(game, pid, ctx) {
   // 毒にかかっていれば、解毒薬で治す（毒は永続なので、放っておくと削られ続ける）
   if (playFirst(game, playable, typesWithEffect(ctx, 'curePoison'))) return true;
   if (me.castleHp < me.castleMaxHp / 2 && playFirst(game, playable, [...typesWithEffect(ctx, 'healOwnCastle'), ...typesWithEffect(ctx, 'healCastleAndSoldiers')])) return true;
+  // 魔族（4陣営。数値は仮）：魂の欠片（敵城に当てて自城を回復）。相手の城を落とせるときだけ先に出す
+  // （それ以外は、下の最後の優先リストの最後に出す。自城HPが低いときに先に出す形は、ほかの魔法の MP とメインの枠を食って勝率が下がった）。防御・反射は playWith → onDefense の今までの扱いのまま
+  const soulShards = demonTypes(ctx, 'damageCastleAndHeal');
+  if (enemy && soulShards.length) {
+    const lethal = soulShards.some((t) => ctx.cards[t].amount >= enemy.castleHp);
+    if (lethal && playFirst(game, playable, soulShards)) return true;
+  }
   // 永続の毒は早く入れるほど効く。強い毒から
   const toxins = typesWithEffect(ctx, 'poisonEnemy').sort((a, b) => ctx.cards[b].amount - ctx.cards[a].amount);
   if (enemy && playFirst(game, playable, toxins)) return true;
@@ -462,17 +519,28 @@ function smartStep(game, pid, ctx) {
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'damageEnemySoldiers'))) return true;
   // 次の進軍で城に着きそうな相手の兵士がいれば、凍結で止める
   const L = ctx.rules.laneLength;
-  const threat = enemy && enemy.soldiers.some((s) => s.position + ctx.cards[s.type].speed >= L);
+  const threat = enemy && enemy.soldiers.some((s) => s.position + (ctx.cards[s.type]?.speed ?? s.speed ?? 0) >= L);
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'freezeEnemySoldiers'))) return true;
+  // 魔族の氷の息：脅威がなくても、敵の兵士が自分の城の手前2マス以内まで来ていれば、凍結で進軍を1回止める
+  const closeIn = enemy && enemy.soldiers.some((s) => s.position >= L - 2);
+  if (closeIn && playFirst(game, playable, demonTypes(ctx, 'freezeEnemySoldiers'))) return true;
   // 凍結がなければ、突風で押し戻す
   if (threat && playFirst(game, playable, typesWithEffect(ctx, 'pushBackEnemySoldiers'))) return true;
   if (enemy && enemy.soldiers.length >= 2 && playFirst(game, playable, typesWithEffect(ctx, 'poisonEnemySoldiers'))) return true;
+  // 魔族の毒の霧：1体でも、HPが高く（4以上）まだ進軍で城に届かない兵士がいれば、毒を入れる（長く効く）
+  const lasting = enemy && enemy.soldiers.some((s) => s.hp + s.shield >= 4 && s.position + (ctx.cards[s.type]?.speed ?? s.speed ?? 0) < L);
+  // 魔族の残響の魂：MP に余裕（コスト＋3）があれば、最後の手段にせず出す（倒れた兵士がいなければ playable に入らない）
+  const revives = demonTypes(ctx, 'reviveFallen').filter((t) => me.mp >= (ctx.cards[t].mpCost ?? 0) + 3);
   const played = playFirst(game, playable, [
     ...soldierTypes(ctx),
     ...castleSpells,
     ...typesWithEffect(ctx, 'breathAttack'), // 火炎の吐息（4陣営）：相手の兵士がいちばん多い道へ（pickLane）
     ...typesWithEffect(ctx, 'damageEnemySoldiers'),
     ...typesWithEffect(ctx, 'healOwnCastle'),
+    ...revives,
+    // 魔族：兵士・ほかの魔法を出したあと、MP が余っていれば出す（先に出すと、ほかの魔法の MP とメインの枠を食う）
+    ...(lasting ? demonTypes(ctx, 'poisonEnemySoldiers') : []),
+    ...soulShards,
   ]);
   if (played) return true;
   // 蘇生：ほかに出す兵士がないとき、最後に倒れた兵士を生き返らせる（出せないときは playable に入らない）

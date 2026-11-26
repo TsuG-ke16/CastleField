@@ -231,9 +231,74 @@ export function factionDecks(factions, cardSets) {
     const cards = {};
     for (const [type, card] of Object.entries(set)) {
       if (type.startsWith('_')) continue;
+      // 切り札（maxCopies。4陣営の王国の神剣・勇者・神盾）は、デッキに maxCopies 枚まで
+      if (card.maxCopies !== undefined && card.count > card.maxCopies) throw new Error(`陣営 "${id}" の「${card.name ?? type}」は${card.maxCopies}枚までです（count ${card.count}）`);
       if (card.count > 0) cards[type] = card.count;
     }
     decks[id] = { name: def.name, cards };
+    // 陣営の特性（森の常時の精霊）は、デッキに付けて Game に渡す（Game は席のデッキから読む）
+    if (def.passiveSpirits !== undefined) decks[id].passiveSpirits = def.passiveSpirits;
+    // 陣営のパッシブ（魔族の「死者を従える」など）も同じ
+    if (def.passive !== undefined) decks[id].passive = def.passive;
   }
   return decks;
+}
+
+/** 常時の精霊の効果（passiveSpirits.spirits[].effect） */
+export const PASSIVE_SPIRIT_EFFECTS = ['castleDamage', 'soldiersDamage', 'pushFront'];
+
+/**
+ * 常時の精霊（デッキの passiveSpirits。4陣営の森）のチェック。間違っていれば Error を投げる。
+ * 形：{ attachTurns, everyTurns?, spiritAttachTo?, spirits: [{ spirit, name, element, effect, amount, ignoreArmor?, push? }] }
+ * @param {object} data passiveSpirits
+ * @param {string[]} elementIds 使える属性ID
+ * @param {string} where エラーの文の頭
+ */
+export function validatePassiveSpirits(data, elementIds, where) {
+  const posInt = (v) => Number.isInteger(v) && v > 0;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(`${where}: passiveSpirits は { attachTurns, spirits } にしてください`);
+  if (!posInt(data.attachTurns)) throw new Error(`${where}: passiveSpirits.attachTurns（付着が残る回数）は1以上の整数にしてください`);
+  if (data.spiritAttachTo !== undefined && !['soldiers', 'castle'].includes(data.spiritAttachTo)) throw new Error(`${where}: passiveSpirits.spiritAttachTo（精霊の属性を付ける先）は "soldiers"（敵の兵士全員。省略したとき）か "castle"（敵の城。rules.castleAttach のときだけ付く）にしてください`);
+  if (data.everyTurns !== undefined && !posInt(data.everyTurns)) throw new Error(`${where}: passiveSpirits.everyTurns（自分の何ターンに1回動くか）は1以上の整数にしてください`);
+  if (!Array.isArray(data.spirits) || data.spirits.length === 0) throw new Error(`${where}: passiveSpirits.spirits に、動く順に精霊を1体以上書いてください`);
+  const seen = new Set();
+  data.spirits.forEach((sp, i) => {
+    const w = `${where}: passiveSpirits.spirits[${i}]`;
+    if (!sp || typeof sp !== 'object') throw new Error(`${w}: { spirit, name, element, effect, amount } のオブジェクトにしてください`);
+    if (typeof sp.spirit !== 'string' || sp.spirit === '' || seen.has(sp.spirit)) throw new Error(`${w}: spirit（精霊のID）は、ほかの精霊と重ならない文字列にしてください`);
+    seen.add(sp.spirit);
+    if (typeof sp.name !== 'string' || sp.name === '') throw new Error(`${w}: name（表示名）を書いてください`);
+    if (!elementIds.includes(sp.element)) throw new Error(`${w}: element の "${sp.element}" は属性の表にありません`);
+    if (!PASSIVE_SPIRIT_EFFECTS.includes(sp.effect)) throw new Error(`${w}: effect は ${PASSIVE_SPIRIT_EFFECTS.join(' / ')} のどれかにしてください`);
+    if (!posInt(sp.amount)) throw new Error(`${w}: amount（ダメージ）は1以上の整数にしてください`);
+    if (sp.ignoreArmor !== undefined && (typeof sp.ignoreArmor !== 'boolean' || sp.effect !== 'castleDamage')) throw new Error(`${w}: ignoreArmor は castleDamage の精霊だけに、true / false で書けます`);
+    if (sp.effect === 'pushFront' ? !posInt(sp.push) : sp.push !== undefined) throw new Error(`${w}: push（押し戻すマス数）は pushFront の精霊だけに、1以上の整数で書いてください`);
+  });
+}
+
+/**
+ * 陣営のパッシブ（デッキの passive。4陣営の魔族）のチェック。間違っていれば Error を投げる。
+ * 形：{ raiseOnKill: { soldier: { name, hp, attack, speed, element? }, perTurn } }
+ *   raiseOnKill：魔族の兵士が、戦い・射撃で敵の兵士のHPを0にしたとき、骸骨兵（soldier）が魔族の城の前に1体生まれる。
+ *   perTurn は1ターン（通算）に生まれる回数の上限
+ * @param {object} data passive
+ * @param {string[]} elementIds 使える属性ID
+ * @param {string} where エラーの文の頭
+ */
+export function validatePassive(data, elementIds, where) {
+  const posInt = (v) => Number.isInteger(v) && v > 0;
+  if (!data || typeof data !== 'object' || Array.isArray(data)) throw new Error(`${where}: passive は { raiseOnKill } のオブジェクトにしてください`);
+  for (const key of Object.keys(data)) if (key !== 'raiseOnKill') throw new Error(`${where}: passive の "${key}" は知らないパッシブです（raiseOnKill だけ）`);
+  const r = data.raiseOnKill;
+  if (r === undefined) return;
+  const w = `${where}: passive.raiseOnKill`;
+  if (!r || typeof r !== 'object' || Array.isArray(r)) throw new Error(`${w} は { soldier, perTurn } のオブジェクトにしてください`);
+  if (!posInt(r.perTurn)) throw new Error(`${w}.perTurn（1ターンに生まれる回数の上限）は1以上の整数にしてください`);
+  const s = r.soldier;
+  if (!s || typeof s !== 'object' || Array.isArray(s)) throw new Error(`${w}.soldier は { name, hp, attack, speed } のオブジェクトにしてください`);
+  if (typeof s.name !== 'string' || s.name === '') throw new Error(`${w}.soldier.name（表示名）を書いてください`);
+  if (!posInt(s.hp)) throw new Error(`${w}.soldier.hp は1以上の整数にしてください`);
+  if (!posInt(s.attack)) throw new Error(`${w}.soldier.attack は1以上の整数にしてください`);
+  if (!posInt(s.speed)) throw new Error(`${w}.soldier.speed は1以上の整数にしてください`);
+  if (s.element !== undefined && s.element !== null && !elementIds.includes(s.element)) throw new Error(`${w}.soldier.element の "${s.element}" は属性の表にありません`);
 }
