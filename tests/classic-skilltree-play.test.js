@@ -49,15 +49,15 @@ test('部屋：クラシックでは席ごとにスキルを選べる（不正�
   const a = lobby.join('sk', 'A', null, 'classic');
   const { room, seat } = lobby.findSeat(a.token);
   assert.deepEqual(seat.skills, []);
-  assert.match(room.setSeat(seat, { skills: ['warcry'] }).reason, /先に/);
-  assert.equal(room.setSeat(seat, { skills: ['keenBlade', 'siegecraft'] }).ok, true);
+  assert.match(room.setSeat(seat, { skills: ['keenBlade'] }).reason, /先に/);
+  assert.equal(room.setSeat(seat, { skills: ['siegecraft', 'warcry'] }).ok, true);
   const cpu = room.addCpu(seat, 'hard');
   assert.equal(cpu.ok, true);
   const info = room.roomInfo();
-  assert.deepEqual(info.players.map((p) => p.skills), [['keenBlade', 'siegecraft'], TREE().presets[SKILL_STYLE_OF.smart].nodes]);
+  assert.deepEqual(info.players.map((p) => p.skills), [['siegecraft', 'warcry'], TREE().presets[SKILL_STYLE_OF.smart].nodes]);
   assert.equal(info.choices.skillTree.points, TREE().points);
   room.startGame();
-  assert.deepEqual(room.game.getState(null).players.p1.skills, ['keenBlade', 'siegecraft']);
+  assert.deepEqual(room.game.getState(null).players.p1.skills, ['siegecraft', 'warcry']);
   // 通常モード
   const n = lobby.join('plain-sk', 'B');
   const r2 = lobby.findSeat(n.token);

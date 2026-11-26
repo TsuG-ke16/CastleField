@@ -1,5 +1,5 @@
 {
-  "_note": "クラシックのスキルツリー（数値はすべて仮。docs/classic-skilltree.md）。試合の前に points のポイントでノードを選ぶ（両者同じ・試合中は育たない）。cost の合計が points 以下。requires のノードを先に取る。effects はプラスが長所・マイナスが短所（どのノードにも両方ある）。キーの意味は js/game/SkillTree.js の SKILL_EFFECTS。presets はおすすめのビルド（CPU とはじめての人向け）",
+  "_note": "クラシックのスキルツリー（数値はすべて仮。docs/classic-skilltree.md）。試合の前に points のポイントでノードを選ぶ（両者同じ・試合中は育たない）。cost の合計が points 以下。requires のノードを先に取る。人間の決定で、ノードは短所のない強化だけ（効果を小さくし、ポイントとコストで制限する）。キーの意味は js/game/SkillTree.js の SKILL_EFFECTS（マイナスも書ける仕組みは残してある）。presets はおすすめのビルド（CPU とはじめての人向け）",
   "points": 6,
   "branches": {
     "blade": {
@@ -16,47 +16,41 @@
     }
   },
   "nodes": {
-    "keenBlade": {
-      "name": "鍛えた刃",
+    "siegecraft": {
+      "name": "攻城術",
       "branch": "blade",
       "tier": 1,
       "cost": 1,
       "effects": {
-        "soldierAttack": 1,
-        "castleHp": -6
+        "castleSpell": 1
       },
-      "description": "出した兵士の攻撃+1。城HP−6"
-    },
-    "siegecraft": {
-      "name": "攻城術",
-      "branch": "blade",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "keenBlade"
-      ],
-      "effects": {
-        "soldierAttack": 1,
-        "castleSpell": 2,
-        "castleHp": -8,
-        "maxHand": -1
-      },
-      "description": "出した兵士の攻撃さらに+1・城への魔法が城に当たると+2。城HP−8・手札の上限−1"
+      "description": "城への魔法が城に当たると+1（先頭の兵士に当たったときは増えない）"
     },
     "warcry": {
       "name": "鬨の声",
       "branch": "blade",
-      "tier": 3,
-      "cost": 3,
+      "tier": 2,
+      "cost": 2,
       "requires": [
         "siegecraft"
       ],
       "effects": {
-        "initialHand": 2,
-        "initialMp": 5,
-        "castleHp": -8
+        "initialHand": 1
       },
-      "description": "最初の手札+2・最初のMP+5（速攻）。城HP−8"
+      "description": "最初の手札+1"
+    },
+    "keenBlade": {
+      "name": "鍛えた刃",
+      "branch": "blade",
+      "tier": 3,
+      "cost": 3,
+      "effects": {
+        "soldierAttack": 1
+      },
+      "description": "出した兵士の攻撃+1",
+      "requires": [
+        "warcry"
+      ]
     },
     "stoneWall": {
       "name": "石垣",
@@ -64,10 +58,9 @@
       "tier": 1,
       "cost": 1,
       "effects": {
-        "armor": 6,
-        "initialMp": -3
+        "armor": 6
       },
-      "description": "最初から城壁6。最初のMP−3"
+      "description": "最初から城壁6"
     },
     "stronghold": {
       "name": "堅城",
@@ -78,10 +71,9 @@
         "stoneWall"
       ],
       "effects": {
-        "castleHp": 8,
-        "initialHand": -1
+        "castleHp": 5
       },
-      "description": "城HP+8。最初の手札−1"
+      "description": "城HP+5"
     },
     "bastion": {
       "name": "不落の砦",
@@ -92,12 +84,10 @@
         "stronghold"
       ],
       "effects": {
-        "castleHp": 10,
-        "armor": 6,
-        "initialMp": -4,
-        "maxHand": -1
+        "castleHp": 4,
+        "armor": 4
       },
-      "description": "城HP+10・城壁+6。最初のMP−4・手札の上限−1"
+      "description": "城HP+4・城壁+4"
     },
     "chaosEye": {
       "name": "混沌の目",
@@ -105,10 +95,9 @@
       "tier": 1,
       "cost": 1,
       "effects": {
-        "randomAttach": true,
-        "castleHp": -2
+        "randomAttach": true
       },
-      "description": "自分のターンの始めに、敵の兵士1体にランダムな属性を付着させる（反応の準備）。城HP−2"
+      "description": "自分のターンの始めに、敵の兵士1体にランダムな属性を付着させる（反応の準備）"
     },
     "resonance": {
       "name": "共鳴",
@@ -119,10 +108,9 @@
         "chaosEye"
       ],
       "effects": {
-        "reactionDamage": 4,
-        "maxMp": -3
+        "reactionDamage": 5
       },
-      "description": "自分の攻撃で起きた反応の追加ダメージ+4。MPの上限−3"
+      "description": "自分の攻撃で起きた反応の追加ダメージ+5"
     },
     "echo": {
       "name": "残響",
@@ -133,11 +121,10 @@
         "resonance"
       ],
       "effects": {
-        "randomAttachTurns": 2,
-        "reactionDamage": 3,
-        "castleHp": -3
+        "randomAttachTurns": 1,
+        "reactionDamage": 3
       },
-      "description": "ランダム付着が2回ぶん長く残る・反応の追加ダメージさらに+3。城HP−3"
+      "description": "ランダム付着が1回ぶん長く残る・反応の追加ダメージさらに+3"
     },
     "manaSpring": {
       "name": "魔力の泉",
@@ -145,11 +132,9 @@
       "tier": 1,
       "cost": 1,
       "effects": {
-        "initialMp": 5,
-        "maxMp": 4,
-        "maxHand": -1
+        "initialMp": 4
       },
-      "description": "最初のMP+5・MPの上限+4。手札の上限−1"
+      "description": "最初のMP+4"
     },
     "deepVessel": {
       "name": "大きな器",
@@ -160,13 +145,13 @@
         "manaSpring"
       ],
       "effects": {
-        "coinPerTurn": 1,
-        "castleHp": -6
+        "maxMp": 4,
+        "initialMp": 2
       },
-      "description": "自分のターンの始めにもらうコイン+1。城HP−6"
+      "description": "MPの上限+4・最初のMP+2"
     },
-    "archmage": {
-      "name": "大魔導",
+    "alchemy": {
+      "name": "錬金術",
       "branch": "mana",
       "tier": 3,
       "cost": 3,
@@ -174,21 +159,18 @@
         "deepVessel"
       ],
       "effects": {
-        "maxMp": 8,
-        "initialMp": 8,
-        "maxHand": 2,
-        "castleHp": -10
+        "coinPerTurn": 1
       },
-      "description": "MPの上限+8・最初のMP+8・手札の上限+2（ためて一気に使う）。城HP−10"
+      "description": "自分のターンの始めにもらうコイン+1"
     }
   },
   "presets": {
     "blade": {
       "name": "攻め（剣を極める）",
       "nodes": [
-        "keenBlade",
         "siegecraft",
-        "warcry"
+        "warcry",
+        "keenBlade"
       ]
     },
     "shield": {
@@ -212,17 +194,17 @@
       "nodes": [
         "manaSpring",
         "deepVessel",
-        "archmage"
+        "alchemy"
       ]
     },
     "hybrid": {
       "name": "まんべんなく",
       "nodes": [
-        "keenBlade",
+        "siegecraft",
         "stoneWall",
         "chaosEye",
         "manaSpring",
-        "resonance"
+        "stronghold"
       ]
     }
   }

@@ -32,7 +32,7 @@ const posInt = (v) => Number.isInteger(v) && v > 0;
 /**
  * スキルツリーのデータのチェック。間違っていれば Error を投げる（Setup.js と同じ流儀：どこが・どう直すかを書く）。
  * 形：{ points, branches: { <id>: { name } }, nodes: { <id>: { name, branch, tier, cost, requires?, effects, description? } }, presets?: { <id>: { name, nodes } } }
- * - どのノードにも長所（よい向きの効果）と短所（悪い向きの効果）が両方ある（桜井流「どのカードにも長所と短所」）
+ * - どのノードにも効果が1つ以上ある。マイナスの値（短所）も書けるが、必須ではない（人間の決定：クラシックは短所なし・ポイントだけで制限する）
  * - requires は同じツリーのノード。輪にならない
  * - presets（おすすめのビルド）は、それ自体が決まりに合う
  */
@@ -56,22 +56,20 @@ export function validateSkillTree(tree) {
       throw new Error(`${w}: requires（先に取るノード）は、ほかのノードのIDの配列にしてください`);
     }
     if (!isObj(n.effects)) throw new Error(`${w}: effects（効果）を { キー: 値 } で書いてください`);
-    let good = 0;
-    let bad = 0;
+    if (Object.keys(n.effects).length === 0) throw new Error(`${w}: effects（効果）を1つ以上書いてください`);
     for (const [key, v] of Object.entries(n.effects)) {
       const kind = SKILL_EFFECTS[key];
       if (!kind) throw new Error(`${w}: effects の "${key}" は知らない効果です（${Object.keys(SKILL_EFFECTS).join(' / ')}）`);
       if (kind === 'flag') {
         if (v !== true) throw new Error(`${w}: effects.${key} は true だけ書けます`);
-        good += 1;
-      } else {
-        if (!Number.isInteger(v) || v === 0) throw new Error(`${w}: effects.${key} は0でない整数にしてください（マイナスは短所）`);
-        if (v > 0) good += 1;
-        else bad += 1;
+      } else if (!Number.isInteger(v) || v === 0) {
+        throw new Error(`${w}: effects.${key} は0でない整数にしてください（マイナスも書ける。今のクラシックは強化だけ）`);
       }
     }
-    if (good === 0 || bad === 0) throw new Error(`${w}: 長所（プラスの効果）と短所（マイナスの効果）を両方書いてください`);
   }
+  // 上位互換のノードを作らない：効果がほかのノードをすべて含み（同じか大きい）、コストが同じか安いノードはエラー
+  const [better] = dominatedPairs(tree);
+  if (better) throw new Error(`${where}: "${better[0]}" は "${better[1]}" の上位互換です（効果がすべて同じか大きく、コストが同じか安い）`);
   // requires が輪になっていないか（たどって自分に戻らない）
   const visiting = new Set();
   const done = new Set();
@@ -93,6 +91,24 @@ export function validateSkillTree(tree) {
       if (!check.ok) throw new Error(`${where}: presets の "${id}" が決まりに合いません：${check.reason}`);
     }
   }
+}
+
+/**
+ * 上位互換の組 [[よい方, 悪い方], ...]。a の効果がすべて b 以上で（flag は true を1と数える）、
+ * どれかが大きいかコストが安く、コストが b 以下なら、a は b の上位互換
+ */
+export function dominatedPairs(tree) {
+  const keys = Object.keys(SKILL_EFFECTS);
+  const val = (n, k) => (SKILL_EFFECTS[k] === 'flag' ? (n.effects[k] ? 1 : 0) : n.effects[k] ?? 0);
+  const out = [];
+  for (const [a, na] of Object.entries(tree.nodes)) {
+    for (const [b, nb] of Object.entries(tree.nodes)) {
+      if (a === b || na.cost > nb.cost) continue;
+      if (!keys.every((k) => val(na, k) >= val(nb, k))) continue;
+      if (keys.some((k) => val(na, k) > val(nb, k)) || na.cost < nb.cost) out.push([a, b]);
+    }
+  }
+  return out;
 }
 
 /**
