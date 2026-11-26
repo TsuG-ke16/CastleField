@@ -1,0 +1,13 @@
+{
+  "mode": "classic",
+  "seed": 20261126,
+  "games": 1000,
+  "workers": 4,
+  "maxTurns": 1000,
+  "maxEvents": 2000,
+  "timeout": 10000,
+  "sides": [
+    {"label": "Smart", "strategy": "smart", "build": []},
+    {"label": "Random", "strategy": "random", "build": []}
+  ]
+}

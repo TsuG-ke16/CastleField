@@ -37,3 +37,7 @@ node js/ui/build-precache.js    # 配るファイルを変えたとき（オフ�
 ## 作り方
 
 2人で開発しています。ロジック（`js/game/`・`data/`・`tests/`・`server/`）と画面（`index.html`・`css/`・`js/ui/`・`js/main.js`・`assets/`）で担当を分け、`main` へはPRと相手の承認で入れます。詳しくは `CLAUDE.md` の「チーム開発のルール」。
+
+## Castle Field QA
+
+既存戦闘エンジンとCPUを使う自動対戦・回帰検証・HTMLダッシュボードは [tools/castle-qa/README.md](tools/castle-qa/README.md) を参照。追加npm依存はありません。

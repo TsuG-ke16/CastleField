@@ -12,3 +12,6 @@ data-store/
 *.db-wal
 *.db-shm
 .env
+
+# Castle Field QA generated reports and traces
+/qa-results/
