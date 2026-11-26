@@ -4,7 +4,6 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { readFileSync, mkdirSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { pathToFileURL } from 'node:url';
 const { chromium } = createRequire(import.meta.url)('playwright');
 const root = resolve(process.argv[2] ?? 'qa-results');
 const artifacts = join(root, 'dashboard');
@@ -19,7 +18,11 @@ try {
   for (const name of ['classic', 'matrix', 'factions']) {
    const dir = join(root, name), data = JSON.parse(readFileSync(join(dir, 'summary.json')));
    const rows = data.rows ?? [data];
-   await page.goto(pathToFileURL(join(dir, 'report.html')).href);
+   // setContent exercises the self-contained HTML without file:// access,
+   // which managed Chromium policies may block.
+   if (process.env.QA_DASHBOARD_URL) await page.goto(`${process.env.QA_DASHBOARD_URL.replace(/\/$/, '')}/${name}/report.html`);
+   else { await page.goto('about:blank'); await page.setContent(readFileSync(join(dir, 'report.html'), 'utf8')); }
+   assert.equal(await page.locator('script[src],link[href],img[src]').count(), 0);
    await page.waitForSelector('#body tr');
    assert.equal(await page.locator('#body tr').count(), rows.length);
    assert.equal(await page.locator('#tiles .tile').first().locator('b').textContent(), String(data.attempted));
