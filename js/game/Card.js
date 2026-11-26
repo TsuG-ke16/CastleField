@@ -136,7 +136,8 @@ export class Card {
   }
 
   toState() {
-    return { cardId: this.cardId, type: this.type };
+    // スキルの一時コピー（js/game/skills/Cards.js）だけ copy: true を足す（ほかのカードの形は変えない）
+    return this.skillCopy ? { cardId: this.cardId, type: this.type, copy: true } : { cardId: this.cardId, type: this.type };
   }
 
   /**

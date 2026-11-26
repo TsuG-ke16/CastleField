@@ -45,7 +45,9 @@ import { initHolograms } from './ui/Hologram.js';
 import { initCardZoom } from './ui/CardZoom.js';
 import { checkCostDeck } from './game/Setup.js';
 import { musicScene } from './ui/musicScene.js';
-import { STRATEGIES, mulliganChoice } from './game/strategies.js';
+import { STRATEGIES, mulliganChoice, chooseSkillBuild } from './game/strategies.js';
+import { SkillTreeView } from './ui/SkillTreeView.js';
+import { SkillBattleView } from './ui/SkillBattleView.js';
 import { checkSync } from './ui/syncCheck.js';
 import { UI_CONFIG } from './ui/config.js';
 import { sound } from './ui/Sound.js';
@@ -121,6 +123,10 @@ let weather = null;  // data/weather.json（読めなければ null：天候な�
 let gameMode = 'kingdom', factionDefinitions = null;
 let elements = null; // 属性の強弱の表（モードの elementsSet。通常モードは null：今までの4属性の輪）
 let reactions = null; // 属性の付着と反応（モードの reactionsSet。通常モードは null：付着・反応なし）
+let skillTree = null; // クラシックのスキルツリー（モードの skillTreeSet。通常モードは null：スキルの画面を出さない）
+let skillTreeView = null; // 対戦前のスキルツリーの画面（js/ui/SkillTreeView.js。クラシックだけ）
+let skillBattle = null;   // 対戦中のスキル表示（js/ui/SkillBattleView.js。クラシックだけ）
+let skillUnsub = null;    // game.observeSkills の解除
 let stages = null;  // data/stages.json（読めなければ null：ステージなし）
 let progressPanel;
 let cardGuide;
@@ -226,7 +232,7 @@ function bootMode() {
   const saved = savedOnlineSession();
   if (saved) return saved.mode ?? URL_MODE ?? 'kingdom';
   let remembered = null;
-  try { if (localStorage.getItem('cf-home-ruleset') === 'factions') remembered = 'factions'; } catch { /* optional */ }
+  try { const r = localStorage.getItem('cf-home-ruleset'); if (r === 'factions' || r === 'classic') remembered = r; } catch { /* optional */ }
   return URL_MODE ?? remembered ?? 'kingdom';
 }
 
@@ -244,7 +250,7 @@ async function boot() {
     gameMode = bootMode();
     const selected = await loadHomeRuleSet(gameMode, loadJson);
     cards = selected.cards; rules = selected.rules; elements=selected.elements; reactions=selected.reactions;
-    factionDefinitions=selected.factions; factionCardSets=selected.cardSets;
+    factionDefinitions=selected.factions; factionCardSets=selected.cardSets; skillTree=selected.skillTree ?? null;
     [monsters, upgrades, rarities, castles, decks, weather, stamps, stages] = await Promise.all([
       loadOptionalJson('data/monsters.json'), loadOptionalJson('data/upgrades.json'), loadOptionalJson('data/rarities.json'), loadOptionalJson('data/castles.json'), loadOptionalJson('data/decks.json'), loadOptionalJson('data/weather.json'), loadOptionalJson('data/stamps.json'), loadOptionalJson('data/stages.json'),
     ]);
@@ -284,7 +290,7 @@ async function boot() {
     onCastleTap: (p) => toast(`${playerName(p.playerId)} · ${castles?.[p.castleType]?.name ?? '城'} · HP ${p.castleHp}/${p.castleMaxHp}`, 'info'),
     onSoldierTap: (s) => toast(soldierInfo(s, { cards, rules, viewerId }), 'info'),
     onMonsterTap: (m) => toast(monsterInfo(m, { monsters }), 'info'),
-    onTargetTap: (target) => { if (!busy) targeting.tap(target); },
+    onTargetTap: (target) => { if (!busy && !skillBattle?.tap(target)) targeting.tap(target); },
   });
   const previewDeck = (root, deck) => renderDeckPreview(root, deck, cards, rarities);
   const savedDecks = () => loadDecks().slots.map((deck, slot) => deck && ({
@@ -297,6 +303,7 @@ async function boot() {
     onChat: () => chat?.toggle(), getUnread: () => chat?.unread ?? 0,
     onEditDeck: openDeckEditor, savedDecks, presetDeck, previewDeck,
     factionInfo: gameMode === 'factions' ? { factions: factionDefinitions, cardSets: factionCardSets, rules } : null,
+    onSkills: skillTree ? () => openSkillTree({ title: 'スキルツリー（部屋の自分の席）', doneLabel: 'この席のスキルにする', onDone: (build) => sendSeatSkills(build) }) : null,
   });
   initHolograms(el.app);
   cardZoom = initCardZoom({ root: el.app, cards, rarities, rules });
@@ -312,6 +319,15 @@ async function boot() {
   renderer.cosmetics = cosmetics; anim.cosmetics = cosmetics;
   if (stamps?.length) chat = new ChatView({ stamps, button: $('chat-open'), root: el.app, maxLength: CHAT_MAX_LENGTH });
   targeting = new Targeting({ renderer, handView, onChoose: (cardId, target) => doPlay(cardId, target) });
+  if (skillTree) {
+    // クラシック：対戦前のスキルツリーと、対戦中のスキル表示（通常モード・4陣営では作らない）
+    skillTreeView = new SkillTreeView({ tree: skillTree, toast });
+    skillBattle = new SkillBattleView({
+      tree: skillTree, cards, renderer, toast,
+      canAct: () => !busy && !sending,
+      onRun: (actionId, args) => act(() => session.skillAction(viewerId, actionId, args)),
+    });
+  }
   if (upgrades && Object.keys(upgrades).length) {
     upgradePanel = new UpgradePanel({ upgrades, rarities, onBuy: buyUpgrade, onOpen: refreshUpgrades, onDenied: (r) => toast(r, 'info') });
   } else {
@@ -524,10 +540,16 @@ function setupTitle(deckOptions) {
   $('prep-navigation').append($('levels-back'),$('title-back'));
   localSetup.inputs.deck.addEventListener('change',()=>{ $('prep-deck').textContent=localSetup.inputs.deck.selectedOptions[0]?.textContent ?? ''; });
   // ホームの「対戦開始」から開く設定画面（CPUの強さ・同じ端末・合言葉）。「もどる」はホームへ戻る
-  openPlaySetup = (mode) => {
+  openPlaySetup = (mode, { treeDone = false } = {}) => {
     sound.play('tap');
+    // クラシック：先にスキルツリーを選ぶ（「決定」で今までの準備画面へ。「もどる」でホームへ）
+    if (skillTreeView && !treeDone) {
+      home.close();
+      openSkillTree({ doneLabel: 'このスキルで対戦の準備へ', onDone: () => openPlaySetup(mode, { treeDone: true }), onCancel: () => home.open() });
+      return;
+    }
     $('prep-title').textContent = {solo:'ひとりで遊ぶ',online:'カジュアル対戦',local:'同じ端末で遊ぶ'}[mode];
-    $('prep-ruleset').textContent = gameMode === 'factions' ? '4陣営モード' : '通常モード';
+    $('prep-ruleset').textContent = gameMode === 'factions' ? '4陣営モード' : gameMode === 'classic' ? `クラシック・スキル${skillTreeView?.currentBuild().ids.length ?? 0}個` : '通常モード';
     $('prep-deck').textContent = home.currentDeckInfo?.name ?? '';
     $('levels-back').hidden = mode === 'online'; $('title-back').hidden = mode !== 'online';
     home.close();
@@ -600,6 +622,7 @@ function showTitle() {
   anim.endSkip();
   queue = [];
   cancelTargeting();
+  skillBattle?.reset();
   upgradePanel?.close();
   el.result.hidden = true;
   el.handover.hidden = true;
@@ -692,6 +715,19 @@ async function surrender() {
   }
 }
 
+/** クラシック：スキルツリーの画面を開く */
+function openSkillTree(options) {
+  if (!skillTreeView) return;
+  skillTreeView.open(options);
+}
+
+/** クラシック（オンライン）：部屋の自分の席のスキルを送る（サーバーの setSeat が本番の検証で確かめる） */
+async function sendSeatSkills(build) {
+  if (!session?.online) return;
+  const res = await session.act('setSeat', [{ skills: build }]);
+  if (!res?.ok) toast(res?.reason ?? 'スキルを部屋に送れませんでした');
+}
+
 function openHelp() {
   $('help-tutorial').textContent=session?'今の試合を終えて操作を練習する':'案内つきで操作を練習する';
   sound.play('tap');
@@ -713,6 +749,7 @@ function mulberry32(a) {
 
 function stopLocal() {
   stopChat();
+  skillUnsub?.(); skillUnsub = null;
   for (const [type, h] of listeners.splice(0)) game?.off(type, h);
   game = null;
   cpu = null;
@@ -742,6 +779,7 @@ function resetForNewGame() {
   el.rematch.disabled = false;
   rematchSent = false;
   knownCards = new Map();
+  skillBattle?.reset();
   model = null; // 前の試合の値（捨てる枚数・決着の理由）を持ちこさない
 }
 
@@ -831,6 +869,17 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
       home.faction=selected;
       try { localStorage.setItem('cf-home-faction',selected); } catch { /* optional */ }
     }
+    if (skillTree) {
+      // クラシック：自分の席は保存したビルド、CPU は戦い方に合わせたビルド（strategies.js の chooseSkillBuild）。
+      // 同じ端末の2人以上は、全員に保存したビルドを使う（席ごとの選択は未対応）
+      opts.skillTree = structuredClone(skillTree);
+      const count = opts.rules.playerCount ?? 2;
+      const humanSeat = cpuLevel ? Math.floor(mulberry32(seed ^ 0x9e3779b9)() * count) : 0; // 下の humanId と同じ求め方
+      const mine = skillTreeView.currentBuild();
+      opts.setup = { ...(opts.setup ?? {}), skills: Array.from({ length: count }, (_, i) => (cpuLevel && i !== humanSeat
+        ? chooseSkillBuild(skillTree, mulberry32((seed ^ 0x5c111) + i), CPU_LEVELS[cpuLevel]?.strategy ?? 'none')
+        : structuredClone(mine))) };
+    }
     game = new Game(opts);
   } catch (err) {
     console.error(err);
@@ -849,7 +898,7 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
     setPlayerNames({ [humanId]: myName() || 'あなた', ...Object.fromEntries(cpuIds.map((id,i)=>[id,`CPU${cpuIds.length>1?i+1:''}（${CPU_LEVELS[cpuLevel].name}）`])) });
   }
   tutorial.close();
-  if (gameMode !== 'factions' && cpu && (replayTutorial || tutorial.pending())) {
+  if (gameMode !== 'factions' && gameMode !== 'classic' && cpu && (replayTutorial || tutorial.pending())) {
     const hand = game.getState(cpu.humanId).players[cpu.humanId].hand;
     game.debugSetHand(cpu.humanId, ['infantry', ...hand.slice(1).map(c => c.type)]);
     tutorial.start(cpu.humanId);
@@ -869,6 +918,10 @@ async function startLocal(seedOverride, cpuLevel = null, options = null) {
 
   // 開始前の状態を表示用に覚えてから start() する。p1 の turnStarted で最初の目隠しが出る
   viewerId = cpu ? cpu.humanId : null;
+  if (skillBattle) {
+    skillBattle.viewerId = viewerId;
+    skillUnsub = game.observeSkills((entry) => skillBattle.addLog(entry));
+  }
   cosmetics.setLocal(cpu ? [cpu.humanId] : []); // 自分のスキン（CPU・同じ端末のほかの人は標準）
   stopChat();
   if (cpu) startLocalChat();
@@ -956,7 +1009,7 @@ async function joinOnline() {
   room = null;
   connected = true;
   roomPassphrase = pass;
-  const res = await client.join(pass, name, gameMode === 'factions' ? 'factions' : undefined);
+  const res = await client.join(pass, name, gameMode === 'factions' || gameMode === 'classic' ? gameMode : undefined);
   el.titleJoin.disabled = false;
   if (session !== client) return; // 待っているあいだに「もどる」を押した
   if (!res.ok) {
@@ -971,6 +1024,8 @@ async function joinOnline() {
   saveOnlineSession(client);
   // 4陣営：ホームで選んだ陣営を、部屋の自分の席の陣営にする（部屋でも変えられる）
   if (gameMode === 'factions' && factionDefinitions?.[home.faction]) client.act('setSeat', [{ faction: home.faction }]);
+  // クラシック：対戦前に選んだスキル（保存したビルド）を、部屋の自分の席のスキルにする（部屋でも変えられる）
+  if (gameMode === 'classic' && skillTreeView) sendSeatSkills(skillTreeView.currentBuild());
   setTitleWaiting(true);
   if (!room?.started) el.titleStatus.textContent = '相手を待っています… 同じ合言葉を入れてもらってください';
 }
@@ -1407,6 +1462,7 @@ async function settle({ check = true } = {}) {
   renderer.setCurrentPlayer(st.phase === 'gameOver' ? null : st.currentPlayer);
   const me = st.players[viewerId];
   battleLayout.update(st, viewerId);
+  skillBattle?.update(st, viewerId, session);
   // 手札の表示は並べ替えてあるので、並びではなく、同じカードがそろっているかで比べる
   if (!handView.sameCards(me.hand)) handView.render(me.hand);
   const blocked = playability(st);
@@ -1653,7 +1709,13 @@ function playCard(cardId) {
 /** カードを出す（target を省略すると、対象が1つのときだけ出せる） */
 async function doPlay(cardId, target) {
   const defending = session?.getState(viewerId)?.phase === 'defend';
-  const res = await act(() => (defending ? session.defend(cardId, target) : session.playCard(cardId, target)));
+  // クラシック：スキルの選択（HP置換・血の刃など）があるカードは、使う前に聞く（キャンセルなら出さない）
+  let skillOptions;
+  if (!defending && skillBattle && !busy && !sending) {
+    skillOptions = await skillBattle.chooseCardOptions(cardId, knownCards.get(cardId)?.type, session);
+    if (skillOptions === null) { targeting.cancel(); return; }
+  }
+  const res = await act(() => (defending ? session.defend(cardId, target) : skillOptions !== undefined ? session.playCard(cardId, target, skillOptions) : session.playCard(cardId, target)));
   if (!res) return;
   if (!res.ok) {
     if (res.needsTarget) {

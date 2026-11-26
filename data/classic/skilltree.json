@@ -1,407 +1,4478 @@
 {
-  "_note": "クラシックのスキルツリー（数値はすべて仮。docs/classic-skilltree.md）。試合の前に points のポイントでノードを選ぶ（両者同じ・試合中は育たない）。cost の合計が points 以下。requires のノードは全部、requiresAny のノードはどれか1つを先に取る。人間の決定で、ノードは短所のない強化だけ（効果を小さくし、ポイントとコストで制限する）。奥義（3段目・コスト3）は、ポイントの都合で1つしか取れない。キーの意味は js/game/SkillTree.js の SKILL_EFFECTS。presets はおすすめのビルド（CPU とはじめての人向け）",
-  "points": 7,
-  "branches": {
-    "blade": {
-      "name": "剣（攻め）"
-    },
-    "troops": {
-      "name": "兵士（隊列）"
-    },
-    "magic": {
-      "name": "魔法（魔術）"
-    },
-    "shield": {
-      "name": "盾（守り）"
-    },
-    "heal": {
-      "name": "回復（癒し）"
-    },
-    "element": {
-      "name": "属性（反応）"
-    },
-    "mana": {
-      "name": "魔力（経済）"
+  "_note": "クラシックの200ノードのスキルツリー（仕様 docs/skilltree-200-spec.md・要約 docs/classic-skilltree.md）。このファイルは tools/build-skilltree.mjs が作る（手で直さない）。全ノード1pt・budget pt まで・奥義は1個まで。START から取得済みノードを通じて辺（edges の系統内テンプレート＋横断ノードの ends）でつながるノードを取れる。requires は接続とは別の必須。handler は効果ハンドラのID、params は効果の数値（初期値・未調整）。layout は画面用の座標",
+  "version": 3,
+  "budget": 12,
+  "start": {
+    "id": "START",
+    "name": "スタート",
+    "cost": 0,
+    "layout": {
+      "x": 0,
+      "y": 0
     }
   },
-  "nodes": {
-    "siegecraft": {
-      "name": "攻城術",
-      "branch": "blade",
-      "tier": 1,
+  "edges": [
+    [
+      "START",
+      "01"
+    ],
+    [
+      "01",
+      "02"
+    ],
+    [
+      "01",
+      "03"
+    ],
+    [
+      "02",
+      "04"
+    ],
+    [
+      "03",
+      "05"
+    ],
+    [
+      "04",
+      "05"
+    ],
+    [
+      "04",
+      "06"
+    ],
+    [
+      "05",
+      "07"
+    ],
+    [
+      "06",
+      "08"
+    ],
+    [
+      "07",
+      "08"
+    ]
+  ],
+  "ring": [
+    "C",
+    "M",
+    "E",
+    "S",
+    "T",
+    "P",
+    "H",
+    "I",
+    "V",
+    "G",
+    "B",
+    "R",
+    "D",
+    "Q",
+    "U",
+    "K",
+    "F",
+    "A"
+  ],
+  "center": "L",
+  "nodeShapes": {
+    "start": "star",
+    "normal": "circle",
+    "ultimate": "hexagon",
+    "cross": "diamond"
+  },
+  "groups": {
+    "C": {
+      "name": "会心",
+      "ring": 0,
+      "color": "#e0533d",
+      "glyph": "blade"
+    },
+    "M": {
+      "name": "魔法",
+      "ring": 1,
+      "color": "#5b6ee1",
+      "glyph": "star"
+    },
+    "E": {
+      "name": "属性",
+      "ring": 2,
+      "color": "#3fb6c9",
+      "glyph": "drop"
+    },
+    "S": {
+      "name": "状態異常",
+      "ring": 3,
+      "color": "#7cb342",
+      "glyph": "skull"
+    },
+    "T": {
+      "name": "時間",
+      "ring": 4,
+      "color": "#8e7cc3",
+      "glyph": "hourglass"
+    },
+    "P": {
+      "name": "魔力",
+      "ring": 5,
+      "color": "#3d7fe0",
+      "glyph": "crystal"
+    },
+    "H": {
+      "name": "手札",
+      "ring": 6,
+      "color": "#c9a03f",
+      "glyph": "card"
+    },
+    "I": {
+      "name": "模倣",
+      "ring": 7,
+      "color": "#9e9e9e",
+      "glyph": "mirror"
+    },
+    "V": {
+      "name": "召喚",
+      "ring": 8,
+      "color": "#4db6ac",
+      "glyph": "portal"
+    },
+    "G": {
+      "name": "墓地",
+      "ring": 9,
+      "color": "#5d4e75",
+      "glyph": "tomb"
+    },
+    "B": {
+      "name": "血魔術",
+      "ring": 10,
+      "color": "#b71c1c",
+      "glyph": "blood"
+    },
+    "R": {
+      "name": "回復",
+      "ring": 11,
+      "color": "#66bb6a",
+      "glyph": "cross"
+    },
+    "D": {
+      "name": "防御",
+      "ring": 12,
+      "color": "#78909c",
+      "glyph": "shield"
+    },
+    "Q": {
+      "name": "闘志",
+      "ring": 13,
+      "color": "#ff8f00",
+      "glyph": "flame"
+    },
+    "U": {
+      "name": "兵士",
+      "ring": 14,
+      "color": "#a1887f",
+      "glyph": "helmet"
+    },
+    "K": {
+      "name": "戦術",
+      "ring": 15,
+      "color": "#6d8b3a",
+      "glyph": "flag"
+    },
+    "F": {
+      "name": "兵器・罠",
+      "ring": 16,
+      "color": "#8d6e63",
+      "glyph": "gear"
+    },
+    "A": {
+      "name": "攻城",
+      "ring": 17,
+      "color": "#d84315",
+      "glyph": "ram"
+    },
+    "L": {
+      "name": "幸運",
+      "ring": null,
+      "color": "#ffd54f",
+      "glyph": "clover"
+    }
+  },
+  "crossGroup": {
+    "id": "X",
+    "name": "横断",
+    "color": "#ffffff",
+    "glyph": "bridge"
+  },
+  "nodes": [
+    {
+      "id": "C01",
+      "group": "C",
+      "name": "会心の心得",
+      "desc": "兵士の通常攻撃・敵兵士への攻撃魔法の直接命中に会心率15%、倍率1.5を解放する。",
       "cost": 1,
-      "effects": {
-        "castleSpell": 2
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "C01",
+      "params": {
+        "critChance": 0.15,
+        "critMultiplier": 1.5
       },
-      "description": "城への魔法が城に当たると+2（先頭の兵士に当たったときは増えない）"
+      "layout": {
+        "x": 0,
+        "y": -340
+      }
     },
-    "warcry": {
-      "name": "鬨の声",
-      "branch": "blade",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "siegecraft"
-      ],
-      "effects": {
-        "initialHand": 1,
-        "initialMp": 1
-      },
-      "description": "最初の手札+1・最初のMP+1"
-    },
-    "keenBlade": {
-      "name": "必殺の号令",
-      "branch": "blade",
-      "tier": 3,
-      "cost": 3,
-      "requires": [
-        "warcry"
-      ],
-      "effects": {
-        "castleSpell": 3,
-        "initialHand": 1
-      },
-      "description": "城への魔法が城に当たるとさらに+3（攻城術と合わせて+5）・最初の手札さらに+1（奥義）"
-    },
-    "reinforce": {
-      "name": "増援",
-      "branch": "troops",
-      "tier": 1,
+    {
+      "id": "C02",
+      "group": "C",
+      "name": "研ぎ澄まされた感覚",
+      "desc": "会心対象の非会心命中ごとに次の会心率+10ポイント（最大+30）、会心でリセット。",
       "cost": 1,
-      "effects": {
-        "soldiersPerTurn": 1
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "C02",
+      "params": {
+        "chanceStep": 0.1,
+        "chanceMax": 0.3
       },
-      "description": "1ターンに出せる兵士+1枚"
+      "layout": {
+        "x": -28,
+        "y": -434
+      }
     },
-    "longbow": {
-      "name": "長弓",
-      "branch": "troops",
-      "tier": 2,
-      "cost": 2,
-      "effects": {
-        "archerRange": 1
-      },
-      "description": "出した弓兵・魔法使いの射程+1",
-      "requires": [
-        "reinforce"
-      ]
-    },
-    "ironArmor": {
-      "name": "隊列の極意",
-      "branch": "troops",
-      "tier": 3,
-      "cost": 3,
-      "requires": [
-        "longbow"
-      ],
-      "effects": {
-        "archerRange": 1,
-        "soldiersPerTurn": 1
-      },
-      "description": "弓兵・魔法使いの射程さらに+1・出せる兵士さらに+1枚（奥義）"
-    },
-    "arcana": {
-      "name": "魔術の心得",
-      "branch": "magic",
-      "tier": 1,
+    {
+      "id": "C03",
+      "group": "C",
+      "name": "致命の一撃",
+      "desc": "会心倍率+0.3（加算）。",
       "cost": 1,
-      "effects": {
-        "spellDamage": 1
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "C03",
+      "params": {
+        "multiplierAdd": 0.3
       },
-      "description": "兵士へのダメージの魔法（ルミナ・ホーリーレイ・シャドウ・カオスパルス）+1"
+      "layout": {
+        "x": 28,
+        "y": -434
+      }
     },
-    "deepVessel": {
-      "name": "大きな器",
-      "branch": "magic",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "arcana"
-      ],
-      "effects": {
-        "maxMp": 3,
-        "initialMp": 1
-      },
-      "description": "MPの上限+3・最初のMP+1"
-    },
-    "archmagic": {
-      "name": "大魔術",
-      "branch": "magic",
-      "tier": 3,
-      "cost": 3,
-      "requires": [
-        "deepVessel"
-      ],
-      "effects": {
-        "spellDamage": 1,
-        "maxMp": 2
-      },
-      "description": "兵士へのダメージの魔法さらに+1（心得と合わせて+2）・MPの上限+2（奥義）"
-    },
-    "stoneWall": {
-      "name": "石垣",
-      "branch": "shield",
-      "tier": 1,
+    {
+      "id": "C04",
+      "group": "C",
+      "name": "深い傷跡",
+      "desc": "直接会心で生存した敵兵士に出血2ターンを付与。",
       "cost": 1,
-      "effects": {
-        "armor": 4
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "C04",
+      "params": {
+        "status": "bleed",
+        "turns": 2
       },
-      "description": "最初から城壁4"
+      "layout": {
+        "x": -34,
+        "y": -529
+      }
     },
-    "stronghold": {
-      "name": "堅城",
-      "branch": "shield",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "stoneWall"
-      ],
-      "effects": {
-        "castleHp": 3
-      },
-      "description": "城HP+3"
-    },
-    "bastion": {
-      "name": "不落の砦",
-      "branch": "shield",
-      "tier": 3,
-      "cost": 3,
-      "requires": [
-        "stronghold"
-      ],
-      "effects": {
-        "castleHp": 3,
-        "armor": 3
-      },
-      "description": "城HP+3・城壁+3（奥義）"
-    },
-    "prayer": {
-      "name": "癒しの祈り",
-      "branch": "heal",
-      "tier": 1,
+    {
+      "id": "C05",
+      "group": "C",
+      "name": "処刑人",
+      "desc": "命中直前にHP20%以下の敵兵士への会心対象攻撃を確定会心にする。",
       "cost": 1,
-      "effects": {
-        "healBonus": 1
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "C05",
+      "params": {
+        "hpRatio": 0.2
       },
-      "description": "城を回復する魔法（小回復・ヒール）の回復量+1"
+      "layout": {
+        "x": 34,
+        "y": -529
+      }
     },
-    "mending": {
-      "name": "城壁の修繕",
-      "branch": "heal",
-      "tier": 2,
-      "cost": 2,
+    {
+      "id": "C06",
+      "group": "C",
+      "name": "追撃",
+      "desc": "直接会心時20%で同じ敵へ威力50%の追加攻撃、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "C06",
+      "params": {
+        "chance": 0.2,
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -40,
+        "y": -624
+      }
+    },
+    {
+      "id": "C07",
+      "group": "C",
+      "name": "会心の余韻",
+      "desc": "直接会心で敵兵士を倒すとSP+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "C07",
+      "params": {
+        "sp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 40,
+        "y": -624
+      }
+    },
+    {
+      "id": "C08",
+      "group": "C",
+      "name": "殺戮の連鎖",
+      "desc": "会心で敵兵士を倒すと次の会心対象命中を確定会心にする。獲得は各自ターン1回、非累積。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "C08",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 0,
+        "y": -720
+      }
+    },
+    {
+      "id": "M01",
+      "group": "M",
+      "name": "魔力還元",
+      "desc": "攻撃魔法の直接ダメージで敵兵士を倒すとMP+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "M01",
+      "params": {
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 116,
+        "y": -319
+      }
+    },
+    {
+      "id": "M02",
+      "group": "M",
+      "name": "魔法のやまびこ",
+      "desc": "手札から使用した単体攻撃魔法が20%で同じ対象へ威力50%で追加発動。追加のMP・カード消費なし。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "M02",
+      "params": {
+        "chance": 0.2,
+        "powerRatio": 0.5
+      },
+      "layout": {
+        "x": 122,
+        "y": -418
+      }
+    },
+    {
+      "id": "M03",
+      "group": "M",
+      "name": "連鎖魔法",
+      "desc": "手札からの単体攻撃魔法の直接ダメージを、対象に隣接する別の敵兵士1体へ25%で伝播。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "M03",
+      "params": {
+        "chance": 0.25
+      },
+      "layout": {
+        "x": 175,
+        "y": -398
+      }
+    },
+    {
+      "id": "M04",
+      "group": "M",
+      "name": "魔力残留",
+      "desc": "攻撃魔法が敵兵士を倒した場合、余剰直接ダメージ（最大3）を隣接する敵兵士1体へ伝播。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "M04",
+      "params": {
+        "overflowMax": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 149,
+        "y": -509
+      }
+    },
+    {
+      "id": "M05",
+      "group": "M",
+      "name": "魔法の複製",
+      "desc": "手札から使用した魔法が5%で捨て札から手札へ戻る。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "M05",
+      "params": {
+        "chance": 0.05,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 213,
+        "y": -485
+      }
+    },
+    {
+      "id": "M06",
+      "group": "M",
+      "name": "魔術の探求",
+      "desc": "手札からの攻撃魔法で敵兵士を倒すと20%で1枚ドロー、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "M06",
+      "params": {
+        "chance": 0.2,
+        "draw": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 176,
+        "y": -600
+      }
+    },
+    {
+      "id": "M07",
+      "group": "M",
+      "name": "詠唱の準備",
+      "desc": "自ターン内で手札から2枚の魔法を使用したら、次の手札からの魔法の消費MP-1（最低1）、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "M07",
+      "params": {
+        "spellsNeeded": 2,
+        "mpReduce": 1,
+        "mpMin": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 251,
+        "y": -572
+      }
+    },
+    {
+      "id": "M08",
+      "group": "M",
+      "name": "多重詠唱",
+      "desc": "M02必須。通常のやまびこ率を50%に変更し、1枚の原魔法あたり追加発動最大3回。各追加発動は前の成功に続く独立判定。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
       "requires": [
-        "prayer"
+        "M02"
       ],
-      "effects": {
-        "armorFloor": 1
+      "handler": "M08",
+      "params": {
+        "chance": 0.5,
+        "maxExtra": 3
       },
-      "description": "自分のターンの始めに、城壁が1より少なければ1まで戻る"
+      "layout": {
+        "x": 246,
+        "y": -677
+      }
     },
-    "regen": {
-      "name": "癒しの聖域",
-      "branch": "heal",
-      "tier": 3,
-      "cost": 3,
-      "requires": [
-        "mending"
-      ],
-      "effects": {
-        "healBonus": 1,
-        "castleHp": 1
-      },
-      "description": "城を回復する魔法さらに+1（祈りと合わせて+2）・城HP+1（奥義）"
-    },
-    "chaosEye": {
+    {
+      "id": "E01",
+      "group": "E",
       "name": "混沌の目",
-      "branch": "element",
-      "tier": 1,
+      "desc": "自ターン開始時、敵兵士1体に使用可能な非無属性からランダムに属性を付着。本人のみ。",
       "cost": 1,
-      "effects": {
-        "randomAttach": true
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "E01",
+      "params": {
+        "targets": 1
       },
-      "description": "自分のターンの始めに、敵の兵士1体にランダムな属性を付着させる（反応の準備）。これを取った人だけが使える"
+      "layout": {
+        "x": 219,
+        "y": -260
+      }
     },
-    "lightDark": {
-      "name": "光と闇の共鳴",
-      "branch": "element",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "chaosEye"
-      ],
-      "effects": {
-        "annihilationDamage": 4
+    {
+      "id": "E02",
+      "group": "E",
+      "name": "元素残留",
+      "desc": "自身が敵兵士へ与える属性付着の消費・持続回数+1。既存付着モデルに従う。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "E02",
+      "params": {
+        "extraCount": 1
       },
-      "description": "自分の攻撃で起きた対消滅（光＋闇）の追加ダメージ+4"
+      "layout": {
+        "x": 257,
+        "y": -351
+      }
     },
-    "blackIce": {
-      "name": "黒氷の呪い",
-      "branch": "element",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "chaosEye"
-      ],
-      "effects": {
-        "blackIceDamage": 4
+    {
+      "id": "E03",
+      "group": "E",
+      "name": "二重付着",
+      "desc": "手札由来の属性付着時20%で異なる属性を順次追加付着、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "E03",
+      "params": {
+        "chance": 0.2,
+        "perTurn": 1
       },
-      "description": "自分の攻撃で起きた黒氷（闇＋氷）の追加ダメージ+4"
+      "layout": {
+        "x": 301,
+        "y": -314
+      }
     },
-    "shatter": {
-      "name": "砕氷の槌",
-      "branch": "element",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "chaosEye"
-      ],
-      "effects": {
-        "shatterDamage": 4
+    {
+      "id": "E04",
+      "group": "E",
+      "name": "反応特化",
+      "desc": "取得時に対消滅+4／黒氷+4／砕氷+4／混沌反応+5から1つ選択。既存反応のダメージへ加算。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "E04",
+      "params": {},
+      "config": {
+        "key": "reaction",
+        "default": "annihilation",
+        "options": [
+          {
+            "id": "annihilation",
+            "name": "対消滅",
+            "amount": 4
+          },
+          {
+            "id": "blackIce",
+            "name": "黒氷",
+            "amount": 4
+          },
+          {
+            "id": "shatter",
+            "name": "砕氷",
+            "amount": 4
+          },
+          {
+            "id": "chaos",
+            "name": "混沌反応",
+            "amount": 5
+          }
+        ]
       },
-      "description": "自分の攻撃で起きた砕氷（氷＋混沌）の追加ダメージ+4"
+      "layout": {
+        "x": 314,
+        "y": -427
+      }
     },
-    "maelstrom": {
-      "name": "混沌の渦",
-      "branch": "element",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "chaosEye"
-      ],
-      "effects": {
-        "chaosDamage": 5
+    {
+      "id": "E05",
+      "group": "E",
+      "name": "元素拡散",
+      "desc": "自分の属性反応時、反応対象の隣接敵兵士1体に反応を起こした側の属性を付着、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "E05",
+      "params": {
+        "perTurn": 1
       },
-      "description": "自分の攻撃で起きた混沌反応の追加ダメージ+5"
+      "layout": {
+        "x": 366,
+        "y": -383
+      }
     },
-    "echo": {
+    {
+      "id": "E06",
+      "group": "E",
+      "name": "元素共鳴",
+      "desc": "自身のダメージ型属性反応の基礎ダメージ+2。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "E06",
+      "params": {
+        "damage": 2
+      },
+      "layout": {
+        "x": 370,
+        "y": -503
+      }
+    },
+    {
+      "id": "E07",
+      "group": "E",
       "name": "残響",
-      "branch": "element",
-      "tier": 3,
-      "cost": 3,
-      "requiresAny": [
-        "lightDark",
-        "blackIce",
-        "shatter",
-        "maelstrom"
-      ],
-      "effects": {
-        "randomAttachTurns": 1,
-        "reactionDamage": 2
-      },
-      "description": "ランダム付着が1回ぶん長く残る・どの反応の追加ダメージも+2（奥義）"
-    },
-    "manaSpring": {
-      "name": "魔力の泉",
-      "branch": "mana",
-      "tier": 1,
+      "desc": "自身が起こす最初の属性反応後、反応前の付着を1回分残す（各自ターン1回）。",
       "cost": 1,
-      "effects": {
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "E07",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 431,
+        "y": -452
+      }
+    },
+    {
+      "id": "E08",
+      "group": "E",
+      "name": "元素暴走",
+      "desc": "自身の反応後、別の敵兵士1体にランダム属性を付着し、既存の反応を誘発できる。各自ターン1回。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "E08",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 463,
+        "y": -552
+      }
+    },
+    {
+      "id": "S01",
+      "group": "S",
+      "name": "感染",
+      "desc": "自身由来の有害状態を持つ敵兵士死亡時、隣接敵兵士1体へ解除可能な状態1種を残存期間1ターンで移す。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "S01",
+      "params": {
+        "turns": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 294,
+        "y": -170
+      }
+    },
+    {
+      "id": "S02",
+      "group": "S",
+      "name": "重症化",
+      "desc": "自身由来の異なる有害状態が2種以上になった敵兵士に固定2ダメージ、対象ごと各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "S02",
+      "params": {
+        "statusCount": 2,
+        "damage": 2
+      },
+      "layout": {
+        "x": 362,
+        "y": -242
+      }
+    },
+    {
+      "id": "S03",
+      "group": "S",
+      "name": "毒の刃",
+      "desc": "自分の手札からの攻撃魔法が敵兵士へ命中すると15%で毒2ターン付与、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "S03",
+      "params": {
+        "chance": 0.15,
+        "status": "poison",
+        "turns": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 390,
+        "y": -192
+      }
+    },
+    {
+      "id": "S04",
+      "group": "S",
+      "name": "傷口の拡大",
+      "desc": "自身の出血tickの基礎ダメージ+1。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "S04",
+      "params": {
+        "damage": 1
+      },
+      "layout": {
+        "x": 441,
+        "y": -294
+      }
+    },
+    {
+      "id": "S05",
+      "group": "S",
+      "name": "燃え広がる炎",
+      "desc": "自身のやけどtick時20%で隣接敵兵士1体へやけど1ターン付与、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "S05",
+      "params": {
+        "chance": 0.2,
+        "status": "burn",
+        "turns": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 475,
+        "y": -235
+      }
+    },
+    {
+      "id": "S06",
+      "group": "S",
+      "name": "衰弱の刻印",
+      "desc": "自身が付与した有害状態を持つ敵兵士への直接攻撃が+1ダメージ、状態数で重複しない。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "S06",
+      "params": {
+        "damage": 1
+      },
+      "layout": {
+        "x": 520,
+        "y": -346
+      }
+    },
+    {
+      "id": "S07",
+      "group": "S",
+      "name": "苦痛の回収",
+      "desc": "自身の有害状態ダメージで敵兵士を倒すとMP+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "S07",
+      "params": {
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 560,
+        "y": -277
+      }
+    },
+    {
+      "id": "S08",
+      "group": "S",
+      "name": "疫病",
+      "desc": "メイン行動中、自身が敵兵士1体に付与した毒・出血の残存tick相当の基礎ダメージを最大8まで即時精算し該当状態を消費。各自ターン1回。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "S08",
+      "params": {
+        "max": 8,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 624,
+        "y": -360
+      }
+    },
+    {
+      "id": "T01",
+      "group": "T",
+      "name": "時間差詠唱",
+      "desc": "手札から使った自ターン最初の単体攻撃魔法を、次の自ターン開始時に元対象へ威力50%で予約発動。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "T01",
+      "params": {
+        "powerRatio": 0.5
+      },
+      "layout": {
+        "x": 335,
+        "y": -59
+      }
+    },
+    {
+      "id": "T02",
+      "group": "T",
+      "name": "停滞",
+      "desc": "自身が敵に付与した有害状態の期限減算時20%で1回だけ減算を見送る。各状態の寿命延長は最大1ターン。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "T02",
+      "params": {
+        "chance": 0.2,
+        "maxExtend": 1
+      },
+      "layout": {
+        "x": 423,
+        "y": -103
+      }
+    },
+    {
+      "id": "T03",
+      "group": "T",
+      "name": "未来への備え",
+      "desc": "自ターン終了時にMPが2以上残っていれば、次の自ターン開始時MP+1。MPの追加支払いなし。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "T03",
+      "params": {
+        "mpThreshold": 2,
+        "mp": 1
+      },
+      "layout": {
+        "x": 432,
+        "y": -47
+      }
+    },
+    {
+      "id": "T04",
+      "group": "T",
+      "name": "先延ばし",
+      "desc": "メイン行動中、味方兵士1体の解除可能な持続ダメージの次の1tickを次回tickへ延期、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "T04",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 515,
+        "y": -125
+      }
+    },
+    {
+      "id": "T05",
+      "group": "T",
+      "name": "時の加速",
+      "desc": "自身の味方に付与した継続回復が発生した後、同じ効果を次の自ターンにもHP1回復として予約、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "T05",
+      "params": {
+        "heal": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 527,
+        "y": -58
+      }
+    },
+    {
+      "id": "T06",
+      "group": "T",
+      "name": "時の錨",
+      "desc": "メイン行動中、次の自ターン開始時に1枚追加ドローを予約、試合中2回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "T06",
+      "params": {
+        "draw": 1,
+        "perMatch": 2
+      },
+      "layout": {
+        "x": 607,
+        "y": -148
+      }
+    },
+    {
+      "id": "T07",
+      "group": "T",
+      "name": "遅延の利得",
+      "desc": "自身の予約魔法が合法に解決されたときMP+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "T07",
+      "params": {
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 621,
+        "y": -69
+      }
+    },
+    {
+      "id": "T08",
+      "group": "T",
+      "name": "時の残響",
+      "desc": "メイン行動中、前の自ターンの最初の手札由来の単体攻撃魔法を元の基礎威力100%で1回再発動（対象を再選択可）、試合中1回。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "T08",
+      "params": {
+        "powerRatio": 1,
+        "perMatch": 1
+      },
+      "layout": {
+        "x": 709,
+        "y": -125
+      }
+    },
+    {
+      "id": "P01",
+      "group": "P",
+      "name": "魔力の泉",
+      "desc": "初期MP+2（上限を超えた分は既存上限で処理）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "P01",
+      "params": {
         "initialMp": 2
       },
-      "description": "最初のMP+2"
+      "layout": {
+        "x": 335,
+        "y": 59
+      }
     },
-    "hunter": {
+    {
+      "id": "P02",
+      "group": "P",
+      "name": "魔力貯蔵",
+      "desc": "MP回復の上限超過分を貯蔵、最大5。P08未取得でも自ターン開始時に1まで空きMPへ自動移送する。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "P02",
+      "params": {
+        "storeMax": 5,
+        "autoTransfer": 1
+      },
+      "layout": {
+        "x": 432,
+        "y": 47
+      }
+    },
+    {
+      "id": "P03",
+      "group": "P",
+      "name": "等価交換",
+      "desc": "自分のメイン行動中、戦闘内コイン1を消費しMP2回復、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "P03",
+      "params": {
+        "coinCost": 1,
+        "mp": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 423,
+        "y": 103
+      }
+    },
+    {
+      "id": "P04",
+      "group": "P",
       "name": "魔物狩り",
-      "branch": "mana",
-      "tier": 2,
-      "cost": 2,
-      "requires": [
-        "manaSpring"
-      ],
-      "effects": {
-        "monsterCoins": 1
+      "desc": "自分の効果・兵士で魔物にとどめを刺すと戦闘内コイン+1、試合中2回まで。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "P04",
+      "params": {
+        "coins": 1,
+        "perMatch": 2
       },
-      "description": "魔物にとどめを刺すと、コインがさらに+1"
+      "layout": {
+        "x": 527,
+        "y": 58
+      }
     },
-    "alchemy": {
-      "name": "魔力の宝物庫",
-      "branch": "mana",
-      "tier": 3,
-      "cost": 3,
-      "requires": [
-        "hunter"
-      ],
-      "effects": {
-        "initialMp": 2,
-        "maxMp": 1
+    {
+      "id": "P05",
+      "group": "P",
+      "name": "魔力節約",
+      "desc": "手札からの有料カード使用宣言時10%でMPコスト-1（最低1）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "P05",
+      "params": {
+        "chance": 0.1,
+        "mpReduce": 1,
+        "mpMin": 1
       },
-      "description": "最初のMP+2・MPの上限+1（奥義）"
+      "layout": {
+        "x": 515,
+        "y": 125
+      }
+    },
+    {
+      "id": "P06",
+      "group": "P",
+      "name": "魔力の奔流",
+      "desc": "使用宣言時のMPが上限なら、その攻撃魔法の直接基礎ダメージ+2。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "P06",
+      "params": {
+        "damage": 2
+      },
+      "layout": {
+        "x": 621,
+        "y": 69
+      }
+    },
+    {
+      "id": "P07",
+      "group": "P",
+      "name": "魔力の器",
+      "desc": "MP上限+2。現在MPは増やさない。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "P07",
+      "params": {
+        "maxMp": 2
+      },
+      "layout": {
+        "x": 607,
+        "y": 148
+      }
+    },
+    {
+      "id": "P08",
+      "group": "P",
+      "name": "魔力覚醒",
+      "desc": "P02必須。自分のメイン行動中、貯蔵MPを空きMP分まで任意に一括移送、各自ターン1回。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [
+        "P02"
+      ],
+      "handler": "P08",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 709,
+        "y": 125
+      }
+    },
+    {
+      "id": "H01",
+      "group": "H",
+      "name": "戦略的準備",
+      "desc": "開始手札から0〜2枚選択し、選択枚数を山札から引いた後に戻したカードを山札へ混ぜる。試合開始時1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "H01",
+      "params": {
+        "maxCards": 2,
+        "perMatch": 1
+      },
+      "layout": {
+        "x": 294,
+        "y": 170
+      }
+    },
+    {
+      "id": "H02",
+      "group": "H",
+      "name": "複製術",
+      "desc": "通常ドローしたカードを10%で一時コピー1枚追加、各自ターン1回。コピーは通常の手札上限に従う。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "H02",
+      "params": {
+        "chance": 0.1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 390,
+        "y": 192
+      }
+    },
+    {
+      "id": "H03",
+      "group": "H",
+      "name": "再利用",
+      "desc": "メイン行動中、捨て札のカード1枚を手札へ戻す。試合中1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "H03",
+      "params": {
+        "perMatch": 1
+      },
+      "layout": {
+        "x": 362,
+        "y": 242
+      }
+    },
+    {
+      "id": "H04",
+      "group": "H",
+      "name": "軍備調達",
+      "desc": "メイン行動中、山札の上から最初の兵士カード1枚を引く。試合中1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "H04",
+      "params": {
+        "perMatch": 1
+      },
+      "layout": {
+        "x": 475,
+        "y": 235
+      }
+    },
+    {
+      "id": "H05",
+      "group": "H",
+      "name": "魔導書",
+      "desc": "メイン行動中、山札の上から最初の魔法カード1枚を引く。試合中1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "H05",
+      "params": {
+        "perMatch": 1
+      },
+      "layout": {
+        "x": 441,
+        "y": 294
+      }
+    },
+    {
+      "id": "H06",
+      "group": "H",
+      "name": "加速思考",
+      "desc": "同一自ターンで手札から3枚目のカードを使うと1枚ドロー、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "H06",
+      "params": {
+        "nthCard": 3,
+        "draw": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 560,
+        "y": 277
+      }
+    },
+    {
+      "id": "H07",
+      "group": "H",
+      "name": "再編成",
+      "desc": "メイン行動中、手札1枚を任意に捨てて1枚ドロー、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "H07",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 520,
+        "y": 346
+      }
+    },
+    {
+      "id": "H08",
+      "group": "H",
+      "name": "運命操作",
+      "desc": "メイン行動中、手札1枚を選び山札から提示した最大3枚のうち1枚と交換。残りは元の順序、各自ターン1回。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "H08",
+      "params": {
+        "reveal": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 624,
+        "y": 360
+      }
+    },
+    {
+      "id": "I01",
+      "group": "I",
+      "name": "盗み見",
+      "desc": "メイン行動中、相手が次に通常ドローする山札先頭1枚を自分だけ確認。共有山札ならその時点の先頭。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "I01",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 219,
+        "y": 260
+      }
+    },
+    {
+      "id": "I02",
+      "group": "I",
+      "name": "魔法模倣",
+      "desc": "敵が手札から使用した単体攻撃魔法を15%で一時コピーとして自分の手札へ追加、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "I02",
+      "params": {
+        "chance": 0.15,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 301,
+        "y": 314
+      }
+    },
+    {
+      "id": "I03",
+      "group": "I",
+      "name": "戦術の模倣",
+      "desc": "敵の手札由来の兵士出撃後20%でその兵士カードの一時コピーを手札へ追加、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "I03",
+      "params": {
+        "chance": 0.2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 257,
+        "y": 351
+      }
+    },
+    {
+      "id": "I04",
+      "group": "I",
+      "name": "借りた力",
+      "desc": "自身の模倣由来カードの使用MP-1（最低1）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "I04",
+      "params": {
+        "mpReduce": 1,
+        "mpMin": 1
+      },
+      "layout": {
+        "x": 366,
+        "y": 383
+      }
+    },
+    {
+      "id": "I05",
+      "group": "I",
+      "name": "対抗詠唱",
+      "desc": "敵が手札から攻撃魔法を使った後、次の自身の攻撃魔法の基礎ダメージ+1、各自ターン1回、非累積。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "I05",
+      "params": {
+        "damage": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 314,
+        "y": 427
+      }
+    },
+    {
+      "id": "I06",
+      "group": "I",
+      "name": "反転の術",
+      "desc": "敵が手札から回復魔法を使った後、次の自身の手札からの回復魔法の回復量+2、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "I06",
+      "params": {
+        "heal": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 431,
+        "y": 452
+      }
+    },
+    {
+      "id": "I07",
+      "group": "I",
+      "name": "観察眼",
+      "desc": "敵が手札から3枚のカードを使用したら自身の次の自ターン開始に1枚追加ドロー、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "I07",
+      "params": {
+        "cardsNeeded": 3,
+        "draw": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 370,
+        "y": 503
+      }
+    },
+    {
+      "id": "I08",
+      "group": "I",
+      "name": "鏡像",
+      "desc": "メイン行動中、敵兵士1体の弱体トークンを自陣の合法枠に召喚。試合中1回、固有能力なし。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "I08",
+      "params": {
+        "perMatch": 1
+      },
+      "layout": {
+        "x": 463,
+        "y": 552
+      }
+    },
+    {
+      "id": "V01",
+      "group": "V",
+      "name": "分身",
+      "desc": "手札由来の兵士出撃時15%で空き枠に同種の弱体トークンを召喚、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "V01",
+      "params": {
+        "chance": 0.15,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 116,
+        "y": 319
+      }
+    },
+    {
+      "id": "V02",
+      "group": "V",
+      "name": "使い魔",
+      "desc": "手札から3枚の魔法を使用するごとに使い魔1体を空き枠に召喚。各自ターン1回、カウンタは試合中継続。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "V02",
+      "params": {
+        "spellsNeeded": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 175,
+        "y": 398
+      }
+    },
+    {
+      "id": "V03",
+      "group": "V",
+      "name": "召喚の盾",
+      "desc": "自分が召喚したトークンにシールド1。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "V03",
+      "params": {
+        "shield": 1
+      },
+      "layout": {
+        "x": 122,
+        "y": 418
+      }
+    },
+    {
+      "id": "V04",
+      "group": "V",
+      "name": "群れの力",
+      "desc": "自分のトークンが盤上に2体以上いれば、トークンの通常攻撃の基礎ダメージ+1。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "V04",
+      "params": {
+        "tokensNeeded": 2,
+        "damage": 1
+      },
+      "layout": {
+        "x": 213,
+        "y": 485
+      }
+    },
+    {
+      "id": "V05",
+      "group": "V",
+      "name": "送還",
+      "desc": "メイン行動中、味方トークン1体を消滅させMP+1。死亡扱いにしない。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "V05",
+      "params": {
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 149,
+        "y": 509
+      }
+    },
+    {
+      "id": "V06",
+      "group": "V",
+      "name": "契約更新",
+      "desc": "味方トークンが敵の攻撃で消滅した場合20%で次の自ターン開始時に使い魔を予約召喚。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "V06",
+      "params": {
+        "chance": 0.2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 251,
+        "y": 572
+      }
+    },
+    {
+      "id": "V07",
+      "group": "V",
+      "name": "召喚の門",
+      "desc": "メイン行動中、MP3で使い魔1体を召喚。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "V07",
+      "params": {
+        "mpCost": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 176,
+        "y": 600
+      }
+    },
+    {
+      "id": "V08",
+      "group": "V",
+      "name": "軍勢の創造",
+      "desc": "分身など元兵士が存在するトークンは安全リストにある元兵士固有能力を1つ継承できる。使い魔は代わりに攻撃力+1。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "V08",
+      "params": {
+        "familiarAttack": 1
+      },
+      "layout": {
+        "x": 246,
+        "y": 677
+      }
+    },
+    {
+      "id": "G01",
+      "group": "G",
+      "name": "死の爆発",
+      "desc": "味方兵士死亡時、死亡位置に隣接する敵兵士へ固定2ダメージ、各自ターン合計2回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "G01",
+      "params": {
+        "damage": 2,
+        "perTurn": 2
+      },
+      "layout": {
+        "x": 0,
+        "y": 340
+      }
+    },
+    {
+      "id": "G02",
+      "group": "G",
+      "name": "魂の回収",
+      "desc": "味方の非トークン兵士死亡時、魂+1、最大6。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "G02",
+      "params": {
+        "souls": 1,
+        "max": 6
+      },
+      "layout": {
+        "x": 28,
+        "y": 434
+      }
+    },
+    {
+      "id": "G03",
+      "group": "G",
+      "name": "死者の魔力",
+      "desc": "味方兵士死亡時MP+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "G03",
+      "params": {
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -28,
+        "y": 434
+      }
+    },
+    {
+      "id": "G04",
+      "group": "G",
+      "name": "冥界の門",
+      "desc": "メイン行動中、墓地から非トークン兵士カード1枚を手札に戻す。試合中1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "G04",
+      "params": {
+        "perMatch": 1
+      },
+      "layout": {
+        "x": 34,
+        "y": 529
+      }
+    },
+    {
+      "id": "G05",
+      "group": "G",
+      "name": "遺志の継承",
+      "desc": "非トークン味方兵士死亡時、次に手札から出撃する味方兵士へ死亡時攻撃力の25%（最大3）を付与。非累積。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "G05",
+      "params": {
+        "ratio": 0.25,
+        "max": 3
+      },
+      "layout": {
+        "x": -34,
+        "y": 529
+      }
+    },
+    {
+      "id": "G06",
+      "group": "G",
+      "name": "蘇生術",
+      "desc": "G02必須。メイン行動中、魂3で墓地の非トークン兵士1体を最大HP50%で蘇生。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [
+        "G02"
+      ],
+      "handler": "G06",
+      "params": {
+        "soulCost": 3,
+        "hpRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 40,
+        "y": 624
+      }
+    },
+    {
+      "id": "G07",
+      "group": "G",
+      "name": "冥府の護り",
+      "desc": "蘇生した兵士にシールド2。各自ターン1体。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "G07",
+      "params": {
+        "shield": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -40,
+        "y": 624
+      }
+    },
+    {
+      "id": "G08",
+      "group": "G",
+      "name": "死霊術",
+      "desc": "各自ターンの最初の合法な非トークン味方兵士死亡時、死亡処理終了後にHP50%で自動蘇生。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "G08",
+      "params": {
+        "hpRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 0,
+        "y": 720
+      }
+    },
+    {
+      "id": "B01",
+      "group": "B",
+      "name": "血の代償",
+      "desc": "任意で手札からの魔法の不足MP1につき城HP2を支払い使用可能（HPは最低1残す）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "B01",
+      "params": {
+        "hpPerMp": 2,
+        "hpFloor": 1
+      },
+      "layout": {
+        "x": -116,
+        "y": 319
+      }
+    },
+    {
+      "id": "B02",
+      "group": "B",
+      "name": "血の契約",
+      "desc": "メイン行動中、城HP3を任意に支払い1枚ドロー、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "B02",
+      "params": {
+        "hpCost": 3,
+        "draw": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -122,
+        "y": 418
+      }
+    },
+    {
+      "id": "B03",
+      "group": "B",
+      "name": "血の刃",
+      "desc": "手札からの攻撃魔法の使用時、任意に城HP2を追加支払い直接基礎ダメージ+4（1対象のみ）、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "B03",
+      "params": {
+        "hpCost": 2,
+        "damage": 4,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -175,
+        "y": 398
+      }
+    },
+    {
+      "id": "B04",
+      "group": "B",
+      "name": "吸血",
+      "desc": "自身の手札由来の攻撃魔法・兵士通常攻撃による敵兵士の実HP損失の10%を城HPに回復。各自ターン上限3。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "B04",
+      "params": {
+        "ratio": 0.1,
+        "perTurnMax": 3
+      },
+      "layout": {
+        "x": -149,
+        "y": 509
+      }
+    },
+    {
+      "id": "B05",
+      "group": "B",
+      "name": "瀕死の覚醒",
+      "desc": "使用宣言時の城HPが最大HPの30%以下なら手札からの攻撃魔法の基礎ダメージ+20%。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "B05",
+      "params": {
+        "hpRatio": 0.3,
+        "damageRatio": 0.2
+      },
+      "layout": {
+        "x": -213,
+        "y": 485
+      }
+    },
+    {
+      "id": "B06",
+      "group": "B",
+      "name": "血液貯蔵",
+      "desc": "任意支払で実消費した城HP1につき血気+1、最大8。B07未取得でもメイン行動中に血気3でMP1回復可（各自ターン1回）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "B06",
+      "params": {
+        "max": 8,
+        "mpCost": 3,
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -176,
+        "y": 600
+      }
+    },
+    {
+      "id": "B07",
+      "group": "B",
+      "name": "血の解放",
+      "desc": "B06必須。メイン行動中、血気を1〜4消費し合法な敵兵士1体へ同量の固定ダメージ、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [
+        "B06"
+      ],
+      "handler": "B07",
+      "params": {
+        "min": 1,
+        "max": 4,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -251,
+        "y": 572
+      }
+    },
+    {
+      "id": "B08",
+      "group": "B",
+      "name": "血の支配者",
+      "desc": "B01必須。任意で手札からの魔法のMPコストの一部または全部を城HPに置換（MP1=HP1）。血の代償の交換率も1:1へ上書き。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [
+        "B01"
+      ],
+      "handler": "B08",
+      "params": {
+        "hpPerMp": 1
+      },
+      "layout": {
+        "x": -246,
+        "y": 677
+      }
+    },
+    {
+      "id": "R01",
+      "group": "R",
+      "name": "癒しの祈り",
+      "desc": "回復魔法の基礎回復量+1。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "R01",
+      "params": {
+        "heal": 1
+      },
+      "layout": {
+        "x": -219,
+        "y": 260
+      }
+    },
+    {
+      "id": "R02",
+      "group": "R",
+      "name": "生命の蓄積",
+      "desc": "余剰回復を最大5まで貯蔵し、次の手札からの回復魔法の最初の対象へ全量加算して消費。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "R02",
+      "params": {
+        "storeMax": 5
+      },
+      "layout": {
+        "x": -257,
+        "y": 351
+      }
+    },
+    {
+      "id": "R03",
+      "group": "R",
+      "name": "浄化",
+      "desc": "手札からの回復魔法対象から解除可能な有害状態を1つ解除。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "R03",
+      "params": {
+        "cleanse": 1
+      },
+      "layout": {
+        "x": -301,
+        "y": 314
+      }
+    },
+    {
+      "id": "R04",
+      "group": "R",
+      "name": "癒しの残響",
+      "desc": "手札からの回復魔法対象は次の自ターン開始時HP1回復、各対象1件まで予約。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "R04",
+      "params": {
+        "heal": 1
+      },
+      "layout": {
+        "x": -314,
+        "y": 427
+      }
+    },
+    {
+      "id": "R05",
+      "group": "R",
+      "name": "生命循環",
+      "desc": "手札からの魔法で城の実HPが回復した場合、傷ついた味方兵士すべてをHP1回復、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "R05",
+      "params": {
+        "heal": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -366,
+        "y": 383
+      }
+    },
+    {
+      "id": "R06",
+      "group": "R",
+      "name": "奇跡の治癒",
+      "desc": "手札からの回復魔法を20%で威力50%再発動、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "R06",
+      "params": {
+        "chance": 0.2,
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -370,
+        "y": 503
+      }
+    },
+    {
+      "id": "R07",
+      "group": "R",
+      "name": "守りの癒し",
+      "desc": "手札からの回復魔法で兵士の実HPが回復した場合、その兵士へシールド1、各自ターン合計2回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "R07",
+      "params": {
+        "shield": 1,
+        "perTurn": 2
+      },
+      "layout": {
+        "x": -431,
+        "y": 452
+      }
+    },
+    {
+      "id": "R08",
+      "group": "R",
+      "name": "生命創造",
+      "desc": "手札からの回復魔法で対象の最大HP+1、各自ターン1回、同一対象の試合中増加上限+3。現在HPの自動増加なし。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "R08",
+      "params": {
+        "maxHp": 1,
+        "perTurn": 1,
+        "perTargetMax": 3
+      },
+      "layout": {
+        "x": -463,
+        "y": 552
+      }
+    },
+    {
+      "id": "D01",
+      "group": "D",
+      "name": "石垣",
+      "desc": "初期城壁+4。城HPとは別。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "D01",
+      "params": {
+        "armor": 4
+      },
+      "layout": {
+        "x": -294,
+        "y": 170
+      }
+    },
+    {
+      "id": "D02",
+      "group": "D",
+      "name": "反射障壁",
+      "desc": "城壁が吸収した実ダメージの20%を攻撃元の生存兵士または敵城へ固定反射、各自ターン合計最大4。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "D02",
+      "params": {
+        "ratio": 0.2,
+        "perTurnMax": 4
+      },
+      "layout": {
+        "x": -362,
+        "y": 242
+      }
+    },
+    {
+      "id": "D03",
+      "group": "D",
+      "name": "危機察知",
+      "desc": "味方兵士への直接攻撃・直接攻撃魔法の命中を10%で回避する。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "D03",
+      "params": {
+        "chance": 0.1
+      },
+      "layout": {
+        "x": -390,
+        "y": 192
+      }
+    },
+    {
+      "id": "D04",
+      "group": "D",
+      "name": "緊急防衛",
+      "desc": "自分の城壁が破壊された後、次の城HPへの直接攻撃ダメージを50%軽減、非累積、各自ターン1回付与。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "D04",
+      "params": {
+        "ratio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -441,
+        "y": 294
+      }
+    },
+    {
+      "id": "D05",
+      "group": "D",
+      "name": "城壁再生",
+      "desc": "自ターン開始時、城壁が2未満なら2まで修復。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "D05",
+      "params": {
+        "armorFloor": 2
+      },
+      "layout": {
+        "x": -475,
+        "y": 235
+      }
+    },
+    {
+      "id": "D06",
+      "group": "D",
+      "name": "守護結界",
+      "desc": "自分の城HPへ通過する最初の直接攻撃ダメージを最大3吸収、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "D06",
+      "params": {
+        "absorb": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -520,
+        "y": 346
+      }
+    },
+    {
+      "id": "D07",
+      "group": "D",
+      "name": "守護の誓い",
+      "desc": "メイン行動中、味方兵士1体を指定し次の敵の直接攻撃で受けるダメージを2軽減。各自ターン1回、次自ターン開始で失効。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "D07",
+      "params": {
+        "reduce": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -560,
+        "y": 277
+      }
+    },
+    {
+      "id": "D08",
+      "group": "D",
+      "name": "絶対防衛",
+      "desc": "敵由来の致死ダメージで城HP1にとどまり、城壁5生成。試合中1回。HP支払・既存の強制終了には適用しない。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "D08",
+      "params": {
+        "armor": 5,
+        "perMatch": 1
+      },
+      "layout": {
+        "x": -624,
+        "y": 360
+      }
+    },
+    {
+      "id": "Q01",
+      "group": "Q",
+      "name": "戦意",
+      "desc": "味方兵士が敵の直接攻撃で実HPダメージを受けるとSP+1、各自ターン合計3まで。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "Q01",
+      "params": {
+        "sp": 1,
+        "perTurnMax": 3
+      },
+      "layout": {
+        "x": -335,
+        "y": 59
+      }
+    },
+    {
+      "id": "Q02",
+      "group": "Q",
+      "name": "闘気",
+      "desc": "SP15以上で自身の兵士の通常攻撃の基礎ダメージ+1。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "Q02",
+      "params": {
+        "spThreshold": 15,
+        "damage": 1
+      },
+      "layout": {
+        "x": -423,
+        "y": 103
+      }
+    },
+    {
+      "id": "Q03",
+      "group": "Q",
+      "name": "奮起",
+      "desc": "メイン行動中、SP3消費で味方兵士1体にシールド3、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "Q03",
+      "params": {
+        "spCost": 3,
+        "shield": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -432,
+        "y": 47
+      }
+    },
+    {
+      "id": "Q04",
+      "group": "Q",
+      "name": "闘志の火花",
+      "desc": "味方兵士が敵兵士を通常攻撃で撃破すると既存SP報酬に+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "Q04",
+      "params": {
+        "sp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -515,
+        "y": 125
+      }
+    },
+    {
+      "id": "Q05",
+      "group": "Q",
+      "name": "集中",
+      "desc": "メイン行動中、SP3で次の自身の直接会心対象命中の会心率+20ポイント。各自ターン1回、非累積。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "Q05",
+      "params": {
+        "spCost": 3,
+        "critChanceAdd": 0.2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -527,
+        "y": 58
+      }
+    },
+    {
+      "id": "Q06",
+      "group": "Q",
+      "name": "戦場の号令",
+      "desc": "メイン行動中、SP5で味方兵士全員の攻撃力+1を次自ターン開始まで付与、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "Q06",
+      "params": {
+        "spCost": 5,
+        "attack": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -607,
+        "y": 148
+      }
+    },
+    {
+      "id": "Q07",
+      "group": "Q",
+      "name": "燃える決意",
+      "desc": "SPが既存上限に初めて到達するとMP+2、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "Q07",
+      "params": {
+        "mp": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -621,
+        "y": 69
+      }
+    },
+    {
+      "id": "Q08",
+      "group": "Q",
+      "name": "覚醒",
+      "desc": "メイン行動中、SP10を消費して味方兵士1体に攻撃力+3・シールド3を付与し、攻撃力補正は次自ターン開始まで。各自ターン1回。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "Q08",
+      "params": {
+        "spCost": 10,
+        "attack": 3,
+        "shield": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -709,
+        "y": 125
+      }
+    },
+    {
+      "id": "U01",
+      "group": "U",
+      "name": "増援",
+      "desc": "既存の兵士出撃可能枚数の上限+1。盤面枠自体は増やさない。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "U01",
+      "params": {
+        "soldiersPerTurn": 1
+      },
+      "layout": {
+        "x": -335,
+        "y": -59
+      }
+    },
+    {
+      "id": "U02",
+      "group": "U",
+      "name": "連携攻撃",
+      "desc": "同一レーンの異なる味方兵士が同一敵兵士に自ターン中2回目以降の通常攻撃をすると追加固定ダメージ2、対象ごと1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "U02",
+      "params": {
+        "damage": 2
+      },
+      "layout": {
+        "x": -432,
+        "y": -47
+      }
+    },
+    {
+      "id": "U03",
+      "group": "U",
+      "name": "先制部隊",
+      "desc": "手札から出撃した兵士が既存射程内の合法な敵兵士1体を即時通常攻撃、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "U03",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -423,
+        "y": -103
+      }
+    },
+    {
+      "id": "U04",
+      "group": "U",
+      "name": "長弓",
+      "desc": "弓兵・魔法使いの射程+1（既存のカード分類で判定）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "U04",
+      "params": {
+        "range": 1
+      },
+      "layout": {
+        "x": -527,
+        "y": -58
+      }
+    },
+    {
+      "id": "U05",
+      "group": "U",
+      "name": "戦術支援",
+      "desc": "隣接味方兵士が1体以上いる兵士の攻撃力+1、非重複の動的補正。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "U05",
+      "params": {
+        "attack": 1
+      },
+      "layout": {
+        "x": -515,
+        "y": -125
+      }
+    },
+    {
+      "id": "U06",
+      "group": "U",
+      "name": "戦術転換",
+      "desc": "メイン行動中、味方兵士1体を同じ進軍位置の隣接レーンの空き枠へ移す、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "U06",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -621,
+        "y": -69
+      }
+    },
+    {
+      "id": "U07",
+      "group": "U",
+      "name": "進軍の旗",
+      "desc": "手札から出撃した最初の兵士へシールド2、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "U07",
+      "params": {
+        "shield": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -607,
+        "y": -148
+      }
+    },
+    {
+      "id": "U08",
+      "group": "U",
+      "name": "軍団指揮",
+      "desc": "味方兵士が通常攻撃で敵兵士を倒すと、既存の合法な対象に即時追加通常攻撃。各兵士・各自ターン1回。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "U08",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -709,
+        "y": -125
+      }
+    },
+    {
+      "id": "K01",
+      "group": "K",
+      "name": "挟撃",
+      "desc": "異なるレーンの味方兵士が同一敵兵士へ合法に通常攻撃した場合、2回目の攻撃で兵士防御を1無視、対象ごと各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "K01",
+      "params": {
+        "ignoreDefense": 1
+      },
+      "layout": {
+        "x": -294,
+        "y": -170
+      }
+    },
+    {
+      "id": "K02",
+      "group": "K",
+      "name": "横隊",
+      "desc": "同じ進軍位置の3レーンに味方兵士が揃う間、該当兵士は直接被ダメージ-1（最低0）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "K02",
+      "params": {
+        "reduce": 1
+      },
+      "layout": {
+        "x": -390,
+        "y": -192
+      }
+    },
+    {
+      "id": "K03",
+      "group": "K",
+      "name": "縦隊",
+      "desc": "同一レーンで前後に隣接する味方兵士が2体以上いる間、最後尾兵士の射程+1。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "K03",
+      "params": {
+        "range": 1
+      },
+      "layout": {
+        "x": -362,
+        "y": -242
+      }
+    },
+    {
+      "id": "K04",
+      "group": "K",
+      "name": "迂回",
+      "desc": "メイン行動中、味方兵士1体を隣接レーン同位置の空き枠へ移動し、シールド1付与。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "K04",
+      "params": {
+        "shield": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -475,
+        "y": -235
+      }
+    },
+    {
+      "id": "K05",
+      "group": "K",
+      "name": "交代",
+      "desc": "メイン行動中、同レーンで前後隣接の味方兵士2体の位置を交換。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "K05",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -441,
+        "y": -294
+      }
+    },
+    {
+      "id": "K06",
+      "group": "K",
+      "name": "待ち伏せ",
+      "desc": "自分の空だったレーンに手札から最初の兵士を出すとシールド2、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "K06",
+      "params": {
+        "shield": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -560,
+        "y": -277
+      }
+    },
+    {
+      "id": "K07",
+      "group": "K",
+      "name": "追い風",
+      "desc": "敵兵士を通常攻撃で倒した味方兵士が空き枠へ1マス追加進軍できる、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "K07",
+      "params": {
+        "steps": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -520,
+        "y": -346
+      }
+    },
+    {
+      "id": "K08",
+      "group": "K",
+      "name": "電撃作戦",
+      "desc": "メイン行動中、味方兵士1体を既存移動制約に従い追加で1マス進軍。各自ターン1回。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "K08",
+      "params": {
+        "steps": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -624,
+        "y": -360
+      }
+    },
+    {
+      "id": "F01",
+      "group": "F",
+      "name": "再装填",
+      "desc": "自分の固定兵器の通常攻撃後20%で同じ対象に威力50%で追加攻撃、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "F01",
+      "params": {
+        "chance": 0.2,
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -219,
+        "y": -260
+      }
+    },
+    {
+      "id": "F02",
+      "group": "F",
+      "name": "再設置",
+      "desc": "自身の手札由来の罠が発動・消滅した後20%で同じ合法枠へ同種罠を再生成、各自ターン1回。生成罠は再設置不可。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "F02",
+      "params": {
+        "chance": 0.2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -301,
+        "y": -314
+      }
+    },
+    {
+      "id": "F03",
+      "group": "F",
+      "name": "防衛工事",
+      "desc": "手札から配置した固定兵器が既存HPを持つならシールド2、持たなければ最初の合法な破壊を1回防ぐ。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "F03",
+      "params": {
+        "shield": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -257,
+        "y": -351
+      }
+    },
+    {
+      "id": "F04",
+      "group": "F",
+      "name": "狙撃照準",
+      "desc": "固定兵器が射程の最大距離で命中した場合、直接基礎ダメージ+2。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "F04",
+      "params": {
+        "damage": 2
+      },
+      "layout": {
+        "x": -366,
+        "y": -383
+      }
+    },
+    {
+      "id": "F05",
+      "group": "F",
+      "name": "連動装置",
+      "desc": "自身の罠が敵に発動した後、射程内にいる固定兵器1基が同じ敵に威力50%で追加攻撃、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "F05",
+      "params": {
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -314,
+        "y": -427
+      }
+    },
+    {
+      "id": "F06",
+      "group": "F",
+      "name": "罠の回収",
+      "desc": "手札由来の罠が消滅するとMP+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "F06",
+      "params": {
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -431,
+        "y": -452
+      }
+    },
+    {
+      "id": "F07",
+      "group": "F",
+      "name": "工兵の知恵",
+      "desc": "手札から自ターン最初の兵器または罠を配置する際、MPコスト-1（最低1）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "F07",
+      "params": {
+        "mpReduce": 1,
+        "mpMin": 1
+      },
+      "layout": {
+        "x": -370,
+        "y": -503
+      }
+    },
+    {
+      "id": "F08",
+      "group": "F",
+      "name": "連鎖起爆",
+      "desc": "自分の罠が発動すると隣接する自分の罠1つを、元対象がその罠の合法対象でもある場合に発動。各自ターン1回、追加罠は再連鎖不可。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "F08",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -463,
+        "y": -552
+      }
+    },
+    {
+      "id": "A01",
+      "group": "A",
+      "name": "城壁破砕",
+      "desc": "敵城壁を破壊した自身の直接攻撃の解決後、敵城へ固定2ダメージ、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "A01",
+      "params": {
+        "damage": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -116,
+        "y": -319
+      }
+    },
+    {
+      "id": "A02",
+      "group": "A",
+      "name": "攻城兵器",
+      "desc": "固定兵器の射程+1。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "A02",
+      "params": {
+        "range": 1
+      },
+      "layout": {
+        "x": -175,
+        "y": -398
+      }
+    },
+    {
+      "id": "A03",
+      "group": "A",
+      "name": "包囲戦",
+      "desc": "敵城到達済みの味方兵士がいる間、手札からの城への攻撃魔法の直接基礎ダメージ+2。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "A03",
+      "params": {
+        "damage": 2
+      },
+      "layout": {
+        "x": -122,
+        "y": -418
+      }
+    },
+    {
+      "id": "A04",
+      "group": "A",
+      "name": "突破口",
+      "desc": "自分が敵城壁を破壊すると1枚ドロー、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "A04",
+      "params": {
+        "draw": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -213,
+        "y": -485
+      }
+    },
+    {
+      "id": "A05",
+      "group": "A",
+      "name": "貫通攻撃",
+      "desc": "敵城への直接ダメージの20%を城壁を経由せず城HPへ通す。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "A05",
+      "params": {
+        "ratio": 0.2
+      },
+      "layout": {
+        "x": -149,
+        "y": -509
+      }
+    },
+    {
+      "id": "A06",
+      "group": "A",
+      "name": "総攻撃",
+      "desc": "手札からの城への攻撃魔法の後、到達済みの味方兵士1体が既存ルールで追撃、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "A06",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -251,
+        "y": -572
+      }
+    },
+    {
+      "id": "A07",
+      "group": "A",
+      "name": "城門の標的",
+      "desc": "味方兵士が初めて敵城へ到達すると次の城への直接攻撃+2。各自ターン1回、非累積。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "A07",
+      "params": {
+        "damage": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -176,
+        "y": -600
+      }
+    },
+    {
+      "id": "A08",
+      "group": "A",
+      "name": "城門突破",
+      "desc": "到達済み味方兵士の通常攻撃が敵城壁を100%貫通する。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "A08",
+      "params": {
+        "pierceRatio": 1
+      },
+      "layout": {
+        "x": -246,
+        "y": -677
+      }
+    },
+    {
+      "id": "L01",
+      "group": "L",
+      "name": "幸運の兆し",
+      "desc": "幸運対象となる自分の確率発動率を1.1倍にする。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "L01",
+      "params": {
+        "chanceMultiplier": 1.1
+      },
+      "layout": {
+        "x": 0,
+        "y": 70
+      }
+    },
+    {
+      "id": "L02",
+      "group": "L",
+      "name": "二度目のチャンス",
+      "desc": "幸運対象の最終失敗後、10%の独立判定に成功すれば元の判定を1回だけ再抽選。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "L02",
+      "params": {
+        "chance": 0.1
+      },
+      "layout": {
+        "x": -42,
+        "y": 115
+      }
+    },
+    {
+      "id": "L03",
+      "group": "L",
+      "name": "運命の蓄積",
+      "desc": "幸運対象の最終失敗ごとに次の対象判定+2ポイント（最大+10）。成功でリセット。プレイヤー共通の蓄積。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "L03",
+      "params": {
+        "step": 0.02,
+        "max": 0.1
+      },
+      "layout": {
+        "x": 42,
+        "y": 115
+      }
+    },
+    {
+      "id": "L04",
+      "group": "L",
+      "name": "奇跡の一枚",
+      "desc": "自ターン開始時10%で追加ドロー1枚。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "L04",
+      "params": {
+        "chance": 0.1,
+        "draw": 1
+      },
+      "layout": {
+        "x": -42,
+        "y": 160
+      }
+    },
+    {
+      "id": "L05",
+      "group": "L",
+      "name": "天の恵み",
+      "desc": "手札からのカード使用時5%で実際に消費したMPを全還元、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "L05",
+      "params": {
+        "chance": 0.05,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 42,
+        "y": 160
+      }
+    },
+    {
+      "id": "L06",
+      "group": "L",
+      "name": "幸運の賽",
+      "desc": "自分の手札からのサイコロカードの出目を独立に2回生成し、選択UI/CPUで片方を選ぶ。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "L06",
+      "params": {
+        "rolls": 2
+      },
+      "layout": {
+        "x": -42,
+        "y": 205
+      }
+    },
+    {
+      "id": "L07",
+      "group": "L",
+      "name": "幸運の反動",
+      "desc": "幸運対象判定の最終失敗が自ターン内で3回に達するとMP+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "L07",
+      "params": {
+        "failures": 3,
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 42,
+        "y": 205
+      }
+    },
+    {
+      "id": "L08",
+      "group": "L",
+      "name": "運命の支配者",
+      "desc": "幸運対象判定を同じ確率で最大2回行い、一方でも成功すれば1度だけ発動。",
+      "cost": 1,
+      "ultimate": true,
+      "cross": false,
+      "ends": null,
+      "requires": [],
+      "handler": "L08",
+      "params": {
+        "rolls": 2
+      },
+      "layout": {
+        "x": 0,
+        "y": 250
+      }
+    },
+    {
+      "id": "X01",
+      "group": "X",
+      "name": "会心の残響",
+      "desc": "手札由来の単体攻撃魔法が直接会心した場合25%で威力50%の追加発動。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "C04",
+        "M02"
+      ],
+      "requires": [],
+      "handler": "X01",
+      "params": {
+        "chance": 0.25,
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 44,
+        "y": -473
+      }
+    },
+    {
+      "id": "X02",
+      "group": "X",
+      "name": "元素連鎖",
+      "desc": "自身のダメージ型属性反応が隣接する別の敵兵士1体へ威力50%で伝播。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "M03",
+        "E05"
+      ],
+      "requires": [],
+      "handler": "X02",
+      "params": {
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 271,
+        "y": -390
+      }
+    },
+    {
+      "id": "X03",
+      "group": "X",
+      "name": "元素吸収",
+      "desc": "自身の属性反応でMP+1、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "E06",
+        "P02"
+      ],
+      "requires": [],
+      "handler": "X03",
+      "params": {
+        "mp": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 401,
+        "y": -228
+      }
+    },
+    {
+      "id": "X04",
+      "group": "X",
+      "name": "魔力の知恵",
+      "desc": "メイン行動中、貯蔵MP2を消費し1枚ドロー、各自ターン1回。P02必須。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "P02",
+        "H04"
+      ],
+      "requires": [
+        "P02"
+      ],
+      "handler": "X04",
+      "params": {
+        "storeCost": 2,
+        "draw": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 454,
+        "y": 141
+      }
+    },
+    {
+      "id": "X05",
+      "group": "X",
+      "name": "援軍要請",
+      "desc": "非トークン味方兵士死亡時、山札の先頭側の兵士カード1枚を引く、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "H06",
+        "U03"
+      ],
+      "requires": [],
+      "handler": "X05",
+      "params": {
+        "draw": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 69,
+        "y": 87
+      }
+    },
+    {
+      "id": "X06",
+      "group": "X",
+      "name": "戦士の遺産",
+      "desc": "非トークン味方兵士死亡時、その安全リスト内の固有能力1つを次の手札由来兵士へ次自ターン開始まで継承、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "U05",
+        "G05"
+      ],
+      "requires": [],
+      "handler": "X06",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -274,
+        "y": 202
+      }
+    },
+    {
+      "id": "X07",
+      "group": "X",
+      "name": "再誕の祝福",
+      "desc": "自身が蘇生した兵士へ次自ターン開始時HP2回復を予約、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "G07",
+        "R04"
+      ],
+      "requires": [],
+      "handler": "X07",
+      "params": {
+        "heal": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -177,
+        "y": 526
+      }
+    },
+    {
+      "id": "X08",
+      "group": "X",
+      "name": "生命障壁",
+      "desc": "手札由来回復魔法の余剰回復量を城壁に変換（各自ターン最大3、貯蔵との二重利用なし）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "R02",
+        "D05"
+      ],
+      "requires": [],
+      "handler": "X08",
+      "params": {
+        "perTurnMax": 3
+      },
+      "layout": {
+        "x": -366,
+        "y": 293
+      }
+    },
+    {
+      "id": "X09",
+      "group": "X",
+      "name": "復讐の砲火",
+      "desc": "自分の城壁破壊後、次の手札由来攻撃魔法の基礎ダメージ+3、各自ターン1回付与。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "D04",
+        "A03"
+      ],
+      "requires": [],
+      "handler": "X09",
+      "params": {
+        "damage": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -281,
+        "y": -62
+      }
+    },
+    {
+      "id": "X10",
+      "group": "X",
+      "name": "破壊衝動",
+      "desc": "城への直接攻撃にも会心率15%・倍率1.5を解放（既存会心率・倍率と重複加算しない）。城への会心時30%城壁貫通。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "A05",
+        "C03"
+      ],
+      "requires": [],
+      "handler": "X10",
+      "params": {
+        "critChance": 0.15,
+        "critMultiplier": 1.5,
+        "pierceChance": 0.3
+      },
+      "layout": {
+        "x": -60,
+        "y": -471
+      }
+    },
+    {
+      "id": "X11",
+      "group": "X",
+      "name": "豪運の一撃",
+      "desc": "直接会心時10%でその会心倍率をさらに2倍（総倍率上限3）。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "L02",
+        "C02"
+      ],
+      "requires": [],
+      "handler": "X11",
+      "params": {
+        "chance": 0.1,
+        "multiplier": 2,
+        "totalMax": 3
+      },
+      "layout": {
+        "x": -35,
+        "y": -159
+      }
+    },
+    {
+      "id": "X12",
+      "group": "X",
+      "name": "奇跡の詠唱",
+      "desc": "やまびこ成功時10%で原カードを捨て札から手札へ戻す、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "L05",
+        "M05"
+      ],
+      "requires": [],
+      "handler": "X12",
+      "params": {
+        "chance": 0.1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 128,
+        "y": -162
+      }
+    },
+    {
+      "id": "X13",
+      "group": "X",
+      "name": "元素の賽",
+      "desc": "自身のダメージ型属性反応時10%で同じ対象に威力50%の固定反応ダメージを再現、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "L03",
+        "E03"
+      ],
+      "requires": [],
+      "handler": "X13",
+      "params": {
+        "chance": 0.1,
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 172,
+        "y": -99
+      }
+    },
+    {
+      "id": "X14",
+      "group": "X",
+      "name": "九死一生",
+      "desc": "敵由来の城致死ダメージ時20%でHP1にとどまる。成功は試合中1回。絶対防衛より先に判定。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "L04",
+        "D03"
+      ],
+      "requires": [],
+      "handler": "X14",
+      "params": {
+        "chance": 0.2,
+        "perMatch": 1
+      },
+      "layout": {
+        "x": -216,
+        "y": 176
+      }
+    },
+    {
+      "id": "X15",
+      "group": "X",
+      "name": "運命の引き寄せ",
+      "desc": "通常ドロー時20%で山札先頭2枚から1枚選択。未選択は元の位置へ戻す。各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "L04",
+        "H02"
+      ],
+      "requires": [],
+      "handler": "X15",
+      "params": {
+        "chance": 0.2,
+        "reveal": 2,
+        "perTurn": 1,
+        "pick": "cost"
+      },
+      "layout": {
+        "x": 174,
+        "y": 176
+      }
+    },
+    {
+      "id": "X16",
+      "group": "X",
+      "name": "黄金の祝福",
+      "desc": "戦闘内コイン獲得時20%でその獲得量を2倍、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "L06",
+        "P04"
+      ],
+      "requires": [],
+      "handler": "X16",
+      "params": {
+        "chance": 0.2,
+        "multiplier": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 243,
+        "y": 132
+      }
+    },
+    {
+      "id": "X17",
+      "group": "X",
+      "name": "致命傷",
+      "desc": "自身の毒・出血・やけどtickに会心率15%・倍率1.5を解放。通常会心補正を利用するが直接会心トリガーは起こさない。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "C04",
+        "S04"
+      ],
+      "requires": [],
+      "handler": "X17",
+      "params": {
+        "critChance": 0.15,
+        "critMultiplier": 1.5
+      },
+      "layout": {
+        "x": 204,
+        "y": -411
+      }
+    },
+    {
+      "id": "X18",
+      "group": "X",
+      "name": "時空の残響",
+      "desc": "予約発動した単体攻撃魔法にも通常やまびこを1回だけ許可。M02必須。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "T02",
+        "M02"
+      ],
+      "requires": [
+        "M02"
+      ],
+      "handler": "X18",
+      "params": {
+        "maxEcho": 1
+      },
+      "layout": {
+        "x": 273,
+        "y": -260
+      }
+    },
+    {
+      "id": "X19",
+      "group": "X",
+      "name": "双子",
+      "desc": "自身がトークン召喚に成功した場合20%で同じトークンをもう1体召喚、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "L02",
+        "V01"
+      ],
+      "requires": [],
+      "handler": "X19",
+      "params": {
+        "chance": 0.2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 55,
+        "y": 231
+      }
+    },
+    {
+      "id": "X20",
+      "group": "X",
+      "name": "不屈",
+      "desc": "敵の直接攻撃で自分の城壁が実ダメージを吸収したときSP+1、各自ターン合計2まで。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "D02",
+        "Q01"
+      ],
+      "requires": [],
+      "handler": "X20",
+      "params": {
+        "sp": 1,
+        "perTurnMax": 2
+      },
+      "layout": {
+        "x": -348,
+        "y": 151
+      }
+    },
+    {
+      "id": "X21",
+      "group": "X",
+      "name": "聖なる反応",
+      "desc": "手札からの回復魔法で実回復した味方兵士へ光属性付着、各自ターン1回。味方への既存有害反応は誘発しない。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "R03",
+        "E03"
+      ],
+      "requires": [],
+      "handler": "X21",
+      "params": {
+        "element": "light",
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "id": "X22",
+      "group": "X",
+      "name": "魔法泥棒",
+      "desc": "模倣由来カードを手札から使用した際、M02の通常やまびこを許可（M02必須）、追加発動最大1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "I02",
+        "M05"
+      ],
+      "requires": [
+        "M02"
+      ],
+      "handler": "X22",
+      "params": {
+        "maxEcho": 1
+      },
+      "layout": {
+        "x": 257,
+        "y": -85
+      }
+    },
+    {
+      "id": "X23",
+      "group": "X",
+      "name": "死者の地雷",
+      "desc": "非トークン味方兵士死亡時、死亡位置の合法枠へ一時罠（敵が侵入すると固定2ダメージで消滅）を生成、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "G01",
+        "F02"
+      ],
+      "requires": [],
+      "handler": "X23",
+      "params": {
+        "damage": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -150,
+        "y": 13
+      }
+    },
+    {
+      "id": "X24",
+      "group": "X",
+      "name": "運命改変",
+      "desc": "自分の幸運対象判定の最終失敗を自ターン中1件記録し、次自ターン開始時に同じ判定を1回再試行。対象が無効なら破棄。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "T02",
+        "L03"
+      ],
+      "requires": [],
+      "handler": "X24",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 233,
+        "y": 6
+      }
+    },
+    {
+      "id": "X25",
+      "group": "X",
+      "name": "元素砲",
+      "desc": "自分の固定兵器の直接攻撃に、ビルド時選択した非無属性1種の付着を追加。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "F04",
+        "E02"
+      ],
+      "requires": [],
+      "handler": "X25",
+      "params": {},
+      "config": {
+        "key": "element",
+        "default": "fire",
+        "options": [
+          {
+            "id": "fire",
+            "name": "火"
+          },
+          {
+            "id": "water",
+            "name": "水"
+          },
+          {
+            "id": "wind",
+            "name": "風"
+          },
+          {
+            "id": "earth",
+            "name": "土"
+          },
+          {
+            "id": "ice",
+            "name": "氷"
+          },
+          {
+            "id": "thunder",
+            "name": "雷"
+          },
+          {
+            "id": "dark",
+            "name": "闇"
+          },
+          {
+            "id": "light",
+            "name": "光"
+          },
+          {
+            "id": "chaos",
+            "name": "混沌"
+          }
+        ]
+      },
+      "layout": {
+        "x": -54,
+        "y": -367
+      }
+    },
+    {
+      "id": "X26",
+      "group": "X",
+      "name": "鮮血の一撃",
+      "desc": "直接会心命中で城HP1回復、各自ターン合計2まで。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B04",
+        "C03"
+      ],
+      "requires": [],
+      "handler": "X26",
+      "params": {
+        "heal": 1,
+        "perTurnMax": 2
+      },
+      "layout": {
+        "x": -60,
+        "y": 38
+      }
+    },
+    {
+      "id": "X27",
+      "group": "X",
+      "name": "血のやまびこ",
+      "desc": "手札から単体攻撃魔法使用後、任意に城HP2を支払い同じ対象に威力50%で再発動、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B03",
+        "M02"
+      ],
+      "requires": [],
+      "handler": "X27",
+      "params": {
+        "hpCost": 2,
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -26,
+        "y": -10
+      }
+    },
+    {
+      "id": "X28",
+      "group": "X",
+      "name": "生命機関",
+      "desc": "任意の城HP支払後、次の手札由来回復魔法の基礎回復量+2、各自ターン1回付与。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B02",
+        "R02"
+      ],
+      "requires": [],
+      "handler": "X28",
+      "params": {
+        "heal": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -153,
+        "y": 413
+      }
+    },
+    {
+      "id": "X29",
+      "group": "X",
+      "name": "生贄の儀式",
+      "desc": "メイン行動中、非トークン味方兵士1体を任意に生贄にして城HP2・MP2回復、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B06",
+        "G02"
+      ],
+      "requires": [],
+      "handler": "X29",
+      "params": {
+        "castleHp": 2,
+        "mp": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -74,
+        "y": 517
+      }
+    },
+    {
+      "id": "X30",
+      "group": "X",
+      "name": "血液感染",
+      "desc": "自身の出血tickによる敵兵士の実HP損失の25%を城HPに回復、各自ターン上限2。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B04",
+        "S04"
+      ],
+      "requires": [],
+      "handler": "X30",
+      "params": {
+        "ratio": 0.25,
+        "perTurnMax": 2
+      },
+      "layout": {
+        "x": 146,
+        "y": 108
+      }
+    },
+    {
+      "id": "X31",
+      "group": "X",
+      "name": "血の眷属",
+      "desc": "累計任意HP支払5ごとに使い魔1体を召喚、各自ターン1回。成功時のみカウンタ5消費、最大繰越9。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B06",
+        "V02"
+      ],
+      "requires": [],
+      "handler": "X31",
+      "params": {
+        "hpPerFamiliar": 5,
+        "carryMax": 9,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 0,
+        "y": 499
+      }
+    },
+    {
+      "id": "X32",
+      "group": "X",
+      "name": "悪魔の賭け",
+      "desc": "任意HP支払の宣言時20%でその支払を免除、各自ターン1回。実消費0なので支払由来効果は発生しない。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B02",
+        "L05"
+      ],
+      "requires": [],
+      "handler": "X32",
+      "params": {
+        "chance": 0.2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -40,
+        "y": 289
+      }
+    },
+    {
+      "id": "X33",
+      "group": "X",
+      "name": "狂戦士",
+      "desc": "任意HP支払1につきSP+1、各自ターン最大3。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B03",
+        "Q03"
+      ],
+      "requires": [],
+      "handler": "X33",
+      "params": {
+        "spPerHp": 1,
+        "perTurnMax": 3
+      },
+      "layout": {
+        "x": -303,
+        "y": 223
+      }
+    },
+    {
+      "id": "X34",
+      "group": "X",
+      "name": "血の障壁",
+      "desc": "任意HP支払1につき城壁+1、各自ターン最大3。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B04",
+        "D05"
+      ],
+      "requires": [],
+      "handler": "X34",
+      "params": {
+        "armorPerHp": 1,
+        "perTurnMax": 3
+      },
+      "layout": {
+        "x": -312,
+        "y": 372
+      }
+    },
+    {
+      "id": "X35",
+      "group": "X",
+      "name": "遅延代償",
+      "desc": "任意HP支払のうち最大2を次自ターン開始まで延期、各自ターン1回。支払義務は予約し、他の任意支払ではHP1と債務分を確保。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "B02",
+        "T03"
+      ],
+      "requires": [],
+      "handler": "X35",
+      "params": {
+        "deferMax": 2,
+        "perTurn": 1,
+        "autoDefer": false
+      },
+      "layout": {
+        "x": 173,
+        "y": 200
+      }
+    },
+    {
+      "id": "X36",
+      "group": "X",
+      "name": "生命の闘気",
+      "desc": "手札由来回復魔法の実回復3以上でSP+2、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "R06",
+        "Q02"
+      ],
+      "requires": [],
+      "handler": "X36",
+      "params": {
+        "healThreshold": 3,
+        "sp": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -396,
+        "y": 303
+      }
+    },
+    {
+      "id": "X37",
+      "group": "X",
+      "name": "癒しの陣",
+      "desc": "手札由来回復魔法の実回復を受けた兵士の次の通常攻撃+1、各自ターン合計2体。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "R05",
+        "U05"
+      ],
+      "requires": [],
+      "handler": "X37",
+      "params": {
+        "attack": 1,
+        "perTurnMax": 2
+      },
+      "layout": {
+        "x": -440,
+        "y": 129
+      }
+    },
+    {
+      "id": "X38",
+      "group": "X",
+      "name": "守護者",
+      "desc": "敵の城への直接攻撃で城HPへ通るダメージを最大2、指定した合法な味方兵士に肩代わりさせる。各自ターン1回、兵士HPの範囲内。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "D05",
+        "U03"
+      ],
+      "requires": [],
+      "handler": "X38",
+      "params": {
+        "redirectMax": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -449,
+        "y": 66
+      }
+    },
+    {
+      "id": "X39",
+      "group": "X",
+      "name": "突破戦術",
+      "desc": "通常攻撃で敵兵士を倒した際の余剰直接ダメージ（最大3）を敵城へ送る、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "U04",
+        "A03"
+      ],
+      "requires": [],
+      "handler": "X39",
+      "params": {
+        "overflowMax": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -324,
+        "y": -238
+      }
+    },
+    {
+      "id": "X40",
+      "group": "X",
+      "name": "盾の陣形",
+      "desc": "横隊成立時、該当兵士にシールド1、成立は各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "K02",
+        "D07"
+      ],
+      "requires": [
+        "K02"
+      ],
+      "handler": "X40",
+      "params": {
+        "shield": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -475,
+        "y": 43
+      }
+    },
+    {
+      "id": "X41",
+      "group": "X",
+      "name": "機動射撃",
+      "desc": "自身の手札由来兵士がレーン変更した後、射程内の敵1体への威力50%の追加通常攻撃、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "K03",
+        "U04"
+      ],
+      "requires": [],
+      "handler": "X41",
+      "params": {
+        "powerRatio": 0.5,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -444,
+        "y": -150
+      }
+    },
+    {
+      "id": "X42",
+      "group": "X",
+      "name": "伏兵配置",
+      "desc": "メイン行動中、自身の罠1つを隣接レーン同位置の合法な空き枠へ移す、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "K06",
+        "F05"
+      ],
+      "requires": [],
+      "handler": "X42",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": -437,
+        "y": -352
+      }
+    },
+    {
+      "id": "X43",
+      "group": "X",
+      "name": "魔力装填",
+      "desc": "メイン行動中、MP2で自分の固定兵器1基に次の通常攻撃+3を付与、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "F01",
+        "P07"
+      ],
+      "requires": [],
+      "handler": "X43",
+      "params": {
+        "mpCost": 2,
+        "attack": 3,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 194,
+        "y": -56
+      }
+    },
+    {
+      "id": "X44",
+      "group": "X",
+      "name": "先読み",
+      "desc": "自ターン終了時手札に2枚以上あれば、次の通常ドローの先頭最大2枚を自分だけ確認し順序を選択、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "T03",
+        "H07"
+      ],
+      "requires": [],
+      "handler": "X44",
+      "params": {
+        "handMin": 2,
+        "reveal": 2,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 494,
+        "y": 164
+      }
+    },
+    {
+      "id": "X45",
+      "group": "X",
+      "name": "元素病",
+      "desc": "自身の有害状態を持つ敵兵士への属性反応の基礎ダメージ+2、各自ターン合計2回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "S05",
+        "E05"
+      ],
+      "requires": [],
+      "handler": "X45",
+      "params": {
+        "damage": 2,
+        "perTurnMax": 2
+      },
+      "layout": {
+        "x": 421,
+        "y": -309
+      }
+    },
+    {
+      "id": "X46",
+      "group": "X",
+      "name": "魂の器",
+      "desc": "自身の非トークン兵士を蘇生した際、使い魔1体を追加召喚、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "V03",
+        "G07"
+      ],
+      "requires": [],
+      "handler": "X46",
+      "params": {
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 59,
+        "y": 535
+      }
+    },
+    {
+      "id": "X47",
+      "group": "X",
+      "name": "知識の複製",
+      "desc": "手札から模倣カードを使用した後1枚ドロー、各自ターン1回。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "I04",
+        "H05"
+      ],
+      "requires": [],
+      "handler": "X47",
+      "params": {
+        "draw": 1,
+        "perTurn": 1
+      },
+      "layout": {
+        "x": 404,
+        "y": 339
+      }
+    },
+    {
+      "id": "X48",
+      "group": "X",
+      "name": "闘気の焦点",
+      "desc": "SP20以上の間、自身の会心対象命中の会心率+10ポイント。会心を新規解放しない。",
+      "cost": 1,
+      "ultimate": false,
+      "cross": true,
+      "ends": [
+        "Q05",
+        "C02"
+      ],
+      "requires": [],
+      "handler": "X48",
+      "params": {
+        "spThreshold": 20,
+        "critChanceAdd": 0.1
+      },
+      "layout": {
+        "x": -277,
+        "y": -188
+      }
     }
-  },
+  ],
   "presets": {
-    "blade": {
-      "name": "攻め（剣を極める）",
-      "nodes": [
-        "siegecraft",
-        "warcry",
-        "keenBlade",
-        "stoneWall"
+    "critMagicLuck": {
+      "name": "会心＋魔法＋幸運",
+      "ids": [
+        "C01",
+        "C02",
+        "C04",
+        "X01",
+        "M02",
+        "M01",
+        "M04",
+        "M06",
+        "M08",
+        "L01",
+        "L02",
+        "X11"
       ]
     },
-    "troops": {
-      "name": "隊列（兵士を極める）",
-      "nodes": [
-        "reinforce",
-        "longbow",
-        "ironArmor",
-        "manaSpring"
+    "bloodHealDefense": {
+      "name": "血魔術＋回復＋防御",
+      "ids": [
+        "B01",
+        "B02",
+        "X28",
+        "R02",
+        "R01",
+        "X08",
+        "D05",
+        "D03",
+        "D01",
+        "D07",
+        "D08",
+        "B03"
       ]
     },
-    "magic": {
-      "name": "魔術（魔法を極める）",
-      "nodes": [
-        "arcana",
-        "deepVessel",
-        "archmagic",
-        "chaosEye"
+    "elementManaMagic": {
+      "name": "属性＋魔力＋魔法",
+      "ids": [
+        "E01",
+        "E03",
+        "E05",
+        "E07",
+        "E08",
+        "X02",
+        "M03",
+        "M01",
+        "M02",
+        "E04",
+        "E06",
+        "X03"
       ]
     },
-    "shield": {
-      "name": "守り（盾を極める）",
-      "nodes": [
-        "stoneWall",
-        "stronghold",
-        "bastion",
-        "prayer"
-      ]
-    },
-    "heal": {
-      "name": "癒し（回復を極める）",
-      "nodes": [
-        "prayer",
-        "mending",
-        "regen",
-        "stoneWall"
-      ]
-    },
-    "element": {
-      "name": "反応（属性を極める）",
-      "nodes": [
-        "chaosEye",
-        "lightDark",
-        "echo",
-        "manaSpring"
-      ]
-    },
-    "mana": {
-      "name": "経済（魔力を極める）",
-      "nodes": [
-        "manaSpring",
-        "hunter",
-        "alchemy",
-        "chaosEye"
-      ]
-    },
-    "hybrid": {
-      "name": "まんべんなく",
-      "nodes": [
-        "siegecraft",
-        "reinforce",
-        "arcana",
-        "stoneWall",
-        "prayer",
-        "stronghold"
+    "graveTroopsSummon": {
+      "name": "墓地＋兵士＋召喚",
+      "ids": [
+        "G01",
+        "G03",
+        "G05",
+        "X06",
+        "U05",
+        "U03",
+        "U01",
+        "G07",
+        "G08",
+        "X46",
+        "V03",
+        "V01"
       ]
     }
   }

@@ -1,0 +1,4175 @@
+{
+ "version": 1,
+ "id": "castle-field-classic-skilltree-v3",
+ "title": "クラシック スキルツリー（200ノード）",
+ "maxPoints": 12,
+ "groups": [
+  {
+   "id": "C",
+   "name": "会心",
+   "icon": "ui/icon-kind-weapon.png"
+  },
+  {
+   "id": "M",
+   "name": "魔法",
+   "icon": "ui/icon-kind-spell.png"
+  },
+  {
+   "id": "E",
+   "name": "属性",
+   "icon": "ui/icon-fire.png"
+  },
+  {
+   "id": "S",
+   "name": "状態異常",
+   "icon": "ui/factions/crest-demon.png"
+  },
+  {
+   "id": "T",
+   "name": "時間",
+   "icon": "ui/icon-help.png"
+  },
+  {
+   "id": "P",
+   "name": "魔力",
+   "icon": "ui/icon-mp.png"
+  },
+  {
+   "id": "H",
+   "name": "手札",
+   "icon": "ui/home/deck.png"
+  },
+  {
+   "id": "I",
+   "name": "模倣",
+   "icon": "ui/icon-kind-wild.png"
+  },
+  {
+   "id": "V",
+   "name": "召喚",
+   "icon": "ui/factions/crest-forest.png"
+  },
+  {
+   "id": "G",
+   "name": "墓地",
+   "icon": "ui/icon-rarity-epic.png"
+  },
+  {
+   "id": "B",
+   "name": "血魔術",
+   "icon": "ui/icon-heart.png"
+  },
+  {
+   "id": "R",
+   "name": "回復",
+   "icon": "ui/icon-water.png"
+  },
+  {
+   "id": "D",
+   "name": "防御",
+   "icon": "ui/icon-kind-defense.png"
+  },
+  {
+   "id": "Q",
+   "name": "闘志",
+   "icon": "ui/icon-rarity-legendary.png"
+  },
+  {
+   "id": "U",
+   "name": "兵士",
+   "icon": "ui/icon-kind-soldier.png"
+  },
+  {
+   "id": "K",
+   "name": "戦術",
+   "icon": "ui/home/rank.png"
+  },
+  {
+   "id": "F",
+   "name": "兵器・罠",
+   "icon": "ui/icon-earth.png"
+  },
+  {
+   "id": "A",
+   "name": "攻城",
+   "icon": "ui/factions/crest-dragon.png"
+  },
+  {
+   "id": "L",
+   "name": "幸運",
+   "icon": "ui/icon-luck.png"
+  }
+ ],
+ "nodes": [
+  {
+   "id": "C01",
+   "name": "会心の心得",
+   "group": "C",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "兵士の通常攻撃・敵兵士への攻撃魔法の直接命中に会心率15%、倍率1.5を解放する。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-kind-weapon.png",
+   "position": {
+    "x": 0,
+    "y": -680
+   }
+  },
+  {
+   "id": "C02",
+   "name": "研ぎ澄まされた感覚",
+   "group": "C",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "会心対象の非会心命中ごとに次の会心率+10ポイント（最大+30）、会心でリセット。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-weapon.png",
+   "position": {
+    "x": -56,
+    "y": -868
+   }
+  },
+  {
+   "id": "C03",
+   "name": "致命の一撃",
+   "group": "C",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "会心倍率+0.3（加算）。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-weapon.png",
+   "position": {
+    "x": 56,
+    "y": -868
+   }
+  },
+  {
+   "id": "C04",
+   "name": "深い傷跡",
+   "group": "C",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "直接会心で生存した敵兵士に出血2ターンを付与。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-weapon.png",
+   "position": {
+    "x": -68,
+    "y": -1058
+   }
+  },
+  {
+   "id": "C05",
+   "name": "処刑人",
+   "group": "C",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "命中直前にHP20%以下の敵兵士への会心対象攻撃を確定会心にする。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-weapon.png",
+   "position": {
+    "x": 68,
+    "y": -1058
+   }
+  },
+  {
+   "id": "C06",
+   "name": "追撃",
+   "group": "C",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "直接会心時20%で同じ敵へ威力50%の追加攻撃、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-weapon.png",
+   "position": {
+    "x": -80,
+    "y": -1248
+   }
+  },
+  {
+   "id": "C07",
+   "name": "会心の余韻",
+   "group": "C",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "直接会心で敵兵士を倒すとSP+1、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-weapon.png",
+   "position": {
+    "x": 80,
+    "y": -1248
+   }
+  },
+  {
+   "id": "C08",
+   "name": "殺戮の連鎖",
+   "group": "C",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "会心で敵兵士を倒すと次の会心対象命中を確定会心にする。獲得は各自ターン1回、非累積。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-kind-weapon.png",
+   "position": {
+    "x": 0,
+    "y": -1440
+   }
+  },
+  {
+   "id": "M01",
+   "name": "魔力還元",
+   "group": "M",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "攻撃魔法の直接ダメージで敵兵士を倒すとMP+1、各自ターン1回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-kind-spell.png",
+   "position": {
+    "x": 232,
+    "y": -638
+   }
+  },
+  {
+   "id": "M02",
+   "name": "魔法のやまびこ",
+   "group": "M",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から使用した単体攻撃魔法が20%で同じ対象へ威力50%で追加発動。追加のMP・カード消費なし。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-spell.png",
+   "position": {
+    "x": 244,
+    "y": -836
+   }
+  },
+  {
+   "id": "M03",
+   "name": "連鎖魔法",
+   "group": "M",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの単体攻撃魔法の直接ダメージを、対象に隣接する別の敵兵士1体へ25%で伝播。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-spell.png",
+   "position": {
+    "x": 350,
+    "y": -796
+   }
+  },
+  {
+   "id": "M04",
+   "name": "魔力残留",
+   "group": "M",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "攻撃魔法が敵兵士を倒した場合、余剰直接ダメージ（最大3）を隣接する敵兵士1体へ伝播。各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-spell.png",
+   "position": {
+    "x": 298,
+    "y": -1018
+   }
+  },
+  {
+   "id": "M05",
+   "name": "魔法の複製",
+   "group": "M",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から使用した魔法が5%で捨て札から手札へ戻る。各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-spell.png",
+   "position": {
+    "x": 426,
+    "y": -970
+   }
+  },
+  {
+   "id": "M06",
+   "name": "魔術の探求",
+   "group": "M",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの攻撃魔法で敵兵士を倒すと20%で1枚ドロー、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-spell.png",
+   "position": {
+    "x": 352,
+    "y": -1200
+   }
+  },
+  {
+   "id": "M07",
+   "name": "詠唱の準備",
+   "group": "M",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自ターン内で手札から2枚の魔法を使用したら、次の手札からの魔法の消費MP-1（最低1）、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-spell.png",
+   "position": {
+    "x": 502,
+    "y": -1144
+   }
+  },
+  {
+   "id": "M08",
+   "name": "多重詠唱",
+   "group": "M",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "M02必須。通常のやまびこ率を50%に変更し、1枚の原魔法あたり追加発動最大3回。各追加発動は前の成功に続く独立判定。",
+   "condition": "隣のノードを取得済み ／ 必須：M02「魔法のやまびこ」 ／ 奥義は1つまで",
+   "icon": "ui/icon-kind-spell.png",
+   "position": {
+    "x": 492,
+    "y": -1354
+   }
+  },
+  {
+   "id": "E01",
+   "name": "混沌の目",
+   "group": "E",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "自ターン開始時、敵兵士1体に使用可能な非無属性からランダムに属性を付着。本人のみ。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-fire.png",
+   "position": {
+    "x": 438,
+    "y": -520
+   }
+  },
+  {
+   "id": "E02",
+   "name": "元素残留",
+   "group": "E",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身が敵兵士へ与える属性付着の消費・持続回数+1。既存付着モデルに従う。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-fire.png",
+   "position": {
+    "x": 514,
+    "y": -702
+   }
+  },
+  {
+   "id": "E03",
+   "name": "二重付着",
+   "group": "E",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札由来の属性付着時20%で異なる属性を順次追加付着、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-fire.png",
+   "position": {
+    "x": 602,
+    "y": -628
+   }
+  },
+  {
+   "id": "E04",
+   "name": "反応特化",
+   "group": "E",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "取得時に対消滅+4／黒氷+4／砕氷+4／混沌反応+5から1つ選択。既存反応のダメージへ加算。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-fire.png",
+   "position": {
+    "x": 628,
+    "y": -854
+   }
+  },
+  {
+   "id": "E05",
+   "name": "元素拡散",
+   "group": "E",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の属性反応時、反応対象の隣接敵兵士1体に反応を起こした側の属性を付着、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-fire.png",
+   "position": {
+    "x": 732,
+    "y": -766
+   }
+  },
+  {
+   "id": "E06",
+   "name": "元素共鳴",
+   "group": "E",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身のダメージ型属性反応の基礎ダメージ+2。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-fire.png",
+   "position": {
+    "x": 740,
+    "y": -1006
+   }
+  },
+  {
+   "id": "E07",
+   "name": "残響",
+   "group": "E",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身が起こす最初の属性反応後、反応前の付着を1回分残す（各自ターン1回）。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-fire.png",
+   "position": {
+    "x": 862,
+    "y": -904
+   }
+  },
+  {
+   "id": "E08",
+   "name": "元素暴走",
+   "group": "E",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の反応後、別の敵兵士1体にランダム属性を付着し、既存の反応を誘発できる。各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-fire.png",
+   "position": {
+    "x": 926,
+    "y": -1104
+   }
+  },
+  {
+   "id": "S01",
+   "name": "感染",
+   "group": "S",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "自身由来の有害状態を持つ敵兵士死亡時、隣接敵兵士1体へ解除可能な状態1種を残存期間1ターンで移す。各自ターン1回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/factions/crest-demon.png",
+   "position": {
+    "x": 588,
+    "y": -340
+   }
+  },
+  {
+   "id": "S02",
+   "name": "重症化",
+   "group": "S",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身由来の異なる有害状態が2種以上になった敵兵士に固定2ダメージ、対象ごと各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-demon.png",
+   "position": {
+    "x": 724,
+    "y": -484
+   }
+  },
+  {
+   "id": "S03",
+   "name": "毒の刃",
+   "group": "S",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の手札からの攻撃魔法が敵兵士へ命中すると15%で毒2ターン付与、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-demon.png",
+   "position": {
+    "x": 780,
+    "y": -384
+   }
+  },
+  {
+   "id": "S04",
+   "name": "傷口の拡大",
+   "group": "S",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の出血tickの基礎ダメージ+1。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-demon.png",
+   "position": {
+    "x": 882,
+    "y": -588
+   }
+  },
+  {
+   "id": "S05",
+   "name": "燃え広がる炎",
+   "group": "S",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身のやけどtick時20%で隣接敵兵士1体へやけど1ターン付与、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-demon.png",
+   "position": {
+    "x": 950,
+    "y": -470
+   }
+  },
+  {
+   "id": "S06",
+   "name": "衰弱の刻印",
+   "group": "S",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身が付与した有害状態を持つ敵兵士への直接攻撃が+1ダメージ、状態数で重複しない。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-demon.png",
+   "position": {
+    "x": 1040,
+    "y": -692
+   }
+  },
+  {
+   "id": "S07",
+   "name": "苦痛の回収",
+   "group": "S",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の有害状態ダメージで敵兵士を倒すとMP+1、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-demon.png",
+   "position": {
+    "x": 1120,
+    "y": -554
+   }
+  },
+  {
+   "id": "S08",
+   "name": "疫病",
+   "group": "S",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、自身が敵兵士1体に付与した毒・出血の残存tick相当の基礎ダメージを最大8まで即時精算し該当状態を消費。各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/factions/crest-demon.png",
+   "position": {
+    "x": 1248,
+    "y": -720
+   }
+  },
+  {
+   "id": "T01",
+   "name": "時間差詠唱",
+   "group": "T",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "手札から使った自ターン最初の単体攻撃魔法を、次の自ターン開始時に元対象へ威力50%で予約発動。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-help.png",
+   "position": {
+    "x": 670,
+    "y": -118
+   }
+  },
+  {
+   "id": "T02",
+   "name": "停滞",
+   "group": "T",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身が敵に付与した有害状態の期限減算時20%で1回だけ減算を見送る。各状態の寿命延長は最大1ターン。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-help.png",
+   "position": {
+    "x": 846,
+    "y": -206
+   }
+  },
+  {
+   "id": "T03",
+   "name": "未来への備え",
+   "group": "T",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自ターン終了時にMPが2以上残っていれば、次の自ターン開始時MP+1。MPの追加支払いなし。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-help.png",
+   "position": {
+    "x": 864,
+    "y": -94
+   }
+  },
+  {
+   "id": "T04",
+   "name": "先延ばし",
+   "group": "T",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、味方兵士1体の解除可能な持続ダメージの次の1tickを次回tickへ延期、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-help.png",
+   "position": {
+    "x": 1030,
+    "y": -250
+   }
+  },
+  {
+   "id": "T05",
+   "name": "時の加速",
+   "group": "T",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の味方に付与した継続回復が発生した後、同じ効果を次の自ターンにもHP1回復として予約、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-help.png",
+   "position": {
+    "x": 1054,
+    "y": -116
+   }
+  },
+  {
+   "id": "T06",
+   "name": "時の錨",
+   "group": "T",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、次の自ターン開始時に1枚追加ドローを予約、試合中2回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-help.png",
+   "position": {
+    "x": 1214,
+    "y": -296
+   }
+  },
+  {
+   "id": "T07",
+   "name": "遅延の利得",
+   "group": "T",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の予約魔法が合法に解決されたときMP+1、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-help.png",
+   "position": {
+    "x": 1242,
+    "y": -138
+   }
+  },
+  {
+   "id": "T08",
+   "name": "時の残響",
+   "group": "T",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、前の自ターンの最初の手札由来の単体攻撃魔法を元の基礎威力100%で1回再発動（対象を再選択可）、試合中1回。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-help.png",
+   "position": {
+    "x": 1418,
+    "y": -250
+   }
+  },
+  {
+   "id": "P01",
+   "name": "魔力の泉",
+   "group": "P",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "初期MP+2（上限を超えた分は既存上限で処理）。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-mp.png",
+   "position": {
+    "x": 670,
+    "y": 118
+   }
+  },
+  {
+   "id": "P02",
+   "name": "魔力貯蔵",
+   "group": "P",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "MP回復の上限超過分を貯蔵、最大5。P08未取得でも自ターン開始時に1まで空きMPへ自動移送する。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-mp.png",
+   "position": {
+    "x": 864,
+    "y": 94
+   }
+  },
+  {
+   "id": "P03",
+   "name": "等価交換",
+   "group": "P",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分のメイン行動中、戦闘内コイン1を消費しMP2回復、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-mp.png",
+   "position": {
+    "x": 846,
+    "y": 206
+   }
+  },
+  {
+   "id": "P04",
+   "name": "魔物狩り",
+   "group": "P",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の効果・兵士で魔物にとどめを刺すと戦闘内コイン+1、試合中2回まで。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-mp.png",
+   "position": {
+    "x": 1054,
+    "y": 116
+   }
+  },
+  {
+   "id": "P05",
+   "name": "魔力節約",
+   "group": "P",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの有料カード使用宣言時10%でMPコスト-1（最低1）。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-mp.png",
+   "position": {
+    "x": 1030,
+    "y": 250
+   }
+  },
+  {
+   "id": "P06",
+   "name": "魔力の奔流",
+   "group": "P",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "使用宣言時のMPが上限なら、その攻撃魔法の直接基礎ダメージ+2。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-mp.png",
+   "position": {
+    "x": 1242,
+    "y": 138
+   }
+  },
+  {
+   "id": "P07",
+   "name": "魔力の器",
+   "group": "P",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "MP上限+2。現在MPは増やさない。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-mp.png",
+   "position": {
+    "x": 1214,
+    "y": 296
+   }
+  },
+  {
+   "id": "P08",
+   "name": "魔力覚醒",
+   "group": "P",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "P02必須。自分のメイン行動中、貯蔵MPを空きMP分まで任意に一括移送、各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 必須：P02「魔力貯蔵」 ／ 奥義は1つまで",
+   "icon": "ui/icon-mp.png",
+   "position": {
+    "x": 1418,
+    "y": 250
+   }
+  },
+  {
+   "id": "H01",
+   "name": "戦略的準備",
+   "group": "H",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "開始手札から0〜2枚選択し、選択枚数を山札から引いた後に戻したカードを山札へ混ぜる。試合開始時1回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/home/deck.png",
+   "position": {
+    "x": 588,
+    "y": 340
+   }
+  },
+  {
+   "id": "H02",
+   "name": "複製術",
+   "group": "H",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "通常ドローしたカードを10%で一時コピー1枚追加、各自ターン1回。コピーは通常の手札上限に従う。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/deck.png",
+   "position": {
+    "x": 780,
+    "y": 384
+   }
+  },
+  {
+   "id": "H03",
+   "name": "再利用",
+   "group": "H",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、捨て札のカード1枚を手札へ戻す。試合中1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/deck.png",
+   "position": {
+    "x": 724,
+    "y": 484
+   }
+  },
+  {
+   "id": "H04",
+   "name": "軍備調達",
+   "group": "H",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、山札の上から最初の兵士カード1枚を引く。試合中1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/deck.png",
+   "position": {
+    "x": 950,
+    "y": 470
+   }
+  },
+  {
+   "id": "H05",
+   "name": "魔導書",
+   "group": "H",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、山札の上から最初の魔法カード1枚を引く。試合中1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/deck.png",
+   "position": {
+    "x": 882,
+    "y": 588
+   }
+  },
+  {
+   "id": "H06",
+   "name": "加速思考",
+   "group": "H",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "同一自ターンで手札から3枚目のカードを使うと1枚ドロー、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/deck.png",
+   "position": {
+    "x": 1120,
+    "y": 554
+   }
+  },
+  {
+   "id": "H07",
+   "name": "再編成",
+   "group": "H",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、手札1枚を任意に捨てて1枚ドロー、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/deck.png",
+   "position": {
+    "x": 1040,
+    "y": 692
+   }
+  },
+  {
+   "id": "H08",
+   "name": "運命操作",
+   "group": "H",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、手札1枚を選び山札から提示した最大3枚のうち1枚と交換。残りは元の順序、各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/home/deck.png",
+   "position": {
+    "x": 1248,
+    "y": 720
+   }
+  },
+  {
+   "id": "I01",
+   "name": "盗み見",
+   "group": "I",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "メイン行動中、相手が次に通常ドローする山札先頭1枚を自分だけ確認。共有山札ならその時点の先頭。各自ターン1回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-kind-wild.png",
+   "position": {
+    "x": 438,
+    "y": 520
+   }
+  },
+  {
+   "id": "I02",
+   "name": "魔法模倣",
+   "group": "I",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵が手札から使用した単体攻撃魔法を15%で一時コピーとして自分の手札へ追加、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-wild.png",
+   "position": {
+    "x": 602,
+    "y": 628
+   }
+  },
+  {
+   "id": "I03",
+   "name": "戦術の模倣",
+   "group": "I",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵の手札由来の兵士出撃後20%でその兵士カードの一時コピーを手札へ追加、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-wild.png",
+   "position": {
+    "x": 514,
+    "y": 702
+   }
+  },
+  {
+   "id": "I04",
+   "name": "借りた力",
+   "group": "I",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の模倣由来カードの使用MP-1（最低1）。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-wild.png",
+   "position": {
+    "x": 732,
+    "y": 766
+   }
+  },
+  {
+   "id": "I05",
+   "name": "対抗詠唱",
+   "group": "I",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵が手札から攻撃魔法を使った後、次の自身の攻撃魔法の基礎ダメージ+1、各自ターン1回、非累積。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-wild.png",
+   "position": {
+    "x": 628,
+    "y": 854
+   }
+  },
+  {
+   "id": "I06",
+   "name": "反転の術",
+   "group": "I",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵が手札から回復魔法を使った後、次の自身の手札からの回復魔法の回復量+2、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-wild.png",
+   "position": {
+    "x": 862,
+    "y": 904
+   }
+  },
+  {
+   "id": "I07",
+   "name": "観察眼",
+   "group": "I",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵が手札から3枚のカードを使用したら自身の次の自ターン開始に1枚追加ドロー、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-wild.png",
+   "position": {
+    "x": 740,
+    "y": 1006
+   }
+  },
+  {
+   "id": "I08",
+   "name": "鏡像",
+   "group": "I",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、敵兵士1体の弱体トークンを自陣の合法枠に召喚。試合中1回、固有能力なし。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-kind-wild.png",
+   "position": {
+    "x": 926,
+    "y": 1104
+   }
+  },
+  {
+   "id": "V01",
+   "name": "分身",
+   "group": "V",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "手札由来の兵士出撃時15%で空き枠に同種の弱体トークンを召喚、各自ターン1回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/factions/crest-forest.png",
+   "position": {
+    "x": 232,
+    "y": 638
+   }
+  },
+  {
+   "id": "V02",
+   "name": "使い魔",
+   "group": "V",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から3枚の魔法を使用するごとに使い魔1体を空き枠に召喚。各自ターン1回、カウンタは試合中継続。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-forest.png",
+   "position": {
+    "x": 350,
+    "y": 796
+   }
+  },
+  {
+   "id": "V03",
+   "name": "召喚の盾",
+   "group": "V",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分が召喚したトークンにシールド1。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-forest.png",
+   "position": {
+    "x": 244,
+    "y": 836
+   }
+  },
+  {
+   "id": "V04",
+   "name": "群れの力",
+   "group": "V",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分のトークンが盤上に2体以上いれば、トークンの通常攻撃の基礎ダメージ+1。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-forest.png",
+   "position": {
+    "x": 426,
+    "y": 970
+   }
+  },
+  {
+   "id": "V05",
+   "name": "送還",
+   "group": "V",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、味方トークン1体を消滅させMP+1。死亡扱いにしない。各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-forest.png",
+   "position": {
+    "x": 298,
+    "y": 1018
+   }
+  },
+  {
+   "id": "V06",
+   "name": "契約更新",
+   "group": "V",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "味方トークンが敵の攻撃で消滅した場合20%で次の自ターン開始時に使い魔を予約召喚。各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-forest.png",
+   "position": {
+    "x": 502,
+    "y": 1144
+   }
+  },
+  {
+   "id": "V07",
+   "name": "召喚の門",
+   "group": "V",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、MP3で使い魔1体を召喚。各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-forest.png",
+   "position": {
+    "x": 352,
+    "y": 1200
+   }
+  },
+  {
+   "id": "V08",
+   "name": "軍勢の創造",
+   "group": "V",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "分身など元兵士が存在するトークンは安全リストにある元兵士固有能力を1つ継承できる。使い魔は代わりに攻撃力+1。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/factions/crest-forest.png",
+   "position": {
+    "x": 492,
+    "y": 1354
+   }
+  },
+  {
+   "id": "G01",
+   "name": "死の爆発",
+   "group": "G",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "味方兵士死亡時、死亡位置に隣接する敵兵士へ固定2ダメージ、各自ターン合計2回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-rarity-epic.png",
+   "position": {
+    "x": 0,
+    "y": 680
+   }
+  },
+  {
+   "id": "G02",
+   "name": "魂の回収",
+   "group": "G",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "味方の非トークン兵士死亡時、魂+1、最大6。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-epic.png",
+   "position": {
+    "x": 56,
+    "y": 868
+   }
+  },
+  {
+   "id": "G03",
+   "name": "死者の魔力",
+   "group": "G",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "味方兵士死亡時MP+1、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-epic.png",
+   "position": {
+    "x": -56,
+    "y": 868
+   }
+  },
+  {
+   "id": "G04",
+   "name": "冥界の門",
+   "group": "G",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、墓地から非トークン兵士カード1枚を手札に戻す。試合中1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-epic.png",
+   "position": {
+    "x": 68,
+    "y": 1058
+   }
+  },
+  {
+   "id": "G05",
+   "name": "遺志の継承",
+   "group": "G",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "非トークン味方兵士死亡時、次に手札から出撃する味方兵士へ死亡時攻撃力の25%（最大3）を付与。非累積。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-epic.png",
+   "position": {
+    "x": -68,
+    "y": 1058
+   }
+  },
+  {
+   "id": "G06",
+   "name": "蘇生術",
+   "group": "G",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "G02必須。メイン行動中、魂3で墓地の非トークン兵士1体を最大HP50%で蘇生。各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 必須：G02「魂の回収」",
+   "icon": "ui/icon-rarity-epic.png",
+   "position": {
+    "x": 80,
+    "y": 1248
+   }
+  },
+  {
+   "id": "G07",
+   "name": "冥府の護り",
+   "group": "G",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "蘇生した兵士にシールド2。各自ターン1体。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-epic.png",
+   "position": {
+    "x": -80,
+    "y": 1248
+   }
+  },
+  {
+   "id": "G08",
+   "name": "死霊術",
+   "group": "G",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "各自ターンの最初の合法な非トークン味方兵士死亡時、死亡処理終了後にHP50%で自動蘇生。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-rarity-epic.png",
+   "position": {
+    "x": 0,
+    "y": 1440
+   }
+  },
+  {
+   "id": "B01",
+   "name": "血の代償",
+   "group": "B",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "任意で手札からの魔法の不足MP1につき城HP2を支払い使用可能（HPは最低1残す）。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-heart.png",
+   "position": {
+    "x": -232,
+    "y": 638
+   }
+  },
+  {
+   "id": "B02",
+   "name": "血の契約",
+   "group": "B",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、城HP3を任意に支払い1枚ドロー、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-heart.png",
+   "position": {
+    "x": -244,
+    "y": 836
+   }
+  },
+  {
+   "id": "B03",
+   "name": "血の刃",
+   "group": "B",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの攻撃魔法の使用時、任意に城HP2を追加支払い直接基礎ダメージ+4（1対象のみ）、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-heart.png",
+   "position": {
+    "x": -350,
+    "y": 796
+   }
+  },
+  {
+   "id": "B04",
+   "name": "吸血",
+   "group": "B",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の手札由来の攻撃魔法・兵士通常攻撃による敵兵士の実HP損失の10%を城HPに回復。各自ターン上限3。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-heart.png",
+   "position": {
+    "x": -298,
+    "y": 1018
+   }
+  },
+  {
+   "id": "B05",
+   "name": "瀕死の覚醒",
+   "group": "B",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "使用宣言時の城HPが最大HPの30%以下なら手札からの攻撃魔法の基礎ダメージ+20%。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-heart.png",
+   "position": {
+    "x": -426,
+    "y": 970
+   }
+  },
+  {
+   "id": "B06",
+   "name": "血液貯蔵",
+   "group": "B",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "任意支払で実消費した城HP1につき血気+1、最大8。B07未取得でもメイン行動中に血気3でMP1回復可（各自ターン1回）。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-heart.png",
+   "position": {
+    "x": -352,
+    "y": 1200
+   }
+  },
+  {
+   "id": "B07",
+   "name": "血の解放",
+   "group": "B",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "B06必須。メイン行動中、血気を1〜4消費し合法な敵兵士1体へ同量の固定ダメージ、各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 必須：B06「血液貯蔵」",
+   "icon": "ui/icon-heart.png",
+   "position": {
+    "x": -502,
+    "y": 1144
+   }
+  },
+  {
+   "id": "B08",
+   "name": "血の支配者",
+   "group": "B",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "B01必須。任意で手札からの魔法のMPコストの一部または全部を城HPに置換（MP1=HP1）。血の代償の交換率も1:1へ上書き。",
+   "condition": "隣のノードを取得済み ／ 必須：B01「血の代償」 ／ 奥義は1つまで",
+   "icon": "ui/icon-heart.png",
+   "position": {
+    "x": -492,
+    "y": 1354
+   }
+  },
+  {
+   "id": "R01",
+   "name": "癒しの祈り",
+   "group": "R",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "回復魔法の基礎回復量+1。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-water.png",
+   "position": {
+    "x": -438,
+    "y": 520
+   }
+  },
+  {
+   "id": "R02",
+   "name": "生命の蓄積",
+   "group": "R",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "余剰回復を最大5まで貯蔵し、次の手札からの回復魔法の最初の対象へ全量加算して消費。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-water.png",
+   "position": {
+    "x": -514,
+    "y": 702
+   }
+  },
+  {
+   "id": "R03",
+   "name": "浄化",
+   "group": "R",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの回復魔法対象から解除可能な有害状態を1つ解除。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-water.png",
+   "position": {
+    "x": -602,
+    "y": 628
+   }
+  },
+  {
+   "id": "R04",
+   "name": "癒しの残響",
+   "group": "R",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの回復魔法対象は次の自ターン開始時HP1回復、各対象1件まで予約。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-water.png",
+   "position": {
+    "x": -628,
+    "y": 854
+   }
+  },
+  {
+   "id": "R05",
+   "name": "生命循環",
+   "group": "R",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの魔法で城の実HPが回復した場合、傷ついた味方兵士すべてをHP1回復、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-water.png",
+   "position": {
+    "x": -732,
+    "y": 766
+   }
+  },
+  {
+   "id": "R06",
+   "name": "奇跡の治癒",
+   "group": "R",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの回復魔法を20%で威力50%再発動、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-water.png",
+   "position": {
+    "x": -740,
+    "y": 1006
+   }
+  },
+  {
+   "id": "R07",
+   "name": "守りの癒し",
+   "group": "R",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの回復魔法で兵士の実HPが回復した場合、その兵士へシールド1、各自ターン合計2回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-water.png",
+   "position": {
+    "x": -862,
+    "y": 904
+   }
+  },
+  {
+   "id": "R08",
+   "name": "生命創造",
+   "group": "R",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの回復魔法で対象の最大HP+1、各自ターン1回、同一対象の試合中増加上限+3。現在HPの自動増加なし。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-water.png",
+   "position": {
+    "x": -926,
+    "y": 1104
+   }
+  },
+  {
+   "id": "D01",
+   "name": "石垣",
+   "group": "D",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "初期城壁+4。城HPとは別。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-kind-defense.png",
+   "position": {
+    "x": -588,
+    "y": 340
+   }
+  },
+  {
+   "id": "D02",
+   "name": "反射障壁",
+   "group": "D",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "城壁が吸収した実ダメージの20%を攻撃元の生存兵士または敵城へ固定反射、各自ターン合計最大4。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-defense.png",
+   "position": {
+    "x": -724,
+    "y": 484
+   }
+  },
+  {
+   "id": "D03",
+   "name": "危機察知",
+   "group": "D",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "味方兵士への直接攻撃・直接攻撃魔法の命中を10%で回避する。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-defense.png",
+   "position": {
+    "x": -780,
+    "y": 384
+   }
+  },
+  {
+   "id": "D04",
+   "name": "緊急防衛",
+   "group": "D",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の城壁が破壊された後、次の城HPへの直接攻撃ダメージを50%軽減、非累積、各自ターン1回付与。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-defense.png",
+   "position": {
+    "x": -882,
+    "y": 588
+   }
+  },
+  {
+   "id": "D05",
+   "name": "城壁再生",
+   "group": "D",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自ターン開始時、城壁が2未満なら2まで修復。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-defense.png",
+   "position": {
+    "x": -950,
+    "y": 470
+   }
+  },
+  {
+   "id": "D06",
+   "name": "守護結界",
+   "group": "D",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の城HPへ通過する最初の直接攻撃ダメージを最大3吸収、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-defense.png",
+   "position": {
+    "x": -1040,
+    "y": 692
+   }
+  },
+  {
+   "id": "D07",
+   "name": "守護の誓い",
+   "group": "D",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、味方兵士1体を指定し次の敵の直接攻撃で受けるダメージを2軽減。各自ターン1回、次自ターン開始で失効。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-defense.png",
+   "position": {
+    "x": -1120,
+    "y": 554
+   }
+  },
+  {
+   "id": "D08",
+   "name": "絶対防衛",
+   "group": "D",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵由来の致死ダメージで城HP1にとどまり、城壁5生成。試合中1回。HP支払・既存の強制終了には適用しない。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-kind-defense.png",
+   "position": {
+    "x": -1248,
+    "y": 720
+   }
+  },
+  {
+   "id": "Q01",
+   "name": "戦意",
+   "group": "Q",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "味方兵士が敵の直接攻撃で実HPダメージを受けるとSP+1、各自ターン合計3まで。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-rarity-legendary.png",
+   "position": {
+    "x": -670,
+    "y": 118
+   }
+  },
+  {
+   "id": "Q02",
+   "name": "闘気",
+   "group": "Q",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "SP15以上で自身の兵士の通常攻撃の基礎ダメージ+1。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-legendary.png",
+   "position": {
+    "x": -846,
+    "y": 206
+   }
+  },
+  {
+   "id": "Q03",
+   "name": "奮起",
+   "group": "Q",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、SP3消費で味方兵士1体にシールド3、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-legendary.png",
+   "position": {
+    "x": -864,
+    "y": 94
+   }
+  },
+  {
+   "id": "Q04",
+   "name": "闘志の火花",
+   "group": "Q",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "味方兵士が敵兵士を通常攻撃で撃破すると既存SP報酬に+1、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-legendary.png",
+   "position": {
+    "x": -1030,
+    "y": 250
+   }
+  },
+  {
+   "id": "Q05",
+   "name": "集中",
+   "group": "Q",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、SP3で次の自身の直接会心対象命中の会心率+20ポイント。各自ターン1回、非累積。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-legendary.png",
+   "position": {
+    "x": -1054,
+    "y": 116
+   }
+  },
+  {
+   "id": "Q06",
+   "name": "戦場の号令",
+   "group": "Q",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、SP5で味方兵士全員の攻撃力+1を次自ターン開始まで付与、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-legendary.png",
+   "position": {
+    "x": -1214,
+    "y": 296
+   }
+  },
+  {
+   "id": "Q07",
+   "name": "燃える決意",
+   "group": "Q",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "SPが既存上限に初めて到達するとMP+2、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-rarity-legendary.png",
+   "position": {
+    "x": -1242,
+    "y": 138
+   }
+  },
+  {
+   "id": "Q08",
+   "name": "覚醒",
+   "group": "Q",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、SP10を消費して味方兵士1体に攻撃力+3・シールド3を付与し、攻撃力補正は次自ターン開始まで。各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-rarity-legendary.png",
+   "position": {
+    "x": -1418,
+    "y": 250
+   }
+  },
+  {
+   "id": "U01",
+   "name": "増援",
+   "group": "U",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "既存の兵士出撃可能枚数の上限+1。盤面枠自体は増やさない。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-kind-soldier.png",
+   "position": {
+    "x": -670,
+    "y": -118
+   }
+  },
+  {
+   "id": "U02",
+   "name": "連携攻撃",
+   "group": "U",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "同一レーンの異なる味方兵士が同一敵兵士に自ターン中2回目以降の通常攻撃をすると追加固定ダメージ2、対象ごと1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-soldier.png",
+   "position": {
+    "x": -864,
+    "y": -94
+   }
+  },
+  {
+   "id": "U03",
+   "name": "先制部隊",
+   "group": "U",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から出撃した兵士が既存射程内の合法な敵兵士1体を即時通常攻撃、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-soldier.png",
+   "position": {
+    "x": -846,
+    "y": -206
+   }
+  },
+  {
+   "id": "U04",
+   "name": "長弓",
+   "group": "U",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "弓兵・魔法使いの射程+1（既存のカード分類で判定）。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-soldier.png",
+   "position": {
+    "x": -1054,
+    "y": -116
+   }
+  },
+  {
+   "id": "U05",
+   "name": "戦術支援",
+   "group": "U",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "隣接味方兵士が1体以上いる兵士の攻撃力+1、非重複の動的補正。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-soldier.png",
+   "position": {
+    "x": -1030,
+    "y": -250
+   }
+  },
+  {
+   "id": "U06",
+   "name": "戦術転換",
+   "group": "U",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、味方兵士1体を同じ進軍位置の隣接レーンの空き枠へ移す、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-soldier.png",
+   "position": {
+    "x": -1242,
+    "y": -138
+   }
+  },
+  {
+   "id": "U07",
+   "name": "進軍の旗",
+   "group": "U",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から出撃した最初の兵士へシールド2、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-kind-soldier.png",
+   "position": {
+    "x": -1214,
+    "y": -296
+   }
+  },
+  {
+   "id": "U08",
+   "name": "軍団指揮",
+   "group": "U",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "味方兵士が通常攻撃で敵兵士を倒すと、既存の合法な対象に即時追加通常攻撃。各兵士・各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-kind-soldier.png",
+   "position": {
+    "x": -1418,
+    "y": -250
+   }
+  },
+  {
+   "id": "K01",
+   "name": "挟撃",
+   "group": "K",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "異なるレーンの味方兵士が同一敵兵士へ合法に通常攻撃した場合、2回目の攻撃で兵士防御を1無視、対象ごと各自ターン1回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/home/rank.png",
+   "position": {
+    "x": -588,
+    "y": -340
+   }
+  },
+  {
+   "id": "K02",
+   "name": "横隊",
+   "group": "K",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "同じ進軍位置の3レーンに味方兵士が揃う間、該当兵士は直接被ダメージ-1（最低0）。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/rank.png",
+   "position": {
+    "x": -780,
+    "y": -384
+   }
+  },
+  {
+   "id": "K03",
+   "name": "縦隊",
+   "group": "K",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "同一レーンで前後に隣接する味方兵士が2体以上いる間、最後尾兵士の射程+1。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/rank.png",
+   "position": {
+    "x": -724,
+    "y": -484
+   }
+  },
+  {
+   "id": "K04",
+   "name": "迂回",
+   "group": "K",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、味方兵士1体を隣接レーン同位置の空き枠へ移動し、シールド1付与。各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/rank.png",
+   "position": {
+    "x": -950,
+    "y": -470
+   }
+  },
+  {
+   "id": "K05",
+   "name": "交代",
+   "group": "K",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、同レーンで前後隣接の味方兵士2体の位置を交換。各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/rank.png",
+   "position": {
+    "x": -882,
+    "y": -588
+   }
+  },
+  {
+   "id": "K06",
+   "name": "待ち伏せ",
+   "group": "K",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の空だったレーンに手札から最初の兵士を出すとシールド2、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/rank.png",
+   "position": {
+    "x": -1120,
+    "y": -554
+   }
+  },
+  {
+   "id": "K07",
+   "name": "追い風",
+   "group": "K",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵兵士を通常攻撃で倒した味方兵士が空き枠へ1マス追加進軍できる、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/home/rank.png",
+   "position": {
+    "x": -1040,
+    "y": -692
+   }
+  },
+  {
+   "id": "K08",
+   "name": "電撃作戦",
+   "group": "K",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、味方兵士1体を既存移動制約に従い追加で1マス進軍。各自ターン1回。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/home/rank.png",
+   "position": {
+    "x": -1248,
+    "y": -720
+   }
+  },
+  {
+   "id": "F01",
+   "name": "再装填",
+   "group": "F",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "自分の固定兵器の通常攻撃後20%で同じ対象に威力50%で追加攻撃、各自ターン1回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-earth.png",
+   "position": {
+    "x": -438,
+    "y": -520
+   }
+  },
+  {
+   "id": "F02",
+   "name": "再設置",
+   "group": "F",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の手札由来の罠が発動・消滅した後20%で同じ合法枠へ同種罠を再生成、各自ターン1回。生成罠は再設置不可。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-earth.png",
+   "position": {
+    "x": -602,
+    "y": -628
+   }
+  },
+  {
+   "id": "F03",
+   "name": "防衛工事",
+   "group": "F",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から配置した固定兵器が既存HPを持つならシールド2、持たなければ最初の合法な破壊を1回防ぐ。各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-earth.png",
+   "position": {
+    "x": -514,
+    "y": -702
+   }
+  },
+  {
+   "id": "F04",
+   "name": "狙撃照準",
+   "group": "F",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "固定兵器が射程の最大距離で命中した場合、直接基礎ダメージ+2。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-earth.png",
+   "position": {
+    "x": -732,
+    "y": -766
+   }
+  },
+  {
+   "id": "F05",
+   "name": "連動装置",
+   "group": "F",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の罠が敵に発動した後、射程内にいる固定兵器1基が同じ敵に威力50%で追加攻撃、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-earth.png",
+   "position": {
+    "x": -628,
+    "y": -854
+   }
+  },
+  {
+   "id": "F06",
+   "name": "罠の回収",
+   "group": "F",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札由来の罠が消滅するとMP+1、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-earth.png",
+   "position": {
+    "x": -862,
+    "y": -904
+   }
+  },
+  {
+   "id": "F07",
+   "name": "工兵の知恵",
+   "group": "F",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から自ターン最初の兵器または罠を配置する際、MPコスト-1（最低1）。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-earth.png",
+   "position": {
+    "x": -740,
+    "y": -1006
+   }
+  },
+  {
+   "id": "F08",
+   "name": "連鎖起爆",
+   "group": "F",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の罠が発動すると隣接する自分の罠1つを、元対象がその罠の合法対象でもある場合に発動。各自ターン1回、追加罠は再連鎖不可。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-earth.png",
+   "position": {
+    "x": -926,
+    "y": -1104
+   }
+  },
+  {
+   "id": "A01",
+   "name": "城壁破砕",
+   "group": "A",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "敵城壁を破壊した自身の直接攻撃の解決後、敵城へ固定2ダメージ、各自ターン1回。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/factions/crest-dragon.png",
+   "position": {
+    "x": -232,
+    "y": -638
+   }
+  },
+  {
+   "id": "A02",
+   "name": "攻城兵器",
+   "group": "A",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "固定兵器の射程+1。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-dragon.png",
+   "position": {
+    "x": -350,
+    "y": -796
+   }
+  },
+  {
+   "id": "A03",
+   "name": "包囲戦",
+   "group": "A",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵城到達済みの味方兵士がいる間、手札からの城への攻撃魔法の直接基礎ダメージ+2。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-dragon.png",
+   "position": {
+    "x": -244,
+    "y": -836
+   }
+  },
+  {
+   "id": "A04",
+   "name": "突破口",
+   "group": "A",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分が敵城壁を破壊すると1枚ドロー、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-dragon.png",
+   "position": {
+    "x": -426,
+    "y": -970
+   }
+  },
+  {
+   "id": "A05",
+   "name": "貫通攻撃",
+   "group": "A",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵城への直接ダメージの20%を城壁を経由せず城HPへ通す。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-dragon.png",
+   "position": {
+    "x": -298,
+    "y": -1018
+   }
+  },
+  {
+   "id": "A06",
+   "name": "総攻撃",
+   "group": "A",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの城への攻撃魔法の後、到達済みの味方兵士1体が既存ルールで追撃、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-dragon.png",
+   "position": {
+    "x": -502,
+    "y": -1144
+   }
+  },
+  {
+   "id": "A07",
+   "name": "城門の標的",
+   "group": "A",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "味方兵士が初めて敵城へ到達すると次の城への直接攻撃+2。各自ターン1回、非累積。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/factions/crest-dragon.png",
+   "position": {
+    "x": -352,
+    "y": -1200
+   }
+  },
+  {
+   "id": "A08",
+   "name": "城門突破",
+   "group": "A",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "到達済み味方兵士の通常攻撃が敵城壁を100%貫通する。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/factions/crest-dragon.png",
+   "position": {
+    "x": -492,
+    "y": -1354
+   }
+  },
+  {
+   "id": "L01",
+   "name": "幸運の兆し",
+   "group": "L",
+   "kind": "normal",
+   "state": "available",
+   "cost": 1,
+   "description": "幸運対象となる自分の確率発動率を1.1倍にする。",
+   "condition": "START に隣接（最初から取得できる） ／ 隣のノードを取得済み",
+   "icon": "ui/icon-luck.png",
+   "position": {
+    "x": 0,
+    "y": 140
+   }
+  },
+  {
+   "id": "L02",
+   "name": "二度目のチャンス",
+   "group": "L",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "幸運対象の最終失敗後、10%の独立判定に成功すれば元の判定を1回だけ再抽選。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-luck.png",
+   "position": {
+    "x": -84,
+    "y": 230
+   }
+  },
+  {
+   "id": "L03",
+   "name": "運命の蓄積",
+   "group": "L",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "幸運対象の最終失敗ごとに次の対象判定+2ポイント（最大+10）。成功でリセット。プレイヤー共通の蓄積。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-luck.png",
+   "position": {
+    "x": 84,
+    "y": 230
+   }
+  },
+  {
+   "id": "L04",
+   "name": "奇跡の一枚",
+   "group": "L",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自ターン開始時10%で追加ドロー1枚。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-luck.png",
+   "position": {
+    "x": -84,
+    "y": 320
+   }
+  },
+  {
+   "id": "L05",
+   "name": "天の恵み",
+   "group": "L",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からのカード使用時5%で実際に消費したMPを全還元、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-luck.png",
+   "position": {
+    "x": 84,
+    "y": 320
+   }
+  },
+  {
+   "id": "L06",
+   "name": "幸運の賽",
+   "group": "L",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の手札からのサイコロカードの出目を独立に2回生成し、選択UI/CPUで片方を選ぶ。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-luck.png",
+   "position": {
+    "x": -84,
+    "y": 410
+   }
+  },
+  {
+   "id": "L07",
+   "name": "幸運の反動",
+   "group": "L",
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "幸運対象判定の最終失敗が自ターン内で3回に達するとMP+1、各自ターン1回。",
+   "condition": "隣のノードを取得済み",
+   "icon": "ui/icon-luck.png",
+   "position": {
+    "x": 84,
+    "y": 410
+   }
+  },
+  {
+   "id": "L08",
+   "name": "運命の支配者",
+   "group": "L",
+   "kind": "ultimate",
+   "state": "locked",
+   "cost": 1,
+   "description": "幸運対象判定を同じ確率で最大2回行い、一方でも成功すれば1度だけ発動。",
+   "condition": "隣のノードを取得済み ／ 奥義は1つまで",
+   "icon": "ui/icon-luck.png",
+   "position": {
+    "x": 0,
+    "y": 500
+   }
+  },
+  {
+   "id": "X01",
+   "name": "会心の残響",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札由来の単体攻撃魔法が直接会心した場合25%で威力50%の追加発動。各自ターン1回。",
+   "condition": "C04「深い傷跡」 か M02「魔法のやまびこ」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 88,
+    "y": -946
+   }
+  },
+  {
+   "id": "X02",
+   "name": "元素連鎖",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身のダメージ型属性反応が隣接する別の敵兵士1体へ威力50%で伝播。各自ターン1回。",
+   "condition": "M03「連鎖魔法」 か E05「元素拡散」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 542,
+    "y": -780
+   }
+  },
+  {
+   "id": "X03",
+   "name": "元素吸収",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の属性反応でMP+1、各自ターン1回。",
+   "condition": "E06「元素共鳴」 か P02「魔力貯蔵」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 802,
+    "y": -456
+   }
+  },
+  {
+   "id": "X04",
+   "name": "魔力の知恵",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、貯蔵MP2を消費し1枚ドロー、各自ターン1回。P02必須。",
+   "condition": "P02「魔力貯蔵」 か H04「軍備調達」 のどちらかを取得 ／ 必須：P02「魔力貯蔵」",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 908,
+    "y": 282
+   }
+  },
+  {
+   "id": "X05",
+   "name": "援軍要請",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "非トークン味方兵士死亡時、山札の先頭側の兵士カード1枚を引く、各自ターン1回。",
+   "condition": "H06「加速思考」 か U03「先制部隊」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 138,
+    "y": 174
+   }
+  },
+  {
+   "id": "X06",
+   "name": "戦士の遺産",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "非トークン味方兵士死亡時、その安全リスト内の固有能力1つを次の手札由来兵士へ次自ターン開始まで継承、各自ターン1回。",
+   "condition": "U05「戦術支援」 か G05「遺志の継承」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -548,
+    "y": 404
+   }
+  },
+  {
+   "id": "X07",
+   "name": "再誕の祝福",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身が蘇生した兵士へ次自ターン開始時HP2回復を予約、各自ターン1回。",
+   "condition": "G07「冥府の護り」 か R04「癒しの残響」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -354,
+    "y": 1052
+   }
+  },
+  {
+   "id": "X08",
+   "name": "生命障壁",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札由来回復魔法の余剰回復量を城壁に変換（各自ターン最大3、貯蔵との二重利用なし）。",
+   "condition": "R02「生命の蓄積」 か D05「城壁再生」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -732,
+    "y": 586
+   }
+  },
+  {
+   "id": "X09",
+   "name": "復讐の砲火",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の城壁破壊後、次の手札由来攻撃魔法の基礎ダメージ+3、各自ターン1回付与。",
+   "condition": "D04「緊急防衛」 か A03「包囲戦」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -562,
+    "y": -124
+   }
+  },
+  {
+   "id": "X10",
+   "name": "破壊衝動",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "城への直接攻撃にも会心率15%・倍率1.5を解放（既存会心率・倍率と重複加算しない）。城への会心時30%城壁貫通。",
+   "condition": "A05「貫通攻撃」 か C03「致命の一撃」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -120,
+    "y": -942
+   }
+  },
+  {
+   "id": "X11",
+   "name": "豪運の一撃",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "直接会心時10%でその会心倍率をさらに2倍（総倍率上限3）。",
+   "condition": "L02「二度目のチャンス」 か C02「研ぎ澄まされた感覚」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -70,
+    "y": -318
+   }
+  },
+  {
+   "id": "X12",
+   "name": "奇跡の詠唱",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "やまびこ成功時10%で原カードを捨て札から手札へ戻す、各自ターン1回。",
+   "condition": "L05「天の恵み」 か M05「魔法の複製」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 256,
+    "y": -324
+   }
+  },
+  {
+   "id": "X13",
+   "name": "元素の賽",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身のダメージ型属性反応時10%で同じ対象に威力50%の固定反応ダメージを再現、各自ターン1回。",
+   "condition": "L03「運命の蓄積」 か E03「二重付着」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 344,
+    "y": -198
+   }
+  },
+  {
+   "id": "X14",
+   "name": "九死一生",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵由来の城致死ダメージ時20%でHP1にとどまる。成功は試合中1回。絶対防衛より先に判定。",
+   "condition": "L04「奇跡の一枚」 か D03「危機察知」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -432,
+    "y": 352
+   }
+  },
+  {
+   "id": "X15",
+   "name": "運命の引き寄せ",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "通常ドロー時20%で山札先頭2枚から1枚選択。未選択は元の位置へ戻す。各自ターン1回。",
+   "condition": "L04「奇跡の一枚」 か H02「複製術」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 348,
+    "y": 352
+   }
+  },
+  {
+   "id": "X16",
+   "name": "黄金の祝福",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "戦闘内コイン獲得時20%でその獲得量を2倍、各自ターン1回。",
+   "condition": "L06「幸運の賽」 か P04「魔物狩り」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 486,
+    "y": 264
+   }
+  },
+  {
+   "id": "X17",
+   "name": "致命傷",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の毒・出血・やけどtickに会心率15%・倍率1.5を解放。通常会心補正を利用するが直接会心トリガーは起こさない。",
+   "condition": "C04「深い傷跡」 か S04「傷口の拡大」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 408,
+    "y": -822
+   }
+  },
+  {
+   "id": "X18",
+   "name": "時空の残響",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "予約発動した単体攻撃魔法にも通常やまびこを1回だけ許可。M02必須。",
+   "condition": "T02「停滞」 か M02「魔法のやまびこ」 のどちらかを取得 ／ 必須：M02「魔法のやまびこ」",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 546,
+    "y": -520
+   }
+  },
+  {
+   "id": "X19",
+   "name": "双子",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身がトークン召喚に成功した場合20%で同じトークンをもう1体召喚、各自ターン1回。",
+   "condition": "L02「二度目のチャンス」 か V01「分身」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 110,
+    "y": 462
+   }
+  },
+  {
+   "id": "X20",
+   "name": "不屈",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵の直接攻撃で自分の城壁が実ダメージを吸収したときSP+1、各自ターン合計2まで。",
+   "condition": "D02「反射障壁」 か Q01「戦意」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -696,
+    "y": 302
+   }
+  },
+  {
+   "id": "X21",
+   "name": "聖なる反応",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札からの回復魔法で実回復した味方兵士へ光属性付着、各自ターン1回。味方への既存有害反応は誘発しない。",
+   "condition": "R03「浄化」 か E03「二重付着」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "id": "X22",
+   "name": "魔法泥棒",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "模倣由来カードを手札から使用した際、M02の通常やまびこを許可（M02必須）、追加発動最大1回。",
+   "condition": "I02「魔法模倣」 か M05「魔法の複製」 のどちらかを取得 ／ 必須：M02「魔法のやまびこ」",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 514,
+    "y": -170
+   }
+  },
+  {
+   "id": "X23",
+   "name": "死者の地雷",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "非トークン味方兵士死亡時、死亡位置の合法枠へ一時罠（敵が侵入すると固定2ダメージで消滅）を生成、各自ターン1回。",
+   "condition": "G01「死の爆発」 か F02「再設置」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -300,
+    "y": 26
+   }
+  },
+  {
+   "id": "X24",
+   "name": "運命改変",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の幸運対象判定の最終失敗を自ターン中1件記録し、次自ターン開始時に同じ判定を1回再試行。対象が無効なら破棄。",
+   "condition": "T02「停滞」 か L03「運命の蓄積」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 466,
+    "y": 12
+   }
+  },
+  {
+   "id": "X25",
+   "name": "元素砲",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自分の固定兵器の直接攻撃に、ビルド時選択した非無属性1種の付着を追加。",
+   "condition": "F04「狙撃照準」 か E02「元素残留」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -108,
+    "y": -734
+   }
+  },
+  {
+   "id": "X26",
+   "name": "鮮血の一撃",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "直接会心命中で城HP1回復、各自ターン合計2まで。",
+   "condition": "B04「吸血」 か C03「致命の一撃」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -120,
+    "y": 76
+   }
+  },
+  {
+   "id": "X27",
+   "name": "血のやまびこ",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から単体攻撃魔法使用後、任意に城HP2を支払い同じ対象に威力50%で再発動、各自ターン1回。",
+   "condition": "B03「血の刃」 か M02「魔法のやまびこ」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -52,
+    "y": -20
+   }
+  },
+  {
+   "id": "X28",
+   "name": "生命機関",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "任意の城HP支払後、次の手札由来回復魔法の基礎回復量+2、各自ターン1回付与。",
+   "condition": "B02「血の契約」 か R02「生命の蓄積」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -306,
+    "y": 826
+   }
+  },
+  {
+   "id": "X29",
+   "name": "生贄の儀式",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、非トークン味方兵士1体を任意に生贄にして城HP2・MP2回復、各自ターン1回。",
+   "condition": "B06「血液貯蔵」 か G02「魂の回収」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -148,
+    "y": 1034
+   }
+  },
+  {
+   "id": "X30",
+   "name": "血液感染",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の出血tickによる敵兵士の実HP損失の25%を城HPに回復、各自ターン上限2。",
+   "condition": "B04「吸血」 か S04「傷口の拡大」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 292,
+    "y": 216
+   }
+  },
+  {
+   "id": "X31",
+   "name": "血の眷属",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "累計任意HP支払5ごとに使い魔1体を召喚、各自ターン1回。成功時のみカウンタ5消費、最大繰越9。",
+   "condition": "B06「血液貯蔵」 か V02「使い魔」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 0,
+    "y": 998
+   }
+  },
+  {
+   "id": "X32",
+   "name": "悪魔の賭け",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "任意HP支払の宣言時20%でその支払を免除、各自ターン1回。実消費0なので支払由来効果は発生しない。",
+   "condition": "B02「血の契約」 か L05「天の恵み」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -80,
+    "y": 578
+   }
+  },
+  {
+   "id": "X33",
+   "name": "狂戦士",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "任意HP支払1につきSP+1、各自ターン最大3。",
+   "condition": "B03「血の刃」 か Q03「奮起」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -606,
+    "y": 446
+   }
+  },
+  {
+   "id": "X34",
+   "name": "血の障壁",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "任意HP支払1につき城壁+1、各自ターン最大3。",
+   "condition": "B04「吸血」 か D05「城壁再生」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -624,
+    "y": 744
+   }
+  },
+  {
+   "id": "X35",
+   "name": "遅延代償",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "任意HP支払のうち最大2を次自ターン開始まで延期、各自ターン1回。支払義務は予約し、他の任意支払ではHP1と債務分を確保。",
+   "condition": "B02「血の契約」 か T03「未来への備え」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 346,
+    "y": 400
+   }
+  },
+  {
+   "id": "X36",
+   "name": "生命の闘気",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札由来回復魔法の実回復3以上でSP+2、各自ターン1回。",
+   "condition": "R06「奇跡の治癒」 か Q02「闘気」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -792,
+    "y": 606
+   }
+  },
+  {
+   "id": "X37",
+   "name": "癒しの陣",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札由来回復魔法の実回復を受けた兵士の次の通常攻撃+1、各自ターン合計2体。",
+   "condition": "R05「生命循環」 か U05「戦術支援」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -880,
+    "y": 258
+   }
+  },
+  {
+   "id": "X38",
+   "name": "守護者",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "敵の城への直接攻撃で城HPへ通るダメージを最大2、指定した合法な味方兵士に肩代わりさせる。各自ターン1回、兵士HPの範囲内。",
+   "condition": "D05「城壁再生」 か U03「先制部隊」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -898,
+    "y": 132
+   }
+  },
+  {
+   "id": "X39",
+   "name": "突破戦術",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "通常攻撃で敵兵士を倒した際の余剰直接ダメージ（最大3）を敵城へ送る、各自ターン1回。",
+   "condition": "U04「長弓」 か A03「包囲戦」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -648,
+    "y": -476
+   }
+  },
+  {
+   "id": "X40",
+   "name": "盾の陣形",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "横隊成立時、該当兵士にシールド1、成立は各自ターン1回。",
+   "condition": "K02「横隊」 か D07「守護の誓い」 のどちらかを取得 ／ 必須：K02「横隊」",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -950,
+    "y": 86
+   }
+  },
+  {
+   "id": "X41",
+   "name": "機動射撃",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の手札由来兵士がレーン変更した後、射程内の敵1体への威力50%の追加通常攻撃、各自ターン1回。",
+   "condition": "K03「縦隊」 か U04「長弓」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -888,
+    "y": -300
+   }
+  },
+  {
+   "id": "X42",
+   "name": "伏兵配置",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、自身の罠1つを隣接レーン同位置の合法な空き枠へ移す、各自ターン1回。",
+   "condition": "K06「待ち伏せ」 か F05「連動装置」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -874,
+    "y": -704
+   }
+  },
+  {
+   "id": "X43",
+   "name": "魔力装填",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "メイン行動中、MP2で自分の固定兵器1基に次の通常攻撃+3を付与、各自ターン1回。",
+   "condition": "F01「再装填」 か P07「魔力の器」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 388,
+    "y": -112
+   }
+  },
+  {
+   "id": "X44",
+   "name": "先読み",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自ターン終了時手札に2枚以上あれば、次の通常ドローの先頭最大2枚を自分だけ確認し順序を選択、各自ターン1回。",
+   "condition": "T03「未来への備え」 か H07「再編成」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 988,
+    "y": 328
+   }
+  },
+  {
+   "id": "X45",
+   "name": "元素病",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の有害状態を持つ敵兵士への属性反応の基礎ダメージ+2、各自ターン合計2回。",
+   "condition": "S05「燃え広がる炎」 か E05「元素拡散」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 842,
+    "y": -618
+   }
+  },
+  {
+   "id": "X46",
+   "name": "魂の器",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "自身の非トークン兵士を蘇生した際、使い魔1体を追加召喚、各自ターン1回。",
+   "condition": "V03「召喚の盾」 か G07「冥府の護り」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 118,
+    "y": 1070
+   }
+  },
+  {
+   "id": "X47",
+   "name": "知識の複製",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "手札から模倣カードを使用した後1枚ドロー、各自ターン1回。",
+   "condition": "I04「借りた力」 か H05「魔導書」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": 808,
+    "y": 678
+   }
+  },
+  {
+   "id": "X48",
+   "name": "闘気の焦点",
+   "group": null,
+   "kind": "normal",
+   "state": "locked",
+   "cost": 1,
+   "description": "SP20以上の間、自身の会心対象命中の会心率+10ポイント。会心を新規解放しない。",
+   "condition": "Q05「集中」 か C02「研ぎ澄まされた感覚」 のどちらかを取得",
+   "icon": "ui/icon-wind.png",
+   "position": {
+    "x": -554,
+    "y": -376
+   }
+  }
+ ],
+ "edges": [
+  {
+   "source": "C01",
+   "target": "C02"
+  },
+  {
+   "source": "C01",
+   "target": "C03"
+  },
+  {
+   "source": "C02",
+   "target": "C04"
+  },
+  {
+   "source": "C02",
+   "target": "X11"
+  },
+  {
+   "source": "C02",
+   "target": "X48"
+  },
+  {
+   "source": "C03",
+   "target": "C05"
+  },
+  {
+   "source": "C03",
+   "target": "X10"
+  },
+  {
+   "source": "C03",
+   "target": "X26"
+  },
+  {
+   "source": "C04",
+   "target": "C05"
+  },
+  {
+   "source": "C04",
+   "target": "C06"
+  },
+  {
+   "source": "C04",
+   "target": "X01"
+  },
+  {
+   "source": "C04",
+   "target": "X17"
+  },
+  {
+   "source": "C05",
+   "target": "C07"
+  },
+  {
+   "source": "C06",
+   "target": "C08"
+  },
+  {
+   "source": "C07",
+   "target": "C08"
+  },
+  {
+   "source": "M01",
+   "target": "M02"
+  },
+  {
+   "source": "M01",
+   "target": "M03"
+  },
+  {
+   "source": "M02",
+   "target": "M04"
+  },
+  {
+   "source": "M02",
+   "target": "X01"
+  },
+  {
+   "source": "M02",
+   "target": "X18"
+  },
+  {
+   "source": "M02",
+   "target": "X27"
+  },
+  {
+   "source": "M03",
+   "target": "M05"
+  },
+  {
+   "source": "M03",
+   "target": "X02"
+  },
+  {
+   "source": "M04",
+   "target": "M05"
+  },
+  {
+   "source": "M04",
+   "target": "M06"
+  },
+  {
+   "source": "M05",
+   "target": "M07"
+  },
+  {
+   "source": "M05",
+   "target": "X12"
+  },
+  {
+   "source": "M05",
+   "target": "X22"
+  },
+  {
+   "source": "M06",
+   "target": "M08"
+  },
+  {
+   "source": "M07",
+   "target": "M08"
+  },
+  {
+   "source": "E01",
+   "target": "E02"
+  },
+  {
+   "source": "E01",
+   "target": "E03"
+  },
+  {
+   "source": "E02",
+   "target": "E04"
+  },
+  {
+   "source": "E02",
+   "target": "X25"
+  },
+  {
+   "source": "E03",
+   "target": "E05"
+  },
+  {
+   "source": "E03",
+   "target": "X13"
+  },
+  {
+   "source": "E03",
+   "target": "X21"
+  },
+  {
+   "source": "E04",
+   "target": "E05"
+  },
+  {
+   "source": "E04",
+   "target": "E06"
+  },
+  {
+   "source": "E05",
+   "target": "E07"
+  },
+  {
+   "source": "E05",
+   "target": "X02"
+  },
+  {
+   "source": "E05",
+   "target": "X45"
+  },
+  {
+   "source": "E06",
+   "target": "E08"
+  },
+  {
+   "source": "E06",
+   "target": "X03"
+  },
+  {
+   "source": "E07",
+   "target": "E08"
+  },
+  {
+   "source": "S01",
+   "target": "S02"
+  },
+  {
+   "source": "S01",
+   "target": "S03"
+  },
+  {
+   "source": "S02",
+   "target": "S04"
+  },
+  {
+   "source": "S03",
+   "target": "S05"
+  },
+  {
+   "source": "S04",
+   "target": "S05"
+  },
+  {
+   "source": "S04",
+   "target": "S06"
+  },
+  {
+   "source": "S04",
+   "target": "X17"
+  },
+  {
+   "source": "S04",
+   "target": "X30"
+  },
+  {
+   "source": "S05",
+   "target": "S07"
+  },
+  {
+   "source": "S05",
+   "target": "X45"
+  },
+  {
+   "source": "S06",
+   "target": "S08"
+  },
+  {
+   "source": "S07",
+   "target": "S08"
+  },
+  {
+   "source": "T01",
+   "target": "T02"
+  },
+  {
+   "source": "T01",
+   "target": "T03"
+  },
+  {
+   "source": "T02",
+   "target": "T04"
+  },
+  {
+   "source": "T02",
+   "target": "X18"
+  },
+  {
+   "source": "T02",
+   "target": "X24"
+  },
+  {
+   "source": "T03",
+   "target": "T05"
+  },
+  {
+   "source": "T03",
+   "target": "X35"
+  },
+  {
+   "source": "T03",
+   "target": "X44"
+  },
+  {
+   "source": "T04",
+   "target": "T05"
+  },
+  {
+   "source": "T04",
+   "target": "T06"
+  },
+  {
+   "source": "T05",
+   "target": "T07"
+  },
+  {
+   "source": "T06",
+   "target": "T08"
+  },
+  {
+   "source": "T07",
+   "target": "T08"
+  },
+  {
+   "source": "P01",
+   "target": "P02"
+  },
+  {
+   "source": "P01",
+   "target": "P03"
+  },
+  {
+   "source": "P02",
+   "target": "P04"
+  },
+  {
+   "source": "P02",
+   "target": "X03"
+  },
+  {
+   "source": "P02",
+   "target": "X04"
+  },
+  {
+   "source": "P03",
+   "target": "P05"
+  },
+  {
+   "source": "P04",
+   "target": "P05"
+  },
+  {
+   "source": "P04",
+   "target": "P06"
+  },
+  {
+   "source": "P04",
+   "target": "X16"
+  },
+  {
+   "source": "P05",
+   "target": "P07"
+  },
+  {
+   "source": "P06",
+   "target": "P08"
+  },
+  {
+   "source": "P07",
+   "target": "P08"
+  },
+  {
+   "source": "P07",
+   "target": "X43"
+  },
+  {
+   "source": "H01",
+   "target": "H02"
+  },
+  {
+   "source": "H01",
+   "target": "H03"
+  },
+  {
+   "source": "H02",
+   "target": "H04"
+  },
+  {
+   "source": "H02",
+   "target": "X15"
+  },
+  {
+   "source": "H03",
+   "target": "H05"
+  },
+  {
+   "source": "H04",
+   "target": "H05"
+  },
+  {
+   "source": "H04",
+   "target": "H06"
+  },
+  {
+   "source": "H04",
+   "target": "X04"
+  },
+  {
+   "source": "H05",
+   "target": "H07"
+  },
+  {
+   "source": "H05",
+   "target": "X47"
+  },
+  {
+   "source": "H06",
+   "target": "H08"
+  },
+  {
+   "source": "H06",
+   "target": "X05"
+  },
+  {
+   "source": "H07",
+   "target": "H08"
+  },
+  {
+   "source": "H07",
+   "target": "X44"
+  },
+  {
+   "source": "I01",
+   "target": "I02"
+  },
+  {
+   "source": "I01",
+   "target": "I03"
+  },
+  {
+   "source": "I02",
+   "target": "I04"
+  },
+  {
+   "source": "I02",
+   "target": "X22"
+  },
+  {
+   "source": "I03",
+   "target": "I05"
+  },
+  {
+   "source": "I04",
+   "target": "I05"
+  },
+  {
+   "source": "I04",
+   "target": "I06"
+  },
+  {
+   "source": "I04",
+   "target": "X47"
+  },
+  {
+   "source": "I05",
+   "target": "I07"
+  },
+  {
+   "source": "I06",
+   "target": "I08"
+  },
+  {
+   "source": "I07",
+   "target": "I08"
+  },
+  {
+   "source": "V01",
+   "target": "V02"
+  },
+  {
+   "source": "V01",
+   "target": "V03"
+  },
+  {
+   "source": "V01",
+   "target": "X19"
+  },
+  {
+   "source": "V02",
+   "target": "V04"
+  },
+  {
+   "source": "V02",
+   "target": "X31"
+  },
+  {
+   "source": "V03",
+   "target": "V05"
+  },
+  {
+   "source": "V03",
+   "target": "X46"
+  },
+  {
+   "source": "V04",
+   "target": "V05"
+  },
+  {
+   "source": "V04",
+   "target": "V06"
+  },
+  {
+   "source": "V05",
+   "target": "V07"
+  },
+  {
+   "source": "V06",
+   "target": "V08"
+  },
+  {
+   "source": "V07",
+   "target": "V08"
+  },
+  {
+   "source": "G01",
+   "target": "G02"
+  },
+  {
+   "source": "G01",
+   "target": "G03"
+  },
+  {
+   "source": "G01",
+   "target": "X23"
+  },
+  {
+   "source": "G02",
+   "target": "G04"
+  },
+  {
+   "source": "G02",
+   "target": "X29"
+  },
+  {
+   "source": "G03",
+   "target": "G05"
+  },
+  {
+   "source": "G04",
+   "target": "G05"
+  },
+  {
+   "source": "G04",
+   "target": "G06"
+  },
+  {
+   "source": "G05",
+   "target": "G07"
+  },
+  {
+   "source": "G05",
+   "target": "X06"
+  },
+  {
+   "source": "G06",
+   "target": "G08"
+  },
+  {
+   "source": "G07",
+   "target": "G08"
+  },
+  {
+   "source": "G07",
+   "target": "X07"
+  },
+  {
+   "source": "G07",
+   "target": "X46"
+  },
+  {
+   "source": "B01",
+   "target": "B02"
+  },
+  {
+   "source": "B01",
+   "target": "B03"
+  },
+  {
+   "source": "B02",
+   "target": "B04"
+  },
+  {
+   "source": "B02",
+   "target": "X28"
+  },
+  {
+   "source": "B02",
+   "target": "X32"
+  },
+  {
+   "source": "B02",
+   "target": "X35"
+  },
+  {
+   "source": "B03",
+   "target": "B05"
+  },
+  {
+   "source": "B03",
+   "target": "X27"
+  },
+  {
+   "source": "B03",
+   "target": "X33"
+  },
+  {
+   "source": "B04",
+   "target": "B05"
+  },
+  {
+   "source": "B04",
+   "target": "B06"
+  },
+  {
+   "source": "B04",
+   "target": "X26"
+  },
+  {
+   "source": "B04",
+   "target": "X30"
+  },
+  {
+   "source": "B04",
+   "target": "X34"
+  },
+  {
+   "source": "B05",
+   "target": "B07"
+  },
+  {
+   "source": "B06",
+   "target": "B08"
+  },
+  {
+   "source": "B06",
+   "target": "X29"
+  },
+  {
+   "source": "B06",
+   "target": "X31"
+  },
+  {
+   "source": "B07",
+   "target": "B08"
+  },
+  {
+   "source": "R01",
+   "target": "R02"
+  },
+  {
+   "source": "R01",
+   "target": "R03"
+  },
+  {
+   "source": "R02",
+   "target": "R04"
+  },
+  {
+   "source": "R02",
+   "target": "X08"
+  },
+  {
+   "source": "R02",
+   "target": "X28"
+  },
+  {
+   "source": "R03",
+   "target": "R05"
+  },
+  {
+   "source": "R03",
+   "target": "X21"
+  },
+  {
+   "source": "R04",
+   "target": "R05"
+  },
+  {
+   "source": "R04",
+   "target": "R06"
+  },
+  {
+   "source": "R04",
+   "target": "X07"
+  },
+  {
+   "source": "R05",
+   "target": "R07"
+  },
+  {
+   "source": "R05",
+   "target": "X37"
+  },
+  {
+   "source": "R06",
+   "target": "R08"
+  },
+  {
+   "source": "R06",
+   "target": "X36"
+  },
+  {
+   "source": "R07",
+   "target": "R08"
+  },
+  {
+   "source": "D01",
+   "target": "D02"
+  },
+  {
+   "source": "D01",
+   "target": "D03"
+  },
+  {
+   "source": "D02",
+   "target": "D04"
+  },
+  {
+   "source": "D02",
+   "target": "X20"
+  },
+  {
+   "source": "D03",
+   "target": "D05"
+  },
+  {
+   "source": "D03",
+   "target": "X14"
+  },
+  {
+   "source": "D04",
+   "target": "D05"
+  },
+  {
+   "source": "D04",
+   "target": "D06"
+  },
+  {
+   "source": "D04",
+   "target": "X09"
+  },
+  {
+   "source": "D05",
+   "target": "D07"
+  },
+  {
+   "source": "D05",
+   "target": "X08"
+  },
+  {
+   "source": "D05",
+   "target": "X34"
+  },
+  {
+   "source": "D05",
+   "target": "X38"
+  },
+  {
+   "source": "D06",
+   "target": "D08"
+  },
+  {
+   "source": "D07",
+   "target": "D08"
+  },
+  {
+   "source": "D07",
+   "target": "X40"
+  },
+  {
+   "source": "Q01",
+   "target": "Q02"
+  },
+  {
+   "source": "Q01",
+   "target": "Q03"
+  },
+  {
+   "source": "Q01",
+   "target": "X20"
+  },
+  {
+   "source": "Q02",
+   "target": "Q04"
+  },
+  {
+   "source": "Q02",
+   "target": "X36"
+  },
+  {
+   "source": "Q03",
+   "target": "Q05"
+  },
+  {
+   "source": "Q03",
+   "target": "X33"
+  },
+  {
+   "source": "Q04",
+   "target": "Q05"
+  },
+  {
+   "source": "Q04",
+   "target": "Q06"
+  },
+  {
+   "source": "Q05",
+   "target": "Q07"
+  },
+  {
+   "source": "Q05",
+   "target": "X48"
+  },
+  {
+   "source": "Q06",
+   "target": "Q08"
+  },
+  {
+   "source": "Q07",
+   "target": "Q08"
+  },
+  {
+   "source": "U01",
+   "target": "U02"
+  },
+  {
+   "source": "U01",
+   "target": "U03"
+  },
+  {
+   "source": "U02",
+   "target": "U04"
+  },
+  {
+   "source": "U03",
+   "target": "U05"
+  },
+  {
+   "source": "U03",
+   "target": "X05"
+  },
+  {
+   "source": "U03",
+   "target": "X38"
+  },
+  {
+   "source": "U04",
+   "target": "U05"
+  },
+  {
+   "source": "U04",
+   "target": "U06"
+  },
+  {
+   "source": "U04",
+   "target": "X39"
+  },
+  {
+   "source": "U04",
+   "target": "X41"
+  },
+  {
+   "source": "U05",
+   "target": "U07"
+  },
+  {
+   "source": "U05",
+   "target": "X06"
+  },
+  {
+   "source": "U05",
+   "target": "X37"
+  },
+  {
+   "source": "U06",
+   "target": "U08"
+  },
+  {
+   "source": "U07",
+   "target": "U08"
+  },
+  {
+   "source": "K01",
+   "target": "K02"
+  },
+  {
+   "source": "K01",
+   "target": "K03"
+  },
+  {
+   "source": "K02",
+   "target": "K04"
+  },
+  {
+   "source": "K02",
+   "target": "X40"
+  },
+  {
+   "source": "K03",
+   "target": "K05"
+  },
+  {
+   "source": "K03",
+   "target": "X41"
+  },
+  {
+   "source": "K04",
+   "target": "K05"
+  },
+  {
+   "source": "K04",
+   "target": "K06"
+  },
+  {
+   "source": "K05",
+   "target": "K07"
+  },
+  {
+   "source": "K06",
+   "target": "K08"
+  },
+  {
+   "source": "K06",
+   "target": "X42"
+  },
+  {
+   "source": "K07",
+   "target": "K08"
+  },
+  {
+   "source": "F01",
+   "target": "F02"
+  },
+  {
+   "source": "F01",
+   "target": "F03"
+  },
+  {
+   "source": "F01",
+   "target": "X43"
+  },
+  {
+   "source": "F02",
+   "target": "F04"
+  },
+  {
+   "source": "F02",
+   "target": "X23"
+  },
+  {
+   "source": "F03",
+   "target": "F05"
+  },
+  {
+   "source": "F04",
+   "target": "F05"
+  },
+  {
+   "source": "F04",
+   "target": "F06"
+  },
+  {
+   "source": "F04",
+   "target": "X25"
+  },
+  {
+   "source": "F05",
+   "target": "F07"
+  },
+  {
+   "source": "F05",
+   "target": "X42"
+  },
+  {
+   "source": "F06",
+   "target": "F08"
+  },
+  {
+   "source": "F07",
+   "target": "F08"
+  },
+  {
+   "source": "A01",
+   "target": "A02"
+  },
+  {
+   "source": "A01",
+   "target": "A03"
+  },
+  {
+   "source": "A02",
+   "target": "A04"
+  },
+  {
+   "source": "A03",
+   "target": "A05"
+  },
+  {
+   "source": "A03",
+   "target": "X09"
+  },
+  {
+   "source": "A03",
+   "target": "X39"
+  },
+  {
+   "source": "A04",
+   "target": "A05"
+  },
+  {
+   "source": "A04",
+   "target": "A06"
+  },
+  {
+   "source": "A05",
+   "target": "A07"
+  },
+  {
+   "source": "A05",
+   "target": "X10"
+  },
+  {
+   "source": "A06",
+   "target": "A08"
+  },
+  {
+   "source": "A07",
+   "target": "A08"
+  },
+  {
+   "source": "L01",
+   "target": "L02"
+  },
+  {
+   "source": "L01",
+   "target": "L03"
+  },
+  {
+   "source": "L02",
+   "target": "L04"
+  },
+  {
+   "source": "L02",
+   "target": "X11"
+  },
+  {
+   "source": "L02",
+   "target": "X19"
+  },
+  {
+   "source": "L03",
+   "target": "L05"
+  },
+  {
+   "source": "L03",
+   "target": "X13"
+  },
+  {
+   "source": "L03",
+   "target": "X24"
+  },
+  {
+   "source": "L04",
+   "target": "L05"
+  },
+  {
+   "source": "L04",
+   "target": "L06"
+  },
+  {
+   "source": "L04",
+   "target": "X14"
+  },
+  {
+   "source": "L04",
+   "target": "X15"
+  },
+  {
+   "source": "L05",
+   "target": "L07"
+  },
+  {
+   "source": "L05",
+   "target": "X12"
+  },
+  {
+   "source": "L05",
+   "target": "X32"
+  },
+  {
+   "source": "L06",
+   "target": "L08"
+  },
+  {
+   "source": "L06",
+   "target": "X16"
+  },
+  {
+   "source": "L07",
+   "target": "L08"
+  }
+ ]
+}

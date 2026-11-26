@@ -10,7 +10,7 @@ import { randomUUID } from 'node:crypto';
 import { filterEventFor } from '../js/game/visibility.js';
 import { STRATEGIES, mulliganChoice, chooseSkillBuild } from '../js/game/strategies.js';
 import { checkCostDeck } from '../js/game/Setup.js';
-import { checkSkillBuild } from '../js/game/SkillTree.js';
+import { normalizeBuild, emptyBuild } from '../js/game/SkillTree.js';
 
 /** 試合中の操作（Game のメソッドに渡す） */
 const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense', 'mulligan'];
@@ -60,6 +60,23 @@ export const CPU_LEVELS = {
   normal: { name: 'ふつう', strategy: 'rush' },
   hard: { name: 'つよい', strategy: 'smart' },
 };
+
+/**
+ * 部屋の画面に送るスキルツリー（版・予算・系統・辺・ノード・おすすめ）。効果の判定は送らない（UI は本番の決まりを
+ * setSeat で確かめる）。ノードの handler・params も送る（説明・ツールチップ用）
+ */
+function publicSkillTree(tree) {
+  return {
+    version: tree.version,
+    budget: tree.budget,
+    start: tree.start,
+    edges: tree.edges.map((e) => [...e]),
+    groups: tree.groups,
+    crossGroup: tree.crossGroup ?? null,
+    nodes: tree.nodes.map((n) => ({ ...n, requires: [...n.requires] })),
+    presets: Object.fromEntries(Object.entries(tree.presets ?? {}).map(([id, p]) => [id, { name: p.name, ids: [...p.ids], config: { ...(p.config ?? {}) } }])),
+  };
+}
 
 export class Room {
   /**
@@ -152,9 +169,9 @@ export class Room {
       // デッキ編成（コスト制）：選んだ見本のデッキ（costDeck）と、自分で編成したデッキ（{ 種類: 枚数 }。なければ null）
       costDeck: this.costDecks() ? this.defaultOf(this.costDecks(), this.data.rules.defaultCostDeck) : null,
       deckList: null,
-      // スキルツリー（data.skillTree があるモードだけ）：席のビルド（ノードのIDの配列）。人は何も取らない（[]）から選ぶ。
-      // CPU は戦い方のおすすめ（strategies.js の SKILL_STYLE_OF）
-      skills: this.data.skillTree ? (cpu ? chooseSkillBuild(this.data.skillTree, Math.random, CPU_LEVELS[cpu]?.strategy ?? 'none') : []) : null,
+      // スキルツリー（data.skillTree があるモードだけ）：席のビルド { ids（取得順のノードID）, config（E04 などの選択） }。
+      // 人は何も取らない（空）から選ぶ。CPU は戦い方のおすすめ（strategies.js の SKILL_STYLE_OF）
+      skills: this.data.skillTree ? (cpu ? chooseSkillBuild(this.data.skillTree, Math.random, CPU_LEVELS[cpu]?.strategy ?? 'none') : emptyBuild()) : null,
     };
     this.seats.push(seat);
     return seat;
@@ -232,7 +249,7 @@ export class Room {
       setup.decks = this.seats.map((s) => s.costDeck);
       setup.deckLists = this.seats.map((s) => s.deckList);
     }
-    if (this.data.skillTree) setup.skills = this.seats.map((s) => s.skills ?? []);
+    if (this.data.skillTree) setup.skills = this.seats.map((s) => s.skills ?? emptyBuild());
     this.game = new Game({ ...this.data, rules, setup, rng: this.makeRng() });
     this.cpuRng = this.makeRng();
     this.cpuActedTurn = null;
@@ -578,11 +595,11 @@ export class Room {
         next.costDeck = value;
         next.deckList = null;
       } else if (key === 'skills') {
-        // スキルツリー：席のビルド（ノードのIDの配列。始まる前だけ）。決まりに合わなければ理由を返す
+        // スキルツリー：席のビルド（取得順のノードIDの配列か { ids, config }。始まる前だけ）。本番の検証で確かめ、合わなければ理由を返す
         if (!this.data.skillTree) return { ok: false, reason: 'このモードではスキルを選べません' };
-        const check = checkSkillBuild(this.data.skillTree, value);
+        const check = normalizeBuild(this.data.skillTree, value, this.data.skillTree.budget);
         if (!check.ok) return { ok: false, reason: check.reason };
-        next.skills = [...value];
+        next.skills = check.build;
       } else if (key === 'deckList') {
         // 自分で編成したデッキ（{ カード種類: 枚数 }）。決まりに合わなければ理由を返す。null で見本に戻す
         if (value === null) {
@@ -876,7 +893,7 @@ export class Room {
         // 4陣営モードの席の陣営（ほかのモードは null）
         faction: s.faction ?? null,
         // スキルツリーのビルド（スキルツリーのあるモードだけ配列。ほかは null）。相手にも見せる
-        skills: s.skills ? [...s.skills] : null,
+        skills: s.skills ? { ids: [...s.skills.ids], config: { ...s.skills.config } } : null,
         // コスト制：見本のデッキの id。自分で編成したデッキなら "custom"
         costDeck: s.deckList ? 'custom' : s.costDeck,
         // 試合中・試合のあとは、その試合のチーム。始まる前は、各自で選ぶときのチーム
@@ -900,7 +917,7 @@ export class Room {
         costDecks: Object.entries(this.costDecks() ?? {}).map(([id, d]) => ({ id, name: d.name ?? id })),
         cpuLevels: Object.entries(CPU_LEVELS).map(([id, d]) => ({ id, name: d.name })),
         // スキルツリー（使えるポイントとノード・おすすめ。スキルツリーのないモードは null）
-        skillTree: this.data.skillTree ? { points: this.data.skillTree.points, nodes: Object.fromEntries(Object.entries(this.data.skillTree.nodes).map(([id, n]) => [id, { name: n.name, branch: n.branch, tier: n.tier, cost: n.cost, requires: n.requires ?? [], requiresAny: n.requiresAny ?? [], description: n.description ?? '' }])), presets: Object.fromEntries(Object.entries(this.data.skillTree.presets ?? {}).map(([id, p]) => [id, { name: p.name, nodes: [...p.nodes] }])) } : null,
+        skillTree: this.data.skillTree ? publicSkillTree(this.data.skillTree) : null,
         castleHpRange: { min: CASTLE_HP_MIN, max: CASTLE_HP_MAX },
         teamModes: Object.entries(TEAM_MODES).map(([id, name]) => ({ id, name })),
         // ステージ（stages.json がなければ空）。最初は「ランダム」

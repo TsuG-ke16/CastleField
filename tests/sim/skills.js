@@ -1,12 +1,12 @@
 // クラシックのスキルツリー：ビルドどうしの勝率と長さ（docs/classic-skilltree.md の「バランスの測り方」）。
 //   node tests/sim/skills.js                         … プリセット全部＋none＋random の総当たり（席を入れかえて各100試合ずつ）
 //   node tests/sim/skills.js --games 200 --seed 7    … 1つの向きの試合数とシード
-//   node tests/sim/skills.js --builds blade,shield   … 比べるビルド（none / random / skilltree.json の presets のID）
+//   node tests/sim/skills.js --builds critMagicLuck,bloodHealDefense … 比べるビルド（none / random / skilltree.json の presets のID）
 //   node tests/sim/skills.js --strategy smart        … 両者の戦い方（省略すると smart）
 //   node tests/sim/skills.js --vs none               … 総当たりではなく、どのビルドもこの1つとだけ比べる（ノード1つの強さを測る）
-//   ビルドは「+」でつないだノードのIDでも書ける（例：keenBlade+siegecraft）
-//   node tests/sim/skills.js --tree '{"nodes":{"keenBlade":{"effects":{"soldierAttack":1,"castleHp":-8}}}}'
-//       … skilltree.json を書き換えずに、一部のノードだけ試す（ノードごとに中身をまぜる）
+//   ビルドは「+」でつないだ取得順のノードIDでも書ける（例：P01+P07）。予算は skilltree.json の budget（12pt）
+//   node tests/sim/skills.js --tree '{"budget":10,"nodes":{"P01":{"params":{"initialMp":3}}}}'
+//       … skilltree.json を書き換えずに、予算・一部のノードだけ試す（ノードごとに中身をまぜる）
 //   node tests/sim/skills.js --json
 // 同じ引数なら、誰が回しても同じ結果になる（乱数はシード付き）。
 import { buildData, loadOptionalData } from '../helpers.js';
@@ -33,8 +33,12 @@ if (!gameOptions.skillTree) die('data/modes.json のクラシックに skillTree
 try {
   const patch = JSON.parse(opt('tree', '{}'));
   const tree = gameOptions.skillTree;
-  if (patch.points !== undefined) tree.points = patch.points;
-  for (const [id, n] of Object.entries(patch.nodes ?? {})) tree.nodes[id] = { ...(tree.nodes[id] ?? {}), ...n };
+  if (patch.budget !== undefined) tree.budget = patch.budget;
+  for (const [id, n] of Object.entries(patch.nodes ?? {})) {
+    const i = tree.nodes.findIndex((x) => x.id === id);
+    if (i === -1) throw new Error(`ノード ${id} はありません`);
+    tree.nodes[i] = { ...tree.nodes[i], ...n };
+  }
 } catch (err) {
   die(`--tree は JSON で書いてください（${err.message}）`);
 }

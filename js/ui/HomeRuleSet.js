@@ -18,11 +18,13 @@ export async function loadHomeRuleSet(id, load) {
   }
   return { id,entry,cards,rules,decks,factions,cardSets,
     elements:entry?.elementsSet ? await load(entry.elementsSet) : null,
-    reactions:entry?.reactionsSet ? await load(entry.reactionsSet) : null };
+    reactions:entry?.reactionsSet ? await load(entry.reactionsSet) : null,
+    // クラシックのスキルツリー（skillTreeSet があるモードだけ。js/ui/SkillTreeView.js と new Game({ skillTree }) が使う）
+    skillTree:entry?.skillTreeSet ? await load(entry.skillTreeSet) : null };
 }
 
 export function rulesetUrl(href, id) {
-  if (!['kingdom','factions'].includes(id)) throw new Error('選べないルールセットです');
+  if (!['kingdom','factions','classic'].includes(id)) throw new Error('選べないルールセットです');
   const url=new URL(href); url.searchParams.set('home','1');
   if(id==='kingdom') url.searchParams.delete('mode'); else url.searchParams.set('mode',id);
   // ?beta=factions（前の4陣営の入口）は ?mode=factions と同じなので、残すと通常モードに戻れない

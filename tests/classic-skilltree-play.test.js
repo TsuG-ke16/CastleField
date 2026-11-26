@@ -39,7 +39,7 @@ test('シミュレーション：スキルありの試合も決着する（ど�
   presets.forEach((p, i) => {
     const r = runMatch({ cards, rules, strategies: ['smart', 'smart'], seed: 10 + i, gameOptions, skills: [p, presets[(i + 1) % presets.length]] });
     assert.ok(r.winner, p);
-    assert.deepEqual(r.finalState.players.p1.skills, gameOptions.skillTree.presets[p].nodes);
+    assert.deepEqual(r.finalState.players.p1.skills, gameOptions.skillTree.presets[p].ids);
   });
 });
 
@@ -48,17 +48,22 @@ test('部屋：クラシックでは席ごとにスキルを選べる（不正�
   const lobby = new Lobby(loadData(), () => seededRng(seed++), { cpuDelayMs: 0, modeData: loadModeData() });
   const a = lobby.join('sk', 'A', null, 'classic');
   const { room, seat } = lobby.findSeat(a.token);
-  assert.deepEqual(seat.skills, []);
-  assert.match(room.setSeat(seat, { skills: ['keenBlade'] }).reason, /先に/);
-  assert.equal(room.setSeat(seat, { skills: ['siegecraft', 'warcry'] }).ok, true);
+  assert.deepEqual(seat.skills, { ids: [], config: {} });
+  assert.match(room.setSeat(seat, { skills: ['C02'] }).reason, /つながっていません/);
+  assert.match(room.setSeat(seat, { skills: { ids: ['E01', 'E02', 'E04'], config: { E04: 'fire' } } }).reason, /選べません/);
+  assert.equal(room.setSeat(seat, { skills: { ids: ['E01', 'E02', 'E04'], config: { E04: 'chaos' } } }).ok, true);
   const cpu = room.addCpu(seat, 'hard');
   assert.equal(cpu.ok, true);
   const info = room.roomInfo();
-  assert.deepEqual(info.players.map((p) => p.skills), [['siegecraft', 'warcry'], TREE().presets[SKILL_STYLE_OF.smart].nodes]);
-  assert.equal(info.choices.skillTree.points, TREE().points);
-  assert.deepEqual(info.choices.skillTree.nodes.echo.requiresAny, TREE().nodes.echo.requiresAny);
+  const smart = TREE().presets[SKILL_STYLE_OF.smart];
+  assert.deepEqual(info.players.map((p) => p.skills), [{ ids: ['E01', 'E02', 'E04'], config: { E04: 'chaos' } }, { ids: smart.ids, config: { E04: 'annihilation' } }]);
+  assert.equal(info.choices.skillTree.budget, TREE().budget);
+  assert.equal(info.choices.skillTree.nodes.length, 200);
+  assert.deepEqual(info.choices.skillTree.nodes.find((n) => n.id === 'M08').requires, ['M02']);
   room.startGame();
-  assert.deepEqual(room.game.getState(null).players.p1.skills, ['siegecraft', 'warcry']);
+  const st = room.game.getState(null).players.p1;
+  assert.deepEqual(st.skills, ['E01', 'E02', 'E04']);
+  assert.deepEqual(st.skillConfig, { E04: 'chaos' });
   // 通常モード
   const n = lobby.join('plain-sk', 'B');
   const r2 = lobby.findSeat(n.token);

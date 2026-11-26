@@ -17,347 +17,62 @@
 | 戦闘ルール（城への魔法は先頭の兵士に／崩壊の刻で必ず決着） | `rules.castleSpellHitsFront`・`collapseStartRound` | 済 |
 | MP（全カード・自然回復・後攻のマナ） | `rules.mpAllCards` など | 済 |
 | 属性9種・付着と反応（対消滅・黒氷・砕氷・混沌反応） | `data/classic/elements.json`・`reactions.json` | 済 |
-| ターン開始時のランダム付着 | `rules.randomAttachTurnStart`（クラシックの rules には書いていない） | 済 → **今回スキル（混沌の目）で一部の人だけに効くようにした** |
+| ターン開始時のランダム付着 | `rules.randomAttachTurnStart`（クラシックの rules には書いていない） | 済 → スキル E01「混沌の目」で取った人だけに効く |
 | CPU | `js/game/strategies.js`（smart は反応を起こせる武器を選ぶ・号砲のために城壁を貯める） | 済 |
 | オンライン（サーバー） | `server/server.js` の `loadData(dir, 'classic')`・`loadModeData`、部屋に入るときの `mode`（`tests/classic-mode.test.js`） | 済 |
-| 見せない情報（visibility） | クラシックの新しいイベントに隠すものはない（付着・反応は盤面の兵士なので見せてよい） | 済（スキルも見せる。下の 2.7） |
+| 見せない情報（visibility） | クラシックの新しいイベントに隠すものはない（付着・反応は盤面の兵士なので見せてよい） | 済（スキルも見せる。下の 2） |
 | シミュレーション | `node tests/sim/run.js --mode classic` | 済 |
 
 ### 今回エンジン側で足したもの
 - **3人以上・チーム戦のクラシックが決着するかのテスト**（`tests/classic-mode.test.js`。4人チーム戦の広場・3人／4人のバトルロイヤル）。今まで2人しか確かめていなかった。どれも決着する（smart 20試合ずつで全部決着、平均113〜151手番）
-- **スキルツリー**（下の 2・3。エンジン・データ・CPU・シミュレーション・サーバーの部屋）
+- **スキルツリー**（下の 2。200ノードのグラフ版。エンジン・データ・CPU・サーバーの部屋）
 
 ### 足りない・仕様の穴（UI か人間の判断が要るもの）
 1. **ホームでクラシックを選べない**：`modes.json` の `classic` は `available: false`・`hidden: true`。ホームの切り替え（`js/ui/HomeRuleSet.js` の `rulesetUrl`）は `kingdom` / `factions` だけ。`?mode=classic` の URL なら、ひとりで遊ぶ・同じ端末は動く（`loadHomeRuleSet` が読む）
 2. **オンラインでクラシックの部屋に入れない（画面側）**：`js/main.js` の `client.join(pass, name, gameMode === 'factions' ? 'factions' : undefined)` が `classic` を送らないので、`?mode=classic` で開いても**通常モードの部屋に入ってしまう**（画面はクラシックのカード表なのに、サーバーは通常モードの試合 → カードが読めない）。サーバー側は `mode: "classic"` を受け付ける
 3. **火・水・風・土の反応がない**：クラシックの山札にある属性は光・闇・氷・混沌だけ（火水風土のカードは森・竜の陣営のカード表にしかない）。反応の表（`reactions.json`）も光・闇・氷・混沌の組だけ。人間の意図「火水風土など」の反応を楽しむには、カード（80枚の中の入れ替え）と反応の表を決める必要がある（**カードの設計なので人間に確認**。仕組みは4陣営の反応（蒸発・溶岩など）がそのまま使える）
-4. **城の種類とスキルツリーの役割がかぶる**：クラシックでも城の種類（とりで・魔法の塔・兵舎）は選べる。スキルツリーは同じ補正（城HP・手札の上限・兵士の攻撃・城への魔法）を使うので、両方あると組み合わせが増えすぎる（下の「人間が決める点」）
+4. **城の種類とスキルツリーの役割がかぶる** → 解消（仕様 第1章）：クラシック（`skillTree` を渡したゲーム）では城の種類の補正を使わず、標準城（`rules.defaultCastle` = `standard`。補正なし）の値にする。見た目（`castleType`）は残す
 5. 魔物・天候・ステージ・コインの強化は通常モードと同じデータを使っている（クラシック専用にするかは未定）
 6. CPU（smart）は、ランダム付着で付いた属性を狙って魔法を撃つことはしない（武器の選び方だけ反応を見る）。人はもっと上手に使える
 
 ---
 
-## 2. スキルツリーの設計
 
-### 2.1 目的
-- 試合の前に「自分の戦い方」を選べるようにする（デッキが共通の山札なので、人ごとの違いを作る場所がほかにない）
-- ターン開始時のランダム付着（反応の準備）を、**選んだ人だけ**の能力にする（CLAUDE.md の約束）
-- 強いビルドが1つに決まらない（7ポイントで何を取るかを選ぶ）。運ではなく選び方で差がつく
+## 2. スキルツリー（200ノードのグラフ版。仕様 `docs/skilltree-200-spec.md` の要約）
 
-### 2.2 方式（既定で決めたこと＋人間の決定）
-- **試合前のビルド方式**：決まったポイント（**7**。両者同じ）でノードを選ぶ。試合中には育たない。メタ進行（レベルで増える）もない＝公平
-- **7つの枝 × 3段 ＝ 24ノード**（人間の指示「もっと増やせる？」で12→24に増やした）。段ごとにコスト 1・2・3。2段目は1段目、3段目（奥義）は2段目を先に取る。属性の枝だけ、2段目が**4択**（光と闇・黒氷・砕氷・混沌）で、奥義「残響」はそのどれか1つがあれば取れる（`requiresAny`）
-- **奥義は1つだけ**：奥義を取るには6ポイント（1+2+3）かかるので、7ポイントでは2つ取れない（テストで確かめる）。**全部は取れない**（全部で48）
-- 取り方は「1つの枝を奥まで＋1段目を1つ」か「1段目をたくさん＋2段目」など
-- **短所はない（人間の決定・案B）**：どのノードも小さな純粋な強化。最初は「どのノードにも長所と短所」で作ったが、人間（ぐらふぃ）の決定で、短所をなくし、**効果を小さくしてポイントとコストだけで制限する**形に作り直した。トレードオフは「7ポイントで何を取らないか」
-- 何も取らない（0ポイント）も選べる（強化だけなので不利になる）
-- 選んだビルドは相手にも見せる（`getState`・部屋の情報）
-- **新しい仕組みはできるだけ作らず、今ある処理に数値を足す**（城の種類の補正・MP・手札・城壁・コイン・ランダム付着・反応のダメージ・魔法の数値・兵士の枠・射程）
+旧24ノード版（7枝×3段・7pt）は置き換えた（旧版の表・測定は commit 38287fc の版のこのファイル）。数値は暫定設計値で、バランスは未測定。
 
-### 2.3 ツリーの図
+### 2.1 方式
+- 試合の前に **12pt**（`budget`。QA で 7/10/12/15 を比べられる）でノードを取る。**全ノード1pt**、START は0pt（ノード数に含めない）。**奥義は1個まで**（強制なし）。対戦前の振り直しは無料、対戦中は変えられない
+- **200ノード**＝19系統×8（通常133＋奥義19。各系統の08が奥義）＋横断48（X01〜X48）。系統：会心C・魔法M・属性E・幸運L・魔力P・手札H・兵士U・墓地G・回復R・防御D・攻城A・時間T・状態異常S・戦術K・兵器罠F・闘志Q・召喚V・模倣I・血魔術B
+- **辺**（無向）：各系統で共通の10本 START–01・01–02・01–03・02–04・03–05・04–05・04–06・05–07・06–08・07–08。横断ノードは2端点（`ends`）とそれぞれ辺を持つ。**表以外の辺はない**
+- **取得条件**：未取得・START か取得済みノードと辺でつながる・残りpt・個別必須（`requires`）・奥義1個。横断は**端点のどちらか一方**があれば取れ、取ると反対側へ進める
+- **個別必須**（接続とは別の AND）：M08→M02、P08→P02、G06→G02、B07→B06、B08→B01、X04→P02、X18→M02、X22→M02、X40→K02
+- **解除**：外したあとに全取得ノードが START と（取得済みノードだけを通って）つながり、必須・奥義の制限を満たすときだけ。並びは取れる順に並べ直す
+- **ノード内の設定**（ノード数は増えない）：E04 反応特化（対消滅+4／黒氷+4／砕氷+4／混沌反応+5。初期値 対消滅）、X25 元素砲（クラシックの属性9種から1つ。初期値 火）
+- リング配置（UI用の座標 `layout`）：会心を真上に時計回りで 会心→魔法→属性→状態異常→時間→魔力→手札→模倣→召喚→墓地→血魔術→回復→防御→闘志→兵士→戦術→兵器・罠→攻城。幸運は中央（START の下）。横断は2端点の中点付近
 
-```
- 剣（攻め）   兵士（隊列）  魔法（魔術）  盾（守り）   回復（癒し）  属性（反応）                      魔力（経済）
- 攻城術 1     増援 1        魔術の心得 1  石垣 1       癒しの祈り 1  混沌の目 1                        魔力の泉 1
-   │            │             │             │            │             ├────────┬────────┬────────┐       │
- 鬨の声 2     長弓 2        大きな器 2    堅城 2       城壁の修繕 2  光と闇の  黒氷の   砕氷の   混沌の    魔物狩り 2
-   │            │             │             │            │           共鳴 2    呪い 2   槌 2     渦 2       │
-   │            │             │             │            │             └────────┴───┬────┴────────┘       │
- 必殺の号令3  隊列の極意3   大魔術 3      不落の砦 3   癒しの聖域 3              残響 3（どれか1つのあと） 魔力の宝物庫 3
-                         使えるポイント：7（数字はコスト。3段目が奥義）
-```
+### 2.2 データ（`data/classic/skilltree.json`。`tools/build-skilltree.mjs` が作る。手で直さない）
+- `node tools/build-skilltree.mjs` で書き出し、`--check` で今のファイルと同じか確かめる（テストも確かめる）。ID・名称・効果文・横断の端点は仕様書の表をそのまま読む。数値（`params`）・必須・選択肢・色・おすすめ・座標はスクリプトに書く
+- 形：`{ version: 3, budget, start, edges（テンプレート）, ring, center, nodeShapes, groups: { C: { name, ring, color, glyph } … }, crossGroup, nodes: [{ id, group（横断は "X"）, name, desc, cost, ultimate, cross, ends, requires, handler, params, config?, layout }], presets }`
+- `handler` は効果ハンドラのID（今はノードIDと同じ）。`params` は仕様の数値（確率は0〜1、`perTurn`＝各自ターンn回、`perMatch`＝試合中n回）
+- おすすめ（`presets`）＝仕様 第10章の4ビルド：`critMagicLuck`（会心＋魔法＋幸運）・`bloodHealDefense`（血魔術＋回復＋防御）・`elementManaMagic`（属性＋魔力＋魔法）・`graveTroopsSummon`（墓地＋兵士＋召喚）
 
-### 2.4 ノード表（`data/classic/skilltree.json`。数値は仮。どれも短所なし）
+### 2.3 API（`js/game/SkillTree.js`。DOM も Game も使わない）
+`canAcquire(tree, picked, id, budget)`・`validate(tree, picked, budget)`（取得順に canAcquire を当てる。順序依存）・`cost`・`acquirableIds`（データの順）・`checkSet`（集合として）・`orderBuild`・`release`・`validateConfig`・`normalizeBuild`（配列か `{ ids, config }` → `{ ids, config }`）・`serializeBuild`（`{ version: 3, ids, config, budget }`）・`deserializeBuild`（version 3 未満＝旧24ノード版は `migrateBuild` で空ビルド＋理由。振り直し）・`skillMods`・`skillTreeApi(tree)`（QA adapter 用に `nodes / canAcquire / validate / cost / acquirableIds / release`）
 
-**剣（攻め）**
+### 2.4 Game との接続（クラシック限定）
+- `new Game({ skillTree, setup: { skills: [ [...ids] | { ids, config }, ... ] } })`。`skillTree` を渡さないゲーム（通常・4陣営）は今までどおり（`setup.skills` を書くと例外、スキルの処理も乱数も使わない）
+- 対戦開始時に両者を再検証。決まりに合わない席は**空ビルドにして**理由を `game.skillFallbacks`・`players.pX.skillError` に残す（例外にしない）。形の間違い（人数より多いなど）は例外
+- getState：`players.pX.skills`（取得順のID配列。相手にも見せる）・`skillConfig`（設定値）・`maxMp`・`skillError`（あるときだけ）
+- **効く効果（段階A）**：単純な初期値系だけ既存の適用に接続（`STATIC_HANDLERS`）：P01 初期MP+2・P07 MP上限+2・D01 初期城壁+4・D05 城壁が2未満なら2まで（ターン開始）・U01 出撃枚数+1・U04 射程+1・R01 城回復魔法+1・E01 ターン開始のランダム付着・E04 選んだ反応+4/+5・E06 反応ダメージ+2
+- **ほかの190ノードは「新ハンドラ未実装」**（データに handler・params はあるが戦闘では効かない。段階B/C で接続）。旧24ノード版の効果キー（城HP・手札・兵士の攻撃・城への魔法・MP回復・コイン・城HP回復・兵士HP・魔物のコイン など）の Game 側の処理は削除せず休眠（どのノードも使わない）
+- クラシックの城：城の種類の補正（`hpBonus` など）は使わず標準城の値（今は補正なし）。見た目の `castleType` は残す。通常モードの城は変えない
 
-| 段 | ノード（ID） | コスト | 先に取る | 効果 |
-|---|---|---|---|---|
-| 1 | 攻城術（`siegecraft`） | 1 | — | 城への魔法が城に当たると+2（先頭の兵士に当たったときは増えない） |
-| 2 | 鬨の声（`warcry`） | 2 | 攻城術 | 最初の手札+1・最初のMP+1 |
-| 3 | 必殺の号令（`keenBlade`） | 3 | 鬨の声 | 城への魔法が城に当たるとさらに+3（攻城術と合わせて+5）・最初の手札さらに+1（奥義） |
+### 2.5 CPU・オンライン
+- `chooseSkillBuild(tree, rng, style, budget)` → `{ ids, config }`：`none`／`random`（取れるノードを安定順に並べ、注入した rng で選ぶ。予算を使い切る・奥義1個・横断を含む）／プリセットのID／戦い方の名前（`SKILL_STYLE_OF`：aggro→会心魔法幸運・rush→墓地兵士召喚・smart→属性魔力魔法・defensive/guard→血魔術回復防御）／`"C01+C02"`
+- 部屋：`setSeat({ skills })` は配列か `{ ids, config }` を本番の `normalizeBuild` で確かめる。席の `skills` と `roomInfo().players[].skills` は `{ ids, config }`、`choices.skillTree` はツリーの公開用の形（版・予算・系統・辺・ノード・おすすめ）
+- シミュレーション：`node tests/sim/skills.js --builds none,random,critMagicLuck`（12pt）、`node tests/sim/run.js --mode classic --skills critMagicLuck,random`
 
-**兵士（隊列）**
-
-| 段 | ノード（ID） | コスト | 先に取る | 効果 |
-|---|---|---|---|---|
-| 1 | 増援（`reinforce`） | 1 | — | 1ターンに出せる兵士+1枚 |
-| 2 | 長弓（`longbow`） | 2 | 増援 | 出した弓兵・魔法使いの射程+1 |
-| 3 | 隊列の極意（`ironArmor`） | 3 | 長弓 | 弓兵・魔法使いの射程さらに+1・出せる兵士さらに+1枚（奥義） |
-
-**魔法（魔術）**
-
-| 段 | ノード（ID） | コスト | 先に取る | 効果 |
-|---|---|---|---|---|
-| 1 | 魔術の心得（`arcana`） | 1 | — | 兵士へのダメージの魔法（ルミナ・ホーリーレイ・シャドウ・カオスパルス）+1 |
-| 2 | 大きな器（`deepVessel`） | 2 | 魔術の心得 | MPの上限+3・最初のMP+1 |
-| 3 | 大魔術（`archmagic`） | 3 | 大きな器 | 兵士へのダメージの魔法さらに+1（心得と合わせて+2）・MPの上限+2（奥義） |
-
-**盾（守り）**
-
-| 段 | ノード（ID） | コスト | 先に取る | 効果 |
-|---|---|---|---|---|
-| 1 | 石垣（`stoneWall`） | 1 | — | 最初から城壁4 |
-| 2 | 堅城（`stronghold`） | 2 | 石垣 | 城HP+3 |
-| 3 | 不落の砦（`bastion`） | 3 | 堅城 | 城HP+3・城壁+3（奥義） |
-
-**回復（癒し）**
-
-| 段 | ノード（ID） | コスト | 先に取る | 効果 |
-|---|---|---|---|---|
-| 1 | 癒しの祈り（`prayer`） | 1 | — | 城を回復する魔法（小回復・ヒール）の回復量+1 |
-| 2 | 城壁の修繕（`mending`） | 2 | 癒しの祈り | 自分のターンの始めに、城壁が1より少なければ1まで戻る |
-| 3 | 癒しの聖域（`regen`） | 3 | 城壁の修繕 | 城を回復する魔法さらに+1（祈りと合わせて+2）・城HP+1（奥義） |
-
-**属性（反応）**
-
-| 段 | ノード（ID） | コスト | 先に取る | 効果 |
-|---|---|---|---|---|
-| 1 | 混沌の目（`chaosEye`） | 1 | — | 自分のターンの始めに、敵の兵士1体にランダムな属性を付着させる（反応の準備）。これを取った人だけが使える |
-| 2 | 光と闇の共鳴（`lightDark`） | 2 | 混沌の目 | 自分の攻撃で起きた対消滅（光＋闇）の追加ダメージ+4 |
-| 2 | 黒氷の呪い（`blackIce`） | 2 | 混沌の目 | 自分の攻撃で起きた黒氷（闇＋氷）の追加ダメージ+4 |
-| 2 | 砕氷の槌（`shatter`） | 2 | 混沌の目 | 自分の攻撃で起きた砕氷（氷＋混沌）の追加ダメージ+4 |
-| 2 | 混沌の渦（`maelstrom`） | 2 | 混沌の目 | 自分の攻撃で起きた混沌反応の追加ダメージ+5 |
-| 3 | 残響（`echo`） | 3 | どれか1つ：光と闇の共鳴・黒氷の呪い・砕氷の槌・混沌の渦 | ランダム付着が1回ぶん長く残る・どの反応の追加ダメージも+2（奥義） |
-
-**魔力（経済）**
-
-| 段 | ノード（ID） | コスト | 先に取る | 効果 |
-|---|---|---|---|---|
-| 1 | 魔力の泉（`manaSpring`） | 1 | — | 最初のMP+2 |
-| 2 | 魔物狩り（`hunter`） | 2 | 魔力の泉 | 魔物にとどめを刺すと、コインがさらに+1 |
-| 3 | 魔力の宝物庫（`alchemy`） | 3 | 魔物狩り | 最初のMP+2・MPの上限+1（奥義） |
-
-おすすめのビルド（`presets`。CPU と、はじめての人向け。8種）：
-| ID | 名前 | ノード |
-|---|---|---|
-| `blade` | 攻め（剣を極める） | 攻城術・鬨の声・必殺の号令・石垣 |
-| `troops` | 隊列（兵士を極める） | 増援・長弓・隊列の極意・魔力の泉 |
-| `magic` | 魔術（魔法を極める） | 魔術の心得・大きな器・大魔術・混沌の目 |
-| `shield` | 守り（盾を極める） | 石垣・堅城・不落の砦・癒しの祈り |
-| `heal` | 癒し（回復を極める） | 癒しの祈り・城壁の修繕・癒しの聖域・石垣 |
-| `element` | 反応（属性を極める） | 混沌の目・光と闇の共鳴・残響・魔力の泉 |
-| `mana` | 経済（魔力を極める） | 魔力の泉・魔物狩り・魔力の宝物庫・混沌の目 |
-| `hybrid` | まんべんなく | 攻城術・増援・魔術の心得・石垣・癒しの祈り・堅城 |
-
-**調整でわかったこと（なぜこの数値か）**：
-- **ポイントが多いと、小さな強化でも積み重なる**。9ポイントでは、どのおすすめビルドも何も取らない相手に60〜70%になったので、**7ポイント**にして、1つ1つの効果も小さくした
-- **入れていない強い効果**：MP の回復+1（それだけで勝率81%）・コイン+2/ターン（90%）・コイン+1/ターン（ノードを増やした版で+16%）・**兵士の攻撃+1**（剣の奥義にしても何も取らない相手に66%）・**毎ターンの城HPの回復**（+1でも80%）。どれも「毎ターン効く」か「全部の兵士に効く」もので、積み重なるため。効果のキー（`mpPerTurn`・`coinPerTurn`・`soldierAttack`・`castleRegen`）は仕組みとして残してある
-- 兵士のHP+1（`soldierHp`）も強め（約+5〜10%）なので、今は使っていない（キーはある）
-- 属性の枝は CPU では強さが出ない（CPU はランダム付着で付いた属性を狙わない）
-
-### 2.5 データの形（`data/classic/skilltree.json`）
-```js
-{
-  points: 7,                                    // 使えるポイント（両者同じ）
-  branches: { blade: { name: "剣（攻め）" }, ... },
-  nodes: {
-    siegecraft: { name, branch: "blade", tier: 1, cost: 1, effects: { castleSpell: 2 }, description },
-    echo: { name, branch: "element", tier: 3, cost: 3, requiresAny: ["lightDark", "blackIce", "shatter", "maelstrom"], effects: {...}, description },
-    ...
-  },
-  presets?: { blade: { name, nodes: ["siegecraft", "warcry", "keenBlade"] }, ... }
-}
-```
-- `effects` のキー（`js/game/SkillTree.js` の `SKILL_EFFECTS`。プラスが強化。マイナスも書ける）：
-  `castleHp`（城HP）・`armor`（最初の城壁）・`initialMp`・`maxMp`・`mpPerTurn`・`initialHand`・`maxHand`・`soldierAttack`（兵舎と同じ）・`castleSpell`（魔法の塔と同じ）・`reactionDamage`・`randomAttach`（true だけ）・`randomAttachTurns`・`coinPerTurn`
-  ノードを増やしたときに足したキー：`spellDamage`（兵士へのダメージの魔法＝ルミナ・ホーリーレイ・シャドウ・カオスパルス）・`healBonus`（城を回復する魔法）・`castleRegen`（ターンの始めの城HPの回復）・`armorFloor`（ターンの始めに城壁をその値まで戻す）・`soldiersPerTurn`（1ターンに出せる兵士）・`archerRange`（弓兵・魔法使いの射程）・`soldierHp`（兵士のHP。鍛錬と同じ `armyHp`）・`monsterCoins`（魔物のとどめのコイン）・`annihilationDamage` / `blackIceDamage` / `shatterDamage` / `chaosDamage`（その反応だけの追加ダメージ）
-- 段の前提：`requires`（全部）と `requiresAny`（どれか1つ。同じ段の選択肢のあと）
-- チェック（`validateSkillTree`）：効果が1つもない、知らないキー、0、**上位互換**（効果がほかのノードをすべて含み、コストが同じか安い。`dominatedPairs`）、`requires` の輪、プリセットが決まりに合わない・ノードと同じID。**マイナスの値（短所）も書けるが必須ではない**（今のクラシックは強化だけ。将来のために仕組みは残した）
-- ビルドの決まり（`checkSkillBuild`）：知っているノード・重ならない・`requires` も選んでいる・コストの合計が `points` 以下
-- **4陣営に流用するとき**：`data/modes.json` の4陣営に `skillTreeSet`（例：`data/factions/skilltree.json`）を書くだけ。Game・サーバー・テストの読み込みはモードごとのデータを差し替える形にしてある。反応のキー（`reactionDamage`・`randomAttach`）を使うツリーは `reactions` を渡すモードでしか使えない（エラーで止まる）
-
-### 2.6 Game との接続
-```js
-new Game({ cards, rules, elements, reactions, skillTree, setup: { skills: [["siegecraft", "warcry"], []] } })
-```
-- `skillTree` を渡さなければ今までどおり（`setup.skills` を書くとエラー）。渡して `setup.skills` を省略した席は「何も取らない」
-- 試合の始め（コンストラクタ。デッキ編成と同じ時期）に、席ごとにビルドを確かめ、効果を合計して `player.skillMods` に持つ。間違いは例外（「席2のスキルが決まりに合いません：「必殺の号令」を取るには、先に「鬨の声」が要ります」）
-- 効く場所（どれも今ある処理に数値を足すだけ）：
-  - 魔法の数値（`spellDamage`・`healBonus`）→ `skillSpellBonus(player, effect)`（ステージの魔法の増加と同じ所）
-  - 出せる兵士の枚数 → `soldiersPerTurnOf(player)`。射程 → 出した兵士の `rangeBonus`。兵士のHP → `armyHp`
-  - 毎ターンの城HPの回復・城壁を戻す → `skillTurnStart(player)`（MP の回復のあと。`castleHealed` の `source: { kind: "skill" }`・`castleArmored` の `skill: true`）
-  - 魔物のコイン → とどめのごほうびのコインに足す
-  - 反応ごとのダメージ → `triggerReaction` で `reactionDamage` ＋ その反応のキー
-  - 城HP・手札の上限・兵士の攻撃・城への魔法 → **城の種類の補正（`hpBonus` など）に足す**（`withSkillBonuses`）。城の種類と同じ所で効く
-  - 最初の城壁 → 後攻の城壁のあとに足す（`armorMax` まで）
-  - 最初の MP・MP の上限 → `maxMpOf(player)`（人ごとの上限。`changeMp`・「MPが満タン」の判定もこれを使う）
-  - MP の回復・コイン → ターンの始めの回復に足す
-  - 最初の手札 → 配る枚数に足す
-  - ランダム付着 → `randomAttachAtTurnStart` の先頭の条件を「ルールが true、**またはそのプレイヤーがスキルを持つ**」にした（CLAUDE.md の約束どおり）
-  - 反応のダメージ → `triggerReaction` で、反応を起こした人（`elementHit` の `by`。省略すると手番の人。兵士同士の戦いの反撃は相手）の `reactionDamage` を足す。自分・味方の兵士への反応には足さない
-- `getState()`（`skillTree` を渡したゲームだけキーが増える）：`players.pX.skills`（選んだノードのID。**相手にも見せる**）、`players.pX.maxMp`（その人の MP の上限）。全体の `maxMp` は今までどおりルールの値
-- イベント（新しいイベントはない。キーが増えるだけ）：
-  - `elementAttached` の `skill: true`：スキル（混沌の目）によるターン開始時のランダム付着（`source: "turnStart"` と一緒）。ルールの `randomAttachTurnStart` のときは付かない
-  - `reactionTriggered` の `skillBonus`：スキルで増えた追加ダメージ（`damage` は増えたあとの値）。増えたときだけ
-
-### 2.7 見せる・隠す（visibility）
-- 既定：**ビルドは相手にも見せる**（カードゲームの「デッキの公開」と同じ。相手の作戦が読めると駆け引きになる）。`visibility.js` は変えていない
-- 試合の前（部屋）でも `roomInfo().players[].skills` に出る
-
-### 2.8 オンライン（`server/`）
-- `server.js` の `loadData` が `skillTreeSet` を読み、`data.skillTree` にする（Game にそのまま渡る）
-- 部屋（`rooms.js`）：席に `skills`（人は `[]` から。CPU は戦い方のおすすめ）。`setSeat({ skills: [...] })` で選ぶ（不正なら理由を返す。スキルツリーのないモードでは「このモードではスキルを選べません」）。試合の開始で `setup.skills` に渡す。`roomInfo().choices.skillTree` に `{ points, nodes（name・branch・tier・cost・requires・requiresAny・description）, presets }`
-
-### 2.9 CPU の使い方（`js/game/strategies.js`）
-- `chooseSkillBuild(tree, rng, style)`：`"none"`／`"random"`（取れるノードからランダムに、ポイントがなくなるまで）／プリセットのID／戦い方の名前（`SKILL_STYLE_OF`：aggro → 剣、rush → 兵士、defensive → 盾、guard → 回復、smart → まんべんなく、random → ランダム、pass → なし）／`"siegecraft+warcry"`（ノードを+でつなぐ。測る用）
-- 試合中の戦い方は変えていない（`refillMp` だけ、人ごとの MP の上限を見るようにした）
-- ひとりで遊ぶの CPU も、画面がスキルを渡すようになったら `chooseSkillBuild(tree, rng, CPUの戦い方)` を使えばよい
-
----
-
-## 3. バランスの測り方と結果
-
-- `node tests/sim/skills.js`：ビルドどうしの総当たり（席を入れかえる）。`--games`・`--seed`・`--builds`・`--strategy`・`--vs none`（1つと比べる）・`--tree '{...}'`（データを書き換えずに試す）・`--json`
-- `node tests/sim/run.js --mode classic --skills blade,shield`：席ごとのビルドで今までの表を出す（`auto` は戦い方のおすすめ）
-
-### smart 同士・席を入れかえて各200試合 × シード2種（1・2）
-`node tests/sim/skills.js --games 100 --seed 1 --builds none,random,blade,troops,magic,shield,heal,element,mana,hybrid`（シード2も）
-
-| ビルド | ほかのビルドとの平均勝率（シード1/2） | 何も取らない相手に（シード1/2・平均） | 同じビルドどうしの先攻の勝率（平均） |
-|---|---|---|---|
-| 何も取らない（`none`） | 40% / 44% | — | 52% |
-| ランダム（`random`） | 52% / 52% | 60% / 58%（59%） | 50% |
-| 剣（`blade`） | 46% / 43% | 61% / 44%（52%） | 46% |
-| 兵士（`troops`） | 48% / 48% | 56% / 56%（56%） | 50% |
-| 魔法（`magic`） | 54% / 55% | 59% / 60%（60%） | 46% |
-| 盾（`shield`） | 49% / 51% | 53% / 54%（54%） | 47% |
-| 回復（`heal`） | 55% / 54% | 61% / 56%（58%） | 46% |
-| 属性（`element`） | 47% / 46% | 58% / 59%（58%） | 48% |
-| 魔力（`mana`） | 55% / 54% | 65% / 59%（62%） | 53% |
-| まんべんなく（`hybrid`） | 53% / 53% | 61% / 57%（59%） | 53% |
-
-全部の組み合わせ（2シードの合計400試合）：
-
-| A vs B | 決着 | A の勝率（シード1/2） | 先攻の勝率 | 平均手番 | 反応/試合 |
-|---|---|---|---|---|---|
-| none vs none | 400/400 | 50/52% | 52% | 100.8 | 1.56 |
-| none vs random | 400/400 | 40/42% | 52% | 100.7 | 1.98 |
-| none vs blade | 400/400 | 39/56% | 48% | 96.7 | 1.43 |
-| none vs troops | 400/400 | 44/44% | 50% | 104.6 | 1.67 |
-| none vs magic | 400/400 | 41/40% | 48% | 100.8 | 1.96 |
-| none vs shield | 400/400 | 47/46% | 47% | 105.0 | 1.62 |
-| none vs heal | 400/400 | 39/44% | 50% | 106.2 | 1.68 |
-| none vs element | 400/400 | 42/41% | 48% | 97.7 | 2.72 |
-| none vs mana | 400/400 | 35/41% | 46% | 95.8 | 2.37 |
-| none vs hybrid | 400/400 | 39/43% | 47% | 103.5 | 1.44 |
-| random vs random | 400/400 | 50/49% | 50% | 103.2 | 2.39 |
-| random vs blade | 400/400 | 60/55% | 52% | 100.8 | 2.02 |
-| random vs troops | 400/400 | 52/53% | 46% | 105.4 | 2.12 |
-| random vs magic | 400/400 | 45/50% | 44% | 104.9 | 2.42 |
-| random vs shield | 400/400 | 50/50% | 46% | 107.5 | 2.13 |
-| random vs heal | 400/400 | 46/48% | 48% | 108.1 | 2.16 |
-| random vs element | 400/400 | 55/55% | 45% | 102.5 | 3.38 |
-| random vs mana | 400/400 | 51/51% | 47% | 101.0 | 2.95 |
-| random vs hybrid | 400/400 | 50/48% | 51% | 104.9 | 1.98 |
-| blade vs blade | 400/400 | 52/52% | 46% | 92.3 | 1.42 |
-| blade vs troops | 400/400 | 49/47% | 48% | 101.0 | 1.61 |
-| blade vs magic | 400/400 | 44/38% | 49% | 102.2 | 2.02 |
-| blade vs shield | 400/400 | 51/44% | 46% | 101.6 | 1.56 |
-| blade vs heal | 400/400 | 49/46% | 47% | 102.7 | 1.72 |
-| blade vs element | 400/400 | 47/48% | 44% | 99.4 | 2.79 |
-| blade vs mana | 400/400 | 35/37% | 46% | 96.2 | 2.38 |
-| blade vs hybrid | 400/400 | 43/43% | 42% | 99.0 | 1.31 |
-| troops vs troops | 400/400 | 55/52% | 50% | 103.9 | 1.59 |
-| troops vs magic | 400/400 | 46/47% | 48% | 104.9 | 1.95 |
-| troops vs shield | 400/400 | 54/49% | 54% | 104.2 | 1.68 |
-| troops vs heal | 400/400 | 38/50% | 46% | 108.2 | 1.68 |
-| troops vs element | 400/400 | 55/48% | 50% | 102.6 | 2.84 |
-| troops vs mana | 400/400 | 43/42% | 48% | 101.2 | 2.51 |
-| troops vs hybrid | 400/400 | 46/40% | 47% | 107.4 | 1.46 |
-| magic vs magic | 400/400 | 57/51% | 46% | 106.0 | 2.39 |
-| magic vs shield | 400/400 | 53/53% | 48% | 107.5 | 2.06 |
-| magic vs heal | 400/400 | 45/49% | 46% | 109.7 | 2.02 |
-| magic vs element | 400/400 | 61/61% | 48% | 101.8 | 3.13 |
-| magic vs mana | 400/400 | 55/54% | 46% | 101.9 | 2.92 |
-| magic vs hybrid | 400/400 | 50/53% | 52% | 107.0 | 1.81 |
-| shield vs shield | 400/400 | 51/55% | 47% | 111.0 | 1.71 |
-| shield vs heal | 400/400 | 44/43% | 48% | 111.8 | 1.68 |
-| shield vs element | 400/400 | 51/54% | 48% | 103.4 | 3.02 |
-| shield vs mana | 400/400 | 46/51% | 46% | 103.5 | 2.46 |
-| shield vs hybrid | 400/400 | 52/49% | 51% | 109.3 | 1.50 |
-| heal vs heal | 400/400 | 48/48% | 46% | 113.9 | 1.73 |
-| heal vs element | 400/400 | 56/62% | 52% | 105.5 | 2.90 |
-| heal vs mana | 400/400 | 52/45% | 46% | 103.9 | 2.61 |
-| heal vs hybrid | 400/400 | 48/56% | 50% | 111.8 | 1.56 |
-| element vs element | 400/400 | 50/54% | 48% | 101.5 | 3.92 |
-| element vs mana | 400/400 | 41/43% | 48% | 98.0 | 3.80 |
-| element vs hybrid | 400/400 | 45/42% | 52% | 106.3 | 2.91 |
-| mana vs mana | 400/400 | 49/44% | 53% | 96.0 | 3.26 |
-| mana vs hybrid | 400/400 | 53/53% | 50% | 102.1 | 2.38 |
-| hybrid vs hybrid | 400/400 | 51/52% | 53% | 110.3 | 1.34 |
-
-### ノード単体の強さ（そのノードと、先に取るノードだけを取ったビルド vs 何も取らない。シード1・200試合）
-
-| ビルド | 何も取らない相手に | 平均手番 |
-|---|---|---|
-| siegecraft | 50% | 100.1 |
-| siegecraft+warcry | 50% | 99.5 |
-| siegecraft+warcry+keenBlade | 56% | 92.2 |
-| reinforce | 50% | 101.2 |
-| reinforce+longbow | 56% | 103.1 |
-| reinforce+longbow+ironArmor | 51% | 105.9 |
-| arcana | 52% | 100.5 |
-| arcana+deepVessel | 60% | 97.7 |
-| arcana+deepVessel+archmagic | 64% | 98.7 |
-| stoneWall | 53% | 102.7 |
-| stoneWall+stronghold | 55% | 103.0 |
-| stoneWall+stronghold+bastion | 54% | 101.9 |
-| prayer | 55% | 102.1 |
-| prayer+mending | 60% | 106.6 |
-| prayer+mending+regen | 63% | 107.0 |
-| chaosEye | 50% | 99.4 |
-| chaosEye+lightDark | 49% | 99.3 |
-| chaosEye+blackIce | 51% | 99.5 |
-| chaosEye+shatter | 48% | 99.3 |
-| chaosEye+maelstrom | 50% | 99.4 |
-| chaosEye+lightDark+echo | 47% | 99.6 |
-| manaSpring | 46% | 100.0 |
-| manaSpring+hunter | 66% | 94.5 |
-| manaSpring+hunter+alchemy | 56% | 98.9 |
-まとめ：
-- **全試合決着**（2シード × 55組 × 200試合）
-- 目標「おすすめビルドの平均勝率 45〜55%」：7種が範囲内。**剣は43〜46%で少し弱い**、魔法・回復・魔力は54〜55%で上のふち
-- 目標「何も取らない相手に、最強のビルドが60%を超えない」：**魔力が平均62%で少し超える**。ほかは52〜60%
-- 同じビルドどうしの先攻の勝率は46〜53%。スキルで先攻・後攻の差は広がっていない
-- 単体の比較では、「魔物狩り」（+20%）・「大きな器」（+8%）・「城壁の修繕」（+5%）が強め、属性の枝は CPU では±0（CPU は付着を狙わない）。どれも1シード200試合なので誤差は±7%
-- 使用量のため、ノードを増やした版はシード1・2の2つで測った（その前の12ノードの版は3つ）
-- 通常モード（`node tests/sim/run.js`）・4陣営（`node tests/sim/factions.js --games 50 --seed 1`）・スキルなしのクラシック（`--mode classic --games 100 --seed 1`）の出力は、変更前と完全に一致
-
----
-
-## 4. UI担当への依頼
-
-画面（`index.html`・`css/`・`js/ui/`・`js/main.js`）は変えていない。必要な変更：
-
-1. **クラシックを遊べる入口**：ホームの対戦形式に「クラシック」を足す（`rulesetUrl` の `['kingdom','factions']` に `classic`、`modes.json` の `available`/`hidden` を変えるのは人間の確認のあと）
-2. **オンラインの join に mode を渡す**：`js/main.js` の `client.join(pass, name, gameMode === 'factions' ? 'factions' : undefined)` を、通常モード以外は `gameMode` を渡すように（今は `?mode=classic` でも通常モードの部屋に入る）
-3. **スキルツリーの読み込み**：`HomeRuleSet.js` の `loadHomeRuleSet` で `entry.skillTreeSet` を読み、`new Game({ ..., skillTree, setup: { skills } })` に渡す（ひとりで遊ぶ・同じ端末）。CPU の席は `chooseSkillBuild(skillTree, rng, CPUの戦い方)`
-4. **スキルを選ぶ画面**（試合の前。デッキを選ぶのと同じ場所）の案（ノードが24個に増えたので、1画面に全部は並べない）：
-   - 上に「残りポイント 7」と、**枝のタブ7つ**（剣・兵士・魔法・盾・回復・属性・魔力。アイコン＋色）。タブに、その枝で取ったノードの数のバッジ
-   - タブの中は**縦3段**（1段目が下、奥義が上。木が伸びる向き）。属性のタブだけ2段目が4つ横に並び、奥義への線は4本から1本に集まる
-   - 取れるノードは明るく、先のノードがないものは鍵、奥義は金の枠。ポイントが足りないものは灰色で「あと○ポイント」
-   - ノードをタップ：名前・効果・コスト・先に取るノード。もう一度タップで取る／外す（外すと、そのノードを先に要するノードも外す。`requiresAny` は、ほかの選択肢が残っていれば外さない）
-   - 下に「いまのビルド」の小さな一覧（取ったノードのアイコンが並ぶ）と、**「おすすめ」ボタン**（`presets` の8種を、名前と一言で選ぶ）・「リセット」
-   - 取れない理由は `checkSkillBuild` の `reason` をそのまま出す（押して何も起きない操作を作らない）
-   - オンラインの部屋：`roomInfo().choices.skillTree` で描く（`requiresAny` も入れた）。選んだら `setSeat({ skills })`。ほかの席のビルドは `players[].skills`
-   - 最後に選んだビルドを覚えておく（localStorage。モードごと）
-5. **試合中の表示**：
-   - 城のそば（か名前のタブ）に、相手と自分のビルドのアイコン（`getState().players.pX.skills`）。タップで説明
-   - MP の上限は `players.pX.maxMp` を使う（ない時は今までどおり全体の `maxMp`）
-   - `elementAttached` の `skill: true`：混沌の目が発動した演出（目のアイコン＋付いた属性の色）
-   - `castleArmored` の `skill: true`（城壁の修繕）・`castleHealed` の `source.kind: "skill"`：スキルの小さな演出
-   - `reactionTriggered` の `skillBonus`：「光と闇の共鳴 +4」のように、反応の数字の横に足す
-6. `js/ui/precache.js` に `data/classic/skilltree.json` を足す（`node js/ui/build-precache.js`）
-
----
-
-## 5. 人間が決める点（推奨つき）
-
-決まったこと：**短所はなくし、ポイントとコストだけで制限する（案B）**。**ノードを増やす（「もっと増やせる？方向性は大丈夫」）**。
-
-1. **魔力（経済）のおすすめが少し強い**：何も取らない相手に平均62%（目安の60%を少し超える。2シードの誤差は±5%ほど）。とくに「魔物狩り（魔物のコイン+1）」が効いている（単体の比較で+20%前後。ただし1シードの値で誤差が大きい）。剣はほかのビルドとの平均が44〜46%と少し弱い（推奨：遊んで確かめてから、魔物狩りをコイン+1のまま奥義へ移すか、剣の奥義に「最初のMP+1」を足す）
-2. **城の種類とスキルツリーの両方を残すか**（推奨：**クラシックでは城を「ふつうの城」に固定**し、スキルツリーに一本化する。補正の中身が重なるうえ、城の種類は短所つきで、短所なしのスキルとは考え方も違う）
-3. **火・水・風・土の反応とカード**（推奨：80枚のうち、シミュレーションで出される回数の少ないカード（`run.js --json` の `playedPerGame` で選ぶ）と入れ替えて、火・水の武器・魔法を各2〜4枚入れ、4陣営の反応（蒸発など）から2〜3個を `data/classic/reactions.json` に足す。属性の枝に、その反応のノードも足せる。カードの設計なので、案を出してから決める）
-
-ほか（既定のまま）：ビルドは相手に見せる・4陣営にはまだ入れない。
+### 2.6 未実装・後工程
+- 戦闘効果ハンドラ（段階B：共通イベント・幸運・会心・資源・予約・連鎖制限、段階C：190ノード）、UI（ツリー画面・任意行動）、QA の observe/verify。進捗は `docs/skilltree-200-progress.md`

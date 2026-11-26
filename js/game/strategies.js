@@ -6,7 +6,7 @@
 //   takeTurn(game, pid, rng, ctx)      … メインでカードを出す（出さなくてもよい）
 //   chooseDiscard(game, pid, rng, ctx) … ctx.discardCount 枚の cardId を返す
 
-import { availableSkillNodes } from './SkillTree.js';
+import { acquirableIds, normalizeBuild } from './SkillTree.js';
 
 const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 
@@ -16,7 +16,7 @@ function view(game, pid) {
   // チーム戦では、同じ城（castleOwner）の味方は相手に数えない
   const sideOf = (id) => state.players[id].castleOwner ?? id;
   const enemies = Object.keys(state.players).filter((id) => sideOf(id) !== sideOf(pid)).map((id) => ({ id, ...state.players[id] }));
-  const playable = me.hand.filter((c) => game.canPlayCard(c.cardId).ok);
+  const playable = me.hand.filter((c) => game.canPlayCard(c.cardId).ok && cpuAffordable(game, pid, c.cardId));
   return { state, me, enemies, playable };
 }
 
@@ -76,7 +76,7 @@ function playWith(game, cardId, chooseTarget) {
     }
   }
   if (!t) return false;
-  const res = game.playCard(cardId, t);
+  const res = cpuPlay(game, cardId, t);
   // 相手が防御を選ぶ場面になったら、(シミュレーションなどでは) その場で相手に返事をしてもらう
   if (res.ok && curCtx?.onDefense && game.getState(null).phase === 'defend') curCtx.onDefense(game);
   return res.ok;
@@ -451,7 +451,7 @@ function smartStep(game, pid, ctx) {
       const m = st.monsters.find((x) => x.monsterId === t.monsterId);
       return m.hp <= ctx.cards[c.type].amount && (m.reward >= 5 || ['rare', 'epic', 'legendary'].includes(m.rewardRarity));
     });
-    if (kill && game.playCard(c.cardId, kill).ok) return true;
+    if (kill && cpuPlay(game, c.cardId, kill).ok) return true;
   }
   // とどめになるなら城への魔法
   for (const t of castleSpells) {
@@ -610,11 +610,11 @@ function refillMp(game, pid, ctx) {
     const me = game.getState(pid).players[pid];
     if (me.mp > maxMp / 2) return;
     const room = maxMp - me.mp;
-    const hand = me.hand.filter((c) => types.includes(c.type) && game.canPlayCard(c.cardId).ok);
+    const hand = me.hand.filter((c) => types.includes(c.type) && game.canPlayCard(c.cardId).ok && cpuAffordable(game, pid, c.cardId));
     // 入りきる最大のカード。なければ、いちばん小さいカード
     const fits = hand.filter((c) => ctx.cards[c.type].amount <= room).sort((a, b) => ctx.cards[b.type].amount - ctx.cards[a.type].amount);
     const card = fits[0] ?? hand.sort((a, b) => ctx.cards[a.type].amount - ctx.cards[b.type].amount)[0];
-    if (!card || !game.playCard(card.cardId).ok) return;
+    if (!card || !cpuPlay(game, card.cardId).ok) return;
   }
 }
 
@@ -624,8 +624,22 @@ function refillMp(game, pid, ctx) {
  * 自分の手札しか見ない
  */
 export function mulliganChoice(game, pid, ctx) {
-  const hand = game.getState(pid).players[pid].hand ?? [];
-  return hand.some((c) => ctx.cards[c.type]?.kind === 'soldier') ? [] : hand.map((c) => c.cardId);
+  const me = game.getState(pid).players[pid];
+  const hand = me.hand ?? [];
+  if (!hand.some((c) => ctx.cards[c.type]?.kind === 'soldier')) return hand.map((c) => c.cardId);
+  // スキル H01（戦略的準備）を持つときだけ：最初の手番で撃てない重い魔法（MPコスト > 今のMP）を、重い順に最大2枚戻す（先に引いてから混ぜる）。
+  // 乱数は使わない（決定論的なフォールバック）。H01 がなければ従来どおり戻さない
+  if (!(me.skills ?? []).includes('H01')) return [];
+  const real = game.players?.[pid]?.hand ?? [];
+  const costOf = (cardId) => {
+    const card = real.find((c) => c.cardId === cardId);
+    return card && typeof game.mpCostOf === 'function' ? game.mpCostOf(card) : 0;
+  };
+  return hand
+    .filter((c) => ctx.cards[c.type]?.kind !== 'soldier' && costOf(c.cardId) > (me.mp ?? 0))
+    .sort((a, b) => costOf(b.cardId) - costOf(a.cardId) || (a.cardId < b.cardId ? -1 : 1))
+    .slice(0, 2)
+    .map((c) => c.cardId);
 }
 
 export const STRATEGIES = Object.fromEntries(
@@ -637,8 +651,12 @@ export const STRATEGIES = Object.fromEntries(
         tieRng = rng;
         curCards = ctx.cards;
         curCtx = ctx;
+        // スキルの任意アクション（クラシックでノードを取った人だけ。スキルがなければ何もせず、乱数も使わない）
+        if (name !== 'pass') takeSkillActions(game, pid, 'pre');
         if (name !== 'pass') refillMp(game, pid, ctx);
-        return st.takeTurn(game, pid, rng, ctx);
+        const r = st.takeTurn(game, pid, rng, ctx);
+        if (name !== 'pass' && game.getState(null).phase === 'main') takeSkillActions(game, pid, 'post');
+        return r;
       },
     },
   ]),
@@ -647,33 +665,170 @@ export const STRATEGIES = Object.fromEntries(
 // ================= スキルツリー（クラシック）：試合の前に CPU が選ぶビルド =================
 
 /**
- * 戦い方ごとの、おすすめのビルド（skilltree.json の presets のID）。ないプリセットは何も取らない。
- * aggro は剣、rush は兵士、defensive は盾、guard は回復、smart はまんべんなく、random はランダム、pass は何も取らない
+ * 戦い方ごとの、おすすめのビルド（skilltree.json の presets のID。仕様 第10章の4ビルド）。
+ * aggro は会心＋魔法＋幸運、rush は墓地＋兵士＋召喚、smart は属性＋魔力＋魔法、defensive・guard は血魔術＋回復＋防御、
+ * random はランダム、pass は何も取らない
  */
 export const SKILL_STYLE_OF = {
-  random: 'random', aggro: 'blade', rush: 'troops', smart: 'hybrid', defensive: 'shield', guard: 'heal', pass: 'none',
+  random: 'random', aggro: 'critMagicLuck', rush: 'graveTroopsSummon', smart: 'elementManaMagic', defensive: 'bloodHealDefense', guard: 'bloodHealDefense', pass: 'none',
 };
 
 /**
  * ビルドを選ぶ（スキルツリーのデータだけを使う。Game は使わない）。
- * style："none"（何も取らない）／"random"（取れるノードからランダムに、ポイントがなくなるまで）／presets のID（おすすめ）
- * 戦い方の名前（smart など）を渡すと SKILL_STYLE_OF のおすすめにする
- * @returns {string[]} ノードのIDの配列（checkSkillBuild に合う）
+ * style："none"（何も取らない）／"random"（取れるノードを安定順に並べ、注入した rng で1つずつ選ぶ。ポイントがなくなるまで。
+ *   奥義は1個まで・横断も含む）／presets のID（おすすめ）／戦い方の名前（SKILL_STYLE_OF）／"C01+C02"（取得順のIDを + でつなぐ）
+ * @param {number} [budget] 使えるポイント（省略するとツリーの budget）
+ * @returns {{ids: string[], config: object}} 正規化したビルド（normalizeBuild に合う）
  */
-export function chooseSkillBuild(tree, rng, style = 'random') {
+export function chooseSkillBuild(tree, rng, style = 'random', budget = tree.budget) {
   const s = SKILL_STYLE_OF[style] ?? style;
-  if (s === 'none') return [];
-  // "keenBlade+siegecraft"：ノードのIDを + でつないだビルド（シミュレーションで1つずつ測るとき）
-  if (s.includes('+') || Object.hasOwn(tree.nodes, s)) return s.split('+');
+  const done = (ids, config = {}) => {
+    const n = normalizeBuild(tree, { ids, config }, budget);
+    if (!n.ok) throw new Error(`スキルのビルド "${style}" が決まりに合いません：${n.reason}`);
+    return n.build;
+  };
+  if (s === 'none') return done([]);
   if (s === 'random') {
-    const build = [];
+    const ids = [];
     for (;;) {
-      const next = availableSkillNodes(tree, build);
-      if (next.length === 0) return build;
-      build.push(pick(next, rng));
+      const next = acquirableIds(tree, ids, budget);
+      if (next.length === 0) return done(ids);
+      ids.push(pick(next, rng));
     }
   }
   const preset = tree.presets?.[s];
-  if (!preset) throw new Error(`スキルのビルド "${style}" はありません（none / random / ${Object.keys(tree.presets ?? {}).join(' / ')}）`);
-  return [...preset.nodes];
+  if (preset) return done([...preset.ids], preset.config ?? {});
+  if (s.includes('+') || tree.nodes.some((n) => n.id === s)) return done(s.split('+'));
+  throw new Error(`スキルのビルド "${style}" はありません（none / random / ${Object.keys(tree.presets ?? {}).join(' / ')}）`);
+}
+
+// ================= スキルツリー（クラシック）：CPU の任意アクションと手札の選択（段階D2） =================
+//
+// 方針（仕様 5.5・6章）：既存の戦い方（上の STRATEGIES）はそのまま。スキルの任意アクションは Game.listSkillActions の合法手だけを
+// Game.skillAction で使う（画面・headless と同じ API・同じルール）。「見送る」が既定で、使っても明らかに損でないものだけを、
+// 資源（城HP・MP）に余裕があるときだけ使う。乱数は使わない（選び方はすべて決定論的）ので、スキルのない試合の乱数・結果は変わらない。
+// 勝率は測っていない（未検証）。
+
+/** CPU が城HPを使ってよい下限（最大HPに対する割合）。支払ったあとも、これ以上残るときだけ HP置換・血魔術の支払をする */
+export const CPU_SKILL_SAFE_HP_RATIO = 0.5;
+
+const maxBy = (key) => (options) => options.reduce((best, o) => (key(o) > key(best) ? o : best), options[0]);
+const mpRoom = (me) => (me.maxMp ?? Infinity) - (me.mp ?? 0);
+
+/**
+ * CPU が使う任意アクション（actionId → { phase, when?, pick? }）。ここにないものは使わない（docs/skilltree-200-handoff.md の「CPU 未対応」）。
+ *   phase "pre"：カードを出す前（ドロー・回収・MP回復）、"post"：出したあと（残った資源で召喚・シールド・追撃・移動）
+ *   when(me, option)：資源の余裕の条件。pick(options)：対象・量の選び方（省略すると一覧の先頭＝安定順）
+ */
+export const CPU_SKILL_ACTIONS = {
+  // ---- 先に（手札・MP を増やす）----
+  P08: { phase: 'pre', pick: maxBy((o) => o.args.amount ?? 0) }, // 貯蔵MPを空きまで移す
+  X04: { phase: 'pre' }, // 貯蔵MP2 → 1枚ドロー
+  B06: { phase: 'pre', when: (me) => mpRoom(me) >= 1 }, // 血気3 → MP1
+  P03: { phase: 'pre', when: (me) => mpRoom(me) >= 2 && (me.coins ?? 0) >= 2 }, // コイン1 → MP2（コインが2枚以上あるときだけ）
+  H03: { phase: 'pre' }, // 捨て札から1枚回収（試合中1回）
+  H04: { phase: 'pre' }, // 山札の最初の兵士を引く（試合中1回）
+  H05: { phase: 'pre' }, // 山札の最初の魔法を引く（試合中1回）
+  G04: { phase: 'pre' }, // 墓地の兵士カードを手札へ（試合中1回）
+  T06: { phase: 'pre' }, // 次の自ターンに追加ドローを予約（試合中2回）
+  I01: { phase: 'pre' }, // 相手の山札の先頭を見る（情報だけ）
+  B02: { phase: 'pre', hp: true }, // 城HP3 → 1枚ドロー（城HPに余裕があるときだけ）
+  // ---- あとで（残った資源で）----
+  G06: { phase: 'post' }, // 魂3で蘇生
+  I08: { phase: 'post' }, // 敵兵士の弱体トークンを自陣に
+  V07: { phase: 'post' }, // MP3で使い魔
+  X43: { phase: 'post' }, // MP2で武器を持つ兵士の次の通常攻撃+3
+  Q08: { phase: 'post' }, // SP10：攻撃力+3・シールド3
+  Q06: { phase: 'post' }, // SP5：味方全員の攻撃力+1
+  Q03: { phase: 'post' }, // SP3：シールド3
+  Q05: { phase: 'post' }, // SP3：次の会心率+20pt
+  D07: { phase: 'post' }, // 味方1体の被ダメージ-2
+  T04: { phase: 'post' }, // 味方の持続ダメージを1回延期
+  S08: { phase: 'post', pick: maxBy((o) => (typeof o.preview === 'object' && o.preview ? o.preview.damage ?? o.preview.amount ?? 0 : 0)) }, // 疫病の即時精算
+  T08: { phase: 'post' }, // 前ターンの単体攻撃魔法を再発動（試合中1回）
+  B07: { phase: 'post', pick: maxBy((o) => o.args.amount ?? 0) }, // 血気で敵兵士に固定ダメージ
+  K04: { phase: 'post' }, // 隣のレーンへ移動＋シールド1
+  K08: { phase: 'post' }, // 味方1体を1マス進軍
+};
+
+/** CPU が城HPを n 使ってよいか（債務がなく、払ったあとも最大HPの CPU_SKILL_SAFE_HP_RATIO 以上残る） */
+function cpuHpOk(game, pid, n) {
+  const me = game.getState(pid).players[pid];
+  if (!me.skillState || (me.skillState.debt ?? 0) > 0) return false;
+  if (!(n > 0)) return true;
+  return me.castleHp - n >= Math.ceil(me.castleMaxHp * CPU_SKILL_SAFE_HP_RATIO);
+}
+
+/**
+ * スキルの任意アクションを使う（phase "pre" / "post"）。使った [{ actionId, args }] を返す。
+ * 合法手は Game.listSkillActions、実行は Game.skillAction（原子的。失敗しても何も消費しない）
+ */
+export function takeSkillActions(game, pid, phase) {
+  const used = [];
+  for (let guard = 0; guard < 40; guard++) {
+    const st = game.getState(null);
+    if (st.phase !== 'main' || st.currentPlayer !== pid) break;
+    const list = game.listSkillActions(pid);
+    if (!list.length) break;
+    const me = game.getState(pid).players[pid];
+    let chosen = null;
+    for (const [actionId, rule] of Object.entries(CPU_SKILL_ACTIONS)) {
+      if (rule.phase !== phase || used.some((u) => u.actionId === actionId)) continue;
+      const a = list.find((x) => x.actionId === actionId && x.ok);
+      if (!a) continue;
+      const options = a.options.filter((o) => (!rule.when || rule.when(me, o)) && (!(o.cost?.hp > 0) || (rule.hp && cpuHpOk(game, pid, o.cost.hp))));
+      if (!options.length) continue;
+      chosen = { actionId, args: (rule.pick ?? ((os) => os[0]))(options).args };
+      break;
+    }
+    if (!chosen) break;
+    const r = game.skillAction(pid, chosen.actionId, chosen.args);
+    used.push({ ...chosen, ok: r.ok });
+    if (r.ok && curCtx?.onDefense && game.getState(null).phase === 'defend') curCtx.onDefense(game);
+  }
+  return used;
+}
+
+/**
+ * 手札のカードを使うときのスキルの選択（playCard の第3引数 skillOptions）。スキルのない人・ゲームは undefined（従来の呼び方のまま）。
+ * - hpForMp（B01/B08 の HP置換）：MP だけで払えるなら 0（置換しない）。足りないときは不足分だけ、城HPに余裕があるときだけ（1＝不足分）
+ * - bloodBlade（B03）・bloodEcho（X27）：城HPに余裕があるときだけ true
+ * - diceChoice（L06）："high"（大きい方）
+ * - deferHp（X35）は渡さない（本人の設定 X35.autoDefer に従う。既定 OFF）
+ * X15 の選び方・E04/X25 の設定・H01 の戻すカードは別（setSkillPrefs・ビルドの config・mulliganChoice）
+ */
+export function cpuSkillOptions(game, pid, cardId) {
+  const base = typeof game.previewSkillCost === 'function' ? game.previewSkillCost(cardId, { hpForMp: 0 }) : null;
+  if (!base) return undefined;
+  const skills = game.getState(pid).players[pid].skills ?? [];
+  const opts = { hpForMp: 0, diceChoice: 'high' };
+  let hp = 0;
+  if (!base.ok) {
+    const p = game.previewSkillCost(cardId, { hpForMp: 1 });
+    if (p?.ok && cpuHpOk(game, pid, p.hp)) {
+      opts.hpForMp = 1;
+      hp = p.hp;
+    }
+  }
+  if (skills.includes('B03') && cpuHpOk(game, pid, hp + 2)) {
+    opts.bloodBlade = true;
+    hp += 2;
+  }
+  if (skills.includes('X27') && cpuHpOk(game, pid, hp + 2)) opts.bloodEcho = true;
+  return opts;
+}
+
+/** CPU がそのカードを出してよいか（HP置換が要るのに城HPに余裕がなければ出さない）。スキルがなければ常に true */
+function cpuAffordable(game, pid, cardId) {
+  const base = typeof game.previewSkillCost === 'function' ? game.previewSkillCost(cardId, { hpForMp: 0 }) : null;
+  if (!base || base.ok) return true;
+  const p = game.previewSkillCost(cardId, { hpForMp: 1 });
+  return Boolean(p?.ok) && cpuHpOk(game, pid, p.hp);
+}
+
+/** CPU のカードの使用（スキルがあれば cpuSkillOptions を第3引数に。なければ従来どおり2引数） */
+function cpuPlay(game, cardId, target) {
+  const pid = game.getState(null).currentPlayer;
+  const opts = cpuSkillOptions(game, pid, cardId);
+  return opts === undefined ? game.playCard(cardId, target) : game.playCard(cardId, target, opts);
 }

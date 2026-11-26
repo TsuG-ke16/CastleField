@@ -105,7 +105,7 @@ js/
     Monster.js     … 魔物と、強化のデータのチェック
     Weather.js     … 天候のデータのチェック
     Stage.js       … ステージ（マップ）のデータのチェックと選び方
-    SkillTree.js   … スキルツリー（クラシック）のデータのチェック・ビルドの決まり・効果の合計
+    SkillTree.js   … スキルツリー（クラシック。200ノードのグラフ）のデータのチェック・取得/解除の判定・保存・初期値系の効果の合計
     Setup.js       … 城の種類・デッキのデータのチェックと、山札1組（Pile）
     visibility.js  … オンラインで、イベントをプレイヤーごとに隠す決まり
     strategies.js  … 戦い方（random / aggro / smart / defensive / rush / guard / pass）。シミュレーションと CPU が使う
@@ -137,6 +137,7 @@ data/
   stages.json      … ステージ（草原・溶岩・氷・古代遺跡・闇の森・砂漠）
   stamps.json      … チャットのスタンプの一覧
   factions/        … 4陣営モード（factions.json・cards/<陣営>.json・rules.json・elements.json・reactions.json。「4陣営モード」）
+tools/             … データを作るスクリプト（build-skilltree.mjs：クラシックのスキルツリーを仕様書から作る）
 ui-tests/          … 画面のスモークテスト（node ui-tests/smoke.js。Playwright は環境にあるものを使う。UI担当）
 docs/              … 設計メモ。archive/ は終わった依頼（Codex 向けのプロンプトなど）
 tests/             … 自動テスト（node --test）。Node.js だけで動く
@@ -292,7 +293,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   - 道の `players[0]` の兵士：道のマス番号 = `position`
   - 道の `players[1]` の兵士：道のマス番号 = `laneLength - 1 - position`
 - 兵士の `targetId` は、その兵士が向かっている相手（道の向こうの人）
-- スキルツリー（`skillTree` を渡したゲームだけ）：`players.pX.skills`（選んだノードのIDの配列。相手にも見せる）・`players.pX.maxMp`（その人の MP の上限）。「クラシックのスキルツリー」
+- スキルツリー（`skillTree` を渡したゲームだけ）：`players.pX.skills`（取得順のノードIDの配列。相手にも見せる）・`players.pX.skillConfig`（E04 などの設定値）・`players.pX.maxMp`（その人の MP の上限）・`players.pX.skillError`（不正で空ビルドにしたときだけ）。「クラシックのスキルツリー」
 - 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.castleAttachments`（城に付いている属性 `[{ element, turns }]`。`rules.castleAttach` のゲームだけ。試作）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）、`players.pX.castleVulnerable`（魔族の脆弱 `{ ratio, maxRatio, turns }` か null。脆弱のカードがあるゲームだけ）・`players.pX.mpSeal`（魔族の封魔 `{ amount, turns }` か null。封魔のカードがあるゲームだけ）。くわしくは「4陣営モード」
 
 ### Gameが出すイベント
@@ -1545,7 +1546,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ## クラシックの属性：ターン開始時のランダム付着（人間の指示。仮）
 
-`rules.randomAttachTurnStart: true`（省略すると `false`）で有効。`reactions` を渡したゲーム（クラシック）だけ。有効にすると全プレイヤーに効く。**スキルツリーの「混沌の目」（`randomAttach`）を持つプレイヤーには、ルールが `false` でも効く**（下の「クラシックのスキルツリー」）。処理は `Game.js` の `randomAttachAtTurnStart(player)` の1か所。
+`rules.randomAttachTurnStart: true`（省略すると `false`）で有効。`reactions` を渡したゲーム（クラシック）だけ。有効にすると全プレイヤーに効く。**スキルツリーの E01「混沌の目」（`randomAttach`）を持つプレイヤーには、ルールが `false` でも効く**（下の「クラシックのスキルツリー」）。処理は `Game.js` の `randomAttachAtTurnStart(player)` の1か所。
 
 - **いつ**：自分のターンの始め。コイン・MP の回復のあと、ドローの前（自分の進軍の前なので、そのターンのうちに自分の武器・魔法で反応を起こせる）
 - **何を**：敵（チーム戦なら相手チーム）の**見える兵士**（忍者・暗殺者は除く）からランダムに1体を選び、`elements` の表の全属性（混沌を含む）から等確率で1つ付着させる（`rng` を2回使う）。自分の兵士には付かない。**付着だけで、その場で反応は起こさない**。同じ属性がもう付いていれば、残りは**長い方にそろえる**（武器・魔法で付いた長い残りが縮まない）
@@ -1563,24 +1564,17 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
   1ターンを採用（5ターンは反応が増えすぎ）。1ターンでも目安（1〜3回）をやや超える。`data/classic/rules.json` にはまだ書いていない（スキルツリーで一部のプレイヤーだけに渡す想定のため。書くときは遊んで確かめる）
 - 画面（UI担当にお願いしたいこと）：`elementAttached.source: "turnStart"` のとき、付着の演出を目立たせるか（スキルの発動として見せる）
 
-## クラシックのスキルツリー（人間の指示：「スキルツリーも必須。全部考えておいて」。方式は既定で決めた。数値はすべて仮）
+## クラシックのスキルツリー（200ノードのグラフ版。仕様 `docs/skilltree-200-spec.md`。数値はすべて暫定・未測定）
 
-設計書：`docs/classic-skilltree.md`（目的・ツリーの図・ノード表・データの形・バランスの結果・UI担当への依頼・人間が決める点）。
+要約：`docs/classic-skilltree.md`。進捗・未実装：`docs/skilltree-200-progress.md`。旧24ノード版（7pt）は置き換えた。
 
-- **方式**：試合の前に、決まったポイント（`points`：7。両者同じ）でノードを選ぶビルド。試合中は育たない・メタ進行なし。**7つの枝（剣＝攻め・兵士＝隊列・魔法＝魔術・盾＝守り・回復＝癒し・属性＝反応・魔力＝経済）×3段＝24ノード**（人間の指示「もっと増やせる？方向性は大丈夫」で12→24に増やした）。コストは段ごとに1・2・3。2段目は1段目、3段目（奥義）は2段目を先に取る（`requires`）。属性の枝だけ2段目が4択（対消滅・黒氷・砕氷・混沌反応のダメージ）で、奥義はどれか1つのあと（`requiresAny`）。奥義は6ポイントかかるので1つだけ。全部は取れない（合計48）。何も取らないのもよい
-- **短所なし・ポイントだけで制限する（人間の決定：案B）**：どのノードも小さな強化だけ（城HPの減点などはない）。強さは効果の大きさとコストで合わせる。データのチェックは「効果が1つ以上」「上位互換（効果がほかのノードをすべて含み、コストが同じか安い）がない」。マイナスの値も書ける仕組みは残した（今は使っていない）
-- **ノード**（数値は仮。表は設計書の 2.4）：剣＝攻城術（城への魔法+2）→鬨の声（手札+1・MP+1）→必殺の号令（城への魔法+3・手札+1）／兵士＝増援（出せる兵士+1枚）→長弓（射程+1）→隊列の極意（射程+1・兵士+1枚）／魔法＝魔術の心得（兵士への魔法+1）→大きな器（MP上限+3・MP+1）→大魔術（兵士への魔法+1・MP上限+2）／盾＝石垣（城壁4）→堅城（城HP+3）→不落の砦（城HP+3・城壁+3）／回復＝癒しの祈り（回復の魔法+1）→城壁の修繕（ターンの始めに城壁を1まで戻す）→癒しの聖域（回復の魔法+1・城HP+1）／属性＝混沌の目（ランダム付着。取った人だけ）→光と闇の共鳴・黒氷の呪い・砕氷の槌（各反応+4）・混沌の渦（+5）→残響（付着の残り+1・どの反応も+2）／魔力＝魔力の泉（MP+2）→魔物狩り（魔物のコイン+1）→魔力の宝物庫（MP+2・上限+1）。おすすめ（`presets`）は8種（枝ごと7＋まんべんなく）
-- **データ**：`data/classic/skilltree.json`（`{ points, branches, nodes: { <id>: { name, branch, tier, cost, requires?, effects, description } }, presets }`）。`data/modes.json` のモードに `skillTreeSet` を書くと、サーバー（`server/server.js` の `loadData`）・テスト（`tests/helpers.js` の `loadOptionalData(mode)`）が読んで `new Game({ skillTree })` に渡す。**4陣営には今は書いていない**（書けばそのまま使える）。画面（`js/main.js`）はまだ渡さない
-- **効果のキー**（`js/game/SkillTree.js` の `SKILL_EFFECTS`）：`castleHp`・`maxHand`・`soldierAttack`・`castleSpell`（城の種類の `hpBonus`・`maxHandBonus`・`soldierAttackBonus`・`castleSpellBonus` に足す）、`armor`（最初の城壁。後攻の城壁に足す）、`initialMp`・`maxMp`（人ごとの MP の上限 `maxMpOf`）・`mpPerTurn`・`coinPerTurn`（ターンの始めの回復に足す）、`initialHand`、`reactionDamage`（自分の攻撃で起きた反応の追加ダメージ。反応を起こした人は `elementHit` の `by`、省略すると手番の人）、`randomAttach`（ターン開始時のランダム付着をその人だけに）・`randomAttachTurns`（その付着の残りに足す）。反応のキーを使うツリーは `reactions` のないゲームではエラー。ノードを増やしたときに足したキー：`spellDamage`・`healBonus`（`skillSpellBonus`）、`castleRegen`・`armorFloor`（`skillTurnStart`。`castleHealed` の `source: { kind: "skill" }`・`castleArmored` の `skill: true`）、`soldiersPerTurn`（`soldiersPerTurnOf`）、`archerRange`（出した弓兵・魔法使いの `rangeBonus`）、`soldierHp`（`armyHp`）、`monsterCoins`、`annihilationDamage`・`blackIceDamage`・`shatterDamage`・`chaosDamage`（その反応だけ）
-- **`new Game({ skillTree, setup: { skills: [[...], [...]] } })`**：席ごとのビルド（ノードのIDの配列）。`skillTree` を渡さなければ今までどおり（`setup.skills` を書くとエラー）。省略した席は何も取らない。決まりに合わなければ例外（「席2のスキルが決まりに合いません：…」）
-- **getState**（`skillTree` を渡したゲームだけ）：`players.pX.skills`（選んだノード。**相手にも見せる**）・`players.pX.maxMp`（その人の MP の上限）。イベントは増やしていない：`elementAttached` に `skill: true`（スキルのランダム付着）、`reactionTriggered` に `skillBonus`（スキルで増えた量）が付くだけ
-- **オンライン**：部屋の席に `skills`（`setSeat({ skills })`。CPU は戦い方のおすすめ）。`roomInfo().players[].skills`・`choices.skillTree`
-- **CPU**（`js/game/strategies.js`）：`chooseSkillBuild(tree, rng, style)`（`none` / `random` / プリセットのID / 戦い方の名前（`SKILL_STYLE_OF`：aggro→剣・rush→兵士・defensive→盾・guard→回復・smart→まんべんなく）/ `"a+b"`）。試合中の戦い方は変えていない
-- **入れていない強い効果**（毎ターン効く・全部の兵士に効くものは積み重なる）：MP の回復+1（勝率81%）・コイン+1〜2/ターン・兵士の攻撃+1（ポイントが多いと何も取らない相手に66%）・毎ターンの城HPの回復（+1でも80%）・兵士のHP+1（強め）。キーは仕組みとして残した。9ポイントでは小さな強化でも積み重なって60〜70%になったので7ポイントにした
-- 確かめたこと（`node tests/sim/skills.js --games 100 --seed 1`・2。smart 同士・席を入れかえて各200試合・おすすめ8種＋なし＋ランダムの総当たり）：全試合決着。ほかのビルドとの平均の勝率 剣43〜46%・兵士48%・魔法54〜55%・盾49〜51%・回復54〜55%・属性46〜47%・魔力54〜55%・まんべんなく53%・なし40〜44%。何も取らない相手に（2シードの平均）魔力62%・魔法60%・まんべんなく59%・回復58%・属性58%・兵士56%・盾54%・剣52%。同じビルドどうしの先攻の勝率46〜53%。通常モード・4陣営・スキルなしのクラシックのシミュレーションは変更前と完全に一致
-- シミュレーション：`node tests/sim/skills.js`（`--builds`・`--vs none`・`--tree`・`--strategy`・`--json`）、`node tests/sim/run.js --mode classic --skills blade,shield`（`auto` は戦い方のおすすめ）
-- 画面（UI担当にお願いしたいこと）：スキルを選ぶ画面、試合中のビルドの表示、`skill: true` / `skillBonus` の演出、`players.pX.maxMp`、`loadHomeRuleSet` で `skillTreeSet` を読む、precache（くわしくは設計書の「UI担当への依頼」）
-- 人間が決める点：設計書の最後（魔力が少し強い・剣が少し弱い、城の種類と一本化するか、火水風土の反応とカード）
+- **方式**：試合の前に12pt（`budget`）でノードを取る。全ノード1pt・奥義は1個まで・START は0pt。19系統×8（各08が奥義）＋横断48（X01〜X48）＝200ノード。START から取得済みノードを通じて辺でつながるノードを取れる（各系統共通の10本の辺＋横断ノードと2端点の辺。横断は片側の端点だけで取れ、反対側へ進める）。個別必須（M08→M02 など9件）は接続とは別。解除は残りが全部 START とつながり必須を満たすときだけ
+- **データ**：`data/classic/skilltree.json`（version 3）は `node tools/build-skilltree.mjs` が仕様書の表から作る（手で直さない。`--check` とテストが一致を確かめる）。ノードは `{ id, group, name, desc, cost, ultimate, cross, ends, requires, handler, params, config?, layout }`。E04・X25 はノード内の選択（`config`）
+- **API**（`js/game/SkillTree.js`）：`canAcquire / validate（取得順に当てる）/ cost / acquirableIds / release / validateConfig / normalizeBuild / serializeBuild / deserializeBuild（旧版は振り直し）/ skillTreeApi`
+- **`new Game({ skillTree, setup: { skills: [ids | { ids, config }, ...] } })`**：クラシックだけ。開始時に再検証し、不正な席は空ビルド（理由は `game.skillFallbacks`・`players.pX.skillError`）。getState に `skills`（取得順のID）・`skillConfig`・`maxMp`。クラシックでは城の種類の補正を使わず標準城の値（見た目は残す）
+- **効く効果は単純な初期値系の10ノードだけ**（`STATIC_HANDLERS`：P01・P07・D01・D05・U01・U04・R01・E01・E04・E06）。ほかは「新ハンドラ未実装」（段階B/C）。旧キーの Game 側の処理は休眠として残した
+- **CPU**：`chooseSkillBuild(tree, rng, style)` → `{ ids, config }`（none / random / プリセット（仕様 第10章の4ビルド）/ 戦い方の名前 / `"C01+C02"`）。部屋の `setSeat({ skills })` も同じ検証
+- 通常モード・4陣営は `skillTree` を渡さないので、スキルの処理も乱数も使わない（シミュレーションの出力は変更前と一致）
 
 ## クラシック：王国の「守りを貫く手段」（案A 聖壁の号砲。人間の指示。数値は仮）
 
