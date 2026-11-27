@@ -199,6 +199,8 @@ export class SkillBattleView {
     if (!res) return;
     if (!res.ok) { this.toast(res.reason ?? '使えませんでした'); return; }
     this.clearPick();
+    // オンラインでは新しい状態が返事より先に届くことがあるので、選択を閉じた表示に描き直す
+    if (!this.panel.hidden) this.render();
     this.toast(`${a.label}を使いました`, 'info');
   }
 

@@ -204,3 +204,24 @@ test('(f) スキルのない試合（クラシックの空ビルド・通常モ�
     assert.equal(st.players[cur.playerId].skillState, undefined);
   }
 });
+
+test('(b) 降参して観戦中の席は使えない（3人のバトルロイヤル）', () => {
+  let seed = 21;
+  const lobby = new Lobby(loadData(), () => seededRng(seed++), { cpuDelayMs: 0, modeData: loadModeData() });
+  const a = lobby.join('osk-watch', 'A', null, 'classic');
+  const b = lobby.join('osk-watch', 'B', null, 'classic');
+  const { room, seat: sa } = lobby.findSeat(a.token);
+  const sb = lobby.findSeat(b.token).seat;
+  for (const s of [sa, sb]) room.setSeat(s, { skills: BUILD });
+  assert.equal(room.setRules(sa, { winCondition: 'lastStanding' }).ok, true);
+  room.addCpu(sa, 'easy');
+  room.startGame();
+  for (const s of [sa, sb]) room.action(s, 'mulligan', [[]]);
+  // 手番でない方の人が降参して観戦になる
+  const watcher = room.game.currentPlayer === sa.playerId ? sb : sa;
+  assert.equal(room.action(watcher, 'surrender', []).ok, true);
+  assert.notEqual(room.game.phase, 'gameOver');
+  room.game.players[watcher.playerId].coins = 3;
+  assert.equal(room.action(watcher, 'skillAction', ['P03']).ok, false);
+  assert.ok(room.action(watcher, 'listSkillActions', []).actions.every((x) => !x.ok));
+});
