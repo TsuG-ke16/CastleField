@@ -54,6 +54,22 @@ export class OnlineEngineAdapter implements GameEngineAdapter {
     return adapter;
   }
 
+  /** サーバーが決めた席の鍵（ランクマッチ）でつなぐ。部屋に入る手続きはいらない */
+  static attach(
+    data: LoadedGameData,
+    token: string,
+    playerId: string,
+    initialState: GameState,
+    options: { serverUrl?: string; onStatus?: (status: OnlineConnStatus) => void } = {}
+  ): OnlineEngineAdapter {
+    options.onStatus?.('connecting');
+    return new OnlineEngineAdapter(data, token, playerId, initialState, options.serverUrl, options.onStatus);
+  }
+
+  get roomToken(): string {
+    return this.token;
+  }
+
   onStateUpdate(handler: (state: GameState) => void): () => void {
     this.stateListeners.add(handler);
     return () => this.stateListeners.delete(handler);

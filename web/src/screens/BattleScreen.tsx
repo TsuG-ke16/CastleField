@@ -6,6 +6,7 @@ import { cardTypeToImagePath, loadModeBundle } from '../engine/dataLoader';
 import { JsLegacyAdapter } from '../engine/jsLegacyAdapter';
 import { OnlineEngineAdapter, type OnlineConnStatus } from '../engine/onlineAdapter';
 import { WasmEngineAdapter } from '../engine/wasmAdapter';
+import { rankedApi, type RankedChange } from '../engine/rankedClient';
 import { getSkinFilter } from '../engine/skinUtils';
 import type { CardDef, GameEvent, GameState, HandCard, PlayTarget, StampDef } from '../engine/types';
 import { soundManager } from '../audio/soundManager';
@@ -53,6 +54,9 @@ function summarizeEvent(ev: GameEvent): string | null {
   }
 }
 
+/** ランクマッチで、相手が動かないまま勝ちを申し出られるまでの時間（サーバーの ranks.json の ranked.idleTurnMs と同じ） */
+const IDLE_CLAIM_MS = 180_000;
+
 export function BattleScreen() {
   const {
     data,
@@ -75,7 +79,13 @@ export function BattleScreen() {
     exitBattle,
     grantRewardCoins,
     recordMatchResult,
+    rankedTicket,
+    setRankedLobbyRequested,
   } = useAppStore();
+  const [rankedChange, setRankedChange] = useState<RankedChange | null>(null);
+  const [idleSince, setIdleSince] = useState(() => Date.now());
+  const [idleNow, setIdleNow] = useState(() => Date.now());
+  const [claimMsg, setClaimMsg] = useState<string | null>(null);
 
   const [matchSeed, setMatchSeed] = useState(() => Date.now());
   const adapterRef = useRef<GameEngineAdapter | null>(null);
@@ -136,12 +146,19 @@ export function BattleScreen() {
     setOnlineStatus(null);
     setConfirmedSide('p1');
     setBattleLog([]);
+    setRankedChange(null);
+    setClaimMsg(null);
 
     const initEngine = async () => {
       let adapter: GameEngineAdapter;
       let resolvedMode: 'rust-wasm' | 'js-legacy' | 'online' | 'factions' | 'classic' = 'js-legacy';
       let seat: 'p1' | 'p2' = 'p1';
 
+      if ((mode === 'factions' || mode === 'classic') && (playMode === 'casual' || playMode === 'ranked')) {
+        // 合言葉対戦・ランクマッチのサーバーは通常モードだけ（相手のいない試合で止まらないように、理由を出す）
+        setOnlineError('合言葉対戦・ランクマッチは「通常モード」で遊べます。4陣営・クラシックは CPU対戦か同じ端末で遊んでください。');
+        return;
+      }
       if (mode === 'factions' || mode === 'classic') {
         const bundle = await loadModeBundle(mode, data);
         if (cancelled) return;
@@ -158,7 +175,25 @@ export function BattleScreen() {
       } else {
         modeCardsRef.current = null;
         setModeCards(null);
-        if (playMode === 'casual' && onlinePassphrase.trim()) {
+        if (playMode === 'ranked') {
+          if (!rankedTicket) {
+            setOnlineError('ランクマッチは、ホームの「ランクマッチへ」から相手を探してください。');
+            return;
+          }
+          const online = OnlineEngineAdapter.attach(data, rankedTicket.token, rankedTicket.playerId, rankedTicket.state, {
+            serverUrl: onlineServerUrl,
+            onStatus: (st) => !cancelled && setOnlineStatus(st),
+          });
+          adapter = online;
+          resolvedMode = 'online';
+          seat = online.seatId;
+          unsubState = online.onStateUpdate((nextSt) => {
+            if (!cancelled) setGameState(nextSt);
+          });
+        } else if (playMode === 'casual' && !onlinePassphrase.trim()) {
+          setOnlineError('合言葉が入っていません。ホームの「対戦形式」で合言葉を入れてください。');
+          return;
+        } else if (playMode === 'casual' && onlinePassphrase.trim()) {
           try {
             const online = await OnlineEngineAdapter.connect(data, onlinePassphrase.trim(), {
               serverUrl: onlineServerUrl,
@@ -254,6 +289,10 @@ export function BattleScreen() {
           const id = ++popCounterRef.current;
           setOppStamp({ id, text: found ? `${found.icon} ${found.label}` : sid });
           setTimeout(() => setOppStamp((cur) => (cur?.id === id ? null : cur)), 2200);
+        } else if (ev.type === 'rankedResult') {
+          const changes = (ev.changes || {}) as Record<string, RankedChange>;
+          const mine = changes[viewerSideRef.current];
+          if (mine) setRankedChange(mine);
         } else if (ev.type === 'gameOver') {
           const w = String(ev.winner || '');
           const won = w === myS;
@@ -312,9 +351,21 @@ export function BattleScreen() {
     mulliganEnabled,
     onlinePassphrase,
     onlineServerUrl,
+    rankedTicket,
     grantRewardCoins,
     recordMatchResult,
   ]);
+
+  // ランクマッチ：相手が長く動かないとき、待っている側は勝ちを申し出られる（サーバーが時間を確かめる）
+  useEffect(() => {
+    setIdleSince(Date.now());
+    setClaimMsg(null);
+  }, [gameState]);
+  useEffect(() => {
+    if (playMode !== 'ranked') return;
+    const iv = window.setInterval(() => setIdleNow(Date.now()), 5000);
+    return () => window.clearInterval(iv);
+  }, [playMode]);
 
   const activeSide: 'p1' | 'p2' = useMemo(() => {
     if (playMode === 'local' && gameState) {
@@ -585,7 +636,7 @@ export function BattleScreen() {
   if (!gameState || !pMe || !pOpp) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, fontWeight: 900 }}>
-        <div>{playMode === 'casual' ? 'オンライン戦場へ接続中…' : '戦場を準備中…'}</div>
+        <div>{playMode === 'casual' || playMode === 'ranked' ? 'オンライン戦場へ接続中…' : '戦場を準備中…'}</div>
         <GameButton size="sm" variant="normal-stone" onClick={exitBattle}>
           キャンセル
         </GameButton>
@@ -653,6 +704,33 @@ export function BattleScreen() {
         </div>
       </header>
 
+      {playMode === 'ranked' &&
+        gameState.phase !== 'gameOver' &&
+        (gameState.phase === 'defend' ? gameState.defense?.defenderId !== activeSide : !myTurn) &&
+        idleNow - idleSince >= IDLE_CLAIM_MS && (
+          <div className={styles.idleClaim} role="status">
+            <span>相手が動きません</span>
+            <GameButton
+              size="sm"
+              variant="selected-royal"
+              onClick={async () => {
+                const token = rankedTicket?.token;
+                if (!token) return;
+                try {
+                  const r = await rankedApi.claimIdle(onlineServerUrl, token);
+                  if (!r.ok) setClaimMsg(r.reason || 'まだ申し出られません');
+                  else if (r.state) setGameState(r.state);
+                } catch {
+                  setClaimMsg('サーバーにつながりません');
+                }
+              }}
+            >
+              勝ちを申し出る
+            </GameButton>
+            {claimMsg && <span className={styles.idleClaimMsg}>{claimMsg}</span>}
+          </div>
+        )}
+
       <div className={styles.arenaWrap}>
         <div className={styles.hpOverlayTop}>
           <div className={styles.castleSign}>
@@ -663,7 +741,9 @@ export function BattleScreen() {
                   : 'P2 (赤)'
                 : playMode === 'casual'
                   ? '対戦相手'
-                  : `CPU (${cpuLevel})`}
+                  : playMode === 'ranked'
+                    ? rankedTicket?.opponentName || '対戦相手'
+                    : `CPU (${cpuLevel})`}
             </span>
             <span>手札{pOpp.handCount}</span>
             {pOpp.castleHp > 0 && pOpp.castleHp <= Math.floor(pOpp.castleMaxHp / 3) && (
@@ -1136,7 +1216,17 @@ export function BattleScreen() {
           damageDealt={summary.damageDealt}
           cardsPlayed={summary.cardsPlayed}
           monstersDefeated={summary.monstersDefeated}
-          onRematch={() => setMatchSeed(Date.now())}
+          onRematch={() => {
+            if (playMode === 'ranked') {
+              // ランクマッチの「もう1回」は、待合室で次の相手を探す
+              exitBattle();
+              setRankedLobbyRequested(true);
+              return;
+            }
+            setMatchSeed(Date.now());
+          }}
+          rematchLabel={playMode === 'ranked' ? '次の相手を探す' : undefined}
+          rankedChange={playMode === 'ranked' ? rankedChange : undefined}
           onHome={exitBattle}
         />
       )}

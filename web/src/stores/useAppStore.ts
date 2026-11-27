@@ -2,6 +2,16 @@ import { create } from 'zustand';
 import type { AppTab, CpuLevel, LoadedGameData, ModeId, PlayMode, QualityMode } from '../engine/types';
 import { loadAllGameData } from '../engine/dataLoader';
 import { soundManager } from '../audio/soundManager';
+import type { RankedSummary } from '../engine/rankedClient';
+import type { GameState } from '../engine/types';
+
+/** ランクマッチで成立した試合の席（サーバーが発行した鍵）。対戦画面がこれでつなぐ */
+export interface RankedTicket {
+  token: string;
+  playerId: 'p1' | 'p2';
+  opponentName: string;
+  state: GameState;
+}
 
 export interface GachaRecord {
   id: string;
@@ -147,6 +157,10 @@ interface AppStoreState {
   stats: PlayerStats;
   claimedMissions: string[];
   inBattle: boolean;
+  rankedTicket: RankedTicket | null;
+  rankedSummary: RankedSummary | null;
+  /** ホームに戻ったら、ランクマッチの待合室を開く */
+  rankedLobbyRequested: boolean;
   data: LoadedGameData | null;
   loading: boolean;
   error: string | null;
@@ -173,6 +187,9 @@ interface AppStoreState {
   toggleMulliganEnabled: () => void;
   startBattle: () => void;
   exitBattle: () => void;
+  startRankedBattle: (ticket: RankedTicket) => void;
+  setRankedSummary: (summary: RankedSummary | null) => void;
+  setRankedLobbyRequested: (open: boolean) => void;
   spendCoinsAndRollGacha: (count: 1 | 10) => GachaRecord[] | null;
   buyShopItem: (itemId: string, price: number, usePoints?: boolean) => boolean;
   equipSkin: (kind: 'castle' | 'soldier' | 'back', skinId: string) => void;
@@ -227,6 +244,9 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     stats: initial.stats ?? { matchesPlayed: 0, wins: 0, gachaRolls: 0, cardsPlayed: 0 },
     claimedMissions: initial.claimedMissions ?? [],
     inBattle: false,
+    rankedTicket: null,
+    rankedSummary: null,
+    rankedLobbyRequested: false,
     data: null,
     loading: true,
     error: null,
@@ -345,9 +365,15 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       soundManager.play('deploy');
       set({ inBattle: true });
     },
+    startRankedBattle: (ticket) => {
+      soundManager.play('deploy');
+      set({ rankedTicket: ticket, playMode: 'ranked', inBattle: true });
+    },
+    setRankedSummary: (rankedSummary) => set({ rankedSummary }),
+    setRankedLobbyRequested: (rankedLobbyRequested) => set({ rankedLobbyRequested }),
     exitBattle: () => {
       soundManager.play('tap');
-      set({ inBattle: false, tab: 'battle' });
+      set({ inBattle: false, tab: 'battle', rankedTicket: null });
     },
 
     spendCoinsAndRollGacha: (count) => {

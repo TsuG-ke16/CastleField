@@ -1,0 +1,173 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(31, 20, 10, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  padding-bottom: calc(12px + var(--cf-safe-bottom, 0px));
+}
+
+.wrap {
+  width: 100%;
+  max-width: 460px;
+}
+
+.sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--cf-ink);
+}
+
+.rankCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 3px solid;
+  border-radius: var(--cf-radius-md, 12px);
+  background: var(--cf-parchment-deep, #f6e4ba);
+}
+
+.rankTexts {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  flex: 1;
+}
+
+.season {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--cf-ink-muted);
+}
+
+.rankName {
+  font-size: 19px;
+  font-weight: 900;
+  color: var(--cf-ink);
+  text-shadow: 0 1px 0 rgba(74, 46, 26, 0.35);
+}
+
+.bar {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(74, 46, 26, 0.18);
+  border: 1.5px solid var(--cf-outline, #4a2e1a);
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 99px;
+}
+
+.small {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--cf-ink-muted);
+  line-height: 1.4;
+}
+
+.searching {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  color: var(--cf-ink);
+}
+
+.spinner {
+  display: flex;
+}
+
+.notice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--cf-ink);
+}
+
+.notice p {
+  margin: 0;
+}
+
+.message {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--cf-ruby-lo, #8e1d2a);
+}
+
+.board {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+.boardRow {
+  display: grid;
+  grid-template-columns: 28px 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 6px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.pos {
+  text-align: center;
+  font-weight: 900;
+}
+
+.boardName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.boardRank {
+  font-size: 12px;
+  text-shadow: 0 1px 0 rgba(74, 46, 26, 0.45);
+}
+
+.footnote {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--cf-ink-muted);
+}
+
+@media (min-width: 1024px) {
+  .backdrop {
+    align-items: center;
+  }
+}

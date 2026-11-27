@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+pub mod ranked;
 pub mod util;
 
 use std::collections::{HashMap, VecDeque};
@@ -79,6 +80,15 @@ impl Default for EconomyProfile {
     }
 }
 
+/// ランクマッチの部屋の情報（ふつうの部屋は None）
+pub struct RankedMeta {
+    pub match_id: String,
+    /// 席 → userId
+    pub users: [(String, String); 2],
+    /// 反映した結果（席 → 変化）。反映前は None。試合ごとに1回だけ反映する
+    pub applied: Option<HashMap<String, Value>>,
+}
+
 pub struct Room {
     pub game: Game,
     pub seats: HashMap<String, String>,
@@ -87,6 +97,9 @@ pub struct Room {
     pub ring: VecDeque<SequencedMsg>,
     pub tx: broadcast::Sender<SequencedMsg>,
     pub ai_rng: Mulberry32,
+    pub ranked: Option<RankedMeta>,
+    /// 最後に操作があった時刻（ミリ秒。ランクマッチの放置の判定に使う）
+    pub last_action_at: i64,
 }
 
 impl Room {
@@ -100,7 +113,13 @@ impl Room {
             ring: VecDeque::with_capacity(RING_CAP),
             tx,
             ai_rng: Mulberry32::new(777 ^ seq),
+            ranked: None,
+            last_action_at: 0,
         }
+    }
+
+    pub fn touch(&mut self, now_ms: i64) {
+        self.last_action_at = now_ms;
     }
 
     /// 盤面が変わったことを、つないでいる全員に知らせる。受け取った接続は、その席向けの state を作って送る
@@ -109,7 +128,7 @@ impl Room {
         let _ = self.tx.send(SequencedMsg { seq: self.seq, kind: "sync".into(), event: None, state: None });
     }
 
-    /// ゲームのイベントではない知らせ（スタンプなど）を流す
+    /// ゲームのイベントではない知らせ（スタンプ・ランクの結果）を流す
     pub fn push_raw(&mut self, event: Value) {
         self.seq += 1;
         let msg = SequencedMsg { seq: self.seq, kind: "event".into(), event: Some(event), state: None };
@@ -151,6 +170,10 @@ pub struct AppState {
     pub db: Mutex<Database>,
     pub next_token_seq: AtomicU64,
     pub requests_total: AtomicU64,
+    pub ranked: ranked::RankedConfig,
+    pub matchmaker: Mutex<ranked::Matchmaker>,
+    /// 今の時刻（ミリ秒）。テストで差しかえる
+    pub clock: Arc<dyn Fn() -> i64 + Send + Sync>,
 }
 
 /// 受け取る人（席）に送ってよい形にする。何を隠すかは js/game/visibility.js と同じ。
@@ -180,6 +203,34 @@ fn filter_msg_for(msg: &SequencedMsg, seat: &str) -> Option<SequencedMsg> {
         Some(ev) => filter_event_for(ev, seat).map(|e| SequencedMsg { event: Some(e), ..msg.clone() }),
         None => Some(msg.clone()),
     }
+}
+
+/// ランクマッチが決着していたら、結果を1回だけ反映して、両方の席に知らせる
+pub fn settle_ranked(state: &AppState, room: &mut Room) {
+    if room.game.phase() != "gameOver" {
+        return;
+    }
+    let Some(meta) = room.ranked.as_ref() else { return };
+    if meta.applied.is_some() {
+        return;
+    }
+    let winner = room.game.get_state(None).winner.unwrap_or_default();
+    let users = [
+        (meta.users[0].1.as_str(), meta.users[0].0 == winner),
+        (meta.users[1].1.as_str(), meta.users[1].0 == winner),
+    ];
+    let by_user = ranked::apply_match(state, users, &meta.match_id);
+    let mut by_seat = HashMap::new();
+    for (seat, uid) in meta.users.iter() {
+        if let Some(c) = by_user.get(uid) {
+            by_seat.insert(seat.clone(), c.clone());
+        }
+    }
+    let payload = json!({ "type": "rankedResult", "changes": by_seat });
+    if let Some(m) = room.ranked.as_mut() {
+        m.applied = Some(by_seat);
+    }
+    room.push_raw(payload);
 }
 
 pub fn load_config_from_dir(data_dir: &Path) -> Result<(GameConfig, Vec<(String, String, String, i32)>), String> {
@@ -229,6 +280,14 @@ pub fn load_config_from_dir(data_dir: &Path) -> Result<(GameConfig, Vec<(String,
 }
 
 pub fn create_state(data_dir: &Path, db_path: &Path) -> Result<Arc<AppState>, String> {
+    create_state_with_clock(data_dir, db_path, Arc::new(ranked::system_now_ms))
+}
+
+pub fn create_state_with_clock(
+    data_dir: &Path,
+    db_path: &Path,
+    clock: Arc<dyn Fn() -> i64 + Send + Sync>,
+) -> Result<Arc<AppState>, String> {
     if let Some(parent) = db_path.parent() {
         let _ = fs::create_dir_all(parent);
     }
@@ -237,10 +296,13 @@ pub fn create_state(data_dir: &Path, db_path: &Path) -> Result<Arc<AppState>, St
         let write_txn = db.begin_write().map_err(|e| e.to_string())?;
         {
             let _ = write_txn.open_table(PROFILES_TABLE).map_err(|e| e.to_string())?;
+            let _ = write_txn.open_table(ranked::ACCOUNTS_TABLE).map_err(|e| e.to_string())?;
+            let _ = write_txn.open_table(ranked::RANKED_TABLE).map_err(|e| e.to_string())?;
         }
         write_txn.commit().map_err(|e| e.to_string())?;
     }
     let (base_config, shop_items) = load_config_from_dir(data_dir)?;
+    let ranked_cfg = ranked::load_ranked_config(data_dir)?;
     Ok(Arc::new(AppState {
         started_at: Instant::now(),
         base_config,
@@ -250,6 +312,9 @@ pub fn create_state(data_dir: &Path, db_path: &Path) -> Result<Arc<AppState>, St
         db: Mutex::new(db),
         next_token_seq: AtomicU64::new(1),
         requests_total: AtomicU64::new(0),
+        ranked: ranked_cfg,
+        matchmaker: Mutex::new(ranked::Matchmaker::default()),
+        clock,
     }))
 }
 
@@ -265,6 +330,13 @@ pub fn build_router(state: Arc<AppState>, repo_root: Option<PathBuf>) -> Router 
         .route("/api/economy/profile", get(api_economy_profile))
         .route("/api/economy/gacha", post(api_economy_gacha))
         .route("/api/economy/buy", post(api_economy_buy))
+        .route("/api/account/guest", post(ranked::api_account_guest))
+        .route("/api/ranked/queue", post(ranked::api_ranked_queue))
+        .route("/api/ranked/status", post(ranked::api_ranked_status))
+        .route("/api/ranked/leave", post(ranked::api_ranked_leave))
+        .route("/api/ranked/summary", post(ranked::api_ranked_summary))
+        .route("/api/ranked/leaderboard", get(ranked::api_ranked_leaderboard))
+        .route("/api/ranked/claimIdle", post(ranked::api_ranked_claim_idle))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
@@ -330,7 +402,12 @@ async fn api_join(State(state): State<Arc<AppState>>, Json(req): Json<JoinReq>) 
     let room_arc = {
         let mut rooms = state.rooms.write().unwrap();
         if let Some(existing) = rooms.get(&pass) {
+            if existing.lock().unwrap().ranked.is_some() {
+                return (StatusCode::OK, Json(json!({ "ok": false, "reason": "その合言葉は使えません" })));
+            }
             existing.clone()
+        } else if pass.starts_with("ranked:") {
+            return (StatusCode::OK, Json(json!({ "ok": false, "reason": "その合言葉は使えません" })));
         } else {
             let mut cfg = state.base_config.clone();
             let seq = state.next_token_seq.load(Ordering::Relaxed) as u32;
@@ -423,6 +500,10 @@ async fn api_action(State(state): State<Arc<AppState>>, Json(req): Json<ActionRe
         if st["phase"] != "defend" || st["defense"]["defenderId"].as_str() != Some(seat_id.as_str()) {
             return (StatusCode::OK, Json(json!({ "ok": false, "reason": "いまは防御できません" })));
         }
+    }
+    // ランクマッチの部屋では、試合をやり直す操作は受けない
+    if room.ranked.is_some() && req.method == "start" {
+        return (StatusCode::OK, Json(json!({ "ok": false, "reason": "ランクマッチでは使えません" })));
     }
     let result = match req.method.as_str() {
         "start" => {
@@ -522,6 +603,10 @@ async fn api_action(State(state): State<Arc<AppState>>, Json(req): Json<ActionRe
         room.push_events(evs);
     }
 
+    if result.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+        room.touch((state.clock)());
+    }
+    settle_ranked(&state, &mut room);
     room.push_sync();
 
     let state_view = state_to_value(&room.game.get_state(Some(&seat_id)));
