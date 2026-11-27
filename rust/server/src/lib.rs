@@ -164,7 +164,7 @@ impl Room {
 pub struct AppState {
     pub started_at: Instant,
     pub base_config: GameConfig,
-    pub shop_items: Vec<(String, String, String, i32)>,
+    pub shop_items: Vec<ShopItem>,
     pub rooms: RwLock<HashMap<String, Arc<Mutex<Room>>>>,
     pub tokens: RwLock<HashMap<String, (String, String)>>,
     pub db: Mutex<Database>,
@@ -233,7 +233,10 @@ pub fn settle_ranked(state: &AppState, room: &mut Room) {
     room.push_raw(payload);
 }
 
-pub fn load_config_from_dir(data_dir: &Path) -> Result<(GameConfig, Vec<(String, String, String, i32)>), String> {
+/// ショップの品（id, 名前, レアリティ, 値段）
+pub type ShopItem = (String, String, String, i32);
+
+pub fn load_config_from_dir(data_dir: &Path) -> Result<(GameConfig, Vec<ShopItem>), String> {
     let read = |f: &str| fs::read_to_string(data_dir.join(f)).map_err(|e| format!("{f}: {e}"));
     let cards = parse_map_str(&read("cards.json")?, CardDef::from_json)?;
     let rules_json = parse_json(&read("rules.json")?)?;
@@ -327,7 +330,7 @@ pub fn build_router(state: Arc<AppState>, repo_root: Option<PathBuf>) -> Router 
         .route("/api/action", post(api_action))
         .route("/api/stream", get(api_stream))
         .route("/api/ws", get(api_ws))
-        .route("/api/economy/profile", get(api_economy_profile))
+        .route("/api/economy/profile", post(api_economy_profile))
         .route("/api/economy/gacha", post(api_economy_gacha))
         .route("/api/economy/buy", post(api_economy_buy))
         .route("/api/account/guest", post(ranked::api_account_guest))
@@ -805,33 +808,42 @@ fn save_profile(db: &Database, profile: &EconomyProfile) -> Result<(), String> {
     Ok(())
 }
 
+/// ガチャ・ショップは、ゲストの本人確認（POST /api/account/guest で発行）を通した人のものだけ動かす。
+/// 以前は送られてきた `user` をそのまま信じていたので、ほかの人のコインを使えてしまった
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct UserQuery {
-    #[serde(default = "default_guest")]
-    user: String,
+struct EconomyAuth {
+    user_id: String,
+    secret: String,
 }
-fn default_guest() -> String { "guest".into() }
 
-async fn api_economy_profile(State(state): State<Arc<AppState>>, Query(q): Query<UserQuery>) -> impl IntoResponse {
+async fn api_economy_profile(State(state): State<Arc<AppState>>, Json(req): Json<EconomyAuth>) -> impl IntoResponse {
+    let acc = match ranked::authenticate(&state, &req.user_id, &req.secret) {
+        Ok(a) => a,
+        Err(e) => return e,
+    };
     let db = state.db.lock().unwrap();
-    let prof = load_profile(&db, &q.user);
-    Json(json!({ "ok": true, "profile": prof }))
+    let prof = load_profile(&db, &acc.user_id);
+    (StatusCode::OK, Json(json!({ "ok": true, "profile": prof })))
 }
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct GachaReq {
-    #[serde(default = "default_guest")]
-    user: String,
+    user_id: String,
+    secret: String,
     count: u32,
 }
 
 async fn api_economy_gacha(State(state): State<Arc<AppState>>, Json(req): Json<GachaReq>) -> impl IntoResponse {
+    let acc = match ranked::authenticate(&state, &req.user_id, &req.secret) {
+        Ok(a) => a,
+        Err(e) => return e,
+    };
     let count = if req.count == 10 { 10 } else { 1 };
     let cost = if count == 10 { 900 } else { 100 };
     let db = state.db.lock().unwrap();
-    let mut prof = load_profile(&db, &req.user);
+    let mut prof = load_profile(&db, &acc.user_id);
     if prof.coins < cost {
         return (StatusCode::OK, Json(json!({ "ok": false, "reason": "コインが足りません" })));
     }
@@ -883,16 +895,20 @@ async fn api_economy_gacha(State(state): State<Arc<AppState>>, Json(req): Json<G
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct BuyReq {
-    #[serde(default = "default_guest")]
-    user: String,
+    user_id: String,
+    secret: String,
     item_id: String,
     #[serde(default)]
     use_points: bool,
 }
 
 async fn api_economy_buy(State(state): State<Arc<AppState>>, Json(req): Json<BuyReq>) -> impl IntoResponse {
+    let acc = match ranked::authenticate(&state, &req.user_id, &req.secret) {
+        Ok(a) => a,
+        Err(e) => return e,
+    };
     let db = state.db.lock().unwrap();
-    let mut prof = load_profile(&db, &req.user);
+    let mut prof = load_profile(&db, &acc.user_id);
     if prof.owned_skins.contains(&req.item_id) {
         return (StatusCode::OK, Json(json!({ "ok": false, "reason": "すでに所持しています" })));
     }

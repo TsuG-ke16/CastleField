@@ -71,11 +71,19 @@ async fn health_room_action_and_economy_persistence_work() {
     assert_eq!(st, StatusCode::OK);
     assert!(act["state"]["turn"].as_u64().unwrap() >= 3);
 
+    // ガチャ・ショップは本人確認が要る（user を名乗るだけでは動かない）
+    let (st, bad) = json_req(&app, "POST", "/api/economy/gacha", Some(json!({ "user": "tester1", "count": 10 }))).await;
+    assert_ne!(st, StatusCode::OK, "{bad}");
+    let (_, g) = json_req(&app, "POST", "/api/account/guest", Some(json!({ "name": "Tester" }))).await;
+    let (uid, secret) = (g["userId"].clone(), g["secret"].clone());
+    let (st, wrong) = json_req(&app, "POST", "/api/economy/buy", Some(json!({ "userId": uid, "secret": "x", "itemId": "unit_crimson" }))).await;
+    assert_eq!(st, StatusCode::FORBIDDEN, "{wrong}");
+
     let (st, gacha) = json_req(
         &app,
         "POST",
         "/api/economy/gacha",
-        Some(json!({ "user": "tester1", "count": 10 })),
+        Some(json!({ "userId": uid, "secret": secret, "count": 10 })),
     )
     .await;
     assert_eq!(st, StatusCode::OK);
@@ -87,12 +95,16 @@ async fn health_room_action_and_economy_persistence_work() {
         &app,
         "POST",
         "/api/economy/buy",
-        Some(json!({ "user": "tester1", "itemId": "unit_crimson", "usePoints": false })),
+        Some(json!({ "userId": uid, "secret": secret, "itemId": "unit_crimson", "usePoints": false })),
     )
     .await;
     assert_eq!(st, StatusCode::OK);
     assert_eq!(buy["ok"], true);
     assert_eq!(buy["profile"]["coins"], 1200);
+
+    let (st, prof) = json_req(&app, "POST", "/api/economy/profile", Some(json!({ "userId": uid, "secret": secret }))).await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(prof["profile"]["coins"], 1200);
 
     let _ = std::fs::remove_file(&tmp_db);
 }
