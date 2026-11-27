@@ -306,7 +306,7 @@ const fail = (reason) => ({ ok: false, reason });
 
 /** 忍者（見えない兵士）について、相手に隠すイベント。城・魔物へのダメージ（castleDamaged・monsterDamaged）は見せる */
 /** コインのカード（1ターンに coinCardsPerTurn 枚まで）：コインを増やすカードとコインサイコロ */
-const isCoinCard = (def) => def.effect === 'gainCoins' || (def.effect === 'dice' && def.dice === 'coin');
+const isCoinCard = (def) => ['gainCoins', 'plunderCoins', 'coinMine', 'investCoins'].includes(def.effect) || (def.effect === 'dice' && def.dice === 'coin');
 
 /** 城HPが変わるイベント（このあと背水の陣を確かめる） */
 const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttackedCastle']);
@@ -909,6 +909,25 @@ export class Game {
   }
 
   /** 城ごとに背水の陣かを確かめ、変わったら overdriveChanged を出す */
+  /**
+   * 段階A1：経済のカードの予約（player.economy）を、その人のターンの始めに進める。
+   *   金鉱（mines）：残り回数ぶん、毎ターン amount（reason "mine"）／投資（investments）：残りが0になったターンに amount（reason "invest"）
+   */
+  payEconomy(player) {
+    const eco = player.economy;
+    if (!eco) return;
+    for (const m of eco.mines) {
+      m.turns -= 1;
+      this.changeCoins(player, m.amount, 'mine');
+    }
+    eco.mines = eco.mines.filter((m) => m.turns > 0);
+    for (const inv of eco.investments) {
+      inv.turns -= 1;
+      if (inv.turns <= 0) this.changeCoins(player, inv.amount, 'invest');
+    }
+    eco.investments = eco.investments.filter((inv) => inv.turns > 0);
+  }
+
   /** 段階A1：城HPが初めて最大の50%以下になった人に castleHalfCoins（各プレイヤー1回。チーム戦では城の持ち主） */
   checkCastleHalf() {
     for (const id of this.aliveSides()) {
@@ -1275,6 +1294,8 @@ export class Game {
     // コインの雨：自分のターンの始めにコインがもらえる
     const rainCoins = this.weatherDef()?.coinPerTurn ?? 0;
     if (rainCoins > 0) this.changeCoins(player, rainCoins, 'weather');
+    // 段階A1：金鉱・投資（経済のカード）の支払い
+    this.payEconomy(player);
     // MP の自然回復：自分のターンの始めに mpPerTurn 増える（上限まで）
     // 魔族の魔の血：MP の回復が mpBonus 多い。封魔をかけられていれば amount 少ない（0より少なくはしない）
     if (this.rules.mpPerTurn > 0 && this.rules.maxMp > 0) {
@@ -2691,7 +2712,8 @@ export class Game {
     const attackDice = def.effect === 'dice' && def.dice === 'attack'; // 攻撃サイコロは攻撃の魔法と同じく MP を使う
     const mpSpell = def.kind === 'spell' && (MP_EFFECTS.includes(def.effect) || attackDice);
     // mpAllCards：兵士・武器・防御・回復なども、カードの mpCost だけ MP を使う（サイコロ・マナ回復は今までどおり）
-    if (this.rules.mpAllCards && !mpSpell && def.effect !== 'dice' && def.effect !== 'gainMp') return def.mpCost ?? 0;
+    // 段階A1：サイコロでも mpCost を書いたカード（宝探し）は、その MP を使う（書いていないサイコロは今までどおり0）
+    if (this.rules.mpAllCards && !mpSpell && (def.effect !== 'dice' || def.mpCost !== undefined) && def.effect !== 'gainMp') return def.mpCost ?? 0;
     if (!mpSpell) return 0;
     return def.mpCost ?? this.rarityDefs?.[def.rarity]?.mpCost ?? 0;
   }
@@ -3464,7 +3486,12 @@ export class Game {
         return { targets: others.length > 0 ? [{ playerId: player.id }] : [], reason: 'ほかに変えられる天候がありません' };
       }
       case 'gainCoins':
+      case 'coinMine':
         return { targets: [{ playerId: player.id }], reason: '' };
+      case 'investCoins':
+        return { targets: player.coins >= def.cost ? [{ playerId: player.id }] : [], reason: `コインが足りません（${def.cost}枚必要）` };
+      case 'plunderCoins':
+        return { targets: this.opponentsOf(player.id).filter((p) => p.coins > 0).map((p) => ({ playerId: p.id })), reason: '相手のコインがありません' };
       case 'gainMp':
         return { targets: this.rules.maxMp > 0 && player.mp < this.maxMpOf(player) ? [{ playerId: player.id }] : [], reason: this.rules.maxMp > 0 ? 'MPが満タンです' : 'このルールではMPを使いません' };
       case 'redrawHand':
@@ -4381,6 +4408,26 @@ export class Game {
         break;
       }
 
+      // 段階A1：経済のカード
+      case 'plunderCoins': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: enemy.id, targetKind: 'player' });
+        const taken = Math.min(card.def.amount, enemy.coins);
+        this.changeCoins(enemy, -taken, 'stolen');
+        this.changeCoins(player, taken, 'plunder');
+        break;
+      }
+      case 'coinMine': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        (player.economy ??= { mines: [], investments: [] }).mines.push({ amount: card.def.amount, turns: card.def.turns });
+        break;
+      }
+      case 'investCoins': {
+        this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
+        this.changeCoins(player, -card.def.cost, 'invest');
+        (player.economy ??= { mines: [], investments: [] }).investments.push({ amount: card.def.amount, turns: card.def.turns });
+        break;
+      }
+
       case 'gainMp': {
         this.emit('spellCast', { playerId: player.id, type: card.type, target: player.id, targetKind: 'player' });
         this.changeMp(player, amount, 'card'); // 上限を超えたぶんは捨てる
@@ -4996,6 +5043,8 @@ export class Game {
         overdrive: this.overdrive.has(this.side(id)),
         castleType: p.castleType,
         maxHand: p.maxHand,
+        // 段階A1：経済のカードの予約（金鉱・投資）。一度も使っていなければ出さない（今までの形のまま）
+        ...(p.economy ? { economy: { mines: p.economy.mines.map((m) => ({ ...m })), investments: p.economy.investments.map((x) => ({ ...x })) } } : {}),
         // スキルツリー（skillTree を渡したゲームだけキーを足す）：選んだノード（相手にも見せる）と、その人の MP の上限
         // skillConfig：取ったノードの設定値（E04 の反応など）。skillError：決まりに合わず空にしたときの理由（そのときだけ）
         ...(this.skillTree ? { skills: [...p.skills], skillConfig: { ...p.skillConfig }, maxMp: this.maxMpOf(p), ...(p.skillError ? { skillError: p.skillError } : {}) } : {}),

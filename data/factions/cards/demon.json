@@ -231,5 +231,25 @@
     "amount": 3,
     "mpCost": 0,
     "count": 2
+  },
+  "fac_demon_plunder": {
+    "name": "略奪",
+    "kind": "spell",
+    "economy": true,
+    "effect": "plunderCoins",
+    "amount": 2,
+    "description": "相手のコインを2枚まで奪う（コインを持っている相手だけ）",
+    "mpCost": 1,
+    "count": 2
+  },
+  "fac_demon_tax": {
+    "name": "徴税",
+    "kind": "spell",
+    "economy": true,
+    "effect": "gainCoins",
+    "amount": 3,
+    "description": "コイン+3（コインのカードは1ターンに rules.coinCardsPerTurn 枚まで。攻撃の魔法の回数には数えない）",
+    "mpCost": 1,
+    "count": 1
   }
 }

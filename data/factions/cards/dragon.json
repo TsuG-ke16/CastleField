@@ -159,5 +159,27 @@
     "mpCost": 3,
     "count": 1,
     "maxCopies": 1
+  },
+  "fac_dragon_gold_mine": {
+    "name": "金鉱",
+    "kind": "spell",
+    "economy": true,
+    "effect": "coinMine",
+    "amount": 2,
+    "turns": 3,
+    "description": "次の自分のターンから3ターン、ターンの始めにコイン+2",
+    "mpCost": 2,
+    "count": 2
+  },
+  "fac_dragon_treasure": {
+    "name": "宝探し",
+    "kind": "spell",
+    "economy": true,
+    "effect": "dice",
+    "dice": "coin",
+    "per": 1,
+    "description": "サイコロを振り、出た目（1〜6）のコインをもらう",
+    "mpCost": 1,
+    "count": 1
   }
 }

@@ -44,8 +44,9 @@ const HEAL = 'classic_king_minor_heal';
 const INF = 'classic_king_infantry';
 
 function classicGame(skills, { seed = 1, mulligan = false } = {}) {
-  // ホーリーレイは MP4 として書いたテスト（段階A1 でデータは MP3 になったので、ここだけ元の値に固定）
-  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan }, cards: { classic_king_holy_ray: { mpCost: 4 } } });
+  // ホーリーレイは MP4 として書いたテスト（段階A1 でデータは MP3 になったので、ここだけ元の値に固定）。
+  // defenseReaction: false … 段階A1 で山札の中身（経済のカード）と盾の MP0 が変わり、相手が防御待ち（defend）になってスキルの処理が止まる手札があるため
+  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan, defenseReaction: false }, cards: { classic_king_holy_ray: { mpCost: 4 } } });
   const opts = loadOptionalData('classic');
   delete opts.stages;
   delete opts.weather;

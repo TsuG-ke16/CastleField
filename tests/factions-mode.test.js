@@ -12,7 +12,7 @@ import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptional
 import { runMatch } from './sim/sim.js';
 
 const MODE = 'factions';
-const FACTIONS = { kingdom: 20, forest: 18, demon: 22, dragon: 16 }; // 新カード（王国3・森4・竜4）を足した // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
+const FACTIONS = { kingdom: 22, forest: 20, demon: 24, dragon: 18 }; // 段階A1：経済のカードを2種ずつ足した // // 新カード（王国3・森4・竜4）を足した // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
 const ELEMENTS = loadOptionalData(MODE).elements;
 
 // ================= データ =================
@@ -666,6 +666,8 @@ const PLAN = {
     // 新カード（docs/new-cards-proposal.md）
     ['攻城兵', 2, S(6, 4, 1)], ['天罰の光', 5, { effect: 'damageEnemyCastle', amount: 9, element: 'light', exhaust: true, count: 1, maxCopies: 1 }],
     ['聖鎖の剣', 3, { kind: 'weapon', attackBonus: 1, element: 'light', freezeOnHit: 1, count: 1, maxCopies: 1 }],
+    // 段階A1：経済のカード
+    ['徴税', 1, { effect: 'gainCoins', amount: 3, count: 2 }], ['投資', 0, { effect: 'investCoins', cost: 3, amount: 6, turns: 3, count: 1 }],
   ],
   forest: [
     ['獣人', 1, S(4, 5, 2)], ['エルフ', 2, S(3, 3, 0, { role: 'archer' })], ['ドルイド', 2, S(2, 4, 0, { role: 'mage', spellBoost: { elements: ['fire', 'water', 'wind', 'earth'], amount: 1 } })],
@@ -679,6 +681,8 @@ const PLAN = {
     // 新カード
     ['森の番人', 2, S(2, 8, 0, { role: 'guard', stay: 3 })], ['樹人', 3, S(3, 7, 1, { count: 1, maxCopies: 1 })],
     ['薬草の湿布', 3, { effect: 'healOwnCastle', amount: 5, count: 1, maxCopies: 1 }], ['古木の根', 3, { effect: 'armorCastle', amount: 9, count: 1, maxCopies: 1 }],
+    // 段階A1：経済のカード
+    ['宝探し', 1, { effect: 'dice', dice: 'coin', per: 1, count: 2 }], ['貿易', 3, { effect: 'gainCoins', amount: 5, count: 1 }],
   ],
   demon: [
     ['骸骨兵', 1, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 1, S(4, 3, 3, { innateElement: 'dark' })],
@@ -695,6 +699,8 @@ const PLAN = {
     ['封魔', 2, { effect: 'sealMp', amount: 1, turns: 2, maxTurns: 4 }],
     ['魂の欠片', 3, { effect: 'damageCastleAndHeal', amount: 3, heal: 3 }], ['残響の魂', 3, { effect: 'reviveFallen', amount: 0.5 }],
     ['血の膜', 1, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 0, { effect: 'shieldSoldier', amount: 3 }],
+    // 段階A1：経済のカード
+    ['略奪', 1, { effect: 'plunderCoins', amount: 2, count: 2 }], ['徴税', 1, { effect: 'gainCoins', amount: 3, count: 1 }],
   ],
   dragon: [
     ['竜人の新兵', 1, S(4, 5, 2)], ['竜騎兵', 2, S(5, 3, 3)], ['幼炎竜', 3, S(5, 5, 2, { innateElement: 'fire' })], ['幼雷竜', 3, S(4, 4, 3, { innateElement: 'thunder' })],
@@ -705,10 +711,12 @@ const PLAN = {
     // 新カード
     ['竜術師', 3, S(3, 4, 0, { role: 'mage', innateElement: 'fire', spellBoost: { elements: ['fire', 'thunder'], amount: 1 } })], ['竜鱗兵', 3, S(3, 9, 1, { count: 1, maxCopies: 1 })],
     ['古竜の障壁', 3, { effect: 'armorCastle', amount: 8, count: 1, maxCopies: 1 }], ['竜翼の身代わり', 3, { effect: 'guardCastle', count: 1, maxCopies: 1 }],
+    // 段階A1：経済のカード
+    ['金鉱', 2, { effect: 'coinMine', amount: 2, turns: 3, count: 2 }], ['宝探し', 1, { effect: 'dice', dice: 'coin', per: 1, count: 1 }],
   ],
 };
 
-test('カード表：58種の名前・攻撃・HP・足・MP・効果量・属性が案の表と同じ', () => {
+test('カード表：66種（段階A1 の経済のカード8種を含む）の名前・攻撃・HP・足・MP・効果量・属性が案の表と同じ', () => {
   for (const [f, rows] of Object.entries(PLAN)) {
     const set = Object.values(loadFactionCards(MODE, f));
     assert.deepEqual(set.map((d) => d.name), rows.map((r) => r[0]), `${f} のカードの並び`);

@@ -181,5 +181,26 @@
     "mpCost": 3,
     "count": 1,
     "maxCopies": 1
+  },
+  "fac_forest_treasure": {
+    "name": "宝探し",
+    "kind": "spell",
+    "economy": true,
+    "effect": "dice",
+    "dice": "coin",
+    "per": 1,
+    "description": "サイコロを振り、出た目（1〜6）のコインをもらう",
+    "mpCost": 1,
+    "count": 2
+  },
+  "fac_forest_trade": {
+    "name": "貿易",
+    "kind": "spell",
+    "economy": true,
+    "effect": "gainCoins",
+    "amount": 5,
+    "description": "MP3 を使ってコイン+5",
+    "mpCost": 3,
+    "count": 1
   }
 }

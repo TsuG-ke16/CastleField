@@ -199,5 +199,27 @@
     "mpCost": 3,
     "count": 1,
     "maxCopies": 1
+  },
+  "fac_king_tax": {
+    "name": "徴税",
+    "kind": "spell",
+    "economy": true,
+    "effect": "gainCoins",
+    "amount": 3,
+    "description": "コイン+3（コインのカードは1ターンに rules.coinCardsPerTurn 枚まで。攻撃の魔法の回数には数えない）",
+    "mpCost": 1,
+    "count": 2
+  },
+  "fac_king_invest": {
+    "name": "投資",
+    "kind": "spell",
+    "economy": true,
+    "effect": "investCoins",
+    "cost": 3,
+    "amount": 6,
+    "turns": 3,
+    "description": "コインを3払い、3回あとの自分のターンの始めにコイン+6",
+    "mpCost": 0,
+    "count": 1
   }
 }

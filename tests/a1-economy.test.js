@@ -197,3 +197,118 @@ test('A1：通常モードは撃破・城HP50% の報酬なし（今までどお
   game.debugSetCastleHp('p2', 1);
   assert.equal(log.filter((e) => e.event === 'coinsChanged' && ['kill', 'castleHalf'].includes(e.reason)).length, 0);
 });
+
+// ================= 経済のカード（段階5） =================
+
+const ECON = ['classic_econ_tax', 'classic_econ_trade', 'classic_econ_gold_mine', 'classic_econ_plunder', 'classic_econ_invest', 'classic_econ_treasure'];
+/** p1 のターンで、手札を types にし、MP を満タン・コインのカードの枚数を0に戻して1枚出す */
+function playEcon(game, type, target) {
+  const p1 = game.players.p1;
+  game.debugSetHand('p1', [type]);
+  p1.mp = 20;
+  p1.coinCardsPlayedThisTurn = 0;
+  return game.playCard(p1.hand[0].cardId, target);
+}
+/** p1 → p2 → p1 のターンに進める（手札があふれたら捨てる） */
+function nextOwnTurn(game) {
+  for (let i = 0; i < 2; i++) {
+    game.endTurn();
+    if (game.phase === 'discard') game.discard(game.players[game.currentPlayer].hand.slice(0, game.discardCount).map((c) => c.cardId));
+  }
+  assert.equal(game.currentPlayer, 'p1');
+}
+
+test('A1 経済のカード：6種がクラシック（山札80枚のまま）と4陣営（各陣営2種）にあり、economy: true・slot "support"', () => {
+  const { cards } = buildData({ mode: 'classic' });
+  assert.equal(Object.values(cards).reduce((n, d) => n + d.count, 0), 80);
+  for (const t of ECON) {
+    assert.equal(cards[t].economy, true, t);
+    assert.ok(cards[t].count >= 1, t);
+  }
+  const { game } = modeGame();
+  for (const t of ECON) assert.equal(game.createCard(t).slot, 'support', t);
+  const fac = buildData({ mode: 'factions' }).cards;
+  for (const f of ['king', 'forest', 'demon', 'dragon']) {
+    const eco = Object.entries(fac).filter(([k, d]) => k.startsWith(`fac_${f}_`) && d.economy);
+    assert.equal(eco.length, 2, f);
+  }
+});
+
+test('A1 経済のカード：徴税+3・貿易（MP3）+5・宝探し（サイコロの目）。コインのカードは1ターン coinCardsPerTurn 枚まで', () => {
+  const { game, cards, rules } = modeGame();
+  const p1 = game.players.p1;
+  let c = p1.coins;
+  assert.equal(playEcon(game, 'classic_econ_tax').ok, true);
+  assert.equal(p1.coins - c, cards.classic_econ_tax.amount);
+  c = p1.coins;
+  assert.equal(playEcon(game, 'classic_econ_trade').ok, true);
+  assert.equal(p1.coins - c, cards.classic_econ_trade.amount);
+  assert.equal(p1.mp, 20 - cards.classic_econ_trade.mpCost);
+  c = p1.coins;
+  game.rng = () => 0.5; // 目は4
+  assert.equal(playEcon(game, 'classic_econ_treasure').ok, true);
+  assert.equal(p1.coins - c, 4);
+  assert.equal(p1.mp, 20 - cards.classic_econ_treasure.mpCost, '宝探しは mpCost を使う');
+  // 1ターンの枚数
+  game.debugSetHand('p1', ['classic_econ_tax', 'classic_econ_tax']);
+  p1.coinCardsPlayedThisTurn = 0;
+  assert.equal(game.playCard(p1.hand[0].cardId).ok, true);
+  const second = game.canPlayCard(p1.hand[0].cardId);
+  assert.equal(second.ok, rules.coinCardsPerTurn === 0 || rules.coinCardsPerTurn >= 2);
+});
+
+test('A1 経済のカード：金鉱は次の自分のターンから3回+2、投資はコイン3を払って3回あとのターンに+6', () => {
+  const { game, cards, log } = modeGame();
+  const p1 = game.players.p1;
+  const mine = cards.classic_econ_gold_mine;
+  const inv = cards.classic_econ_invest;
+  assert.equal(playEcon(game, 'classic_econ_gold_mine').ok, true);
+  p1.coins = inv.cost;
+  assert.equal(playEcon(game, 'classic_econ_invest').ok, true);
+  assert.equal(p1.coins, 0);
+  assert.deepEqual(game.getState('p2').players.p1.economy, { mines: [{ amount: mine.amount, turns: mine.turns }], investments: [{ amount: inv.amount, turns: inv.turns }] });
+  const paid = (reason) => log.filter((e) => e.event === 'coinsChanged' && e.playerId === 'p1' && e.reason === reason).map((e) => e.delta);
+  for (let t = 1; t <= 4; t++) {
+    nextOwnTurn(game);
+    assert.equal(paid('mine').length, Math.min(t, mine.turns), `金鉱 ${t}`);
+    assert.equal(paid('invest').filter((d) => d > 0).length, t >= inv.turns ? 1 : 0, `投資 ${t}`);
+  }
+  assert.deepEqual(paid('mine'), Array(mine.turns).fill(mine.amount));
+  assert.deepEqual(paid('invest'), [-inv.cost, inv.amount]);
+  assert.deepEqual(game.getState('p1').players.p1.economy, { mines: [], investments: [] });
+  // コインが足りなければ投資は出せない
+  p1.coins = inv.cost - 1;
+  game.debugSetHand('p1', ['classic_econ_invest']);
+  p1.coinCardsPlayedThisTurn = 0;
+  assert.equal(game.canPlayCard(p1.hand[0].cardId).ok, false);
+});
+
+test('A1 経済のカード：略奪は相手のコインを2枚まで（コインのない相手には出せない）', () => {
+  const { game, cards } = modeGame();
+  const [p1, p2] = [game.players.p1, game.players.p2];
+  p2.coins = 0;
+  game.debugSetHand('p1', ['classic_econ_plunder']);
+  assert.equal(game.canPlayCard(p1.hand[0].cardId).ok, false);
+  p2.coins = 1;
+  const c = p1.coins;
+  assert.equal(playEcon(game, 'classic_econ_plunder', { playerId: 'p2' }).ok, true);
+  assert.deepEqual([p1.coins - c, p2.coins], [1, 0]);
+  p2.coins = 10;
+  assert.equal(playEcon(game, 'classic_econ_plunder', { playerId: 'p2' }).ok, true);
+  assert.equal(p2.coins, 10 - cards.classic_econ_plunder.amount);
+});
+
+test('A1 経済のカード：CPU（smart）が使う（クラシック・4陣営）', async () => {
+  const { runMatch } = await import('./sim/sim.js');
+  for (const mode of ['classic', 'factions']) {
+    const { cards, rules } = buildData({ mode });
+    const gameOptions = loadOptionalData(mode);
+    let used = 0;
+    for (let seed = 1; seed <= 4; seed++) {
+      const r = runMatch({ cards, rules, gameOptions, strategies: ['smart', 'smart'], seed });
+      used += Object.entries(r.played).filter(([t]) => cards[t]?.economy).reduce((n, [, v]) => n + v, 0);
+      assert.ok(r.winner, `${mode} seed ${seed} 決着`);
+    }
+    assert.ok(used > 0, `${mode}：経済のカードを使った`);
+  }
+});

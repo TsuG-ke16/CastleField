@@ -31,6 +31,8 @@ export function slotNote(def) {
   if (def.kind === 'defense') return '防御：何枚でも出せる';
   if (def.effect === 'wild') return '合成専用：どのカードとでも合成できる（出せません）';
   if (def.kind === 'soldier') return '兵士：1ターンに複数枚出せる';
+  // 段階A1：経済のカード（クラシック・4陣営）。攻撃の魔法の回数に数えない
+  if (def.economy) return '経済：攻撃の魔法の回数に数えない（コインのカードは1ターンに決まった枚数まで）';
   if (['summonSpirit', 'gainCoins', 'gainMp'].includes(def.effect)) return '精霊・コイン・マナ：何枚でも出せる（メインを使わない）';
   return 'メイン：攻撃の魔法・回復は1ターンに1枚';
 }
@@ -138,6 +140,11 @@ export function cardShort(def) {
   switch (def.effect) {
     case 'summonSpirit': return [{ icon: ELEMENT_LOOK[def.spirit]?.iconName ?? 'crown', text: `${def.amount}・${def.turns}回` }];
     case 'gainCoins': return [{ icon: 'coin', text: `+${def.amount}` }];
+    // 段階A1：経済のカード
+    case 'plunderCoins': return [{ icon: 'coin', text: `奪う${def.amount}` }];
+    case 'coinMine': return [{ icon: 'coin', text: `+${def.amount}×${def.turns}` }];
+    case 'investCoins': return [{ icon: 'coin', text: `-${def.cost}→+${def.amount}` }];
+    case 'dice': return def.economy && def.dice === 'coin' ? [{ icon: 'coin', text: '1〜6' }] : [];
     case 'gainMp': return [{ icon: 'water', text: `MP+${def.amount}` }];
     case 'damageEnemyCastle': return [{ icon: 'fire', text: `城 -${def.amount}` }];
     case 'damageEnemySoldiers': return [{ icon: 'sword', text: `兵士 -${def.amount}` }];
