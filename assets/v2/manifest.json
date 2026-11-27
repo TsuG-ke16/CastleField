@@ -164,5 +164,15 @@
       "file": "icons/earth.webp",
       "bytes": 4998
     }
+  ],
+  "models": [
+    "models/home-diorama-v2.glb",
+    "models/gacha-chest-v2.glb",
+    "models/field-meadow-v2.glb",
+    "models/field-lava-v2.glb",
+    "models/field-ice-v2.glb",
+    "models/field-ruins-v2.glb",
+    "models/field-darkForest-v2.glb",
+    "models/field-desert-v2.glb"
   ]
 }

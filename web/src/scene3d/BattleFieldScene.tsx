@@ -103,8 +103,18 @@ function projectWorld(cam: THREE.PerspectiveCamera, x: number, y: number, z: num
   };
 }
 
-function MeadowModel({ shakePower }: { shakePower: number }) {
-  const { scene } = useGLTF('/assets/v2/models/field-meadow-v2.glb');
+const STAGE_GLB_MAP: Record<string, string> = {
+  meadow: '/assets/v2/models/field-meadow-v2.glb',
+  lava: '/assets/v2/models/field-lava-v2.glb',
+  ice: '/assets/v2/models/field-ice-v2.glb',
+  ruins: '/assets/v2/models/field-ruins-v2.glb',
+  darkForest: '/assets/v2/models/field-darkForest-v2.glb',
+  desert: '/assets/v2/models/field-desert-v2.glb',
+};
+
+function StageBiomeModel({ stageId, shakePower }: { stageId: string; shakePower: number }) {
+  const glbUrl = STAGE_GLB_MAP[stageId] || STAGE_GLB_MAP.meadow;
+  const { scene } = useGLTF(glbUrl);
   const cloned = useMemo(() => scene.clone(), [scene]);
   const rootRef = useRef<THREE.Group>(null);
 
@@ -401,7 +411,7 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
         <hemisphereLight args={[isNight ? '#6078c9' : theme.hemiTop, theme.hemiBottom, isNight ? 0.65 : 1.0]} />
         <directionalLight position={[8, 18, 10]} intensity={isNight ? 1.15 : 2.0} color={isNight ? '#c8d6ff' : '#fff6de'} />
         <Suspense fallback={null}>
-          <MeadowModel shakePower={props.shakePower} />
+          <StageBiomeModel key={activeStage} stageId={activeStage} shakePower={props.shakePower} />
           <BoardMeshes
             state={props.state}
             viewerSide={mySide}

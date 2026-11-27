@@ -82,6 +82,7 @@ pub struct Game {
     next_soldier_seq: u32,
     next_monster_seq: u32,
     monster_cooldown: u32,
+    mulligan_done: Vec<String>,
     events: Vec<GameEvent>,
 }
 
@@ -258,6 +259,7 @@ impl Game {
             next_soldier_seq: 0,
             next_monster_seq: 0,
             monster_cooldown: 0,
+            mulligan_done: Vec::new(),
             events: Vec::new(),
         })
     }
@@ -277,6 +279,10 @@ impl Game {
     pub fn start(&mut self) -> Vec<GameEvent> {
         if self.phase != "ready" {
             return Vec::new();
+        }
+        if self.config.rules.mulligan {
+            self.phase = "mulligan".into();
+            return self.drain_events();
         }
         self.begin_turn(true);
         self.drain_events()
@@ -1111,8 +1117,49 @@ impl Game {
         ActionResult::ok()
     }
 
-    pub fn mulligan(&mut self, _player_id: &str, _card_ids: &[String]) -> ActionResult {
+    pub fn mulligan(&mut self, player_id: &str, card_ids: &[String]) -> ActionResult {
         if self.phase == "ready" {
+            self.begin_turn(true);
+            return ActionResult::ok();
+        }
+        if self.phase != "mulligan" {
+            return ActionResult::err("マリガン中ではありません");
+        }
+        if !self.players.contains_key(player_id) {
+            return ActionResult::err("プレイヤーが見つかりません");
+        }
+        if self.mulligan_done.iter().any(|p| p == player_id) {
+            return ActionResult::err("すでにマリガンを完了しています");
+        }
+
+        let shared = self.config.rules.deck_mode == "shared";
+        let mut swapped = 0usize;
+        if !card_ids.is_empty() {
+            let mut returned_types = Vec::new();
+            if let Some(p) = self.players.get_mut(player_id) {
+                for cid in card_ids {
+                    if let Some(idx) = p.hand.iter().position(|c| &c.card_id == cid) {
+                        let hc = p.hand.remove(idx);
+                        returned_types.push(hc.card_type);
+                        swapped += 1;
+                    }
+                }
+                if !shared {
+                    p.deck.extend(returned_types.drain(..));
+                    shuffle_vec(&mut p.deck, &mut self.rng);
+                }
+            }
+            if shared && !returned_types.is_empty() {
+                self.shared_deck.extend(returned_types);
+                shuffle_vec(&mut self.shared_deck, &mut self.rng);
+            }
+            if swapped > 0 {
+                self.draw_cards(player_id, swapped);
+            }
+        }
+
+        self.mulligan_done.push(player_id.to_string());
+        if self.mulligan_done.len() >= self.player_order.len() {
             self.begin_turn(true);
         }
         ActionResult::ok()

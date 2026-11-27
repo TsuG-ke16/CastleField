@@ -288,6 +288,35 @@
   cursor: pointer;
 }
 
+.cutInBanner {
+  position: absolute;
+  top: 42%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 16px;
+  background: linear-gradient(90deg, rgba(46, 26, 78, 0.94) 0%, rgba(164, 58, 34, 0.94) 100%);
+  border: 3px solid #ffe37a;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  color: #fffaf0;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.odBadge {
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #ff7722;
+  color: #fffaf0;
+  border: 1.5px solid #4a2e1a;
+  font-size: 10px;
+  font-weight: 900;
+}
+
 @media (min-width: 960px) {
   .battleRoot {
     display: grid;

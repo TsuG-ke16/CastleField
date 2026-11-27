@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
 import type { GameEngineAdapter } from '../engine/adapter';
-import { loadModeBundle } from '../engine/dataLoader';
+import { cardTypeToImagePath, loadModeBundle } from '../engine/dataLoader';
 import { JsLegacyAdapter } from '../engine/jsLegacyAdapter';
 import { OnlineEngineAdapter, type OnlineConnStatus } from '../engine/onlineAdapter';
 import { WasmEngineAdapter } from '../engine/wasmAdapter';
@@ -71,6 +71,7 @@ export function BattleScreen() {
     selectedCastleSkin,
     selectedSoldierSkin,
     quality,
+    mulliganEnabled,
     exitBattle,
     grantRewardCoins,
     recordMatchResult,
@@ -79,6 +80,7 @@ export function BattleScreen() {
   const [matchSeed, setMatchSeed] = useState(() => Date.now());
   const adapterRef = useRef<GameEngineAdapter | null>(null);
   const fxRef = useRef<BattleFxHandle | null>(null);
+  const modeCardsRef = useRef<Record<string, CardDef> | null>(null);
   const [modeCards, setModeCards] = useState<Record<string, CardDef> | null>(null);
   const [activeEngine, setActiveEngine] = useState<'rust-wasm' | 'js-legacy' | 'online' | 'factions' | 'classic'>(engineMode);
   const [onlineSeatId, setOnlineSeatId] = useState<'p1' | 'p2'>('p1');
@@ -102,6 +104,8 @@ export function BattleScreen() {
   const [fuseMode, setFuseMode] = useState(false);
   const [fuseFirst, setFuseFirst] = useState<HandCard | null>(null);
   const [discardSelected, setDiscardSelected] = useState<string[]>([]);
+  const [mulliganSelected, setMulliganSelected] = useState<string[]>([]);
+  const [cutIn, setCutIn] = useState<{ id: number; name: string; typeKey: string; rarity: string } | null>(null);
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const [summary, setSummary] = useState<MatchSummary>({
     winner: null,
@@ -141,15 +145,18 @@ export function BattleScreen() {
       if (mode === 'factions' || mode === 'classic') {
         const bundle = await loadModeBundle(mode, data);
         if (cancelled) return;
+        modeCardsRef.current = bundle.cards;
         setModeCards(bundle.cards);
         adapter = JsLegacyAdapter.forMode(bundle, data, {
           factionId: selectedFactionId,
           skills: unlockedSkills,
           stage: selectedStageId,
           seed: matchSeed,
+          mulligan: mulliganEnabled,
         });
         resolvedMode = mode;
       } else {
+        modeCardsRef.current = null;
         setModeCards(null);
         if (playMode === 'casual' && onlinePassphrase.trim()) {
           try {
@@ -176,15 +183,16 @@ export function BattleScreen() {
               selectedDeckId,
               selectedStageId,
               matchSeed,
-              customDeck
+              customDeck,
+              mulliganEnabled
             );
             resolvedMode = 'rust-wasm';
           } catch (err) {
             console.warn('[CastleField] Rust WASM load failed, falling back to JS engine:', err);
-            adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck);
+            adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck, mulliganEnabled);
           }
         } else {
-          adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck);
+          adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck, mulliganEnabled);
         }
       }
 
@@ -229,8 +237,15 @@ export function BattleScreen() {
         } else if (ev.type === 'castleHealed') {
           soundManager.play('heal');
           fxRef.current?.burst('heal');
-        } else if (ev.type === 'cardPlayed' && ev.playerId === myS) {
-          statsAccRef.current.cardsPlayed += 1;
+        } else if (ev.type === 'cardPlayed') {
+          if (ev.playerId === myS) statsAccRef.current.cardsPlayed += 1;
+          const cardType = String(ev.cardType || '');
+          const def = (modeCardsRef.current || data.cards)[cardType];
+          if (def && (def.rarity === 'epic' || def.rarity === 'legendary')) {
+            const cid = ++popCounterRef.current;
+            setCutIn({ id: cid, name: def.name, typeKey: cardType, rarity: def.rarity });
+            setTimeout(() => setCutIn((cur) => (cur?.id === cid ? null : cur)), 950);
+          }
         } else if (ev.type === 'monsterDefeated' && ev.playerId === myS) {
           statsAccRef.current.monstersDefeated += 1;
         } else if (ev.type === 'stampSent' && ev.playerId !== myS) {
@@ -271,6 +286,7 @@ export function BattleScreen() {
       setSelectedCard(null);
       setTargets([]);
       setDiscardSelected([]);
+      setMulliganSelected([]);
     };
 
     void initEngine();
@@ -293,6 +309,7 @@ export function BattleScreen() {
     customDeck,
     matchSeed,
     engineMode,
+    mulliganEnabled,
     onlinePassphrase,
     onlineServerUrl,
     grantRewardCoins,
@@ -415,6 +432,13 @@ export function BattleScreen() {
   const handleCardTap = (c: HandCard) => {
     const adapter = adapterRef.current;
     if (!adapter || !gameState) return;
+
+    if (gameState.phase === 'mulligan') {
+      setMulliganSelected((prev) =>
+        prev.includes(c.cardId) ? prev.filter((id) => id !== c.cardId) : [...prev, c.cardId]
+      );
+      return;
+    }
 
     if (gameState.phase === 'discard' && myTurn) {
       setDiscardSelected((prev) =>
@@ -642,6 +666,9 @@ export function BattleScreen() {
                   : `CPU (${cpuLevel})`}
             </span>
             <span>手札{pOpp.handCount}</span>
+            {pOpp.castleHp > 0 && pOpp.castleHp <= Math.floor(pOpp.castleMaxHp / 3) && (
+              <span className={styles.odBadge}>⚡OD</span>
+            )}
           </div>
           <div className={styles.castleSign}>
             <PaintedIcon name="heart" size={16} />
@@ -677,6 +704,31 @@ export function BattleScreen() {
               className={styles.damagePop}
             >
               {damagePop.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {cutIn && (
+            <motion.div
+              key={cutIn.id}
+              initial={{ scale: 0.72, x: '-50%', y: '-35%', opacity: 0 }}
+              animate={{ scale: 1, x: '-50%', y: '-50%', opacity: 1 }}
+              exit={{ scale: 0.9, x: '-50%', y: '-60%', opacity: 0 }}
+              transition={{ duration: 0.22 }}
+              className={styles.cutInBanner}
+            >
+              <img
+                src={cardTypeToImagePath(cutIn.typeKey)}
+                alt={cutIn.name}
+                style={{ width: 42, height: 42, objectFit: 'cover', borderRadius: 10, border: '2px solid #ffe37a' }}
+              />
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 900, color: '#ffe37a', letterSpacing: 1 }}>
+                  {cutIn.rarity === 'legendary' ? '★ LEGENDARY ★' : '◆ EPIC ◆'}
+                </div>
+                <div style={{ fontSize: 16, fontWeight: 900 }}>{cutIn.name}</div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -738,6 +790,9 @@ export function BattleScreen() {
           <div className={styles.castleSign}>
             <span>{playMode === 'local' ? (activeSide === 'p1' ? 'P1 (青)' : 'P2 (赤)') : 'あなた'}</span>
             {pMe.armor > 0 && <span>🛡{pMe.armor}</span>}
+            {pMe.castleHp > 0 && pMe.castleHp <= Math.floor(pMe.castleMaxHp / 3) && (
+              <span className={styles.odBadge}>⚡OD</span>
+            )}
           </div>
           <div className={styles.castleSign}>
             <PaintedIcon name="heart" size={16} />
@@ -806,6 +861,30 @@ export function BattleScreen() {
               }}
             >
               そのまま受ける
+            </GameButton>
+          </div>
+        )}
+
+        {gameState.phase === 'mulligan' && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#e7f2ff', padding: '6px 10px', borderRadius: 12, border: '2px solid #4a2e1a' }}>
+            <span style={{ fontSize: 12, fontWeight: 900 }}>
+              初期手札マリガン：引き直すカードを選択 ({mulliganSelected.length}枚)
+            </span>
+            <GameButton
+              size="sm"
+              variant="primary-gold"
+              onClick={() => {
+                const adapter = adapterRef.current;
+                if (!adapter) return;
+                adapter.mulligan(activeSide, mulliganSelected);
+                if (playMode === 'cpu' || playMode === 'local') {
+                  adapter.mulligan('p2', []);
+                }
+                setMulliganSelected([]);
+                refreshState();
+              }}
+            >
+              {mulliganSelected.length > 0 ? '引き直す' : 'そのまま開始'}
             </GameButton>
           </div>
         )}
@@ -921,12 +1000,15 @@ export function BattleScreen() {
               const def = cards[c.type];
               if (!def) return null;
               const playable = adapterRef.current?.canPlayCard(c.cardId).ok ?? false;
-              const isSel = selectedCard?.cardId === c.cardId || discardSelected.includes(c.cardId);
+              const isSel =
+                selectedCard?.cardId === c.cardId ||
+                discardSelected.includes(c.cardId) ||
+                mulliganSelected.includes(c.cardId);
               return (
                 <motion.div
                   key={c.cardId}
                   style={{ flexShrink: 0, touchAction: 'pan-x' }}
-                  drag={playable && !fuseMode && gameState.phase !== 'discard' ? 'y' : false}
+                  drag={playable && !fuseMode && gameState.phase === 'main' ? 'y' : false}
                   dragDirectionLock
                   dragConstraints={{ top: -90, bottom: 0 }}
                   dragElastic={0.2}

@@ -70,9 +70,13 @@ function buildConfigPayload(
   deckId: string,
   stage = 'meadow',
   seed = Date.now(),
-  customDeck?: Record<string, number>
+  customDeck?: Record<string, number>,
+  mulliganEnabled = false
 ) {
-  const rules: Record<string, unknown> = { ...(data.rules as Record<string, unknown>), mulligan: false };
+  const rules: Record<string, unknown> = {
+    ...(data.rules as Record<string, unknown>),
+    mulligan: Boolean(mulliganEnabled),
+  };
   const decks: Record<string, { name: string; cards: Record<string, number>; costDeck?: boolean }> = {
     ...(data.decks || {}),
   };
@@ -172,10 +176,11 @@ export class WasmEngineAdapter implements GameEngineAdapter {
     deckId: string,
     stage = 'meadow',
     seed = Date.now(),
-    customDeck?: Record<string, number>
+    customDeck?: Record<string, number>,
+    mulliganEnabled = false
   ): Promise<WasmEngineAdapter> {
     const e = await getWasmExports();
-    const cfg = buildConfigPayload(data, deckId, stage, seed, customDeck);
+    const cfg = buildConfigPayload(data, deckId, stage, seed, customDeck, mulliganEnabled);
     const [p, l] = writeWasmStr(e, JSON.stringify(cfg));
     const handle = e.cf_new(p, l);
     if (l > 0) e.cf_dealloc(p, l);

@@ -68,6 +68,7 @@ interface SavedSlice {
   quality?: QualityMode;
   muted?: boolean;
   bgmMuted?: boolean;
+  mulliganEnabled?: boolean;
   engineMode?: EngineMode;
   stats?: PlayerStats;
   claimedMissions?: string[];
@@ -105,6 +106,7 @@ function persistState(s: AppStoreState): void {
       quality: s.quality,
       muted: s.muted,
       bgmMuted: s.bgmMuted,
+      mulliganEnabled: s.mulliganEnabled,
       engineMode: s.engineMode,
       stats: s.stats,
       claimedMissions: s.claimedMissions,
@@ -135,6 +137,7 @@ interface AppStoreState {
   quality: QualityMode;
   muted: boolean;
   bgmMuted: boolean;
+  mulliganEnabled: boolean;
   coins: number;
   points: number;
   pityCount: number;
@@ -167,6 +170,7 @@ interface AppStoreState {
   setQuality: (q: QualityMode) => void;
   toggleMute: () => void;
   toggleBgmMute: () => void;
+  toggleMulliganEnabled: () => void;
   startBattle: () => void;
   exitBattle: () => void;
   spendCoinsAndRollGacha: (count: 1 | 10) => GachaRecord[] | null;
@@ -213,6 +217,7 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     quality: initial.quality ?? '3d',
     muted: initial.muted ?? false,
     bgmMuted: initial.bgmMuted ?? false,
+    mulliganEnabled: initial.mulliganEnabled ?? false,
     coins: initial.coins ?? 2400,
     points: initial.points ?? 350,
     pityCount: initial.pityCount ?? 0,
@@ -331,6 +336,10 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       const next = !get().bgmMuted;
       soundManager.setBgmMuted(next);
       savePatch({ bgmMuted: next });
+    },
+    toggleMulliganEnabled: () => {
+      soundManager.play('tap');
+      savePatch({ mulliganEnabled: !get().mulliganEnabled });
     },
     startBattle: () => {
       soundManager.play('deploy');

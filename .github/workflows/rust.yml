@@ -26,8 +26,10 @@ jobs:
           mkdir -p web/public/wasm
           cp rust/target/wasm32-unknown-unknown/release/castlefield_wasm.wasm web/public/wasm/castlefield_wasm.wasm
 
-      - name: Verify compiled WASM against Node parity suite
-        run: node --test rust/tests/wasm_parity.test.mjs
+      - name: Verify compiled WASM and JS vs Rust parity suites
+        run: |
+          node --test rust/tests/wasm_parity.test.mjs
+          node --test rust/tests/js_vs_rust_parity.test.mjs
 
       - name: Run castlefield-server tests
         run: cargo test --manifest-path rust/server/Cargo.toml

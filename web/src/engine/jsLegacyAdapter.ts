@@ -35,12 +35,12 @@ export class JsLegacyAdapter implements GameEngineAdapter {
   static forMode(
     bundle: ModeBundle,
     baseData: LoadedGameData,
-    opts: { factionId?: string; skills?: string[]; stage?: string; seed?: number } = {}
+    opts: { factionId?: string; skills?: string[]; stage?: string; seed?: number; mulligan?: boolean } = {}
   ): JsLegacyAdapter {
     const seed = opts.seed ?? Date.now();
     const rng = makeMulberry32(seed);
     const rules = structuredClone(bundle.rules) as Record<string, unknown>;
-    rules.mulligan = false;
+    rules.mulligan = Boolean(opts.mulligan);
 
     const stageKeys = Object.keys(baseData.stages || { meadow: {} });
     const stageArg = opts.stage || 'meadow';
@@ -109,14 +109,15 @@ export class JsLegacyAdapter implements GameEngineAdapter {
     deckId: string,
     stage = 'meadow',
     seed = Date.now(),
-    customDeck?: Record<string, number>
+    customDeck?: Record<string, number>,
+    mulliganEnabled = false
   ) {
     this.data = data;
     const rng = makeMulberry32(seed);
     this.cpuRng = makeMulberry32(seed ^ 0x51ed270b);
 
     const rules = structuredClone(data.rules) as Record<string, unknown>;
-    rules.mulligan = false; // Streamlined instant play into turn 1 for crisp mobile pacing
+    rules.mulligan = Boolean(mulliganEnabled);
     const decks = structuredClone(data.decks) as Record<string, { name: string; cards: Record<string, number>; costDeck?: boolean }>;
     if (deckId === 'custom' && customDeck && Object.keys(customDeck).length > 0) {
       decks.custom = { name: 'オリジナルデッキ', cards: { ...customDeck }, costDeck: true };

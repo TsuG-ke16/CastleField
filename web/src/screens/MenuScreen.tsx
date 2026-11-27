@@ -14,6 +14,8 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     toggleMute,
     bgmMuted,
     toggleBgmMute,
+    mulliganEnabled,
+    toggleMulliganEnabled,
     engineMode,
     setEngineMode,
     data,
@@ -412,6 +414,22 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               onClick={toggleBgmMute}
             >
               {muted ? '全体ミュート中' : bgmMuted ? 'OFF' : 'ON'}
+            </GameButton>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 900 }}>初期手札マリガン</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>
+                開始時に1回だけ手札を引き直せます
+              </div>
+            </div>
+            <GameButton
+              size="sm"
+              variant={mulliganEnabled ? 'selected-royal' : 'normal-stone'}
+              onClick={toggleMulliganEnabled}
+            >
+              {mulliganEnabled ? 'ON' : 'OFF'}
             </GameButton>
           </div>
 
