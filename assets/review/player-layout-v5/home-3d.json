@@ -1,0 +1,24 @@
+[
+  {
+    "device": "pc",
+    "webgl": true,
+    "hero": {
+      "x": 178,
+      "y": 252.1875,
+      "width": 782,
+      "height": 532.8125
+    },
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "webgl": true,
+    "hero": {
+      "x": 12,
+      "y": 196.828125,
+      "width": 366,
+      "height": 220
+    },
+    "errors": []
+  }
+]

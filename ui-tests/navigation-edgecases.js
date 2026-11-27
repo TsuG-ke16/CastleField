@@ -1,15 +1,16 @@
+import {selectDifficulty} from './lib/title.js';
 // Supplement the route walk with real touch, retry, modal focus and non-cost decks.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {mkdirSync,writeFileSync,readFileSync} from 'node:fs';
 const{chromium}=createRequire(import.meta.url)('playwright');
 const base=process.env.UI_TEST_URL??'http://127.0.0.1:3000/';
-const out=new URL('../assets/review/navigation-v4/',import.meta.url);mkdirSync(out,{recursive:true});
+const out=new URL(process.env.UI_REVIEW_DIR??'../assets/review/navigation-v4/',import.meta.url);mkdirSync(out,{recursive:true});
 const b=await chromium.launch({headless:true,executablePath:process.env.UI_TEST_CHROMIUM??'/usr/bin/chromium'});const report=[];
 try{
  const c=await b.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce',serviceWorkers:'block'}),p=await c.newPage(),errors=[];p.setDefaultTimeout(30000);p.on('pageerror',e=>errors.push(e.message));
  await p.goto(new URL('?home=1&debug=1&fx=lite',base).href);await p.locator('#home:not([hidden])').waitFor();
- await p.locator('.cpu-choice[data-level=easy]').tap();assert.equal(await p.locator('.cpu-choice[data-level=easy]').getAttribute('aria-pressed'),'true');assert.equal(await p.evaluate(()=>castlefield.game()),null);
+ await selectDifficulty(p,'easy',true);assert.equal(await p.locator('.cpu-choice[data-level=easy]').getAttribute('aria-pressed'),'true');assert.equal(await p.evaluate(()=>castlefield.game()),null);
  await p.locator('.home-player').tap();await p.locator('[data-page=profile] [data-act=backMenu]').tap();assert.ok(await p.locator('[data-page=battle]').isVisible(),'profile returns to invoking home');
  await p.locator('[data-act=chooseMode]').tap();await p.locator('[data-mode=online]').tap();await p.locator('#title-pass').fill('retry-'+Date.now());
  await p.route('**/api/join',r=>r.fulfill({json:{ok:false,reason:'接続の試験拒否'}}),{times:1});

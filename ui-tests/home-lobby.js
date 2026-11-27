@@ -1,3 +1,4 @@
+import {selectDifficulty} from './lib/title.js';
 // UIの公開操作で、ホーム・準備・デッキ・4陣営を確認する。
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -53,14 +54,14 @@ try {
     assert.ok(await page.locator('.home-match-options').isVisible());assert.ok(await page.locator('.home-cpu').isHidden());
     if(width===390)await shot(page,'local-setup');
     await selectMode(page,'online');assert.ok(await page.locator('#title-form').isVisible());
-    await selectMode(page,'solo');await page.locator('.cpu-choice[data-level=hard]').click();assert.ok(await page.locator('#home:not([hidden])').isVisible());
+    await selectMode(page,'solo');await selectDifficulty(page,'hard');assert.ok(await page.locator('#home:not([hidden])').isVisible());
     if(width===390)await shot(page,'solo-setup');
     await page.locator('[data-act=chooseDeck]').first().click();assert.equal(await page.locator('.home-deck-choice[data-choose-slot]').count(),4);
     if(width===390)await shot(page,'deck-sheet');await page.keyboard.press('Escape');
     await page.locator('.home-shortcuts [data-act=catalog]').click();await page.locator('#card-guide:not([hidden])').waitFor();
     await page.locator('.guide-query input').fill('歩兵');assert.ok(await page.locator('.guide-card').count()>0);
     if(width===390)await shot(page,'catalog');await page.getByRole('button',{name:'一覧を閉じる'}).click();
-    await page.locator('.home-tab[data-tab=menu]').click();assert.equal(await page.locator('#home-page-menu .home-tile').count(),9);
+    await page.locator('.home-tab[data-tab=menu]').click();assert.equal(await page.locator('#home-page-menu .home-tile').count(),7);
     if(width===390)await shot(page,'menu');
     await page.locator('.home-tab[data-tab=menu]').click();await page.locator('.home-tile[data-id=settings]').click();
     await page.locator('#settings:not([hidden])').waitFor();if(width===390)await shot(page,'settings');await page.keyboard.press('Escape');
@@ -77,7 +78,7 @@ try {
   assert.equal(await page.locator('[data-faction-quick=dragon]').getAttribute('aria-pressed'),'true');
 await shot(page,'factions-home');
   await page.locator('[data-act=chooseMode]').click();assert.equal(await page.locator('.home-mode[data-mode=online]').isDisabled(),false,'4陣営でもカジュアル対戦（オンライン）を選べる');await page.locator('.home-mode[data-mode=solo]').click();
-  await page.locator('.cpu-choice[data-level=hard]').click();await page.locator('.home-start').click();
+  await selectDifficulty(page,'hard');await page.locator('.home-start').click();
   await page.waitForFunction(()=>Boolean(window.castlefield?.game()));
   const state=await page.evaluate(()=>{const id=document.querySelector('#app').dataset.viewer,s=castlefield.game().getState(id),p=s.players[id];return {id,deckId:p.deckId,hand:p.hand.map(c=>c.type),opponents:Object.entries(s.players).filter(([pid])=>pid!==id).map(([,p])=>p.deckId)}});
   assert.equal(state.deckId,'dragon');assert.ok(state.hand.every(c=>c.startsWith('fac_dragon_')));assert.ok(state.opponents.some(d=>d!=='dragon'));

@@ -8,7 +8,7 @@ export class LocalSetup {
     this.key=`cf-match-setup-${ruleset}`;
     this.mode='solo'; this.cpuLevel='normal'; this.inputs={};
     this.box=host;
-    host.innerHTML=`<section class="home-cpu" aria-labelledby="home-cpu-title"><h2 id="home-cpu-title">CPUの強さ</h2><div class="home-cpu-choices" role="group" aria-label="CPU難易度">${[['easy','よわい','守りを中心に戦う'],['normal','ふつう','攻めを中心に戦う'],['hard','つよい','よく考えて戦う']].map(([id,name,note])=>`<button type="button" class="cpu-choice raw-btn" data-level="${id}" aria-pressed="${id==='normal'}">${atlasMarkup(NAV_ART[id],'difficulty-art',80)}<strong>${name}</strong><small>${note}</small></button>`).join('')}</div></section>
+    host.innerHTML=`<details class="home-cpu"><summary><span class="cpu-current-art" aria-hidden="true"></span><span>CPUの強さ <b data-cpu-current></b></span><small>変更</small></summary><div class="home-cpu-choices" role="group" aria-label="CPU難易度">${[['easy','よわい','守りを中心に戦う'],['normal','ふつう','攻めを中心に戦う'],['hard','つよい','よく考えて戦う']].map(([id,name,note])=>`<button type="button" class="cpu-choice raw-btn" data-level="${id}" aria-pressed="${id==='normal'}">${atlasMarkup(NAV_ART[id],'difficulty-art',80)}<strong>${name}</strong><small>${note}</small></button>`).join('')}</div></details>
       <details class="home-match-options"><summary>対戦設定 <span data-setup-summary></span></summary><div class="home-match-fields"></div><p class="local-note">CPU戦では残りの席がCPU、同じ端末では全員が人になります。自分以外の城・デッキは標準。チーム戦では城を共有します。</p></details>`;
     this.fields=host.querySelector('.home-match-fields');
     const add=(key,label,choices)=>{
@@ -41,7 +41,7 @@ export class LocalSetup {
     this.refreshDecks();
     const deck=saved.deck??defaults.deck;if([...this.inputs.deck.options].some(o=>o.value===deck))this.inputs.deck.value=deck;
     host.addEventListener('change',e=>{if(e.target===this.inputs.deckMode)this.refreshDecks();this.changed()});
-    host.addEventListener('click',e=>{const b=e.target.closest('.cpu-choice');if(!b)return;this.cpuLevel=b.dataset.level;this.changed()});
+    host.addEventListener('click',e=>{const b=e.target.closest('.cpu-choice');if(!b)return;this.cpuLevel=b.dataset.level;this.changed();const detail=this.box.querySelector('.home-cpu');detail.open=false;detail.querySelector('summary').focus({preventScroll:true})});
     this.changed(false);
   }
   refreshDecks(){
@@ -64,6 +64,8 @@ export class LocalSetup {
   changed(save=true){
     this.preview.hidden=this.ruleset!=='kingdom'||this.inputs.deckMode.value!=='own';
     if(!this.preview.hidden)this.previewDeck(this.preview,this.presetDeck(this.inputs.deck.value));
+    this.box.querySelector('[data-cpu-current]').textContent={easy:'よわい',normal:'ふつう',hard:'つよい'}[this.cpuLevel];
+    this.box.querySelector('.cpu-current-art').innerHTML=atlasMarkup(NAV_ART[this.cpuLevel],'',32);
     for(const b of this.box.querySelectorAll('.cpu-choice'))b.setAttribute('aria-pressed',String(b.dataset.level===this.cpuLevel));
     this.box.querySelector('[data-setup-summary]').textContent=`${this.inputs.playerCount.selectedOptions[0]?.textContent} · ${this.inputs.castle.selectedOptions[0]?.textContent.split(' · ')[0]}`;
     if(save)try{localStorage.setItem(this.key,JSON.stringify({...this.read(),cpuLevel:this.cpuLevel}))}catch{}

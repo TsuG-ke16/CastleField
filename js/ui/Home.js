@@ -13,7 +13,7 @@ import { HomeDioramaGL } from './HomeDioramaGL.js';
 
 const MODE_KEY = 'cf-home-mode';
 const MODES = {
-  solo: { label: 'ひとりで遊ぶ', chip: 'ひとりで', note: 'CPUと対戦', icon: 'assets/ui/icon-mode-solo.png' },
+  solo: { label: 'CPU対戦', chip: 'ひとりで', note: 'CPUと対戦', icon: 'assets/ui/icon-mode-solo.png' },
   online: { label: 'カジュアル対戦', chip: 'カジュアル', note: '合言葉で友だちと', icon: 'assets/ui/icon-mode-online.png' },
   local: { label: '同じ端末で遊ぶ', chip: '同じ端末', note: '2〜8人で交代', icon: 'assets/ui/icon-mode-local.png' },
 };
@@ -31,9 +31,9 @@ const TABS = [
 ];
 const GROUPS = {
   deck: [['カード', ['catalog'], 'list']],
-  battle: [], gacha: [], shop: [],
+  battle: [['オンライン対戦', ['rank', 'friend'], 'pair']], gacha: [], shop: [],
   menu: [['自分の王国', ['skin', 'profile', 'account'], 'list'],
-         ['対戦と進行', ['rank', 'friend', 'ranking', 'mission'], 'grid'],
+         ['戦績と報酬', ['ranking', 'mission'], 'grid'],
          ['遊び方と環境', ['settings', 'help'], 'list']],
 };
 const PAGES = new Set([...Object.keys(GROUPS), 'skin', 'profile', 'settings']);
@@ -170,6 +170,7 @@ export class Home {
             <button class="home-deck-change raw-btn" data-act="chooseDeck" aria-label="使用デッキを選ぶ">${homeIcon('arrow',22)}</button>
           </div>
           <button class="home-mode-picker raw-btn" data-act="chooseMode" aria-haspopup="dialog"><span class="home-selected-mode-icon" data-part="modeIcon"></span><span><small>対戦形式</small><strong data-part="modeName">ひとりで遊ぶ</strong></span><span class="home-mode-change">変更${homeIcon('down',16)}</span></button>
+        <nav class="home-menu home-battle-links" aria-label="オンライン対戦" data-menu="battle"${ruleset==='kingdom'?'':' hidden'}></nav>
           <div data-part="matchSetup"></div>
           <div data-part="onlineSetup" hidden></div>
           <div class="home-skills"${ruleset==='classic'?'':' hidden'}><p>スキル <b data-part="skillCount">0</b>個・保存したビルドで対戦</p><button type="button" class="cf-btn raw-btn" data-act="skills">スキルツリーを編集</button></div>
@@ -343,7 +344,7 @@ export class Home {
     }
     this.part('dot').hidden = !(this.data?.rewardsAvailable > 0 || this.socialCount > 0 || this.data?.claimable > 0);
     // タブにも印（そのタブの中に、受け取れるもの・通知がある）
-    const tabHas = { menu: this.data?.rewardsAvailable > 0 || this.socialCount > 0, battle: this.data?.claimable > 0 };
+    const tabHas = { menu: this.data?.rewardsAvailable > 0 || this.data?.claimable > 0, battle: this.socialCount > 0 };
     for (const b of this.part('tabbar').children) b.querySelector('.home-tab-dot').hidden = !tabHas[b.dataset.tab];
   }
 
@@ -638,6 +639,7 @@ export class Home {
           if (note) note.textContent = MENU_NOTE[id] ?? '';
           grid.append(button);
         }
+        if (!grid.childElementCount) continue;
         if (name) group.append(heading);
         group.append(grid);
         nav.append(group);

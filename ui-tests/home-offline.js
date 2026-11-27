@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { mkdirSync,writeFileSync } from 'node:fs';
 const {chromium}=createRequire(import.meta.url)('playwright');
 const base=process.env.UI_TEST_URL ?? 'http://127.0.0.1:8000/';
-const out=new URL('./artifacts/home-offline/',import.meta.url);mkdirSync(out,{recursive:true});
+const out=new URL(process.env.UI_REVIEW_DIR??'./artifacts/home-offline/',import.meta.url);mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({...(process.env.UI_TEST_CHROMIUM?{executablePath:process.env.UI_TEST_CHROMIUM}:{})});
 try {
   const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:'reduce'}),page=await context.newPage(),errors=[];

@@ -1,3 +1,4 @@
+import {selectDifficulty} from './lib/title.js';
 // アカウント画面のテスト：node ui-tests/account.js（Playwright は環境にあるものを使う）
 // アカウント付きのサーバーを一時のデータベースで起動し、ゲスト作成・デッキ保存・再読み込み・アカウント作成（メールアドレス）とログイン・設定画面の入口を確かめる。
 import assert from 'node:assert/strict';
@@ -55,7 +56,7 @@ try {
   assert.equal(await page.locator('#settings .set-name-group').isVisible(), false);
   await page.keyboard.press('Escape');
   // 難易度を選ぶだけでは開始しない。開始自体は navigation.js が確認する。
-  await page.click('#home .home-tab[data-tab=battle]');await page.click('.cpu-choice[data-level=hard]');
+  await page.click('#home .home-tab[data-tab=battle]');await selectDifficulty(page,'hard');
   assert.ok(await page.locator('#home:not([hidden])').isVisible());
   await page.click('#home .home-tab[data-tab=menu]'); await page.click('#home .home-tile[data-id=settings]');
   await page.locator('#settings:not([hidden])').waitFor();

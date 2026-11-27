@@ -1,3 +1,4 @@
+import {selectDifficulty} from './lib/title.js';
 // Integration through real UI + real HTTP APIs. All account data lives in :memory:.
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
@@ -23,8 +24,8 @@ try{
   server.account.economy.credit(user.id,5000,'ui-test',`${device}-seed`);
   await p.reload();await p.locator('#home:not([hidden])').waitFor();
   // Difficulty is a preference, not an implicit start action, and survives reload.
-  await p.locator('.cpu-choice[data-level=hard]').click();assert.equal(await p.evaluate(()=>castlefield.game()),null);
-  await p.reload();await p.locator('.cpu-choice[data-level=hard][aria-pressed=true]').waitFor();await shot('home');console.log(device,'home preferences passed');
+  await selectDifficulty(p,'hard');assert.equal(await p.evaluate(()=>castlefield.game()),null);
+  await p.reload();await p.locator('.cpu-choice[data-level=hard][aria-pressed=true]').waitFor({state:'attached'});await shot('home');console.log(device,'home preferences passed');
   await p.locator('.home-match-options summary').click();await p.selectOption('[name=playerCount]','3');await p.selectOption('[name=stage]','ice');await shot('home-options');
   await p.locator('.home-match-options summary').click();
   await p.locator('[data-act=chooseMode]').click();await p.locator('[data-mode=local]').click();assert.ok(await p.locator('.home-cpu').isHidden());
@@ -56,7 +57,7 @@ try{
     await context.addInitScript(()=>{localStorage.setItem('cf-tutorial','done');localStorage.setItem('cf-settings-v1',JSON.stringify({speed:'skip',reduced:true}))});
     await page.goto(`${base}/?home=1&fx=lite&debug=1&seed=8${mode==='kingdom'?'':`&mode=${mode}`}`);await page.locator('#home:not([hidden])').waitFor();
     if(format==='local'){await page.click('[data-act=chooseMode]');await page.click('[data-mode=local]');assert.ok(await page.locator('.home-cpu').isHidden())}
-    else await page.locator('.cpu-choice[data-level=easy]').click();
+    else await selectDifficulty(page,'easy');
     if(mode==='classic'){
      assert.ok(await page.locator('[data-act=skills]').isVisible());assert.ok(await page.locator('.home-deckpanel').isHidden());
      await page.click('[data-act=skills]');await page.locator('.skilltree:not([hidden])').waitFor();await page.click('.st-chip[data-group=available]');await page.locator('.st-result').first().click();await page.locator('[data-act=acquire]').click();await page.click('.st-done');assert.equal(await page.locator('[data-part=skillCount]').textContent(),'1');

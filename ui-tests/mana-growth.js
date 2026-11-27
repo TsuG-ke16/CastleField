@@ -1,3 +1,4 @@
+import {selectDifficulty} from './lib/title.js';
 // UI projection / reconnect contracts. No game rules or production state are modified.
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
@@ -62,7 +63,7 @@ try {
   await local.goto(base); await toTitle(local); await local.click('#home .home-tab[data-tab=battle]'); await local.locator('#home [data-act="chooseMode"]').click(); await local.locator('#home .home-mode[data-mode="solo"]').click();
   await local.locator('.home-match-options summary').click();
   await local.locator('.home-match-fields select[name=playerCount]').selectOption('4');
-  await local.locator('.cpu-choice[data-level=easy]').click();await local.locator('.home-start').click();
+  await selectDifficulty(local,'easy');await local.locator('.home-start').click();
   await local.waitForFunction(()=>!document.documentElement.classList.contains('at-title')&&!document.querySelector('#app').classList.contains('busy'));
   await local.screenshot({path:new URL('./artifacts/local-plaza.png',import.meta.url).pathname});
   await local.close();

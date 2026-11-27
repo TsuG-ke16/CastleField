@@ -1,3 +1,4 @@
+import {selectDifficulty} from './lib/title.js';
 // Natural match via real UI. No surrender, Game mutations, or balance changes.
 // 実行: node ui-tests/kingdom-natural-3d.js（環境のPlaywrightとChromiumを使用）
 import assert from 'node:assert/strict';
@@ -60,7 +61,7 @@ try{
   const url=new URL(base);url.search='?home=1&debug=1&seed=8';
   if(process.env.UI_TEST_FX)url.searchParams.set('fx',process.env.UI_TEST_FX);
   if(process.env.UI_TEST_FIELD3D)url.searchParams.set('field3d',process.env.UI_TEST_FIELD3D);
-  await page.goto(url.href);await page.locator('#home:not([hidden])').waitFor();await page.locator('.cpu-choice[data-level=hard]').click();assert.equal(await page.evaluate(()=>castlefield.game()),null);await press('#home .home-start');await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:180000});
+  await page.goto(url.href);await page.locator('#home:not([hidden])').waitFor();await selectDifficulty(page,'hard');assert.equal(await page.evaluate(()=>castlefield.game()),null);await press('#home .home-start');await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:180000});
   await page.evaluate(async()=>{(await import('./js/ui/config.js')).UI_CONFIG.speed=0});
   await page.evaluate(()=>{window.__uiSmokeCards=0;const id=document.querySelector('#app').dataset.viewer;castlefield.game().on('gameOver',e=>window.__naturalEnd=e);castlefield.game().on('cardPlayed',e=>{if(e.playerId===id)window.__uiSmokeCards++})});
   const deadline=Date.now()+1200000;let deployed=false,ended=false,mulliganShown=false;

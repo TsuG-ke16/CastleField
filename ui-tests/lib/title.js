@@ -13,3 +13,10 @@ export async function openAccountFromHome(page) {
   await page.click('#home .home-tab[data-tab=menu]');
   await page.click('#home .home-tile[data-id=account]');
 }
+
+/** 難易度を必要なときだけ開き、選択後はコンパクト表示へ戻す。 */
+export async function selectDifficulty(page, level, touch = false) {
+  const choice=page.locator(`.cpu-choice[data-level="${level}"]`);
+  if(!await choice.isVisible()) await page.locator('.home-cpu summary')[touch?'tap':'click']();
+  await choice[touch?'tap':'click']();
+}

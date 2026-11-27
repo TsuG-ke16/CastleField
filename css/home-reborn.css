@@ -24,23 +24,23 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn button { touch-action:manipulation; }
 #app #home.home-reborn button:disabled { cursor:not-allowed; }
 #app #home.home-reborn .home-page { min-height:0;min-width:0;gap:0; }
-#app #home.home-reborn .home-page[data-page="battle"] { display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:44px 48px 120px auto auto 44px;align-content:stretch; }
-#app #home.home-reborn .home-worlds { display:flex;gap:24px;margin:0;padding:0; }
+#app #home.home-reborn .home-page[data-page="battle"] { display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto clamp(210px,29vh,320px) auto auto auto;grid-template-areas:"rules" "heading" "art" "progress" "console" "shortcuts";align-content:start;row-gap:10px; }
+#app #home.home-reborn .home-worlds { grid-area:rules;display:flex;gap:24px;margin:0;padding:0; }
 #app #home.home-reborn .home-world { position:relative;flex:none;min-height:44px;padding:9px 0;font-size:13px; }
-#app #home.home-reborn .home-battle-heading { display:flex;flex-direction:column;align-items:start;justify-content:center;gap:0; }
+#app #home.home-reborn .home-battle-heading { grid-area:heading;display:flex;flex-direction:column;align-items:start;justify-content:center;gap:0; }
 #app #home.home-reborn .home-battle-heading p { margin:0;font-size:10px;letter-spacing:.18em;font-weight:800; }
-#app #home.home-reborn .home-battle-heading h1 { font-size:28px;line-height:1.4;margin:0;letter-spacing:.03em;font-weight:900; }
+#app #home.home-reborn .home-battle-heading h1 { font-size:28px;line-height:1.28;margin:0;letter-spacing:.03em;font-weight:900; }
 #app #home.home-reborn .home-battle-heading > span { display:none; }
-#app #home.home-reborn .home-hero { display:flex;align-items:center;justify-content:center;position:relative;min-height:0;margin:0 -8px;padding:0;overflow:visible; }
+#app #home.home-reborn .home-hero { grid-area:art;display:flex;align-items:center;justify-content:center;position:relative;min-height:0;margin:0 -8px;padding:0;overflow:visible; }
 #app #home.home-reborn .home-arena { display:block;width:100%;height:100%;max-height:100%;object-fit:contain; }
-#app #home.home-reborn .home-progress-line { display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0; }
+#app #home.home-reborn .home-progress-line { grid-area:progress;display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0; }
 #app #home.home-reborn .home-season { position:static;order:0;padding:0;margin:0;font-size:12px;min-height:0; }
 #app #home.home-reborn .home-season:empty::after { content:'ローカルでも遊べます'; }
 #app #home.home-reborn .home-rank-chip { display:flex;align-items:center;gap:4px;min-height:34px;margin:0;padding:0;cursor:pointer; }
 #app #home.home-reborn .home-rank-chip > span:last-of-type { display:flex;gap:5px;align-items:center;font-size:12px; }
 #app #home.home-reborn .home-rank-chip small { font-size:11px; }
 #app #home.home-reborn .home-rank-chip .rank-emblem { width:22px;height:22px; }
-#app #home.home-reborn .home-battle-console { display:grid;grid-template-columns:minmax(0,1fr);min-width:0;padding:0; }
+#app #home.home-reborn .home-battle-console { grid-area:console;display:grid;grid-template-columns:minmax(0,1fr);min-width:0;padding:0; }
 #app #home.home-reborn .home-deckpanel { display:flex;align-items:center;gap:12px;min-height:84px;padding:10px 0;overflow:visible; }
 #app #home.home-reborn .home-deckpanel-text { flex:1;display:grid;gap:2px;align-content:center;justify-items:start;min-width:0;min-height:64px;padding:0;text-align:left;cursor:pointer; }
 #app #home.home-reborn .home-eyebrow { font-size:11px;letter-spacing:0; }
@@ -64,7 +64,7 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-start:active { transform:translateY(2px); }
 #app #home.home-reborn .home-note { font-size:12px;line-height:1.5;margin:8px 0 0; }
 #app #home.home-reborn .home-note:empty { display:none; }
-#app #home.home-reborn .home-shortcuts { display:flex;justify-content:center;gap:20px;margin-top:3px; }
+#app #home.home-reborn .home-shortcuts { grid-area:shortcuts;display:flex;justify-content:center;gap:20px;margin-top:3px; }
 #app #home.home-reborn .home-shortcuts button { display:flex;gap:7px;align-items:center;justify-content:center;min-height:44px;padding:0 5px;cursor:pointer; }
 #app #home.home-reborn .home-tabbar { position:fixed;left:0;right:0;bottom:0;transform:none;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch;gap:0;width:100%;min-height:72px;margin:0;padding:0 max(6px,env(safe-area-inset-right)) env(safe-area-inset-bottom) max(6px,env(safe-area-inset-left)); }
 #app #home.home-reborn .home-tab { display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;min-height:70px;margin:0;padding:8px 0; }
@@ -148,16 +148,16 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-player { flex:initial;min-width:240px; }
 #app #home.home-reborn .home-side { margin-left:auto;gap:12px; }
 #app #home.home-reborn .home-who strong { font-size:15px; }
-#app #home.home-reborn .home-page[data-page="battle"] { grid-template-columns:minmax(0,1fr) minmax(320px,370px);grid-template-rows:44px 100px minmax(180px,1fr) 40px 52px;grid-template-areas:"rules console" "heading console" "art console" "progress console" "shortcuts console";gap:0 36px; }
+#app #home.home-reborn .home-page[data-page="battle"] { grid-template-columns:minmax(0,1fr) minmax(320px,370px);grid-template-rows:auto auto minmax(360px,1fr) auto auto;grid-template-areas:"rules console" "heading console" "art console" "progress console" "shortcuts console";gap:0 36px; }
 #app #home.home-reborn .home-worlds { grid-area:rules; }
 #app #home.home-reborn .home-battle-heading { grid-area:heading; }
 #app #home.home-reborn .home-battle-heading h1 { font-size:40px; }
 #app #home.home-reborn .home-battle-heading p { font-size:12px; }
 #app #home.home-reborn .home-battle-heading > span { display:block;font-size:13px;margin-top:8px; }
 #app #home.home-reborn .home-hero { grid-area:art;margin:0 -14px; }
-#app #home.home-reborn .home-arena { max-height:390px; }
+#app #home.home-reborn .home-arena { max-height:460px; }
 #app #home.home-reborn .home-progress-line { grid-area:progress; }
-#app #home.home-reborn .home-battle-console { grid-area:console;align-self:center;gap:14px; }
+#app #home.home-reborn .home-battle-console { grid-area:console;align-self:start;gap:14px; }
 #app #home.home-reborn .home-battle-console::before { content:'対戦の準備';font-size:25px;font-weight:900;margin-bottom:8px; }
 #app #home.home-reborn .home-deckpanel { min-height:108px; }
 #app #home.home-reborn .home-deckpanel-name { font-size:16px; }
@@ -175,7 +175,7 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-page[data-page="shop"],#app #home.home-reborn .home-page[data-page="settings"] { width:min(100%,780px);justify-self:center; }; }
 @media(max-height:740px) and (max-width:999px) { #app #home.home-reborn { padding-top:4px;height:calc(100dvh - 84px);padding-bottom:24px; }
 #app #home.home-reborn .home-wrap { grid-template-rows:56px auto;gap:4px; }
-#app #home.home-reborn .home-page[data-page="battle"] { grid-template-rows:40px 48px 100px auto auto 44px; }
+#app #home.home-reborn .home-page[data-page="battle"] { grid-template-rows:auto auto 210px auto auto auto; }
 #app #home.home-reborn .home-battle-heading h1 { font-size:24px; }
 #app #home.home-reborn .home-deckpanel { min-height:74px;padding:5px 0; }
 #app #home.home-reborn .home-mode-picker { min-height:50px; }
@@ -184,9 +184,9 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home.home-reborn .home-tabbar { min-height:64px; }; }
 @media(orientation:landscape) and (max-height:649px) { #app #home.home-reborn { padding:6px 24px 24px; }
 #app #home.home-reborn .home-wrap { width:100%;grid-template-rows:50px auto; }
-#app #home.home-reborn .home-page[data-page="battle"] { grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:38px minmax(50px,1fr) 28px;grid-template-areas:"rules console" "art console" "progress shortcuts";gap:0 24px; }
+#app #home.home-reborn .home-page[data-page="battle"] { grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto 230px auto auto;grid-template-areas:"rules console" "heading console" "art console" "progress console" "shortcuts console";gap:0 24px; }
 #app #home.home-reborn .home-worlds { grid-area:rules;display:flex; }
-#app #home.home-reborn .home-battle-heading { display:none; }
+#app #home.home-reborn .home-battle-heading { display:flex; }
 #app #home.home-reborn .home-hero { grid-area:art; }
 #app #home.home-reborn .home-progress-line { grid-area:progress; }
 #app #home.home-reborn .home-battle-console { grid-area:console; }
@@ -228,8 +228,13 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
 #app #home .embedded-view :is(.collection-body,.settings-content){overflow:visible;max-height:none}
 #app #home .embedded-view :is(.collection-close,.settings-close,.profile-close){display:none}
 #app #home .embedded-view h2{font-size:20px;text-align:left}
-#app #home .home-cpu h2{font-size:15px;margin:12px 0 8px}
-#app #home .home-cpu-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#app #home .home-cpu{margin:10px 0;border:var(--ui-border);border-radius:12px;background:var(--ui-paper-hi);padding:0 10px}
+#app #home .home-cpu>summary{display:flex;align-items:center;gap:8px;min-height:52px;cursor:pointer;font-size:13px;list-style:none}
+#app #home .home-cpu>summary::-webkit-details-marker{display:none}
+#app #home .home-cpu>summary>span:nth-child(2){flex:1}
+#app #home .home-cpu>summary small{font-size:12px;color:var(--ui-muted)}
+#app #home .cpu-current-art{display:flex;width:32px;height:32px;flex:none}
+#app #home .home-cpu-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:4px 0 12px}
 #app #home .cpu-choice{display:grid;justify-items:center;gap:2px;min-width:0;padding:7px 3px;color:var(--ui-ink);border:var(--ui-border);border-radius:12px;background:var(--ui-paper-hi);box-shadow:0 3px 0 #987044;cursor:pointer}
 #app #home .cpu-choice .difficulty-art{width:64px;height:64px}
 #app #home .cpu-choice strong{font-size:14px}
@@ -258,10 +263,15 @@ html.at-title #app[data-home-theme] { width:100%;height:100dvh;max-height:100dvh
  #app #home .home-page[data-page=menu]{max-width:880px;width:100%;justify-self:center}
  #app #home .home-page[data-page=menu] .is-list .home-menu-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 20px}
 }
-@media(max-width:500px){#app #home .home-match-fields{grid-template-columns:1fr}#app #home .cpu-choice .difficulty-art{width:52px;height:52px}#app #home.home-reborn .home-page[data-page=battle]{grid-template-rows:44px 40px 100px auto auto 44px}#app #home.home-reborn .home-worlds{gap:8px}#app #home.home-reborn .home-world{flex:1;min-width:0;padding-inline:4px;font-size:12px;white-space:normal}}
+@media(max-width:500px){#app #home .home-match-fields{grid-template-columns:1fr}#app #home .cpu-choice .difficulty-art{width:52px;height:52px}#app #home.home-reborn .home-page[data-page=battle]{grid-template-rows:auto auto 220px auto auto auto}#app #home.home-reborn .home-worlds{gap:8px}#app #home.home-reborn .home-world{flex:1;min-width:0;padding-inline:4px;font-size:12px;white-space:normal}}
 
 #app #home .home-action-dock{position:fixed;z-index:19;left:20px;right:20px;bottom:calc(94px + env(safe-area-inset-bottom));width:min(calc(100% - 40px),660px);margin:auto}
 #app #home:not([data-tab=battle]) .home-action-dock{display:none}
 @media(max-width:999px) and (min-height:500px){#app #home.home-reborn[data-tab=battle]{height:calc(100dvh - 156px - env(safe-area-inset-bottom))}}
 #app #home .embedded-view>.screen-box>h2,#app #home .embedded-view .collection-head h2{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
 #app #home .embedded-view .collection-head{justify-content:flex-end}
+
+#app #home.home-reborn .home-battle-links .home-menu-group h2{display:none}
+#app #home.home-reborn .home-battle-links .home-menu-grid{grid-template-columns:1fr 1fr;gap:8px;margin:8px 0}
+#app #home.home-reborn .home-battle-links .home-tile{min-height:50px;padding:8px;border:1px solid var(--ui-paper-edge);border-radius:10px;background:var(--ui-paper-hi);gap:8px}
+#app #home.home-reborn .home-battle-links .home-tile-label{font-size:13px}
