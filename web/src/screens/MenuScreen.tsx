@@ -27,7 +27,12 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     selectedSoldierSkin,
     unlockedSkills,
     equipSkin,
+    walletMode,
+    enableServerWallet,
+    disableServerWallet,
   } = useAppStore();
+  const [walletBusy, setWalletBusy] = useState(false);
+  const [walletNote, setWalletNote] = useState<string | null>(null);
   const [subPage, setSubPage] = useState<'main' | 'skins' | 'missions' | 'guide'>('main');
   const [benchBusy, setBenchBusy] = useState(false);
   const [benchResult, setBenchResult] = useState<RustBenchmarkResult | null>(null);
@@ -145,14 +150,16 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
   }
 
   if (subPage === 'missions') {
-    const missions = [
-      { id: 'welcome_gift', title: '王国へようこそ（初陣準備ボーナス）', cur: 1, goal: 1, reward: 150 },
-      { id: 'first_match', title: '初めての出陣を経験する', cur: stats.matchesPlayed, goal: 1, reward: 200 },
-      { id: 'win_three', title: 'バトルで3回勝利する', cur: stats.wins, goal: 3, reward: 500 },
-      { id: 'gacha_ten', title: '王国の宝箱を10回引く', cur: stats.gachaRolls, goal: 10, reward: 300 },
-      { id: 'collect_skins', title: 'スキンを5個集める', cur: ownedSkins.length, goal: 5, reward: 300 },
-      { id: 'unlock_skills', title: 'スキルを3個解放する', cur: unlockedSkills.length, goal: 3, reward: 250 },
-    ];
+    // ミッションの中身は data/v2/economy.json（サーバーも同じものを読んで確かめる）
+    const progressOf: Record<string, number> = {
+      always: 1,
+      matches: stats.matchesPlayed,
+      wins: stats.wins,
+      gachaRolls: stats.gachaRolls,
+      skins: ownedSkins.length,
+      skills: unlockedSkills.length,
+    };
+    const missions = (data?.economy?.missions || []).map((m) => ({ ...m, cur: progressOf[m.kind] ?? 0 }));
 
     return (
       <section
@@ -367,6 +374,40 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 900, paddingLeft: 4 }}>お財布（コイン・所持品）</div>
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.6 }}>
+            {walletMode === 'server'
+              ? 'サーバーに保存しています（この端末のゲスト登録にひもづきます）。'
+              : 'この端末に保存しています。サーバーに保存すると、コインと所持品を書きかえられなくなります。'}
+          </div>
+          {walletMode !== 'server' && (
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)', lineHeight: 1.5 }}>
+              切りかえると、この端末のスキンはサーバーに移ります（1回だけ。ランク報酬は除く）。コインはサーバーの初期値から始まります。CPU対戦の報酬は1日{data?.economy?.matchReward.dailyLimit ?? 10}回までです。別の端末へ引き継ぐ方法は、まだありません。
+            </div>
+          )}
+          <GameButton
+            size="sm"
+            fullWidth
+            variant={walletMode === 'server' ? 'normal-stone' : 'primary-gold'}
+            disabled={walletBusy}
+            onClick={async () => {
+              if (walletMode === 'server') {
+                disableServerWallet();
+                setWalletNote('この端末の保存に戻しました（サーバーの記録は残ります）');
+                return;
+              }
+              setWalletBusy(true);
+              const r = await enableServerWallet();
+              setWalletBusy(false);
+              setWalletNote(r.ok ? 'サーバーに保存するようにしました' : r.reason || '切りかえられませんでした');
+            }}
+          >
+            {walletBusy ? '切りかえ中…' : walletMode === 'server' ? 'この端末の保存に戻す' : 'サーバーに保存する'}
+          </GameButton>
+          {walletNote && <div style={{ fontSize: 12, fontWeight: 800 }}>{walletNote}</div>}
+        </ParchmentSheet>
+
         <div style={{ fontSize: 13, fontWeight: 900, paddingLeft: 4 }}>環境・外遊び設定</div>
         <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>

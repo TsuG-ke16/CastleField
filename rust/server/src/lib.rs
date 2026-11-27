@@ -2,6 +2,7 @@
 
 pub mod ranked;
 pub mod util;
+pub mod wallet;
 
 use std::collections::{HashMap, VecDeque};
 use std::fs;
@@ -66,7 +67,27 @@ pub struct EconomyProfile {
     pub points: i32,
     pub pity_count: u32,
     pub owned_skins: Vec<String>,
+    /// 端末の所持品をもう移したか（1回だけ）
+    #[serde(default)]
+    pub migrated: bool,
+    /// サーバーで数えた試合数・勝利数・ガチャ回数（ミッションの確認に使う）
+    #[serde(default)]
+    pub matches: u32,
+    #[serde(default)]
+    pub wins: u32,
+    #[serde(default)]
+    pub gacha_rolls: u32,
+    /// CPU対戦などの報酬を受け取った日（UTC の通算日）と回数
+    #[serde(default)]
+    pub match_reward_day: i64,
+    #[serde(default)]
+    pub match_reward_count: u32,
+    #[serde(default)]
+    pub claimed_missions: Vec<String>,
 }
+
+/// 最初から持っている見た目の品（ショップにはない）
+pub const DEFAULT_SKINS: [&str; 3] = ["castle-blue", "infantry-blue", "card-back"];
 
 impl Default for EconomyProfile {
     fn default() -> Self {
@@ -75,7 +96,14 @@ impl Default for EconomyProfile {
             coins: 2400,
             points: 350,
             pity_count: 0,
-            owned_skins: vec!["castle-blue".into(), "infantry-blue".into(), "card-back".into()],
+            owned_skins: DEFAULT_SKINS.iter().map(|s| s.to_string()).collect(),
+            migrated: false,
+            matches: 0,
+            wins: 0,
+            gacha_rolls: 0,
+            match_reward_day: 0,
+            match_reward_count: 0,
+            claimed_missions: Vec::new(),
         }
     }
 }
@@ -174,6 +202,8 @@ pub struct AppState {
     pub matchmaker: Mutex<ranked::Matchmaker>,
     /// 今の時刻（ミリ秒）。テストで差しかえる
     pub clock: Arc<dyn Fn() -> i64 + Send + Sync>,
+    pub economy: wallet::EconomyConfig,
+    pub default_skins: Vec<String>,
 }
 
 /// 受け取る人（席）に送ってよい形にする。何を隠すかは js/game/visibility.js と同じ。
@@ -315,6 +345,7 @@ pub fn create_state_with_clock(
     }
     let (base_config, shop_items) = load_config_from_dir(data_dir)?;
     let ranked_cfg = ranked::load_ranked_config(data_dir)?;
+    let economy = wallet::load_economy_config(data_dir)?;
     Ok(Arc::new(AppState {
         started_at: Instant::now(),
         base_config,
@@ -327,6 +358,8 @@ pub fn create_state_with_clock(
         ranked: ranked_cfg,
         matchmaker: Mutex::new(ranked::Matchmaker::default()),
         clock,
+        economy,
+        default_skins: DEFAULT_SKINS.iter().map(|s| s.to_string()).collect(),
     }))
 }
 
@@ -342,6 +375,10 @@ pub fn build_router(state: Arc<AppState>, repo_root: Option<PathBuf>) -> Router 
         .route("/api/economy/profile", post(api_economy_profile))
         .route("/api/economy/gacha", post(api_economy_gacha))
         .route("/api/economy/buy", post(api_economy_buy))
+        .route("/api/economy/wallet", post(wallet::api_wallet))
+        .route("/api/economy/migrate", post(wallet::api_migrate))
+        .route("/api/economy/matchReward", post(wallet::api_match_reward))
+        .route("/api/economy/mission", post(wallet::api_mission))
         .route("/api/account/guest", post(ranked::api_account_guest))
         .route("/api/account/profile", post(ranked::api_account_profile))
         .route("/api/ranked/queue", post(ranked::api_ranked_queue))
@@ -836,7 +873,7 @@ async fn api_economy_profile(State(state): State<Arc<AppState>>, Json(req): Json
     };
     let db = state.db.lock().unwrap();
     let prof = load_profile(&db, &acc.user_id);
-    (StatusCode::OK, Json(json!({ "ok": true, "profile": prof })))
+    (StatusCode::OK, Json(json!({ "ok": true, "wallet": wallet::wallet_value(&state, &prof), "profile": prof })))
 }
 
 #[derive(Deserialize)]
@@ -864,6 +901,7 @@ async fn api_economy_gacha(State(state): State<Arc<AppState>>, Json(req): Json<G
     let mut results = Vec::new();
     for i in 0..count {
         prof.pity_count += 1;
+        prof.gacha_rolls += 1;
         let force_epic = prof.pity_count >= 40;
         let force_rare = count == 10 && i == 9;
         let mut candidates: Vec<&(String, String, String, i32)> = state.shop_items.iter().collect();
@@ -901,7 +939,7 @@ async fn api_economy_gacha(State(state): State<Arc<AppState>>, Json(req): Json<G
         }));
     }
     let _ = save_profile(&db, &prof);
-    (StatusCode::OK, Json(json!({ "ok": true, "results": results, "profile": prof })))
+    (StatusCode::OK, Json(json!({ "ok": true, "results": results, "wallet": wallet::wallet_value(&state, &prof), "profile": prof })))
 }
 
 #[derive(Deserialize)]
@@ -944,5 +982,5 @@ async fn api_economy_buy(State(state): State<Arc<AppState>>, Json(req): Json<Buy
     }
     prof.owned_skins.push(req.item_id);
     let _ = save_profile(&db, &prof);
-    (StatusCode::OK, Json(json!({ "ok": true, "profile": prof })))
+    (StatusCode::OK, Json(json!({ "ok": true, "wallet": wallet::wallet_value(&state, &prof), "profile": prof })))
 }

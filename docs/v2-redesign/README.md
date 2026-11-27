@@ -46,6 +46,7 @@
 | `03-frontend-architecture.md` | **Track C（フロント実装）** | `web/` 技術スタック（Vite/React/TS/Zustand/Motion/R3F/PixiJS/Howler）、コンポーネント契約、GameEngineAdapter、外遊びPWA最適化 |
 | `04-rust-core-and-server.md` | **Track D（Rustコア/WASM）/ Track E（Rustサーバー）** | `rust/` Cargo構成、JSONデータ互換、Gameイベント契約、JS版とのゴールデンテスト、`axum` WebSocket/HTTP API仕様 |
 | `07-phase8-ranked.md` | **全AI（ランク・サーバーを触るとき）** | Phase 8：ランクマッチ（ゲスト本人確認・待ち行列・結果の反映・ランキング）と、一緒に直したサーバーの不具合 |
+| `08-server-wallet.md` | **全AI（コイン・所持品を触るとき）** | v2 のお財布をサーバーで持つ（移行・対戦報酬の上限・ミッション・ランク報酬） |
 | `05-ai-work-orders.md` | **人間（司令塔）向け** | 各AIへそのままコピペして発注できる Track A〜E 別の作業依頼プロンプト＆受け入れ条件 |
 
 ---

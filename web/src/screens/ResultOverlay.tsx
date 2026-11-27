@@ -16,6 +16,8 @@ interface ResultOverlayProps {
   rematchLabel?: string;
   /** ランクマッチのとき：サーバーが決めたランクの変化（届くまでは null） */
   rankedChange?: RankedChange | null;
+  /** 獲得コイン（null は計算中）。省略すると勝ち150・負け40 */
+  coinReward?: number | null;
 }
 
 function RankedPanel({ change }: { change: RankedChange | null }) {
@@ -79,6 +81,7 @@ export function ResultOverlay({
   onHome,
   rematchLabel,
   rankedChange,
+  coinReward,
 }: ResultOverlayProps) {
   return (
     <div
@@ -130,7 +133,7 @@ export function ResultOverlay({
             <span>倒した魔物</span><span className="tabular">{monstersDefeated}</span>
             <span>獲得コイン</span>
             <span className="tabular" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-              <PaintedIcon name="coin" size={14} />+{won ? 150 : 40}
+              <PaintedIcon name="coin" size={14} />{coinReward === null ? '…' : `+${coinReward ?? (won ? 150 : 40)}`}
             </span>
             <span>獲得経験値</span>
             <span className="tabular">+{won ? 85 : 25} XP</span>

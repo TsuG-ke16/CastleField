@@ -91,20 +91,31 @@ async fn health_room_action_and_economy_persistence_work() {
     assert_eq!(gacha["results"].as_array().unwrap().len(), 10);
     assert_eq!(gacha["profile"]["coins"], 1500);
 
+    // ガチャで引いていない、値段のある品を買う（ガチャの乱数しだいで同じ品を引くことがあるため）
+    let shop: Value = serde_json::from_str(&std::fs::read_to_string(root.join("data/shop.json")).unwrap()).unwrap();
+    let owned = gacha["profile"]["ownedSkins"].as_array().unwrap().clone();
+    let (item, price) = shop["items"]
+        .as_object()
+        .unwrap()
+        .iter()
+        .filter(|(id, it)| it["price"].as_i64().is_some_and(|p| p <= 1500) && !owned.contains(&json!(id)))
+        .map(|(id, it)| (id.clone(), it["price"].as_i64().unwrap()))
+        .next()
+        .unwrap();
     let (st, buy) = json_req(
         &app,
         "POST",
         "/api/economy/buy",
-        Some(json!({ "userId": uid, "secret": secret, "itemId": "unit_crimson", "usePoints": false })),
+        Some(json!({ "userId": uid, "secret": secret, "itemId": item, "usePoints": false })),
     )
     .await;
     assert_eq!(st, StatusCode::OK);
-    assert_eq!(buy["ok"], true);
-    assert_eq!(buy["profile"]["coins"], 1200);
+    assert_eq!(buy["ok"], true, "{buy}");
+    assert_eq!(buy["profile"]["coins"], 1500 - price);
 
     let (st, prof) = json_req(&app, "POST", "/api/economy/profile", Some(json!({ "userId": uid, "secret": secret }))).await;
     assert_eq!(st, StatusCode::OK);
-    assert_eq!(prof["profile"]["coins"], 1200);
+    assert_eq!(prof["profile"]["coins"], 1500 - price);
 
     let _ = std::fs::remove_file(&tmp_db);
 }

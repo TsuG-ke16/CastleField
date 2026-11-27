@@ -141,6 +141,12 @@ async fn ranked_match_settles_once_and_counts_placement() {
     assert_eq!((sa["matches"].clone(), sa["wins"].clone(), sa["placementLeft"].clone()), (json!(1), json!(1), json!(4)));
     assert_eq!((sb["matches"].clone(), sb["wins"].clone(), sb["placementLeft"].clone()), (json!(1), json!(0), json!(4)));
     assert_eq!(sa["lastChange"]["result"], "win");
+    // ランクマッチの報酬はサーバーが渡す（勝ち150・負け40。data/v2/economy.json）
+    assert_eq!(sa["lastChange"]["coins"], 150);
+    assert_eq!(sb["lastChange"]["coins"], 40);
+    let wa = post(&e, "/api/economy/wallet", &a).await;
+    assert_eq!(wa["coins"], 2400 + 150);
+    assert_eq!((wa["matches"].clone(), wa["wins"].clone()), (json!(1), json!(1)));
     assert_eq!(sa["lastChange"]["placement"], true);
     assert_eq!(sb["lastChange"]["result"], "loss");
     let _ = pb;

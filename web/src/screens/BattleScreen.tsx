@@ -78,7 +78,7 @@ export function BattleScreen() {
     quality,
     mulliganEnabled,
     exitBattle,
-    grantRewardCoins,
+    reportMatchReward,
     recordMatchResult,
     rankedTicket,
     setRankedLobbyRequested,
@@ -303,10 +303,10 @@ export function BattleScreen() {
             if (won) {
               soundManager.play('victory');
               fxRef.current?.burst('victory');
-              grantRewardCoins(150);
+              reportMatchReward(true, playMode === 'ranked');
             } else {
               soundManager.play('defeat');
-              grantRewardCoins(40);
+              reportMatchReward(false, playMode === 'ranked');
             }
           }
           const finalSt = adapter.getState(myS);
@@ -353,7 +353,7 @@ export function BattleScreen() {
     onlinePassphrase,
     onlineServerUrl,
     rankedTicket,
-    grantRewardCoins,
+    reportMatchReward,
     recordMatchResult,
   ]);
 
@@ -1244,6 +1244,13 @@ export function BattleScreen() {
           }}
           rematchLabel={playMode === 'ranked' ? '次の相手を探す' : undefined}
           rankedChange={playMode === 'ranked' ? rankedChange : undefined}
+          coinReward={
+            playMode === 'ranked'
+              ? (rankedChange?.coins ?? null)
+              : summary.winner === activeSide
+                ? (data?.economy?.matchReward.win ?? 150)
+                : (data?.economy?.matchReward.loss ?? 40)
+          }
           onHome={exitBattle}
         />
       )}

@@ -26,6 +26,7 @@ export async function loadAllGameData(): Promise<LoadedGameData> {
     gacha,
     skillTree,
     stamps,
+    economy,
   ] = await Promise.all([
     fetchJson<LoadedGameData['cards']>('/data/cards.json'),
     fetchJson<LoadedGameData['rules']>('/data/rules.json'),
@@ -40,6 +41,7 @@ export async function loadAllGameData(): Promise<LoadedGameData> {
     fetchJson<LoadedGameData['gacha']>('/data/gacha.json'),
     fetchJson<LoadedGameData['skillTree']>('/data/classic/skilltree.json'),
     fetchJson<StampDef[]>('/data/stamps.json').catch(() => [] as StampDef[]),
+    fetchJson<LoadedGameData['economy']>('/data/v2/economy.json'),
   ]);
 
   cachedData = {
@@ -53,6 +55,7 @@ export async function loadAllGameData(): Promise<LoadedGameData> {
     stages,
     weather,
     stamps,
+    economy,
     shop,
     gacha,
     skillTree,

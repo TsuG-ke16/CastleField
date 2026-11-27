@@ -265,6 +265,10 @@ pub fn apply_match(state: &AppState, users: [(&str, bool); 2], match_id: &str) -
             "demoted": demoted,
             "scaled": ch.scale < 1.0,
         });
+        // ランクマッチの報酬（サーバーが決着を確かめて渡す）
+        let coins = crate::wallet::credit_ranked(state, &db, uid, won);
+        let mut change = change;
+        change["coins"] = json!(coins);
         recs[i].last_change = Some(change.clone());
         out.insert(uid.to_string(), change);
     }

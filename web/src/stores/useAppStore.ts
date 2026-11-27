@@ -3,6 +3,10 @@ import type { AppTab, CpuLevel, LoadedGameData, ModeId, PlayMode, QualityMode } 
 import { loadAllGameData } from '../engine/dataLoader';
 import { soundManager } from '../audio/soundManager';
 import type { PublicProfile, RankedSummary } from '../engine/rankedClient';
+import { economyApi, type ServerWallet } from '../engine/economyClient';
+
+/** お財布（コイン・交換pt・所持品）をどこで持つか。server はサーバーが正（端末の値は表示用の写し） */
+export type WalletMode = 'local' | 'server';
 import type { GameState } from '../engine/types';
 
 /** ランクマッチで成立した試合の席（サーバーが発行した鍵）。対戦画面がこれでつなぐ */
@@ -85,6 +89,7 @@ interface SavedSlice {
   engineMode?: EngineMode;
   stats?: PlayerStats;
   claimedMissions?: string[];
+  walletMode?: WalletMode;
 }
 
 function loadSaved(): SavedSlice {
@@ -124,6 +129,7 @@ function persistState(s: AppStoreState): void {
       engineMode: s.engineMode,
       stats: s.stats,
       claimedMissions: s.claimedMissions,
+      walletMode: s.walletMode,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch {
@@ -163,6 +169,9 @@ interface AppStoreState {
   stats: PlayerStats;
   claimedMissions: string[];
   inBattle: boolean;
+  walletMode: WalletMode;
+  /** お財布の操作の結果の知らせ（失敗の理由・上限など）。画面が出して消す */
+  walletMessage: string | null;
   rankedTicket: RankedTicket | null;
   rankedSummary: RankedSummary | null;
   /** ホームに戻ったら、ランクマッチの待合室を開く */
@@ -206,6 +215,17 @@ interface AppStoreState {
   grantRewardCoins: (amount: number) => void;
   recordMatchResult: (won: boolean, cardsPlayed: number) => void;
   claimMissionReward: (missionId: string, rewardCoins: number) => boolean;
+  /** サーバーのお財布をこの端末に写す */
+  applyWallet: (w: ServerWallet) => void;
+  /** お財布をサーバーに切りかえる（端末の所持品を1回だけ移す。コインは移らない） */
+  enableServerWallet: () => Promise<{ ok: boolean; reason?: string }>;
+  disableServerWallet: () => void;
+  refreshWallet: () => Promise<void>;
+  /** ガチャ（お財布の場所に合わせて、端末かサーバーで引く） */
+  rollGacha: (count: 1 | 10) => Promise<GachaRecord[] | null>;
+  /** 試合の報酬（ranked はサーバーが決着で渡すので、ここでは読み直すだけ） */
+  reportMatchReward: (won: boolean, ranked: boolean) => void;
+  setWalletMessage: (msg: string | null) => void;
 }
 
 const initial = loadSaved();
@@ -253,6 +273,8 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     stats: initial.stats ?? { matchesPlayed: 0, wins: 0, gachaRolls: 0, cardsPlayed: 0 },
     claimedMissions: initial.claimedMissions ?? [],
     inBattle: false,
+    walletMode: initial.walletMode ?? 'local',
+    walletMessage: null,
     rankedTicket: null,
     rankedSummary: null,
     rankedLobbyRequested: false,
@@ -395,7 +417,9 @@ export const useAppStore = create<AppStoreState>((set, get) => {
         : Array.isArray(data.shop?.items)
           ? data.shop.items
           : Object.entries(data.shop?.items || {}).map(([id, v]) => ({ id, ...v }));
-      const pool = rawItems.length > 0 ? rawItems : [
+      // ランク報酬（シーズン報酬だけでもらえる品）はガチャから出さない
+      const gachaItems = rawItems.filter((x) => !(x as { rankReward?: string | null }).rankReward);
+      const pool = gachaItems.length > 0 ? gachaItems : [
         { id: 'unit_crimson', name: '紅蓮の兵', category: 'soldier', rarity: 'rare' },
         { id: 'castle_crimson', name: '紅蓮の城', category: 'castle', rarity: 'epic' },
         { id: 'castle_gold', name: '黄金の城', category: 'castle', rarity: 'legendary' },
@@ -451,6 +475,19 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       if (add.length) savePatch({ ownedSkins: [...owned, ...add] });
     },
     buyShopItem: (itemId, price, usePoints = false) => {
+      if (get().walletMode === 'server') {
+        const { onlineServerUrl, playerName } = get();
+        economyApi
+          .buy(onlineServerUrl, playerName, itemId, usePoints)
+          .then((r) => {
+            if (r.ok) {
+              soundManager.play('coin');
+              get().applyWallet(r.wallet);
+            } else set({ walletMessage: r.reason });
+          })
+          .catch((e) => set({ walletMessage: e instanceof Error ? e.message : String(e) }));
+        return true;
+      }
       const { coins, points, ownedSkins, data } = get();
       if (ownedSkins.includes(itemId)) return false;
       // 売り物でない品（ランク報酬・ガチャ限定。shop.json の price が null）は買えない
@@ -513,6 +550,19 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     },
 
     claimMissionReward: (missionId, rewardCoins) => {
+      if (get().walletMode === 'server') {
+        const { onlineServerUrl, playerName } = get();
+        economyApi
+          .mission(onlineServerUrl, playerName, missionId)
+          .then((r) => {
+            if (r.ok) {
+              soundManager.play('coin');
+              get().applyWallet(r);
+            } else set({ walletMessage: r.reason });
+          })
+          .catch((e) => set({ walletMessage: e instanceof Error ? e.message : String(e) }));
+        return true;
+      }
       const claimed = get().claimedMissions;
       if (claimed.includes(missionId)) return false;
       soundManager.play('coin');
@@ -522,5 +572,97 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       });
       return true;
     },
+
+    applyWallet: (w) => {
+      savePatch({
+        coins: w.coins,
+        points: w.points,
+        pityCount: w.pityCount,
+        ownedSkins: w.ownedSkins,
+        claimedMissions: w.claimedMissions,
+        // サーバーの所持品にないフレームは外す（端末だけで持っていたものは移らない）
+        selectedIconFrame: get().selectedIconFrame && w.ownedSkins.includes(get().selectedIconFrame as string) ? get().selectedIconFrame : null,
+      });
+    },
+
+    enableServerWallet: async () => {
+      const { onlineServerUrl, playerName, ownedSkins } = get();
+      try {
+        const m = await economyApi.migrate(onlineServerUrl, playerName, ownedSkins);
+        const w = m.ok ? m : await economyApi.wallet(onlineServerUrl, playerName);
+        if (!w.ok) return { ok: false, reason: w.reason };
+        get().applyWallet(w);
+        savePatch({ walletMode: 'server' });
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, reason: e instanceof Error ? e.message : String(e) };
+      }
+    },
+
+    disableServerWallet: () => {
+      // 端末のお財布に戻す（今の写しから続ける。サーバーの値はそのまま残る）
+      savePatch({ walletMode: 'local' });
+    },
+
+    refreshWallet: async () => {
+      if (get().walletMode !== 'server') return;
+      const { onlineServerUrl, playerName } = get();
+      try {
+        const w = await economyApi.wallet(onlineServerUrl, playerName);
+        if (w.ok) get().applyWallet(w);
+      } catch {
+        // つながらないときは、写しのまま
+      }
+    },
+
+    rollGacha: async (count) => {
+      if (get().walletMode !== 'server') return get().spendCoinsAndRollGacha(count);
+      const { onlineServerUrl, playerName } = get();
+      try {
+        const r = await economyApi.gacha(onlineServerUrl, playerName, count);
+        if (!r.ok) {
+          set({ walletMessage: r.reason });
+          return null;
+        }
+        soundManager.play('coin');
+        get().applyWallet(r.wallet);
+        const st = get().stats;
+        savePatch({
+          gachaHistory: [...r.results, ...get().gachaHistory].slice(0, 40),
+          stats: { ...st, gachaRolls: st.gachaRolls + count },
+        });
+        return r.results;
+      } catch (e) {
+        set({ walletMessage: e instanceof Error ? e.message : String(e) });
+        return null;
+      }
+    },
+
+    reportMatchReward: (won, ranked) => {
+      const { walletMode, data, onlineServerUrl, playerName } = get();
+      if (walletMode !== 'server') {
+        // 端末のお財布：data/v2/economy.json の報酬
+        const r = data?.economy?.matchReward;
+        get().grantRewardCoins(won ? (r?.win ?? 150) : (r?.loss ?? 40));
+        return;
+      }
+      if (ranked) {
+        void get().refreshWallet();
+        return;
+      }
+      economyApi
+        .matchReward(onlineServerUrl, playerName, won)
+        .then((r) => {
+          if (!r.ok) {
+            set({ walletMessage: r.reason });
+            return;
+          }
+          get().applyWallet(r);
+          if (!r.granted) set({ walletMessage: '今日の対戦報酬は上限に達しました（ランクマッチの報酬は上限なし）' });
+        })
+        .catch(() => set({ walletMessage: 'サーバーにつながらず、報酬を受け取れませんでした' }));
+    },
+
+    setWalletMessage: (walletMessage) => set({ walletMessage }),
   };
 });

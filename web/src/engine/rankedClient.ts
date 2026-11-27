@@ -43,6 +43,8 @@ export interface RankedChange {
   promoted: boolean;
   demoted: boolean;
   scaled: boolean;
+  /** ランクマッチの報酬のコイン（サーバーが渡した量） */
+  coins?: number;
 }
 
 export interface RankedSummary {

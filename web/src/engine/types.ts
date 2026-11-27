@@ -161,6 +161,19 @@ export interface StampDef {
   label: string;
 }
 
+/** data/v2/economy.json：v2 のお財布の数値 */
+export interface EconomyDef {
+  matchReward: { win: number; loss: number; dailyLimit: number };
+  rankedReward: { win: number; loss: number };
+  missions: Array<{
+    id: string;
+    title: string;
+    kind: 'always' | 'matches' | 'wins' | 'gachaRolls' | 'skins' | 'skills';
+    goal: number;
+    reward: number;
+  }>;
+}
+
 export interface LoadedGameData {
   cards: Record<string, CardDef>;
   rules: Record<string, unknown>;
@@ -172,6 +185,7 @@ export interface LoadedGameData {
   stages: Record<string, { name: string; icon?: string; description?: string; element?: string }>;
   weather: Record<string, { name: string; description?: string }>;
   stamps: StampDef[];
+  economy: EconomyDef;
   shop: { items: Record<string, Omit<ShopItem, 'id'>> | ShopItem[] } | ShopItem[];
   gacha: Record<string, unknown>;
   skillTree: {

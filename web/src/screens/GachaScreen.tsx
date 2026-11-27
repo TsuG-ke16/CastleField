@@ -9,13 +9,17 @@ import { ParchmentSheet, RibbonBanner } from '../components/ui/Surfaces';
 import styles from './GachaScreen.module.css';
 
 export function GachaScreen() {
-  const { data, coins, points, pityCount, quality, gachaHistory, spendCoinsAndRollGacha } = useAppStore();
+  const { data, coins, points, pityCount, quality, gachaHistory, rollGacha, walletMode } = useAppStore();
+  const [busy, setBusy] = useState(false);
   const [opening, setOpening] = useState(false);
   const [rewards, setRewards] = useState<Array<{ id: string; name: string; rarity: string; isNew: boolean }> | null>(null);
   const [subModal, setSubModal] = useState<'none' | 'rates' | 'history'>('none');
 
-  const triggerRoll = (count: 1 | 10) => {
-    const rolled = spendCoinsAndRollGacha(count);
+  const triggerRoll = async (count: 1 | 10) => {
+    if (busy) return;
+    setBusy(true);
+    const rolled = await rollGacha(count);
+    setBusy(false);
     if (!rolled) return;
     setOpening(true);
     setTimeout(() => {
@@ -34,6 +38,7 @@ export function GachaScreen() {
           <h1 className={styles.title}>王国の宝箱</h1>
           <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--cf-ink-muted)' }} className="tabular">
             コイン {coins.toLocaleString()} ・ 交換pt {points.toLocaleString()}
+            {walletMode === 'server' ? '（サーバー）' : ''}
           </div>
         </div>
         <div className={styles.utilIcons}>

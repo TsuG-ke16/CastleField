@@ -56,6 +56,9 @@ export function App() {
     equipSkin,
     data,
     onlineServerUrl,
+    refreshWallet,
+    walletMessage,
+    setWalletMessage,
     setPlayMode,
     setOnlinePassphrase,
     setSelectedStageId,
@@ -89,6 +92,18 @@ export function App() {
   useEffect(() => {
     init();
   }, [init]);
+
+  // お財布をサーバーで持っているなら、起動したときに読み直す
+  useEffect(() => {
+    if (!loading) void refreshWallet();
+  }, [loading, refreshWallet]);
+
+  // お財布の知らせ（失敗の理由・上限）は少し出して消す
+  useEffect(() => {
+    if (!walletMessage) return;
+    const t = window.setTimeout(() => setWalletMessage(null), 3200);
+    return () => window.clearTimeout(t);
+  }, [walletMessage, setWalletMessage]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -200,6 +215,29 @@ export function App() {
         <Suspense fallback={<RouteFallback />}>
           <SkillTreeScreen onBack={() => setSkillTreeOpen(false)} />
         </Suspense>
+      )}
+
+      {walletMessage && (
+        <div
+          role="status"
+          style={{
+            position: 'fixed',
+            left: '50%',
+            bottom: 'calc(92px + var(--cf-safe-bottom, 0px))',
+            transform: 'translateX(-50%)',
+            zIndex: 80,
+            maxWidth: 'calc(100% - 32px)',
+            padding: '8px 14px',
+            borderRadius: 12,
+            border: '2px solid #4a2e1a',
+            background: '#fff6dc',
+            fontSize: 13,
+            fontWeight: 900,
+            boxShadow: 'var(--cf-shadow-float)',
+          }}
+        >
+          {walletMessage}
+        </div>
       )}
 
       {profileOpen && (
