@@ -54,7 +54,7 @@ await step('ホームの4陣営モードから、カジュアル対戦の部屋�
   await page.locator('#title-form:not([hidden])').waitFor();
   await page.fill('#title-name', 'テスト');
   await page.fill('#title-pass', `beta-cards-${Date.now()}`);
-  await page.click('#title-join');
+  await page.click('#home .home-start');
   await page.getByRole('button', { name: '陣営の説明' }).waitFor();
 });
 

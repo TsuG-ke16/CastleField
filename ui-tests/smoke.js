@@ -63,7 +63,7 @@ try{
   await page.evaluate(async()=>{(await import('./js/ui/config.js')).UI_CONFIG.speed=.03});
   await press('#menu-open');await press('#menu-title-btn');
   assert.ok(await page.locator('#home').isVisible(),'ホームを表示');await snapshot('home');
-  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await press('#home .home-mode[data-mode="solo"]');await press('#home [data-act="start"]');await press('.level[data-level="hard"]');
+  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await press('#home .home-mode[data-mode="solo"]');await press('.cpu-choice[data-level="hard"]');await press('#home [data-act="start"]');
   await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:60000});
   await page.evaluate(()=>{window.__uiSmokeCards=0;const id=document.querySelector('#app').dataset.viewer;castlefield.game().on('cardPlayed',e=>{if(e.playerId===id)window.__uiSmokeCards++})});
   const deadline=Date.now()+180000;let deployed=false,ended=false,mulliganShown=false;

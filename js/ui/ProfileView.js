@@ -1,3 +1,4 @@
+import { presentView, dismissView } from './viewPlacement.js';
 import { profileArt } from './profileArt.js';
 // プロフィール画面：自分の情報・戦績・最近の対戦・アイコンと公開設定・レベル報酬の受け取り。
 // 値はすべてサーバーから受け取って表示する（ここで経験値や勝敗を変えることはできない）。文字は textContent で入れる。
@@ -15,8 +16,8 @@ const ago = (t) => {
 };
 
 export class ProfileView {
-  constructor({ toast = () => {}, onChanged = () => {} } = {}) {
-    this.toast = toast; this.onChanged = onChanged;
+  constructor({ toast = () => {}, onChanged = () => {}, getLocalProfile = () => ({}), onLocalName = () => {} } = {}) {
+    this.toast = toast; this.onChanged = onChanged;this.getLocalProfile=getLocalProfile;this.onLocalName=onLocalName;
     const box = this.box = document.createElement('div');
     box.id = 'profile'; box.className = 'screen dim'; box.hidden = true;
     box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'profile-title');
@@ -72,11 +73,24 @@ export class ProfileView {
     });
   }
 
-  async open(userId = null) {
-    this.box.hidden = false;
+  async open(userId = null, host = null) {
+    if(host)this.host=host;
+    if(userId===null&&this.box.classList.contains('embedded-view')&&!host)host=this.host;
+    presentView(this,host);
+    const request=this.request=Symbol();
     this.part('state').hidden = false; this.part('state').textContent = '読み込み中…';
     this.part('body').hidden = true;
-    this.box.querySelector('.profile-close').focus({ preventScroll: true });
+    if(!host)this.box.querySelector('.profile-close').focus({ preventScroll: true });
+    if(!userId&&(!account.enabled||!account.user)){
+      const local=this.getLocalProfile();this.part('state').textContent=local.record||'この端末のプロフィール';
+      const form=document.createElement('form');form.className='profile-local-name';
+      const label=document.createElement('label');label.textContent='あなたの名前';
+      const input=document.createElement('input');input.maxLength=16;input.value=local.name??'';input.autocomplete='nickname';label.append(input);
+      const save=document.createElement('button');save.type='submit';save.className='small-btn';save.textContent='名前を保存';form.append(label,save);
+      form.addEventListener('submit',e=>{e.preventDefault();this.onLocalName(input.value.trim());this.toast('名前を保存しました','info')});
+      this.part('state').append(form);return;
+    }
+
     try {
       const [p, h, home] = await Promise.all([
         account.api('GET', userId ? `/api/profile/user/${userId}` : '/api/profile/me'),
@@ -84,13 +98,15 @@ export class ProfileView {
         userId ? null : account.api('GET', '/api/level-rewards'),
       ]);
       if (!p.json?.ok) throw new Error('profile');
+      if(this.request!==request)return;
       this.render(p.json.profile, h?.json, home?.json);
     } catch {
+      if(this.request!==request)return;
       this.part('state').textContent = 'プロフィールを読み込めませんでした。つながってから、もう一度開いてください';
     }
   }
 
-  close() { this.box.hidden = true; }
+  close() { dismissView(this); }
 
   render(pf, homeJson, rewardsJson) {
     const p = this.part;

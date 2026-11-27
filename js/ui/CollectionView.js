@@ -1,3 +1,4 @@
+import { presentView, dismissView } from './viewPlacement.js';
 // ショップ・ガチャ・所持品（装備）の画面。価格・確率・景品はサーバーの値を表示するだけ（ここで残高や景品を変えることはできない）。
 // 景品はすべて見た目だけで、ランクマッチの勝敗には影響しない。名前などは textContent で入れる。
 import { account } from './Account.js';
@@ -20,8 +21,7 @@ export class CollectionView {
     box.innerHTML = `<div class="screen-box parchment collection-box">
       <header class="collection-head"><h2 id="collection-title">ショップ</h2>
         <span class="collection-wallet" data-part="wallet" aria-live="polite"></span></header>
-      <div class="social-tabs collection-tabs" role="tablist" data-part="tabs"></div>
-      <div class="collection-slots" role="tablist" data-part="slots"></div>
+      <div class="collection-slots" role="group" aria-label="アイテムの種類" data-part="slots"></div>
       <div class="collection-body" data-part="body"></div>
       <p class="collection-msg" data-part="msg" role="status"></p>
       <button type="button" class="plank-btn collection-close">閉じる</button>
@@ -31,21 +31,16 @@ export class CollectionView {
     box.querySelector('.collection-close').addEventListener('click', () => this.close());
     box.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const r = this.part('body').querySelector('.gacha-reveal'); if (r) r.remove(); else this.close(); } });
     box.addEventListener('click', (e) => this.onClick(e));
+    account.onChange(()=>{if(this.box.getClientRects().length)this.load()});
   }
 
-  async open(tab = 'shop') {
+  async open(tab = 'shop', host = null) {
     this.tab = tab; this.say('');
-    this.box.hidden = false;
-    this.box.querySelector('.collection-close').focus({ preventScroll: true });
+    presentView(this, host);
+    if(!host)this.box.querySelector('.collection-close').focus({ preventScroll: true });
     await this.load();
   }
-  /** ホームの「1回・10連」から：ガチャの画面を開いて、そのまま同じ回数を引く（コインが足りなければ、画面に足りない数が出る） */
-  async openAndPull(count) {
-    await this.open('gacha');
-    const btn = this.box.querySelector(`[data-act=pull][data-count="${count}"]`);
-    if (btn && !btn.disabled) btn.click();
-  }
-  close() { this.box.hidden = true; }
+  close() { dismissView(this); }
   say(t, bad = false) { const m = this.part('msg'); m.textContent = t; m.classList.toggle('bad', bad); }
 
   async call(method, path, body) {
@@ -55,29 +50,28 @@ export class CollectionView {
   }
 
   async load() {
+    const request=this.request=Symbol();
+    if(!account.enabled||!account.user){this.part('body').replaceChildren(el('p','collection-empty','オンラインにつながると利用できます。ひとりで遊ぶ・同じ端末の対戦はオフラインでも遊べます。'));this.part('slots').replaceChildren();this.part('wallet').replaceChildren();return;}
     this.part('body').replaceChildren(el('p', 'collection-empty', '読み込み中…'));
     const [shop, gacha] = await Promise.all([this.call('GET', '/api/shop'), this.call('GET', '/api/gacha/info')]);
+    if(this.request!==request)return;
     if (!shop || !gacha) { this.part('body').replaceChildren(el('p', 'collection-empty', '読み込めませんでした。つながってから、もう一度開いてください')); return; }
     this.shop = shop; this.gacha = gacha;
     this.render();
   }
 
   render() {
-    const titles = { shop: 'ショップ', gacha: 'ガチャ', collection: 'スキン・所持品' };
+    const titles = { shop: 'ショップ', gacha: 'ガチャ', collection: 'スキン装備' };
     this.box.querySelector('h2').textContent = titles[this.tab];
     const w = this.part('wallet'); w.replaceChildren();
     const coin = el('span', 'collection-coin'); const ci = new Image(); ci.src = 'assets/ui/icon-coin.png'; ci.alt = 'コイン'; ci.width = 20; ci.height = 20;
     coin.append(ci, el('b', null, String(this.shop.coins)));
     w.append(coin);
     if (this.tab !== 'shop') w.append(el('span', 'collection-points', `交換ポイント ${this.shop.points}`));
-    const tabs = this.part('tabs'); tabs.replaceChildren();
-    for (const [id, label] of [['shop', 'ショップ'], ['gacha', 'ガチャ'], ['collection', '所持品']]) {
-      const t = el('button', 'social-tab raw-btn', label); t.type = 'button'; t.dataset.tab = id; t.setAttribute('role', 'tab'); t.setAttribute('aria-selected', String(this.tab === id)); tabs.append(t);
-    }
     const slots = this.part('slots'); slots.replaceChildren();
     slots.hidden = this.tab === 'gacha';
     for (const s of SLOT_ORDER) {
-      const b = el('button', 'collection-slot raw-btn', this.shop.slots[s]); b.type = 'button'; b.dataset.slot = s; b.setAttribute('aria-selected', String(this.slot === s)); slots.append(b);
+      const b = el('button', 'collection-slot raw-btn', this.shop.slots[s]); b.type = 'button'; b.dataset.slot = s; b.setAttribute('aria-pressed', String(this.slot === s)); slots.append(b);
     }
     const body = this.part('body'); body.replaceChildren();
     ({ shop: () => this.renderShop(body), gacha: () => this.renderGacha(body), collection: () => this.renderCollection(body) })[this.tab]();
@@ -112,6 +106,7 @@ export class CollectionView {
       else if (it.buyable) grid.append(this.card(it, { action: 'buy', label: `買う　${it.price}`, disabled: this.shop.coins < it.price, note: this.shop.coins < it.price ? `あと ${it.price - this.shop.coins} コイン` : '' }));
       else grid.append(this.card(it, { note: 'ガチャか交換で手に入ります' }));
     });
+    this.renderExchange(body);
     body.append(el('p', 'collection-note', 'コインは、対戦（オンライン）で遊ぶと増えます。景品は見た目だけで、対戦の強さには影響しません。'));
   }
 
@@ -122,8 +117,24 @@ export class CollectionView {
     body.append(el('p', 'collection-note', '装備したスキンは、対戦中に相手にも見えます。持っていないスキンは表示されません（標準の見た目になります）。'));
   }
 
+  renderExchange(body) {
+    const g=this.gacha;
+    // 交換
+    const ex = el('details', 'gacha-exchange'); ex.append(el('summary', null, `交換ポイント ${this.shop.points} で景品を選ぶ`));
+    const grid = el('div', 'item-grid');
+    for (const it of g.items.filter((i) => !i.owned && i.gacha)) {
+      const cost = g.exchangeCost[it.rarity];
+      grid.append(this.card(it, { action: 'exchange', label: `${cost} ポイント`, disabled: this.shop.points < cost }));
+    }
+    if (!grid.childElementCount) grid.append(el('p', 'collection-empty', 'ガチャ限定の景品はすべて持っています'));
+    ex.append(grid); body.append(ex);
+  }
+
   renderGacha(body) {
     const g = this.gacha;
+    const showcase=el('div','gacha-showcase');
+    for(const [src,name] of [['castle-shadow','影の城'],['castle-gold','黄金の城'],['unit-gold','黄金の兵']]){const img=new Image();img.src=`assets/skins/${src}.png`;img.alt=name;showcase.append(img)}
+    body.append(showcase);
     const head = el('div', 'gacha-head');
     head.append(el('strong', null, g.banner.name), el('small', null, `天井：エピック以上が出ないまま ${g.pity.epicAt} 回で確定（いま ${g.pity.sinceEpic} 回）　10連はレア以上が1つ確定`));
     body.append(head);
@@ -156,15 +167,6 @@ export class CollectionView {
     }
     rates.append(table, el('p', 'collection-note', `重複したときは、持っている景品はそのまま残り、交換ポイントになります（${Object.entries(g.duplicatePoints).map(([r, n]) => `${RARITY_NAME[r]} ${n}`).join('・')}）。`));
     body.append(rates);
-    // 交換
-    const ex = el('details', 'gacha-exchange'); ex.append(el('summary', null, `交換ポイント ${this.shop.points} で景品を選ぶ`));
-    const grid = el('div', 'item-grid');
-    for (const it of g.items.filter((i) => !i.owned && i.gacha)) {
-      const cost = g.exchangeCost[it.rarity];
-      grid.append(this.card(it, { action: 'exchange', label: `${cost} ポイント`, disabled: this.shop.points < cost }));
-    }
-    if (!grid.childElementCount) grid.append(el('p', 'collection-empty', 'ガチャ限定の景品はすべて持っています'));
-    ex.append(grid); body.append(ex);
     // 履歴
     const hist = el('details', 'gacha-history'); hist.append(el('summary', null, '履歴'));
     hist.addEventListener('toggle', async () => {
@@ -180,8 +182,6 @@ export class CollectionView {
   }
 
   async onClick(e) {
-    const tab = e.target.closest('.social-tab[data-tab]');
-    if (tab) { this.tab = tab.dataset.tab; this.say(''); this.render(); return; }
     const slot = e.target.closest('.collection-slot');
     if (slot) { this.slot = slot.dataset.slot; this.render(); return; }
     const btn = e.target.closest('[data-act]');
@@ -200,7 +200,7 @@ export class CollectionView {
       if (r) { this.toast(`${r.item.name} と交換しました`, 'info'); await this.reload(); }
     } else if (act === 'pull') {
       const r = await this.call('POST', '/api/gacha/pull', { count: Number(btn.dataset.count) });
-      if (r) { this.reveal(r.results); await this.reload(false); }
+      if (r) { if(this.tab==='gacha')this.reveal(r.results);else this.toast('ガチャの景品を受け取りました','info'); await this.reload(false); }
     }
     btn.disabled = false;
   }
@@ -245,7 +245,7 @@ export class CollectionView {
       if (this.reducedMotion() || matchMedia('(prefers-reduced-motion: reduce)').matches) wrap.classList.add('all');
       skip.focus({ preventScroll: true });
     }, { once: true }); skip.type = 'button';
-    skip.addEventListener('click', (e) => { e.stopPropagation(); wrap.remove(); });
+    skip.addEventListener('click', (e) => { e.stopPropagation(); wrap.remove();this.part('body').querySelector('[data-act=pull]')?.focus({preventScroll:true}); });
     wrap.addEventListener('click', () => wrap.classList.add('all'));
     wrap.append(capsule, launch, grid, hint, skip);
     this.part('body').prepend(wrap);

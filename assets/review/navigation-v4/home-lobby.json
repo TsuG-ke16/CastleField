@@ -1,0 +1,100 @@
+{
+  "report": [
+    {
+      "width": 375,
+      "height": 812,
+      "overflow": false,
+      "start": {
+        "top": 660,
+        "bottom": 718,
+        "height": 58
+      },
+      "nav": {
+        "top": 722,
+        "bottom": 812
+      },
+      "startClickable": true,
+      "smallTargets": [],
+      "orientation": "horizontal",
+      "normalFlows": true,
+      "keyboard": true,
+      "nativeSheetFocus": true
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "overflow": false,
+      "start": {
+        "top": 692,
+        "bottom": 750,
+        "height": 58
+      },
+      "nav": {
+        "top": 754,
+        "bottom": 844
+      },
+      "startClickable": true,
+      "smallTargets": [],
+      "orientation": "horizontal",
+      "normalFlows": true,
+      "keyboard": true,
+      "nativeSheetFocus": true
+    },
+    {
+      "width": 430,
+      "height": 932,
+      "overflow": false,
+      "start": {
+        "top": 780,
+        "bottom": 838,
+        "height": 58
+      },
+      "nav": {
+        "top": 842,
+        "bottom": 932
+      },
+      "startClickable": true,
+      "smallTargets": [],
+      "orientation": "horizontal",
+      "normalFlows": true,
+      "keyboard": true,
+      "nativeSheetFocus": true
+    },
+    {
+      "width": 1278,
+      "height": 800,
+      "overflow": false,
+      "start": {
+        "top": 657,
+        "bottom": 721,
+        "height": 64
+      },
+      "nav": {
+        "top": 142,
+        "bottom": 558
+      },
+      "startClickable": true,
+      "smallTargets": [],
+      "orientation": "vertical",
+      "normalFlows": true,
+      "keyboard": true,
+      "nativeSheetFocus": true
+    }
+  ],
+  "factionFlow": {
+    "id": "p2",
+    "deckId": "dragon",
+    "hand": [
+      "fac_dragon_thunder_spear",
+      "fac_dragon_bolt",
+      "fac_dragon_thunder_whelp",
+      "fac_dragon_mage",
+      "fac_dragon_ash_veil"
+    ],
+    "opponents": [
+      "demon"
+    ]
+  },
+  "selectedDeckMatches": true,
+  "errors": []
+}

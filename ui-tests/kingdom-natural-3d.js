@@ -9,7 +9,7 @@ import { spawn } from 'node:child_process';
 const require=createRequire(import.meta.url);
 const {chromium}=require('playwright');
 const root=fileURLToPath(new URL('../',import.meta.url));
-const artifacts=resolve(root,'assets/review/kingdom-fantasy-v3/natural-3d');mkdirSync(artifacts,{recursive:true});
+const artifacts=resolve(root,process.env.UI_REVIEW_DIR??'assets/review/kingdom-fantasy-v3/natural-3d');mkdirSync(artifacts,{recursive:true});
 const base=process.env.UI_TEST_URL??'http://127.0.0.1:8000/';
 const viewport = { width: Number(process.env.UI_TEST_WIDTH ?? 390), height: Number(process.env.UI_TEST_HEIGHT ?? 844) };
 let server,browser,page,serverLog='';
@@ -56,11 +56,11 @@ try{
   page.on('pageerror',error=>errors.push(error.message));
   page.on('console',message=>{if(message.type()==='error'&&!message.location().url?.endsWith('/api/me'))errors.push(message.text()); /* アカウント機能のない簡易サーバーでは /api/me が404になる（想定内） */if(message.text().startsWith('[sync]'))warnings.push(message.text())});
   // debugは公開状態を読むためだけに使用。Gameの変更メソッドはテストから呼ばない。
-  // 既存のdebug起動からメニューでホーム（入口）へ戻り、以降は実際のUIで開始する。
-  const url=new URL(base);url.search='?local=1&cpu=hard&debug=1&seed=8';
+  // ホームで難易度を選び、唯一の開始ボタンから開始する。
+  const url=new URL(base);url.search='?home=1&debug=1&seed=8';
   if(process.env.UI_TEST_FX)url.searchParams.set('fx',process.env.UI_TEST_FX);
   if(process.env.UI_TEST_FIELD3D)url.searchParams.set('field3d',process.env.UI_TEST_FIELD3D);
-  await page.goto(url.href);await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:60000});
+  await page.goto(url.href);await page.locator('#home:not([hidden])').waitFor();await page.locator('.cpu-choice[data-level=hard]').click();assert.equal(await page.evaluate(()=>castlefield.game()),null);await press('#home .home-start');await page.waitForFunction(()=>Boolean(window.castlefield?.game()),{},{timeout:180000});
   await page.evaluate(async()=>{(await import('./js/ui/config.js')).UI_CONFIG.speed=0});
   await page.evaluate(()=>{window.__uiSmokeCards=0;const id=document.querySelector('#app').dataset.viewer;castlefield.game().on('gameOver',e=>window.__naturalEnd=e);castlefield.game().on('cardPlayed',e=>{if(e.playerId===id)window.__uiSmokeCards++})});
   const deadline=Date.now()+1200000;let deployed=false,ended=false,mulliganShown=false;
@@ -109,7 +109,7 @@ try{
   assert.deepEqual(errors,[],'コンソールとページにエラーがない');assert.deepEqual(warnings,[],'描画の同期警告がない');
   assert.ok(await page.locator('canvas.field-gl').evaluate(c=>{const gl=c.getContext('webgl2');return gl&&!gl.isContextLost()}));
   const report={finish:'natural gameOver',strategy:'deploy once, then pass through normal UI',endEvent:await page.evaluate(()=>window.__naturalEnd),surrender:false,field3d:!process.env.UI_TEST_FX&&process.env.UI_TEST_FIELD3D!=='2d',viewport:`${viewport.width}x${viewport.height}`,deployed,ended,turns:final.turn,cards:used,errors,warnings,rematch:true};
-  writeFileSync(resolve(artifacts,'report.json'),JSON.stringify(report,null,2)+'\n');rmSync(resolve(artifacts,'failure.json'),{force:true});console.log(JSON.stringify(report));
+  writeFileSync(resolve(artifacts,'report.json'),JSON.stringify(report,null,2)+'\n');rmSync(resolve(artifacts,'failure.json'),{force:true});rmSync(resolve(artifacts,'failure.png'),{force:true});console.log(JSON.stringify(report));
 }catch(error){
   if(page)await snapshot('failure').catch(()=>{});
   writeFileSync(resolve(artifacts,'failure.json'),JSON.stringify({error:String(error),errors,warnings,serverLog},null,2)+'\n');
