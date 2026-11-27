@@ -860,3 +860,9 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 ## 第3版の画像配信（2026-11-27）
 
 生成した14枚のPNG原画を `assets/review/kingdom-fantasy-v3/sources/` へ保存し、Pillow/libwebpで配信用WebPを `assets/ui/kingdom-v2/` に生成。原画のデザインは変更しない。カード・人物・枠は無劣化、効果アイコンは品質95、アルファは全て保持。元画像の利用条件は上記と同じ。
+
+## CastleField v2 リデザイン素材（2026-11-27）
+- `assets/v2/ui/buttons/*.webp`（新規制作ボタン5種・旧ボタン流用なし）: Gemini Image Generation + Sharp 9-slice 加工（2026-11-27）
+- `assets/v2/ui/frames/*.webp`（羊皮紙・木枠・勝利/敗北リボン）: Gemini Image Generation + Sharp 加工（2026-11-27）
+- `assets/v2/icons/*.webp`（脱SVGカラーアイコン一式）: Gemini Image Generation + 既存 `assets/ui/` 統合（2026-11-27）
+- `assets/v2/models/{home-diorama-v2,field-meadow-v2,gacha-chest-v2}.glb`: Blender 5.3 スクリプト生成・既存ジオラマ再調整（2026-11-27）

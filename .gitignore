@@ -12,3 +12,7 @@ data-store/
 *.db-wal
 *.db-shm
 .env
+
+# v2 web build & raw source sheets
+web/dist/
+assets/v2/raw/

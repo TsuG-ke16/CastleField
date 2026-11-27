@@ -1,0 +1,57 @@
+/* CastleField v2 Single Design Token Source — Character Illustration Alignment */
+:root {
+  /* Ink & Outline */
+  --cf-ink: #4a2e1a;
+  --cf-ink-muted: #7a5638;
+  --cf-ink-inverse: #fffaf0;
+
+  /* Brand & Action Colors */
+  --cf-gold-hi: #ffe37a;
+  --cf-gold: #ffb833;
+  --cf-gold-lo: #e4881a;
+
+  --cf-stone-hi: #fffdf6;
+  --cf-stone: #f4e4c1;
+  --cf-stone-shadow: #c9ad7b;
+
+  --cf-royal-hi: #5b8df0;
+  --cf-royal: #3465cc;
+  --cf-royal-lo: #234799;
+
+  --cf-ruby-hi: #ff8c7a;
+  --cf-ruby: #de4f46;
+  --cf-ruby-lo: #a82a24;
+
+  /* Surfaces */
+  --cf-parchment: #fff6e0;
+  --cf-parchment-deep: #f7e7c4;
+  --cf-wood-hi: #c9955a;
+  --cf-wood: #8a562d;
+  --cf-wood-lo: #5e371b;
+
+  /* Player Sides */
+  --cf-p1-sky: #4da3e8;
+  --cf-p1-sky-lo: #2a6cab;
+  --cf-p2-sunset: #f5923e;
+  --cf-p2-sunset-lo: #c05a1c;
+
+  /* Sky Backdrop */
+  --cf-sky-top: #74c2ff;
+  --cf-sky-mid: #bfe6ff;
+  --cf-sky-bottom: #fff4d8;
+
+  /* Typography */
+  --cf-font: "M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Yu Gothic UI", "Meiryo", sans-serif;
+
+  /* Radii & Shadows */
+  --cf-radius-sm: 10px;
+  --cf-radius-md: 16px;
+  --cf-radius-lg: 22px;
+  --cf-outline: 2.5px solid var(--cf-ink);
+  --cf-shadow-card: 0 6px 0 rgba(74, 46, 26, 0.28), 0 12px 24px rgba(35, 71, 153, 0.16);
+  --cf-shadow-float: 0 10px 28px rgba(74, 46, 26, 0.28);
+
+  /* Layout Safe Areas */
+  --cf-safe-top: env(safe-area-inset-top, 0px);
+  --cf-safe-bottom: env(safe-area-inset-bottom, 0px);
+}

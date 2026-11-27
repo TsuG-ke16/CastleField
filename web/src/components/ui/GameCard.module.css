@@ -1,0 +1,126 @@
+.card {
+  position: relative;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 3;
+  border-radius: 12px;
+  border: 2.5px solid var(--cf-ink);
+  background: linear-gradient(180deg, #fffdf6 0%, #f5e5c2 100%);
+  box-shadow: 0 4px 0 rgba(74, 46, 26, 0.28);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 5px;
+  gap: 4px;
+  transition: transform 140ms ease, box-shadow 140ms ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+.selected {
+  border-color: var(--cf-royal);
+  box-shadow: 0 0 0 3px #ffe37a, 0 8px 18px rgba(52, 101, 204, 0.42);
+}
+
+.disabled {
+  opacity: 0.62;
+  filter: saturate(0.65);
+}
+
+.rarity-common { background: linear-gradient(180deg, #fffdf6 0%, #efe1c4 100%); }
+.rarity-uncommon { background: linear-gradient(180deg, #effcf1 0%, #bfe8c6 100%); }
+.rarity-rare { background: linear-gradient(180deg, #eef6ff 0%, #b7d7ff 100%); }
+.rarity-epic { background: linear-gradient(180deg, #faf0ff 0%, #deb8ff 100%); }
+.rarity-legendary { background: linear-gradient(180deg, #fff9dc 0%, #ffd266 100%); }
+.rarity-special { background: linear-gradient(135deg, #ffe7f3 0%, #e4f4ff 50%, #fff3c4 100%); }
+
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  min-height: 18px;
+}
+
+.kindTag {
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(74, 46, 26, 0.85);
+  color: #fffaf0;
+}
+
+.costPill {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #3465cc;
+  color: #fffaf0;
+  border: 1.5px solid #4a2e1a;
+}
+
+.artBox {
+  flex: 1;
+  min-height: 0;
+  border-radius: 8px;
+  border: 1.5px solid rgba(74, 46, 26, 0.35);
+  background: radial-gradient(circle at 50% 42%, #ffffff 0%, #f6e7c7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 2px;
+}
+
+.artImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.namePlate {
+  background: #fff9ec;
+  border: 1.5px solid rgba(74, 46, 26, 0.6);
+  border-radius: 6px;
+  padding: 2px 4px;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.statBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 900;
+  min-height: 16px;
+}
+
+.statItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.badgeCount {
+  position: absolute;
+  top: 26px;
+  right: 5px;
+  background: #4a2e1a;
+  color: #ffe37a;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
