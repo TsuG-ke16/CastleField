@@ -1,0 +1,36 @@
+[
+  {
+    "device": "pc",
+    "online": true,
+    "opponentPublicLog": true,
+    "initialLog": true,
+    "reconnectedLog": true,
+    "rematchLog": true,
+    "preferences": true,
+    "manualSkill": true,
+    "cancelNoConsumption": true,
+    "rejectInsufficientMp": true,
+    "payment": {
+      "mp": 1,
+      "hp": 6
+    },
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "online": true,
+    "opponentPublicLog": true,
+    "initialLog": true,
+    "reconnectedLog": true,
+    "rematchLog": true,
+    "preferences": true,
+    "manualSkill": true,
+    "cancelNoConsumption": true,
+    "rejectInsufficientMp": true,
+    "payment": {
+      "mp": 1,
+      "hp": 6
+    },
+    "errors": []
+  }
+]

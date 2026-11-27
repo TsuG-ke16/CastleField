@@ -31,8 +31,8 @@ export class SkillBattleView {
    *           onRun: (actionId: string, args: object) => Promise<{ok:boolean, reason?:string}|null>,
    *           canAct: () => boolean }} o
    */
-  constructor({ tree, cards, renderer, toast = () => {}, onRun, canAct = () => true }) {
-    Object.assign(this, { tree, cards, renderer, toast, onRun, canAct });
+  constructor({ tree, cards, renderer, toast = () => {}, onRun, onPrefs = async () => ({ok:false}), canAct = () => true }) {
+    Object.assign(this, { tree, cards, renderer, toast, onRun, onPrefs, canAct });
     this.ix = treeIndex(tree);
     this.log = [];
     this.unread = 0;
@@ -61,6 +61,15 @@ export class SkillBattleView {
     this.panel = panel;
     toggle.addEventListener('click', (e) => { e.stopPropagation(); this.setOpen(panel.hidden); });
     panel.addEventListener('click', (e) => { e.stopPropagation(); this.onClick(e); });
+    panel.addEventListener('change', async e => {
+      const id=e.target.dataset.pref;if(!id)return;if(this.prefSending||!this.canAct()){this.render();return;}
+      this.prefSending=true;
+      e.target.disabled=true;
+      const prefs=id==='X35'?{X35:{autoDefer:e.target.checked}}:{X15:{pick:e.target.value}};
+      try { const r=await this.onPrefs(prefs);if(!r?.ok)this.toast(r?.reason??'設定を変更できませんでした'); }
+      catch {this.toast('設定を変更できませんでした');}
+      finally {this.prefSending=false;this.render();}
+    });
     panel.addEventListener('pointerdown', (e) => e.stopPropagation());
   }
 
@@ -74,6 +83,7 @@ export class SkillBattleView {
 
   /** 試合が変わったとき */
   reset() {
+    this.cancelCardOptions?.();
     this.h01Told = false;
     this.log = [];
     this.unread = 0;
@@ -83,7 +93,7 @@ export class SkillBattleView {
     this.toggle.hidden = true;
   }
 
-  /** 発動ログの1件（game.observeSkills から）。自分のもの以外は skillLogText が null を返す */
+  /** ローカルの即時通知。確定ログはupdate()でgetStateの公開履歴から復元する。 */
   addLog(entry) {
     const text = skillLogText(this.tree, entry, this.viewerId);
     if (!text) return;
@@ -98,6 +108,14 @@ export class SkillBattleView {
     this.state = st;
     this.viewerId = viewerId;
     this.session = session;
+    const choice=this.cardChoice;
+    if(choice&&(choice.session!==session||choice.turn!==st?.turn||st?.phase!=='main'||st.currentPlayer!==viewerId||!st.players[viewerId]?.hand?.some(c=>c.cardId===choice.cardId)))this.cancelCardOptions?.();
+    if (st?.skillLog) {
+      this.log = st.skillLog.map(entry => {
+        const text=skillLogText(this.tree,entry,viewerId);
+        return text?{turn:entry.turn,text:`${entry.playerId===viewerId?'あなた':playerName(entry.playerId)}：${text}`} : null;
+      }).filter(Boolean).slice(-LOG_MAX);
+    }
     const anySkills = st && Object.values(st.players ?? {}).some((p) => p.skills?.length);
     this.toggle.hidden = !anySkills || st.phase === 'gameOver';
     if (this.toggle.hidden) { this.setOpen(false); return; }
@@ -154,7 +172,10 @@ export class SkillBattleView {
       <div class="sb-head"><h2>スキル</h2><button type="button" class="sb-close" data-close="1" aria-label="閉じる">×</button></div>
       <h3>あなた</h3>${section(this.viewerId, true)}
       ${actionsHtml}
-      ${this.session?.online ? '' : `<details${this.log.length ? ' open' : ''}><summary>発動ログ（${this.log.length}）</summary><ul class="sb-log">${this.log.slice().reverse().map((l) => `<li>${l.turn ? `${l.turn}手目：` : ''}${esc(l.text)}</li>`).join('') || '<li>まだありません</li>'}</ul></details>`}
+      ${me?.skills?.some(id=>['X35','X15'].includes(id)) ? `<details open><summary>自動発動の設定</summary>
+        ${me.skills.includes('X35')?`<label><input type="checkbox" data-pref="X35" ${(me.skillState?.prefs?.X35?.autoDefer??this.ix.byId.get('X35')?.params?.autoDefer??false)?'checked':''}>任意のHP支払いを自動で延期する</label>`:''}
+        ${me.skills.includes('X15')?`<label>先頭2枚の選び方<select data-pref="X15">${[['cost','MPコストの大きい方'],['first','1枚目'],['second','2枚目']].map(([v,t])=>`<option value="${v}" ${(me.skillState?.prefs?.X15?.pick??'cost')===v?'selected':''}>${t}</option>`).join('')}</select></label>`:''}</details>`:''}
+      ${`<details${this.log.length ? ' open' : ''}><summary>発動ログ（${this.log.length}）</summary><ul class="sb-log">${this.log.slice().reverse().map((l) => `<li>${l.turn ? `${l.turn}手目：` : ''}${esc(l.text)}</li>`).join('') || '<li>まだありません</li>'}</ul></details>`}
       ${foes.map((id) => `<h3>${esc(playerName(id))}</h3>${section(id, false)}`).join('')}`;
     this.highlight();
   }
@@ -181,11 +202,13 @@ export class SkillBattleView {
   }
 
   async run() {
+    if(this.running)return;
     const a = this.actions().find((x) => x.actionId === this.pick?.actionId);
     const o = a?.options[this.pick?.optionIndex];
     if (!a || !o) return;
     if (!this.canAct()) return this.toast('演出が終わってから使えます', 'info');
-    const res = await this.onRun(a.actionId, o.args ?? {});
+    this.running=true;
+    let res;try {res=await this.onRun(a.actionId,o.args??{});}finally{this.running=false;}
     if (!res) return;
     if (!res.ok) { this.toast(res.reason ?? '使えませんでした'); return; }
     this.clearPick();
@@ -232,6 +255,7 @@ export class SkillBattleView {
     const def = this.cards[type];
     const questions = me?.skills?.length && st.phase === 'main' ? cardSkillQuestions(me.skills, def, { mp: me.mp ?? 0, cost: st.mpCosts?.[type] ?? 0 }) : [];
     if (!questions.length) return Promise.resolve(undefined);
+    this.cancelCardOptions?.();
     return new Promise((resolve) => {
       const dlg = document.createElement('div');
       dlg.className = 'skill-battle';
@@ -239,10 +263,13 @@ export class SkillBattleView {
       dlg.setAttribute('aria-modal', 'true');
       dlg.setAttribute('aria-label', `${def?.name ?? 'カード'}のスキル選択`);
       const answers = Object.fromEntries(questions.map((q) => [q.key, q.default ?? (q.type === 'range' ? q.min : undefined)]));
+      let revision=0,finished=false;
       const draw = () => {
+        const version=++revision;
+        const focus=document.activeElement?.dataset?.q;
         const opts = answersToOptions(questions, answers);
-        const pv = session.previewCardCost ? session.previewCardCost(cardId, opts) : null;
-        const pvHtml = pv ? (pv.ok ? `<p class="sb-preview">実際の支払い：MP ${pv.mp}${pv.hp ? `・城HP ${pv.hp}` : ''}${opts.bloodBlade ? '（血の刃は命中時に城HP2）' : ''}${opts.bloodEcho ? '（血のやまびこは命中後に城HP2）' : ''}</p>` : `<p class="sb-preview bad">${esc(pv.reason)}</p>`)
+        const render = (pv, pending=false) => {
+        const pvHtml = pending ? '<p class="sb-preview">支払いを確認中…</p>' : pv ? (pv.ok ? `<p class="sb-preview">実際の支払い：MP ${pv.mp}${pv.hp ? `・城HP ${pv.hp}` : ''}${opts.bloodBlade ? '（血の刃は命中時に城HP2）' : ''}${opts.bloodEcho ? '（血のやまびこは命中後に城HP2）' : ''}</p>` : `<p class="sb-preview bad">${esc(pv.reason)}</p>`)
           : '<p class="sb-note">オンラインでは、実際の支払いはサーバーで決まります。</p>';
         dlg.innerHTML = `<div class="sb-head"><h2>「${esc(def?.name ?? type)}」を使う</h2></div>
           ${questions.map((q) => {
@@ -251,9 +278,16 @@ export class SkillBattleView {
             return `<div class="sb-q"><label>${esc(q.label)}<select data-q="${q.key}">${q.choices.map(([v, l]) => `<option value="${v}"${answers[q.key] === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>`;
           }).join('')}
           ${pvHtml}
-          <div class="sb-confirm"><button type="button" class="plank-btn" data-ok="1"${pv && !pv.ok ? ' aria-disabled="true"' : ''}>使う</button><button type="button" class="small-btn" data-no="1">キャンセル</button></div>`;
+          <div class="sb-confirm"><button type="button" class="plank-btn" data-ok="1"${pending || (pv && !pv.ok) ? ' disabled aria-disabled="true"' : ''}>使う</button><button type="button" class="small-btn" data-no="1">キャンセル</button></div>`;
+          if(focus)dlg.querySelector(`[data-q="${focus}"]`)?.focus();
+        };
+        render(null,true);
+        Promise.resolve().then(()=>session.previewCardCost?.(cardId,opts)).then(pv=>{
+          if(!finished&&version===revision)render(pv??{ok:false,reason:'支払いを確認できませんでした'});
+        }).catch(()=>{if(!finished&&version===revision)render({ok:false,reason:'支払いを確認できませんでした'});});
       };
-      const finish = (v) => { dlg.remove(); resolve(v); };
+      const finish = (v) => { if(finished)return;finished=true;revision++;dlg.remove();this.cancelCardOptions=null;this.cardChoice=null;resolve(v); };
+      this.cancelCardOptions=()=>finish(null);this.cardChoice={cardId,turn:st.turn,session};
       dlg.addEventListener('input', (e) => {
         const k = e.target.dataset?.q;
         if (!k) return;

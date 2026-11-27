@@ -73,6 +73,8 @@ export class LocalSession {
     return g.skillRt.planCardCost(player, card, g.mpCostOf(card), skillOptions, { preview: true }) ?? null;
   }
 
+  async setSkillPrefs(playerId,prefs) { return this.game.setSkillPrefs(playerId,prefs); }
+
   /** 攻撃を受けたとき、防御カードを出す */
   async defend(cardId, target) {
     return target ? this.game.defend(cardId, target) : this.game.defend(cardId);

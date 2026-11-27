@@ -10,6 +10,7 @@
 
 import { SKILL_EVENTS, STAGES, EXTRA_EXCEPTIONS, SAME_KIND_BANNED, makeEvent, isExtraOrigin, isDirect } from './Events.js';
 import { LIMITS, RESOURCE_CAPS } from './Limits.js';
+import { skillTransaction } from './transaction.js';
 import * as Luck from './Luck.js';
 import * as Crit from './Crit.js';
 import * as Resources from './Resources.js';
@@ -137,6 +138,7 @@ export class SkillRuntime {
     for (const m of SETTLE_METHODS) {
       const orig = game[m].bind(game);
       game[m] = (...args) => {
+        if(m==='playCard')return skillTransaction(this,()=>{const r=orig(...args);if(r?.ok)this.settle();return r;});
         const r = orig(...args);
         this.settle();
         return r;
@@ -269,6 +271,16 @@ export class SkillRuntime {
         console.error('スキルの observe の処理中にエラー:', err);
       }
     }
+  }
+
+  logFor(viewerId) {
+    return this.log.flatMap((e, i) => {
+      const base = { seq:i, turn:e.turn, kind:e.kind, playerId:e.playerId, skillId:e.skillId };
+      if (e.kind === 'trigger' && e.skillId) return [{ ...base, count:e.count }];
+      if (e.kind === 'effect' && ['castleHealed','castleArmored'].includes(e.type)) return [{ ...base, type:e.type, amount:e.amount }];
+      if (e.kind === 'diagnostic' && e.playerId === viewerId) return [{ ...base, code:e.code }];
+      return [];
+    }).slice(-100);
   }
 
   recordLuck(entry) {
@@ -1130,22 +1142,20 @@ export class SkillRuntime {
     if (!plan?.ok) return { ok: false, reason: plan?.reason ?? '使えません' };
     const pay = this.canPay(playerId, plan.cost ?? {});
     if (!pay.ok) return pay;
-    this.beginRoot('skillActive', { playerId });
-    const ev = makeEvent(this, 'skillAction', { ownerId: playerId, sourceSkillId: skillId, origin: 'skillActive' });
-    const api = this.api(playerId, skillId, ev);
-    this.ctxStack.push({ ev, skillId, playerId, origin: 'skillActive' });
-    let result;
-    try {
-      this.pay(playerId, plan.cost ?? {}, skillId);
-      result = def.run(api, args ?? {}, plan);
-    } finally {
-      this.ctxStack.pop();
-    }
-    this.consume(playerId, skillId, key, 1, scope);
-    this.countSuccess(playerId, skillId, { action: actionId, origin: 'skillActive' });
-    this.drain();
-    this.game.checkGameOver();
-    return { ok: true, result: result ?? null };
+    return skillTransaction(this, () => {
+      this.beginRoot('skillActive', { playerId });
+      const ev = makeEvent(this, 'skillAction', { ownerId: playerId, sourceSkillId: skillId, origin: 'skillActive' });
+      const api = this.api(playerId, skillId, ev);
+      this.ctxStack.push({ ev, skillId, playerId, origin: 'skillActive' });
+      let result;
+      try { this.pay(playerId, plan.cost ?? {}, skillId); result = def.run(api, args ?? {}, plan); }
+      finally { this.ctxStack.pop(); }
+      if (result === false || result?.ok === false) return result === false ? { ok:false, reason:'スキルを実行できませんでした' } : result;
+      this.consume(playerId, skillId, key, 1, scope);
+      this.countSuccess(playerId, skillId, { action: actionId, origin: 'skillActive' });
+      this.drain(); this.game.checkGameOver();
+      return { ok:true, result:result ?? null };
+    });
   }
 
   // ================= 公開状態・保存（5.1） =================

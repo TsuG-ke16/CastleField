@@ -13,7 +13,7 @@ import { checkCostDeck } from '../js/game/Setup.js';
 import { normalizeBuild, emptyBuild } from '../js/game/SkillTree.js';
 
 /** 試合中の操作（Game のメソッドに渡す） */
-const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense', 'mulligan'];
+const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense', 'mulligan', 'skillAction', 'setSkillPrefs', 'previewSkillCost'];
 /** 部屋の操作（いつでも送れる。だめなときは理由を返す） */
 const RANKED_BLOCKED = ['start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'rematch'];
 const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
@@ -341,6 +341,11 @@ export class Room {
       default: break;
     }
     if (!this.game) return { ok: false, reason: 'まだ試合が始まっていません' };
+    if (method === 'setSkillPrefs') {
+      const result=this.game.setSkillPrefs(seat.playerId,args[0]);
+      if(result.ok)this.broadcastState();
+      return result;
+    }
     if (method === 'mulligan') {
       // マリガン：だれでも自分の手札だけ（自分の番でなくても）。args は [cardIds]
       args = [seat.playerId, args[0] ?? []];
@@ -352,10 +357,15 @@ export class Room {
       return { ok: false, reason: 'あなたの番ではありません' };
     }
     // 手札にないカードは、相手の手札にあってもなくても同じ文にする（文の違いから相手の手札が分からないように）
-    if (method === 'playCard' || method === 'defend') {
+    if (method === 'playCard' || method === 'defend' || method === 'previewSkillCost') {
       const hand = this.game.getState(seat.playerId).players[seat.playerId].hand || [];
       if (!hand.some((c) => c.cardId === args[0])) return { ok: false, reason: 'そのカードは手札にありません' };
     }
+    if(method==='previewSkillCost') {
+      if(this.game.phase!=='main')return {ok:false,reason:'カードを使う場面ではありません'};
+      return {ok:true,preview:this.game.previewSkillCost(args[0],args[1])};
+    }
+    if(method==='skillAction')args=[seat.playerId,args[0],args[1]??{}];
     let result;
     try {
       result = this.game[method](...args);
@@ -845,6 +855,7 @@ export class Room {
   stateFor(playerId) {
     const game = this.game;
     const state = game.getState(playerId);
+    state.matchId=this.matchMeta?.matchId??null;
     const defending = game.phase === 'defend';
     const myTurn = game.currentPlayer === playerId && !defending;
     const hand = state.players[playerId].hand || [];

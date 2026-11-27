@@ -325,6 +325,7 @@ async function boot() {
       tree: skillTree, cards, renderer, toast,
       canAct: () => !busy && !sending,
       onRun: (actionId, args) => act(() => session.skillAction(viewerId, actionId, args)),
+      onPrefs: prefs => act(() => session.setSkillPrefs(viewerId,prefs)),
     });
   }
   if (upgrades && Object.keys(upgrades).length) {
@@ -1260,7 +1261,7 @@ async function showBatch(batch) {
   sending = false;
   for (const c of st.players[viewerId]?.hand ?? []) knownCards.set(c.cardId, { ...c });
 
-  const newGame = !model || !el.title.hidden || st.turn < model.turn ||
+  const newGame = !model || !el.title.hidden || (st.matchId && st.matchId !== model.matchId) || st.turn < model.turn ||
     (model.phase === 'gameOver' && st.phase !== 'gameOver');
   if (newGame) {
     // 試合の始まり（入ったとき・もう1回）：状態から描く
@@ -1320,6 +1321,7 @@ function modelFromState(st) {
     };
   }
   return {
+    matchId:st.matchId,
     deckMode:st.deckMode,
     maxMp: st.maxMp ?? 0,
     mpCosts: { ...(st.mpCosts ?? {}) },
@@ -1898,9 +1900,9 @@ function stopCelebration() {
 
 async function showResult(winner) {
   setBusy(true);
-  const s = session;
+  const s = session, generation=gen;
   await anim.delay(UI_CONFIG.timing.gameOverDelay);
-  if (s !== session) return; // 待っているあいだにタイトルへ戻った
+  if (s !== session || generation !== gen || session?.getState(viewerId)?.phase !== 'gameOver') return; // 再戦後に旧試合の結果を開かない
   const online = !usesHandover(); // オンライン・CPU 戦：画面を見ている人から見た勝ち負けを出す
   const winningTeam = model.teams?.[model.winnerTeam];
   const won = !online || winner === viewerId || Boolean(winningTeam?.members.includes(viewerId));
