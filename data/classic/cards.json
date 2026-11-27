@@ -14,7 +14,7 @@
     "hp": 4,
     "attack": 4,
     "speed": 3,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 3
   },
   "classic_king_archer": {
@@ -55,7 +55,7 @@
     "kind": "weapon",
     "attackBonus": 2,
     "element": "light",
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "classic_king_lumina_lance": {
@@ -63,7 +63,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "element": "light",
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 2
   },
   "classic_king_lumina": {
@@ -73,7 +73,7 @@
     "element": "light",
     "amount": 2,
     "scope": "lane",
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 3
   },
   "classic_king_minor_heal": {
@@ -97,7 +97,7 @@
     "kind": "defense",
     "effect": "shieldSoldier",
     "amount": 3,
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 3
   },
   "classic_king_wall": {
@@ -105,7 +105,7 @@
     "kind": "defense",
     "effect": "armorCastle",
     "amount": 5,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 3
   },
   "classic_king_purify": {
@@ -123,7 +123,7 @@
     "effect": "singleDamage",
     "element": "light",
     "amount": 5,
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 2
   },
   "classic_king_holy_fireball": {
@@ -159,7 +159,7 @@
     "hp": 3,
     "attack": 4,
     "speed": 3,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 3
   },
   "classic_demon_curser": {
@@ -179,7 +179,7 @@
     "kind": "weapon",
     "attackBonus": 2,
     "element": "dark",
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "classic_demon_frost_blade": {
@@ -187,7 +187,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "element": "ice",
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 2
   },
   "classic_demon_chaos_rod": {
@@ -195,7 +195,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "element": "chaos",
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 2
   },
   "classic_demon_frost_breath": {
@@ -213,7 +213,7 @@
     "kind": "spell",
     "effect": "poisonEnemy",
     "amount": 1,
-    "mpCost": 1,
+    "mpCost": 2,
     "count": 3
   },
   "classic_demon_soul_shard": {
@@ -222,7 +222,7 @@
     "effect": "damageCastleAndHeal",
     "amount": 3,
     "heal": 3,
-    "mpCost": 2,
+    "mpCost": 3,
     "count": 3,
     "description": "相手の城に3ダメージ、自分の城を3回復する"
   },
@@ -239,7 +239,7 @@
     "kind": "defense",
     "effect": "shieldSoldier",
     "amount": 3,
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 3
   },
   "classic_demon_shadow": {
@@ -248,7 +248,7 @@
     "effect": "singleDamage",
     "element": "dark",
     "amount": 4,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 3
   },
   "classic_demon_curse_mark": {
@@ -282,7 +282,7 @@
     "kind": "spell",
     "effect": "randomElementDamage",
     "amount": 3,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   }
 }

@@ -8,7 +8,8 @@ import { Soldier } from '../js/game/Soldier.js';
 import { buildData, loadOptionalData } from './helpers.js';
 
 function classicGame(skills, { rng = () => 0 } = {}) {
-  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan: false } });
+  // 聖鉄の剣は MP2 として書いたテスト（段階A1 でデータは MP1 になったので、ここだけ元の値に固定）
+  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan: false }, cards: { classic_king_holy_sword: { mpCost: 2 } } });
   const opts = loadOptionalData('classic');
   delete opts.stages;
   delete opts.weather;

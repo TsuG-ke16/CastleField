@@ -5,7 +5,7 @@
     "hp": 5,
     "attack": 4,
     "speed": 2,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "fac_dragon_dragoon": {
@@ -14,7 +14,7 @@
     "hp": 3,
     "attack": 5,
     "speed": 3,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_dragon_flame_whelp": {
@@ -24,7 +24,7 @@
     "attack": 5,
     "speed": 2,
     "innateElement": "fire",
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 2
   },
   "fac_dragon_thunder_whelp": {
@@ -34,7 +34,7 @@
     "attack": 4,
     "speed": 3,
     "innateElement": "thunder",
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 2
   },
   "fac_dragon_fang_sword": {
@@ -42,7 +42,7 @@
     "kind": "weapon",
     "attackBonus": 2,
     "element": "fire",
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "fac_dragon_thunder_spear": {
@@ -52,7 +52,7 @@
     "element": "thunder",
     "rangeBonus": 1,
     "description": "攻撃+2・雷。射程+1（弓兵・魔法使いは撃てる距離が1のびる。進む兵士は2マス先の相手を、反撃を受けずに突く）",
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "fac_dragon_fireball": {
@@ -61,7 +61,7 @@
     "effect": "damageEnemyCastle",
     "element": "fire",
     "amount": 5,
-    "mpCost": 2,
+    "mpCost": 3,
     "count": 2
   },
   "fac_dragon_bolt": {
@@ -71,7 +71,7 @@
     "element": "thunder",
     "amount": 3,
     "scope": "lane",
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 2
   },
   "fac_dragon_flame_breath": {
@@ -91,7 +91,7 @@
     "effect": "healSoldier",
     "amount": 4,
     "description": "傷ついた自分の兵士1体のHP+4（最大HPまで）",
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "fac_dragon_ash_veil": {
@@ -99,7 +99,7 @@
     "kind": "defense",
     "effect": "armorCastle",
     "amount": 3,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "fac_dragon_whelp_scale": {
@@ -107,7 +107,7 @@
     "kind": "defense",
     "effect": "shieldSoldier",
     "amount": 2,
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 2
   },
   "fac_dragon_mage": {
@@ -127,7 +127,7 @@
       "amount": 1
     },
     "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る。火で撃つ。場にいるあいだ、自分の火・雷の魔法のダメージ+1",
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 2
   },
   "fac_dragon_scale_guard": {
@@ -137,7 +137,7 @@
     "attack": 3,
     "speed": 1,
     "description": "分厚い鱗で前に立つ兵士。HP9・速さ1（遅い）。デッキに1枚だけ",
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 1,
     "maxCopies": 1
   },
@@ -147,7 +147,7 @@
     "effect": "armorCastle",
     "amount": 8,
     "description": "城壁8。MPが重く、デッキに1枚だけ",
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 1,
     "maxCopies": 1
   },
