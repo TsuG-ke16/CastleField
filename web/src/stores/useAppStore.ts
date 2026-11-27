@@ -20,9 +20,38 @@ export interface PlayerStats {
   cardsPlayed: number;
 }
 
+export function computePlayerProgression(stats: PlayerStats): {
+  xp: number;
+  level: number;
+  title: string;
+  currentLevelXp: number;
+  nextLevelXp: number;
+} {
+  const xp = stats.wins * 60 + stats.matchesPlayed * 25 + stats.cardsPlayed * 2 + stats.gachaRolls * 5;
+  const level = Math.min(20, 1 + Math.floor(xp / 100));
+  const titles = [
+    '見習い兵',
+    '王国の騎士',
+    '近衛隊長',
+    '城塞将軍',
+    '王国英雄',
+    '伝説の覇者',
+  ];
+  const titleIdx = Math.min(titles.length - 1, Math.floor((level - 1) / 3));
+  return {
+    xp,
+    level,
+    title: titles[titleIdx],
+    currentLevelXp: xp % 100,
+    nextLevelXp: 100,
+  };
+}
+
 const STORAGE_KEY = 'castlefield_v2_save_v1';
 
 interface SavedSlice {
+  playerName?: string;
+  avatarCardType?: string;
   coins?: number;
   points?: number;
   pityCount?: number;
@@ -58,6 +87,8 @@ function loadSaved(): SavedSlice {
 function persistState(s: AppStoreState): void {
   try {
     const payload: SavedSlice = {
+      playerName: s.playerName,
+      avatarCardType: s.avatarCardType,
       coins: s.coins,
       points: s.points,
       pityCount: s.pityCount,
@@ -89,6 +120,8 @@ interface AppStoreState {
   mode: ModeId;
   playMode: PlayMode;
   cpuLevel: CpuLevel;
+  playerName: string;
+  avatarCardType: string;
   engineMode: EngineMode;
   onlinePassphrase: string;
   onlineServerUrl: string;
@@ -120,6 +153,8 @@ interface AppStoreState {
   setMode: (mode: ModeId) => void;
   setPlayMode: (playMode: PlayMode) => void;
   setCpuLevel: (level: CpuLevel) => void;
+  setPlayerName: (name: string) => void;
+  setAvatarCardType: (cardType: string) => void;
   setEngineMode: (engineMode: EngineMode) => void;
   setOnlinePassphrase: (passphrase: string) => void;
   setOnlineServerUrl: (url: string) => void;
@@ -163,6 +198,8 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     mode: 'kingdom',
     playMode: 'cpu',
     cpuLevel: 'normal',
+    playerName: initial.playerName ?? '王国の領主',
+    avatarCardType: initial.avatarCardType ?? 'infantry',
     engineMode: initial.engineMode ?? 'rust-wasm',
     onlinePassphrase: '',
     onlineServerUrl: '',
@@ -232,6 +269,14 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     setCpuLevel: (cpuLevel) => {
       soundManager.play('tap');
       set({ cpuLevel });
+    },
+    setPlayerName: (playerName) => {
+      const cleaned = playerName.trim() || '王国の領主';
+      savePatch({ playerName: cleaned });
+    },
+    setAvatarCardType: (avatarCardType) => {
+      soundManager.play('tap');
+      savePatch({ avatarCardType });
     },
     setEngineMode: (engineMode) => {
       soundManager.play('tap');

@@ -69,6 +69,24 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     setServerStatus(ok ? 'Rustサーバー接続OK' : 'サーバー未接続（ローカルCPUで遊べます）');
   };
 
+  const handleGeneratePassphrase = () => {
+    const num = 1000 + Math.floor(Math.random() * 9000);
+    setOnlinePassphrase(`castle-${num}`);
+    setServerStatus('新しい合言葉を作成しました');
+  };
+
+  const handleCopyInviteUrl = async () => {
+    const pass = onlinePassphrase.trim() || 'castle-777';
+    if (!onlinePassphrase.trim()) setOnlinePassphrase(pass);
+    const url = `${window.location.origin}/?room=${encodeURIComponent(pass)}&stage=${encodeURIComponent(selectedStageId)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setServerStatus(`招待URLをコピーしました: ${url}`);
+    } catch {
+      setServerStatus(`招待URL: ${url}`);
+    }
+  };
+
   const activeMode = MODES.find((m) => m.id === mode) || MODES[0];
   const deckEntry = selectedDeckId === 'custom' ? null : data?.decks?.[selectedDeckId];
   const deckName = selectedDeckId === 'custom' ? '★ オリジナル' : (deckEntry?.name || 'バランス（コスト制）');
@@ -360,16 +378,22 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                             }}
                           />
                         </label>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                          <GameButton size="sm" variant="normal-stone" onClick={handleCheckServer}>
-                            サーバー接続テスト
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <GameButton size="sm" variant="normal-stone" onClick={handleGeneratePassphrase}>
+                            合言葉を自動生成
                           </GameButton>
-                          {serverStatus && (
-                            <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--cf-ink-muted)' }}>
-                              {serverStatus}
-                            </span>
-                          )}
+                          <GameButton size="sm" variant="selected-royal" onClick={handleCopyInviteUrl}>
+                            招待URLをコピー
+                          </GameButton>
+                          <GameButton size="sm" variant="normal-stone" onClick={handleCheckServer}>
+                            接続テスト
+                          </GameButton>
                         </div>
+                        {serverStatus && (
+                          <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--cf-ink-muted)', wordBreak: 'break-all' }}>
+                            {serverStatus}
+                          </span>
+                        )}
                       </div>
                     )}
 

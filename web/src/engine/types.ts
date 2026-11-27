@@ -151,6 +151,12 @@ export interface ShopItem {
   filters?: { blue?: string; orange?: string };
 }
 
+export interface StampDef {
+  id: string;
+  icon: string;
+  label: string;
+}
+
 export interface LoadedGameData {
   cards: Record<string, CardDef>;
   rules: Record<string, unknown>;
@@ -161,6 +167,7 @@ export interface LoadedGameData {
   rarities: Record<string, { name: string; color?: string; rate?: number; deckCost?: number }>;
   stages: Record<string, { name: string; icon?: string; description?: string; element?: string }>;
   weather: Record<string, { name: string; description?: string }>;
+  stamps: StampDef[];
   shop: { items: Record<string, Omit<ShopItem, 'id'>> | ShopItem[] } | ShopItem[];
   gacha: Record<string, unknown>;
   skillTree: {

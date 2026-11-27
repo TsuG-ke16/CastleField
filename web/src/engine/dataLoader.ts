@@ -1,4 +1,4 @@
-import type { CardDef, LoadedGameData, ModeId } from './types';
+import type { CardDef, LoadedGameData, ModeId, StampDef } from './types';
 // @ts-ignore - vanilla JS Setup helper
 import { factionDecks } from '@game/Setup.js';
 
@@ -25,6 +25,7 @@ export async function loadAllGameData(): Promise<LoadedGameData> {
     shop,
     gacha,
     skillTree,
+    stamps,
   ] = await Promise.all([
     fetchJson<LoadedGameData['cards']>('/data/cards.json'),
     fetchJson<LoadedGameData['rules']>('/data/rules.json'),
@@ -38,6 +39,7 @@ export async function loadAllGameData(): Promise<LoadedGameData> {
     fetchJson<LoadedGameData['shop']>('/data/shop.json'),
     fetchJson<LoadedGameData['gacha']>('/data/gacha.json'),
     fetchJson<LoadedGameData['skillTree']>('/data/classic/skilltree.json'),
+    fetchJson<StampDef[]>('/data/stamps.json').catch(() => [] as StampDef[]),
   ]);
 
   cachedData = {
@@ -50,6 +52,7 @@ export async function loadAllGameData(): Promise<LoadedGameData> {
     rarities,
     stages,
     weather,
+    stamps,
     shop,
     gacha,
     skillTree,

@@ -1,4 +1,5 @@
-import { useAppStore } from '../../stores/useAppStore';
+import { computePlayerProgression, useAppStore } from '../../stores/useAppStore';
+import { cardTypeToImagePath } from '../../engine/dataLoader';
 import type { AppTab } from '../../engine/types';
 import { PaintedIcon, type PaintedIconName } from '../ui/PaintedIcon';
 import { RoundButton } from '../ui/GameButton';
@@ -12,22 +13,34 @@ const NAV_ITEMS: Array<{ id: AppTab; label: string; icon: PaintedIconName }> = [
   { id: 'menu', label: 'メニュー', icon: 'settings' },
 ];
 
-export function TopBar({ onOpenNotice }: { onOpenNotice?: () => void }) {
-  const { coins, setTab } = useAppStore();
+export function TopBar({
+  onOpenNotice,
+  onOpenProfile,
+}: {
+  onOpenNotice?: () => void;
+  onOpenProfile?: () => void;
+}) {
+  const { coins, setTab, playerName, avatarCardType, stats } = useAppStore();
+  const prog = computePlayerProgression(stats);
 
   return (
     <header className={styles.topBar}>
-      <div className={styles.profilePill}>
+      <button
+        type="button"
+        className={styles.profilePill}
+        onClick={onOpenProfile}
+        aria-label="プレイヤープロフィール"
+      >
         <img
-          src="/assets/cards/card-infantry.png"
+          src={cardTypeToImagePath(avatarCardType)}
           alt="アバター"
           className={styles.avatar}
         />
         <div className={styles.playerMeta}>
-          <span className={styles.playerName}>王国の領主</span>
-          <span className={styles.playerRank}>Lv.1 見習い兵</span>
+          <span className={styles.playerName}>{playerName}</span>
+          <span className={styles.playerRank}>Lv.{prog.level} {prog.title}</span>
         </div>
-      </div>
+      </button>
 
       <div className={styles.rightGroup}>
         <button

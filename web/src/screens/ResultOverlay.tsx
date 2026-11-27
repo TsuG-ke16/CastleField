@@ -72,6 +72,8 @@ export function ResultOverlay({
             <span className="tabular" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <PaintedIcon name="coin" size={14} />+{won ? 150 : 40}
             </span>
+            <span>獲得経験値</span>
+            <span className="tabular">+{won ? 85 : 25} XP</span>
           </div>
 
           <GameButton variant="primary-gold" size="lg" fullWidth crown onClick={onRematch}>

@@ -7,7 +7,7 @@ import { JsLegacyAdapter } from '../engine/jsLegacyAdapter';
 import { OnlineEngineAdapter, type OnlineConnStatus } from '../engine/onlineAdapter';
 import { WasmEngineAdapter } from '../engine/wasmAdapter';
 import { getSkinFilter } from '../engine/skinUtils';
-import type { CardDef, GameEvent, GameState, HandCard, PlayTarget } from '../engine/types';
+import type { CardDef, GameEvent, GameState, HandCard, PlayTarget, StampDef } from '../engine/types';
 import { soundManager } from '../audio/soundManager';
 import { BattleFxOverlay, type BattleFxHandle } from '../pixi/BattleFxOverlay';
 import { BattleFieldScene } from '../scene3d/BattleFieldScene';
@@ -95,6 +95,9 @@ export function BattleScreen() {
   const [damagePop, setDamagePop] = useState<{ id: number; text: string } | null>(null);
   const [showMenu, setShowMenu] = useState(false);
   const [showLog, setShowLog] = useState(false);
+  const [showStamps, setShowStamps] = useState(false);
+  const [myStamp, setMyStamp] = useState<{ id: number; text: string } | null>(null);
+  const [oppStamp, setOppStamp] = useState<{ id: number; text: string } | null>(null);
   const [showUpgrades, setShowUpgrades] = useState(false);
   const [fuseMode, setFuseMode] = useState(false);
   const [fuseFirst, setFuseFirst] = useState<HandCard | null>(null);
@@ -230,6 +233,12 @@ export function BattleScreen() {
           statsAccRef.current.cardsPlayed += 1;
         } else if (ev.type === 'monsterDefeated' && ev.playerId === myS) {
           statsAccRef.current.monstersDefeated += 1;
+        } else if (ev.type === 'stampSent' && ev.playerId !== myS) {
+          const sid = String(ev.stampId || '');
+          const found = (data.stamps || []).find((s) => s.id === sid);
+          const id = ++popCounterRef.current;
+          setOppStamp({ id, text: found ? `${found.icon} ${found.label}` : sid });
+          setTimeout(() => setOppStamp((cur) => (cur?.id === id ? null : cur)), 2200);
         } else if (ev.type === 'gameOver') {
           const w = String(ev.winner || '');
           const won = w === myS;
@@ -505,6 +514,25 @@ export function BattleScreen() {
     refreshState();
   };
 
+  const handleSendStamp = (stamp: StampDef) => {
+    soundManager.play('tap');
+    setShowStamps(false);
+    const id = ++popCounterRef.current;
+    setMyStamp({ id, text: `${stamp.icon} ${stamp.label}` });
+    setTimeout(() => setMyStamp((cur) => (cur?.id === id ? null : cur)), 2200);
+    if (adapterRef.current instanceof OnlineEngineAdapter) {
+      adapterRef.current.sendStamp(stamp.id);
+    } else if (playMode === 'cpu' && (data?.stamps?.length || 0) > 0 && Math.random() < 0.55) {
+      const pool = (data?.stamps || []).filter((s) => ['hello', 'nice', 'go', 'smug', 'gg'].includes(s.id));
+      const reply = pool[Math.floor(Math.random() * Math.max(1, pool.length))] || stamp;
+      setTimeout(() => {
+        const oid = ++popCounterRef.current;
+        setOppStamp({ id: oid, text: `${reply.icon} ${reply.label}` });
+        setTimeout(() => setOppStamp((cur) => (cur?.id === oid ? null : cur)), 2200);
+      }, 520);
+    }
+  };
+
   if (onlineError) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20 }}>
@@ -653,6 +681,33 @@ export function BattleScreen() {
           )}
         </AnimatePresence>
 
+        <AnimatePresence>
+          {oppStamp && (
+            <motion.div
+              key={oppStamp.id}
+              initial={{ scale: 0.7, y: -6, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              className={styles.stampBubble}
+              style={{ top: 52 }}
+            >
+              {oppStamp.text}
+            </motion.div>
+          )}
+          {myStamp && (
+            <motion.div
+              key={myStamp.id}
+              initial={{ scale: 0.7, y: 6, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              className={styles.stampBubble}
+              style={{ bottom: 52 }}
+            >
+              {myStamp.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <BattleFieldScene
           state={gameState}
           quality={quality}
@@ -775,6 +830,22 @@ export function BattleScreen() {
           </div>
         )}
 
+        {showStamps && (data?.stamps?.length || 0) > 0 && (
+          <div className={styles.stampPalette} aria-label="スタンプ選択">
+            {(data?.stamps || []).map((st) => (
+              <button
+                key={st.id}
+                type="button"
+                className={styles.stampBtn}
+                onClick={() => handleSendStamp(st)}
+              >
+                <span>{st.icon}</span>
+                <span>{st.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className={styles.actionBar}>
           <div className={styles.actionLeft}>
             <GameButton
@@ -799,6 +870,23 @@ export function BattleScreen() {
               <PaintedIcon name="coin" size={14} />
               <span className="tabular">{pMe.coins}</span>
             </GameButton>
+            <button
+              type="button"
+              onClick={() => setShowStamps((v) => !v)}
+              aria-label="スタンプ"
+              style={{
+                background: showStamps ? '#3465cc' : 'rgba(255,246,224,0.2)',
+                color: '#fff6e0',
+                border: '1.5px solid #ffd98a',
+                borderRadius: 10,
+                padding: '6px 8px',
+                fontSize: 12,
+                fontWeight: 900,
+                cursor: 'pointer',
+              }}
+            >
+              💬
+            </button>
             <button
               type="button"
               onClick={() => setHandCollapsed((v) => !v)}

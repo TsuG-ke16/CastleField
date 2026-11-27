@@ -434,6 +434,22 @@ async fn api_action(State(state): State<Arc<AppState>>, Json(req): Json<ActionRe
             room.push_events(evs);
             action_to_value(r)
         }
+        "stamp" => {
+            let sid = req.args.first().and_then(|v| v.as_str()).unwrap_or("hello");
+            room.seq += 1;
+            let msg = SequencedMsg {
+                seq: room.seq,
+                kind: "event".into(),
+                event: Some(json!({ "type": "stampSent", "playerId": seat_id, "stampId": sid })),
+                state: None,
+            };
+            if room.ring.len() >= RING_CAP {
+                room.ring.pop_front();
+            }
+            room.ring.push_back(msg.clone());
+            let _ = room.tx.send(msg);
+            json!({ "ok": true })
+        }
         _ => json!({ "ok": false, "reason": "未対応の操作です" }),
     };
 

@@ -218,6 +218,10 @@ export class OnlineEngineAdapter implements GameEngineAdapter {
     return this.fire('surrender', []);
   }
 
+  sendStamp(stampId: string): void {
+    void sendOnlineAction(this.token, 'stamp', [stampId], this.serverUrl);
+  }
+
   runCpuTurn(_playerId: string, _level: CpuLevel): void {
     // Handled authoritatively on the Rust server
   }
