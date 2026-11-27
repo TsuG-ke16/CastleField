@@ -13,7 +13,11 @@ import { checkCostDeck } from '../js/game/Setup.js';
 import { normalizeBuild, emptyBuild } from '../js/game/SkillTree.js';
 
 /** 試合中の操作（Game のメソッドに渡す） */
-const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense', 'mulligan'];
+const GAME_ACTIONS = ['playCard', 'discard', 'endTurn', 'buyUpgrade', 'fuse', 'defend', 'passDefense', 'mulligan',
+  // クラシックのスキルツリー（スキルのない席・モードでは Game が「スキルがありません」を返すだけ）
+  'skillAction', 'listSkillActions', 'previewSkillCost', 'setSkillPrefs'];
+/** 状態を変えない操作（返事だけ。状態を送り直さない・CPU を動かさない） */
+const READ_ACTIONS = ['listSkillActions', 'previewSkillCost'];
 /** 部屋の操作（いつでも送れる。だめなときは理由を返す） */
 const RANKED_BLOCKED = ['start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'rematch'];
 const ROOM_ACTIONS = ['rematch', 'surrender', 'leave', 'start', 'transferHost', 'setRules', 'setSeat', 'addCpu', 'removeCpu', 'backToRoom', 'chat'];
@@ -60,6 +64,108 @@ export const CPU_LEVELS = {
   normal: { name: 'ふつう', strategy: 'rush' },
   hard: { name: 'つよい', strategy: 'smart' },
 };
+
+// ---------- スキルの操作の入力チェック（ブラウザから来る値は信用しない） ----------
+
+/** JSON.parse が作るふつうのオブジェクトか（配列・クラスのインスタンス・null を除く） */
+const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v) && Object.getPrototypeOf(v) === Object.prototype;
+/** オブジェクトのキーに使えない名前（プロトタイプ汚染対策） */
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const ARG_KEY = /^[A-Za-z][A-Za-z0-9_]{0,31}$/;
+/** playCard の第3引数 skillOptions で受け付けるキーと値（js/game/skills の B01/B08・B03・X27・L06・X35 が読むものだけ） */
+const SKILL_OPTION_SCHEMA = {
+  hpForMp: (v) => typeof v === 'boolean' || (Number.isInteger(v) && v >= 0 && v <= 999),
+  bloodBlade: (v) => typeof v === 'boolean',
+  bloodEcho: (v) => typeof v === 'boolean',
+  deferHp: (v) => typeof v === 'boolean',
+  diceChoice: (v) => ['high', 'low', 'first', 'second'].includes(v),
+};
+const BAD_SKILL_OPTIONS = { ok: false, reason: 'スキルの選択の形が正しくありません' };
+
+/**
+ * playCard の skillOptions を確かめて、知っているキーだけの新しいオブジェクトにする。
+ * undefined・null は「選択なし」（undefined を返す）。だめなら { error }
+ */
+export function cleanSkillOptions(v) {
+  if (v === undefined || v === null) return { value: undefined };
+  if (!isPlainObject(v)) return { error: BAD_SKILL_OPTIONS };
+  const keys = Object.keys(v);
+  if (keys.length > Object.keys(SKILL_OPTION_SCHEMA).length) return { error: BAD_SKILL_OPTIONS };
+  const out = {};
+  for (const k of keys) {
+    if (!Object.hasOwn(SKILL_OPTION_SCHEMA, k) || !SKILL_OPTION_SCHEMA[k](v[k])) return { error: BAD_SKILL_OPTIONS };
+    out[k] = v[k];
+  }
+  return { value: out };
+}
+
+/**
+ * 任意スキルの args（対象の兵士のID・量など）を、JSON の値だけの新しいオブジェクトにする（中身の正しさは Game が確かめる）。
+ * 深さ3・値の数64・文字列64文字・配列16個まで。キーは英数字だけ（__proto__ などは通さない）
+ */
+export function cleanActionArgs(v) {
+  if (v === undefined || v === null) return { value: {} };
+  if (!isPlainObject(v)) return { error: { ok: false, reason: 'スキルの対象の形が正しくありません' } };
+  let budget = 64;
+  const walk = (x, depth) => {
+    if (--budget < 0 || depth > 3) throw new Error('too large');
+    if (x === null || typeof x === 'boolean') return x;
+    if (typeof x === 'number') { if (!Number.isFinite(x)) throw new Error('number'); return x; }
+    if (typeof x === 'string') { if (x.length > 64) throw new Error('string'); return x; }
+    if (Array.isArray(x)) { if (x.length > 16) throw new Error('array'); return x.map((y) => walk(y, depth + 1)); }
+    if (!isPlainObject(x)) throw new Error('type');
+    const out = {};
+    for (const k of Object.keys(x)) {
+      if (FORBIDDEN_KEYS.has(k) || !ARG_KEY.test(k)) throw new Error('key');
+      out[k] = walk(x[k], depth + 1);
+    }
+    return out;
+  };
+  try {
+    return { value: walk(v, 0) };
+  } catch {
+    return { error: { ok: false, reason: 'スキルの対象の形が正しくありません' } };
+  }
+}
+
+/** setSkillPrefs の値：{ ノードID: { キー: 値（真偽値・数・短い文字列） } }。中身（選べる値か）は Game が確かめる */
+export function cleanSkillPrefs(v) {
+  const bad = { error: { ok: false, reason: 'スキルの設定の形が正しくありません' } };
+  if (!isPlainObject(v)) return bad;
+  const ids = Object.keys(v);
+  if (ids.length === 0 || ids.length > 8) return bad;
+  const out = {};
+  for (const id of ids) {
+    if (!/^[A-Z][0-9]{2}$/.test(id) || !isPlainObject(v[id])) return bad;
+    const keys = Object.keys(v[id]);
+    if (keys.length > 8) return bad;
+    const kv = {};
+    for (const k of keys) {
+      const x = v[id][k];
+      if (FORBIDDEN_KEYS.has(k) || !ARG_KEY.test(k)) return bad;
+      if (!(typeof x === 'boolean' || (typeof x === 'number' && Number.isFinite(x)) || (typeof x === 'string' && x.length <= 16))) return bad;
+      kv[k] = x;
+    }
+    out[id] = kv;
+  }
+  return { value: out };
+}
+
+/** 任意スキルのID（"P03"・"V07" など） */
+const isActionId = (v) => typeof v === 'string' && /^[A-Z][A-Za-z0-9_]{0,15}$/.test(v);
+
+/**
+ * スキルの発動ログ（game.observeSkills の1件）を、その席に送る形にする。送るのは本人の発動（trigger）と上限の知らせ（diagnostic）だけで、
+ * 中身は表示に使うキーだけ（カード・手札・山札の情報は入れない）。相手の発動は送らない（画面のログも本人の分だけ）
+ */
+export function skillLogFor(entry, playerId) {
+  if (!entry || entry.playerId !== playerId) return null;
+  if (entry.kind === 'trigger') return { kind: 'trigger', turn: entry.turn ?? null, playerId, skillId: entry.skillId ?? null, count: entry.count ?? 1 };
+  if (entry.kind === 'diagnostic') return { kind: 'diagnostic', turn: entry.turn ?? null, playerId, skillId: entry.skillId ?? null, code: entry.code ?? null };
+  return null;
+}
+/** つなぎ直したときに送り直すログの件数（画面のログの上限と同じくらい） */
+const SKILL_LOG_RESEND = 40;
 
 /**
  * 部屋の画面に送るスキルツリー（版・予算・系統・辺・ノード・おすすめ）。効果の判定は送らない（UI は本番の決まりを
@@ -275,6 +381,15 @@ export class Room {
         }
       });
     }
+    // スキルの発動ログ（スキルのある試合だけ。ないときは observeSkills が何もしない）：本人の分だけを本人に
+    game.observeSkills((entry) => {
+      if (this.game !== game) return;
+      for (const seat of this.seats) {
+        if (seat.clients.size === 0) continue;
+        const shown = skillLogFor(entry, seat.playerId);
+        if (shown) this.send(seat, { type: 'skillLog', entries: [shown] });
+      }
+    });
     game.start();
     this.broadcastRoom(); // started と、もう1回の投票を空に戻したことを知らせる
     this.broadcastState();
@@ -309,6 +424,11 @@ export class Room {
     this.broadcastRoom();
     if (this.chatLog.length > 0) client({ type: 'chatLog', messages: this.chatLog.map((m) => this.chatMessage(m)) });
     if (this.game) client({ type: 'state', ...this.stateFor(seat.playerId) });
+    // つなぎ直し：スキルの発動ログの最近の分を送り直す（replace：画面のログを置きかえる）。回数・資源は上の状態に入っている
+    if (this.game?.skillRt) {
+      const entries = this.game.skillEvents.map((e) => skillLogFor(e, seat.playerId)).filter(Boolean).slice(-SKILL_LOG_RESEND);
+      client({ type: 'skillLog', entries, replace: true });
+    }
     return () => {
       this.lastActive = Date.now();
       seat.clients.delete(client);
@@ -344,6 +464,14 @@ export class Room {
     if (method === 'mulligan') {
       // マリガン：だれでも自分の手札だけ（自分の番でなくても）。args は [cardIds]
       args = [seat.playerId, args[0] ?? []];
+    } else if (method === 'listSkillActions') {
+      // 任意スキルの一覧：いつでも、自分の席のものだけ（だれの一覧かは送らせない）
+      return { ok: true, actions: this.game.listSkillActions(seat.playerId) };
+    } else if (method === 'setSkillPrefs') {
+      // スキルの設定（X35 の自動延期など）：自分の席だけ。自分の番でなくても変えられる
+      const prefs = cleanSkillPrefs(args[0]);
+      if (prefs.error) return prefs.error;
+      args = [seat.playerId, prefs.value];
     } else if (DEFENSE_ACTIONS.includes(method)) {
       // 防御は、攻撃を受ける人だけが送れる
       if (this.game.phase !== 'defend') return { ok: false, reason: '今は防御する場面ではありません' };
@@ -352,9 +480,25 @@ export class Room {
       return { ok: false, reason: 'あなたの番ではありません' };
     }
     // 手札にないカードは、相手の手札にあってもなくても同じ文にする（文の違いから相手の手札が分からないように）
-    if (method === 'playCard' || method === 'defend') {
+    if (method === 'playCard' || method === 'defend' || method === 'previewSkillCost') {
       const hand = this.game.getState(seat.playerId).players[seat.playerId].hand || [];
       if (!hand.some((c) => c.cardId === args[0])) return { ok: false, reason: 'そのカードは手札にありません' };
+    }
+    if (method === 'playCard' && args.length > 2) {
+      // クラシックのスキルの選択（HP置換の量など）。知っているキーと値だけを Game に渡す
+      const opts = cleanSkillOptions(args[2]);
+      if (opts.error) return opts.error;
+      args = opts.value === undefined ? [args[0], args[1]] : [args[0], args[1] ?? undefined, opts.value];
+    } else if (method === 'previewSkillCost') {
+      const opts = cleanSkillOptions(args[1]);
+      if (opts.error) return opts.error;
+      args = [args[0], opts.value ?? {}];
+    } else if (method === 'skillAction') {
+      // 任意スキル：自分の席で、自分の番だけ（上で確かめた）。メイン行動中か・回数・支払いは Game が確かめる
+      if (!isActionId(args[0])) return { ok: false, reason: '任意スキルのIDが正しくありません' };
+      const a = cleanActionArgs(args[1]);
+      if (a.error) return a.error;
+      args = [seat.playerId, args[0], a.value];
     }
     let result;
     try {
@@ -363,6 +507,12 @@ export class Room {
       console.error(err);
       result = { ok: false, reason: '操作の形が正しくありません' };
     }
+    if (READ_ACTIONS.includes(method)) {
+      // 見積もり：{ ok, mp, hp, reason } だけを返す（スキルのないゲーム・人は preview: null）
+      return { ok: true, preview: result ? { ok: !!result.ok, reason: result.reason ?? null, mp: result.mp ?? null, hp: result.hp ?? null } : null };
+    }
+    // スキルの結果は、ハンドラが返した中身（兵士のオブジェクトなど）を送らない。変わったことは状態とイベントで届く
+    if (method === 'skillAction' || method === 'setSkillPrefs') result = result?.ok ? { ok: true } : { ok: false, reason: result?.reason ?? '使えません' };
     if (result?.ok) this.lastActionAt = Date.now();
     this.broadcastState();
     this.runCpu();
