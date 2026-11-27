@@ -173,6 +173,16 @@ const OPTIONAL_RULES = {
   // 試合の最初に持っているコインと、自分のターンの始めにもらえるコイン
   initialCoins: 0,
   coinPerTurn: 0,
+  // 段階A1（クラシック・4陣営）：敵兵士の撃破報酬（コイン）と、1人が1ターン（通算 turn）にもらえる上限（0 は上限なし）。
+  // 召喚・蘇生・トークン（骸骨兵・スキルの使い魔など）が倒された／倒したときは出ない。0 なら撃破報酬なし（今までどおり）
+  killCoins: 0,
+  killCoinsPerTurn: 0,
+  // 段階A1：自分の城HPが初めて最大の50%以下になったとき、その人がもらうコイン（各プレイヤー1回。0 ならなし）
+  castleHalfCoins: 0,
+  // 段階A1：魔物の種類ごとのコイン報酬（{ slime: 2, ... }）。書けば monsters.json の reward の代わりにこれを使う（書いていない種類は0）。null なら今までどおり
+  monsterCoinRewards: null,
+  // 段階A1：false なら魔物のごほうびのカード（rewardRarity）を出さない（コイン報酬に置き換えたモード用）。true が今までどおり
+  monsterCardRewards: true,
   // 放置された魔物が城を攻めるたびに、ダメージが増える量（1回目は castleAttack、2回目は +growth、…）
   monsterAttackGrowth: 0,
   // MP：試合の最初に持っている量と上限（maxMp が 0 のときは MP を使わない＝コストなし）
@@ -300,6 +310,8 @@ const isCoinCard = (def) => def.effect === 'gainCoins' || (def.effect === 'dice'
 
 /** 城HPが変わるイベント（このあと背水の陣を確かめる） */
 const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttackedCastle']);
+/** 段階A1：damageSoldier の cause のうち、手番の人の行動とみなして撃破報酬を手番の人に出すもの */
+const KILL_CREDIT_CAUSES = new Set(['spell', 'reaction', 'spirit', 'shot', 'skill', 'guard']);
 /** 死者を従える（魔族のパッシブ）で生まれた骸骨兵の type（カードではない。cardDefs にはない） */
 const RAISED_TYPE = 'raisedSoldier';
 
@@ -749,6 +761,16 @@ export class Game {
     if (rules.soldiersPerTurn !== undefined && !(Number.isInteger(rules.soldiersPerTurn) && rules.soldiersPerTurn >= 1)) {
       throw new Error('rules.json の soldiersPerTurn は1以上の整数にしてください（書かなければ 1）');
     }
+    for (const key of ['killCoins', 'killCoinsPerTurn', 'castleHalfCoins']) {
+      if (rules[key] !== undefined && !(Number.isInteger(rules[key]) && rules[key] >= 0)) throw new Error(`rules.json の ${key} は0以上の整数にしてください（書かなければ 0）`);
+    }
+    if (rules.monsterCoinRewards !== undefined && rules.monsterCoinRewards !== null) {
+      const t = rules.monsterCoinRewards;
+      if (typeof t !== 'object' || Array.isArray(t) || !Object.values(t).every((v) => Number.isInteger(v) && v >= 0)) {
+        throw new Error('rules.json の monsterCoinRewards は { 魔物の種類: 0以上の整数 } にしてください（書かなければ null）');
+      }
+    }
+    if (rules.monsterCardRewards !== undefined && typeof rules.monsterCardRewards !== 'boolean') throw new Error('rules.json の monsterCardRewards は true か false にしてください（書かなければ true）');
     for (const key of ['armorMax', 'poisonTurns', 'poisonMax', 'coinCardsPerTurn']) {
       if (rules[key] !== undefined && !(Number.isInteger(rules[key]) && rules[key] >= 0)) {
         throw new Error(`rules.json の ${key} は0以上の整数にしてください（書かなければ 0）`);
@@ -815,6 +837,8 @@ export class Game {
     if (type === 'castleDamaged' && this.rules.collapseStartRound > 0) this.countCastleDamage(payload);
     // 城HPが変わったら、背水の陣になったか（終わったか）を確かめる
     if (CASTLE_HP_EVENTS.has(type)) this.updateOverdrive();
+    // 段階A1：城HPが初めて50%以下になった人にコイン（castleHalfCoins が0なら何もしない）
+    if (CASTLE_HP_EVENTS.has(type) && this.rules.castleHalfCoins > 0) this.checkCastleHalf();
     // スキル：Game のイベントをスキルイベントに直す（スキルのないゲームでは何もしない）
     if (this.skillRt) this.skillRt.onGameEvent(type, payload);
   }
@@ -885,6 +909,38 @@ export class Game {
   }
 
   /** 城ごとに背水の陣かを確かめ、変わったら overdriveChanged を出す */
+  /** 段階A1：城HPが初めて最大の50%以下になった人に castleHalfCoins（各プレイヤー1回。チーム戦では城の持ち主） */
+  checkCastleHalf() {
+    for (const id of this.aliveSides()) {
+      const owner = this.players[id];
+      if (owner.castleHalfRewarded || owner.castle.hp <= 0 || owner.castle.hp * 2 > owner.castle.maxHp) continue;
+      owner.castleHalfRewarded = true;
+      this.changeCoins(owner, this.rules.castleHalfCoins, 'castleHalf');
+    }
+  }
+
+  /**
+   * 段階A1：敵兵士の撃破報酬。owner の兵士 soldier が倒れた（killed）とき、by（倒した人）に killCoins。
+   * 出ないとき：killCoins が0／by がない・味方／倒された兵士か倒した兵士（killer）が召喚・蘇生・トークン（無限獲得の防止）／
+   * by がこのターン（通算 turn）にもう killCoinsPerTurn 枚もらった
+   */
+  killBounty(owner, soldier, by, killer = null) {
+    const coins = this.rules.killCoins;
+    if (!(coins > 0) || !by || this.phase === 'gameOver') return;
+    const p = this.players[by];
+    if (!p || this.side(by) === this.side(owner.id)) return;
+    if (soldier.token || soldier.noBounty || killer?.token || killer?.noBounty) return;
+    if (p.killCoinTurn !== this.turn) {
+      p.killCoinTurn = this.turn;
+      p.killCoinsThisTurn = 0;
+    }
+    const cap = this.rules.killCoinsPerTurn;
+    const gain = cap > 0 ? Math.min(coins, cap - p.killCoinsThisTurn) : coins;
+    if (gain <= 0) return;
+    p.killCoinsThisTurn += gain;
+    this.changeCoins(p, gain, 'kill');
+  }
+
   updateOverdrive() {
     if (!this.rules.overdriveAttack || !this.rules.overdriveHpRatio) return;
     for (const id of this.aliveSides()) {
@@ -1660,14 +1716,17 @@ export class Game {
   }
 
   /** 兵士にダメージ（盾が先に受ける）。soldierDamaged を出し、HPが0なら消す。消えたら true */
-  damageSoldier(owner, soldier, amount, cause) {
+  /** @param {{by?: string|null, killer?: object|null}} [credit] 段階A1：撃破報酬を受け取る人と倒した兵士（省略すると cause で決める） */
+  damageSoldier(owner, soldier, amount, cause, credit = null) {
     amount = this.reduceDamage(owner, amount);
     const blocked = soldier.takeDamage(amount);
     this.emit('soldierDamaged', {
       playerId: owner.id, soldierId: soldier.soldierId, amount, hp: soldier.hp, cause, blocked,
     });
     if (!soldier.isDead) return false;
-    this.removeSoldier(owner, soldier, 'killed');
+    // 撃破報酬：手番の人の行動（魔法・反応・精霊・射撃・スキル・身代わり）で倒れたら手番の人。毒・天候・噴火などはだれでもない
+    const by = credit && 'by' in credit ? credit.by : KILL_CREDIT_CAUSES.has(cause) ? this.currentPlayer : null;
+    this.removeSoldier(owner, soldier, 'killed', by, credit?.killer ?? null);
     return true;
   }
 
@@ -2086,7 +2145,12 @@ export class Game {
     }
   }
 
-  removeSoldier(owner, soldier, reason) {
+  /**
+   * @param {string|null} [by] 段階A1：倒した人（撃破報酬 killBounty。戦い・射撃は相手の兵士の持ち主。省略すると、
+   *   魔法・反応・精霊などの手番の人の行動は手番の人、それ以外（毒・天候・魔物など）はだれでもない＝報酬なし）
+   * @param {object|null} [killer] 倒した兵士（召喚・蘇生・トークンなら報酬なし）
+   */
+  removeSoldier(owner, soldier, reason, by = undefined, killer = null) {
     owner.removeSoldier(soldier.soldierId);
     // 蘇生（reviveFallen）のために、HPが0になって倒れた（killed）兵士を持ち主ごとに1体だけ覚えておく（getState には出さない）。
     // 魔物のカードの駒は山札に戻らない特別なカードなので、生き返らせない
@@ -2098,6 +2162,7 @@ export class Game {
     // スキル：墓地・撃破（SP）・トークンの消滅・onUnitDeath
     if (this.skillRt) this.skillRt.unitRemoved(owner, soldier, reason);
     this.emit('soldierDestroyed', { playerId: owner.id, soldierId: soldier.soldierId, reason });
+    if (reason === 'killed' && this.rules.killCoins > 0) this.killBounty(owner, soldier, by === undefined ? null : by, killer);
   }
 
   /**
@@ -2180,7 +2245,7 @@ export class Game {
       this.emit('soldierShot', { ...shot, target: { kind: 'soldier', playerId: owner.id, soldierId: victim.soldierId }, amount });
       const hp0 = victim.hp;
       if (miss) this.emitMiss(player.id, 'shot', { soldierId: soldier.soldierId });
-      else if (this.damageSoldier(owner, victim, amount, 'shot')) {
+      else if (this.damageSoldier(owner, victim, amount, 'shot', { by: player.id, killer: soldier })) {
         this.raiseOnKill(player, soldier); // 魔族のパッシブ（死者を従える）
         this.lifestealBy(player, soldier, hp0); // 吸命の剣
       } else {
@@ -2554,13 +2619,21 @@ export class Game {
     this.emit('monsterDamaged', { monsterId: monster.monsterId, amount, hp: monster.hp, by });
   }
 
+  /** 魔物のコイン報酬：rules.monsterCoinRewards（段階A1）があればその種類の値（なければ0）、なければ monsters.json の reward */
+  monsterCoinReward(monster) {
+    const table = this.rules.monsterCoinRewards;
+    if (table) return Object.hasOwn(table, monster.type) ? table[monster.type] : 0;
+    return monster.def.reward ?? 0;
+  }
+
   defeatMonsterIfDead(monster, playerId) {
     if (!monster.isDead) return;
     this.monsters = this.monsters.filter((m) => m !== monster);
     const slot = monster.roadId === PLAZA ? PLAZA : this.findRoad(monster.roadId).pairId;
     this.monsterCooldown.set(slot, this.round + this.rules.monsterCooldownRounds + 1);
-    const { reward } = monster.def;
-    const baseRarity = monster.rewardRarity ?? monster.def.rewardRarity ?? null;
+    // 段階A1：monsterCoinRewards（モードの rules）があれば、魔物の種類ごとのコインを使う。monsterCardRewards が false ならカードは出さない
+    const reward = this.monsterCoinReward(monster);
+    const baseRarity = this.rules.monsterCardRewards === false ? null : monster.rewardRarity ?? monster.def.rewardRarity ?? null;
     // ラッキー：rewardLuckyChance の確率で、1つ上のレアリティが出る（確率が0のときは乱数を使わない）
     let rewardRarity = baseRarity;
     let lucky = false;
@@ -3127,8 +3200,8 @@ export class Game {
     // 消える順番は soldierDamaged と同じ（守る側 → 攻める側）
     const deadD = defender.isDead;
     const deadA = attacker.isDead;
-    for (const [owner, s] of [[enemy, defender], [player, attacker]]) {
-      if (s.isDead) this.removeSoldier(owner, s, 'killed');
+    for (const [owner, s, by, killer] of [[enemy, defender, player.id, attacker], [player, attacker, enemy.id, defender]]) {
+      if (s.isDead) this.removeSoldier(owner, s, 'killed', by, killer);
     }
     // 魔族のパッシブ（死者を従える）：戦いで敵を倒した側（守る側 → 攻める側の順）
     if (deadD) this.raiseOnKill(player, attacker);
@@ -3714,6 +3787,7 @@ export class Game {
     soldier.baseAttack += player.castleDef.soldierAttackBonus ?? 0; // 兵舎
     soldier.baseAttack += player.armyAttack; // 訓練（コインで買う）
     soldier.maxHp = fallen.maxHp;
+    soldier.noBounty = true; // 段階A1：蘇生した兵士は撃破報酬の対象外
     soldier.hp = Math.max(1, Math.ceil(fallen.maxHp * card.def.amount));
     player.soldiers.push(soldier);
     if (soldier.stealth) (this.stealthSides ??= new Map()).set(soldierId, this.side(player.id));
@@ -4976,7 +5050,10 @@ export class Game {
       // 昼と夜："day" か "night"。夜なら nightRoundsLeft に残りの周回
       time: this.night ? 'night' : 'day',
       nightRoundsLeft: this.night ? this.night.roundsLeft : 0,
-      monsters: this.monsters.map((m) => m.toState()),
+      // 段階A1：魔物のごほうびをコインに置き換えたモードでは、reward・rewardRarity もそれに合わせる
+      monsters: this.monsters.map((m) => (this.rules.monsterCoinRewards || this.rules.monsterCardRewards === false
+        ? { ...m.toState(), reward: this.monsterCoinReward(m), ...(this.rules.monsterCardRewards === false ? { rewardRarity: null } : {}) }
+        : m.toState())),
       roads: this.roads.map((r) => r.toState()),
       turn: this.turn,
       currentPlayer: this.currentPlayer,
