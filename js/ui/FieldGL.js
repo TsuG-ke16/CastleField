@@ -2417,7 +2417,7 @@ export class FieldGL {
       this.rafId = 0;
       if (this.disposed || this.hidden || (typeof document !== 'undefined' && document.hidden) || !this.stageGroup) return;
       // Rendering cadence only; game updates and animations keep their existing inputs.
-      if(now-this.lastFrameTime >= (prefersReducedMotion()?100:1000/30))this.renderFrame(now);
+      if(now-(this.lastRenderCompletedAt??this.lastFrameTime) >= (prefersReducedMotion()?(this.activeEffects.length?100:250):1000/30)){this.renderFrame(now);this.lastRenderCompletedAt=performance.now();}
       this.rafId = requestAnimationFrame(tick);
     };
     this.rafId = requestAnimationFrame(tick);

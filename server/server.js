@@ -103,6 +103,7 @@ function readJson(req) {
 }
 
 const STATIC_TYPES = {
+  '.webp': 'image/webp', // UI atlas delivery; no game/API behavior changes.
   '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.glb': 'model/gltf-binary', '.svg': 'image/svg+xml', '.mp3': 'audio/mpeg',
   '.webmanifest': 'application/manifest+json; charset=utf-8',

@@ -90,3 +90,6 @@ html.at-title,html.at-title body{background:#eee0ba}
 #app #title .title-box{align-items:stretch}
 #app #title .title-choices{width:100%;max-width:none;align-self:stretch}
 #app #menu button[data-ui-skin]{white-space:normal!important;overflow-wrap:anywhere;line-height:1.4;min-height:52px;height:auto!important;padding:8px 10px!important}
+/* Numerical deck metadata is dark on parchment, including nested bold labels. */
+#app #home.home-reborn .home-deck-meta :is(span,b){color:#4c331c;text-shadow:none}
+#app #home.home-reborn .home-deck-meta b{font-weight:900;font-variant-numeric:tabular-nums}

@@ -1,7 +1,7 @@
 // Production UI routes: no Game mutation, no rules or effect changes.
 import {createRequire} from 'node:module';import {mkdirSync,writeFileSync} from 'node:fs';
 const{chromium}=createRequire(import.meta.url)('playwright');
-const base=process.env.UI_TEST_URL??'http://127.0.0.1:3000';const out=new URL('../assets/review/kingdom-fantasy-v2/',import.meta.url).pathname;mkdirSync(out,{recursive:true});
+const base=process.env.UI_TEST_URL??'http://127.0.0.1:3000';const out=new URL(process.env.UI_REVIEW_DIR??'../assets/review/kingdom-fantasy-v2/',import.meta.url).pathname;mkdirSync(out,{recursive:true});
 const browser=await chromium.launch({headless:true,executablePath:process.env.UI_TEST_CHROMIUM??'/usr/bin/chromium',args:['--no-sandbox']});const report=[];
 try{for(const[device,width,height]of[['pc',1440,900],['mobile',390,844]]){
  const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce',serviceWorkers:'block'});const page=await context.newPage();page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));

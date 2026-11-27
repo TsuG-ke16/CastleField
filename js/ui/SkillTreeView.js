@@ -3,12 +3,14 @@
 // パン、ピンチ、検索、取得可能一覧、マウス即時選択、詳細、保存を担当する。
 // 接続・効果・条件・コストは js/game/SkillTree.js（skillTreeModel.js 経由）を唯一の正とし、ここで変更しない。
 
+import { TREE_PATHS } from './skillTreePaths.js';
+import { routeCurve } from './skillTreeRoutes.js';
 import { TREE_LAYOUT } from './skillTreeLayout.js';
 import { GROUP_ART, START_ART, CROSS_ART, FRAME_ART, SKILL_ART, atlasMarkup, atlasElement } from './KingdomArt.js';
 import { treeIndex } from '../game/SkillTree.js';
 import {
   allStatuses, buildSummary, edgeList, edgeState, routeTo, searchNodes, groupList, nodeDetail, nodeKind,
-  acquire, releaseNode, setConfig, applyPreset, loadSavedBuild, saveBuild, buildForGame, STATE_LABEL,
+  acquire, releaseNode, setConfig, applyPreset, loadSavedBuild, saveBuild, buildForGame, STATE_LABEL, implementationOf,
 } from './skillTreeModel.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
@@ -61,6 +63,7 @@ export class SkillTreeView {
     this.box.querySelector('.st-title').textContent = title;
     this.box.querySelector('.st-done').textContent = doneLabel;
     this.previousFocus = document.activeElement;
+    this.box.querySelectorAll('image[data-atlas-src]').forEach(el=>el.setAttribute('href',el.dataset.atlasSrc));
     this.box.hidden = false;
     document.documentElement.classList.add('skilltree-open');
     if (this.notice) {
@@ -93,15 +96,15 @@ export class SkillTreeView {
       <header class="st-head">
         <button type="button" class="st-back" aria-label="もどる">もどる</button>
         <h2 id="st-title" class="st-title"></h2>
-        <div class="st-summary" aria-live="polite"></div>
+        <button type="button" class="st-tools-toggle" aria-expanded="false" aria-controls="st-tools st-groups">検索・系統</button><div class="st-summary" aria-live="polite"></div>
       </header>
-      <div class="st-tools">
+      <div id="st-tools" class="st-tools">
         <label class="st-search-wrap"><span class="visually-hidden">ノードを探す</span>
           <input class="st-search" type="search" placeholder="名前・効果・系統で探す（例：会心、MP）" autocomplete="off" enterkeyhint="search"></label>
         <select class="st-preset" aria-label="おすすめのビルド"><option value="">おすすめを適用…</option>${presets.map(([id, p]) => `<option value="${esc(id)}">${esc(p.name)}</option>`).join('')}</select>
         <button type="button" class="st-reset">全リセット</button>
       </div>
-      <div class="st-groups" role="toolbar" aria-label="系統で絞り込む"></div>
+      <div id="st-groups" class="st-groups" role="toolbar" aria-label="系統で絞り込む"></div>
       <ul class="st-results" aria-label="見つかったノード" hidden></ul>
       <div class="st-stage">
         <svg class="st-svg" role="group" aria-label="スキルツリーの図（ドラッグで移動・ホイールかピンチで拡大）"><defs><pattern id="st-dots" width="60" height="60" patternUnits="userSpaceOnUse"><circle cx="0" cy="0" r="1.4" fill="#997344" opacity=".18"/></pattern></defs><rect class="st-bg" x="-5000" y="-5000" width="10000" height="10000" fill="url(#st-dots)"/><g class="st-labels"></g><g class="st-edges"></g><g class="st-route"></g><g class="st-nodes"></g></svg>
@@ -116,8 +119,8 @@ export class SkillTreeView {
             <li><span class="lg lg-owned">✓</span>取得済み（ロイヤルブルーの塗り・チェック）</li>
             <li><span class="lg lg-avail">＋</span>取得できる（金の太い輪郭）</li>
             <li><span class="lg lg-blocked">!</span>条件不足（破線：必須ノード・奥義・ポイント）</li>
-            <li><span class="lg lg-unconn"> </span>未接続（点線・暗い・灰色のアイコン）</li>
-            <li>密集した場所は＋で拡大、または「取得できる」一覧から選べます。</li><li>ロイヤルブルーの太線＝取得済みの経路／金の線＝次に取れるノードへの線／点線＝横断の線</li>
+            <li><span class="lg lg-unconn"> </span>未接続（点線）／休眠は「休」印</li>
+            <li>線の交差点では接続しません。青い線と「つながるスキル」で確認できます。</li><li>密集した場所は＋で拡大、または「取得できる」一覧から選べます。</li><li>ロイヤルブルーの太線＝取得済みの経路／金の線＝次に取れるノードへの線／点線＝横断の線</li>
           </ul>
         </details>
       </div>
@@ -141,6 +144,7 @@ export class SkillTreeView {
     const chip = (id, name, color) => `<button type="button" class="st-chip" data-group="${esc(id)}" aria-pressed="false" style="--gc:${esc(color)}">${GROUP_ART[id] || id==='X' ? atlasMarkup(GROUP_ART[id]??CROSS_ART,'',26) : ''}${esc(name)}</button>`;
     groups.innerHTML = chip('', 'すべて', '#ccc') + chip('available', '取得できる', '#fff') + groupList(this.tree).map((g) => chip(g.id, g.name, g.color)).join('');
 
+    box.querySelector('.st-tools-toggle').addEventListener('click',e=>{const on=box.classList.toggle('tools-expanded');e.currentTarget.setAttribute('aria-expanded',String(on));if(this.view)this.applyView();});
     this.drawStatic();
 
     box.querySelector('.st-back').addEventListener('click', () => { this.close(); this.handlers?.onCancel?.(); });
@@ -208,6 +212,8 @@ export class SkillTreeView {
       this.update(r.build);
     });
     this.setupGestures();
+    this.stageObserver=new ResizeObserver(()=>{if(!this.box.hidden&&this.view)this.applyView()});
+    this.stageObserver.observe(this.box.querySelector('.st-stage'));
     window.addEventListener('resize', () => { if (!this.box.hidden) this.applyView(); });
   }
 
@@ -217,18 +223,13 @@ export class SkillTreeView {
   }
 
   edgePath(a, b) {
-    const pa=this.pos(a),pb=this.pos(b);
-    const cross=this.ix.byId.get(a)?.cross ? a : this.ix.byId.get(b)?.cross ? b : null;
-    if (!cross) {
-      if (a===this.ix.startId || b===this.ix.startId) {
-        const id=a===this.ix.startId?b:a,p=this.pos(id),c=TREE_LAYOUT.centers[id[0]],y=c.y-150;
-        return `M 0 -150 L -200 -150 L -200 ${y} L ${c.x-200} ${y} L ${c.x-200} ${p.y} L ${p.x} ${p.y}`;
-      }
-      return `M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`;
-    }
-    const normal=cross===a?b:a,p=this.pos(normal),q=this.pos(cross),c=TREE_LAYOUT.centers[normal[0]];
-    const gx=c.x+(q.x<c.x?-200:200),gy=c.y+(q.y<c.y?-150:150);
-    return `M ${p.x} ${p.y} Q ${gx} ${p.y} ${gx} ${gy} L ${q.x} ${gy} L ${q.x} ${q.y}`;
+    this.routeCache ??= new Map();
+    const key=[a,b].sort().join(':');
+    if(TREE_PATHS[key])return TREE_PATHS[key];
+    if(!this.routeCache.has(key))this.routeCache.set(key,routeCurve(a,b,TREE_LAYOUT.positions,id=>{
+      const kind=nodeKind(this.ix.byId.get(id)??null);return R[kind]*(kind==='ultimate'?1.35:1)+5;
+    }));
+    return this.routeCache.get(key);
   }
 
   /** 辺とノードの形（状態に関係しない部分）を一度だけ作る */
@@ -238,25 +239,27 @@ export class SkillTreeView {
       const g=this.tree.groups[gid];
       const district=document.createElementNS(SVG,'g');district.classList.add('st-district');district.dataset.group=gid;
       district.style.setProperty('--gc',g.color);
-      district.innerHTML=`<rect x="${c.x-174}" y="${c.y-156}" width="348" height="312" rx="26"/><path d="M ${c.x-145} ${c.y-118} H ${c.x+145}"/><text x="${c.x+12}" y="${c.y-130}">${esc(g.name)}</text>`;
-      const icon=atlasElement(GROUP_ART[gid],42,'st-district-icon');icon.setAttribute('x',c.x-95);icon.setAttribute('y',c.y-162);district.append(icon);
+      district.innerHTML=`<ellipse cx="${c.x}" cy="${c.y}" rx="192" ry="148"/><path d="M ${c.x-70} ${c.y-158} Q ${c.x} ${c.y-176} ${c.x+70} ${c.y-158}"/><text x="${c.x+12}" y="${c.y-170}">${esc(g.name)}</text>`;
+      const icon=atlasElement(GROUP_ART[gid],42,'st-district-icon');icon.setAttribute('x',c.x-95);icon.setAttribute('y',c.y-202);district.append(icon);
       this.gLabels.append(district);
     }
     this.edgeEls = edgeList(this.tree).map(([a, b]) => {
       const line = document.createElementNS(SVG, 'path');
       line.setAttribute('d',this.edgePath(a,b));
+      line.dataset.source=a;line.dataset.target=b;
+      const halo=line.cloneNode();halo.classList.add('st-edge-halo');this.gEdges.append(halo);
       line.classList.add('st-edge');
       if(a===this.ix.startId || b===this.ix.startId)line.classList.add('trunk');
       if (this.ix.byId.get(a)?.cross || this.ix.byId.get(b)?.cross) line.classList.add('cross');
       this.gEdges.append(line);
-      return { a, b, el: line };
+      return { a, b, el: line, halo };
     });
     this.nodeEls = new Map();
     const ids = [this.ix.startId, ...this.ix.order];
     for (const id of ids) {
       const node = this.ix.byId.get(id) ?? null;
       const kind = nodeKind(node);
-      const p = pos(id);
+      const p = this.pos(id);
       const color = node ? (node.cross ? this.tree.crossGroup?.color ?? '#fff' : this.tree.groups[node.group]?.color ?? '#999') : '#ffd54f';
       const g = document.createElementNS(SVG, 'g');
       g.classList.add('st-node', `k-${kind}`);
@@ -294,15 +297,19 @@ export class SkillTreeView {
       idText.classList.add('st-id');
       const below = kind === 'ultimate' ? r * 1.35 : r;
       idText.setAttribute('y', below + 14);
-      idText.textContent = node ? id : 'START';
+      idText.textContent = node ? '' : 'START';
       const name = document.createElementNS(SVG, 'text');
       name.classList.add('st-name');
-      name.setAttribute('y', below + 27);
-      name.textContent = node ? node.name : '';
+      name.setAttribute('y', below + 22);
+      if(node){const letters=Array.from(node.name);for(let i=0;i<Math.min(letters.length,10);i+=5){const t=document.createElementNS(SVG,'tspan');t.setAttribute('x','0');t.setAttribute('dy',i?'1.2em':'0');t.textContent=letters.slice(i,i+5).join('')+(i===5&&letters.length>10?'…':'');name.append(t)}}
+      const title=document.createElementNS(SVG,'title');title.textContent=node?.name??'スタート';g.append(title);
       const hit = document.createElementNS(SVG, 'circle');
       hit.classList.add('st-hit');
       hit.setAttribute('r', Math.max(r + 5, 24));
-      g.append(hit, ring, shape, decor, img, badge, idText, name);
+      const dormant=node && implementationOf(id)===null;
+      g.classList.toggle('st-dormant',Boolean(dormant));
+      const sleep=document.createElementNS(SVG,'text');sleep.classList.add('st-sleep');sleep.setAttribute('x',-r);sleep.setAttribute('y',-r);sleep.textContent=dormant?'休':'';
+      g.append(hit, ring, shape, decor, img, badge, idText, name,sleep);
       this.gNodes.append(g);
       this.nodeEls.set(id, { g, mark, node });
     }
@@ -322,8 +329,9 @@ export class SkillTreeView {
       g.classList.remove('st-owned', 'st-available', 'st-blocked', 'st-unconnected', 'st-start', 'dim', 'hit', 'selected');
       g.classList.add(`st-${s.state}`);
       mark.textContent = MARK[s.state] ?? '';
-      const label = node ? `${id} ${node.name}（${node.cross ? '横断' : node.ultimate ? '奥義' : '通常'}）・${STATE_LABEL[s.state]}` : 'スタート';
-      g.setAttribute('aria-label', label);
+      const label = node ? `${node.name} ${id}（${node.cross ? '横断' : node.ultimate ? '奥義' : '通常'}）・${STATE_LABEL[s.state]}` : 'スタート';
+      g.setAttribute('aria-label', label+(node&&implementationOf(id)===null?'・休眠':''));
+      g.classList.toggle('neighbor',Boolean(this.selected&&this.ix.adj.get(this.selected)?.has(id)));
       let dim = false;
       if (matches && id !== this.ix.startId) dim = !matches.has(id);
       if (this.filter === 'available' && id !== this.ix.startId) dim = s.state !== 'available';
@@ -337,6 +345,10 @@ export class SkillTreeView {
       e.el.classList.remove('path', 'next', 'plain', 'dim');
       e.el.classList.add(edgeState(st, e.a, e.b));
       if (matches || this.filter === 'available') e.el.classList.add('dim');
+      e.el.classList.toggle('connected',e.a===this.selected||e.b===this.selected);
+      e.el.classList.toggle('unfocused',Boolean(this.selected&&e.a!==this.selected&&e.b!==this.selected));
+      e.halo.classList.toggle('connected',e.a===this.selected||e.b===this.selected);
+      if(e.a===this.selected||e.b===this.selected)this.gEdges.append(e.halo,e.el);
     }
     for (const b of this.box.querySelectorAll('.st-chip')) b.setAttribute('aria-pressed', String((b.dataset.group || null) === this.filter));
     this.renderSummary();
@@ -365,7 +377,7 @@ export class SkillTreeView {
       ? ids.slice(0, 40).map((id) => {
         const n = this.ix.byId.get(id);
         const s = this.statuses.get(id).state;
-        return `<li><button type="button" class="st-result st-r-${s}" data-id="${id}"><span class="st-r-mark" aria-hidden="true">${MARK[s] || '·'}</span><b>${id}</b> ${esc(n.name)} <small>${STATE_LABEL[s]}</small></button></li>`;
+        return `<li><button type="button" class="st-result st-r-${s}" data-id="${id}"><span class="st-r-mark" aria-hidden="true">${MARK[s] || '·'}</span><b>${esc(n.name)}</b> <small>${STATE_LABEL[s]}</small></button></li>`;
       }).join('') + (ids.length > 40 ? `<li class="st-more">ほか ${ids.length - 40}件（言葉をしぼってください）</li>` : '')
       : '<li class="st-more">見つかりません</li>';
   }
@@ -405,6 +417,7 @@ export class SkillTreeView {
     } else if (s.state !== 'start') {
       actions = `<button type="button" class="small-btn" data-act="acquire" aria-disabled="true">取得できません</button><p class="st-reason">${esc(s.reason)}</p>${route ? `<p class="st-route-text">ここまでの道：${route.map((x) => esc(`${x}`)).join(' → ')}（${route.length}pt）</p>` : ''}`;
     }
+    const connections=[...(this.ix.adj.get(id)??[])].map(target=>`<button type="button" data-jump="${target}">${esc(this.ix.byId.get(target)?.name??'スタート')} <small>${STATE_LABEL[this.statuses.get(target)?.state]??''}</small></button>`).join('');
     const dnode = this.ix.byId.get(id);
     const dicon = dnode ? SKILL_ART[id] : START_ART;
     this.detail.innerHTML = `
@@ -419,10 +432,11 @@ export class SkillTreeView {
       ${IMPL_TEXT[d.implemented] ? `<p class="st-d-row st-dormant">${esc(IMPL_TEXT[d.implemented])}</p>` : ''}
       <p class="st-d-state st-s-${s.state}"><span aria-hidden="true">${MARK[s.state] || '·'}</span> ${esc(STATE_LABEL[s.state])}</p>
       ${cfg}
-      <div class="st-d-actions">${actions}</div>`;
+      <nav class="st-connections" aria-label="つながるスキル"><b>つながるスキル</b>${connections}</nav><div class="st-d-actions">${actions}</div>`;
   }
 
   onDetailClick(e) {
+    const target=e.target.closest('[data-jump]')?.dataset.jump;if(target)return this.select(target,{center:true});
     const act = e.target.closest('[data-act]')?.dataset.act;
     if (!act) return;
     if (act === 'close') return this.select(null);
@@ -469,7 +483,7 @@ export class SkillTreeView {
     this.fit();
     if (this.size().w < 900) {
       if (this.build.ids.length) this.centerOn(this.build.ids.at(-1));
-      else { const {w,h}=this.size(); this.view={cx:0,cy:-150,k:Math.min(w/780,h/640,0.65)}; this.applyView(); }
+      else { const {w,h}=this.size(); this.view={cx:0,cy:0,k:Math.min(w/780,h/640,0.65)}; this.applyView(); }
     }
   }
 
@@ -490,9 +504,10 @@ export class SkillTreeView {
     this.svg.setAttribute('viewBox', `${this.view.cx - w / (2 * k)} ${this.view.cy - h / (2 * k)} ${w / k} ${h / k}`);
     this.svg.classList.toggle('zoom-names', k >= 0.85);
     // CSS pixels: every node has a hit disc at least 48px wide at every zoom.
-    for (const { g, node } of this.nodeEls.values()) {
+    if(this.hitScale!==k)for (const { g, node } of this.nodeEls.values()) {
       g.querySelector('.st-hit').setAttribute('r', Math.max(R[nodeKind(node)] + 5, 24 / k));
     }
+    this.hitScale=k;
     this.svg.classList.toggle('zoom-far', k < 0.3);
     this.drawMinimap();
   }
@@ -612,7 +627,7 @@ export class SkillTreeView {
       if (pts.size < 2) pinch = null;
       if (pts.size === 0 && moved <= 6 && e.type === 'pointerup') {
         const now = performance.now();
-        if (lastTap && now - lastTap.time < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 28) {
+        if (e.pointerType !== 'mouse' && lastTap && now - lastTap.time < 320 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 28) {
           clearTimeout(this.tapTimer);
           this.zoomAt(1.6, e.clientX, e.clientY); lastTap = null;
         } else {

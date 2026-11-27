@@ -856,3 +856,7 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 `assets/ui/kingdom-v2/*.png` の14枚はOpenAI画像生成でこのプロジェクト用に新規制作。参照はプロジェクト既存の `style-reference.png`、生成した `groups.png`、既存の `cards/card-fireball.png`。外部作品の素材は使用していない。利用条件は本ファイル「本番用PNG」のOpenAI規約・AI生成の記述に従う。各画像の一覧・セル用途・寸法・ハッシュは同ディレクトリのREADME.mdとimage-inventory.jsonを参照。
 
 `assets/review/kingdom-fantasy-v2/` はPlaywright/Chromiumで実画面・実際の画像対応コードを描画した確認資料。追加の外部素材はなし。
+
+## 第3版の画像配信（2026-11-27）
+
+生成した14枚のPNG原画を `assets/review/kingdom-fantasy-v3/sources/` へ保存し、Pillow/libwebpで配信用WebPを `assets/ui/kingdom-v2/` に生成。原画のデザインは変更しない。カード・人物・枠は無劣化、効果アイコンは品質95、アルファは全て保持。元画像の利用条件は上記と同じ。

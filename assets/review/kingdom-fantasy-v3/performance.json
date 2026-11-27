@@ -1,0 +1,24 @@
+[
+  {
+    "version": "v2-with-coordinate-reference-fix",
+    "atlasTransferredBytes": 24579176,
+    "panFPS": 16.482610845555687,
+    "frameP95Ms": 169.80000000074506,
+    "constructMs": 153.7000000011176,
+    "readyMs": 519.5,
+    "deferred": 0,
+    "panMedianMs": 4.699999999254942,
+    "panP95Ms": 29.90000000037253
+  },
+  {
+    "version": "v3",
+    "atlasTransferredBytes": 11018089,
+    "panFPS": 21.362449560882983,
+    "frameP95Ms": 103.29999999888241,
+    "constructMs": 65.30000000074506,
+    "readyMs": 332,
+    "deferred": 421,
+    "panMedianMs": 1.3999999985098839,
+    "panP95Ms": 3
+  }
+]

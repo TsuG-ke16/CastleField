@@ -76,3 +76,28 @@ html.skilltree-open,html.skilltree-open body{overflow:hidden}
 .st-edge.trunk{opacity:.15;stroke-width:2}.st-edge.trunk.path{opacity:.8;stroke-width:5}
 .st-available:not(.selected) .st-ring{opacity:1;stroke:#9b650b;stroke-width:3;stroke-dasharray:none}
 .st-owned:not(.selected) .st-ring{opacity:1;stroke:#2458a8;stroke-width:3;stroke-dasharray:none}
+/* Finishing: open groves, individual routes and name-first labels. */
+.st-district ellipse{fill:var(--gc);fill-opacity:.045;stroke:none}
+.st-district path{stroke:#bb9555;stroke-width:3;fill:none}
+.st-district text{font-size:24px;fill:#59391f;stroke:#fff8e8;stroke-width:6}
+.st-edge-halo{fill:none;stroke:#fff7e3;stroke-width:7;opacity:.85;pointer-events:none}
+.st-edge{opacity:.42;stroke-width:2.5}.st-edge.trunk{opacity:.25;stroke-dasharray:4 5}
+.st-edge.cross{stroke:#8d6641;stroke-dasharray:7 4;opacity:.5}
+.st-edge.connected{opacity:1!important;stroke:#1c58b1!important;stroke-width:5!important;stroke-dasharray:none!important}
+.st-edge.unfocused{opacity:.09!important}.st-edge-halo.connected{stroke-width:10;opacity:1}
+.st-node.neighbor .st-ring{opacity:1;stroke:#1c58b1;stroke-width:3;stroke-dasharray:3 4}
+.st-name{font-size:12px;stroke:#fff8e8;stroke-width:5;fill:#422b18;font-weight:900}
+.zoom-names .st-name,.st-node.selected .st-name,.st-node.neighbor .st-name{display:inline}
+.st-id{font-size:11px;fill:#755637}.st-sleep{font-size:13px;font-weight:900;fill:#704792;paint-order:stroke;stroke:#fff8e8;stroke-width:5}
+.st-dormant .st-shape{stroke:#865aa2;stroke-dasharray:8 3 2 3}
+.st-connections{display:grid;gap:6px;margin:12px 0}.st-connections>b{color:#674326}
+.st-connections button{font-size:12px!important;text-align:left;background:#edf3ff!important;box-shadow:none!important;border-color:#8eaaCD!important}
+.st-connections small{display:block;font-size:11px;color:#574527}
+.st-tools-toggle{display:none}
+@media(max-height:540px) and (max-width:950px){
+ .st-tools-toggle{display:block;font-size:12px!important}
+ .skilltree:not(.tools-expanded) :is(.st-tools,.st-groups,.st-results){display:none}
+ .st-head{gap:8px}.st-title{font-size:12px}.st-title::before{display:none}
+ .st-legend{max-width:220px}.st-legend summary{font-size:11px}
+ .skilltree:has(.st-detail:not([hidden])){grid-template-columns:minmax(0,1fr) 280px}
+}

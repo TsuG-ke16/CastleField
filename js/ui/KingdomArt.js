@@ -11,10 +11,11 @@ export function atlasMarkup(spec, cls='', size=32) {
  if(!spec)return '';
  const {sheet,index,cols,rows}=spec;
  const aspect=sheet==='decor'?2:sheet==='classic-spells'?3:sheet==='cards-extra2'?1.5:sheet==='skills-0'?1267/1241:1;
- const inset=sheet==='navigation'&&index>=8?0.035:0;
+ const deferred=['st-icon','st-node-frame','st-district-icon'].includes(cls);
+ const inset=(sheet==='navigation'&&index>=8)||(sheet==='cards-extra2'&&index===1)?0.035:0;
  const clipId=`kingdom-clip-${++atlasSequence}`;
  const x=(index%cols)/cols,y=Math.floor(index/cols)/(rows*aspect);
- return `<svg class="kingdom-art ${cls}" viewBox="${x} ${y} ${1/cols} ${1/(rows*aspect)}" width="${size}" height="${size}" overflow="hidden" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><defs><clipPath id="${clipId}"><rect x="${x+inset/cols}" y="${y}" width="${(1-inset*2)/cols}" height="${1/(rows*aspect)}"/></clipPath></defs><g clip-path="url(#${clipId})"><image href="assets/ui/kingdom-v2/${sheet}.png" width="1" height="${1/aspect}"/></g></svg>`;
+ return `<svg class="kingdom-art ${cls}" viewBox="${x} ${y} ${1/cols} ${1/(rows*aspect)}" width="${size}" height="${size}" overflow="hidden" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><defs><clipPath id="${clipId}"><rect x="${x+inset/cols}" y="${y}" width="${(1-inset*2)/cols}" height="${1/(rows*aspect)}"/></clipPath></defs><g clip-path="url(#${clipId})"><image ${deferred?'data-atlas-src':'href'}="assets/ui/kingdom-v2/${sheet}.webp" width="1" height="${1/aspect}"/></g></svg>`;
 }
 export function atlasElement(spec,size,cls) {
  const t=document.createElement('template');t.innerHTML=atlasMarkup(spec,cls,size);return t.content.firstElementChild;
