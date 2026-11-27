@@ -1,0 +1,15 @@
+✔ skill action throw: rolls back payment, board, cards, counters, logs, RNG and notifications (36.287008ms)
+✔ skill action false: rolls back payment, board, cards, counters, logs, RNG and notifications (30.31217ms)
+✔ skill action failure: rolls back payment, board, cards, counters, logs, RNG and notifications (11.729273ms)
+✔ skill action handlerError: rolls back payment, board, cards, counters, logs, RNG and notifications (17.270186ms)
+✔ public skill history is an allowlist; private handler results, cards, peek and preferences never enter it (9.993144ms)
+✔ room binds skill actions, prefs and preview to the authenticated seat; preview has no effects (12.666927ms)
+✔ skill card apply failure restores MP, HP, hand, piles and runtime after payment (35.24519ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 182.518681

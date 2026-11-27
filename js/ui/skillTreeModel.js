@@ -306,13 +306,14 @@ export function usesText(tree, skillState, id) {
 
 /**
  * スキルの発動ログ（game.skillEvents / observeSkills の1件）を1行の文にする。自分の発動（kind "trigger"）と
- * 自分の HP 支払・診断だけ。相手のものや、本人だけの情報が入る行は viewerId でしぼる。表示しないものは null
+ * 公開可能な発動・城への効果と、本人だけの診断を表示する。手札・山札・選択引数は文にしない。
  */
 export function skillLogText(tree, entry, viewerId) {
-  if (!entry || entry.playerId !== viewerId) return null;
+  if (!entry) return null;
   const name = (id) => treeIndex(tree).byId.get(id)?.name ?? id;
-  if (entry.kind === 'trigger' && entry.skillId) return `${name(entry.skillId)}（${entry.skillId}）が発動${entry.count > 1 ? `・${entry.count}回目` : ''}`;
-  if (entry.kind === 'diagnostic') return `スキルの上限に達しました（${entry.type ?? entry.reason ?? ''}）`;
+  if (entry.kind === 'trigger' && entry.skillId) return `${name(entry.skillId)}（${entry.skillId}）が発動${entry.count > 1 ? `・${entry.count}回目` : ''}${entry.playerId !== viewerId ? `：${treeIndex(tree).byId.get(entry.skillId)?.desc ?? ''}` : ''}`;
+  if (entry.kind === 'effect' && ['castleHealed','castleArmored'].includes(entry.type)) return `${name(entry.skillId)}：${entry.type === 'castleHealed' ? '城HP回復' : '城壁変化'}${entry.amount == null ? '' : ` ${entry.amount}`}`;
+  if (entry.kind === 'diagnostic' && entry.playerId === viewerId) return `スキルの上限に達しました（${entry.type ?? entry.reason ?? ''}）`;
   return null;
 }
 

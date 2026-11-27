@@ -4995,6 +4995,7 @@ export class Game {
       discardCount: topPile ? topPile.discard.length : null,
       exhaustedCount: topPile ? topPile.exhausted.length : null,
       players,
+      ...(this.skillRt ? { skillLog:this.skillRt.logFor(viewerId) } : {}),
     };
   }
 

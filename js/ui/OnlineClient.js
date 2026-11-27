@@ -151,8 +151,12 @@ export class OnlineClient {
   }
   /** スキルの任意アクションの一覧：サーバーが送る自分の状態（skillState.actions）をそのまま読む */
   listSkillActions(playerId) { return this.state?.players?.[playerId]?.skillState?.actions ?? []; }
-  /** スキルの任意アクション：今のサーバーは受け付けない（server/rooms.js の操作に未追加。段階D1 の範囲外） */
-  async skillAction() { return { ok: false, reason: 'オンラインの部屋では、任意スキルはまだ使えません' }; }
+  skillAction(_playerId, actionId, args) { return this.act('skillAction',[actionId,args??{}]); }
+  setSkillPrefs(_playerId,prefs) { return this.act('setSkillPrefs',[prefs]); }
+  async previewCardCost(cardId,opts={}) {
+    const r=await this.act('previewSkillCost',[cardId,opts]);
+    return r.ok?r.preview:{ok:false,reason:r.reason};
+  }
   buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
   endTurn() { return this.act('endTurn'); }
   /** 攻撃を受けたとき、防御カードを出す／防御しない（自分の番でなくても送れる） */
