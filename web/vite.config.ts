@@ -86,7 +86,8 @@ export default defineConfig({
             urlPattern: ({ url }) =>
               url.pathname.startsWith('/assets/') ||
               url.pathname.startsWith('/data/') ||
-              url.pathname.startsWith('/wasm/'),
+              url.pathname.startsWith('/wasm/') ||
+              url.pathname.startsWith('/draco/'),
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'castlefield-runtime-assets',

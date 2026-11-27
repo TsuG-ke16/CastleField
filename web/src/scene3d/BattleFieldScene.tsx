@@ -4,6 +4,7 @@ import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { GameState, MonsterState, RoadState, SoldierState } from '../engine/types';
 import { cardTypeToImagePath } from '../engine/dataLoader';
+import { DRACO_PATH } from './dracoPath';
 
 interface BattleFieldSceneProps {
   state: GameState;
@@ -114,7 +115,7 @@ const STAGE_GLB_MAP: Record<string, string> = {
 
 function StageBiomeModel({ stageId, shakePower }: { stageId: string; shakePower: number }) {
   const glbUrl = STAGE_GLB_MAP[stageId] || STAGE_GLB_MAP.meadow;
-  const { scene } = useGLTF(glbUrl);
+  const { scene } = useGLTF(glbUrl, DRACO_PATH);
   const cloned = useMemo(() => scene.clone(), [scene]);
   const rootRef = useRef<THREE.Group>(null);
 
