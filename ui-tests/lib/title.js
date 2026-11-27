@@ -2,15 +2,21 @@
 export async function toTitle(page) { // 名前は昔のまま：ホームが出るのを待つ
   await page.locator('#home:not([hidden])').waitFor();
 }
-/** ホームでモード（solo / local / online）を選んで「対戦開始」を押す（強さの画面・同じ端末の設定・合言葉の入力が出る） */
+/** ホームでモード（solo / local / online）を選んで設定を選ぶ（開始は呼び出し側で必要な入力を済ませてから押す） */
 export async function openMode(page, mode) {
   await toTitle(page);
   await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await page.locator(`#home .home-mode[data-mode="${mode}"]`).click();
-  await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="start"]').click();
 }
-/** ホームの設定 → アカウント */
+/** ホームのメニュー → アカウント管理 */
 export async function openAccountFromHome(page) {
   await toTitle(page);
-  await page.click('#home .home-tab[data-tab=settings]'); await page.locator('#home .home-tile[data-id="settings"]').click();
-  await page.locator('.set-account-btn').click();
+  await page.click('#home .home-tab[data-tab=menu]');
+  await page.click('#home .home-tile[data-id=account]');
+}
+
+/** 難易度を必要なときだけ開き、選択後はコンパクト表示へ戻す。 */
+export async function selectDifficulty(page, level, touch = false) {
+  const choice=page.locator(`.cpu-choice[data-level="${level}"]`);
+  if(!await choice.isVisible()) await page.locator('.home-cpu summary')[touch?'tap':'click']();
+  await choice[touch?'tap':'click']();
 }

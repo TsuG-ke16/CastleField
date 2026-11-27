@@ -1,0 +1,5 @@
+turn 4
+turn 6
+turn 8
+turn 10
+{"finish":"natural gameOver","strategy":"deploy once, then pass through normal UI","endEvent":{"winner":"p1","reason":"castleDestroyed"},"surrender":false,"field3d":true,"viewport":"390x844","deployed":true,"ended":true,"turns":11,"cards":1,"errors":[],"warnings":[],"rematch":true}

@@ -1,0 +1,156 @@
+[
+  {
+    "device": "pc",
+    "compactDifficulty": true,
+    "difficultyPersists": true,
+    "battleLinks": 2,
+    "shopSearch": true,
+    "shopPagination": true,
+    "shopSort": true,
+    "coinPurchase": true,
+    "pointExchange": true,
+    "equipmentPreview": true,
+    "realPulls": 2,
+    "singleAndTenRewards": true,
+    "escapeReturnsToGacha": true,
+    "touch": false,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "compactDifficulty": true,
+    "difficultyPersists": true,
+    "battleLinks": 2,
+    "shopSearch": true,
+    "shopPagination": true,
+    "shopSort": true,
+    "coinPurchase": true,
+    "pointExchange": true,
+    "equipmentPreview": true,
+    "realPulls": 2,
+    "singleAndTenRewards": true,
+    "escapeReturnsToGacha": true,
+    "touch": true,
+    "errors": []
+  },
+  {
+    "device": "small",
+    "mode": "kingdom",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 220,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  },
+  {
+    "device": "small",
+    "mode": "factions",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 220,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  },
+  {
+    "device": "small",
+    "mode": "classic",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 220,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  },
+  {
+    "device": "tablet",
+    "mode": "kingdom",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 320,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  },
+  {
+    "device": "tablet",
+    "mode": "factions",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 320,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  },
+  {
+    "device": "tablet",
+    "mode": "classic",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 320,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  },
+  {
+    "device": "landscape",
+    "mode": "kingdom",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 237.421875,
+    "heroClear": true,
+    "startClickable": false,
+    "startReachable": true
+  },
+  {
+    "device": "landscape",
+    "mode": "factions",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 236.59375,
+    "heroClear": true,
+    "startClickable": false,
+    "startReachable": true
+  },
+  {
+    "device": "landscape",
+    "mode": "classic",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 237.421875,
+    "heroClear": true,
+    "startClickable": false,
+    "startReachable": true
+  },
+  {
+    "device": "pc",
+    "mode": "kingdom",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 532.8125,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  },
+  {
+    "device": "pc",
+    "mode": "factions",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 576.8125,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  },
+  {
+    "device": "pc",
+    "mode": "classic",
+    "overflow": false,
+    "titleClear": true,
+    "heroHeight": 576.8125,
+    "heroClear": true,
+    "startClickable": true,
+    "startReachable": true
+  }
+]

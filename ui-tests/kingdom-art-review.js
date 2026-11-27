@@ -1,0 +1,12 @@
+// Review sheets made by rendering the production atlas registry without editing generated images.
+import{createRequire}from'node:module';import{mkdirSync}from'node:fs';
+const{chromium}=createRequire(import.meta.url)('playwright');const out=new URL('../assets/review/kingdom-fantasy-v2/',import.meta.url).pathname;mkdirSync(out,{recursive:true});
+const browser=await chromium.launch({headless:true,executablePath:'/usr/bin/chromium',args:['--no-sandbox']});
+try{const page=await browser.newPage({viewport:{width:1440,height:900},reducedMotion:'reduce'});await page.goto((process.env.UI_TEST_URL??'http://127.0.0.1:3000')+'/?fx=lite');await page.locator('#home:not([hidden])').waitFor();
+for(const kind of ['skills','cards']){await page.evaluate(async kind=>{
+ document.querySelector('#art-review')?.remove();document.querySelector('#app').style.display='none';document.documentElement.classList.remove('at-title');document.body.style.cssText='margin:0;background:#fff5dd;overflow:visible;height:auto';document.documentElement.style.cssText='height:auto;overflow:visible';
+ const{atlasMarkup,SKILL_ART}=await import('/js/ui/KingdomArt.js');const{CARD_VISUALS}=await import('/js/ui/cardVisuals.js');const tree=await(await fetch('/data/classic/skilltree.json')).json();
+ const box=document.createElement('div');box.id='art-review';box.style.cssText='padding:20px;display:grid;grid-template-columns:repeat(10,1fr);gap:8px;width:1400px;background:#fff5dd;color:#422b18;font:12px sans-serif';
+ for(const[id,spec]of Object.entries(kind==='skills'?SKILL_ART:CARD_VISUALS)){const cell=document.createElement('div');cell.style.cssText='padding:8px;background:#fffdf5;border:1px solid #c5a16b;border-radius:10px;overflow:hidden';const name=tree.nodes.find(n=>n.id===id)?.name??id;cell.innerHTML=(spec.path?`<img src="assets/${spec.path}" width="105" height="105" style="object-fit:contain">`:atlasMarkup(spec,'',105))+`<div>${id}</div><div>${name}</div>`;box.append(cell)}document.body.append(box);
+ await Promise.all([...box.querySelectorAll('img')].map(i=>i.decode().catch(()=>{})));await Promise.all([...new Set([...box.querySelectorAll('image')].map(i=>i.getAttribute('href')))].map(src=>new Promise(resolve=>{const i=new Image();i.onload=resolve;i.onerror=resolve;i.src=src})));
+},kind);await page.screenshot({path:out+'art-review-'+kind+'.png',fullPage:true,timeout:60000})}}finally{await browser.close()}

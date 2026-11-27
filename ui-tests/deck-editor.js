@@ -116,13 +116,8 @@ async function verify(width, height, reducedMotion) {
   await toTitle(page);
   assert.match(await page.locator('#home [data-part="deck"]').innerText(), /確認用のデッキ/);
   await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await press('#home .home-mode[data-mode="local"]');
-  await page.click('#home .home-tab[data-tab=battle]'); await press('#home [data-act="start"]');
-  await press('.local-options summary');
-  await press('.local-options .pill[data-value="cost"]');
-  await press('.local-options .pill[data-value="custom:0"]');
-  assert.match(await page.locator('.local-options .deck-preview').innerText(), /確認用のデッキ/);
-
-  await press('#local-start');
+  await page.locator('[data-act=chooseDeck]').click();await page.locator('[data-choose-slot="0"]').click();
+  await press('#home .home-start');
   await page.waitForFunction(() => window.castlefield?.game()?.getState(null).players.p1.deckId === 'custom');
   await page.goto(base);
   await toTitle(page);
@@ -130,7 +125,7 @@ async function verify(width, height, reducedMotion) {
   await page.click('#home .home-tab[data-tab=battle]'); await press('#home [data-act="start"]');
   await page.locator('#title-name').fill('編成テスト');
   await page.locator('#title-pass').fill(`deck-${width}-${Date.now()}`);
-  await press('#title-join');
+  await press('#home .home-start');
   await page.locator('#room-screen').waitFor();
   await page.getByRole('button', { name: 'ルールを変更' }).click();
   await page.locator('.room-modal select[data-slot="rule:deckMode"]').selectOption('cost');

@@ -50,7 +50,6 @@ async function offline() {
   // ホーム（入口）の「ひとりで」→「対戦開始」→ 強さ
   await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="chooseMode"]').click(); await page.locator('#home .home-mode[data-mode="solo"]').click();
   await page.click('#home .home-tab[data-tab=battle]'); await page.locator('#home [data-act="start"]').click();
-  await page.locator('#title-levels .level[data-level="normal"]').click();
   await page.waitForFunction(() => !document.querySelector('#board').hidden && !document.querySelector('#app').classList.contains('busy'), {}, { timeout: 60000 });
   const broken = await page.evaluate(() => [...document.querySelectorAll('img')]
     .filter(img => img.getClientRects().length && img.complete && img.naturalWidth === 0)

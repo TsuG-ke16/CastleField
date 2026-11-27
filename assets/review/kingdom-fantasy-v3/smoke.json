@@ -1,0 +1,107 @@
+[
+  {
+    "coordinateSelections": 200,
+    "adjacencyLists": 200,
+    "geometry": true,
+    "device": "pc",
+    "width": 1440,
+    "height": 900,
+    "nodes": 201,
+    "hitPixels": 48,
+    "realNodeTap": true,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  },
+  {
+    "coordinateSelections": null,
+    "adjacencyLists": null,
+    "geometry": true,
+    "device": "tablet",
+    "width": 820,
+    "height": 1180,
+    "nodes": 201,
+    "hitPixels": 48,
+    "realNodeTap": true,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  },
+  {
+    "coordinateSelections": null,
+    "adjacencyLists": null,
+    "geometry": true,
+    "device": "mobile",
+    "width": 390,
+    "height": 844,
+    "nodes": 201,
+    "hitPixels": 48,
+    "realNodeTap": true,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  },
+  {
+    "coordinateSelections": null,
+    "adjacencyLists": null,
+    "geometry": true,
+    "device": "small",
+    "width": 320,
+    "height": 568,
+    "nodes": 201,
+    "hitPixels": 48,
+    "realNodeTap": true,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  },
+  {
+    "coordinateSelections": null,
+    "adjacencyLists": null,
+    "geometry": true,
+    "device": "landscape",
+    "width": 844,
+    "height": 390,
+    "nodes": 201,
+    "hitPixels": 48,
+    "realNodeTap": true,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  }
+]

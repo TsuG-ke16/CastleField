@@ -1,0 +1,152 @@
+[
+  {
+    "device": "pc",
+    "screen": "home",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "account",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "deck",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "shop",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "settings",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "mode-dialog",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "cpu-preparation",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "preparation-options",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "deck-editor",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "catalog",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "account-dialog",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "settings-dialog",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "more-dialog",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "gacha-dialog",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "help-dialog",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "home",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "account",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "deck",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "shop",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "settings",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "mode-dialog",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "cpu-preparation",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "preparation-options",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "deck-editor",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "catalog",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "account-dialog",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "settings-dialog",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "more-dialog",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "gacha-dialog",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "help-dialog",
+    "errors": []
+  }
+]

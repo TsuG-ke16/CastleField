@@ -18,6 +18,16 @@ Playwrightのブラウザ配置を環境で変えている場合は `PLAYWRIGHT_
 
 実機タッチ・音の聴き心地・初見の人の理解・オンラインの通し対戦・全画面幅は、このスモークテストの対象外。
 
+## 画面構成・操作導線（PR #202 第4版）
+
+`node ui-tests/navigation.js` は専用のメモリDBとローカルHTTPサーバーを作り、PC/スマホの抽選・購入・装備・名前変更・設定保存・オンライン入室、通常/4陣営/クラシックのCPU/同じ端末での直接開始を検証する。テスト用コインはこのメモリDBだけに投入する。実データとルールは変更しない。小型・タブレット・横向きのボタン位置も確認する。
+
+`node ui-tests/kingdom-screens.js` は同じ検証と画面撮影への入口。出力は `assets/review/navigation-v4/`（`UI_REVIEW_DIR` で変更可能）。`UI_TEST_CHROMIUM=/usr/bin/chromium` など環境のブラウザを指定できる。
+
+既存サーバーに対して `UI_TEST_URL=http://127.0.0.1:3000 node ui-tests/navigation-edgecases.js` で実タップ、接続失敗からの再試行、共通/個別山札、ローカル名を確認する。`ui-tests/home-offline.js` は実PWAを保存し、通信を切って設定・スキル編集・モード切替・対戦開始を行う。
+
+遷移図と役割の監査は [画面構成の再設計](../docs/navigation-redesign.md)、完成画面とログは [レビュー資料](../assets/review/navigation-v4/README.md)。
+
 ## デッキ編成
 
 `node server/server.js` を起動し、`node ui-tests/deck-editor.js` を実行する。390×844 と 360×640 で旧版デッキの読み込みと修正、編成・保存・複製・削除、偏光、同じ端末とオンラインでの対戦開始を確認する。オンラインでは再接続後も自分のデッキを表示できるか確かめる。画面と偏光の連続画像は `ui-tests/artifacts/` に出力する。

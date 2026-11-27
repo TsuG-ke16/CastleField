@@ -1,0 +1,133 @@
+{
+  "originalBytes": 31043531,
+  "deliveryBytes": 15660810,
+  "images": [
+    {
+      "sheet": "cards-extra",
+      "originalBytes": 2504901,
+      "deliveryBytes": 1915308,
+      "lossless": true,
+      "alphaExact": true,
+      "compositedPSNRdB": null,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "cards-extra2",
+      "originalBytes": 2618819,
+      "deliveryBytes": 1747306,
+      "lossless": true,
+      "alphaExact": true,
+      "compositedPSNRdB": null,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "classic-spells",
+      "originalBytes": 1342736,
+      "deliveryBytes": 983212,
+      "lossless": true,
+      "alphaExact": true,
+      "compositedPSNRdB": null,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "decor",
+      "originalBytes": 1796617,
+      "deliveryBytes": 1347366,
+      "lossless": true,
+      "alphaExact": true,
+      "compositedPSNRdB": null,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "groups",
+      "originalBytes": 1998066,
+      "deliveryBytes": 1486152,
+      "lossless": true,
+      "alphaExact": true,
+      "compositedPSNRdB": null,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "navigation",
+      "originalBytes": 1770105,
+      "deliveryBytes": 1306582,
+      "lossless": true,
+      "alphaExact": true,
+      "compositedPSNRdB": null,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "skills-0",
+      "originalBytes": 2162410,
+      "deliveryBytes": 800132,
+      "lossless": false,
+      "alphaExact": true,
+      "compositedPSNRdB": 36.66,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "skills-1",
+      "originalBytes": 2402673,
+      "deliveryBytes": 873262,
+      "lossless": false,
+      "alphaExact": true,
+      "compositedPSNRdB": 35.8,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "skills-2",
+      "originalBytes": 2437635,
+      "deliveryBytes": 851472,
+      "lossless": false,
+      "alphaExact": true,
+      "compositedPSNRdB": 35.88,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "skills-3",
+      "originalBytes": 2717982,
+      "deliveryBytes": 982242,
+      "lossless": false,
+      "alphaExact": true,
+      "compositedPSNRdB": 36.59,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "skills-4",
+      "originalBytes": 2414970,
+      "deliveryBytes": 865538,
+      "lossless": false,
+      "alphaExact": true,
+      "compositedPSNRdB": 36.62,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "skills-5",
+      "originalBytes": 2164204,
+      "deliveryBytes": 794640,
+      "lossless": false,
+      "alphaExact": true,
+      "compositedPSNRdB": 36.81,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "skills-6",
+      "originalBytes": 2225457,
+      "deliveryBytes": 801506,
+      "lossless": false,
+      "alphaExact": true,
+      "compositedPSNRdB": 36.38,
+      "rgbaExact": false
+    },
+    {
+      "sheet": "skills-7",
+      "originalBytes": 2486956,
+      "deliveryBytes": 906092,
+      "lossless": false,
+      "alphaExact": true,
+      "compositedPSNRdB": 35.76,
+      "rgbaExact": false
+    }
+  ],
+  "reductionPercent": 49.6
+}
