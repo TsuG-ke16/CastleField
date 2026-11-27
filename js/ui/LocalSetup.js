@@ -1,3 +1,4 @@
+import { NAV_ART, atlasMarkup } from './KingdomArt.js';
 // 選ばなければ従来どおりの2人戦。詳細設定は閉じておく。
 import { pillify } from './pills.js';
 import { deckChoice, deckSlot, loadDecks } from './DeckStore.js';
@@ -5,6 +6,10 @@ export class LocalSetup {
   constructor({castles,decks,rules,stages,factionMode=false,onStart,savedDecks,presetDeck,previewDeck,openDeckEditor}) {
     const box=document.getElementById('title-levels');
     this.mode='solo';this.rules=rules;
+    for(const button of box.querySelectorAll('.level')) {
+      const small=button.querySelector('small'),label=button.firstChild.textContent.trim();
+      button.innerHTML=atlasMarkup(NAV_ART[button.dataset.level],'difficulty-art',112)+`<span class="difficulty-name">${label}</span><small>${small.textContent}</small>`;
+    }
     Object.assign(this, { savedDecks, presetDeck, previewDeck, openDeckEditor });
     const detail=document.createElement('details');detail.className='local-options';
     detail.innerHTML='<summary>人数・城・デッキなどを選ぶ（任意）</summary><div class="local-fields"></div>';

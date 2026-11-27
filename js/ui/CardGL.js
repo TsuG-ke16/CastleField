@@ -322,8 +322,24 @@ async function readyImage(img) {
   if (!img.complete) await new Promise((resolve) => { img.addEventListener('load', resolve, { once: true }); img.addEventListener('error', resolve, { once: true }); });
   return img.naturalWidth ? img : null;
 }
+const atlasImages = new Map();
 /** インラインの SVG を画像にする（色は今の見た目に合わせて固定する） */
 async function svgImage(svg, width, height) {
+  // Generated icon/card atlases: rasterise the actual image cell directly.
+  // External <image> references cannot load inside a data: SVG used as an image.
+  const source=svg.querySelector('image');
+  if(svg.classList.contains('kingdom-art') && source) {
+    const url=new URL(source.getAttribute('href'),document.baseURI).href;
+    if(!atlasImages.has(url))atlasImages.set(url,loadImage(url));
+    const image=await atlasImages.get(url);if(!image)return null;
+    const vb=svg.viewBox.baseVal,iw=Number(source.getAttribute('width')),ih=Number(source.getAttribute('height'));
+    const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(width));canvas.height=Math.max(1,Math.round(height));
+    const ctx=canvas.getContext('2d');
+    const sw=vb.width/iw*image.naturalWidth,sh=vb.height/ih*image.naturalHeight;
+    const scale=Math.min(canvas.width/sw,canvas.height/sh),dw=sw*scale,dh=sh*scale;
+    ctx.drawImage(image,vb.x/iw*image.naturalWidth,vb.y/ih*image.naturalHeight,sw,sh,(canvas.width-dw)/2,(canvas.height-dh)/2,dw,dh);
+    return canvas;
+  }
   const clone = svg.cloneNode(true);
   clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
   clone.setAttribute('width', Math.max(1, Math.round(width)));

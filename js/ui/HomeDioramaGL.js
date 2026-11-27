@@ -952,6 +952,10 @@ export class HomeDioramaGL {
         this.rafId = 0;
         return;
       }
+      // Keep the real 3D scene; avoid submitting unchanged reduced-motion frames at 60Hz.
+      if(ts-this.lastFrameTs < (isReducedMotion()?100:1000/30)) {
+        this.rafId=requestAnimationFrame(tick);return;
+      }
       const dt = Math.min(0.05, Math.max(0.001, (ts - this.lastFrameTs) / 1000));
       this.lastFrameTs = ts;
       this.update(dt);

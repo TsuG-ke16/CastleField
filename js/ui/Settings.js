@@ -30,7 +30,7 @@ export class Settings {
       </section>
       <section class="set-group"><h3>画面と演出</h3>
         ${pills('homeSky','ホームの空（時間帯）',HOME_SKY_MODES.map((k)=>[k,HOME_SKY_LABELS[k]]),true)}
-        <p class="set-note">基本は現在時刻に合わせて宇宙と光が変化します。好みの時間帯に固定もできます。</p>
+        <p class="set-note">基本は現在時刻に合わせて空と光が変化します。好みの時間帯に固定もできます。</p>
         ${pills('speed','演出の速さ',[['normal','ふつう'],['fast','はやい'],['skip','スキップ']])}
         ${pills('reduced','動きを減らす',[['true','ON'],['false','OFF']])}
         <p class="set-note">揺れや点滅を抑え、カードの獲得は静止画で表示します。</p>

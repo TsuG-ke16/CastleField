@@ -1,5 +1,7 @@
 # Castle Field 王国ファンタジー デザイン監査・実装記録
 
+> 第1段階の記録です。追加実装・画像制作・現在の検証結果は [第2レビュー対応](kingdom-fantasy-v2.md) を参照してください。旧不足候補61件は現在、生成画像または意味の一致する既存絵へ対応済みです。
+
 調査日: 2026-11-26。基点: `9521ab2`（PR #201 取り込み後）。絵柄の正は `assets/STYLE.md`。実装前に STYLE、tokens、home、materials、kingdom、skilltree、SkillTreeView、home-reborn、HomeDioramaGL、assetsの各カテゴリを確認した。
 
 ## 合っている要素

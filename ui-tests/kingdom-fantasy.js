@@ -4,7 +4,7 @@ import { createRequire } from 'node:module';
 import { mkdirSync, writeFileSync } from 'node:fs';
 const { chromium } = createRequire(import.meta.url)('playwright');
 const base = process.env.UI_TEST_URL ?? 'http://127.0.0.1:3000';
-const out = new URL('../assets/review/kingdom-fantasy/', import.meta.url).pathname;
+const out = new URL('../assets/review/kingdom-fantasy-v2/', import.meta.url).pathname;
 mkdirSync(out, { recursive:true });
 const browser = await chromium.launch({ headless:true, executablePath:process.env.UI_TEST_CHROMIUM ?? '/usr/bin/chromium', args:['--no-sandbox'] });
 const report = [];
@@ -30,7 +30,12 @@ try {
   await page.screenshot({path:`${out}after-tree-${device}.png`});
   await page.locator('[data-group="available"]').click();
   assert.ok(await page.locator('.st-result').count()>0);
-  await page.locator('.st-result[data-id="C01"]').click();
+  await page.locator('.st-chip[data-group="C"]').click();
+  const point=await page.evaluate(()=>{const m=st.nodeEls.get('C01').g.getScreenCTM();return{x:m.e,y:m.f}});
+  if(width>=900)await page.mouse.click(point.x,point.y);else await page.touchscreen.tap(point.x,point.y);
+  if(width>=900)assert.equal(await page.evaluate(()=>st.selected),'C01','desktop selection is synchronous after pointerup');
+  await page.locator('.st-d-close').waitFor({state:'visible'});
+  assert.equal(await page.evaluate(()=>st.selected),'C01','real SVG node selected');
   await page.locator('.st-acquire').click();
   assert.ok(await page.locator('.st-node[data-id="C01"]').evaluate(el=>el.classList.contains('st-owned')));
   const saved=await page.evaluate(()=>st.build.ids.includes('C01')&&qaStore.getItem('cf-classic-skilltree')!==null);
@@ -65,7 +70,7 @@ try {
   await page.keyboard.press('Escape');assert.ok(await page.locator('.st-detail').isHidden());
   await page.locator('.st-done').click();assert.ok(await page.locator('#skilltree-view').isHidden());
   assert.deepEqual(errors,[]);
-  report.push({device,width,height,nodes:201,hitPixels:48,search:true,acquire:true,save:true,gestures:gesture,keyboard:true,errors});
+  report.push({device,width,height,nodes:201,hitPixels:48,realNodeTap:true,search:true,acquire:true,save:true,gestures:gesture,keyboard:true,errors});
   await context.close();
  }
  writeFileSync(`${out}smoke.json`,JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

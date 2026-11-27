@@ -850,3 +850,9 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 ## 王国UI監査（2026-11-26）
 
 `assets/review/kingdom-fantasy/` はこのリポジトリの画面をPlaywright/Chromiumで撮影した比較画像・検証記録と、既存素材を並べた確認用コンタクトシート。新規の画像生成・外部素材の追加はなし。元の素材の利用条件は各項目に従う。
+
+## 王国UI 専用生成素材 v2（2026-11-26）
+
+`assets/ui/kingdom-v2/*.png` の14枚はOpenAI画像生成でこのプロジェクト用に新規制作。参照はプロジェクト既存の `style-reference.png`、生成した `groups.png`、既存の `cards/card-fireball.png`。外部作品の素材は使用していない。利用条件は本ファイル「本番用PNG」のOpenAI規約・AI生成の記述に従う。各画像の一覧・セル用途・寸法・ハッシュは同ディレクトリのREADME.mdとimage-inventory.jsonを参照。
+
+`assets/review/kingdom-fantasy-v2/` はPlaywright/Chromiumで実画面・実際の画像対応コードを描画した確認資料。追加の外部素材はなし。

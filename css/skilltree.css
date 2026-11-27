@@ -1,167 +1,47 @@
-/* クラシックのスキルツリー画面（js/ui/SkillTreeView.js）と、対戦中のスキル表示（js/ui/SkillBattleView.js）。
-   種類・状態は色だけでなく、形（★●⬢◆）・明暗・線種（実線/破線/点線）・記号（✓＋!）で区別する。 */
-.visually-hidden { position:absolute !important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
-html.skilltree-open, html.skilltree-open body { overflow:hidden; }
-
-.skilltree { --st-bg:#f4e4bc; --st-surface:#fff2d2; --st-raised:#f5dfaa; --st-line:#997344; --st-text:#3f2511; --st-muted:#6b4a2e; --st-cyan:#386cd8; --st-gold:#946014; --st-action:#ffbf52;
-  position:fixed; inset:0; z-index:900; display:flex; flex-direction:column; background:var(--st-bg); color:var(--st-text);
-  font-family:var(--font); padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-.skilltree[hidden], .st-results[hidden], .st-detail[hidden] { display:none; }
-.skilltree > * { flex:none; }
-.skilltree button { font-family:inherit; }
-.st-head { display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--st-surface); border-bottom:1px solid var(--st-line); flex-wrap:wrap; }
-.st-title { margin:0; font-size:17px; flex:1 1 auto; letter-spacing:.04em; }
-.st-summary { display:flex; gap:12px; font-size:13px; flex-wrap:wrap; color:var(--st-muted); }
-.st-summary b { font-size:18px; color:var(--st-gold); }
-.st-summary .zero b { color:var(--st-cyan); }
-.st-back, .st-reset, .st-d-actions .small-btn { min-height:44px; padding:0 14px; border-radius:8px; border:1px solid var(--st-line); background:var(--st-raised); color:var(--st-text); font-size:14px; }
-.st-tools { display:flex; gap:6px; padding:8px 12px 4px; flex-wrap:wrap; align-items:center; }
-.st-search-wrap { flex:1 1 180px; display:flex; }
-.st-search { flex:1; min-height:44px; font:inherit; font-size:16px; padding:0 12px; border-radius:8px; border:1px solid var(--st-line); background:#fffaf0; color:var(--st-text); }
-.st-search:focus { outline:2px solid var(--st-cyan); }
-.st-preset { min-height:44px; font:inherit; font-size:14px; border-radius:8px; background:var(--st-raised); color:var(--st-text); border:1px solid var(--st-line); max-width:100%; }
-.st-groups { display:flex; gap:6px; overflow-x:auto; padding:4px 12px 8px; scrollbar-width:thin; }
-.st-chip { flex:none; display:inline-flex; align-items:center; gap:4px; min-height:44px; padding:0 12px 0 8px; border-radius:999px; border:1px solid var(--st-line); border-left:4px solid var(--gc); background:var(--st-surface); color:var(--st-text); font-size:13px; }
-.st-chip img { width:22px; height:22px; object-fit:contain; }
-.st-chip[aria-pressed="true"] { background:var(--st-raised); border-color:var(--st-cyan); box-shadow:inset 0 0 0 1px var(--st-cyan); font-weight:bold; }
-.st-results { list-style:none; margin:0; padding:0 12px 6px; max-height:28vh; overflow:auto; display:grid; gap:4px; }
-.st-result { width:100%; text-align:left; min-height:44px; border-radius:8px; border:1px solid var(--st-line); background:var(--st-surface); color:var(--st-text); font-size:14px; padding:4px 8px; }
-.st-result small { color:var(--st-muted); margin-left:6px; }
-.st-r-mark { display:inline-block; width:1.4em; text-align:center; font-weight:bold; }
-.st-r-unconnected { opacity:.6; border-style:dotted; } .st-r-blocked { border-style:dashed; } .st-r-available { border-color:var(--st-gold); } .st-r-owned { background:#dce8ff; border-color:var(--st-cyan); }
-.st-more { font-size:13px; color:var(--st-muted); padding:4px; }
-
-.st-stage { position:relative; flex:1 1 auto; min-height:120px; overflow:hidden; }
-.st-svg { width:100%; height:100%; display:block; touch-action:none; cursor:grab; user-select:none; -webkit-user-select:none; background:radial-gradient(circle at 50% 50%, #fff8e0, var(--st-bg) 75%); }
-.st-svg:active { cursor:grabbing; }
-.st-cluster { fill:#705334; font-size:22px; font-weight:600; letter-spacing:2px; text-anchor:middle; pointer-events:none; }
-.zoom-far .st-cluster { font-size:40px; }
-.st-edge { stroke:#9c825b; stroke-width:3; opacity:.8; }
-.st-edge.cross { stroke-dasharray:8 6; }
-.st-edge.next { stroke:var(--st-gold); stroke-width:3.5; opacity:1; }
-.st-edge.path { stroke:var(--st-cyan); stroke-width:6; opacity:1; stroke-dasharray:none; }
-.st-edge.dim { opacity:.15; }
-.st-edge.path.dim { opacity:.6; }
-.st-routeline { fill:none; stroke:var(--st-gold); stroke-width:5; stroke-dasharray:4 9; stroke-linecap:round; }
-
-.st-node { cursor:pointer; outline:none; }
-.st-shape { fill:#f0e6d2; stroke:#8c7556; stroke-width:2; }
-.st-ring { fill:none; stroke:#1f3f8f; stroke-width:2.5; stroke-dasharray:5 5; opacity:0; }
-.st-node.selected .st-ring, .st-node:focus-visible .st-ring { opacity:1; }
-.st-icon { pointer-events:none; }
-.st-badge circle { fill:#fffaf0; stroke:currentColor; stroke-width:1.5; }
-.st-mark { text-anchor:middle; font-size:13px; font-weight:900; fill:currentColor; pointer-events:none; }
-.st-id { text-anchor:middle; font-size:12px; fill:#4a2f17; pointer-events:none; paint-order:stroke; stroke:var(--st-bg); stroke-width:3px; font-weight:600; }
-.st-name { text-anchor:middle; font-size:11px; fill:#4a2f17; pointer-events:none; display:none; paint-order:stroke; stroke:var(--st-bg); stroke-width:3px; }
-.zoom-names .st-name { display:inline; }
-.zoom-far .st-id, .zoom-far .st-badge { display:none; }
-/* 状態：取得済み＝ロイヤルブルーの塗り＋✓（PR200）／取得できる＝金の太い輪郭＋「＋」／条件不足＝破線＋「!」・やや暗い／未接続＝点線・暗い・アイコン灰色 */
-.st-owned { color:#2a52b0; }
-.st-owned .st-shape { fill:#dce8ff; stroke:#2a52b0; stroke-width:3.5; }
-.st-owned .st-badge circle { fill:#2a52b0; }
-.st-owned .st-mark { fill:#fffaf0; }
-.st-available { color:var(--st-gold); }
-.st-available .st-shape { fill:#fff2bf; stroke:#946014; stroke-width:4;  }
-.st-blocked { color:#a33329; opacity:.8; }
-.st-blocked .st-shape { stroke:#a33329; stroke-dasharray:6 4; stroke-width:2.5; }
-.st-unconnected { opacity:.85; }
-.st-unconnected .st-shape { stroke-dasharray:1.5 4; }
-.st-unconnected .st-icon { opacity:.65; filter:grayscale(.85); }
-.st-unconnected .st-badge { display:none; }
-.st-start .st-shape { fill:#dce8ff; stroke:#946014; stroke-width:4; }
-.st-start .st-badge { display:none; }
-.k-ultimate .st-shape { stroke:#946014; stroke-width:3; fill:#efe0c4; }
-.k-ultimate.st-available .st-shape { stroke:#946014; fill:#fff2bf; }
-.k-ultimate.st-owned .st-shape { stroke:#2a52b0; fill:#dce8ff; }
-.k-ultimate .st-id { fill:var(--st-gold); }
-.k-cross .st-shape { fill:#ece5d8; }
-.st-node.dim { opacity:.12; }
-.st-node.hit .st-ring { opacity:1; stroke:var(--st-cyan); }
-
-.st-zoom { position:absolute; right:10px; bottom:10px; display:flex; flex-direction:column; gap:6px; }
-.st-zoom button { min-width:44px; min-height:44px; border-radius:8px; border:1px solid var(--st-line); background:#f4e4bce8; color:var(--st-text); font-size:16px; }
-.st-minimap { position:absolute; right:64px; bottom:10px; width:112px; padding:4px; background:#f4e4bce8; border:1px solid var(--st-line); border-radius:6px; }
-.st-minimap canvas { width:104px; height:104px; display:block; cursor:crosshair; }
-.st-minimap span { display:block; text-align:center; font-size:9px; letter-spacing:.1em; color:#6b4a2e; }
-.st-legend { position:absolute; left:10px; top:10px; max-width:min(80vw, 340px); background:#f4e4bce8; border:1px solid var(--st-line); border-radius:8px; padding:6px 10px; font-size:12px; color:var(--st-muted); }
-.st-legend summary { cursor:pointer; min-height:32px; line-height:32px; color:var(--st-text); }
-.st-legend ul { margin:4px 0; padding-left:0; list-style:none; display:grid; gap:4px; }
-.lg { display:inline-block; width:1.6em; text-align:center; font-weight:bold; }
-.lg-owned { background:#2a52b0; color:#fffaf0; border-radius:50%; } .lg-avail { border:2px solid #946014; color:#946014; border-radius:50%; }
-.lg-ult { color:var(--st-action); } .lg-blocked { border:2px dashed #a33329; border-radius:50%; } .lg-unconn { border:2px dotted #6b4a2e; border-radius:50%; opacity:.6; }
-
-.st-detail { position:relative; background:var(--st-surface); border-top:1px solid var(--st-line); padding:10px 12px; max-height:44vh; overflow:auto; font-size:14px; }
-.st-card { float:right; position:relative; width:72px; height:100px; margin:0 0 6px 10px; }
-.st-card-art { position:absolute; left:16%; top:18%; width:68%; height:52%; object-fit:contain; }
-.st-card-frame { position:absolute; inset:0; width:100%; height:100%; }
-.st-d-head { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-.st-d-head h3 { margin:0; font-size:18px; flex:1 1 auto; } .st-d-head small { color:var(--st-muted); font-size:12px; }
-.st-d-kind, .st-d-group { font-size:11px; padding:2px 8px; border-radius:999px; border:1px solid var(--st-line); color:var(--st-muted); }
-.st-d-kind.k-ultimate { border-color:var(--st-gold); color:var(--st-gold); } .st-d-kind.k-cross { border-style:dashed; }
-.st-d-close { margin-left:auto; min-width:44px; min-height:44px; border:none; background:none; color:var(--st-text); font-size:22px; }
-.st-d-desc { margin:6px 0; line-height:1.6; }
-.st-d-row { margin:4px 0; color:#4a2f17; }
-.st-dormant { color:#a33329; }
-.st-d-state { display:inline-block; margin:6px 0; font-weight:bold; padding:2px 10px; border-radius:999px; border:1px solid; }
-.st-s-owned { color:#2a52b0; border-color:#386cd866; } .st-s-available { color:var(--st-gold); border-color:#94601466; } .st-s-blocked { color:#a33329; border-style:dashed; } .st-s-unconnected { color:var(--st-muted); border-style:dotted; }
-.st-reason { margin:4px 0; color:#a33329; } .st-route-text { margin:4px 0; color:var(--st-gold); }
-.st-config { display:block; margin:6px 0; } .st-config select { min-height:44px; font:inherit; margin-left:4px; }
-.st-d-actions { clear:both; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:6px; }
-.st-d-actions [aria-disabled="true"] { opacity:.5; }
-.st-acquire, .st-done { min-height:46px; padding:0 22px; border-radius:8px; border:1px solid #946014; background:linear-gradient(#f6b35c, var(--st-action)); color:#2a1708; font-weight:700; font-size:15px; box-shadow:0 3px 0 #9b5f1d; }
-.st-acquire:active, .st-done:active { transform:translateY(2px); box-shadow:0 1px 0 #9b5f1d; }
-.st-foot { padding:8px 12px; background:var(--st-surface); border-top:1px solid var(--st-line); display:flex; justify-content:center; }
-.st-foot .st-done { width:min(92vw, 480px); }
-@media (min-width: 900px) {
-  .st-detail { position:absolute; right:12px; top:200px; width:340px; max-height:calc(100dvh - 300px); border:1px solid var(--st-line); border-radius:10px; box-shadow:0 6px 18px rgb(0 0 0 / 45%); }
+/* Heraldic atlas. Geometry and interactions are presentation-only. */
+.visually-hidden{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+html.skilltree-open,html.skilltree-open body{overflow:hidden}
+.skilltree{position:fixed;inset:0;z-index:900;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto auto minmax(0,1fr) auto;color:var(--wood-dark);background:var(--cream);font:14px/1.5 var(--font);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);color-scheme:light}
+.skilltree[hidden],.st-results[hidden],.st-detail[hidden]{display:none}
+.skilltree:has(.st-detail:not([hidden])){grid-template-columns:minmax(0,1fr) 340px}
+.st-head,.st-tools,.st-groups,.st-results,.st-foot{grid-column:1/-1}
+.st-head{grid-row:1;display:flex;gap:14px;align-items:center;padding:10px 16px;color:var(--cream-hi);background:linear-gradient(var(--royal),var(--royal-lo));border-bottom:3px solid var(--wood-dark);box-shadow:inset 0 -2px var(--gold-line)}
+.st-title{font-size:18px;margin:0;flex:1}.st-title::before{content:'';display:inline-block;width:28px;height:30px;margin-right:10px;background:url('../assets/ui/kingdom-crest.png') center/contain;vertical-align:middle}
+.st-summary{display:flex;gap:16px;font-size:12px;white-space:nowrap}.st-summary b{color:var(--gold-hi);font-size:20px}
+.skilltree button,.skilltree select,.skilltree input{font:inherit;min-height:44px;border:2px solid var(--wood-dark);border-radius:10px;color:var(--wood-dark);background:linear-gradient(#fffdf4,#f3dfb0);box-shadow:0 3px 0 #947044;padding:6px 12px;cursor:pointer}
+.skilltree input{background:var(--cream-hi);box-shadow:inset 0 2px 3px #68431f24;cursor:text}
+.skilltree :is(button,input,select,summary):focus-visible{outline:3px solid var(--royal-deep);outline-offset:3px}
+.skilltree button:active{transform:translateY(2px);box-shadow:0 1px 0 #947044}
+.st-tools{grid-row:2;display:flex;gap:8px;padding:10px 16px 6px}.st-search-wrap{flex:1;display:flex;min-width:0}.st-search{width:100%;min-width:0;font-size:16px!important}.st-preset{max-width:220px}
+.st-groups{grid-row:3;display:flex;gap:8px;padding:6px 16px 12px;overflow:auto;scrollbar-width:thin}
+.st-chip{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none;border-bottom:4px solid var(--gc)!important;font-size:12px!important}
+.st-chip[aria-pressed=true]{background:var(--royal-lo);color:var(--cream-hi)}.kingdom-art{display:inline-block;flex:none;vertical-align:middle}
+.st-results{grid-row:4;list-style:none;margin:0;padding:4px 16px 10px;max-height:19vh;overflow:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:6px}
+.st-result{width:100%;text-align:left;font-size:13px!important}.st-result small{margin-left:6px}.st-r-mark{display:inline-block;width:20px;font-weight:900}.st-r-owned{background:#dce8ff!important}.st-r-blocked{border-style:dashed!important}.st-more{padding:8px}
+.st-stage{position:relative;grid-column:1;grid-row:5;min-height:0;overflow:hidden;border-block:3px solid var(--wood-dark);background:url('../assets/ui/natural/paper-tile.png') repeat}
+.st-svg{width:100%;height:100%;display:block;touch-action:none;cursor:grab;user-select:none;background:radial-gradient(ellipse,#fff8e0cc,#e5c68966)}.st-svg:active{cursor:grabbing}
+.st-district{pointer-events:none}.st-district rect{fill:#fffaf0;fill-opacity:.82;stroke:var(--gc);stroke-width:4}.st-district path{stroke:var(--gc);stroke-width:3;fill:none}.st-district text{text-anchor:middle;font-size:25px;font-weight:900;fill:#4a2f17;paint-order:stroke;stroke:#fffaf0;stroke-width:3}
+.st-edge{fill:none;stroke:#9e865f;stroke-width:2;opacity:.42;stroke-linejoin:round;stroke-linecap:round}.st-edge.cross{stroke:#8b7355;stroke-dasharray:7 5;opacity:.28}.st-edge.next{stroke:#a16c1d;stroke-width:3;opacity:.65}.st-edge.path{stroke:#386cd8;stroke-width:5;opacity:.9;stroke-dasharray:none}.st-edge.dim{opacity:.07}.st-edge.path.dim{opacity:.5}
+.st-routeline{fill:none;stroke:#c88716;stroke-width:6;stroke-dasharray:7 7;stroke-linejoin:round;pointer-events:none}
+.st-node{cursor:pointer;outline:none}.st-shape{fill:#fff3d1;stroke:#78512d;stroke-width:2}.st-node-frame{opacity:.9}.st-hit{fill:transparent;pointer-events:all}.st-node>:not(.st-hit){pointer-events:none}.st-ring{fill:none;stroke:#163f91;stroke-width:5;stroke-dasharray:7 4;opacity:0}.st-node.selected .st-ring,.st-node:focus-visible .st-ring{opacity:1}
+.st-badge circle{fill:#fffaf0;stroke:currentColor;stroke-width:2}.st-mark{text-anchor:middle;font-size:15px;font-weight:900;fill:currentColor}.st-id,.st-name{text-anchor:middle;fill:#3f2511;paint-order:stroke;stroke:#fffaf0;stroke-width:4px;font-weight:800;pointer-events:none}.st-id{font-size:14px}.st-name{font-size:13px;display:none}.zoom-names .st-node.selected .st-name{display:inline}.zoom-far .st-id{display:none}
+.st-owned{color:#1f4b9f}.st-owned .st-shape{fill:#bcd5ff;stroke:#244fa7;stroke-width:5}.st-owned .st-badge circle{fill:#244fa7}.st-owned .st-mark{fill:#fffaf0}.st-available{color:#8b5709}.st-available .st-shape{fill:#ffe49a;stroke:#925d14;stroke-width:5}.st-blocked{color:#a33329}.st-blocked .st-shape{stroke:#a33329;stroke-dasharray:6 4;stroke-width:4}.st-unconnected .st-shape{stroke:#786a56;stroke-dasharray:2 4}.st-unconnected .st-badge,.st-start .st-badge{display:none}.st-start .st-shape{fill:#cee0ff;stroke:#244fa7;stroke-width:5}.k-ultimate .st-shape{fill:#ffe7a8;stroke:#946014;stroke-width:4}.st-node.dim{opacity:.25}.st-node.hit .st-ring{opacity:1}
+.st-zoom{position:absolute;right:12px;bottom:12px;display:flex;gap:8px}.st-zoom button{min-width:48px;font-weight:900}.st-minimap{position:absolute;right:12px;top:12px;padding:4px;background:#fffaf0ee;border:2px solid #745430;border-radius:10px}.st-minimap canvas{width:100px;height:100px;display:block}.st-minimap span{display:block;text-align:center;font-size:10px}
+.st-legend{position:absolute;left:10px;top:10px;padding:4px 10px;max-width:min(70vw,350px);border:2px solid #745430;border-radius:10px;background:#fffaf0f5;font-size:12px}.st-legend summary{min-height:44px;line-height:44px;cursor:pointer}.st-legend ul{padding:0;list-style:none;display:grid;gap:6px}.lg{display:inline-block;text-align:center;width:20px}.lg-owned{color:#244fa7}.lg-avail{color:#8b5709}.lg-blocked{border:2px dashed #a33329}.lg-unconn{border:2px dotted #786a56}
+.st-detail{grid-column:2;grid-row:5;min-height:0;overflow:auto;background:var(--cream-hi);border:3px solid var(--wood-dark);border-top:5px solid var(--gold-d);padding:14px;font-size:14px;scroll-padding:60px 0}
+.st-d-head{position:sticky;top:-14px;background:var(--cream-hi);z-index:2;display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 0;border-bottom:2px solid #d9bd86}.st-d-head h3{font-size:18px;margin:0;flex:1}.st-d-head small{font-size:12px;white-space:nowrap}.st-d-kind,.st-d-group{border:1px solid #987240;border-radius:10px;padding:2px 7px;font-size:11px;background:#f7e9c3}.st-d-close{margin-left:auto;min-width:44px;padding:0!important;font-size:24px!important}.st-d-desc{line-height:1.8}.st-d-row{line-height:1.6}.st-dormant,.st-reason{color:#9b3028}.st-d-state{display:inline-block;border:2px solid currentColor;border-radius:999px;padding:3px 10px;font-weight:900}.st-s-owned{color:#244fa7}.st-s-blocked{color:#a33329;border-style:dashed}.st-s-unconnected{border-style:dotted}.st-config select{width:100%;margin-top:5px}
+.st-card{position:relative;width:120px;height:160px;float:right;margin:8px 0 8px 10px}.st-card-art{position:absolute;inset:12% 8% auto;width:84%;height:58%;z-index:1}.st-card-frame{position:absolute;inset:0;width:100%;height:100%}.st-card.ult{width:150px;height:200px}
+.st-d-actions{clear:both;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--cream-hi);padding:10px 0;position:sticky;bottom:-14px}.st-d-actions button{flex:1;min-height:48px}.st-d-actions [aria-disabled=true]{opacity:.6}.st-route-text{color:#805319}.st-foot{grid-row:6;padding:10px 16px;display:flex;justify-content:center;background:#e4c99a;border-top:2px solid var(--wood-dark)}
+.skilltree .st-done,.skilltree .st-acquire{background:linear-gradient(#ffe89d,#ffbf52,#e69728);font-weight:900}.st-done{width:min(100%,480px)}
+@media(max-width:899px) and (min-height:541px){
+ .skilltree,.skilltree:has(.st-detail:not([hidden])){grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto auto auto minmax(90px,1fr) auto auto}
+ .st-head{padding:6px 10px;gap:6px;flex-wrap:wrap}.st-title{font-size:13px}.st-title::before{display:none}.st-summary{width:100%;justify-content:space-around}.st-summary b{font-size:17px}
+ .st-tools{padding:6px 10px;flex-wrap:wrap}.st-search-wrap{flex-basis:100%}.st-preset{flex:1;max-width:none;min-width:0}.st-groups{padding:4px 10px 8px;gap:6px}.st-chip{padding:4px 8px!important}
+ .st-detail{grid-column:1;grid-row:6;max-height:36dvh;border-radius:18px 18px 0 0;padding:10px 14px}.st-detail .st-d-head{top:-10px}.st-foot{grid-row:7;padding:6px 10px}.st-done{width:100%}
+ .skilltree:has(.st-detail:not([hidden])) .st-tools,.skilltree:has(.st-detail:not([hidden])) .st-results{display:none}
+ .st-results{max-height:16dvh;padding:4px 10px}.st-zoom{right:6px;bottom:8px;gap:5px}.st-zoom button{padding:4px 8px;min-width:44px;font-size:12px}.st-minimap{display:none}.st-card{width:90px;height:120px}.st-card.ult{width:110px;height:147px}
 }
-@media (max-width: 420px) { .st-minimap { display:none; } }
-
-/* 王国の作戦図：既存の木・羊皮紙を原寸タイルとして再利用。ノード上には模様を置かない。 */
-.skilltree { color-scheme:light; }
-.st-head { background:linear-gradient(var(--royal),var(--royal-lo)); color:var(--cream-hi); border-bottom:3px solid var(--wood-dark); box-shadow:inset 0 -2px var(--gold-line); }
-.st-title::before { content:''; display:inline-block; width:30px; height:30px; vertical-align:middle; margin-right:8px; background:url('../assets/ui/kingdom-crest.png') center/contain no-repeat; }
-.st-head .st-summary { color:var(--cream); } .st-head .st-summary b { color:var(--gold-hi); }
-.st-tools,.st-groups,.st-foot { background:var(--cream); }
-.st-svg { background:radial-gradient(ellipse,#fff8e0bb,#ecd39d88),url('../assets/ui/natural/paper-tile.png') repeat; }
-.st-stage { border-block:3px solid var(--wood-dark); }
-.st-detail,.st-legend,.st-minimap { background:var(--cream-hi); border:2px solid var(--wood-dark); box-shadow:var(--shadow-soft); border-radius:var(--radius-panel); }
-.st-detail { border-top:4px solid var(--gold-d); padding:12px 16px; }
-.st-detail .st-d-head { border-bottom:2px solid var(--line-inset); padding-bottom:8px; }
-.st-detail .st-d-kind,.st-detail .st-d-group { background:var(--paper-d); color:var(--wood-ink); border-color:var(--wood); }
-.st-detail .st-d-kind.k-ultimate { background:var(--gold-hi); }
-.st-back,.st-reset,.st-preset,.st-chip,.st-result,.st-zoom button,.st-d-actions .small-btn { border:2px solid var(--wood-dark); box-shadow:0 2px 0 #8b623b; border-radius:var(--radius-control); }
-.st-back,.st-reset,.st-preset,.st-zoom button,.st-d-actions .small-btn { background:linear-gradient(var(--cream-hi),var(--parch-deep)); color:var(--wood-dark); }
-.st-chip[aria-pressed="true"] { background:var(--royal-lo); color:#fffaf0; border-color:var(--wood-dark); box-shadow:inset 0 -3px var(--gold-line); }
-.st-acquire,.st-done { border:2px solid var(--wood-dark); background:linear-gradient(var(--gold-hi),var(--gold-main),var(--gold-lo)); }
-.skilltree :is(button,input,select,summary):focus-visible { outline:3px solid var(--royal-deep); outline-offset:3px; }
-.st-ring { stroke:var(--royal-deep); stroke-width:4; }
-.st-edge { stroke-linecap:round; } .st-edge.path { stroke:var(--royal-lo); }
-.st-hit { fill:transparent; pointer-events:all; }
-.st-node > :not(.st-hit) { pointer-events:none; }
-.st-node:focus-visible .st-shape { stroke-width:5; }
-.st-node.k-ultimate .st-shape { stroke-width:4; }
-.st-zoom { gap:8px; } .st-zoom button { font-weight:800; min-width:52px; }
-.st-legend summary { min-height:44px; line-height:44px; }
-.st-legend { max-width:min(70vw,340px); }
-.st-s-owned,.st-s-available { background:var(--paper); border-color:currentColor; }
-.st-d-actions { position:sticky; bottom:-12px; background:var(--cream-hi); padding:8px 0; }
-.st-detail[hidden] { display:none; }
-@media (max-width:899px) {
- .st-detail { flex:0 1 auto; max-height:38dvh; border-radius:16px 16px 0 0; }
- .st-d-actions button { flex:1; min-height:48px; }
- .st-results { max-height:18dvh; }
- .st-head { gap:6px; padding:6px 10px; } .st-title { font-size:14px; } .st-summary { width:100%; justify-content:space-around; gap:8px; }
- .st-tools { padding:6px 10px; } .st-search-wrap { flex-basis:100%; min-width:0; } .st-search { min-width:0; width:100%; }
- .st-preset { flex:1; min-width:0; } .st-groups { padding:4px 10px 10px; }
- .st-foot { padding:6px 10px; } .st-foot .st-done { width:100%; }
- .st-title::before { width:24px; height:24px; }
-}
-@media (max-height:540px) and (max-width:899px) {
- .st-summary { width:auto; } .st-search-wrap { flex-basis:140px; } .st-title::before { display:none; }
- .st-tools,.st-groups { padding-block:3px; } .st-detail { position:absolute; right:76px; bottom:64px; width:min(420px,60vw); max-height:65dvh; }
- .st-minimap { display:none; }
-}
+@media(max-height:540px){.st-title{font-size:13px}.st-summary{font-size:10px;gap:8px}.st-tools{padding:4px 10px}.st-groups{padding:4px 10px}.st-head{padding:4px 10px}.st-minimap{display:none}.st-foot{grid-row:6;padding:5px}.st-detail{max-height:none}.skilltree:has(.st-detail:not([hidden])){grid-template-columns:minmax(0,1fr) 300px}}
 /* ---------- 対戦中のスキル（取得したときだけ） ---------- */
 .skill-battle-toggle { position:fixed; left:max(8px, env(safe-area-inset-left)); top:calc(50% - 22px); z-index:60; min-width:44px; min-height:44px; border-radius:12px; border:2px solid #4d3426; background:#fff8e0; color:#3f2511; font:inherit; font-size:13px; font-weight:bold; box-shadow:0 3px 0 rgb(77 52 38 / 45%); }
 .skill-battle-toggle[hidden] { display:none; }
@@ -193,20 +73,6 @@ html.skilltree-open, html.skilltree-open body { overflow:hidden; }
 .sb-q { display:grid; gap:4px; margin:8px 0; } .sb-q input[type="range"] { width:100%; min-height:32px; }
 .sb-q label { display:flex; gap:8px; align-items:center; min-height:40px; } .sb-q input[type="checkbox"] { width:22px; height:22px; }
 .sb-q select { min-height:40px; font:inherit; }
-/* 小さい端末ではシートが地図の最小高さと競合しないように重ねる。 */
-@media (max-width:899px) and (min-height:541px) {
- .st-detail { position:absolute; left:0; right:0; bottom:66px; max-height:48dvh; min-height:180px; }
- .st-detail .st-d-head { position:sticky; top:-12px; z-index:2; background:var(--cream-hi); }
-}
-.k-cross.st-owned .st-shape { fill:#dce8ff; stroke:#2a52b0; }
-.k-cross.st-available .st-shape { fill:#fff2bf; stroke:#946014; }
-.st-minimap { right:80px; }
-@media (max-width:899px) {
- .st-zoom { flex-direction:row; right:8px; bottom:8px; gap:6px; }
- .st-stage { min-height:140px; }
- .st-minimap { right:8px; top:8px; bottom:auto; }
-}
-@media (max-width:360px) {
- .st-title { font-size:12px; } .st-title::before { display:none; }
- .st-results { max-height:14dvh; }
-}
+.st-edge.trunk{opacity:.15;stroke-width:2}.st-edge.trunk.path{opacity:.8;stroke-width:5}
+.st-available:not(.selected) .st-ring{opacity:1;stroke:#9b650b;stroke-width:3;stroke-dasharray:none}
+.st-owned:not(.selected) .st-ring{opacity:1;stroke:#2458a8;stroke-width:3;stroke-dasharray:none}

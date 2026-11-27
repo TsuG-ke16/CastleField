@@ -2416,7 +2416,8 @@ export class FieldGL {
     const tick = (now) => {
       this.rafId = 0;
       if (this.disposed || this.hidden || (typeof document !== 'undefined' && document.hidden) || !this.stageGroup) return;
-      this.renderFrame(now);
+      // Rendering cadence only; game updates and animations keep their existing inputs.
+      if(now-this.lastFrameTime >= (prefersReducedMotion()?100:1000/30))this.renderFrame(now);
       this.rafId = requestAnimationFrame(tick);
     };
     this.rafId = requestAnimationFrame(tick);

@@ -1,26 +1,18 @@
-// クラシックの対戦前に開く、スキルツリーの画面（200ノード＋辺を SVG で描く）。
-// - ドラッグでパン、ホイール・ピンチでズーム、＋／−／全体ボタン
-// - 系統の絞り込み・検索（ジャンプ）、取得済みの経路の強調、残りポイント・奥義数・取得数
-// - ノードをタップすると詳細（名前・効果・条件・回数・取得できるかと理由）。取得・解除・E04/X25 の選択
-// - おすすめ（data の presets）・全リセット。変えるたびに localStorage へ保存（SkillTree.serializeBuild の版つき）
-// ルールはすべて js/game/SkillTree.js（skillTreeModel.js 経由）。この画面で別の決まりを作らない。
-// 見た目・操作は PR #200 の独立プレビュー（previews/skill-tree/）を土台にした：羊皮紙とロイヤルブルーの配色、系統アイコン（既存の assets/ui）、
-// 奥義＝大きな菱形、取得済み＝ロイヤルブルー＋チェック、取得できる＝金の輪郭、選択＝金の点線の輪、ミニマップ（Canvas）、系統名のラベル。
-// ノードの種類（START＝紋章の大きな円・通常＝円・奥義＝大きな菱形・横断＝六角形）と状態（取得済み＝ロイヤルブルーの塗り＋✓／
-// 取得できる＝金の太い輪郭＋「＋」／条件不足＝破線＋「!」／未接続＝点線・暗い・アイコン灰色）は、色だけでなく形・明暗・線種・記号で区別する。
+// クラシックの200スキル＋STARTを19の紋章区画として描くUI。
+// 専用アトラスの効果絵・種類別の装飾枠・通路の配線は表示専用。
+// パン、ピンチ、検索、取得可能一覧、マウス即時選択、詳細、保存を担当する。
+// 接続・効果・条件・コストは js/game/SkillTree.js（skillTreeModel.js 経由）を唯一の正とし、ここで変更しない。
 
+import { TREE_LAYOUT } from './skillTreeLayout.js';
+import { GROUP_ART, START_ART, CROSS_ART, FRAME_ART, SKILL_ART, atlasMarkup, atlasElement } from './KingdomArt.js';
 import { treeIndex } from '../game/SkillTree.js';
-import { GROUP_ICONS, CROSS_ICON, START_ICON } from './skillTreeExport.js';
 import {
   allStatuses, buildSummary, edgeList, edgeState, routeTo, searchNodes, groupList, nodeDetail, nodeKind,
   acquire, releaseNode, setConfig, applyPreset, loadSavedBuild, saveBuild, buildForGame, STATE_LABEL,
 } from './skillTreeModel.js';
 
 const SVG = 'http://www.w3.org/2000/svg';
-const R = { start: 40, normal: 22, ultimate: 34, cross: 18 };
-/** データの layout 座標の倍率（PR200 と同じくらいのノードの大きさで重ならないように広げる） */
-const SCALE = 1.8;
-const asset = (path) => `assets/${path}`;
+const R = { start: 42, normal: 26, ultimate: 40, cross: 23 };
 const MARK = { owned: '✓', available: '+', blocked: '!', unconnected: '', start: '★' };
 const IMPL_TEXT = { handler: '', core: '', static: '', null: '※この効果は今のクラシックの仕組みでは発動しません（休眠）' };
 
@@ -117,7 +109,7 @@ export class SkillTreeView {
         <div class="st-zoom" role="group" aria-label="拡大縮小">
           <button type="button" data-zoom="in" aria-label="拡大">＋</button><button type="button" data-zoom="out" aria-label="縮小">−</button><button type="button" data-zoom="fit" aria-label="全体を表示">全体</button><button type="button" data-zoom="current" aria-label="選択中のノードまたはSTARTへ戻る">現在地</button>
         </div>
-        <details class="st-legend"><summary>凡例</summary>
+        <details class="st-legend"><summary>凡例・操作</summary>
           <ul>
             <li><span class="lg lg-start">◎</span>START（紋章・0pt）</li>
             <li><span class="lg lg-normal">●</span>通常 ／ <span class="lg lg-ult">◆</span>奥義（大きな菱形・1つまで） ／ <span class="lg lg-cross">⬢</span>横断（六角形）</li>
@@ -125,7 +117,7 @@ export class SkillTreeView {
             <li><span class="lg lg-avail">＋</span>取得できる（金の太い輪郭）</li>
             <li><span class="lg lg-blocked">!</span>条件不足（破線：必須ノード・奥義・ポイント）</li>
             <li><span class="lg lg-unconn"> </span>未接続（点線・暗い・灰色のアイコン）</li>
-            <li>ロイヤルブルーの太線＝取得済みの経路／金の線＝次に取れるノードへの線／点線＝横断の線</li>
+            <li>密集した場所は＋で拡大、または「取得できる」一覧から選べます。</li><li>ロイヤルブルーの太線＝取得済みの経路／金の線＝次に取れるノードへの線／点線＝横断の線</li>
           </ul>
         </details>
       </div>
@@ -146,7 +138,7 @@ export class SkillTreeView {
 
     // 系統のボタン
     const groups = box.querySelector('.st-groups');
-    const chip = (id, name, color) => `<button type="button" class="st-chip" data-group="${esc(id)}" aria-pressed="false" style="--gc:${esc(color)}">${GROUP_ICONS[id] || id === 'X' ? `<img src="${asset(GROUP_ICONS[id] ?? CROSS_ICON)}" alt="">` : ''}${esc(name)}</button>`;
+    const chip = (id, name, color) => `<button type="button" class="st-chip" data-group="${esc(id)}" aria-pressed="false" style="--gc:${esc(color)}">${GROUP_ART[id] || id==='X' ? atlasMarkup(GROUP_ART[id]??CROSS_ART,'',26) : ''}${esc(name)}</button>`;
     groups.innerHTML = chip('', 'すべて', '#ccc') + chip('available', '取得できる', '#fff') + groupList(this.tree).map((g) => chip(g.id, g.name, g.color)).join('');
 
     this.drawStatic();
@@ -171,7 +163,10 @@ export class SkillTreeView {
       if (!b) return;
       this.filter = b.dataset.group || null;
       this.render();
-      if (this.filter && this.filter !== 'available') this.jumpToIds(searchNodes(this.tree, '', this.filter));
+      if (this.filter && this.filter !== 'available') {
+        const ids=this.filter==='X'?searchNodes(this.tree,'','X'):this.tree.nodes.filter(n=>!n.cross&&n.group===this.filter).map(n=>n.id);
+        this.jumpToIds(ids);
+      }
     });
     const search = box.querySelector('.st-search');
     search.addEventListener('input', () => { this.query = search.value; this.render(); });
@@ -216,36 +211,42 @@ export class SkillTreeView {
     window.addEventListener('resize', () => { if (!this.box.hidden) this.applyView(); });
   }
 
-  /** 画面上の座標（データの layout × SCALE） */
+  /** UI専用の区画配置。元のゲームデータ座標は書き換えない。 */
   pos(id) {
-    const l = id === this.ix.startId ? this.tree.start.layout ?? { x: 0, y: 0 } : this.ix.byId.get(id)?.layout;
-    // 表示座標だけを調整。元データの START と重なる横断ノードを左右へ逃がす。
-    // 接続・条件・保存には元の ID をそのまま使用する。
-    if (id === 'X21') return { x: 95, y: -55 };
-    if (id === 'X27') return { x: -95, y: -55 };
-    return l ? { x: l.x * SCALE, y: l.y * SCALE } : null;
+    return TREE_LAYOUT.positions[id] ?? null;
+  }
+
+  edgePath(a, b) {
+    const pa=this.pos(a),pb=this.pos(b);
+    const cross=this.ix.byId.get(a)?.cross ? a : this.ix.byId.get(b)?.cross ? b : null;
+    if (!cross) {
+      if (a===this.ix.startId || b===this.ix.startId) {
+        const id=a===this.ix.startId?b:a,p=this.pos(id),c=TREE_LAYOUT.centers[id[0]],y=c.y-150;
+        return `M 0 -150 L -200 -150 L -200 ${y} L ${c.x-200} ${y} L ${c.x-200} ${p.y} L ${p.x} ${p.y}`;
+      }
+      return `M ${pa.x} ${pa.y} L ${pb.x} ${pb.y}`;
+    }
+    const normal=cross===a?b:a,p=this.pos(normal),q=this.pos(cross),c=TREE_LAYOUT.centers[normal[0]];
+    const gx=c.x+(q.x<c.x?-200:200),gy=c.y+(q.y<c.y?-150:150);
+    return `M ${p.x} ${p.y} Q ${gx} ${p.y} ${gx} ${gy} L ${q.x} ${gy} L ${q.x} ${q.y}`;
   }
 
   /** 辺とノードの形（状態に関係しない部分）を一度だけ作る */
   drawStatic() {
-    const pos = (id) => this.pos(id);
-    // 系統名のラベル（PR200 のクラスター名）：その系統の奥義（08）の外側
-    for (const [gid, g] of Object.entries(this.tree.groups)) {
-      const ult = this.pos(`${gid}08`);
-      if (!ult) continue;
-      const len = Math.hypot(ult.x, ult.y) || 1;
-      const out = gid === this.tree.center ? { x: ult.x, y: ult.y + 70 } : { x: ult.x + (ult.x / len) * 80, y: ult.y + (ult.y / len) * 80 };
-      const t = document.createElementNS(SVG, 'text');
-      t.setAttribute('x', out.x); t.setAttribute('y', out.y);
-      t.classList.add('st-cluster');
-      t.textContent = g.name;
-      this.gLabels.append(t);
+    // Heraldic districts: one quiet panel and bespoke icon for each of the 19 groups.
+    for (const [gid, c] of Object.entries(TREE_LAYOUT.centers)) {
+      const g=this.tree.groups[gid];
+      const district=document.createElementNS(SVG,'g');district.classList.add('st-district');district.dataset.group=gid;
+      district.style.setProperty('--gc',g.color);
+      district.innerHTML=`<rect x="${c.x-174}" y="${c.y-156}" width="348" height="312" rx="26"/><path d="M ${c.x-145} ${c.y-118} H ${c.x+145}"/><text x="${c.x+12}" y="${c.y-130}">${esc(g.name)}</text>`;
+      const icon=atlasElement(GROUP_ART[gid],42,'st-district-icon');icon.setAttribute('x',c.x-95);icon.setAttribute('y',c.y-162);district.append(icon);
+      this.gLabels.append(district);
     }
     this.edgeEls = edgeList(this.tree).map(([a, b]) => {
-      const pa = pos(a), pb = pos(b);
-      const line = document.createElementNS(SVG, 'line');
-      line.setAttribute('x1', pa.x); line.setAttribute('y1', pa.y); line.setAttribute('x2', pb.x); line.setAttribute('y2', pb.y);
+      const line = document.createElementNS(SVG, 'path');
+      line.setAttribute('d',this.edgePath(a,b));
       line.classList.add('st-edge');
+      if(a===this.ix.startId || b===this.ix.startId)line.classList.add('trunk');
       if (this.ix.byId.get(a)?.cross || this.ix.byId.get(b)?.cross) line.classList.add('cross');
       this.gEdges.append(line);
       return { a, b, el: line };
@@ -272,12 +273,12 @@ export class SkillTreeView {
       const ring = document.createElementNS(SVG, 'circle');
       ring.setAttribute('r', (kind === 'ultimate' ? r * 1.35 : r) + 9);
       ring.classList.add('st-ring');
-      const img = document.createElementNS(SVG, 'image');
-      const icon = !node ? START_ICON : node.cross ? CROSS_ICON : GROUP_ICONS[node.group];
-      const size = r * (kind === 'start' ? 1.5 : 1.25);
-      img.setAttribute('href', asset(icon ?? 'ui/icon-kind-spell.png'));
-      img.setAttribute('x', -size / 2); img.setAttribute('y', -size / 2); img.setAttribute('width', size); img.setAttribute('height', size);
-      img.classList.add('st-icon');
+      const size = r * (kind === 'ultimate' ? 1.85 : 1.65);
+      const img=atlasElement(node ? SKILL_ART[id] : START_ART,size,'st-icon');
+      img.setAttribute('x',-size/2);img.setAttribute('y',-size/2);
+      const frameSize=r*(kind==='ultimate'?3.25:2.65);
+      const decor=atlasElement(FRAME_ART[kind],frameSize,'st-node-frame');
+      decor.setAttribute('x',-frameSize/2);decor.setAttribute('y',-frameSize/2);
       // 状態の記号（✓ ＋ !）は右下の小さな丸に（PR200 のチェックの位置）
       const badge = document.createElementNS(SVG, 'g');
       badge.classList.add('st-badge');
@@ -301,7 +302,7 @@ export class SkillTreeView {
       const hit = document.createElementNS(SVG, 'circle');
       hit.classList.add('st-hit');
       hit.setAttribute('r', Math.max(r + 5, 24));
-      g.append(hit, ring, shape, img, badge, idText, name);
+      g.append(hit, ring, shape, decor, img, badge, idText, name);
       this.gNodes.append(g);
       this.nodeEls.set(id, { g, mark, node });
     }
@@ -376,11 +377,11 @@ export class SkillTreeView {
     if (!id || !this.ix.byId.has(id) || this.build.ids.includes(id)) return;
     const route = routeTo(this.tree, this.build.ids, id);
     if (!route || route.length < 2) return;
-    const pos = (x) => this.pos(x);
     const first = [...this.ix.adj.get(route[0])].find((x) => x === this.ix.startId || this.build.ids.includes(x));
-    const pts = [first, ...route].map((x) => { const p = pos(x); return `${p.x},${p.y}`; }).join(' ');
-    const line = document.createElementNS(SVG, 'polyline');
-    line.setAttribute('points', pts);
+    const routeIds=[first,...route];
+    const pts=routeIds.slice(1).map((x,i)=>this.edgePath(routeIds[i],x)).join(' ');
+    const line = document.createElementNS(SVG, 'path');
+    line.setAttribute('d', pts);
     line.classList.add('st-routeline');
     this.gRoute.append(line);
   }
@@ -405,12 +406,12 @@ export class SkillTreeView {
       actions = `<button type="button" class="small-btn" data-act="acquire" aria-disabled="true">取得できません</button><p class="st-reason">${esc(s.reason)}</p>${route ? `<p class="st-route-text">ここまでの道：${route.map((x) => esc(`${x}`)).join(' → ')}（${route.length}pt）</p>` : ''}`;
     }
     const dnode = this.ix.byId.get(id);
-    const dicon = !dnode ? START_ICON : dnode.cross ? CROSS_ICON : GROUP_ICONS[dnode.group];
+    const dicon = dnode ? SKILL_ART[id] : START_ART;
     this.detail.innerHTML = `
       <div class="st-d-head"><span class="st-d-kind k-${d.kind}">${esc(d.kindLabel)}</span>${d.group ? `<span class="st-d-group">${esc(d.group)}</span>` : ''}
         <h3>${esc(d.name)} <small>${esc(d.id === this.ix.startId ? '' : d.id)}</small></h3>
         <button type="button" class="st-d-close" data-act="close" aria-label="詳細を閉じる">×</button></div>
-      <div class="st-card${d.kind === 'ultimate' ? ' ult' : ''}" aria-hidden="true"><img class="st-card-art" src="${asset(dicon ?? 'ui/icon-kind-spell.png')}" alt=""><img class="st-card-frame" src="assets/cards/frame-${d.kind === 'ultimate' ? 'legendary' : 'rare'}.png" alt=""></div>
+      <div class="st-card${d.kind === 'ultimate' ? ' ult' : ''}" aria-hidden="true">${atlasMarkup(dicon,'st-card-art',120)}<img class="st-card-frame" src="assets/cards/frame-${d.kind === 'ultimate' ? 'legendary' : 'rare'}.png" alt=""></div>
       <p class="st-d-desc">${esc(d.desc)}</p>
       ${d.requires.length ? `<p class="st-d-row"><b>必須：</b>${esc(d.requires.join('・'))}</p>` : ''}
       ${d.ends.length ? `<p class="st-d-row"><b>つなぐ：</b>${esc(d.ends.join(' ↔ '))}（どちらか一方を取れば取得できます）</p>` : ''}
@@ -451,7 +452,7 @@ export class SkillTreeView {
   select(id, { center = false } = {}) {
     this.selected = id;
     this.render();
-    if (id && center) this.centerOn(id);
+    if (id && (center || this.size().w<900)) this.centerOn(id);
     else this.applyView();
     if (id) this.nodeEls.get(id)?.g.focus({ preventScroll: true });
   }
@@ -468,7 +469,7 @@ export class SkillTreeView {
     this.fit();
     if (this.size().w < 900) {
       if (this.build.ids.length) this.centerOn(this.build.ids.at(-1));
-      else this.centerOn(this.ix.startId);
+      else { const {w,h}=this.size(); this.view={cx:0,cy:-150,k:Math.min(w/780,h/640,0.65)}; this.applyView(); }
     }
   }
 
@@ -487,7 +488,7 @@ export class SkillTreeView {
     const { w, h } = this.size();
     const k = this.view.k;
     this.svg.setAttribute('viewBox', `${this.view.cx - w / (2 * k)} ${this.view.cy - h / (2 * k)} ${w / k} ${h / k}`);
-    this.svg.classList.toggle('zoom-names', k >= 1.6);
+    this.svg.classList.toggle('zoom-names', k >= 0.85);
     // CSS pixels: every node has a hit disc at least 48px wide at every zoom.
     for (const { g, node } of this.nodeEls.values()) {
       g.querySelector('.st-hit').setAttribute('r', Math.max(R[nodeKind(node)] + 5, 24 / k));
@@ -502,7 +503,7 @@ export class SkillTreeView {
     if (!c || !this.view) return;
     const ctx = c.getContext?.('2d');
     if (!ctx) return;
-    const W = c.width, H = c.height, ext = 760 * SCALE, sc = Math.min(W, H) / (2 * ext);
+    const W = c.width, H = c.height, ext = 1250, sc = Math.min(W, H) / (2 * ext);
     const tx = (x) => W / 2 + x * sc, ty = (y) => H / 2 + y * sc;
     ctx.clearRect(0, 0, W, H);
     ctx.lineWidth = 0.6;
@@ -617,7 +618,8 @@ export class SkillTreeView {
         } else {
           const id = downTarget;
           clearTimeout(this.tapTimer);
-          this.tapTimer = setTimeout(() => { if (!this.box.hidden) this.select(id); }, 320);
+          if(e.pointerType==='mouse') this.select(id);
+          else this.tapTimer = setTimeout(() => { if (!this.box.hidden) this.select(id); }, 280);
           lastTap = { time: now, x: e.clientX, y: e.clientY };
         }
       }

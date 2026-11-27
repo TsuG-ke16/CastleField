@@ -22,7 +22,7 @@ async function ensureServer(){
   for(let n=0;n<40;n++){if(await available())return;await new Promise(r=>setTimeout(r,100))}
   throw Error(`HTTPサーバーを起動できませんでした\n${serverLog}`);
 }
-async function snapshot(name){await page.screenshot({path:resolve(artifacts,`${name}.png`)})}
+async function snapshot(name){await page.screenshot({path:resolve(artifacts,`${name}.png`),timeout:60000})}
 async function state(){
   return page.evaluate(()=>{
     const game=window.castlefield.game(),id=document.querySelector('#app').dataset.viewer,st=game.getState(id);
@@ -76,6 +76,10 @@ try{
     const card=s.playable.find(c=>c.soldier);assert.ok(card,'最初の手番に出せる兵士がある');
     await play(card);
     await page.waitForFunction(()=>{const id=document.querySelector('#app').dataset.viewer;return castlefield.game().getState(id).players[id].soldiers.length>0});
+    if(!process.env.UI_TEST_FX && process.env.UI_TEST_FIELD3D!=='2d') {
+      await page.locator('canvas.field-gl').waitFor({state:'visible',timeout:60000});
+      assert.ok(await page.locator('canvas.field-gl').evaluate(c=>{const gl=c.getContext('webgl2');return gl&&!gl.isContextLost()}),'normal 3D WebGL context is active');
+    }
     deployed=true;await snapshot('deployed');
     await page.waitForFunction(()=>!document.querySelector('#app').classList.contains('busy'));
     await press('#end-turn');ended=true;break;
@@ -104,7 +108,7 @@ try{
   await page.evaluate(()=>{window.__uiSmokePrevious=castlefield.game()});await press('#rematch');
   await page.waitForFunction(()=>Boolean(castlefield.game())&&castlefield.game()!==window.__uiSmokePrevious&&castlefield.game().getState(null).phase!=='gameOver');
   assert.deepEqual(errors,[],'コンソールとページにエラーがない');assert.deepEqual(warnings,[],'描画の同期警告がない');
-  const report={viewport:`${viewport.width}x${viewport.height}`,deployed,ended,turns:final.turn,cards:used,errors,warnings,rematch:true};
+  const report={field3d:!process.env.UI_TEST_FX&&process.env.UI_TEST_FIELD3D!=='2d',viewport:`${viewport.width}x${viewport.height}`,deployed,ended,turns:final.turn,cards:used,errors,warnings,rematch:true};
   writeFileSync(resolve(artifacts,'report.json'),JSON.stringify(report,null,2)+'\n');console.log(JSON.stringify(report));
 }catch(error){
   if(page)await snapshot('failure').catch(()=>{});
