@@ -1,6 +1,6 @@
-import { Suspense, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Html, useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { GameState, MonsterState, RoadState, SoldierState } from '../engine/types';
 import { cardTypeToImagePath } from '../engine/dataLoader';
@@ -95,6 +95,14 @@ function squareZ(roadSquare: number, laneLen: number): number {
   return 5.0 - t * 10.0;
 }
 
+function projectWorld(cam: THREE.PerspectiveCamera, x: number, y: number, z: number): { left: number; top: number } {
+  const v = new THREE.Vector3(x, y, z).project(cam);
+  return {
+    left: (v.x * 0.5 + 0.5) * 100,
+    top: (-v.y * 0.5 + 0.5) * 100,
+  };
+}
+
 function MeadowModel({ shakePower }: { shakePower: number }) {
   const { scene } = useGLTF('/assets/v2/models/field-meadow-v2.glb');
   const cloned = useMemo(() => scene.clone(), [scene]);
@@ -118,35 +126,36 @@ function MeadowModel({ shakePower }: { shakePower: number }) {
   );
 }
 
-function BoardEntities({
+function BoardMeshes({
   state,
   viewerSide = 'p1',
-  myCastleFilter,
-  mySoldierFilter,
   highlightRoadIds,
   highlightSoldierIds,
-  highlightMonsterIds,
   highlightEnemyCastle,
   onSelectRoad,
   onSelectSoldier,
-  onSelectMonster,
   onSelectEnemyCastle,
-}: Omit<BattleFieldSceneProps, 'quality' | 'shakePower' | 'stageId'>) {
+}: {
+  state: GameState;
+  viewerSide: 'p1' | 'p2';
+  highlightRoadIds: string[];
+  highlightSoldierIds: string[];
+  highlightEnemyCastle: boolean;
+  onSelectRoad: (roadId: string) => void;
+  onSelectSoldier: (soldierId: string) => void;
+  onSelectEnemyCastle: () => void;
+}) {
   const roads = state.roads;
   const mySide: 'p1' | 'p2' = viewerSide;
   const oppSide: 'p1' | 'p2' = mySide === 'p1' ? 'p2' : 'p1';
   const laneLen = roads[0]?.length || 3;
 
-  const roadSquareOf = (s: SoldierState, side: 'p1' | 'p2') => {
-    return side === mySide ? s.position : laneLen - 1 - s.position;
-  };
-
-  const myCastleImg = mySide === 'p1' ? '/assets/castles/castle-blue.png' : '/assets/castles/castle-orange.png';
-  const oppCastleImg = oppSide === 'p1' ? '/assets/castles/castle-blue.png' : '/assets/castles/castle-orange.png';
+  const roadSquareOf = (s: SoldierState, side: 'p1' | 'p2') =>
+    side === mySide ? s.position : laneLen - 1 - s.position;
 
   return (
     <group>
-      {/* Opponent Castle (North, Z = -8.4) */}
+      {/* Opponent Castle Pedestal */}
       <group position={[0, 0.35, -8.4]}>
         <mesh
           onClick={(e) => {
@@ -163,51 +172,14 @@ function BoardEntities({
             emissiveIntensity={0.6}
           />
         </mesh>
-        <Html position={[0, 1.3, 0]} center distanceFactor={14}>
-          <button
-            type="button"
-            onClick={() => highlightEnemyCastle && onSelectEnemyCastle()}
-            style={{
-              background: 'none',
-              border: highlightEnemyCastle ? '3px solid #ffe37a' : 'none',
-              borderRadius: 16,
-              padding: 0,
-              cursor: highlightEnemyCastle ? 'pointer' : 'default',
-            }}
-          >
-            <img
-              src={oppCastleImg}
-              alt="相手の城"
-              style={{
-                width: 76,
-                height: 76,
-                objectFit: 'contain',
-                filter: oppSide === 'p1' ? myCastleFilter : undefined,
-              }}
-            />
-          </button>
-        </Html>
       </group>
 
-      {/* Viewer Castle (South, Z = +8.4) */}
+      {/* Viewer Castle Pedestal */}
       <group position={[0, 0.35, 8.4]}>
         <mesh>
           <cylinderGeometry args={[1.6, 1.8, 0.3, 18]} />
           <meshStandardMaterial color={mySide === 'p1' ? '#4da3e8' : '#f28b38'} />
         </mesh>
-        <Html position={[0, 1.3, 0]} center distanceFactor={14}>
-          <img
-            src={myCastleImg}
-            alt="自分の城"
-            style={{
-              width: 80,
-              height: 80,
-              objectFit: 'contain',
-              pointerEvents: 'none',
-              filter: mySide === 'p1' ? myCastleFilter : undefined,
-            }}
-          />
-        </Html>
       </group>
 
       {/* Clickable Target Lane Pads */}
@@ -237,7 +209,7 @@ function BoardEntities({
         );
       })}
 
-      {/* Soldiers (p1 & p2) */}
+      {/* Soldier Bases */}
       {(['p1', 'p2'] as const).map((pid) => {
         const ps = state.players[pid];
         if (!ps) return null;
@@ -246,134 +218,61 @@ function BoardEntities({
           const z = squareZ(roadSquareOf(s, pid), laneLen);
           const isTarget = highlightSoldierIds.includes(s.soldierId);
           return (
-            <group key={s.soldierId} position={[x, 0.45, z]}>
-              <mesh
-                onClick={(e) => {
-                  if (isTarget) {
-                    e.stopPropagation();
-                    onSelectSoldier(s.soldierId);
-                  }
-                }}
-              >
-                <cylinderGeometry args={[0.55, 0.55, 0.1, 16]} />
-                <meshStandardMaterial
-                  color={isTarget ? '#ffe37a' : pid === 'p1' ? '#4da3e8' : '#f5923e'}
-                  emissive={isTarget ? '#ffaa00' : '#000000'}
-                  emissiveIntensity={0.6}
-                />
-              </mesh>
-              <Html position={[0, 0.9, 0]} center distanceFactor={14}>
-                <button
-                  type="button"
-                  onClick={() => isTarget && onSelectSoldier(s.soldierId)}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    background: 'none',
-                    border: 'none',
-                    padding: 0,
-                    cursor: isTarget ? 'pointer' : 'default',
-                  }}
-                >
-                  <img
-                    src={cardTypeToImagePath(s.type)}
-                    alt={s.name || s.type}
-                    style={{
-                      width: 48,
-                      height: 48,
-                      objectFit: 'contain',
-                      borderRadius: 10,
-                      border: `2.5px solid ${isTarget ? '#ffe37a' : pid === 'p1' ? '#2a6cab' : '#c05a1c'}`,
-                      background: '#fffaf0',
-                      filter: pid === 'p1' ? mySoldierFilter : undefined,
-                    }}
-                  />
-                  <span
-                    style={{
-                      marginTop: -6,
-                      background: pid === 'p1' ? '#234799' : '#c05a1c',
-                      color: '#fffaf0',
-                      fontSize: 10,
-                      fontWeight: 900,
-                      padding: '1px 6px',
-                      borderRadius: 999,
-                      border: '1.5px solid #4a2e1a',
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    ⚔{s.attack} ❤{s.hp}{s.shield > 0 ? ` 🛡${s.shield}` : ''}
-                  </span>
-                </button>
-              </Html>
-            </group>
+            <mesh
+              key={s.soldierId}
+              position={[x, 0.45, z]}
+              onClick={(e) => {
+                if (isTarget) {
+                  e.stopPropagation();
+                  onSelectSoldier(s.soldierId);
+                }
+              }}
+            >
+              <cylinderGeometry args={[0.55, 0.55, 0.1, 16]} />
+              <meshStandardMaterial
+                color={isTarget ? '#ffe37a' : pid === 'p1' ? '#4da3e8' : '#f5923e'}
+                emissive={isTarget ? '#ffaa00' : '#000000'}
+                emissiveIntensity={0.6}
+              />
+            </mesh>
           );
         });
-      })}
-
-      {/* Monsters */}
-      {state.monsters.map((m: MonsterState) => {
-        const x = laneXOf(m.roadId, roads);
-        const sq = mySide === 'p1' ? m.square : laneLen - 1 - m.square;
-        const z = squareZ(sq, laneLen);
-        const isTarget = highlightMonsterIds.includes(m.monsterId);
-        return (
-          <group key={m.monsterId} position={[x, 0.5, z]}>
-            <Html position={[0, 0.95, 0]} center distanceFactor={14}>
-              <button
-                type="button"
-                onClick={() => isTarget && onSelectMonster(m.monsterId)}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  background: 'none',
-                  border: 'none',
-                  padding: 0,
-                  cursor: isTarget ? 'pointer' : 'default',
-                }}
-              >
-                <img
-                  src={`/assets/cards/card-beast-${m.type.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}.png`}
-                  alt={m.type}
-                  style={{
-                    width: 54,
-                    height: 54,
-                    objectFit: 'contain',
-                    borderRadius: 12,
-                    border: `3px solid ${isTarget ? '#ffe37a' : '#a82a24'}`,
-                    background: '#fff2ee',
-                  }}
-                />
-                <span
-                  style={{
-                    marginTop: -6,
-                    background: '#a82a24',
-                    color: '#fffaf0',
-                    fontSize: 10,
-                    fontWeight: 900,
-                    padding: '1px 6px',
-                    borderRadius: 999,
-                    border: '1.5px solid #4a2e1a',
-                  }}
-                >
-                  魔物 ❤{m.hp} (あと{m.attackIn})
-                </span>
-              </button>
-            </Html>
-          </group>
-        );
       })}
     </group>
   );
 }
 
 export function BattleFieldScene(props: BattleFieldSceneProps) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ w: 390, h: 480 });
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver((entries) => {
+      const r = entries[0]?.contentRect;
+      if (r && r.width > 0 && r.height > 0) {
+        setSize({ w: r.width, h: r.height });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   const activeStage = props.state.stage || props.stageId || 'meadow';
   const theme = STAGE_THEMES[activeStage] || STAGE_THEMES.meadow;
   const isNight = props.state.time === 'night';
   const mySide: 'p1' | 'p2' = props.viewerSide || 'p1';
   const oppSide: 'p1' | 'p2' = mySide === 'p1' ? 'p2' : 'p1';
+
+  const cam = useMemo(() => {
+    const aspect = Math.max(0.4, size.w / Math.max(1, size.h));
+    const c = new THREE.PerspectiveCamera(44, aspect, 0.2, 100);
+    c.position.set(0, 18.2, 16.5);
+    c.lookAt(0, 0, 0);
+    c.updateMatrixWorld();
+    return c;
+  }, [size.w, size.h]);
 
   if (props.quality === '2d') {
     const roads = props.state.roads;
@@ -475,11 +374,21 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
     );
   }
 
+  const roads = props.state.roads;
+  const laneLen = roads[0]?.length || 3;
+  const oppCastlePos = projectWorld(cam, 0, 1.5, -8.4);
+  const myCastlePos = projectWorld(cam, 0, 1.5, 8.4);
+  const myCastleImg = mySide === 'p1' ? '/assets/castles/castle-blue.png' : '/assets/castles/castle-orange.png';
+  const oppCastleImg = oppSide === 'p1' ? '/assets/castles/castle-blue.png' : '/assets/castles/castle-orange.png';
+
   return (
     <div
+      ref={wrapRef}
       style={{
+        position: 'relative',
         width: '100%',
         height: '100%',
+        overflow: 'hidden',
         background: isNight ? 'linear-gradient(180deg, #1b274b 0%, #314275 55%, #274435 100%)' : theme.bg2d,
       }}
     >
@@ -493,22 +402,186 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
         <directionalLight position={[8, 18, 10]} intensity={isNight ? 1.15 : 2.0} color={isNight ? '#c8d6ff' : '#fff6de'} />
         <Suspense fallback={null}>
           <MeadowModel shakePower={props.shakePower} />
-          <BoardEntities
+          <BoardMeshes
             state={props.state}
             viewerSide={mySide}
-            myCastleFilter={props.myCastleFilter}
-            mySoldierFilter={props.mySoldierFilter}
             highlightRoadIds={props.highlightRoadIds}
             highlightSoldierIds={props.highlightSoldierIds}
-            highlightMonsterIds={props.highlightMonsterIds}
             highlightEnemyCastle={props.highlightEnemyCastle}
             onSelectRoad={props.onSelectRoad}
             onSelectSoldier={props.onSelectSoldier}
-            onSelectMonster={props.onSelectMonster}
             onSelectEnemyCastle={props.onSelectEnemyCastle}
           />
         </Suspense>
       </Canvas>
+
+      {/* Projected 2D Sprite Overlay inside local stacking context (zero <Html> React portals) */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', zIndex: 5 }}>
+        {/* Opponent Castle */}
+        <button
+          type="button"
+          onClick={() => props.highlightEnemyCastle && props.onSelectEnemyCastle()}
+          style={{
+            position: 'absolute',
+            left: `${oppCastlePos.left}%`,
+            top: `${oppCastlePos.top}%`,
+            transform: 'translate(-50%, -50%)',
+            background: 'none',
+            border: props.highlightEnemyCastle ? '3px solid #ffe37a' : 'none',
+            borderRadius: 16,
+            padding: 0,
+            pointerEvents: props.highlightEnemyCastle ? 'auto' : 'none',
+            cursor: props.highlightEnemyCastle ? 'pointer' : 'default',
+          }}
+        >
+          <img
+            src={oppCastleImg}
+            alt="相手の城"
+            style={{
+              width: 68,
+              height: 68,
+              objectFit: 'contain',
+              filter: oppSide === 'p1' ? props.myCastleFilter : undefined,
+            }}
+          />
+        </button>
+
+        {/* Viewer Castle */}
+        <img
+          src={myCastleImg}
+          alt="自分の城"
+          style={{
+            position: 'absolute',
+            left: `${myCastlePos.left}%`,
+            top: `${myCastlePos.top}%`,
+            transform: 'translate(-50%, -50%)',
+            width: 72,
+            height: 72,
+            objectFit: 'contain',
+            filter: mySide === 'p1' ? props.myCastleFilter : undefined,
+          }}
+        />
+
+        {/* Soldiers */}
+        {(['p1', 'p2'] as const).map((pid) => {
+          const ps = props.state.players[pid];
+          if (!ps) return null;
+          return ps.soldiers.map((s) => {
+            const x = laneXOf(s.roadId, roads) + (pid === mySide ? -0.15 : 0.15);
+            const sq = pid === mySide ? s.position : laneLen - 1 - s.position;
+            const z = squareZ(sq, laneLen);
+            const pos = projectWorld(cam, x, 1.35, z);
+            const isTarget = props.highlightSoldierIds.includes(s.soldierId);
+            return (
+              <button
+                key={s.soldierId}
+                type="button"
+                onClick={() => isTarget && props.onSelectSoldier(s.soldierId)}
+                style={{
+                  position: 'absolute',
+                  left: `${pos.left}%`,
+                  top: `${pos.top}%`,
+                  transform: 'translate(-50%, -50%)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  pointerEvents: isTarget ? 'auto' : 'none',
+                  cursor: isTarget ? 'pointer' : 'default',
+                }}
+              >
+                <img
+                  src={cardTypeToImagePath(s.type)}
+                  alt={s.name || s.type}
+                  style={{
+                    width: 44,
+                    height: 44,
+                    objectFit: 'contain',
+                    borderRadius: 10,
+                    border: `2.5px solid ${isTarget ? '#ffe37a' : pid === 'p1' ? '#2a6cab' : '#c05a1c'}`,
+                    background: '#fffaf0',
+                    filter: pid === 'p1' ? props.mySoldierFilter : undefined,
+                  }}
+                />
+                <span
+                  style={{
+                    marginTop: -6,
+                    background: pid === 'p1' ? '#234799' : '#c05a1c',
+                    color: '#fffaf0',
+                    fontSize: 10,
+                    fontWeight: 900,
+                    padding: '1px 6px',
+                    borderRadius: 999,
+                    border: '1.5px solid #4a2e1a',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  ⚔{s.attack} ❤{s.hp}{s.shield > 0 ? ` 🛡${s.shield}` : ''}
+                </span>
+              </button>
+            );
+          });
+        })}
+
+        {/* Monsters */}
+        {props.state.monsters.map((m: MonsterState) => {
+          const x = laneXOf(m.roadId, roads);
+          const sq = mySide === 'p1' ? m.square : laneLen - 1 - m.square;
+          const z = squareZ(sq, laneLen);
+          const pos = projectWorld(cam, x, 1.45, z);
+          const isTarget = props.highlightMonsterIds.includes(m.monsterId);
+          return (
+            <button
+              key={m.monsterId}
+              type="button"
+              onClick={() => isTarget && props.onSelectMonster(m.monsterId)}
+              style={{
+                position: 'absolute',
+                left: `${pos.left}%`,
+                top: `${pos.top}%`,
+                transform: 'translate(-50%, -50%)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                background: 'none',
+                border: 'none',
+                padding: 0,
+                pointerEvents: isTarget ? 'auto' : 'none',
+                cursor: isTarget ? 'pointer' : 'default',
+              }}
+            >
+              <img
+                src={`/assets/cards/card-beast-${m.type.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()}.png`}
+                alt={m.type}
+                style={{
+                  width: 50,
+                  height: 50,
+                  objectFit: 'contain',
+                  borderRadius: 12,
+                  border: `3px solid ${isTarget ? '#ffe37a' : '#a82a24'}`,
+                  background: '#fff2ee',
+                }}
+              />
+              <span
+                style={{
+                  marginTop: -6,
+                  background: '#a82a24',
+                  color: '#fffaf0',
+                  fontSize: 10,
+                  fontWeight: 900,
+                  padding: '1px 6px',
+                  borderRadius: 999,
+                  border: '1.5px solid #4a2e1a',
+                }}
+              >
+                魔物 ❤{m.hp} (あと{m.attackIn})
+              </span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

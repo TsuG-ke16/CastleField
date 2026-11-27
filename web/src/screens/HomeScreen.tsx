@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useAppStore } from '../stores/useAppStore';
+import { useAppStore, type FactionId } from '../stores/useAppStore';
 import type { CpuLevel, ModeId, PlayMode } from '../engine/types';
 import { cardTypeToImagePath } from '../engine/dataLoader';
 import { checkServerHealth } from '../engine/onlineClient';
@@ -8,6 +8,13 @@ import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon, type PaintedIconName } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
 import styles from './HomeScreen.module.css';
+
+const FACTIONS: Array<{ id: FactionId; label: string; desc: string; icon: PaintedIconName }> = [
+  { id: 'kingdom', label: '王国', desc: '守りと回復で粘り、光の騎士で押し切る', icon: 'crown' },
+  { id: 'forest', label: '森の同盟', desc: '4大精霊が毎ターン連動し元素反応を起こす', icon: 'wind' },
+  { id: 'demon', label: '魔族軍', desc: '毒・闇侵食・骸骨兵の蘇生で守りを貫く', icon: 'fire' },
+  { id: 'dragon', label: '竜族帝国', desc: '炎と雷の高火力竜で短期決戦を狙う', icon: 'fire' },
+];
 
 const MODES: Array<{ id: ModeId; label: string; headline: string }> = [
   { id: 'kingdom', label: '通常モード', headline: '城を落とせ。' },
@@ -40,6 +47,8 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     setSelectedDeckId,
     selectedStageId,
     setSelectedStageId,
+    selectedFactionId,
+    setSelectedFactionId,
     customDeck,
     onlinePassphrase,
     setOnlinePassphrase,
@@ -51,7 +60,7 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     setTab,
   } = useAppStore();
 
-  const [sheet, setSheet] = useState<'none' | 'deck' | 'match'>('none');
+  const [sheet, setSheet] = useState<'none' | 'deck' | 'match' | 'faction'>('none');
   const [serverStatus, setServerStatus] = useState<string | null>(null);
 
   const handleCheckServer = async () => {
@@ -123,6 +132,18 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               <div className={styles.chipTexts}>
                 <span className={styles.chipLabel}>スキルツリー</span>
                 <span className={styles.chipValue}>取得 {unlockedSkills.length}/12</span>
+              </div>
+            </button>
+          ) : mode === 'factions' ? (
+            <button
+              type="button"
+              className={styles.prepChip}
+              onClick={() => setSheet('faction')}
+            >
+              <PaintedIcon name={FACTIONS.find((f) => f.id === selectedFactionId)?.icon || 'crown'} size={26} />
+              <div className={styles.chipTexts}>
+                <span className={styles.chipLabel}>使用陣営</span>
+                <span className={styles.chipValue}>{FACTIONS.find((f) => f.id === selectedFactionId)?.label || '王国'}</span>
               </div>
             </button>
           ) : (
@@ -198,12 +219,35 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               <ParchmentSheet className={styles.sheetCard}>
                 <div className={styles.sheetHeader}>
                   <h2 className={styles.sheetTitle}>
-                    {sheet === 'deck' ? 'デッキを選ぶ' : '対戦形式と強さ'}
+                    {sheet === 'deck' ? 'デッキを選ぶ' : sheet === 'faction' ? '陣営を選ぶ（4陣営）' : '対戦形式と強さ'}
                   </h2>
                   <RoundButton onClick={() => setSheet('none')} aria-label="閉じる">
                     <PaintedIcon name="close" size={18} />
                   </RoundButton>
                 </div>
+
+                {sheet === 'faction' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {FACTIONS.map((fac) => (
+                      <GameButton
+                        key={fac.id}
+                        size="sm"
+                        fullWidth
+                        variant={selectedFactionId === fac.id ? 'selected-royal' : 'normal-stone'}
+                        onClick={() => {
+                          setSelectedFactionId(fac.id);
+                          setSheet('none');
+                        }}
+                      >
+                        <PaintedIcon name={fac.icon} size={18} />
+                        <div style={{ flex: 1, textAlign: 'left' }}>
+                          <div>{fac.label}</div>
+                          <div style={{ fontSize: 10, opacity: 0.85, fontWeight: 700 }}>{fac.desc}</div>
+                        </div>
+                      </GameButton>
+                    ))}
+                  </div>
+                )}
 
                 {sheet === 'deck' && data?.decks && (
                   <>

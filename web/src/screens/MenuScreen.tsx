@@ -12,6 +12,8 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     setQuality,
     muted,
     toggleMute,
+    bgmMuted,
+    toggleBgmMute,
     engineMode,
     setEngineMode,
     data,
@@ -398,6 +400,18 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               onClick={toggleMute}
             >
               {muted ? 'ミュート中' : 'ON'}
+            </GameButton>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div style={{ fontSize: 14, fontWeight: 900 }}>BGM（音楽）</div>
+            <GameButton
+              size="sm"
+              variant={bgmMuted || muted ? 'danger-ruby' : 'selected-royal'}
+              disabled={muted}
+              onClick={toggleBgmMute}
+            >
+              {muted ? '全体ミュート中' : bgmMuted ? 'OFF' : 'ON'}
             </GameButton>
           </div>
 

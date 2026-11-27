@@ -194,7 +194,7 @@
 .modalBackdrop {
   position: fixed;
   inset: 0;
-  z-index: 60;
+  z-index: 200;
   background: rgba(28, 17, 8, 0.58);
   display: flex;
   align-items: center;
@@ -205,7 +205,7 @@
 .handoffCurtain {
   position: fixed;
   inset: 0;
-  z-index: 70;
+  z-index: 220;
   background: rgba(20, 29, 58, 0.94);
   display: flex;
   align-items: center;

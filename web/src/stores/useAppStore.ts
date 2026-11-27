@@ -11,6 +11,7 @@ export interface GachaRecord {
 }
 
 export type EngineMode = 'rust-wasm' | 'js-legacy';
+export type FactionId = 'kingdom' | 'forest' | 'demon' | 'dragon';
 
 export interface PlayerStats {
   matchesPlayed: number;
@@ -32,10 +33,12 @@ interface SavedSlice {
   selectedBackSkin?: string;
   selectedDeckId?: string;
   selectedStageId?: string;
+  selectedFactionId?: FactionId;
   customDeck?: Record<string, number>;
   unlockedSkills?: string[];
   quality?: QualityMode;
   muted?: boolean;
+  bgmMuted?: boolean;
   engineMode?: EngineMode;
   stats?: PlayerStats;
   claimedMissions?: string[];
@@ -65,10 +68,12 @@ function persistState(s: AppStoreState): void {
       selectedBackSkin: s.selectedBackSkin,
       selectedDeckId: s.selectedDeckId,
       selectedStageId: s.selectedStageId,
+      selectedFactionId: s.selectedFactionId,
       customDeck: s.customDeck,
       unlockedSkills: s.unlockedSkills,
       quality: s.quality,
       muted: s.muted,
+      bgmMuted: s.bgmMuted,
       engineMode: s.engineMode,
       stats: s.stats,
       claimedMissions: s.claimedMissions,
@@ -89,12 +94,14 @@ interface AppStoreState {
   onlineServerUrl: string;
   selectedDeckId: string;
   selectedStageId: string;
+  selectedFactionId: FactionId;
   customDeck: Record<string, number>;
   selectedCastleSkin: string;
   selectedSoldierSkin: string;
   selectedBackSkin: string;
   quality: QualityMode;
   muted: boolean;
+  bgmMuted: boolean;
   coins: number;
   points: number;
   pityCount: number;
@@ -118,11 +125,13 @@ interface AppStoreState {
   setOnlineServerUrl: (url: string) => void;
   setSelectedDeckId: (deckId: string) => void;
   setSelectedStageId: (stageId: string) => void;
+  setSelectedFactionId: (factionId: FactionId) => void;
   clonePresetToCustomDeck: (presetId: string) => void;
   updateCustomDeckCard: (cardKey: string, delta: number) => void;
   resetCustomDeck: () => void;
   setQuality: (q: QualityMode) => void;
   toggleMute: () => void;
+  toggleBgmMute: () => void;
   startBattle: () => void;
   exitBattle: () => void;
   spendCoinsAndRollGacha: (count: 1 | 10) => GachaRecord[] | null;
@@ -138,6 +147,9 @@ interface AppStoreState {
 const initial = loadSaved();
 if (initial.muted) {
   soundManager.setMuted(true);
+}
+if (initial.bgmMuted) {
+  soundManager.setBgmMuted(true);
 }
 
 export const useAppStore = create<AppStoreState>((set, get) => {
@@ -156,12 +168,14 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     onlineServerUrl: '',
     selectedDeckId: initial.selectedDeckId ?? 'costBalance',
     selectedStageId: initial.selectedStageId ?? 'meadow',
+    selectedFactionId: initial.selectedFactionId ?? 'kingdom',
     customDeck: initial.customDeck ?? {},
     selectedCastleSkin: initial.selectedCastleSkin ?? 'castle-blue',
     selectedSoldierSkin: initial.selectedSoldierSkin ?? 'infantry-blue',
     selectedBackSkin: initial.selectedBackSkin ?? 'card-back',
     quality: initial.quality ?? '3d',
     muted: initial.muted ?? false,
+    bgmMuted: initial.bgmMuted ?? false,
     coins: initial.coins ?? 2400,
     points: initial.points ?? 350,
     pityCount: initial.pityCount ?? 0,
@@ -233,6 +247,10 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       soundManager.play('tap');
       savePatch({ selectedStageId });
     },
+    setSelectedFactionId: (selectedFactionId) => {
+      soundManager.play('tap');
+      savePatch({ selectedFactionId });
+    },
     clonePresetToCustomDeck: (presetId) => {
       const decks = get().data?.decks || {};
       const src = decks[presetId]?.cards;
@@ -263,6 +281,11 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       const next = !get().muted;
       soundManager.setMuted(next);
       savePatch({ muted: next });
+    },
+    toggleBgmMute: () => {
+      const next = !get().bgmMuted;
+      soundManager.setBgmMuted(next);
+      savePatch({ bgmMuted: next });
     },
     startBattle: () => {
       soundManager.play('deploy');

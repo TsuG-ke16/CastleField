@@ -1,4 +1,6 @@
-import type { LoadedGameData } from './types';
+import type { CardDef, LoadedGameData, ModeId } from './types';
+// @ts-ignore - vanilla JS Setup helper
+import { factionDecks } from '@game/Setup.js';
 
 async function fetchJson<T>(url: string): Promise<T> {
   const res = await fetch(url);
@@ -53,6 +55,106 @@ export async function loadAllGameData(): Promise<LoadedGameData> {
     skillTree,
   };
   return cachedData;
+}
+
+export interface ModeBundle {
+  mode: ModeId;
+  cards: Record<string, CardDef>;
+  rules: Record<string, unknown>;
+  decks?: Record<string, { name: string; cards: Record<string, number>; costDeck?: boolean; [k: string]: unknown }>;
+  elements?: Record<string, unknown>;
+  reactions?: Record<string, unknown>;
+  skillTree?: LoadedGameData['skillTree'];
+  factions?: Record<string, { name: string; description?: string; [k: string]: unknown }>;
+  useRarities: boolean;
+}
+
+const modeCache = new Map<ModeId, ModeBundle>();
+
+function cleanCardMap(raw: Record<string, unknown>): Record<string, CardDef> {
+  const out: Record<string, CardDef> = {};
+  for (const [k, v] of Object.entries(raw || {})) {
+    if (k.startsWith('_') || !v || typeof v !== 'object') continue;
+    out[k] = v as CardDef;
+  }
+  return out;
+}
+
+export async function loadModeBundle(mode: ModeId, baseData: LoadedGameData): Promise<ModeBundle> {
+  const hit = modeCache.get(mode);
+  if (hit) return hit;
+
+  if (mode === 'factions') {
+    const [rules, elements, reactions, factionsRaw, cKing, cForest, cDemon, cDragon] = await Promise.all([
+      fetchJson<Record<string, unknown>>('/data/factions/rules.json'),
+      fetchJson<Record<string, unknown>>('/data/factions/elements.json'),
+      fetchJson<Record<string, unknown>>('/data/factions/reactions.json'),
+      fetchJson<Record<string, { name: string; description?: string; [k: string]: unknown }>>('/data/factions/factions.json'),
+      fetchJson<Record<string, unknown>>('/data/factions/cards/kingdom.json'),
+      fetchJson<Record<string, unknown>>('/data/factions/cards/forest.json'),
+      fetchJson<Record<string, unknown>>('/data/factions/cards/demon.json'),
+      fetchJson<Record<string, unknown>>('/data/factions/cards/dragon.json'),
+    ]);
+    const sets = {
+      kingdom: cleanCardMap(cKing),
+      forest: cleanCardMap(cForest),
+      demon: cleanCardMap(cDemon),
+      dragon: cleanCardMap(cDragon),
+    };
+    const cards: Record<string, CardDef> = {
+      ...sets.kingdom,
+      ...sets.forest,
+      ...sets.demon,
+      ...sets.dragon,
+    };
+    const decks = factionDecks(factionsRaw, sets) as ModeBundle['decks'];
+    const factions: NonNullable<ModeBundle['factions']> = {};
+    for (const [k, v] of Object.entries(factionsRaw || {})) {
+      if (!k.startsWith('_')) factions[k] = v;
+    }
+    const bundle: ModeBundle = {
+      mode: 'factions',
+      cards,
+      rules,
+      decks,
+      elements,
+      reactions,
+      factions,
+      useRarities: false,
+    };
+    modeCache.set('factions', bundle);
+    return bundle;
+  }
+
+  if (mode === 'classic') {
+    const [cardsRaw, rules, elements, reactions] = await Promise.all([
+      fetchJson<Record<string, unknown>>('/data/classic/cards.json'),
+      fetchJson<Record<string, unknown>>('/data/classic/rules.json'),
+      fetchJson<Record<string, unknown>>('/data/classic/elements.json'),
+      fetchJson<Record<string, unknown>>('/data/classic/reactions.json'),
+    ]);
+    const bundle: ModeBundle = {
+      mode: 'classic',
+      cards: cleanCardMap(cardsRaw),
+      rules,
+      elements,
+      reactions,
+      skillTree: baseData.skillTree,
+      useRarities: false,
+    };
+    modeCache.set('classic', bundle);
+    return bundle;
+  }
+
+  const bundle: ModeBundle = {
+    mode: 'kingdom',
+    cards: baseData.cards,
+    rules: baseData.rules,
+    decks: baseData.decks,
+    useRarities: true,
+  };
+  modeCache.set('kingdom', bundle);
+  return bundle;
 }
 
 export function cardTypeToImagePath(type: string): string {

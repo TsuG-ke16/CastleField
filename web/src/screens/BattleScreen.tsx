@@ -2,12 +2,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
 import type { GameEngineAdapter } from '../engine/adapter';
+import { loadModeBundle } from '../engine/dataLoader';
 import { JsLegacyAdapter } from '../engine/jsLegacyAdapter';
 import { OnlineEngineAdapter, type OnlineConnStatus } from '../engine/onlineAdapter';
 import { WasmEngineAdapter } from '../engine/wasmAdapter';
 import { getSkinFilter } from '../engine/skinUtils';
-import type { GameEvent, GameState, HandCard, PlayTarget } from '../engine/types';
+import type { CardDef, GameEvent, GameState, HandCard, PlayTarget } from '../engine/types';
 import { soundManager } from '../audio/soundManager';
+import { BattleFxOverlay, type BattleFxHandle } from '../pixi/BattleFxOverlay';
 import { BattleFieldScene } from '../scene3d/BattleFieldScene';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { GameCard } from '../components/ui/GameCard';
@@ -54,10 +56,13 @@ function summarizeEvent(ev: GameEvent): string | null {
 export function BattleScreen() {
   const {
     data,
+    mode,
     playMode,
     setPlayMode,
     selectedDeckId,
     selectedStageId,
+    selectedFactionId,
+    unlockedSkills,
     customDeck,
     cpuLevel,
     engineMode,
@@ -73,7 +78,9 @@ export function BattleScreen() {
 
   const [matchSeed, setMatchSeed] = useState(() => Date.now());
   const adapterRef = useRef<GameEngineAdapter | null>(null);
-  const [activeEngine, setActiveEngine] = useState<'rust-wasm' | 'js-legacy' | 'online'>(engineMode);
+  const fxRef = useRef<BattleFxHandle | null>(null);
+  const [modeCards, setModeCards] = useState<Record<string, CardDef> | null>(null);
+  const [activeEngine, setActiveEngine] = useState<'rust-wasm' | 'js-legacy' | 'online' | 'factions' | 'classic'>(engineMode);
   const [onlineSeatId, setOnlineSeatId] = useState<'p1' | 'p2'>('p1');
   const [onlineStatus, setOnlineStatus] = useState<OnlineConnStatus | null>(null);
   const [onlineError, setOnlineError] = useState<string | null>(null);
@@ -125,43 +132,57 @@ export function BattleScreen() {
 
     const initEngine = async () => {
       let adapter: GameEngineAdapter;
-      let resolvedMode: 'rust-wasm' | 'js-legacy' | 'online' = 'js-legacy';
+      let resolvedMode: 'rust-wasm' | 'js-legacy' | 'online' | 'factions' | 'classic' = 'js-legacy';
       let seat: 'p1' | 'p2' = 'p1';
 
-      if (playMode === 'casual' && onlinePassphrase.trim()) {
-        try {
-          const online = await OnlineEngineAdapter.connect(data, onlinePassphrase.trim(), {
-            serverUrl: onlineServerUrl,
-            onStatus: (st) => !cancelled && setOnlineStatus(st),
-          });
-          adapter = online;
-          resolvedMode = 'online';
-          seat = online.seatId;
-          unsubState = online.onStateUpdate((nextSt) => {
-            if (!cancelled) setGameState(nextSt);
-          });
-        } catch (err) {
-          if (!cancelled) {
-            setOnlineError(err instanceof Error ? err.message : String(err));
+      if (mode === 'factions' || mode === 'classic') {
+        const bundle = await loadModeBundle(mode, data);
+        if (cancelled) return;
+        setModeCards(bundle.cards);
+        adapter = JsLegacyAdapter.forMode(bundle, data, {
+          factionId: selectedFactionId,
+          skills: unlockedSkills,
+          stage: selectedStageId,
+          seed: matchSeed,
+        });
+        resolvedMode = mode;
+      } else {
+        setModeCards(null);
+        if (playMode === 'casual' && onlinePassphrase.trim()) {
+          try {
+            const online = await OnlineEngineAdapter.connect(data, onlinePassphrase.trim(), {
+              serverUrl: onlineServerUrl,
+              onStatus: (st) => !cancelled && setOnlineStatus(st),
+            });
+            adapter = online;
+            resolvedMode = 'online';
+            seat = online.seatId;
+            unsubState = online.onStateUpdate((nextSt) => {
+              if (!cancelled) setGameState(nextSt);
+            });
+          } catch (err) {
+            if (!cancelled) {
+              setOnlineError(err instanceof Error ? err.message : String(err));
+            }
+            return;
           }
-          return;
-        }
-      } else if (engineMode === 'rust-wasm') {
-        try {
-          adapter = await WasmEngineAdapter.create(
-            data,
-            selectedDeckId,
-            selectedStageId,
-            matchSeed,
-            customDeck
-          );
-          resolvedMode = 'rust-wasm';
-        } catch (err) {
-          console.warn('[CastleField] Rust WASM load failed, falling back to JS engine:', err);
+        } else if (engineMode === 'rust-wasm') {
+          try {
+            adapter = await WasmEngineAdapter.create(
+              data,
+              selectedDeckId,
+              selectedStageId,
+              matchSeed,
+              customDeck
+            );
+            resolvedMode = 'rust-wasm';
+          } catch (err) {
+            console.warn('[CastleField] Rust WASM load failed, falling back to JS engine:', err);
+            adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck);
+          }
+        } else {
           adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck);
         }
-      } else {
-        adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck);
       }
 
       if (cancelled) {
@@ -188,16 +209,23 @@ export function BattleScreen() {
           const amt = Number(ev.amount || 0);
           if (ev.playerId !== myS) statsAccRef.current.damageDealt += amt;
           soundManager.play('hit');
+          fxRef.current?.burst('fire');
           setShakePower(Math.min(1.6, 0.5 + amt * 0.08));
           setTimeout(() => setShakePower(0), 220);
           setDamagePop({ id: ++popCounterRef.current, text: `-${amt}` });
           setTimeout(() => setDamagePop(null), 650);
         } else if (ev.type === 'soldierDeployed') {
           soundManager.play('deploy');
+          fxRef.current?.burst('deploy');
+        } else if (ev.type === 'soldiersClashed') {
+          fxRef.current?.burst('clash');
         } else if (ev.type === 'spellCast') {
           soundManager.play('spell');
+          const stName = String(ev.spellType || '').toLowerCase();
+          fxRef.current?.burst(stName.includes('thunder') || stName.includes('bolt') || stName.includes('frost') ? 'thunder' : 'fire');
         } else if (ev.type === 'castleHealed') {
           soundManager.play('heal');
+          fxRef.current?.burst('heal');
         } else if (ev.type === 'cardPlayed' && ev.playerId === myS) {
           statsAccRef.current.cardsPlayed += 1;
         } else if (ev.type === 'monsterDefeated' && ev.playerId === myS) {
@@ -210,6 +238,7 @@ export function BattleScreen() {
             recordMatchResult(won, statsAccRef.current.cardsPlayed);
             if (won) {
               soundManager.play('victory');
+              fxRef.current?.burst('victory');
               grantRewardCoins(150);
             } else {
               soundManager.play('defeat');
@@ -246,9 +275,12 @@ export function BattleScreen() {
     };
   }, [
     data,
+    mode,
     playMode,
     selectedDeckId,
     selectedStageId,
+    selectedFactionId,
+    unlockedSkills,
     customDeck,
     matchSeed,
     engineMode,
@@ -307,7 +339,12 @@ export function BattleScreen() {
   const pMe = gameState?.players[activeSide];
   const pOpp = gameState?.players[oppSide];
   const myTurn = gameState?.currentPlayer === activeSide;
-  const cards = data?.cards || {};
+  const cards = modeCards || data?.cards || {};
+
+  useEffect(() => {
+    if (!pMe || pMe.castleMaxHp <= 0) return;
+    soundManager.setBgmMode(pMe.castleHp / pMe.castleMaxHp <= 0.34 ? 'pinch' : 'battle');
+  }, [pMe?.castleHp, pMe?.castleMaxHp]);
 
   const myCastleFilter = useMemo(
     () => getSkinFilter(data, selectedCastleSkin, 'blue'),
@@ -529,18 +566,26 @@ export function BattleScreen() {
             title={
               activeEngine === 'online'
                 ? 'Rustサーバー同期オンライン'
-                : activeEngine === 'rust-wasm'
-                  ? 'Rust WebAssembly エンジン稼働中'
-                  : 'Legacy JS エンジン稼働中'
+                : activeEngine === 'factions'
+                  ? '4陣営モード稼働中'
+                  : activeEngine === 'classic'
+                    ? 'クラシックモード稼働中'
+                    : activeEngine === 'rust-wasm'
+                      ? 'Rust WebAssembly エンジン稼働中'
+                      : 'Legacy JS エンジン稼働中'
             }
           >
             {activeEngine === 'online'
               ? onlineStatus === 'waiting'
                 ? '⏳ 相手待ち'
                 : '🟢 オンライン'
-              : activeEngine === 'rust-wasm'
-                ? '🦀 Rust'
-                : 'JS'}
+              : activeEngine === 'factions'
+                ? '⚔ 4陣営'
+                : activeEngine === 'classic'
+                  ? '📜 クラシック'
+                  : activeEngine === 'rust-wasm'
+                    ? '🦀 Rust'
+                    : 'JS'}
           </span>
           <span className={`${styles.hudPill} tabular`}>{gameState.round}周目</span>
           {pMe.maxMp !== undefined && (
@@ -624,6 +669,14 @@ export function BattleScreen() {
           onSelectSoldier={(soldierId) => executeWithTarget(targets.find((t) => t.soldierId === soldierId))}
           onSelectMonster={(monsterId) => executeWithTarget(targets.find((t) => t.monsterId === monsterId))}
           onSelectEnemyCastle={() => executeWithTarget(targets.find((t) => t.playerId === oppSide && !t.roadId))}
+        />
+
+        <BattleFxOverlay
+          ref={fxRef}
+          stageId={stageKey}
+          weatherId={gameState.weather?.id}
+          isNight={gameState.time === 'night'}
+          quality={quality}
         />
 
         <div className={styles.hpOverlayBottom}>

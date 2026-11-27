@@ -1,4 +1,5 @@
 import type { GameEngineAdapter } from './adapter';
+import type { ModeBundle } from './dataLoader';
 import type { ActionResult, CpuLevel, GameEvent, GameState, LoadedGameData, PlayTarget } from './types';
 // Direct browser-safe ES module import from existing pure game logic
 // @ts-ignore - vanilla JS game engine module
@@ -28,8 +29,80 @@ export class JsLegacyAdapter implements GameEngineAdapter {
   private game: any;
   private listeners = new Set<(event: GameEvent) => void>();
   private unsubs: Array<() => void> = [];
-  private data: LoadedGameData;
+  private data: { cards: Record<string, unknown>; rules: Record<string, unknown>; upgrades?: Record<string, unknown> };
   private cpuRng: () => number;
+
+  static forMode(
+    bundle: ModeBundle,
+    baseData: LoadedGameData,
+    opts: { factionId?: string; skills?: string[]; stage?: string; seed?: number } = {}
+  ): JsLegacyAdapter {
+    const seed = opts.seed ?? Date.now();
+    const rng = makeMulberry32(seed);
+    const rules = structuredClone(bundle.rules) as Record<string, unknown>;
+    rules.mulligan = false;
+
+    const stageKeys = Object.keys(baseData.stages || { meadow: {} });
+    const stageArg = opts.stage || 'meadow';
+    const resolvedStage =
+      stageArg === 'random' && stageKeys.length > 0
+        ? stageKeys[(seed >>> 0) % stageKeys.length]
+        : stageKeys.includes(stageArg)
+          ? stageArg
+          : stageKeys[0] || 'meadow';
+
+    const setup: Record<string, unknown> = {
+      stage: resolvedStage,
+      firstPlayer: 'p1',
+      castles: ['standard', 'standard'],
+    };
+
+    if (bundle.mode === 'factions' && bundle.decks) {
+      const fKeys = Object.keys(bundle.decks);
+      const myFac = opts.factionId && bundle.decks[opts.factionId] ? opts.factionId : fKeys[0];
+      const oppFac = fKeys.find((k) => k !== myFac) || myFac;
+      setup.decks = [myFac, oppFac];
+    } else if (bundle.mode === 'classic' && opts.skills && opts.skills.length > 0) {
+      setup.skills = [opts.skills, []];
+    }
+
+    const game = new Game({
+      cards: structuredClone(bundle.cards),
+      rules,
+      monsters: structuredClone(baseData.monsters),
+      upgrades: structuredClone(baseData.upgrades),
+      castles: structuredClone(baseData.castles),
+      decks: bundle.decks ? structuredClone(bundle.decks) : null,
+      stages: structuredClone(baseData.stages),
+      rarities: bundle.useRarities ? structuredClone(baseData.rarities) : null,
+      weather: structuredClone(baseData.weather),
+      elements: bundle.elements ? structuredClone(bundle.elements) : undefined,
+      reactions: bundle.reactions ? structuredClone(bundle.reactions) : undefined,
+      skillTree: bundle.skillTree ? structuredClone(bundle.skillTree) : undefined,
+      setup,
+      rng,
+    });
+
+    const adapter = Object.create(JsLegacyAdapter.prototype) as JsLegacyAdapter;
+    adapter.game = game;
+    adapter.listeners = new Set();
+    adapter.unsubs = [];
+    adapter.data = { cards: bundle.cards, rules, upgrades: baseData.upgrades };
+    adapter.cpuRng = makeMulberry32(seed ^ 0x51ed270b);
+    adapter.bindEvents();
+    return adapter;
+  }
+
+  private bindEvents(): void {
+    for (const evType of EVENT_TYPES as string[]) {
+      const fn = (payload: Record<string, unknown>) => {
+        const evt: GameEvent = { type: evType, ...(payload || {}) };
+        for (const listener of this.listeners) listener(evt);
+      };
+      this.game.on(evType, fn);
+      this.unsubs.push(() => this.game.off(evType, fn));
+    }
+  }
 
   constructor(
     data: LoadedGameData,
@@ -82,14 +155,7 @@ export class JsLegacyAdapter implements GameEngineAdapter {
       rng,
     });
 
-    for (const evType of EVENT_TYPES as string[]) {
-      const fn = (payload: Record<string, unknown>) => {
-        const evt: GameEvent = { type: evType, ...(payload || {}) };
-        for (const listener of this.listeners) listener(evt);
-      };
-      this.game.on(evType, fn);
-      this.unsubs.push(() => this.game.off(evType, fn));
-    }
+    this.bindEvents();
   }
 
   start(): void {

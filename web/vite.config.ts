@@ -102,6 +102,18 @@ export default defineConfig({
       '@game': path.resolve(REPO_ROOT, 'js/game'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'zustand'],
+          'vendor-motion': ['motion', 'howler'],
+          'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
+          'vendor-pixi': ['pixi.js'],
+        },
+      },
+    },
+  },
   server: {
     fs: {
       allow: [REPO_ROOT],

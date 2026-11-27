@@ -41,6 +41,7 @@ export function DeckScreen() {
   const [rarityFilter, setRarityFilter] = useState('all');
   const [query, setQuery] = useState('');
   const [inspectType, setInspectType] = useState<string | null>(null);
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 50, active: false });
 
   const decks = data?.decks || {};
   const cards = data?.cards || {};
@@ -371,11 +372,41 @@ export function DeckScreen() {
               </div>
 
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <img
-                  src={cardTypeToImagePath(inspectType)}
-                  alt={inspectedDef.name}
-                  style={{ width: 84, height: 84, objectFit: 'contain', borderRadius: 12, border: '2px solid #4a2e1a', background: '#fff8e5' }}
-                />
+                <div
+                  className={styles.tiltWrap}
+                  onPointerMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const px = (e.clientX - rect.left) / rect.width;
+                    const py = (e.clientY - rect.top) / rect.height;
+                    setTilt({
+                      rx: (0.5 - py) * 24,
+                      ry: (px - 0.5) * 24,
+                      gx: Math.round(px * 100),
+                      gy: Math.round(py * 100),
+                      active: true,
+                    });
+                  }}
+                  onPointerLeave={() => setTilt({ rx: 0, ry: 0, gx: 50, gy: 50, active: false })}
+                  style={{
+                    transform: `perspective(560px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale(${tilt.active ? 1.04 : 1})`,
+                  }}
+                >
+                  <img
+                    src={cardTypeToImagePath(inspectType)}
+                    alt={inspectedDef.name}
+                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                  />
+                  {(inspectedDef.rarity === 'rare' ||
+                    inspectedDef.rarity === 'epic' ||
+                    inspectedDef.rarity === 'legendary') && (
+                    <div
+                      className={styles.holoSheen}
+                      style={{
+                        background: `radial-gradient(circle at ${tilt.gx}% ${tilt.gy}%, rgba(255,244,170,0.65), rgba(110,220,255,0.28) 45%, transparent 72%)`,
+                      }}
+                    />
+                  )}
+                </div>
                 <div style={{ flex: 1, fontSize: 12, fontWeight: 800, display: 'flex', flexDirection: 'column', gap: 4 }}>
                   <div>種別: {KIND_FILTERS.find((k) => k.id === inspectedDef.kind)?.label || inspectedDef.kind}</div>
                   <div>レア度: {rarities[inspectedDef.rarity || 'common']?.name || inspectedDef.rarity || 'コモン'}（編成コスト {cardDeckCost(inspectType)}）</div>

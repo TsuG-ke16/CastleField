@@ -195,6 +195,27 @@
   background: #ebf2ff;
 }
 
+.tiltWrap {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 14px;
+  border: 2.5px solid #4a2e1a;
+  background: #fff8e5;
+  overflow: hidden;
+  transition: transform 120ms ease-out;
+  transform-style: preserve-3d;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.holoSheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: screen;
+}
+
 @media (min-width: 960px) {
   .page {
     padding-left: 110px;
