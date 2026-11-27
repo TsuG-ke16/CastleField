@@ -12,7 +12,7 @@
 - [x] (3) カードMP再設計（クラシック → 4陣営）
 - [x] (4) 撃破/魔物/城HP50% のコイン報酬と無限獲得防止
 - [x] (5) 経済系カード6種＋CPU
-- [ ] (6) 攻撃魔法1ターン2回
+- [x] (6) 攻撃魔法1ターン2回
 - [ ] (7) 変更前後の比較表と整合メモ
 
 ## 計測のしかた（段階1）
@@ -113,6 +113,13 @@
 - CPU（strategies.js smartStep）：ほかに出すものがないとき、徴税・貿易（既存の gainCoins の手）→ 金鉱 → 投資 → 略奪 → 宝探し
 - テストの更新（仕様変更で必然）：4陣営のカード表の種類数（factions-mode の FACTIONS・PLAN、kingdom-light 20→22、new-cards の魔族 22→24）。
   スキルの単体テスト（classic-skills-blood / c2 / c3 / c4）は helper のルールに `defenseReaction: false` を足した：山札の中身が変わって、相手の手札に0MPの盾が来ると攻撃が「防御待ち（defend）」で止まり、スキルのキューが処理されないため（スキルの仕様の確認で、防御の確認ではない）
+
+### (6) 攻撃の魔法は1ターン2回
+- `rules.attackSpellsPerTurn`（既定0＝今までどおり「メイン（slot "main"）は1ターン1枚」。クラシック/4陣営は2）。1以上のモードでは、**メインの魔法のうち攻撃の魔法だけを数え**、回復・蘇生など自分にだけ効くもの（`NON_ATTACK_MAIN_EFFECTS`：healOwnCastle・healSoldier・healCastleAndSoldiers・reviveFallen・bloodPact ほか。js/game/Card.js）は数えずに何枚でも出せる（既存の「魔法は1ターン1枚」を置き換え。テンポ優先で回復を縛らない）
+- 数えるのは playCard（手札からの使用）だけ。スキルの追加の詠唱（やまびこ・連鎖・予約・複製など）は playCard を通らないので数えない（テストで M02 を確認）。経済のカード・精霊などの slot "support" も数えない
+- getState：`players[id].attackSpellsThisTurn`（全モードで出す。通常モードは常に0）、`attackSpellsPerTurn`（1以上のモードだけ）。UI はカードの説明（slotNote）に「攻撃の魔法：1ターンに2回まで」を出すだけ
+- 0MP のカードの一律の制限は入れていない（測った結果、下の比較表で極端な値は出ていないため）
+- 小規模の確認（10試合）：クラシックの none で攻撃魔法/ターン 0.93→1.47、MP≧50%終了 97%→42%、MP不足 0%→38%（MP の使い道ができ、MP系統の価値が戻る）
 
 ## 未確認
 

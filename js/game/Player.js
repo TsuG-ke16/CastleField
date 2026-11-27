@@ -15,6 +15,8 @@ export class Player {
     /** @type {import('./Soldier.js').Soldier[]} 出した順に並ぶ */
     this.soldiers = [];
     this.playedThisTurn = false;
+    // 段階A1：このターンに手札から使った攻撃の魔法の回数（rules.attackSpellsPerTurn のモードだけ数える）
+    this.attackSpellsThisTurn = 0;
     this.soldiersPlayedThisTurn = 0;
     this.coinCardsPlayedThisTurn = 0;
     /** 負けて抜けたか（3人以上のとき） */
@@ -104,6 +106,7 @@ export class Player {
       hand: showHand ? this.hand.map((c) => c.toState()) : null,
       handCount: this.hand.length,
       playedThisTurn: this.playedThisTurn,
+      attackSpellsThisTurn: this.attackSpellsThisTurn,
       soldiersPlayedThisTurn: this.soldiersPlayedThisTurn,
       soldiers: this.soldiers.map((s) => s.toState()),
     };

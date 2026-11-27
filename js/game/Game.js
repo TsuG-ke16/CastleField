@@ -18,7 +18,7 @@
 //                超えていなければ（または捨て終わったら）次の人のターンが始まる
 //   城HPが0以下になった瞬間に phase "gameOver"
 
-import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE } from './Card.js';
+import { Card, ELEMENTS, LANE_SCOPE_EFFECTS, MP_EFFECTS, BASIC_DICE, NON_ATTACK_MAIN_EFFECTS } from './Card.js';
 import { validateElements, elementIds, beatsElement, validateReactions } from './Elements.js';
 import { Monster, validateUpgrades } from './Monster.js';
 import { CASTLE_KEYS, Pile, validatePassiveSpirits, validatePassive, checkCostDeck, DECK_COST_DEFAULTS, chainOrder, validateCastles, validateDecks, validateRarities, sampleDeckTypes, sampleType, sampleTypeOfRarity, nextRarityWithCards, dropRates, rewardOdds } from './Setup.js';
@@ -173,6 +173,10 @@ const OPTIONAL_RULES = {
   // 試合の最初に持っているコインと、自分のターンの始めにもらえるコイン
   initialCoins: 0,
   coinPerTurn: 0,
+  // 段階A1（クラシック・4陣営）：手札から使える攻撃の魔法（slot "main" のうち NON_ATTACK_MAIN_EFFECTS 以外）の1ターンの回数。
+  // 0 なら今までどおり「メイン（slot "main"）は1ターン1枚」。1以上なら、その回数まで（回復・蘇生などは数えず、何枚でも）。
+  // スキルの追加の詠唱（やまびこ・連鎖・予約など。playCard を通らない）は数えない
+  attackSpellsPerTurn: 0,
   // 段階A1（クラシック・4陣営）：敵兵士の撃破報酬（コイン）と、1人が1ターン（通算 turn）にもらえる上限（0 は上限なし）。
   // 召喚・蘇生・トークン（骸骨兵・スキルの使い魔など）が倒された／倒したときは出ない。0 なら撃破報酬なし（今までどおり）
   killCoins: 0,
@@ -312,6 +316,8 @@ const isCoinCard = (def) => ['gainCoins', 'plunderCoins', 'coinMine', 'investCoi
 const CASTLE_HP_EVENTS = new Set(['castleDamaged', 'castleHealed', 'monsterAttackedCastle']);
 /** 段階A1：damageSoldier の cause のうち、手番の人の行動とみなして撃破報酬を手番の人に出すもの */
 const KILL_CREDIT_CAUSES = new Set(['spell', 'reaction', 'spirit', 'shot', 'skill', 'guard']);
+/** 段階A1：attackSpellsPerTurn で数える攻撃の魔法か */
+export const isAttackSpell = (card) => card.slot === 'main' && !NON_ATTACK_MAIN_EFFECTS.has(card.def.effect);
 /** 死者を従える（魔族のパッシブ）で生まれた骸骨兵の type（カードではない。cardDefs にはない） */
 const RAISED_TYPE = 'raisedSoldier';
 
@@ -761,7 +767,7 @@ export class Game {
     if (rules.soldiersPerTurn !== undefined && !(Number.isInteger(rules.soldiersPerTurn) && rules.soldiersPerTurn >= 1)) {
       throw new Error('rules.json の soldiersPerTurn は1以上の整数にしてください（書かなければ 1）');
     }
-    for (const key of ['killCoins', 'killCoinsPerTurn', 'castleHalfCoins']) {
+    for (const key of ['killCoins', 'killCoinsPerTurn', 'castleHalfCoins', 'attackSpellsPerTurn']) {
       if (rules[key] !== undefined && !(Number.isInteger(rules[key]) && rules[key] >= 0)) throw new Error(`rules.json の ${key} は0以上の整数にしてください（書かなければ 0）`);
     }
     if (rules.monsterCoinRewards !== undefined && rules.monsterCoinRewards !== null) {
@@ -1233,6 +1239,7 @@ export class Game {
     this.turn += 1;
     this.phase = 'main';
     player.playedThisTurn = false;
+    player.attackSpellsThisTurn = 0;
     player.soldiersPlayedThisTurn = 0;
     player.coinCardsPlayedThisTurn = 0;
     const playedLastTurn = player.cardsPlayedThisTurn;
@@ -3593,7 +3600,13 @@ export class Game {
     if (card.slot === 'soldier' && player.soldiersPlayedThisTurn >= this.soldiersPerTurnOf(player)) {
       return fail(`このターンに出せる兵士は${this.soldiersPerTurnOf(player)}枚までです`);
     }
-    if (card.slot === 'main' && player.playedThisTurn) return fail('このターンはもうメインのカードを出しました');
+    if (card.slot === 'main') {
+      const limit = this.rules.attackSpellsPerTurn;
+      // 段階A1：攻撃の魔法は1ターン limit 回まで（回復・蘇生などは何枚でも）。limit が0なら今までどおりメインは1枚
+      if (limit > 0) {
+        if (isAttackSpell(card) && player.attackSpellsThisTurn >= limit) return fail(`このターンに使える攻撃の魔法は${limit}回までです`);
+      } else if (player.playedThisTurn) return fail('このターンはもうメインのカードを出しました');
+    }
     if (isCoinCard(card.def) && this.rules.coinCardsPerTurn && player.coinCardsPlayedThisTurn >= this.rules.coinCardsPerTurn) {
       return fail(`コインのカードは1ターンに${this.rules.coinCardsPerTurn}枚までです`);
     }
@@ -3666,6 +3679,7 @@ export class Game {
     const mpCost = plan ? plan.mp : this.mpCostOf(card);
     if (mpCost > 0) this.changeMp(player, -mpCost, 'cast');
     if (card.slot === 'main') player.playedThisTurn = true;
+    if (this.rules.attackSpellsPerTurn > 0 && isAttackSpell(card)) player.attackSpellsThisTurn += 1;
     if (isCoinCard(card.def)) player.coinCardsPlayedThisTurn += 1;
     if (card.slot === 'soldier') player.soldiersPlayedThisTurn += 1;
     player.cardsPlayedThisTurn += 1;
@@ -4870,6 +4884,7 @@ export class Game {
   passTurn() {
     const player = this.players[this.currentPlayer];
     player.playedThisTurn = false;
+    player.attackSpellsThisTurn = 0;
     player.soldiersPlayedThisTurn = 0;
     player.coinCardsPlayedThisTurn = 0;
     this.tickSpirit(player);
@@ -5073,6 +5088,8 @@ export class Game {
     return {
       deckMode: this.rules.deckMode,
       maxMp: this.rules.maxMp,
+      // 段階A1：攻撃の魔法の1ターンの回数（0 は今までどおりメイン1枚。0 のときはキーを出さない）
+      ...(this.rules.attackSpellsPerTurn > 0 ? { attackSpellsPerTurn: this.rules.attackSpellsPerTurn } : {}),
       // MP を使うカードの種類 → 必要な MP（UI が手札に表示する）
       mpCosts: Object.fromEntries(Object.entries(this.cardDefs).map(([t, d]) => [t, this.mpCostOf({ def: d })]).filter(([, c]) => c > 0)),
       // 属性の反応の定義（reactions を渡したゲームだけ。キーごと足さない）。CPU・画面が、ゲームの内部を読まずに反応を調べるため

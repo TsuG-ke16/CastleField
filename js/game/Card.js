@@ -77,6 +77,9 @@ export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers',
 /** 攻撃ではない魔法（精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
 export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison', 'plunderCoins', 'coinMine', 'investCoins'];
 
+/** 段階A1：rules.attackSpellsPerTurn のモードで、メイン（slot "main"）の魔法のうち攻撃の魔法に数えないもの（自分にだけ効く回復・蘇生・強化など） */
+export const NON_ATTACK_MAIN_EFFECTS = new Set(['healOwnCastle', 'healSoldier', 'healCastleAndSoldiers', 'reviveFallen', 'bloodPact', 'healCastleOrMp', 'healAndArmor', 'redrawHand', 'setTime', 'changeWeather']);
+
 /** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
 /**
  * サイコロの種類（cards.json の dice）。効果は「出た目 × per」（端数は切り上げ）。random は per を書かない

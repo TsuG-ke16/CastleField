@@ -26,6 +26,7 @@
   "soldiersPerTurn": 3,
   "initialCoins": 2,
   "coinPerTurn": 2,
+  "attackSpellsPerTurn": 2,
   "killCoins": 1,
   "killCoinsPerTurn": 3,
   "castleHalfCoins": 3,

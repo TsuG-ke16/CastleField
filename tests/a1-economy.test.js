@@ -312,3 +312,63 @@ test('A1 経済のカード：CPU（smart）が使う（クラシック・4陣�
     assert.ok(used > 0, `${mode}：経済のカードを使った`);
   }
 });
+
+// ================= 攻撃の魔法は1ターン2回（段階6） =================
+
+test('A1：攻撃の魔法は1ターン attackSpellsPerTurn 回まで。回復・経済のカードは数えない。次のターンに戻る', () => {
+  const { game, rules } = modeGame();
+  const p1 = game.players.p1;
+  assert.equal(rules.attackSpellsPerTurn, 2);
+  assert.equal(game.getState('p1').attackSpellsPerTurn, 2);
+  const foes = [0, 1, 2].map((r) => put(game, 'p2', 'classic_king_heavy', r, 0));
+  game.debugSetHand('p1', [SHADOW, SHADOW, SHADOW, 'classic_king_minor_heal', 'classic_king_heal', 'classic_econ_tax']);
+  p1.mp = 20;
+  p1.castle.hp = 10;
+  const of = (type) => p1.hand.find((c) => c.type === type).cardId;
+  assert.equal(game.playCard(of(SHADOW), { soldierId: foes[0].soldierId }).ok, true);
+  assert.equal(game.playCard(of('classic_king_minor_heal')).ok, true, '回復は数えない');
+  assert.equal(game.playCard(of(SHADOW), { soldierId: foes[1].soldierId }).ok, true, '2回目');
+  assert.equal(p1.attackSpellsThisTurn, 2);
+  assert.match(game.canPlayCard(of(SHADOW)).reason, /攻撃の魔法は2回まで/);
+  assert.equal(game.playCard(of('classic_king_heal')).ok, true, '回復は何枚でも');
+  assert.equal(game.playCard(of('classic_econ_tax')).ok, true, '経済のカードは数えない');
+  assert.equal(game.getState('p1').players.p1.attackSpellsThisTurn, 2);
+  nextOwnTurn(game);
+  assert.equal(p1.attackSpellsThisTurn, 0);
+  assert.equal(game.canPlayCard(of(SHADOW)).ok, true);
+});
+
+test('A1：スキルの追加の詠唱（M02 やまびこ）は攻撃の魔法の回数に数えない', async () => {
+  const { createSkillQa } = await import('../js/game/skills/qa.js');
+  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan: false, monsterSpawnChance: 0, defenseReaction: false } });
+  const opts = loadOptionalData('classic');
+  delete opts.stages;
+  delete opts.weather;
+  const qa = createSkillQa(opts.skillTree);
+  const game = new Game(qa.apply({ ...opts, cards, rules, rng: () => 0 }, [['M01', 'M02'], []]));
+  game.start();
+  const p1 = game.players.p1;
+  const foe = put(game, 'p2', 'classic_king_heavy', 0, 0, { hp: 30, maxHp: 30 });
+  game.debugSetHand('p1', [SHADOW, SHADOW, SHADOW]);
+  p1.mp = 20;
+  for (let i = 0; i < 2; i++) assert.equal(game.playCard(p1.hand[0].cardId, { soldierId: foe.soldierId }).ok, true);
+  assert.ok(game.skillCounters('p1').M02 >= 1, 'やまびこが起きた');
+  assert.equal(p1.attackSpellsThisTurn, 2, '手札から使った2回だけ');
+  assert.equal(game.canPlayCard(p1.hand[0].cardId).ok, false);
+});
+
+test('A1：通常モードは今までどおり「メインは1ターン1枚」', () => {
+  const { cards, rules } = buildData({ rules: { mulligan: false } });
+  assert.equal(rules.attackSpellsPerTurn, undefined);
+  const game = new Game({ cards, rules, rng: () => 0.5 });
+  game.start();
+  assert.equal(game.getState('p1').attackSpellsPerTurn, undefined);
+  const spell = Object.keys(cards).find((k) => cards[k].effect === 'damageEnemyCastle');
+  game.debugSetHand('p1', [spell, spell]);
+  const p1 = game.players.p1;
+  p1.mp = game.maxMpOf(p1);
+  const r = game.playCard(p1.hand[0].cardId, { playerId: 'p2' });
+  assert.equal(r.ok, true, r.reason);
+  if (game.phase === 'defend') game.passDefense();
+  assert.match(game.canPlayCard(p1.hand[0].cardId).reason, /メインのカードを出しました/);
+});

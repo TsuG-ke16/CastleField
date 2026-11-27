@@ -25,7 +25,7 @@ test('クラシックのルールは、決めた値だけが通常モードと�
   const { rules } = buildData({ mode: 'classic' });
   const changed = Object.keys({ ...normal, ...rules }).filter((k) => normal[k] !== rules[k]).sort();
   assert.deepEqual(changed, [
-    'castleHalfCoins', 'castleSpellHitsFront', 'coinPerTurn', 'collapseAnnounceRound', 'collapseDamage', 'collapseStartRound',
+    'attackSpellsPerTurn', 'castleHalfCoins', 'castleSpellHitsFront', 'coinPerTurn', 'collapseAnnounceRound', 'collapseDamage', 'collapseStartRound',
     'drawPerPlayed', 'drawPerTurn', 'drawUntilHand', 'firstTurnDraw', 'initialCoins', 'killCoins', 'killCoinsPerTurn', 'maxRounds',
     'monsterCardRewards', 'monsterCoinRewards', 'mpAllCards', 'mpPerTurn', 'secondPlayerArmor', 'secondPlayerMp',
   ]);
