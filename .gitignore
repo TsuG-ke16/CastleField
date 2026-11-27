@@ -19,3 +19,4 @@ assets/v2/raw/
 
 # Rust build artifacts
 rust/target/
+rust/server/target/

@@ -54,6 +54,22 @@ export class OnlineEngineAdapter implements GameEngineAdapter {
     return adapter;
   }
 
+  /** サーバーが決めた席の鍵（ランクマッチ）でつなぐ。部屋に入る手続きはいらない */
+  static attach(
+    data: LoadedGameData,
+    token: string,
+    playerId: string,
+    initialState: GameState,
+    options: { serverUrl?: string; onStatus?: (status: OnlineConnStatus) => void } = {}
+  ): OnlineEngineAdapter {
+    options.onStatus?.('connecting');
+    return new OnlineEngineAdapter(data, token, playerId, initialState, options.serverUrl, options.onStatus);
+  }
+
+  get roomToken(): string {
+    return this.token;
+  }
+
   onStateUpdate(handler: (state: GameState) => void): () => void {
     this.stateListeners.add(handler);
     return () => this.stateListeners.delete(handler);
@@ -155,11 +171,16 @@ export class OnlineEngineAdapter implements GameEngineAdapter {
   }
 
   private fire(method: string, args: unknown[] = []): ActionResult {
-    void sendOnlineAction(this.token, method, args, this.serverUrl).then((resp) => {
-      if (resp.state) {
-        this.emitState(resp.state);
-      }
-    });
+    void sendOnlineAction(this.token, method, args, this.serverUrl)
+      .then((resp) => {
+        if (resp.state) {
+          this.emitState(resp.state);
+        }
+      })
+      .catch(() => {
+        // 回線が切れた：盤面はつなぎ直したときに届く
+        this.onStatus?.('reconnecting');
+      });
     return { ok: true };
   }
 
@@ -219,7 +240,7 @@ export class OnlineEngineAdapter implements GameEngineAdapter {
   }
 
   sendStamp(stampId: string): void {
-    void sendOnlineAction(this.token, 'stamp', [stampId], this.serverUrl);
+    void sendOnlineAction(this.token, 'stamp', [stampId], this.serverUrl).catch(() => {});
   }
 
   runCpuTurn(_playerId: string, _level: CpuLevel): void {

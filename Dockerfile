@@ -17,9 +17,8 @@ COPY web/package.json web/package-lock.json web/
 RUN cd web && npm ci
 
 COPY . .
-RUN mkdir -p web/public/wasm && \
-    cp rust/target/wasm32-unknown-unknown/release/castlefield_wasm.wasm web/public/wasm/castlefield_wasm.wasm && \
-    cd web && npm run build
+COPY --from=rust-builder /src/rust/target/wasm32-unknown-unknown/release/castlefield_wasm.wasm web/public/wasm/castlefield_wasm.wasm
+RUN cd web && npm run build
 
 # Stage 3: Minimal production runtime serving SPA, WASM, assets, API, and WebSockets
 FROM debian:bookworm-slim AS runtime

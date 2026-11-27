@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAppStore, type FactionId } from '../stores/useAppStore';
 import type { CpuLevel, ModeId, PlayMode } from '../engine/types';
 import { cardTypeToImagePath } from '../engine/dataLoader';
 import { checkServerHealth } from '../engine/onlineClient';
+import { loadIdentity, rankedApi, rankLabel } from '../engine/rankedClient';
+import { RankedLobby } from './RankedLobby';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon, type PaintedIconName } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
@@ -58,10 +60,46 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     data,
     startBattle,
     setTab,
+    playerName,
+    rankedSummary,
+    setRankedSummary,
+    rankedLobbyRequested,
+    setRankedLobbyRequested,
   } = useAppStore();
 
   const [sheet, setSheet] = useState<'none' | 'deck' | 'match' | 'faction'>('none');
   const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const lobbyOpen = rankedLobbyRequested;
+  const setLobbyOpen = setRankedLobbyRequested;
+
+  // 前にランクマッチを遊んだ端末なら、今のランクを静かに読む（つながらなければ何もしない）
+  useEffect(() => {
+    if (!loadIdentity(onlineServerUrl)) return;
+    let alive = true;
+    rankedApi
+      .summary(onlineServerUrl, playerName)
+      .then((sum) => {
+        if (alive && sum.ok) setRankedSummary(sum);
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [onlineServerUrl, playerName, setRankedSummary]);
+
+  const handleSortie = () => {
+    if (playMode === 'ranked') {
+      setLobbyOpen(true);
+      return;
+    }
+    if (playMode === 'casual' && !onlinePassphrase.trim()) {
+      // 合言葉がないと、だれとも対戦できない（押しても何も起きない状態にしない）
+      setServerStatus('合言葉を入れるか「合言葉を自動生成」を押してください');
+      setSheet('match');
+      return;
+    }
+    startBattle();
+  };
 
   const handleCheckServer = async () => {
     setServerStatus('接続確認中…');
@@ -130,10 +168,10 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
         <button
           type="button"
           className={styles.seasonChip}
-          onClick={() => setTab('menu')}
+          onClick={() => setLobbyOpen(true)}
         >
-          <PaintedIcon name="rank-unranked" size={20} />
-          <span>シーズン1 ・ ランク未参加</span>
+          <PaintedIcon name={rankedSummary?.placed ? 'rank' : 'rank-unranked'} size={20} />
+          <span>シーズン{rankedSummary?.season ?? 1} ・ {rankLabel(rankedSummary)}</span>
           <PaintedIcon name="arrow" size={14} />
         </button>
       </div>
@@ -211,11 +249,13 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           size="lg"
           fullWidth
           crown
-          onClick={startBattle}
+          onClick={handleSortie}
         >
-          出陣する！
+          {playMode === 'ranked' ? 'ランクマッチへ' : '出陣する！'}
         </GameButton>
       </div>
+
+      <AnimatePresence>{lobbyOpen && <RankedLobby onClose={() => setLobbyOpen(false)} />}</AnimatePresence>
 
       <AnimatePresence>
         {sheet !== 'none' && (
@@ -401,7 +441,7 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                       <p style={{ margin: 0, fontSize: 12, color: 'var(--cf-ink-muted)', fontWeight: 700 }}>
                         {playMode === 'local'
                           ? '端末1台で交互に手札を隠して対戦できます（受け渡し画面つき）。'
-                          : '※ ランクマッチ・フレンド部屋はオンラインサーバー接続時に対戦できます。'}
+                          : '近い強さの相手と対戦し、勝ち負けでランクが上下します（オンラインサーバーが必要・通常モードのみ）。「ランクマッチへ」で相手を探します。'}
                       </p>
                     )}
 

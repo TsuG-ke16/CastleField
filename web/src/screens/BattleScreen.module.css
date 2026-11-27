@@ -347,3 +347,33 @@
     min-height: 0;
   }
 }
+
+/* ランクマッチ：相手が動かないときの申し出 */
+.idleClaim {
+  position: absolute;
+  top: calc(56px + var(--cf-safe-top, 0px));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  max-width: calc(100% - 24px);
+  padding: 6px 10px;
+  border: 2px solid var(--cf-outline, #4a2e1a);
+  border-radius: 12px;
+  background: var(--cf-parchment, #fbefd2);
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--cf-ink);
+  box-shadow: var(--cf-shadow-float);
+}
+
+.idleClaimMsg {
+  flex-basis: 100%;
+  text-align: center;
+  font-size: 11px;
+  color: var(--cf-ink-muted);
+}

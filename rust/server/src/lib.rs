@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+pub mod ranked;
+
 use std::collections::{HashMap, VecDeque};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -14,7 +16,7 @@ use axum::response::sse::{Event as SseEvent, KeepAlive, Sse};
 use axum::response::{IntoResponse, Json};
 use axum::routing::{get, post};
 use axum::Router;
-use futures_util::{SinkExt, StreamExt};
+use futures_util::StreamExt;
 use redb::{Database, TableDefinition};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -77,6 +79,15 @@ impl Default for EconomyProfile {
     }
 }
 
+/// ランクマッチの部屋の情報（ふつうの部屋は None）
+pub struct RankedMeta {
+    pub match_id: String,
+    /// 席 → userId
+    pub users: [(String, String); 2],
+    /// 反映した結果（席 → 変化）。反映前は None。試合ごとに1回だけ反映する
+    pub applied: Option<HashMap<String, Value>>,
+}
+
 pub struct Room {
     pub game: Game,
     pub seats: HashMap<String, String>,
@@ -85,9 +96,48 @@ pub struct Room {
     pub ring: VecDeque<SequencedMsg>,
     pub tx: broadcast::Sender<SequencedMsg>,
     pub ai_rng: Mulberry32,
+    pub ranked: Option<RankedMeta>,
+    /// 最後に操作があった時刻（ミリ秒。ランクマッチの放置の判定に使う）
+    pub last_action_at: i64,
 }
 
 impl Room {
+    pub fn new(game: Game, seq: u32) -> Self {
+        let (tx, _) = broadcast::channel(64);
+        Self {
+            game,
+            seats: HashMap::new(),
+            cpu_seats: Vec::new(),
+            seq: 0,
+            ring: VecDeque::with_capacity(RING_CAP),
+            tx,
+            ai_rng: Mulberry32::new(777 ^ seq),
+            ranked: None,
+            last_action_at: 0,
+        }
+    }
+
+    pub fn touch(&mut self, now_ms: i64) {
+        self.last_action_at = now_ms;
+    }
+
+    /// 盤面が変わったことを、つないでいる全員に知らせる。受け取った接続は、その席向けの state を作って送る
+    /// （state は席ごとに手札を隠すので、ここでは作らない）。リングには入れない（つなぎ直しは毎回 state を送る）
+    pub fn push_sync(&mut self) {
+        let _ = self.tx.send(SequencedMsg { seq: self.seq, kind: "sync".into(), event: None, state: None });
+    }
+
+    /// ゲームのイベントではない知らせ（スタンプ・ランクの結果）を流す
+    pub fn push_raw(&mut self, event: Value) {
+        self.seq += 1;
+        let msg = SequencedMsg { seq: self.seq, kind: "event".into(), event: Some(event), state: None };
+        if self.ring.len() >= RING_CAP {
+            self.ring.pop_front();
+        }
+        self.ring.push_back(msg.clone());
+        let _ = self.tx.send(msg);
+    }
+
     fn push_event(&mut self, event: GameEvent) {
         self.seq += 1;
         let msg = SequencedMsg {
@@ -119,6 +169,67 @@ pub struct AppState {
     pub db: Mutex<Database>,
     pub next_token_seq: AtomicU64,
     pub requests_total: AtomicU64,
+    pub ranked: ranked::RankedConfig,
+    pub matchmaker: Mutex<ranked::Matchmaker>,
+    /// 今の時刻（ミリ秒）。テストで差しかえる
+    pub clock: Arc<dyn Fn() -> i64 + Send + Sync>,
+}
+
+/// 受け取る人（席）に送ってよい形にする。何を隠すかは js/game/visibility.js と同じ。
+/// 送らないときは None
+pub fn filter_event_for(ev: &Value, seat: &str) -> Option<Value> {
+    let ty = ev.get("type").and_then(|v| v.as_str()).unwrap_or("");
+    let pid = ev.get("playerId").and_then(|v| v.as_str()).unwrap_or("");
+    match ty {
+        "cardDrawn" => {
+            let count = ev.get("cardIds").and_then(|v| v.as_array()).map(|a| a.len()).unwrap_or(0);
+            if pid == seat {
+                let mut e = ev.clone();
+                e["count"] = json!(count);
+                Some(e)
+            } else {
+                Some(json!({ "type": "cardDrawn", "playerId": pid, "count": count }))
+            }
+        }
+        "mulliganDone" if pid != seat => Some(json!({ "type": "mulliganDone", "playerId": pid, "count": ev.get("count").cloned().unwrap_or(json!(0)) })),
+        "cardsFused" if pid != seat => Some(json!({ "type": "cardsFused", "playerId": pid })),
+        _ => Some(ev.clone()),
+    }
+}
+
+fn filter_msg_for(msg: &SequencedMsg, seat: &str) -> Option<SequencedMsg> {
+    match &msg.event {
+        Some(ev) => filter_event_for(ev, seat).map(|e| SequencedMsg { event: Some(e), ..msg.clone() }),
+        None => Some(msg.clone()),
+    }
+}
+
+/// ランクマッチが決着していたら、結果を1回だけ反映して、両方の席に知らせる
+pub fn settle_ranked(state: &AppState, room: &mut Room) {
+    if room.game.phase() != "gameOver" {
+        return;
+    }
+    let Some(meta) = room.ranked.as_ref() else { return };
+    if meta.applied.is_some() {
+        return;
+    }
+    let winner = room.game.get_state(None).winner.unwrap_or_default();
+    let users = [
+        (meta.users[0].1.as_str(), meta.users[0].0 == winner),
+        (meta.users[1].1.as_str(), meta.users[1].0 == winner),
+    ];
+    let by_user = ranked::apply_match(state, users, &meta.match_id);
+    let mut by_seat = HashMap::new();
+    for (seat, uid) in meta.users.iter() {
+        if let Some(c) = by_user.get(uid) {
+            by_seat.insert(seat.clone(), c.clone());
+        }
+    }
+    let payload = json!({ "type": "rankedResult", "changes": by_seat });
+    if let Some(m) = room.ranked.as_mut() {
+        m.applied = Some(by_seat);
+    }
+    room.push_raw(payload);
 }
 
 pub fn load_config_from_dir(data_dir: &Path) -> Result<(GameConfig, Vec<(String, String, String, i32)>), String> {
@@ -168,6 +279,14 @@ pub fn load_config_from_dir(data_dir: &Path) -> Result<(GameConfig, Vec<(String,
 }
 
 pub fn create_state(data_dir: &Path, db_path: &Path) -> Result<Arc<AppState>, String> {
+    create_state_with_clock(data_dir, db_path, Arc::new(ranked::system_now_ms))
+}
+
+pub fn create_state_with_clock(
+    data_dir: &Path,
+    db_path: &Path,
+    clock: Arc<dyn Fn() -> i64 + Send + Sync>,
+) -> Result<Arc<AppState>, String> {
     if let Some(parent) = db_path.parent() {
         let _ = fs::create_dir_all(parent);
     }
@@ -176,10 +295,13 @@ pub fn create_state(data_dir: &Path, db_path: &Path) -> Result<Arc<AppState>, St
         let write_txn = db.begin_write().map_err(|e| e.to_string())?;
         {
             let _ = write_txn.open_table(PROFILES_TABLE).map_err(|e| e.to_string())?;
+            let _ = write_txn.open_table(ranked::ACCOUNTS_TABLE).map_err(|e| e.to_string())?;
+            let _ = write_txn.open_table(ranked::RANKED_TABLE).map_err(|e| e.to_string())?;
         }
         write_txn.commit().map_err(|e| e.to_string())?;
     }
     let (base_config, shop_items) = load_config_from_dir(data_dir)?;
+    let ranked_cfg = ranked::load_ranked_config(data_dir)?;
     Ok(Arc::new(AppState {
         started_at: Instant::now(),
         base_config,
@@ -189,6 +311,9 @@ pub fn create_state(data_dir: &Path, db_path: &Path) -> Result<Arc<AppState>, St
         db: Mutex::new(db),
         next_token_seq: AtomicU64::new(1),
         requests_total: AtomicU64::new(0),
+        ranked: ranked_cfg,
+        matchmaker: Mutex::new(ranked::Matchmaker::default()),
+        clock,
     }))
 }
 
@@ -204,6 +329,13 @@ pub fn build_router(state: Arc<AppState>, repo_root: Option<PathBuf>) -> Router 
         .route("/api/economy/profile", get(api_economy_profile))
         .route("/api/economy/gacha", post(api_economy_gacha))
         .route("/api/economy/buy", post(api_economy_buy))
+        .route("/api/account/guest", post(ranked::api_account_guest))
+        .route("/api/ranked/queue", post(ranked::api_ranked_queue))
+        .route("/api/ranked/status", post(ranked::api_ranked_status))
+        .route("/api/ranked/leave", post(ranked::api_ranked_leave))
+        .route("/api/ranked/summary", post(ranked::api_ranked_summary))
+        .route("/api/ranked/leaderboard", get(ranked::api_ranked_leaderboard))
+        .route("/api/ranked/claimIdle", post(ranked::api_ranked_claim_idle))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
@@ -211,14 +343,21 @@ pub fn build_router(state: Arc<AppState>, repo_root: Option<PathBuf>) -> Router 
         let data_dir = root.join("data");
         let assets_dir = root.join("assets");
         let dist_dir = root.join("web").join("dist");
-        if data_dir.exists() {
-            router = router.nest_service("/data", ServeDir::new(data_dir));
-        }
-        if assets_dir.exists() {
-            router = router.nest_service("/assets", ServeDir::new(assets_dir));
-        }
         if dist_dir.exists() {
-            router = router.fallback_service(ServeDir::new(dist_dir));
+            // web/dist を先に配る（Vite の出力 /assets/index-*.js と、ビルド時にコピーした data・assets が入っている）。
+            // dist にないものだけリポジトリから配る（/assets をリポジトリだけに割り当てると、画面の JS が 404 になる）
+            // リポジトリ全体は配らない（.git やソースが見えてしまう）。/assets と /data だけ
+            router = router
+                .nest_service("/assets", ServeDir::new(dist_dir.join("assets")).fallback(ServeDir::new(assets_dir)))
+                .nest_service("/data", ServeDir::new(dist_dir.join("data")).fallback(ServeDir::new(data_dir)))
+                .fallback_service(ServeDir::new(dist_dir));
+        } else {
+            if data_dir.exists() {
+                router = router.nest_service("/data", ServeDir::new(data_dir));
+            }
+            if assets_dir.exists() {
+                router = router.nest_service("/assets", ServeDir::new(assets_dir));
+            }
         }
     }
     router
@@ -262,7 +401,12 @@ async fn api_join(State(state): State<Arc<AppState>>, Json(req): Json<JoinReq>) 
     let room_arc = {
         let mut rooms = state.rooms.write().unwrap();
         if let Some(existing) = rooms.get(&pass) {
+            if existing.lock().unwrap().ranked.is_some() {
+                return (StatusCode::OK, Json(json!({ "ok": false, "reason": "その合言葉は使えません" })));
+            }
             existing.clone()
+        } else if pass.starts_with("ranked:") {
+            return (StatusCode::OK, Json(json!({ "ok": false, "reason": "その合言葉は使えません" })));
         } else {
             let mut cfg = state.base_config.clone();
             let seq = state.next_token_seq.load(Ordering::Relaxed) as u32;
@@ -272,16 +416,7 @@ async fn api_join(State(state): State<Arc<AppState>>, Json(req): Json<JoinReq>) 
                 Ok(g) => g,
                 Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "ok": false, "reason": e }))),
             };
-            let (tx, _) = broadcast::channel(64);
-            let r = Arc::new(Mutex::new(Room {
-                game,
-                seats: HashMap::new(),
-                cpu_seats: Vec::new(),
-                seq: 0,
-                ring: VecDeque::with_capacity(RING_CAP),
-                tx,
-                ai_rng: Mulberry32::new(777 ^ seq),
-            }));
+            let r = Arc::new(Mutex::new(Room::new(game, seq)));
             rooms.insert(pass.clone(), r.clone());
             r
         }
@@ -314,8 +449,9 @@ async fn api_join(State(state): State<Arc<AppState>>, Json(req): Json<JoinReq>) 
         (seat_id, view, started)
     };
 
-    let tok_num = state.next_token_seq.fetch_add(1, Ordering::Relaxed);
-    let token = format!("cf_tok_{tok_num}_{seat_id}");
+    state.next_token_seq.fetch_add(1, Ordering::Relaxed);
+    // 席の鍵は推測できない値にする（連番だと、ほかの人の席で操作できてしまう）
+    let token = format!("cf_tok_{}", ranked::random_hex(16));
     state.tokens.write().unwrap().insert(token.clone(), (pass, seat_id.clone()));
 
     (
@@ -357,6 +493,17 @@ async fn api_action(State(state): State<Arc<AppState>>, Json(req): Json<ActionRe
     };
 
     let mut room = room_arc.lock().unwrap();
+    // 防御は、攻撃を受けている人だけが送れる
+    if req.method == "defend" || req.method == "passDefense" {
+        let st = state_to_value(&room.game.get_state(None));
+        if st["phase"] != "defend" || st["defense"]["defenderId"].as_str() != Some(seat_id.as_str()) {
+            return (StatusCode::OK, Json(json!({ "ok": false, "reason": "いまは防御できません" })));
+        }
+    }
+    // ランクマッチの部屋では、試合をやり直す操作は受けない
+    if room.ranked.is_some() && req.method == "start" {
+        return (StatusCode::OK, Json(json!({ "ok": false, "reason": "ランクマッチでは使えません" })));
+    }
     let result = match req.method.as_str() {
         "start" => {
             let evs = room.game.start();
@@ -435,19 +582,8 @@ async fn api_action(State(state): State<Arc<AppState>>, Json(req): Json<ActionRe
             action_to_value(r)
         }
         "stamp" => {
-            let sid = req.args.first().and_then(|v| v.as_str()).unwrap_or("hello");
-            room.seq += 1;
-            let msg = SequencedMsg {
-                seq: room.seq,
-                kind: "event".into(),
-                event: Some(json!({ "type": "stampSent", "playerId": seat_id, "stampId": sid })),
-                state: None,
-            };
-            if room.ring.len() >= RING_CAP {
-                room.ring.pop_front();
-            }
-            room.ring.push_back(msg.clone());
-            let _ = room.tx.send(msg);
+            let sid: String = req.args.first().and_then(|v| v.as_str()).unwrap_or("hello").chars().take(32).collect();
+            room.push_raw(json!({ "type": "stampSent", "playerId": seat_id, "stampId": sid }));
             json!({ "ok": true })
         }
         _ => json!({ "ok": false, "reason": "未対応の操作です" }),
@@ -465,6 +601,12 @@ async fn api_action(State(state): State<Arc<AppState>>, Json(req): Json<ActionRe
         let evs = room.game.drain_events();
         room.push_events(evs);
     }
+
+    if result.get("ok").and_then(|v| v.as_bool()).unwrap_or(false) {
+        room.touch((state.clock)());
+    }
+    settle_ranked(&state, &mut room);
+    room.push_sync();
 
     let state_view = state_to_value(&room.game.get_state(Some(&seat_id)));
     (StatusCode::OK, Json(json!({ "result": result, "state": state_view, "seq": room.seq })))
@@ -491,7 +633,7 @@ async fn api_stream(State(state): State<Arc<AppState>>, Query(q): Query<StreamQu
         (state_to_value(&room.game.get_state(Some(&seat_id))), room.tx.subscribe())
     };
 
-    let stream = async_stream_sse(init_view, &mut rx);
+    let stream = async_stream_sse(init_view, &mut rx, seat_id, room_arc);
     Sse::new(stream)
         .keep_alive(KeepAlive::new().interval(Duration::from_secs(15)).text("ping"))
         .into_response()
@@ -500,19 +642,27 @@ async fn api_stream(State(state): State<Arc<AppState>>, Query(q): Query<StreamQu
 fn async_stream_sse(
     init_view: Value,
     rx: &mut broadcast::Receiver<SequencedMsg>,
+    seat_id: String,
+    room_arc: Arc<Mutex<Room>>,
 ) -> impl futures_util::Stream<Item = Result<SseEvent, std::convert::Infallible>> {
     let rx_owned = rx.resubscribe();
     let init_payload = json!({ "kind": "state", "state": init_view }).to_string();
     futures_util::stream::once(async move {
         Ok(SseEvent::default().data(init_payload))
     })
-    .chain(futures_util::stream::unfold(rx_owned, |mut r| async move {
-        match r.recv().await {
-            Ok(msg) => {
-                let data = serde_json::to_string(&msg).unwrap_or_default();
-                Some((Ok(SseEvent::default().data(data)), r))
-            }
-            Err(_) => None,
+    .chain(futures_util::stream::unfold((rx_owned, seat_id, room_arc), |(mut r, seat, room)| async move {
+        loop {
+            let msg = match r.recv().await {
+                Ok(m) if m.kind == "sync" => snapshot_for(&room, &seat),
+                Ok(m) => match filter_msg_for(&m, &seat) {
+                    Some(f) => f,
+                    None => continue,
+                },
+                Err(broadcast::error::RecvError::Lagged(_)) => snapshot_for(&room, &seat),
+                Err(_) => return None,
+            };
+            let data = serde_json::to_string(&msg).unwrap_or_default();
+            return Some((Ok(SseEvent::default().data(data)), (r, seat, room)));
         }
     }))
 }
@@ -531,12 +681,23 @@ async fn api_ws(
     ws.on_upgrade(move |socket| handle_ws(socket, room_arc, seat_id, q.last_seq))
 }
 
+/// その席向けの今の盤面
+fn snapshot_for(room_arc: &Arc<Mutex<Room>>, seat_id: &str) -> SequencedMsg {
+    let room = room_arc.lock().unwrap();
+    SequencedMsg {
+        seq: room.seq,
+        kind: "state".into(),
+        event: None,
+        state: Some(state_to_value(&room.game.get_state(Some(seat_id)))),
+    }
+}
+
 async fn handle_ws(mut socket: WebSocket, room_arc: Arc<Mutex<Room>>, seat_id: String, last_seq: u64) {
     let (missed, snapshot_msg, mut rx) = {
         let room = room_arc.lock().unwrap();
         let oldest_seq = room.ring.front().map(|m| m.seq).unwrap_or(room.seq + 1);
         let missed: Vec<SequencedMsg> = if last_seq > 0 && last_seq + 1 >= oldest_seq {
-            room.ring.iter().filter(|m| m.seq > last_seq).cloned().collect()
+            room.ring.iter().filter(|m| m.seq > last_seq).filter_map(|m| filter_msg_for(m, &seat_id)).collect()
         } else {
             Vec::new()
         };
@@ -549,14 +710,15 @@ async fn handle_ws(mut socket: WebSocket, room_arc: Arc<Mutex<Room>>, seat_id: S
         (missed, snap, room.tx.subscribe())
     };
 
-    if last_seq == 0 || missed.is_empty() {
-        let txt = serde_json::to_string(&snapshot_msg).unwrap_or_default();
+    // 取りこぼしたイベントを送ってから、今の盤面を送る（つなぎ直したあとも盤面が必ずそろう）
+    for m in missed {
+        let txt = serde_json::to_string(&m).unwrap_or_default();
         if socket.send(Message::Text(txt.into())).await.is_err() {
             return;
         }
     }
-    for m in missed {
-        let txt = serde_json::to_string(&m).unwrap_or_default();
+    {
+        let txt = serde_json::to_string(&snapshot_msg).unwrap_or_default();
         if socket.send(Message::Text(txt.into())).await.is_err() {
             return;
         }
@@ -572,7 +734,15 @@ async fn handle_ws(mut socket: WebSocket, room_arc: Arc<Mutex<Room>>, seat_id: S
             }
             recv = rx.recv() => {
                 match recv {
+                    Ok(msg) if msg.kind == "sync" => {
+                        let snap = snapshot_for(&room_arc, &seat_id);
+                        let txt = serde_json::to_string(&snap).unwrap_or_default();
+                        if socket.send(Message::Text(txt.into())).await.is_err() {
+                            break;
+                        }
+                    }
                     Ok(msg) => {
+                        let Some(msg) = filter_msg_for(&msg, &seat_id) else { continue };
                         let txt = serde_json::to_string(&msg).unwrap_or_default();
                         if socket.send(Message::Text(txt.into())).await.is_err() {
                             break;
