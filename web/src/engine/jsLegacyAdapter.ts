@@ -31,18 +31,35 @@ export class JsLegacyAdapter implements GameEngineAdapter {
   private data: LoadedGameData;
   private cpuRng: () => number;
 
-  constructor(data: LoadedGameData, deckId: string, stage = 'meadow', seed = Date.now()) {
+  constructor(
+    data: LoadedGameData,
+    deckId: string,
+    stage = 'meadow',
+    seed = Date.now(),
+    customDeck?: Record<string, number>
+  ) {
     this.data = data;
     const rng = makeMulberry32(seed);
     this.cpuRng = makeMulberry32(seed ^ 0x51ed270b);
 
     const rules = structuredClone(data.rules) as Record<string, unknown>;
     rules.mulligan = false; // Streamlined instant play into turn 1 for crisp mobile pacing
-    const decks = structuredClone(data.decks);
+    const decks = structuredClone(data.decks) as Record<string, { name: string; cards: Record<string, number>; costDeck?: boolean }>;
+    if (deckId === 'custom' && customDeck && Object.keys(customDeck).length > 0) {
+      decks.custom = { name: 'オリジナルデッキ', cards: { ...customDeck }, costDeck: true };
+    }
+    const stageKeys = Object.keys(data.stages || { meadow: {} });
+    const resolvedStage =
+      stage === 'random' && stageKeys.length > 0
+        ? stageKeys[(seed >>> 0) % stageKeys.length]
+        : stageKeys.includes(stage)
+          ? stage
+          : stageKeys[0] || 'meadow';
+
     const deckKeys = Object.keys(decks || {});
     const myDeck = decks[deckId] ? deckId : (decks['costBalance'] ? 'costBalance' : deckKeys[0]);
     const oppDeck = decks['costAssault'] ? 'costAssault' : (decks['assault'] ? 'assault' : deckKeys[0]);
-    const isCost = Boolean((decks[myDeck] as Record<string, unknown> | undefined)?.costDeck);
+    const isCost = Boolean(decks[myDeck]?.costDeck);
     if (isCost) rules.deckMode = 'cost';
     else if (decks[myDeck]) rules.deckMode = 'own';
 
@@ -57,7 +74,7 @@ export class JsLegacyAdapter implements GameEngineAdapter {
       rarities: structuredClone(data.rarities),
       weather: structuredClone(data.weather),
       setup: {
-        stage,
+        stage: resolvedStage,
         firstPlayer: 'p1',
         castles: ['standard', 'standard'],
         decks: [myDeck, oppDeck],

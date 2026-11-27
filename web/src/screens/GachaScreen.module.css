@@ -102,7 +102,7 @@
 
 .rewardTile {
   background: #fffdf6;
-  border: 2px solid var(--cf-ink);
+  border: 2.5px solid var(--cf-ink);
   border-radius: 12px;
   padding: 8px;
   display: flex;
@@ -112,6 +112,28 @@
   text-align: center;
   font-size: 12px;
   font-weight: 900;
+}
+
+.rarity-uncommon {
+  border-color: #2f7d44;
+  background: #f1fbf3;
+}
+
+.rarity-rare {
+  border-color: #2f65c4;
+  background: #eef4ff;
+}
+
+.rarity-epic {
+  border-color: #8837b8;
+  background: #f9efff;
+  box-shadow: 0 0 10px rgba(154, 72, 209, 0.35);
+}
+
+.rarity-legendary {
+  border-color: #d98212;
+  background: #fff8df;
+  box-shadow: 0 0 14px rgba(255, 184, 51, 0.55);
 }
 
 @media (min-width: 960px) {

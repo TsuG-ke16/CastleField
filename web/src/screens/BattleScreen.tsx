@@ -3,7 +3,9 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
 import type { GameEngineAdapter } from '../engine/adapter';
 import { JsLegacyAdapter } from '../engine/jsLegacyAdapter';
+import { OnlineEngineAdapter, type OnlineConnStatus } from '../engine/onlineAdapter';
 import { WasmEngineAdapter } from '../engine/wasmAdapter';
+import { getSkinFilter } from '../engine/skinUtils';
 import type { GameEvent, GameState, HandCard, PlayTarget } from '../engine/types';
 import { soundManager } from '../audio/soundManager';
 import { BattleFieldScene } from '../scene3d/BattleFieldScene';
@@ -22,11 +24,60 @@ interface MatchSummary {
   monstersDefeated: number;
 }
 
+function summarizeEvent(ev: GameEvent): string | null {
+  switch (ev.type) {
+    case 'turnStarted':
+      return `ターン${ev.turn}: ${ev.playerId === 'p1' ? 'P1' : 'P2'} の行動開始`;
+    case 'soldierDeployed':
+      return `${ev.playerId === 'p1' ? 'P1' : 'P2'} が兵士を配置 (⚔${ev.attack} ❤${ev.hp})`;
+    case 'spellCast':
+      return `${ev.playerId === 'p1' ? 'P1' : 'P2'} が魔法発動`;
+    case 'castleDamaged':
+      return `${ev.playerId === 'p1' ? 'P1' : 'P2'} の城に ${ev.amount} ダメージ`;
+    case 'castleHealed':
+      return `${ev.playerId === 'p1' ? 'P1' : 'P2'} の城が ${ev.amount} 回復`;
+    case 'monsterAppeared':
+      return `野生の魔物が出現！(❤${ev.hp})`;
+    case 'monsterDefeated':
+      return `${ev.playerId === 'p1' ? 'P1' : 'P2'} が魔物を撃破 (+報酬)`;
+    case 'cardsFused':
+      return `カード合成成功！上位カードへ進化`;
+    case 'spellReflected':
+      return `反射で魔法を跳ね返した！(${ev.amount})`;
+    case 'gameOver':
+      return ev.winner ? `決着！ ${ev.winner === 'p1' ? 'P1' : 'P2'} の勝利` : '引き分け';
+    default:
+      return null;
+  }
+}
+
 export function BattleScreen() {
-  const { data, selectedDeckId, cpuLevel, engineMode, quality, exitBattle, grantRewardCoins } = useAppStore();
+  const {
+    data,
+    playMode,
+    setPlayMode,
+    selectedDeckId,
+    selectedStageId,
+    customDeck,
+    cpuLevel,
+    engineMode,
+    onlinePassphrase,
+    onlineServerUrl,
+    selectedCastleSkin,
+    selectedSoldierSkin,
+    quality,
+    exitBattle,
+    grantRewardCoins,
+    recordMatchResult,
+  } = useAppStore();
+
   const [matchSeed, setMatchSeed] = useState(() => Date.now());
   const adapterRef = useRef<GameEngineAdapter | null>(null);
-  const [activeEngine, setActiveEngine] = useState<'rust-wasm' | 'js-legacy'>(engineMode);
+  const [activeEngine, setActiveEngine] = useState<'rust-wasm' | 'js-legacy' | 'online'>(engineMode);
+  const [onlineSeatId, setOnlineSeatId] = useState<'p1' | 'p2'>('p1');
+  const [onlineStatus, setOnlineStatus] = useState<OnlineConnStatus | null>(null);
+  const [onlineError, setOnlineError] = useState<string | null>(null);
+  const [confirmedSide, setConfirmedSide] = useState<'p1' | 'p2'>('p1');
 
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedCard, setSelectedCard] = useState<HandCard | null>(null);
@@ -36,10 +87,12 @@ export function BattleScreen() {
   const [shakePower, setShakePower] = useState(0);
   const [damagePop, setDamagePop] = useState<{ id: number; text: string } | null>(null);
   const [showMenu, setShowMenu] = useState(false);
+  const [showLog, setShowLog] = useState(false);
   const [showUpgrades, setShowUpgrades] = useState(false);
   const [fuseMode, setFuseMode] = useState(false);
   const [fuseFirst, setFuseFirst] = useState<HandCard | null>(null);
   const [discardSelected, setDiscardSelected] = useState<string[]>([]);
+  const [battleLog, setBattleLog] = useState<string[]>([]);
   const [summary, setSummary] = useState<MatchSummary>({
     winner: null,
     turns: 1,
@@ -50,6 +103,8 @@ export function BattleScreen() {
 
   const statsAccRef = useRef({ damageDealt: 0, cardsPlayed: 0, monstersDefeated: 0 });
   const popCounterRef = useRef(0);
+  const recordedMatchRef = useRef(false);
+  const viewerSideRef = useRef<'p1' | 'p2'>('p1');
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -59,22 +114,54 @@ export function BattleScreen() {
     if (!data) return;
     let cancelled = false;
     let unsub: (() => void) | undefined;
+    let unsubState: (() => void) | undefined;
     let created: GameEngineAdapter | null = null;
     statsAccRef.current = { damageDealt: 0, cardsPlayed: 0, monstersDefeated: 0 };
+    recordedMatchRef.current = false;
+    setOnlineError(null);
+    setOnlineStatus(null);
+    setConfirmedSide('p1');
+    setBattleLog([]);
 
     const initEngine = async () => {
       let adapter: GameEngineAdapter;
-      let resolvedMode: 'rust-wasm' | 'js-legacy' = 'js-legacy';
-      if (engineMode === 'rust-wasm') {
+      let resolvedMode: 'rust-wasm' | 'js-legacy' | 'online' = 'js-legacy';
+      let seat: 'p1' | 'p2' = 'p1';
+
+      if (playMode === 'casual' && onlinePassphrase.trim()) {
         try {
-          adapter = await WasmEngineAdapter.create(data, selectedDeckId, 'meadow', matchSeed);
+          const online = await OnlineEngineAdapter.connect(data, onlinePassphrase.trim(), {
+            serverUrl: onlineServerUrl,
+            onStatus: (st) => !cancelled && setOnlineStatus(st),
+          });
+          adapter = online;
+          resolvedMode = 'online';
+          seat = online.seatId;
+          unsubState = online.onStateUpdate((nextSt) => {
+            if (!cancelled) setGameState(nextSt);
+          });
+        } catch (err) {
+          if (!cancelled) {
+            setOnlineError(err instanceof Error ? err.message : String(err));
+          }
+          return;
+        }
+      } else if (engineMode === 'rust-wasm') {
+        try {
+          adapter = await WasmEngineAdapter.create(
+            data,
+            selectedDeckId,
+            selectedStageId,
+            matchSeed,
+            customDeck
+          );
           resolvedMode = 'rust-wasm';
         } catch (err) {
           console.warn('[CastleField] Rust WASM load failed, falling back to JS engine:', err);
-          adapter = new JsLegacyAdapter(data, selectedDeckId, 'meadow', matchSeed);
+          adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck);
         }
       } else {
-        adapter = new JsLegacyAdapter(data, selectedDeckId, 'meadow', matchSeed);
+        adapter = new JsLegacyAdapter(data, selectedDeckId, selectedStageId, matchSeed, customDeck);
       }
 
       if (cancelled) {
@@ -84,15 +171,22 @@ export function BattleScreen() {
 
       created = adapter;
       adapterRef.current = adapter;
+      viewerSideRef.current = seat;
+      setOnlineSeatId(seat);
       setActiveEngine(resolvedMode);
 
       unsub = adapter.onEvent((ev: GameEvent) => {
+        const line = summarizeEvent(ev);
+        if (line) {
+          setBattleLog((prev) => [line, ...prev].slice(0, 20));
+        }
+        const myS = viewerSideRef.current;
         if (ev.type === 'turnStarted') {
-          if (ev.playerId === 'p1') setToastMsg('あなたの番！カードを出そう');
+          if (ev.playerId === myS || playMode === 'local') setToastMsg('あなたの番！カードを出そう');
           else setToastMsg('相手の番です…');
         } else if (ev.type === 'castleDamaged') {
           const amt = Number(ev.amount || 0);
-          if (ev.playerId === 'p2') statsAccRef.current.damageDealt += amt;
+          if (ev.playerId !== myS) statsAccRef.current.damageDealt += amt;
           soundManager.play('hit');
           setShakePower(Math.min(1.6, 0.5 + amt * 0.08));
           setTimeout(() => setShakePower(0), 220);
@@ -104,20 +198,25 @@ export function BattleScreen() {
           soundManager.play('spell');
         } else if (ev.type === 'castleHealed') {
           soundManager.play('heal');
-        } else if (ev.type === 'cardPlayed' && ev.playerId === 'p1') {
+        } else if (ev.type === 'cardPlayed' && ev.playerId === myS) {
           statsAccRef.current.cardsPlayed += 1;
-        } else if (ev.type === 'monsterDefeated' && ev.playerId === 'p1') {
+        } else if (ev.type === 'monsterDefeated' && ev.playerId === myS) {
           statsAccRef.current.monstersDefeated += 1;
         } else if (ev.type === 'gameOver') {
           const w = String(ev.winner || '');
-          if (w === 'p1') {
-            soundManager.play('victory');
-            grantRewardCoins(150);
-          } else {
-            soundManager.play('defeat');
-            grantRewardCoins(40);
+          const won = w === myS;
+          if (!recordedMatchRef.current) {
+            recordedMatchRef.current = true;
+            recordMatchResult(won, statsAccRef.current.cardsPlayed);
+            if (won) {
+              soundManager.play('victory');
+              grantRewardCoins(150);
+            } else {
+              soundManager.play('defeat');
+              grantRewardCoins(40);
+            }
           }
-          const finalSt = adapter.getState('p1');
+          const finalSt = adapter.getState(myS);
           setSummary({
             winner: w || null,
             turns: finalSt.turn,
@@ -129,7 +228,7 @@ export function BattleScreen() {
       });
 
       adapter.start();
-      const initial = adapter.getState('p1');
+      const initial = adapter.getState(seat);
       setGameState(initial);
       setSelectedCard(null);
       setTargets([]);
@@ -141,15 +240,41 @@ export function BattleScreen() {
     return () => {
       cancelled = true;
       unsub?.();
+      unsubState?.();
       created?.dispose();
       adapterRef.current = null;
     };
-  }, [data, selectedDeckId, matchSeed, engineMode, grantRewardCoins]);
+  }, [
+    data,
+    playMode,
+    selectedDeckId,
+    selectedStageId,
+    customDeck,
+    matchSeed,
+    engineMode,
+    onlinePassphrase,
+    onlineServerUrl,
+    grantRewardCoins,
+    recordMatchResult,
+  ]);
 
-  // Automatic CPU turn driver when currentPlayer === 'p2' or p2 needs defense
+  const activeSide: 'p1' | 'p2' = useMemo(() => {
+    if (playMode === 'local' && gameState) {
+      if (gameState.phase === 'defend' && gameState.defense?.defenderId) {
+        return gameState.defense.defenderId === 'p2' ? 'p2' : 'p1';
+      }
+      return gameState.currentPlayer === 'p2' ? 'p2' : 'p1';
+    }
+    return onlineSeatId;
+  }, [playMode, gameState, onlineSeatId]);
+
+  viewerSideRef.current = activeSide;
+  const oppSide: 'p1' | 'p2' = activeSide === 'p1' ? 'p2' : 'p1';
+
+  // Automatic CPU turn driver only when playMode === 'cpu'
   useEffect(() => {
     const adapter = adapterRef.current;
-    if (!adapter || !gameState || gameState.phase === 'gameOver') return;
+    if (playMode !== 'cpu' || !adapter || !gameState || gameState.phase === 'gameOver') return;
 
     const needCpuAct =
       gameState.currentPlayer === 'p2' ||
@@ -161,17 +286,37 @@ export function BattleScreen() {
       setGameState(adapter.getState('p1'));
     }, 520);
     return () => clearTimeout(timer);
-  }, [gameState, cpuLevel]);
+  }, [playMode, gameState, cpuLevel]);
 
   const refreshState = () => {
     if (!adapterRef.current) return;
-    setGameState(adapterRef.current.getState('p1'));
+    if (playMode === 'local') {
+      const probe = adapterRef.current.getState(null);
+      const nextSide: 'p1' | 'p2' =
+        probe.phase === 'defend' && probe.defense?.defenderId
+          ? (probe.defense.defenderId === 'p2' ? 'p2' : 'p1')
+          : probe.currentPlayer === 'p2'
+            ? 'p2'
+            : 'p1';
+      setGameState(adapterRef.current.getState(nextSide));
+    } else {
+      setGameState(adapterRef.current.getState(onlineSeatId));
+    }
   };
 
-  const p1 = gameState?.players.p1;
-  const p2 = gameState?.players.p2;
-  const myTurn = gameState?.currentPlayer === 'p1';
+  const pMe = gameState?.players[activeSide];
+  const pOpp = gameState?.players[oppSide];
+  const myTurn = gameState?.currentPlayer === activeSide;
   const cards = data?.cards || {};
+
+  const myCastleFilter = useMemo(
+    () => getSkinFilter(data, selectedCastleSkin, 'blue'),
+    [data, selectedCastleSkin]
+  );
+  const mySoldierFilter = useMemo(
+    () => getSkinFilter(data, selectedSoldierSkin, 'blue'),
+    [data, selectedSoldierSkin]
+  );
 
   const highlightRoadIds = useMemo(
     () => targets.map((t) => t.roadId).filter((x): x is string => Boolean(x)),
@@ -186,15 +331,45 @@ export function BattleScreen() {
     [targets]
   );
   const highlightEnemyCastle = useMemo(
-    () => targets.some((t) => t.playerId === 'p2' && !t.roadId),
-    [targets]
+    () => targets.some((t) => t.playerId === oppSide && !t.roadId),
+    [targets, oppSide]
   );
+
+  const handleCardQuickPlay = (c: HandCard) => {
+    const adapter = adapterRef.current;
+    if (!adapter || !gameState) return;
+    const check = adapter.canPlayCard(c.cardId);
+    if (!check.ok && !check.needsTarget) {
+      setSelectedCard(c);
+      setTargets([]);
+      showToast(check.reason || 'いまは出せません');
+      return;
+    }
+    const tList = adapter.getTargets(c.cardId);
+    if (tList.length <= 1) {
+      const res =
+        gameState.phase === 'defend'
+          ? adapter.defend(c.cardId, tList[0])
+          : adapter.playCard(c.cardId, tList[0]);
+      if (res.ok) {
+        setSelectedCard(null);
+        setTargets([]);
+        showToast(`${cards[c.type]?.name || 'カード'} を発動！`);
+      } else {
+        showToast(res.reason || '出せませんでした');
+      }
+      refreshState();
+    } else {
+      setSelectedCard(c);
+      setTargets(tList);
+      showToast('盤面の光っている場所（レーン／対象）をタップ！');
+    }
+  };
 
   const handleCardTap = (c: HandCard) => {
     const adapter = adapterRef.current;
     if (!adapter || !gameState) return;
 
-    // Discard mode
     if (gameState.phase === 'discard' && myTurn) {
       setDiscardSelected((prev) =>
         prev.includes(c.cardId) ? prev.filter((id) => id !== c.cardId) : [...prev, c.cardId]
@@ -202,7 +377,6 @@ export function BattleScreen() {
       return;
     }
 
-    // Fusion mode
     if (fuseMode) {
       if (!fuseFirst) {
         setFuseFirst(c);
@@ -226,7 +400,6 @@ export function BattleScreen() {
     }
 
     if (selectedCard?.cardId === c.cardId) {
-      // Tap again to play if single target or no target choice needed
       handlePlaySelected();
       return;
     }
@@ -246,7 +419,7 @@ export function BattleScreen() {
     if (tList.length > 1) {
       showToast('盤面の光っている場所（レーン／対象）をタップ！');
     } else {
-      showToast('もう一度タップ、または「使う」で発動！');
+      showToast('もう一度タップ・上にスワイプ、または「使う」で発動！');
     }
   };
 
@@ -291,47 +464,92 @@ export function BattleScreen() {
     setTargets([]);
     const res = adapter.endTurn();
     if (!res.ok) showToast(res.reason || 'ターンを終えられません');
-    else showToast('相手の番です…');
+    else showToast(playMode === 'local' ? '端末を相手へ渡してください…' : '相手の番です…');
     refreshState();
   };
 
-  if (!gameState || !p1 || !p2) {
+  if (onlineError) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontWeight: 900 }}>
-        戦場を準備中…
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20 }}>
+        <ParchmentSheet style={{ maxWidth: 380, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <strong style={{ fontSize: 17 }}>オンライン接続エラー</strong>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>{onlineError}</p>
+          <GameButton
+            variant="primary-gold"
+            fullWidth
+            onClick={() => {
+              setOnlineError(null);
+              setPlayMode('cpu');
+              setMatchSeed(Date.now());
+            }}
+          >
+            CPU対戦へ切り替える
+          </GameButton>
+          <GameButton variant="normal-stone" fullWidth onClick={exitBattle}>
+            ホームに戻る
+          </GameButton>
+        </ParchmentSheet>
       </div>
     );
   }
 
-  const isDefensePrompt = gameState.phase === 'defend' && gameState.defense?.defenderId === 'p1';
-  const needDiscardCount = gameState.phase === 'discard' && myTurn ? Math.max(0, (p1.hand?.length || 0) - p1.maxHand) : 0;
+  if (!gameState || !pMe || !pOpp) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, fontWeight: 900 }}>
+        <div>{playMode === 'casual' ? 'オンライン戦場へ接続中…' : '戦場を準備中…'}</div>
+        <GameButton size="sm" variant="normal-stone" onClick={exitBattle}>
+          キャンセル
+        </GameButton>
+      </div>
+    );
+  }
+
+  const isDefensePrompt = gameState.phase === 'defend' && gameState.defense?.defenderId === activeSide;
+  const needDiscardCount = gameState.phase === 'discard' && myTurn ? Math.max(0, (pMe.hand?.length || 0) - pMe.maxHand) : 0;
+  const showHandoff = playMode === 'local' && gameState.phase !== 'gameOver' && activeSide !== confirmedSide;
+  const stageKey = gameState.stage || (selectedStageId === 'random' ? 'meadow' : selectedStageId);
+  const stageInfo = data?.stages?.[stageKey];
 
   return (
     <section className={styles.battleRoot} aria-label="バトル画面">
       <header className={styles.topHud}>
         <span className={`${styles.turnBadge} ${myTurn ? styles.turnMe : styles.turnOpp}`}>
-          {isDefensePrompt ? '防御チャンス！' : myTurn ? 'あなたの番' : '相手の番'}
+          {isDefensePrompt
+            ? '防御チャンス！'
+            : playMode === 'local'
+              ? `${activeSide === 'p1' ? 'P1(青)' : 'P2(赤)'} の番`
+              : myTurn
+                ? 'あなたの番'
+                : '相手の番'}
         </span>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <span
             className={styles.hudPill}
-            title={activeEngine === 'rust-wasm' ? 'Rust WebAssembly エンジン稼働中' : 'Legacy JS エンジン稼働中'}
+            title={
+              activeEngine === 'online'
+                ? 'Rustサーバー同期オンライン'
+                : activeEngine === 'rust-wasm'
+                  ? 'Rust WebAssembly エンジン稼働中'
+                  : 'Legacy JS エンジン稼働中'
+            }
           >
-            {activeEngine === 'rust-wasm' ? '🦀 Rust' : 'JS'}
+            {activeEngine === 'online'
+              ? onlineStatus === 'waiting'
+                ? '⏳ 相手待ち'
+                : '🟢 オンライン'
+              : activeEngine === 'rust-wasm'
+                ? '🦀 Rust'
+                : 'JS'}
           </span>
-          <span className={`${styles.hudPill} tabular`}>
-            {gameState.round}周目
-          </span>
-          {p1.maxMp !== undefined && (
+          <span className={`${styles.hudPill} tabular`}>{gameState.round}周目</span>
+          {pMe.maxMp !== undefined && (
             <span className={`${styles.hudPill} tabular`}>
               <PaintedIcon name="mp" size={14} />
-              {p1.mp ?? 0}/{p1.maxMp}
+              {pMe.mp ?? 0}/{pMe.maxMp}
             </span>
           )}
-          <span className={`${styles.hudPill} tabular`}>
-            山{gameState.deckCount ?? 0}
-          </span>
+          <span className={`${styles.hudPill} tabular`}>山{gameState.deckCount ?? 0}</span>
           <RoundButton onClick={() => setShowMenu(true)} aria-label="対戦メニュー">
             <PaintedIcon name="settings" size={18} />
           </RoundButton>
@@ -341,19 +559,39 @@ export function BattleScreen() {
       <div className={styles.arenaWrap}>
         <div className={styles.hpOverlayTop}>
           <div className={styles.castleSign}>
-            <span>CPU ({cpuLevel})</span>
-            <span>手札{p2.handCount}</span>
+            <span>
+              {playMode === 'local'
+                ? oppSide === 'p1'
+                  ? 'P1 (青)'
+                  : 'P2 (赤)'
+                : playMode === 'casual'
+                  ? '対戦相手'
+                  : `CPU (${cpuLevel})`}
+            </span>
+            <span>手札{pOpp.handCount}</span>
           </div>
           <div className={styles.castleSign}>
             <PaintedIcon name="heart" size={16} />
             <div className={styles.hpBarOuter}>
               <div
                 className={styles.hpBarFillOpp}
-                style={{ width: `${Math.max(0, Math.min(100, (p2.castleHp / p2.castleMaxHp) * 100))}%` }}
+                style={{ width: `${Math.max(0, Math.min(100, (pOpp.castleHp / pOpp.castleMaxHp) * 100))}%` }}
               />
             </div>
-            <span className="tabular">{p2.castleHp}/{p2.castleMaxHp}</span>
+            <span className="tabular">{pOpp.castleHp}/{pOpp.castleMaxHp}</span>
           </div>
+        </div>
+
+        <div className={styles.envBadges}>
+          <span className={styles.envPill}>
+            {stageInfo?.icon || '🌿'} {(stageInfo?.name || '草原').split('（')[0]}
+          </span>
+          {gameState.weather && (
+            <span className={styles.envPill}>
+              ☁ {gameState.weather.name || gameState.weather.id}
+            </span>
+          )}
+          {gameState.time === 'night' && <span className={styles.envPill}>🌙 夜</span>}
         </div>
 
         <AnimatePresence>
@@ -374,6 +612,10 @@ export function BattleScreen() {
           state={gameState}
           quality={quality}
           shakePower={shakePower}
+          stageId={stageKey}
+          viewerSide={activeSide}
+          myCastleFilter={myCastleFilter}
+          mySoldierFilter={mySoldierFilter}
           highlightRoadIds={highlightRoadIds}
           highlightSoldierIds={highlightSoldierIds}
           highlightMonsterIds={highlightMonsterIds}
@@ -381,23 +623,23 @@ export function BattleScreen() {
           onSelectRoad={(roadId) => executeWithTarget(targets.find((t) => t.roadId === roadId))}
           onSelectSoldier={(soldierId) => executeWithTarget(targets.find((t) => t.soldierId === soldierId))}
           onSelectMonster={(monsterId) => executeWithTarget(targets.find((t) => t.monsterId === monsterId))}
-          onSelectEnemyCastle={() => executeWithTarget(targets.find((t) => t.playerId === 'p2' && !t.roadId))}
+          onSelectEnemyCastle={() => executeWithTarget(targets.find((t) => t.playerId === oppSide && !t.roadId))}
         />
 
         <div className={styles.hpOverlayBottom}>
           <div className={styles.castleSign}>
-            <span>あなた</span>
-            {p1.armor > 0 && <span>🛡{p1.armor}</span>}
+            <span>{playMode === 'local' ? (activeSide === 'p1' ? 'P1 (青)' : 'P2 (赤)') : 'あなた'}</span>
+            {pMe.armor > 0 && <span>🛡{pMe.armor}</span>}
           </div>
           <div className={styles.castleSign}>
             <PaintedIcon name="heart" size={16} />
             <div className={styles.hpBarOuter}>
               <div
                 className={styles.hpBarFillMe}
-                style={{ width: `${Math.max(0, Math.min(100, (p1.castleHp / p1.castleMaxHp) * 100))}%` }}
+                style={{ width: `${Math.max(0, Math.min(100, (pMe.castleHp / pMe.castleMaxHp) * 100))}%` }}
               />
             </div>
-            <span className="tabular">{p1.castleHp}/{p1.castleMaxHp}</span>
+            <span className="tabular">{pMe.castleHp}/{pMe.castleMaxHp}</span>
           </div>
         </div>
       </div>
@@ -426,7 +668,14 @@ export function BattleScreen() {
                       使う
                     </GameButton>
                   )}
-                  <RoundButton onClick={() => { setSelectedCard(null); setTargets([]); setToastMsg(myTurn ? 'あなたの番！カードを出そう' : '相手の番です…'); }} aria-label="閉じる">
+                  <RoundButton
+                    onClick={() => {
+                      setSelectedCard(null);
+                      setTargets([]);
+                      setToastMsg(myTurn ? 'あなたの番！カードを出そう' : '相手の番です…');
+                    }}
+                    aria-label="閉じる"
+                  >
                     <PaintedIcon name="close" size={16} />
                   </RoundButton>
                 </div>
@@ -495,7 +744,7 @@ export function BattleScreen() {
               onClick={() => setShowUpgrades(true)}
             >
               <PaintedIcon name="coin" size={14} />
-              <span className="tabular">{p1.coins}</span>
+              <span className="tabular">{pMe.coins}</span>
             </GameButton>
             <button
               type="button"
@@ -527,13 +776,26 @@ export function BattleScreen() {
 
         {!handCollapsed && (
           <div className={styles.handStrip} aria-label="手札">
-            {(p1.hand || []).map((c) => {
+            {(showHandoff ? [] : pMe.hand || []).map((c) => {
               const def = cards[c.type];
               if (!def) return null;
               const playable = adapterRef.current?.canPlayCard(c.cardId).ok ?? false;
               const isSel = selectedCard?.cardId === c.cardId || discardSelected.includes(c.cardId);
               return (
-                <div key={c.cardId} style={{ flexShrink: 0 }}>
+                <motion.div
+                  key={c.cardId}
+                  style={{ flexShrink: 0, touchAction: 'pan-x' }}
+                  drag={playable && !fuseMode && gameState.phase !== 'discard' ? 'y' : false}
+                  dragDirectionLock
+                  dragConstraints={{ top: -90, bottom: 0 }}
+                  dragElastic={0.2}
+                  dragSnapToOrigin
+                  onDragEnd={(_, info) => {
+                    if (info.offset.y < -42) {
+                      handleCardQuickPlay(c);
+                    }
+                  }}
+                >
                   <GameCard
                     typeKey={c.type}
                     card={def}
@@ -542,19 +804,43 @@ export function BattleScreen() {
                     disabled={myTurn && gameState.phase === 'main' && !playable}
                     onClick={() => handleCardTap(c)}
                   />
-                </div>
+                </motion.div>
               );
             })}
           </div>
         )}
       </footer>
 
+      {showHandoff && (
+        <div className={styles.handoffCurtain}>
+          <ParchmentSheet style={{ maxWidth: 360, width: '100%', display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'center' }}>
+            <strong style={{ fontSize: 18 }}>
+              {activeSide === 'p1' ? 'プレイヤー1（青）' : 'プレイヤー2（赤）'} の番です
+            </strong>
+            <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>
+              {isDefensePrompt ? '防御判定が飛んできました！端末を渡してください。' : '端末を受け取ったら下のボタンを押してください（相手の手札は隠されています）。'}
+            </p>
+            <GameButton
+              variant="primary-gold"
+              fullWidth
+              onClick={() => {
+                setConfirmedSide(activeSide);
+                setToastMsg(`${activeSide === 'p1' ? 'P1(青)' : 'P2(赤)'} の番！カードを出そう`);
+                refreshState();
+              }}
+            >
+              準備OK（手札を見る）
+            </GameButton>
+          </ParchmentSheet>
+        </div>
+      )}
+
       {showUpgrades && data?.upgrades && (
         <div className={styles.modalBackdrop} onClick={() => setShowUpgrades(false)}>
           <div style={{ width: '100%', maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
             <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong style={{ fontSize: 16 }}>コインで強化（所持 {p1.coins}）</strong>
+                <strong style={{ fontSize: 16 }}>コインで強化（所持 {pMe.coins}）</strong>
                 <RoundButton onClick={() => setShowUpgrades(false)} aria-label="閉じる">
                   <PaintedIcon name="close" size={16} />
                 </RoundButton>
@@ -582,15 +868,28 @@ export function BattleScreen() {
 
       {showMenu && (
         <div className={styles.modalBackdrop} onClick={() => setShowMenu(false)}>
-          <div style={{ width: '100%', maxWidth: 340 }} onClick={(e) => e.stopPropagation()}>
+          <div style={{ width: '100%', maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
             <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <strong style={{ fontSize: 17, textAlign: 'center' }}>対戦メニュー</strong>
+              <GameButton
+                size="sm"
+                variant="normal-stone"
+                fullWidth
+                onClick={() => setShowLog((v) => !v)}
+              >
+                {showLog ? '対戦ログを閉じる' : `対戦ログを見る (${battleLog.length})`}
+              </GameButton>
+              {showLog && (
+                <div className={styles.logBox}>
+                  {battleLog.length === 0 ? 'まだ行動がありません' : battleLog.map((line, i) => <div key={i}>• {line}</div>)}
+                </div>
+              )}
               <GameButton
                 variant="danger-ruby"
                 fullWidth
                 onClick={() => {
                   setShowMenu(false);
-                  adapterRef.current?.surrender('p1');
+                  adapterRef.current?.surrender(activeSide);
                   refreshState();
                 }}
               >
@@ -609,7 +908,7 @@ export function BattleScreen() {
 
       {gameState.phase === 'gameOver' && (
         <ResultOverlay
-          won={summary.winner === 'p1'}
+          won={summary.winner === activeSide}
           turns={summary.turns}
           damageDealt={summary.damageDealt}
           cardsPlayed={summary.cardsPlayed}

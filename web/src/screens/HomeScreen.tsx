@@ -38,6 +38,9 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     setCpuLevel,
     selectedDeckId,
     setSelectedDeckId,
+    selectedStageId,
+    setSelectedStageId,
+    customDeck,
     onlinePassphrase,
     setOnlinePassphrase,
     onlineServerUrl,
@@ -58,14 +61,22 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
   };
 
   const activeMode = MODES.find((m) => m.id === mode) || MODES[0];
-  const deckEntry = data?.decks?.[selectedDeckId];
-  const deckName = deckEntry?.name || 'バランス（コスト制）';
-  const deckPreviewCards = Object.keys(deckEntry?.cards || { starfall: 1, giant: 1 }).slice(0, 2);
+  const deckEntry = selectedDeckId === 'custom' ? null : data?.decks?.[selectedDeckId];
+  const deckName = selectedDeckId === 'custom' ? '★ オリジナル' : (deckEntry?.name || 'バランス（コスト制）');
+  const deckPreviewCards =
+    selectedDeckId === 'custom'
+      ? Object.keys(customDeck).slice(0, 2)
+      : Object.keys(deckEntry?.cards || { starfall: 1, giant: 1 }).slice(0, 2);
+
+  const stageLabel =
+    selectedStageId === 'random'
+      ? 'ランダム'
+      : (data?.stages?.[selectedStageId]?.name || '草原').split('（')[0];
 
   const matchLabel =
     playMode === 'cpu'
-      ? `CPU (${CPU_LABELS[cpuLevel]})`
-      : PLAY_MODES.find((p) => p.id === playMode)?.label || 'CPU対戦';
+      ? `CPU(${CPU_LABELS[cpuLevel]})・${stageLabel}`
+      : `${PLAY_MODES.find((p) => p.id === playMode)?.label || '対戦'}・${stageLabel}`;
 
   return (
     <section className={styles.homeRoot} aria-label="バトルホーム">
@@ -197,6 +208,16 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                 {sheet === 'deck' && data?.decks && (
                   <>
                     <div className={styles.optionGrid}>
+                      <GameButton
+                        size="sm"
+                        variant={selectedDeckId === 'custom' ? 'selected-royal' : 'normal-stone'}
+                        onClick={() => {
+                          setSelectedDeckId('custom');
+                          setSheet('none');
+                        }}
+                      >
+                        ★ オリジナル
+                      </GameButton>
                       {Object.entries(data.decks).map(([id, deck]) => (
                         <GameButton
                           key={id}
@@ -310,8 +331,35 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
 
                     {playMode !== 'cpu' && playMode !== 'casual' && (
                       <p style={{ margin: 0, fontSize: 12, color: 'var(--cf-ink-muted)', fontWeight: 700 }}>
-                        ※ オンライン部屋（合言葉）／ローカル端末対戦は現行サーバー・セッション仕様と接続可能です。すぐに1人対戦を試す場合は「CPU対戦」から出陣できます。
+                        {playMode === 'local'
+                          ? '端末1台で交互に手札を隠して対戦できます（受け渡し画面つき）。'
+                          : '※ ランクマッチ・フレンド部屋はオンラインサーバー接続時に対戦できます。'}
                       </p>
+                    )}
+
+                    {data?.stages && (
+                      <>
+                        <div className={styles.chipLabel}>戦場ステージ</div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                          <GameButton
+                            size="sm"
+                            variant={selectedStageId === 'random' ? 'selected-royal' : 'normal-stone'}
+                            onClick={() => setSelectedStageId('random')}
+                          >
+                            🎲 ランダム
+                          </GameButton>
+                          {Object.entries(data.stages).map(([sid, st]) => (
+                            <GameButton
+                              key={sid}
+                              size="sm"
+                              variant={selectedStageId === sid ? 'selected-royal' : 'normal-stone'}
+                              onClick={() => setSelectedStageId(sid)}
+                            >
+                              {(st.icon || '🌿')} {st.name.split('（')[0]}
+                            </GameButton>
+                          ))}
+                        </div>
+                      </>
                     )}
                   </>
                 )}

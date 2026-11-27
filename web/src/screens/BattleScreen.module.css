@@ -202,6 +202,51 @@
   padding: 16px;
 }
 
+.handoffCurtain {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: rgba(20, 29, 58, 0.94);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.envBadges {
+  position: absolute;
+  top: 44px;
+  left: 10px;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.envPill {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 248, 226, 0.92);
+  border: 1.5px solid var(--cf-ink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.logBox {
+  max-height: 180px;
+  overflow-y: auto;
+  background: #fbf3dc;
+  border: 1.5px solid #d4bc7d;
+  border-radius: 10px;
+  padding: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 @media (min-width: 960px) {
   .battleRoot {
     display: grid;

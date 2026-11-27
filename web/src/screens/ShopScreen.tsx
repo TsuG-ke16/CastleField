@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../stores/useAppStore';
+import { getSkinPreviewImage } from '../engine/skinUtils';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
 import styles from './ShopScreen.module.css';
@@ -15,7 +16,17 @@ const CATEGORIES = [
 ];
 
 export function ShopScreen() {
-  const { data, coins, points, ownedSkins, buyShopItem } = useAppStore();
+  const {
+    data,
+    coins,
+    points,
+    ownedSkins,
+    selectedCastleSkin,
+    selectedSoldierSkin,
+    selectedBackSkin,
+    buyShopItem,
+    equipSkin,
+  } = useAppStore();
   const [usePoints, setUsePoints] = useState(false);
   const [category, setCategory] = useState('all');
   const [showFilter, setShowFilter] = useState(false);
@@ -106,26 +117,65 @@ export function ShopScreen() {
       </div>
 
       <div className={styles.grid}>
-        {items.slice(0, 24).map((item) => {
+        {items.map((item) => {
           const owned = ownedSkins.includes(item.id);
           const price = usePoints ? (item.pointCost ?? 150) : (item.price ?? 300);
           const canBuy = !owned && (usePoints ? points >= price : coins >= price);
-          const iconName = String(item.id).includes('castle') ? 'crown' : String(item.id).includes('back') ? 'deck' : 'skin';
+          const slot = String(item.slot || item.category || item.id);
+          const previewImg = getSkinPreviewImage(slot);
+          const filterCss = item.filters?.blue;
+          const equipKind =
+            slot === 'castle' || item.id.startsWith('castle')
+              ? 'castle'
+              : slot === 'cardBack' || item.id.includes('back')
+                ? 'back'
+                : slot === 'unit' || item.id.startsWith('unit')
+                  ? 'soldier'
+                  : null;
+          const isEquipped =
+            selectedCastleSkin === item.id ||
+            selectedSoldierSkin === item.id ||
+            selectedBackSkin === item.id;
 
           return (
             <div key={item.id} className={styles.itemCard}>
               <span className={styles.rarityTag}>{item.rarity || 'common'}</span>
-              <PaintedIcon name={iconName} size={46} />
+              <img
+                src={previewImg}
+                alt={item.name}
+                style={{
+                  width: 54,
+                  height: 54,
+                  objectFit: 'contain',
+                  filter: filterCss,
+                }}
+              />
               <div className={styles.itemName}>{item.name}</div>
-              <GameButton
-                size="sm"
-                fullWidth
-                variant={owned ? 'normal-stone' : canBuy ? 'primary-gold' : 'normal-stone'}
-                disabled={!canBuy}
-                onClick={() => buyShopItem(item.id, price, usePoints)}
-              >
-                {owned ? '所持済み' : usePoints ? `交換 ${price}pt` : `買う ${price}`}
-              </GameButton>
+              {(item.desc || item.description) && (
+                <div style={{ fontSize: 10, color: 'var(--cf-ink-muted)', fontWeight: 700, textAlign: 'center', lineHeight: 1.35 }}>
+                  {item.desc || item.description}
+                </div>
+              )}
+              {owned && equipKind ? (
+                <GameButton
+                  size="sm"
+                  fullWidth
+                  variant={isEquipped ? 'selected-royal' : 'normal-stone'}
+                  onClick={() => equipSkin(equipKind, item.id)}
+                >
+                  {isEquipped ? '装備中' : '装備する'}
+                </GameButton>
+              ) : (
+                <GameButton
+                  size="sm"
+                  fullWidth
+                  variant={owned ? 'normal-stone' : canBuy ? 'primary-gold' : 'normal-stone'}
+                  disabled={!canBuy}
+                  onClick={() => buyShopItem(item.id, price, usePoints)}
+                >
+                  {owned ? '所持済み' : usePoints ? `交換 ${price}pt` : `買う ${price}`}
+                </GameButton>
+              )}
             </div>
           );
         })}

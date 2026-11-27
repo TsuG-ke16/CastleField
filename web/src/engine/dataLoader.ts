@@ -162,6 +162,7 @@ export function cardTypeToImagePath(type: string): string {
     earthKing: 'card-earth-king.png',
     apocalypse: 'card-apocalypse.png',
     adapt: 'card-adapt.png',
+    beast_demonKing: 'card-beast-demon-king.png',
   };
 
   if (DIRECT_MAP[type]) return `/assets/cards/${DIRECT_MAP[type]}`;

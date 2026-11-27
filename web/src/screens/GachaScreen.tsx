@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
+import { getSkinFilter, getSkinPreviewImage } from '../engine/skinUtils';
 import { GachaChestScene } from '../scene3d/GachaChestScene';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
@@ -8,7 +9,7 @@ import { ParchmentSheet, RibbonBanner } from '../components/ui/Surfaces';
 import styles from './GachaScreen.module.css';
 
 export function GachaScreen() {
-  const { coins, points, pityCount, quality, gachaHistory, spendCoinsAndRollGacha } = useAppStore();
+  const { data, coins, points, pityCount, quality, gachaHistory, spendCoinsAndRollGacha } = useAppStore();
   const [opening, setOpening] = useState(false);
   const [rewards, setRewards] = useState<Array<{ id: string; name: string; rarity: string; isNew: boolean }> | null>(null);
   const [subModal, setSubModal] = useState<'none' | 'rates' | 'history'>('none');
@@ -95,15 +96,34 @@ export function GachaScreen() {
             <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <RibbonBanner tone="victory" label="宝箱オープン！" />
               <div className={styles.rewardGrid}>
-                {rewards.map((r, i) => (
-                  <div key={`${r.id}-${i}`} className={styles.rewardTile}>
-                    <PaintedIcon name={r.rarity === 'legendary' || r.rarity === 'epic' ? 'crown' : 'skin'} size={34} />
-                    <span>{r.name}</span>
-                    <span style={{ fontSize: 10, color: r.isNew ? '#de4f46' : '#7a5638' }}>
-                      {r.isNew ? 'NEW!' : '交換pt +25'}
-                    </span>
-                  </div>
-                ))}
+                {rewards.map((r, i) => {
+                  const rarityCls = styles[`rarity-${r.rarity}`] || '';
+                  return (
+                    <motion.div
+                      key={`${r.id}-${i}`}
+                      initial={{ scale: 0.72, opacity: 0, y: 12 }}
+                      animate={{ scale: 1, opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05, type: 'spring', stiffness: 360, damping: 24 }}
+                      className={`${styles.rewardTile} ${rarityCls}`}
+                    >
+                      <img
+                        src={getSkinPreviewImage(r.id)}
+                        alt={r.name}
+                        style={{
+                          width: 42,
+                          height: 42,
+                          objectFit: 'contain',
+                          filter: getSkinFilter(data, r.id, 'blue'),
+                        }}
+                      />
+                      <span>{r.name}</span>
+                      <span style={{ fontSize: 10, opacity: 0.75 }}>{r.rarity.toUpperCase()}</span>
+                      <span style={{ fontSize: 10, color: r.isNew ? '#de4f46' : '#7a5638' }}>
+                        {r.isNew ? 'NEW!' : '交換pt +25'}
+                      </span>
+                    </motion.div>
+                  );
+                })}
               </div>
               <GameButton variant="primary-gold" fullWidth onClick={() => setRewards(null)}>
                 受け取る

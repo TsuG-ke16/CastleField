@@ -57,13 +57,32 @@ async function getWasmExports(): Promise<WasmExports> {
   return wasmInstancePromise;
 }
 
-function buildConfigPayload(data: LoadedGameData, deckId: string, stage = 'meadow', seed = Date.now()) {
+function resolveStage(data: LoadedGameData, stage: string, seed: number): string {
+  const stageKeys = Object.keys(data.stages || { meadow: {} });
+  if (stage === 'random' && stageKeys.length > 0) {
+    return stageKeys[(seed >>> 0) % stageKeys.length];
+  }
+  return stageKeys.includes(stage) ? stage : stageKeys[0] || 'meadow';
+}
+
+function buildConfigPayload(
+  data: LoadedGameData,
+  deckId: string,
+  stage = 'meadow',
+  seed = Date.now(),
+  customDeck?: Record<string, number>
+) {
   const rules: Record<string, unknown> = { ...(data.rules as Record<string, unknown>), mulligan: false };
-  const decks = data.decks || {};
+  const decks: Record<string, { name: string; cards: Record<string, number>; costDeck?: boolean }> = {
+    ...(data.decks || {}),
+  };
+  if (deckId === 'custom' && customDeck && Object.keys(customDeck).length > 0) {
+    decks.custom = { name: 'オリジナルデッキ', cards: { ...customDeck }, costDeck: true };
+  }
   const deckKeys = Object.keys(decks);
   const myDeck = decks[deckId] ? deckId : (decks['costBalance'] ? 'costBalance' : deckKeys[0]);
   const oppDeck = decks['costAssault'] ? 'costAssault' : (decks['assault'] ? 'assault' : deckKeys[0]);
-  const isCost = Boolean((decks[myDeck] as Record<string, unknown> | undefined)?.costDeck);
+  const isCost = Boolean(decks[myDeck]?.costDeck);
   if (isCost) rules.deckMode = 'cost';
   else if (decks[myDeck]) rules.deckMode = 'own';
 
@@ -78,7 +97,7 @@ function buildConfigPayload(data: LoadedGameData, deckId: string, stage = 'meado
     rarities: data.rarities,
     weather: data.weather,
     setup: {
-      stage,
+      stage: resolveStage(data, stage, seed),
       firstPlayer: 'p1',
       castles: ['standard', 'standard'],
       decks: [myDeck, oppDeck],
@@ -152,10 +171,11 @@ export class WasmEngineAdapter implements GameEngineAdapter {
     data: LoadedGameData,
     deckId: string,
     stage = 'meadow',
-    seed = Date.now()
+    seed = Date.now(),
+    customDeck?: Record<string, number>
   ): Promise<WasmEngineAdapter> {
     const e = await getWasmExports();
-    const cfg = buildConfigPayload(data, deckId, stage, seed);
+    const cfg = buildConfigPayload(data, deckId, stage, seed, customDeck);
     const [p, l] = writeWasmStr(e, JSON.stringify(cfg));
     const handle = e.cf_new(p, l);
     if (l > 0) e.cf_dealloc(p, l);

@@ -21,6 +21,11 @@ export interface CardDef {
   attackBonus?: number;
   element?: 'fire' | 'water' | 'wind' | 'earth' | 'light' | 'dark';
   turns?: number;
+  stay?: number;
+  armor?: number;
+  heal?: number;
+  fuseTo?: string;
+  dice?: string;
   exhaust?: boolean;
   description?: string;
   scope?: 'all' | 'lane';
@@ -143,6 +148,7 @@ export interface ShopItem {
   target?: string;
   desc?: string;
   description?: string;
+  filters?: { blue?: string; orange?: string };
 }
 
 export interface LoadedGameData {
@@ -151,9 +157,9 @@ export interface LoadedGameData {
   monsters: Record<string, { name: string; hp: number; attack: number; element: string; reward: number }>;
   upgrades: Record<string, { name: string; cost: number; description?: string }>;
   castles: Record<string, { name: string; hp?: number; maxHand?: number }>;
-  decks: Record<string, { name: string; cards: Record<string, number> }>;
-  rarities: Record<string, { name: string; color?: string; rate?: number }>;
-  stages: Record<string, { name: string }>;
+  decks: Record<string, { name: string; cards: Record<string, number>; costDeck?: boolean }>;
+  rarities: Record<string, { name: string; color?: string; rate?: number; deckCost?: number }>;
+  stages: Record<string, { name: string; icon?: string; description?: string; element?: string }>;
   weather: Record<string, { name: string; description?: string }>;
   shop: { items: Record<string, Omit<ShopItem, 'id'>> | ShopItem[] } | ShopItem[];
   gacha: Record<string, unknown>;
