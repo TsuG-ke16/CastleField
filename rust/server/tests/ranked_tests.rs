@@ -204,3 +204,22 @@ async fn queue_times_out_and_idle_opponent_can_be_claimed() {
     assert_eq!(r["state"]["phase"], "gameOver");
     assert_eq!(r["state"]["winner"], waiting_pid.as_str());
 }
+
+#[tokio::test]
+async fn rank_rewards_and_unpriced_items_cannot_be_bought() {
+    let e = env("shop");
+    let a = guest(&e, "Alice").await;
+    let buy = |item: &str| json!({ "userId": a["userId"], "secret": a["secret"], "itemId": item });
+    let r = post(&e, "/api/economy/buy", &buy("frame_gold")).await;
+    assert_eq!(r["ok"], false, "ランク報酬は買えない: {r}");
+    let r = post(&e, "/api/economy/buy", &buy("unit_gold")).await;
+    assert_eq!(r["ok"], false, "値段のない品は買えない: {r}");
+    // ガチャからもランク報酬は出ない
+    for _ in 0..2 {
+        let g = post(&e, "/api/economy/gacha", &json!({ "userId": a["userId"], "secret": a["secret"], "count": 10 })).await;
+        for it in g["results"].as_array().unwrap() {
+            let id = it["id"].as_str().unwrap();
+            assert!(!id.starts_with("frame_") && !id.starts_with("back_rank_"), "{id}");
+        }
+    }
+}

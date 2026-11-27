@@ -233,7 +233,8 @@ pub fn settle_ranked(state: &AppState, room: &mut Room) {
     room.push_raw(payload);
 }
 
-/// ショップの品（id, 名前, レアリティ, 値段）
+/// ショップの品（id, 名前, レアリティ, 値段）。値段が -1 の品は売り物でない（ガチャ限定など）。
+/// ランク報酬（`rankReward`）の品はここに入れない（買えず、ガチャにも出ない。シーズン報酬だけでもらえる）
 pub type ShopItem = (String, String, String, i32);
 
 pub fn load_config_from_dir(data_dir: &Path) -> Result<(GameConfig, Vec<ShopItem>), String> {
@@ -254,9 +255,17 @@ pub fn load_config_from_dir(data_dir: &Path) -> Result<(GameConfig, Vec<ShopItem
     let mut shop_items = Vec::new();
     if let Some(map) = shop_val.get("items").and_then(|v| v.as_object()) {
         for (id, item) in map {
+            if item.get("rankReward").map(|v| !v.is_null()).unwrap_or(false) {
+                continue;
+            }
             let name = item.get("name").and_then(|v| v.as_str()).unwrap_or(id).to_string();
             let rarity = item.get("rarity").and_then(|v| v.as_str()).unwrap_or("common").to_string();
-            let price = item.get("price").and_then(|v| v.as_i64()).unwrap_or(300) as i32;
+            // 値段が null の品は売り物でない（以前は 300 として買えてしまった）
+            let price = match item.get("price") {
+                Some(Value::Null) => -1,
+                Some(v) => v.as_i64().unwrap_or(300) as i32,
+                None => 300,
+            };
             shop_items.push((id.clone(), name, rarity, price));
         }
     }
@@ -915,6 +924,9 @@ async fn api_economy_buy(State(state): State<Arc<AppState>>, Json(req): Json<Buy
     let Some((_, _, _, base_price)) = state.shop_items.iter().find(|x| x.0 == req.item_id) else {
         return (StatusCode::OK, Json(json!({ "ok": false, "reason": "商品が見つかりません" })));
     };
+    if *base_price < 0 {
+        return (StatusCode::OK, Json(json!({ "ok": false, "reason": "この品はショップでは買えません" })));
+    }
     if req.use_points {
         let pt_price = (*base_price / 2).max(50);
         if prof.points < pt_price {

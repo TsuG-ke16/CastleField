@@ -437,8 +437,11 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     },
 
     buyShopItem: (itemId, price, usePoints = false) => {
-      const { coins, points, ownedSkins } = get();
+      const { coins, points, ownedSkins, data } = get();
       if (ownedSkins.includes(itemId)) return false;
+      // 売り物でない品（ランク報酬・ガチャ限定。shop.json の price が null）は買えない
+      const shopItems = (data?.shop as { items?: Record<string, { price?: number | null }> } | undefined)?.items;
+      if (shopItems && !Array.isArray(shopItems) && shopItems[itemId]?.price === null) return false;
       if (usePoints) {
         if (points < price) return false;
         soundManager.play('coin');
