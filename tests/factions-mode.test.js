@@ -42,13 +42,13 @@ test('データ：4陣営のカード表は FACTIONS の種類数。各陣営の
   assert.equal(decoy.mpCost, 3);
 });
 
-test('データ：4陣営のルールは専用（2枚ドロー固定・手札6枚・全カードでMP・各自のデッキ）。全モード共通の rules.json は変えない', () => {
+test('データ：4陣営のルールは専用（2枚ドロー固定・手札8枚（段階A1）・全カードでMP・各自のデッキ）。全モード共通の rules.json は変えない', () => {
   const { rules } = buildData({ mode: MODE });
   assert.equal(rules.drawPerTurn, 2);
   assert.equal(rules.firstTurnDraw, 2);
   assert.equal(rules.drawUntilHand, 0);
   assert.equal(rules.drawPerPlayed, false);
-  assert.equal(rules.maxHand, 6);
+  assert.equal(rules.maxHand, 8);
   assert.equal(rules.mpAllCards, true);
   assert.equal(rules.maxMp, 20);
   assert.equal(rules.deckMode, 'own');

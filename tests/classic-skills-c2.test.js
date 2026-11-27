@@ -112,8 +112,8 @@ test('P02/P08：上限超過のMPを貯蔵（最大5）。自ターン開始に1
   assert.equal(game.skillAction('p1', 'P08', { amount: 1 }).ok, false); // 各自ターン1回
   p1.mp = 0;
   endTurn(game);
-  endTurn(game); // p1 のターン開始：回復 +3 のあとに貯蔵から1
-  assert.equal(p1.mp, 4);
+  endTurn(game); // p1 のターン開始：回復（rules.mpPerTurn。段階A1 で 3→5）のあとに貯蔵から1
+  assert.equal(p1.mp, game.rules.mpPerTurn + 1);
   assert.equal(st.res.storedMp, 1);
   assert.ok(used(game, 'p1', 'P02') >= 3 && used(game, 'p1', 'P08') === 1);
 });

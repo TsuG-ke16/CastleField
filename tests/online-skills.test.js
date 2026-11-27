@@ -80,6 +80,7 @@ test('(a)(b) 任意スキル：本人が自分の番に使える。相手の番�
   if (room.game.phase === 'discard') room.action(cur, 'discard', [room.game.players[cur.playerId].hand.slice(0, room.game.players[cur.playerId].hand.length - room.game.getState(cur.playerId).players[cur.playerId].maxHand).map((c) => c.cardId)]);
   assert.equal(room.game.currentPlayer, other.playerId);
   room.game.players[other.playerId].coins = 3;
+  room.game.players[other.playerId].mp = 0; // 段階A1：MP回復が5になり、ターン開始で満タンになりうる（P03 は満タンでは使えない）
   assert.deepEqual(room.action(other, 'skillAction', ['P03']), { ok: true });
   assert.match(room.action(cur, 'skillAction', ['P03']).reason, /あなたの番ではありません/);
 });

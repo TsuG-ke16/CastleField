@@ -8,7 +8,7 @@
 ## 進捗
 
 - [x] (1) ベースライン計測と sim 指標の追加（`tests/sim/sim.js` の `tempo: true`・`tests/sim/tempo.js`）
-- [ ] (2) データ分離・基本数値（MP/ドロー/手札/コイン）
+- [x] (2) データ分離・基本数値（MP/ドロー/手札/コイン）
 - [ ] (3) カードMP再設計（クラシック → 4陣営）
 - [ ] (4) 撃破/魔物/城HP50% のコイン報酬と無限獲得防止
 - [ ] (5) 経済系カード6種＋CPU
@@ -65,7 +65,11 @@
 
 ## 判断メモ
 
-（段階ごとに追記）
+### (2) データ分離・基本数値
+- **モード別の置き場所は各モードの rules.json**（通常 `data/rules.json`・クラシック `data/classic/rules.json`・4陣営 `data/factions/rules.json`）。
+  理由：rules はすでにモードごとに分かれていて、ブラウザ（js/main.js → HomeRuleSet.js の rulesSet）・サーバー（server/server.js の rulesSet）・CPU（ctx.rules）・sim（tests/helpers.js の buildData）が同じファイルを読む。新しい読み込み口を作らずに「同じ設定」を保証できる。A1 で足すキーも全部ここに置き、Game の既定値（DEFAULT_RULES）は「機能なし」にして通常モードを変えない
+- 変えた値（クラシック・4陣営とも）：mpPerTurn 3→5、maxHand 6→8、initialCoins 0→2、coinPerTurn 1→2。initialMp 10・maxMp 20・drawPerTurn 2・soldiersPerTurn 3 は既に仕様どおり（変更なし）。後攻の secondPlayerMp 2 はそのまま
+- テストの期待値の更新（仕様変更で必然的に変わる箇所だけ）：classic-mode（maxHand・通常モードとの差分キー）、factions-mode（maxHand）、classic-skills-c2 の P02（回復量を rules.mpPerTurn から計算）、online-skills（P03 の前に MP を0に：回復5で満タンになりうる）、skill-choice（X15 のテストは maxHand 6 に固定：手札8だと同じビルドの L04 の追加ドローが先に起きて山札の先頭がずれる）
 
 ## 未確認
 

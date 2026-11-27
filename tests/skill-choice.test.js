@@ -18,7 +18,8 @@ const { opts: base } = (() => {
 const qa = createSkillQa(base.skillTree);
 
 function classicGame(builds) {
-  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan: false } });
+  // maxHand 6：段階A1 で手札上限が8になり、X15_BUILD の L04（ターン開始の追加ドロー）が手札6枚でも引くようになったため、従来の上限に固定（X15 が山札の先頭2枚を見ることを確かめる）
+  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan: false, maxHand: 6 } });
   const opts = loadOptionalData('classic');
   delete opts.stages;
   delete opts.weather;
