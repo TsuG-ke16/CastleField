@@ -1,0 +1,87 @@
+[
+  {
+    "device": "pc",
+    "width": 1440,
+    "height": 900,
+    "nodes": 201,
+    "hitPixels": 48,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  },
+  {
+    "device": "tablet",
+    "width": 820,
+    "height": 1180,
+    "nodes": 201,
+    "hitPixels": 48,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "width": 390,
+    "height": 844,
+    "nodes": 201,
+    "hitPixels": 48,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  },
+  {
+    "device": "small",
+    "width": 320,
+    "height": 568,
+    "nodes": 201,
+    "hitPixels": 48,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  },
+  {
+    "device": "landscape",
+    "width": 844,
+    "height": 390,
+    "nodes": 201,
+    "hitPixels": 48,
+    "search": true,
+    "acquire": true,
+    "save": true,
+    "gestures": {
+      "double": true,
+      "pinch": true,
+      "pan": true
+    },
+    "keyboard": true,
+    "errors": []
+  }
+]

@@ -1,0 +1,82 @@
+[
+  {
+    "device": "pc",
+    "screen": "rank",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "rank-rewards",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "ranking",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "friend",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "mission",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "help",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "deck-editor",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "screen": "catalog",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "rank",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "rank-rewards",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "ranking",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "friend",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "mission",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "help",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "deck-editor",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "screen": "catalog",
+    "errors": []
+  }
+]

@@ -53,10 +53,6 @@ export class AccountPanel {
         <button type="button" class="plank-btn" data-act="switch">切りかえる</button>
         <button type="button" class="small-btn" data-act="cancel">やめる</button>
       </section>
-      <section class="account-section" data-part="rename">
-        <label>表示名<input data-part="nameInput" maxlength="16" autocomplete="nickname" placeholder="なまえ"></label>
-        <button type="button" class="small-btn" data-act="rename">名前を変える</button>
-      </section>
       <p class="account-msg" data-part="msg" role="status"></p>
       <div class="account-danger">
         <button type="button" class="small-btn" data-act="export">データを書き出す</button>
@@ -83,14 +79,14 @@ export class AccountPanel {
     account.init();
   }
 
-  open() { this.render(); this.box.hidden = false; this.part('card').focus?.(); this.box.querySelector('[data-act="close"]').focus({ preventScroll: true }); }
-  close() { this.box.hidden = true; this.confirmingDelete = false; this.say(''); }
+  open() { this.opener=document.activeElement; this.render(); this.box.hidden = false; this.part('card').focus?.(); this.box.querySelector('[data-act="close"]').focus({ preventScroll: true }); }
+  close() { this.box.hidden = true; this.confirmingDelete = false; this.say(''); this.opener?.focus({preventScroll:true}); }
   say(text, bad = false) { const m = this.part('msg'); m.textContent = text; m.classList.toggle('bad', bad); }
 
   render() {
     const p = this.part;
     const on = account.enabled && account.user;
-    for (const n of ['card', 'sync', 'link', 'rename']) p(n).hidden = !on;
+    for (const n of ['card', 'sync', 'link']) p(n).hidden = !on;
     p('passSection').hidden = true;
     this.box.querySelector('.account-danger').hidden = !on;
     p('conflict').hidden = !this.conflictId;
@@ -124,7 +120,6 @@ export class AccountPanel {
     p('or').hidden = hasEmail;
     this.box.querySelector('.account-provider[data-provider="google"]').textContent = member ? 'Googleでもログインできるようにする' : 'Googleで作成・ログイン';
     p('link').hidden = hasEmail && !showGoogle; // 足せるものがなければ、この欄ごと隠す
-    p('nameInput').value = u.displayName;
     const del = this.box.querySelector('[data-act="delete"]');
     del.textContent = this.confirmingDelete ? 'もう一度押すと削除' : 'アカウント削除';
     this.box.querySelector('[data-act="logout"]').textContent = 'ログアウト';
@@ -159,11 +154,6 @@ export class AccountPanel {
       if (!r.ok) return this.say(r.reason, true);
       this.part('curPass').value = ''; this.part('newPass').value = '';
       this.say('パスワードを変えました。ほかの端末では、もう一度ログインしてください');
-      return this.render();
-    }
-    if (act === 'rename') {
-      const r = await account.rename(this.part('nameInput').value);
-      this.say(r.ok ? '名前を変えました' : r.reason, !r.ok);
       return this.render();
     }
     if (act === 'switch' || act === 'cancel') {

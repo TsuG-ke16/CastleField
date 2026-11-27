@@ -1,0 +1,6 @@
+viewports and faction flow complete
+deck fixture ready
+deck selected
+actual deck verified
+invalid saved deck: copy and delete verified
+{"viewports":4,"factionFlow":{"id":"p2","deckId":"dragon","hand":["fac_dragon_thunder_spear","fac_dragon_bolt","fac_dragon_thunder_whelp","fac_dragon_mage","fac_dragon_ash_veil"],"opponents":["demon"]},"errors":[]}

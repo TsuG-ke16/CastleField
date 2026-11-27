@@ -1,0 +1,69 @@
+/* Collection destinations share the material tokens, but each has its own layout. */
+#app #home .embedded-view .collection-box{background:none;border:0;box-shadow:none;padding:0;gap:14px}
+#app #home.home-reborn .home-page:is([data-page=gacha],[data-page=shop],[data-page=skin]){width:min(100%,1080px);justify-self:center}
+#app #collection .shop-tools{display:grid;gap:12px;padding:16px;border:var(--ui-border);border-radius:14px;background:var(--ui-paper-hi)}
+#app #collection .shop-tools[hidden]{display:none}
+#app #collection .shop-sources{display:flex;flex-wrap:wrap;gap:10px}
+#app #collection .shop-search-row{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:12px}
+#app #collection .shop-search-row label{display:grid;gap:5px;font-size:13px;font-weight:800;min-width:0}
+#app #collection .shop-search-row :is(input,select){width:100%;box-sizing:border-box;font:inherit}
+#app #collection .shop-affordable{display:flex;align-items:center;gap:8px;font-size:13px;min-height:32px}
+#app #collection .shop-affordable input{width:22px;height:22px}
+#app #collection[data-kind=shop] .collection-slots{flex-wrap:wrap;overflow:visible;gap:8px}
+#app #collection .shop-results-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+#app #collection .shop-results-head h3{margin:0;font-size:20px}
+#app #collection .shop-result-count{font-size:13px;color:var(--ui-muted)}
+#app #collection[data-kind=shop] .item-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+#app #collection[data-kind=shop] .item-preview{width:112px;height:112px}
+#app #collection .shop-more{display:block;margin:18px auto;min-width:200px}
+#app #collection[data-kind=gacha] .collection-body{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(280px,1fr);gap:14px 26px;align-items:start}
+#app #collection .gacha-altar{grid-column:1;grid-row:1/span 5;display:grid;justify-items:center;align-content:center;min-height:400px;padding:26px 12px;border-radius:40% 40% 20px 20px;background:radial-gradient(ellipse,#ffe4a3 0%,#ffedc866 48%,transparent 72%);color:var(--ui-ink)}
+#app #collection .gacha-altar .gacha-chest{width:min(100%,300px);height:auto;aspect-ratio:1;filter:drop-shadow(0 12px 6px #70451b33)}
+#app #collection .gacha-altar p{font-weight:900;font-size:18px;text-align:center;margin:18px 0 0}
+#app #collection[data-kind=gacha] .collection-body>:not(.gacha-altar){grid-column:2;margin:0}
+#app #collection .gacha-pull{width:100%}
+#app #collection .gacha-samples{border:1px solid var(--ui-paper-edge);border-radius:12px;padding:4px 12px;background:var(--ui-paper-hi)}
+#app #collection .gacha-samples summary{min-height:44px;display:flex;align-items:center;font-weight:800;cursor:pointer}
+#app #collection .gacha-samples .gacha-showcase{padding:10px 0}
+#app #collection .gacha-reveal{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:0;position:fixed;inset:0;margin:auto;width:min(92vw,880px);height:max-content;max-height:88dvh;box-sizing:border-box;border:3px solid #8d652a;border-radius:20px;padding:24px;background:radial-gradient(ellipse at top,#ffe5a5,#fff6df 65%);color:var(--ui-ink);overflow:auto;text-align:center;gap:16px}
+#app #collection .gacha-reveal>*{flex:none}
+#app #collection .gacha-reveal::backdrop{background:#302115b8;backdrop-filter:blur(3px)}
+#app #collection .gacha-hint{color:var(--ui-muted)}
+#app #collection .gacha-reveal h3{font-size:24px;margin:0}
+#app #collection .gacha-reveal .gacha-capsule{width:240px;height:240px;object-fit:contain}
+#app #collection .gacha-capsule .gacha-chest{width:100%;height:100%}
+#app #collection .gacha-reveal.opened[data-best="3"]{background:radial-gradient(ellipse at top,#ead8ff,#fff6df 70%)}
+#app #collection .gacha-reveal.opened[data-best="4"]{background:radial-gradient(ellipse at top,#ffd775,#fff6df 70%)}
+#app #collection .gacha-reveal-grid{width:100%;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+#app #collection .gacha-reveal .gacha-card{min-width:0;background:var(--ui-paper-hi);color:var(--ui-ink)}
+#app #collection .gacha-reveal .gacha-card .item-preview{width:84px;max-width:100%}
+#app #collection .gacha-reveal .gacha-open{min-width:220px}
+#app #collection[data-kind=collection] .collection-body{display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,1.25fr);gap:24px;align-items:start}
+#app #collection .wardrobe-stage{position:sticky;top:10px;border:var(--ui-border);border-radius:20px;padding:18px;background:linear-gradient(#e4ecff,#fff0cb 75%);text-align:center}
+#app #collection .wardrobe-stage h3{margin:0 0 18px;font-size:22px}
+#app #collection .wardrobe-scene{display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:16px;background:radial-gradient(ellipse at bottom,#c8ac78,transparent 70%);padding:8px}
+#app #collection .wardrobe-preview{display:grid;justify-items:center;gap:8px;margin:0;min-width:0}
+#app #collection .preview-castle{grid-column:1/-1}
+#app #collection .wardrobe-preview :is(img,.item-preview){width:100px;height:110px;object-fit:contain;max-width:100%;background:none;border-radius:0}
+#app #collection .preview-castle :is(img,.item-preview){width:210px;height:180px}
+#app #collection .wardrobe-preview .item-preview img{width:100%;height:100%}
+#app #collection .wardrobe-preview figcaption{font-size:12px;font-weight:800;line-height:1.5}
+#app #collection .wardrobe-items h3{margin:0 0 12px;font-size:18px}
+#app #collection .wardrobe-items .item-card:has([data-act=unequip]){outline:3px solid var(--ui-blue);outline-offset:2px}
+@media(max-width:700px){
+ #app #collection .shop-search-row{grid-template-columns:minmax(0,1fr)}
+ #app #collection[data-kind=shop] .item-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ #app #collection[data-kind=shop] .item-preview{width:96px;height:96px}
+ #app #collection[data-kind=gacha] .collection-body{display:flex;flex-direction:column;align-items:stretch;gap:12px}
+ #app #collection .gacha-altar{min-height:260px;padding:12px 0}
+ #app #collection .gacha-altar .gacha-chest{width:210px}
+ #app #collection .gacha-altar p{font-size:16px;margin-top:10px}
+ #app #collection .gacha-reveal{padding:18px 12px}
+ #app #collection .gacha-reveal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #app #collection[data-kind=collection] .collection-body{grid-template-columns:1fr}
+ #app #collection .wardrobe-stage{position:static}
+ #app #collection .wardrobe-scene{grid-template-columns:1.4fr 1fr 1fr;gap:8px}
+ #app #collection .preview-castle{grid-column:auto}
+ #app #collection .preview-castle :is(img,.item-preview){width:150px;height:130px}
+ #app #collection .wardrobe-preview :is(img,.item-preview){max-width:100%;height:100px}
+}

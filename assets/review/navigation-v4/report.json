@@ -1,0 +1,154 @@
+[
+  {
+    "device": "pc",
+    "economy": {
+      "realSinglePull": true,
+      "buy": true,
+      "equip": true
+    },
+    "settingsPersistence": true,
+    "profileRename": true,
+    "accountSeparated": true,
+    "onlineRoom": true,
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "mode": "kingdom",
+    "format": "solo",
+    "directStart": true,
+    "optionalSkills": false,
+    "deckMode": "cost",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "mode": "kingdom",
+    "format": "local",
+    "directStart": true,
+    "optionalSkills": false,
+    "deckMode": "cost",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "mode": "factions",
+    "format": "solo",
+    "directStart": true,
+    "optionalSkills": false,
+    "deckMode": "own",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "mode": "factions",
+    "format": "local",
+    "directStart": true,
+    "optionalSkills": false,
+    "deckMode": "own",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "mode": "classic",
+    "format": "solo",
+    "directStart": true,
+    "optionalSkills": true,
+    "deckMode": "shared",
+    "errors": []
+  },
+  {
+    "device": "pc",
+    "mode": "classic",
+    "format": "local",
+    "directStart": true,
+    "optionalSkills": true,
+    "deckMode": "shared",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "economy": {
+      "realSinglePull": true,
+      "buy": true,
+      "equip": true
+    },
+    "settingsPersistence": true,
+    "profileRename": true,
+    "accountSeparated": true,
+    "onlineRoom": true,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "mode": "kingdom",
+    "format": "solo",
+    "directStart": true,
+    "optionalSkills": false,
+    "deckMode": "cost",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "mode": "kingdom",
+    "format": "local",
+    "directStart": true,
+    "optionalSkills": false,
+    "deckMode": "cost",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "mode": "factions",
+    "format": "solo",
+    "directStart": true,
+    "optionalSkills": false,
+    "deckMode": "own",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "mode": "factions",
+    "format": "local",
+    "directStart": true,
+    "optionalSkills": false,
+    "deckMode": "own",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "mode": "classic",
+    "format": "solo",
+    "directStart": true,
+    "optionalSkills": true,
+    "deckMode": "shared",
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "mode": "classic",
+    "format": "local",
+    "directStart": true,
+    "optionalSkills": true,
+    "deckMode": "shared",
+    "errors": []
+  },
+  {
+    "device": "small",
+    "overflow": false,
+    "startClickable": true,
+    "height": 50
+  },
+  {
+    "device": "tablet",
+    "overflow": false,
+    "startClickable": true,
+    "height": 58
+  },
+  {
+    "device": "landscape",
+    "overflow": false,
+    "startClickable": true,
+    "height": 50
+  }
+]

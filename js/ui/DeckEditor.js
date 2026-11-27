@@ -182,8 +182,11 @@ export class DeckEditor {
     });
   }
 
-  open(slot = loadDecks().active) {
+  open(slot = loadDecks().active, presetId = null) {
     if (this.box.open) return;
+    if(presetId&&this.decks[presetId]?.costDeck&&!loadDecks().slots[slot]){
+      this.drafts.set(slot,{name:`${this.decks[presetId].name}の編成`.slice(0,24),list:{...this.decks[presetId].cards}});
+    }
     this.useSlot(slot);
     this.box.showModal();
   }

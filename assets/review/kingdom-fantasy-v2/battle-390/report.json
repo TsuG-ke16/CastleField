@@ -1,0 +1,12 @@
+{
+  "finish": "surrender via UI",
+  "field3d": true,
+  "viewport": "390x844",
+  "deployed": true,
+  "ended": true,
+  "turns": 4,
+  "cards": 1,
+  "errors": [],
+  "warnings": [],
+  "rematch": true
+}

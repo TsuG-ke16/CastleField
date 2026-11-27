@@ -69,12 +69,13 @@ export class RankRewardsView {
     }
   }
 
-  open() {
+  open(onClose = null) {
+    this.onClose = onClose;
     this.box.hidden = false;
     this.box.querySelector('.rank-rewards-close').focus({ preventScroll: true });
   }
 
-  close() { this.box.hidden = true; }
+  close() { if(this.box.hidden)return;this.box.hidden = true;const back=this.onClose;this.onClose=null;back?.(); }
 }
 
 export { LABELS as RANK_LABELS };

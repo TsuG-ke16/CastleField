@@ -1,0 +1,77 @@
+/* Castle Field shared material system. Layout stays in the owning screen stylesheet. */
+:root{--ui-ink:#422b18;--ui-muted:#765535;--ui-paper:#fff5dd;--ui-paper-hi:#fffdf5;--ui-paper-edge:#dbc18b;--ui-wood:#6b4323;--ui-gold:#e5b355;--ui-blue:#315fbc;--ui-blue-deep:#25488d;--ui-radius:14px;--ui-shadow:0 4px 0 #6b432344,0 10px 24px #4a2b1822;--ui-border:2px solid #57381f}
+html.at-title,html.at-title body{background:#eee0ba}
+#app[data-home-theme]{--lobby-bg:var(--ui-paper);--lobby-surface:var(--ui-paper-hi);--lobby-raised:#f0dbae;--lobby-line:#c5a16b;--lobby-text:var(--ui-ink);--lobby-muted:var(--ui-muted);--lobby-accent:var(--ui-blue);--lobby-action:#ffbf52;--lobby-ink:var(--ui-ink)}
+#app [data-ui-frame]{background:var(--ui-paper)!important;color:var(--ui-ink);border:var(--ui-border)!important;border-image:none!important;border-radius:var(--ui-radius)!important;box-shadow:var(--ui-shadow)!important}
+#app [data-ui-frame=wood]{background:linear-gradient(#714a2d,#4f301b)!important;color:#fff5dd;border-color:#3f2511!important;box-shadow:inset 0 2px #c4975c,var(--ui-shadow)!important}
+#app button[data-ui-skin],#app .cf-btn{background:linear-gradient(#fffdf5,#f3dfb0)!important;color:var(--ui-ink)!important;border:var(--ui-border)!important;border-image:none!important;border-radius:10px!important;box-shadow:inset 0 2px #fff9,0 3px 0 #987044!important;text-shadow:none!important;min-height:44px;font-weight:800;background-clip:border-box!important}
+#app button[data-ui-tone=primary],#app .cf-btn-primary{background:linear-gradient(#ffeaa3,#ffbf52,#e89525)!important;color:#482907!important}
+#app button[data-ui-tone=danger]{background:linear-gradient(#ffe3cd,#de7760)!important;color:#682418!important}
+#app button[data-ui-skin]:is(.on,[aria-selected=true],[aria-pressed=true]),#app .cf-btn[aria-pressed=true]{background:linear-gradient(#4b7ad4,#294f9e)!important;color:#fffaf0!important;border-color:#4b311c!important}
+#app button[data-ui-skin]:disabled{filter:grayscale(.65)!important;opacity:.65!important}
+#app button[data-ui-skin]:active,#app .cf-btn:active{transform:translateY(2px);box-shadow:inset 0 2px #fff6,0 1px 0 #987044!important}
+#app :is(input:not([type=range]):not([type=checkbox]),select:not(.pill-source)){background:var(--ui-paper-hi);border:2px solid #b48d54;border-image:none;border-radius:8px;min-height:44px;color:var(--ui-ink);color-scheme:light}
+#app :is(button,input,select,a,summary):focus-visible{outline:3px solid #244f9c!important;outline-offset:3px}
+#app :is(.screen-box,.home-sheet,.deck-card-info){color:var(--ui-ink)}
+#app :is(.chip,.home-titlechip,.home-ribbon,.home-deck-state){border-radius:9px;background:#fff0c8;color:#60421f;border:1px solid #bc965b}
+#app :is(.set-group h3,.levels-title,.home-menu-group h2){color:var(--ui-ink);border-bottom:2px solid var(--ui-gold);padding-bottom:8px;font-weight:900}
+#app #home.home-reborn{--home-ink:var(--ui-ink);--home-ink-muted:var(--ui-muted);--home-line:#c5a16b;--home-paper:var(--ui-paper);--home-panel:var(--ui-paper-hi);--ink-royal:var(--ui-ink);--royal:#386cd8;--royal-lo:#2a52b0;--royal-hi:#5b8df0;--focus-outline:#244f9c;--focus-halo:#fffaf0;background:var(--ui-paper);color:var(--ui-ink);font-family:var(--font);scrollbar-color:#b28f59 transparent}
+#app #home.home-reborn .home-sky{background:linear-gradient(#edf7ff99,#fff2d2dd),url('../assets/ui/natural/paper-tile.png') repeat}
+#app #home.home-reborn :is(.home-top,.home-tabbar){background:linear-gradient(#4779d8,#2b52a6);color:#fff5dd;border:var(--ui-border);border-radius:14px;box-shadow:inset 0 -3px #e5b355,var(--ui-shadow);padding:8px}
+#app #home.home-reborn .home-top :is(strong,small,b,.home-coins,.home-coin-add){color:#fff5dd}
+#app #home.home-reborn .home-tab{color:#fff5dd;border-radius:10px;background:none;font-weight:800}
+#app #home.home-reborn .home-tab[aria-selected=true]{color:#22478c;background:#fff2d2;box-shadow:inset 0 -4px #d5a443}
+#app #home.home-reborn :is(.home-deckpanel,.home-mode-picker,.home-card,.home-sheet,.home-gacha,.home-deckhero,.home-stats){background:var(--ui-paper-hi);border:var(--ui-border);border-radius:var(--ui-radius);box-shadow:var(--ui-shadow);padding:12px;color:var(--ui-ink)}
+#app #home.home-reborn :is(.home-world,.home-shortcuts button,.home-deck-pen,.home-slot,.home-mode,.home-deck-choice,.home-sheet-close){min-height:44px;padding:6px 12px;border:var(--ui-border);border-radius:10px;background:linear-gradient(#fffdf5,#f3dfb0);color:var(--ui-ink);box-shadow:0 3px 0 #987044}
+#app #home.home-reborn .home-world[aria-pressed=true],#app #home.home-reborn .home-slot[aria-checked=true],#app #home.home-reborn :is(.home-mode,.home-deck-choice)[aria-pressed=true]{background:var(--ui-blue);color:#fffaf0}
+#app #home.home-reborn .home-start{background:linear-gradient(#ffeaa3,#ffbf52,#e89525)!important;color:#482907!important;border:var(--ui-border)!important;border-radius:12px!important;box-shadow:0 4px 0 #987044!important}
+#app #home.home-reborn :is(.home-icon-btn,.home-coin-add,.home-deck-change){color:var(--ui-ink);background:none;border:0;box-shadow:none}
+#app #home.home-reborn :is(.home-note,.home-eyebrow,.home-season,.home-guest-note,.home-deck-meta span,.home-mode small,.home-tile-note){color:var(--ui-muted)}
+#app #home.home-reborn :is(.home-avatar,.home-bigavatar){background:#e2c286;border:2px solid #674326;border-radius:12px;box-shadow:inset 0 0 0 2px #f7d887}
+#app #home.home-reborn .home-tile{border-bottom:1px solid #d7bd8a;color:var(--ui-ink)}
+#app #home.home-reborn :is(.home-tile-label,.home-pagehead,.home-profilecard-text b,.home-deckhero-head h2,.home-gacha-banner h2){color:var(--ui-ink);text-shadow:none}
+#app #home.home-reborn .home-tile-icon{background:#f7e8c4;border:1px solid #a7834b;border-radius:10px;width:40px;height:40px}
+#app #home.home-reborn .home-mode[aria-pressed=true]{background:#e2ebff;color:var(--ui-ink);border-left:4px solid var(--ui-blue)}
+#app #home.home-reborn .home-sheet-heading{background:var(--ui-paper-hi);border-bottom:2px solid var(--ui-gold)}
+#app #home.home-reborn .home-deck-stage{background:radial-gradient(ellipse,#e7cf9b,transparent 70%)}
+#app #home.home-reborn.has-3d-diorama{background:transparent}
+#app #home.home-reborn.has-3d-diorama .home-sky::after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(#fff2d244,transparent 45%,#fff2d2dd 88%)}
+#app #home.home-reborn.has-3d-diorama:not([data-tab=battle]) .home-sky::after{background:#fff2d2ed}
+#app #home.home-reborn.has-3d-diorama .home-battle-console{background:#fff2d2f5;border:var(--ui-border);border-radius:16px;box-shadow:var(--ui-shadow);padding:14px}
+#app #home.home-reborn.diorama-3d-ready .home-arena{opacity:0;pointer-events:none}
+#app #home.home-reborn .home-faction-bar{background:var(--ui-paper);border:var(--ui-border);border-radius:999px;box-shadow:var(--ui-shadow);padding:4px}
+#app #home.home-reborn .home-faction-chip{min-height:44px;background:none;color:var(--ui-ink);border:0;border-radius:99px;padding:6px 12px}
+#app #home.home-reborn .home-faction-chip[aria-pressed=true]{background:var(--ui-blue);color:#fffaf0}
+#app #title{background:linear-gradient(#e5f2ff80,#f5e5bf),url('../assets/ui/natural/paper-tile.png');color:var(--ui-ink)}
+#app #title .title-box{background:none;color:var(--ui-ink)}
+#app #title :is(.prep-heading h1,.levels-title){color:var(--ui-ink)}
+#app #title :is(.prep-brand,.prep-context,.local-note,.local-field>span){color:var(--ui-muted)}
+#app #title .local-options{background:var(--ui-paper-hi)!important;border:var(--ui-border)!important;border-radius:12px!important;padding:8px 12px;box-shadow:var(--ui-shadow)!important}
+#app #title .local-options summary{min-height:44px;color:var(--ui-muted);font-weight:800}
+#app #title #title-levels{gap:16px}
+#app #title button.level[data-ui-skin]{display:grid;grid-template-columns:106px 1fr 24px;grid-template-rows:auto auto;column-gap:16px;align-items:center;min-height:132px;height:auto!important;aspect-ratio:auto!important;padding:12px 18px!important;text-align:left;white-space:normal;overflow:visible!important;background:linear-gradient(100deg,#f4dfb5,#fffaf0)!important;border-radius:18px!important}
+#app #title .level .difficulty-art{grid-column:1;grid-row:1/3;width:104px;height:104px;filter:drop-shadow(0 4px 2px #56391e33)}
+#app #title .level .difficulty-name{grid-column:2;font-size:22px;align-self:end;font-weight:900}
+#app #title .level small{grid-column:2;align-self:start;color:var(--ui-muted);font:13px/1.7 var(--font)}
+#app #title .level::after{content:'›';position:static;grid-column:3;grid-row:1/3;color:#8d632e;font-size:30px;translate:none}
+#app #title .level[data-level=hard]{border-color:#99701e!important;background:linear-gradient(100deg,#ead4a1,#fff7d7)!important}
+#app #deck-editor{--deck-night:#f6e6c3;--deck-night-light:#e7cf9e;--deck-gold:#c69b46;--deck-cream:#4a2f17;background:var(--ui-paper);border:var(--ui-border);color:var(--ui-ink)}
+#app #deck-editor :is(.deck-box,.deck-tray,.deck-grid-item,.deck-card-info){background:var(--ui-paper-hi);color:var(--ui-ink);border-color:#b69259}
+#app #deck-editor :is(.deck-button,.deck-icon,select,input){background:var(--ui-paper);color:var(--ui-ink);border:var(--ui-border);border-radius:10px}
+#app #deck-editor .deck-card-info span{color:var(--ui-muted)}
+#app #result .result-box{background:var(--ui-paper)!important;border:3px solid #57381f!important;border-radius:20px!important;box-shadow:var(--ui-shadow)!important}
+#app #result .result-title{color:#78531c;text-shadow:0 2px #fff5dd;-webkit-text-stroke:0}
+#app #result #result-stats{background:#f0dfb8;color:var(--ui-ink);border:1px solid #c8a56c;border-radius:12px}
+@media(max-width:420px){#app #title button.level[data-ui-skin]{grid-template-columns:80px 1fr 16px;gap:10px;min-height:116px;padding:10px 12px!important}#app #title .level .difficulty-art{width:80px;height:90px}#app #title .level .difficulty-name{font-size:19px}#app #title .level small{font-size:12px}}
+@media(prefers-reduced-motion:reduce){#app button:active{transform:none}}
+#app #home.home-reborn .home-hero{background:none;border:0;box-shadow:none;border-radius:0}
+#app #home.home-reborn .home-worlds{background:none;border:0;box-shadow:none}
+#app #home.home-reborn :is(.home-deckpanel-text,.home-rank-chip,.home-deck-change){background:none;border:0;box-shadow:none;color:var(--ui-ink)}
+#app #home.home-reborn .home-deck-meta span{background:none;border:0;box-shadow:none}
+#app #home.home-reborn .home-tab .kingdom-art{width:32px;height:32px}
+#app #menu button[data-ui-skin]{white-space:normal!important;overflow-wrap:anywhere;line-height:1.4;min-height:52px;height:auto!important;padding:8px 10px!important}
+/* Numerical deck metadata is dark on parchment, including nested bold labels. */
+#app #home.home-reborn .home-deck-meta :is(span,b){color:#4c331c;text-shadow:none}
+#app #home.home-reborn .home-deck-meta b{font-weight:900;font-variant-numeric:tabular-nums}
+
+#app #home.home-reborn .home-mode[aria-pressed=true] small{color:#fff5dd}

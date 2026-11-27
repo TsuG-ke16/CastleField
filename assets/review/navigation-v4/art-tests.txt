@@ -1,0 +1,14 @@
+✔ 200 effects have actual generated icon cells, including all 19 ultimates and 48 crossings (3.935906ms)
+✔ all groups, four frame kinds and five navigation categories are backed by generated art (0.350817ms)
+✔ all 230 current card definitions have a real illustration, including classic cards (2.555374ms)
+✔ UI layout covers START and every skill once, without modifying connection definitions (0.348521ms)
+✔ all 12 recruitable monster card illustrations remain present (0.42959ms)
+✔ compiled curves cover every real edge exactly once (20.798706ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 6
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 34.008654

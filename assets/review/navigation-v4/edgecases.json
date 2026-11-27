@@ -1,0 +1,30 @@
+[
+  {
+    "touch": true,
+    "profileReturnsToCaller": true,
+    "failedJoinRetry": true,
+    "errors": []
+  },
+  {
+    "deckMode": "shared",
+    "deckId": null
+  },
+  {
+    "deckMode": "own",
+    "deckId": "assault"
+  },
+  {
+    "costPresets": 3,
+    "presetPersistence": true,
+    "savedDeckSwitch": true,
+    "editFromPreset": true,
+    "presetMatchesActualCards": true
+  },
+  {
+    "classicStartsWithoutSkillEditor": true
+  },
+  {
+    "localProfileName": true,
+    "offlineAvailability": true
+  }
+]

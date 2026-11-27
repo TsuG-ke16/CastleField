@@ -1,3 +1,4 @@
+import { NAV_ART, atlasMarkup } from './KingdomArt.js';
 // ホーム専用。ナビ・操作アイコンを同じ24pxグリッド/線幅で描く。
 const paths = {
   profile:'<circle cx="12" cy="8" r="3.2"/><path d="M5 21v-3a7 7 0 0 1 14 0v3Z"/>',
@@ -21,4 +22,4 @@ const paths = {
   shop:'<path d="M3 8h18l-2-5H5Zm1 0v13h16V8M9 21v-7h6v7M3 8v3a3 3 0 0 0 6 0 3 3 0 0 0 6 0 3 3 0 0 0 6 0V8"/>',
   skin:'<path d="m8 3 4 3 4-3 6 5-4 5-2-2v11H8V11l-2 2-4-5Z"/>',
 };
-export const homeIcon = (id, size=24) => `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[id] ?? paths.more}</svg>`;
+export const homeIcon = (id, size=24) => NAV_ART[id] ? atlasMarkup(NAV_ART[id],'home-nav-art',size) : `<svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[id] ?? paths.more}</svg>`;

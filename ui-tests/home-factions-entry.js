@@ -35,7 +35,6 @@ try {
     await page.locator('#home[data-ruleset=factions]:not([hidden])').waitFor();
     await pickMode(page, 'solo');
     await page.locator('.home-start').click();
-    await page.locator('.level[data-level=normal]').click();
     await page.locator('#hand .card').first().waitFor();
     // ?debug がないので castlefield はない。手札のカードが4陣営（竜）のもの（陣営のフレーム data-faction）かを見る
     const factions = await page.locator('#hand .card').evaluateAll((cs) => cs.map((c) => c.dataset.faction ?? ''));
@@ -54,7 +53,7 @@ try {
     await page.locator('#title-form:not([hidden])').waitFor();
     await page.fill('#title-name', 'テスト');
     await page.fill('#title-pass', `entry-${Date.now()}`);
-    await page.click('#title-join');
+    await page.click('#home .home-start');
     await page.getByRole('button', { name: '陣営の説明' }).waitFor();
     const select = page.locator('.room-select', { hasText: '陣営' }).locator('select').first();
     await page.waitForFunction(() => [...document.querySelectorAll('.room-select select')].some((s) => s.value === 'dragon'));
@@ -97,7 +96,7 @@ try {
     await page.locator('.home-start').click();
     await page.fill('#title-name', 'テスト');
     await page.fill('#title-pass', `entry-k-${Date.now()}`);
-    await page.click('#title-join');
+    await page.click('#home .home-start');
     await page.locator('#room-screen:not([hidden])').first().waitFor();
     assert.equal(await page.evaluate(() => JSON.parse(sessionStorage.getItem('cf-online')).mode), 'kingdom');
     await page.evaluate(() => localStorage.setItem('cf-home-ruleset', 'factions'));

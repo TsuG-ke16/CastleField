@@ -95,7 +95,6 @@ const el = {
   titlePass: $('title-pass'),
   titleStatus: $('title-status'),
   titleJoin: $('title-join'),
-  titleLevels: $('title-levels'),
   menuSurrender: $('menu-surrender'),
   netText: document.querySelector('#net-status .net-text'),
   netLeave: $('net-leave'),
@@ -106,7 +105,7 @@ setupMaterialSkin();
 const matchStats = new MatchStats();
 const tutorial = new Tutorial();
 let replayTutorial = false;
-let openPlaySetup; // ホームの「対戦開始」から開く設定画面（setupTitle で作る）
+let startHomeMatch; // ホームで選んだ設定を、そのまま既存の開始処理へ渡す
 let settings;
 let localSetup;
 let lastLocalOptions = null;
@@ -124,7 +123,7 @@ let gameMode = 'kingdom', factionDefinitions = null;
 let elements = null; // 属性の強弱の表（モードの elementsSet。通常モードは null：今までの4属性の輪）
 let reactions = null; // 属性の付着と反応（モードの reactionsSet。通常モードは null：付着・反応なし）
 let skillTree = null; // クラシックのスキルツリー（モードの skillTreeSet。通常モードは null：スキルの画面を出さない）
-let skillTreeView = null; // 対戦前のスキルツリーの画面（js/ui/SkillTreeView.js。クラシックだけ）
+let skillTreeView = null; // ホーム・部屋から任意編集するスキルツリー（js/ui/SkillTreeView.js。クラシックだけ）
 let skillBattle = null;   // 対戦中のスキル表示（js/ui/SkillBattleView.js。クラシックだけ）
 let skillUnsub = null;    // game.observeSkills の解除
 let stages = null;  // data/stages.json（読めなければ null：ステージなし）
@@ -353,6 +352,7 @@ async function boot() {
 
   if (rarities && Object.values(decks ?? {}).some((d) => d.costDeck)) {
     const refresh = (saved) => {
+      if(saved)home?.useSavedDeck();
       home?.refresh(); // ホームに出すデッキ名を描き直す
       localSetup?.refreshDecks();
       if (saved) roomView.refreshDecks(saved);
@@ -377,7 +377,7 @@ async function boot() {
   settings = new Settings((value) => { if (!hasAccountName()) el.titleName.value = value.name; anim.applyCssTiming(); handView.updateDetail(); home?.setSkyMode?.(value.homeSky); });
   // アカウント：サーバーにアカウント機能があるときだけボタンを出す（なければ今までどおり）
   const accountPanel = new AccountPanel({ toast });
-  const profileView = new ProfileView({ toast, onChanged: () => home.refresh() });
+  const profileView = new ProfileView({ toast, onChanged: () => home.refresh(),getLocalProfile:()=>({name:settings.value.name,record:matchStats.recordText()}),onLocalName:(name)=>{settings.setName(name);home.refresh();} });
   home = new Home({
     toast, cards, rarities, rules, decks, ruleset:gameMode, factions:factionDefinitions, skyMode:settings.value.homeSky,
     onRuleset: (id) => {
@@ -385,21 +385,25 @@ async function boot() {
       location.assign(rulesetUrl(location.href,id));
     },
     onZoomCard: (type) => cardZoom?.open(type),
-    onPlay: (mode) => openPlaySetup(mode),
-    onDeck: (slot) => deckEditor?.open(slot),
+    onPlay: (mode) => startHomeMatch(mode),
+    onMode: (mode) => syncHomeMatchMode(mode),
+    onSkills: () => {
+      openSkillTree({title:'スキルツリー（保存したビルド）',doneLabel:'保存してホームに戻る',onDone:()=>syncHomeSkillCount(),onCancel:()=>syncHomeSkillCount()});
+    },
+    onPage: (page,host) => {
+      if(!host)return;
+      if(page==='settings')settings.embed(host);
+      if(page==='profile')profileView.open(null,host);
+      if(['gacha','shop','skin'].includes(page))collectionView?.open(page==='skin'?'collection':page,host);
+    },
+    onDeck: (slot, presetId) => deckEditor?.open(slot, presetId),
     onCatalog: () => { sound.play('tap'); cardGuide.open('cards'); },
     onHelp: () => openHelp(),
     getRecord: () => matchStats.recordText(),
-    onSettings: () => settings.open(),
-    onProfile: () => profileView.open(),
     onAccount: () => accountPanel.open(),
     onRanked: () => rankedView.open(),
     onRanking: () => rankingView.open(),
     onFriends: () => socialView.open(),
-    onShop: () => collectionView.open('shop'),
-    onGacha: () => collectionView.open('gacha'),
-    onGachaPull: (count) => collectionView.openAndPull(count),
-    onSkin: () => collectionView.open('collection'),
     onMission: () => missionView.open(),
   });
   // ランクマッチ：相手が見つかったら、サーバーが作った部屋の鍵で入る（ページを読み直したときと同じつなぎ方）
@@ -408,7 +412,10 @@ async function boot() {
   loadOptionalJson('data/ranks.json').then((ranks) => { if (ranks?.tiers) { rankRewardsView.tiers = ranks.tiers; rankRewardsView.render(); } }).catch(() => {});
   rankedView = new RankedView({
     toast,
-    onRewards: () => rankRewardsView.open(),
+    onRewards: () => {
+      rankedView.close();
+      rankRewardsView.open(async()=>{await rankedView.open();if(!rankedView.box.hidden)rankedView.box.querySelector('.ranked-rewards-btn').focus({preventScroll:true});});
+    },
     onNeedMember: () => accountPanel.open(),
     onMatched: ({ token, playerId }) => {
       try { sessionStorage.setItem(SESSION_KEY, JSON.stringify({ token, playerId, passphrase: '', mode: 'kingdom' })); } catch { /* 読み直せないだけ */ }
@@ -424,8 +431,7 @@ async function boot() {
     onProfile: (id) => profileView.open(id),
     onBadge: (n) => home.setSocialBadge(n),
     onJoinRoom: (passphrase) => {
-      home.close();
-      el.title.hidden = false; el.titleLevels.hidden = true; el.titleForm.hidden = false;
+      home.open();home.mode='online';home.showTab('battle');home.renderModes();syncHomeMatchMode('online');
       el.titlePass.value = passphrase;
       joinOnline();
     },
@@ -442,12 +448,9 @@ async function boot() {
     onBalance: () => home.refresh(),
   });
   const missionView = new MissionView({ toast, onChanged: () => home.refresh() });
+  for(const view of [settings,profileView,collectionView])view.onEmbeddedBack=()=>home.backPage();
   let socialStarted = false;
   const syncSettingsAccount = () => {
-    const u = account.enabled ? account.user : null;
-    settings.setAccount(u ? (u.kind === 'guest'
-      ? { label: 'アカウントを作成', note: 'アカウントを作ると、別の端末でも同じデータで遊べます。ランクマッチとフレンドも使えます。', onOpen: () => accountPanel.open() }
-      : { label: 'アカウント', note: `${u.displayName} でログイン中`, onOpen: () => accountPanel.open() }) : null);
     // 名前は1つだけ：アカウントがあれば表示名（プロフィールで変える）。合言葉の画面の名前の欄は出さない
     el.titleName.closest('label').hidden = hasAccountName();
     if (hasAccountName()) el.titleName.value = account.user.displayName;
@@ -536,53 +539,27 @@ async function setupOffline() {
 // ---------- タイトル・メニュー ----------
 
 function setupTitle(deckOptions) {
-  localSetup = new LocalSetup({castles,decks,rules,stages,factionMode:gameMode==='factions',...deckOptions,onStart:(level,options)=>startLocal(undefined,level,options)});
-  $('prep-navigation').append($('levels-back'),$('title-back'));
-  localSetup.inputs.deck.addEventListener('change',()=>{ $('prep-deck').textContent=localSetup.inputs.deck.selectedOptions[0]?.textContent ?? ''; });
-  // ホームの「対戦開始」から開く設定画面（CPUの強さ・同じ端末・合言葉）。「もどる」はホームへ戻る
-  openPlaySetup = (mode, { treeDone = false } = {}) => {
+  localSetup = new LocalSetup({host:home.part('matchSetup'),castles,decks,rules,stages,ruleset:gameMode,...deckOptions,onChange:({deckMode})=>{
+    home.box.querySelector('.home-deckpanel').hidden=gameMode!=='kingdom'||home.mode==='online'||deckMode!=='cost';
+  }});
+  // The existing network form is moved, not copied. The room/seat protocol is unchanged.
+  home.part('onlineSetup').append(el.titleForm);
+  el.titleForm.hidden=false;
+  $('title-back').textContent='接続をやめる';$('title-back').hidden=true;
+  syncHomeMatchMode(home.mode);
+  syncHomeSkillCount();
+  startHomeMatch = (mode) => {
     sound.play('tap');
-    // クラシック：先にスキルツリーを選ぶ（「決定」で今までの準備画面へ。「もどる」でホームへ）
-    if (skillTreeView && !treeDone) {
-      home.close();
-      openSkillTree({ doneLabel: 'このスキルで対戦の準備へ', onDone: () => openPlaySetup(mode, { treeDone: true }), onCancel: () => home.open() });
-      return;
-    }
-    $('prep-title').textContent = {solo:'ひとりで遊ぶ',online:'カジュアル対戦',local:'同じ端末で遊ぶ'}[mode];
-    $('prep-ruleset').textContent = gameMode === 'factions' ? '4陣営モード' : gameMode === 'classic' ? `クラシック・スキル${skillTreeView?.currentBuild().ids.length ?? 0}個` : '通常モード';
-    $('prep-deck').textContent = home.currentDeckInfo?.name ?? '';
-    $('levels-back').hidden = mode === 'online'; $('title-back').hidden = mode !== 'online';
-    home.close();
-    el.title.hidden = false;
-    el.titleLevels.hidden = true;
-    el.titleForm.hidden = true;
-    if (mode === 'online') {
-      el.titleForm.hidden = false;
-      setTitleWaiting(false);
-      el.titleStatus.textContent = '同じ合言葉を入れた人と対戦します';
-      (el.titleName.value || hasAccountName() ? el.titlePass : el.titleName).focus({ preventScroll: true });
-      return;
-    }
-    localSetup.open(mode);
-    if(gameMode==='factions') localSetup.chooseDeck(home.faction); else localSetup.syncHomeDeck(home.currentDeckInfo);
-    el.titleLevels.hidden = false;
-    const first = mode === 'local' ? $('local-start') : el.titleLevels.querySelector('.level');
-    first.focus({ preventScroll: true });
+    if(mode==='online'){joinOnline();return;}
+    localSetup.syncHomeDeck(home.currentDeckInfo);
+    if(gameMode==='factions')localSetup.chooseDeck(home.faction);
+    startLocal(undefined,mode==='solo'?localSetup.cpuLevel:null,localSetup.read());
   };
-  $('levels-back').addEventListener('click', () => { el.titleLevels.hidden = true; el.title.hidden = true; home.open(); });
-  for (const btn of el.titleLevels.querySelectorAll('.level')) {
-    btn.addEventListener('click', () => { sound.play('tap'); startLocal(undefined, btn.dataset.level, localSetup.read()); });
-  }
   settings.setRecord(matchStats.recordText(), () => matchStats.clear());
   matchStats.onRecord = (text) => { settings.setRecord(text); home.refresh(); };
   $('help-tutorial').addEventListener('click', () => { el.help.hidden = true; replayTutorial = true; startLocal(undefined, 'normal'); });
   $('menu-settings').addEventListener('click', () => settings.open());
-  $('title-back').addEventListener('click', () => {
-    leaveOnline();
-    el.titleForm.hidden = true;
-    el.title.hidden = true;
-    home.open();
-  });
+  $('title-back').addEventListener('click', () => {leaveOnline();syncHomeMatchMode('online');el.titleStatus.textContent='接続をやめました';});
   el.titleForm.addEventListener('submit', (e) => { e.preventDefault(); joinOnline(); });
   try {
     el.titleName.value = hasAccountName() ? account.user.displayName : localStorage.getItem('cf-name') ?? '';
@@ -629,16 +606,28 @@ function showTitle() {
   el.menu.hidden = true;
   el.confetti.innerHTML = '';
   setBusy(true);
-  el.titleForm.hidden = true;
-  el.titleLevels.hidden = true;
+  el.titleForm.hidden = false;
   el.title.hidden = true;
+  home.showTab('battle');syncHomeMatchMode(home.mode);
   home.open(); // 入口はホームだけ（4陣営もホームの対戦形式で選ぶ）
 }
 
+function syncHomeSkillCount(){if(home&&skillTreeView)home.part('skillCount').textContent=String(skillTreeView.currentBuild().ids.length);}
+function syncHomeMatchMode(mode){
+  if(!home)return;
+  localSetup?.open(mode);
+  home.part('onlineSetup').hidden=mode!=='online';
+  el.titleForm.hidden=false;
+  if(mode==='online')el.titleStatus.textContent='同じ合言葉の部屋に参加します。';
+  home.renderFacts();
+}
 function setTitleWaiting(waiting) {
   el.titleName.disabled = el.titlePass.disabled = waiting;
-  el.titleJoin.hidden = waiting;
+  el.titleJoin.disabled = waiting;
+  el.titleJoin.hidden = true;
+  $('title-back').hidden=!waiting;
   el.titleForm.classList.toggle('waiting', waiting);
+  if(home){home.box.querySelector('.home-start').disabled=waiting;home.box.querySelector('.home-mode-picker').disabled=waiting;}
 }
 
 /** 手札の表示・非表示（盤面を広く見たいとき用） */
@@ -790,6 +779,7 @@ function resetForNewGame() {
  */
 async function startLocal(seedOverride, cpuLevel = null, options = null) {
   const request=++startRequest;
+  home?.diorama?.setVisible(false); // Pause the covered home scene while battle art is decoded.
   $('asset-loading').hidden=false;
   await prepareBattleAssets();
   if(request!==startRequest)return;
@@ -979,7 +969,7 @@ function hasAccountName() { return !!(account.enabled && account.user?.displayNa
 function myName() { return hasAccountName() ? account.user.displayName : el.titleName.value.trim() || (settings?.value.name ?? '').trim(); }
 
 async function joinOnline() {
-  if (session?.online) return;
+  if (session?.online || el.titleJoin.disabled) return;
   const name = myName();
   const pass = el.titlePass.value.trim();
   if (!name || !pass) {
@@ -992,7 +982,7 @@ async function joinOnline() {
     localStorage.setItem('cf-pass', pass);
   } catch { /* 覚えられなくても困らない */ }
   stopLocal();
-  el.titleJoin.disabled = true;
+  setTitleWaiting(true);
   el.titleStatus.textContent = 'つないでいます…';
   const client = new OnlineClient({
     onRoom: (r) => { if (session === client) onRoom(r); },
@@ -1011,11 +1001,11 @@ async function joinOnline() {
   connected = true;
   roomPassphrase = pass;
   const res = await client.join(pass, name, gameMode === 'factions' || gameMode === 'classic' ? gameMode : undefined);
-  el.titleJoin.disabled = false;
   if (session !== client) return; // 待っているあいだに「もどる」を押した
   if (!res.ok) {
     client.close();
     session = null;
+    setTitleWaiting(false);
     el.titleStatus.textContent = res.reason ?? '入れませんでした';
     sound.play('deny');
     return;
@@ -1067,7 +1057,6 @@ function resumeOnline() {
   connected = true;
   viewerId = saved.playerId;
   roomPassphrase = saved.passphrase ?? '';
-  el.titleLevels.hidden = true;
   el.titleForm.hidden = false;
   setTitleWaiting(true);
   el.titleStatus.textContent = '前の部屋につなぎ直しています…';

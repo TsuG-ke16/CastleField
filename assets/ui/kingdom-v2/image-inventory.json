@@ -1,0 +1,100 @@
+[
+  {
+    "file": "cards-extra.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2504901,
+    "sha256": "5dd35907ba451ac0bbe0827a063b168204ba5221978feb2dd26deba6e12d32d5"
+  },
+  {
+    "file": "cards-extra2.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 2618819,
+    "sha256": "217ebea407e7f473e63d35478261d59e2928cf166a5ca46783ab8a4ef60d2e59"
+  },
+  {
+    "file": "classic-spells.png",
+    "width": 2172,
+    "height": 724,
+    "bytes": 1342736,
+    "sha256": "e41d628d1d3cfec452802672c5693ee0cf229113501aee91cd11179c71c67d34"
+  },
+  {
+    "file": "decor.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 1796617,
+    "sha256": "db0aef849a1d4c90cccbcf0af21b33c076ca54851e3083f2f6d7126289d95140"
+  },
+  {
+    "file": "groups.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1998066,
+    "sha256": "d76ae24aefe241e9d168eec6baf0399a61e9c7353bb04fff6e0f4eab371c8b11"
+  },
+  {
+    "file": "navigation.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1770105,
+    "sha256": "88922c11ff500a3185c3db1e49940fe97c557e170e3c9b59923ab0852f3ece6b"
+  },
+  {
+    "file": "skills-0.png",
+    "width": 1267,
+    "height": 1241,
+    "bytes": 2162410,
+    "sha256": "be7f0dc381aa064ea3667ca26fa7bccf7b1839dc1b20879ddab56cd2c712b6ab"
+  },
+  {
+    "file": "skills-1.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2402673,
+    "sha256": "ac5523c344c88b67741474018feb8a9f5787266feb050463a955dcd162c55f75"
+  },
+  {
+    "file": "skills-2.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2437635,
+    "sha256": "60ea4fca9188370e878e8acccff7e05f91fca3306ef50c05e12b2f8719ed1b15"
+  },
+  {
+    "file": "skills-3.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2717982,
+    "sha256": "087b74c57d5742536428c9d3ffca33173da969e904fc80c376ebecec9b6aa708"
+  },
+  {
+    "file": "skills-4.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2414970,
+    "sha256": "d3f4f702edc1ae6bbc475b3576613a857de1cccd29e22114d390626ef87a2ac9"
+  },
+  {
+    "file": "skills-5.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2164204,
+    "sha256": "a0cfbb47ddc96a0870c83a1fbade3e07364f0c0287a4717f68f98a6ee50a5238"
+  },
+  {
+    "file": "skills-6.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2225457,
+    "sha256": "5c426005a05bf5b088ea3bb7a3ac030d6c6fc21f30cfdf1f57e46b2b65ed3844"
+  },
+  {
+    "file": "skills-7.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 2486956,
+    "sha256": "439fcc295406ed536ecbd70a9cd14226e701ee378844f1d3a903fd3790d399b0"
+  }
+]
