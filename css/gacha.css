@@ -1,0 +1,77 @@
+/* Extends only PR #202 native result dialog; no page or navigation styles. */
+.royal-chest-camera { position:relative; flex-shrink:0; width:280px; height:200px; perspective:850px; }
+.royal-chest { position:absolute; left:40px; top:62px; width:200px; height:108px; transform-style:preserve-3d; transform:rotateX(-17deg) rotateY(-24deg); transition:transform .65s ease; }
+.chest-body,.chest-lid { position:absolute; width:200px; height:108px; transform-style:preserve-3d; }
+.royal-chest i { position:absolute; display:block; border:5px solid #d5a548; box-shadow:inset 0 0 0 2px #68441c,inset 0 0 14px #35251e88; background:repeating-linear-gradient(0deg,#264e6a 0 23px,#19394e 24px 26px); backface-visibility:hidden; }
+.royal-chest i:after { content:''; position:absolute; inset:7px; border:2px solid #c49642; border-radius:5px; }
+.chest-front { width:200px; height:108px; transform:translateZ(65px); }
+.chest-back { width:200px; height:108px; transform:rotateY(180deg) translateZ(65px); }
+.chest-left { width:130px; height:108px; transform:translateX(-65px) rotateY(-90deg); }
+.chest-right { width:130px; height:108px; transform:translateX(135px) rotateY(90deg); }
+.chest-floor { width:200px; height:130px; transform:translateY(43px) rotateX(-90deg); }
+.chest-crest { position:absolute; left:74px; top:21px; z-index:1; display:grid; place-items:center; width:44px; height:58px; background:linear-gradient(110deg,#fff0a2,#c58a29); color:#5b391b; border:3px solid #6c451e; border-radius:8px 8px 18px 18px; font-size:30px; font-style:normal; box-shadow:0 3px 0 #30241e; }
+.chest-lid { height:32px; top:-32px; transform-origin:50% 32px -65px; transition:transform .65s cubic-bezier(.2,.7,.3,1); }
+.royal-chest .lid-top { width:200px; height:130px; transform:translateY(-65px) rotateX(90deg); background:linear-gradient(90deg,#dab256 0 12%,#275775 12% 43%,#e2bd64 43% 57%,#275775 57% 88%,#dab256 88%); }
+.lid-top span { display:grid; height:100%; place-items:center; font-size:54px; color:#ffe4a0; }
+.lid-front { width:200px; height:32px; transform:translateZ(65px); }
+.lid-back { width:200px; height:32px; transform:rotateY(180deg) translateZ(65px); }
+.lid-left { width:130px; height:32px; transform:translateX(-65px) rotateY(-90deg); }
+.lid-right { width:130px; height:32px; transform:translateX(135px) rotateY(90deg); }
+.royal-halo { position:absolute; width:240px; height:240px; border:1px solid var(--glow); border-radius:50%; background:radial-gradient(circle,color-mix(in srgb,var(--glow) 40%,transparent),transparent 68%); box-shadow:0 0 45px color-mix(in srgb,var(--glow) 30%,transparent),inset 0 0 30px color-mix(in srgb,var(--glow) 25%,transparent); animation:royal-pulse 1.8s ease-in-out infinite alternate; }
+.royal-halo:after { content:'✦'; position:absolute; inset:14px; border:1px dashed var(--glow); border-radius:50%; color:var(--glow); font-size:26px; text-align:center; }
+.royal-particles { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.royal-particles i { --a:calc(var(--n) * 22.5deg); position:absolute; left:50%; top:50%; width:4px; height:4px; border-radius:50%; background:var(--glow); box-shadow:0 0 8px var(--glow); animation:royal-gather 1.6s calc(var(--n) * -0.1s) linear infinite; }
+.gacha-reveal[data-phase=open] .royal-chest { transform:scale(1.18) rotateX(-17deg) rotateY(-15deg); }
+.gacha-reveal[data-phase=open] .chest-lid { transform:rotateX(-110deg); }
+.gacha-reveal[data-phase=card] .royal-chest-camera,.gacha-reveal[data-phase=inspect] .royal-chest-camera { display:none; }
+.royal-card-slot { display:none; position:relative; z-index:3; width:210px; height:300px; perspective:900px; }
+.gacha-reveal[data-phase=card] .royal-card-slot,.gacha-reveal[data-phase=inspect] .royal-card-slot { display:block; }
+.royal-card { position:relative; width:100%; height:100%; transform-style:preserve-3d; touch-action:none; transition:transform .18s ease-out; }
+.gacha-reveal[data-phase=card] .royal-card { animation:royal-card-rise .7s both; }
+.royal-card-front,.royal-card-back { position:absolute; inset:0; border:5px solid #d2a854; border-radius:16px; backface-visibility:hidden; box-shadow:0 12px 30px #0007,inset 0 0 0 2px #6b481f; overflow:hidden; }
+.royal-card-front { display:flex; flex-direction:column; align-items:center; padding:16px 10px; background:radial-gradient(ellipse at 50% 35%,#fff9dd,#e9d19a); color:#4d321d; transform:translateZ(2px); }
+.royal-card-front:after { content:''; position:absolute; inset:6px; border:1px solid #b18a45; border-radius:7px; pointer-events:none; }
+.royal-card-crest { width:36px; height:36px; object-fit:contain; opacity:.7; margin-bottom:6px; }
+.royal-card-front .item-preview { width:150px!important; height:145px!important; flex-shrink:0; background:none; border:0; }
+.royal-card-front .item-preview img { width:100%; height:100%; object-fit:contain; }
+.royal-card-name { margin:8px 0; font-size:18px; text-align:center; overflow-wrap:anywhere; }
+.royal-card-back { transform:rotateY(180deg) translateZ(2px); background:#1b4265; }
+.royal-card-back img { width:100%; height:100%; object-fit:fill; }
+.royal-rarity { font-size:13px; letter-spacing:.04em; }
+.royal-new,.royal-duplicate { display:block; font-size:12px; font-weight:900; border-radius:4px; padding:3px 7px; background:#d78128; color:white; }
+.royal-duplicate { background:#325477; }
+.royal-card .royal-new,.royal-card .royal-duplicate { position:absolute; top:12px; left:10px; z-index:2; }
+.royal-hint { font-size:14px; line-height:1.6; text-align:center; margin:0; }
+.royal-controls { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%; }
+.royal-controls button { min-height:44px; font-size:14px; }
+.royal-rotation { width:100%; height:36px; accent-color:#f2cd72; }
+@keyframes royal-pulse { to { transform:scale(1.12); opacity:.5; } }
+@keyframes royal-gather { from { transform:rotate(var(--a)) translateX(160px) scale(.5); opacity:0; } 30% { opacity:1; } to { transform:rotate(var(--a)) translateX(30px); opacity:0; } }
+@keyframes royal-card-rise { from { opacity:0; transform:translateY(90px) rotateY(160deg) scale(.6); } to { opacity:1; transform:translateY(0) rotateY(0); } }
+
+#app #collection .gacha-reveal.gacha-enhanced { --glow:#92cbe9; }
+#app #collection .gacha-enhanced[data-rarity=uncommon] { --glow:#82ca99; }
+#app #collection .gacha-enhanced[data-rarity=rare] { --glow:#55b3f1; }
+#app #collection .gacha-enhanced[data-rarity=epic] { --glow:#b378ec; }
+#app #collection .gacha-enhanced[data-rarity=legendary] { --glow:#eab43e; }
+#app #collection .gacha-enhanced[data-rarity=special] { --glow:#cc80ce; background:linear-gradient(130deg,#fff0cf,#d6f0ff,#f1d6ff); }
+#app #collection .gacha-enhanced .gacha-capsule { position:relative;display:grid;place-items:center;isolation:isolate;width:100%;height:330px;perspective:1000px;flex-shrink:0; }
+#app #collection .gacha-enhanced[data-phase=waiting] .royal-particles,#app #collection .gacha-enhanced.fx-lite .royal-particles { display:none; }
+#app #collection .gacha-enhanced[data-phase=charge] .royal-chest { transform:scale(1.14) rotateX(-17deg) rotateY(-15deg); }
+#app #collection .gacha-enhanced[data-phase=open] .royal-chest { transform:scale(1.18) rotateX(-17deg) rotateY(-15deg); }
+#app #collection .gacha-enhanced[data-phase=open] .chest-lid { transform:rotateX(-110deg); }
+#app #collection .gacha-enhanced .royal-card-slot { width:200px;height:290px; }
+#app #collection .gacha-enhanced .gacha-card[role=button] { cursor:pointer; }
+#app #collection .gacha-enhanced .gacha-card[role=button]:focus-visible { outline:3px solid var(--ui-blue);outline-offset:2px; }
+#app #collection .gacha-enhanced .royal-controls { display:flex;flex-wrap:wrap;gap:10px;justify-content:center;width:min(100%,360px); }
+#app #collection .gacha-enhanced .royal-rotation { width:100%;min-height:36px;accent-color:#547bb2; }
+#app #collection .gacha-enhanced .gacha-close { min-width:140px; }
+#app #collection .gacha-enhanced[data-rarity=legendary] .royal-halo:before,#app #collection .gacha-enhanced[data-rarity=special] .royal-halo:before { content:'✧   ✦   ✧';position:absolute;inset:-26px;border:2px double var(--glow);border-radius:50%;text-align:center;color:var(--glow);font-size:22px; }
+.chest-crest:after { content:'';position:absolute;width:12px;height:12px;bottom:5px;background:linear-gradient(135deg,#c0f5ff,#288cca 50%,#154b81);transform:rotate(45deg);border:1px solid #ffe7a1; }
+@media(max-height:650px) { #app #collection .gacha-enhanced .gacha-capsule { height:260px; } #app #collection .gacha-enhanced .royal-card-slot { width:170px;height:245px; } #app #collection .gacha-enhanced .royal-card-front .item-preview { width:110px!important;height:100px!important; } }
+@media(prefers-reduced-motion:reduce) { .gacha-enhanced * { animation:none!important;transition:none!important; } }
+#app #collection .gacha-enhanced .royal-card-front { display:grid;grid-template-rows:28px minmax(0,1fr) 20px auto;justify-items:center;align-items:center;padding:14px 10px; }
+#app #collection .gacha-enhanced .royal-card-crest { width:28px;height:28px;margin:0; }
+#app #collection .gacha-enhanced .royal-card-front .item-preview { width:140px!important;height:130px!important;max-height:100%;min-height:0; }
+#app #collection .gacha-enhanced .royal-card-name { font-size:16px;line-height:1.3;margin:4px 0; }
+#app #collection .gacha-enhanced .gacha-hint { display:block; }

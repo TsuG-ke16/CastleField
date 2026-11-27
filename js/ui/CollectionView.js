@@ -5,6 +5,7 @@ import { presentView, dismissView } from './viewPlacement.js';
 import { account } from './Account.js';
 import { itemPreview } from './Cosmetics.js';
 import { skinArt } from './skinArt.js';
+import { GachaPresentation } from './GachaPresentation.js';
 
 const RARITY_NAME = { common: 'コモン', uncommon: 'アンコモン', rare: 'レア', epic: 'エピック', legendary: 'レジェンド' };
 const SLOT_ORDER = ['unit', 'castle', 'charSkin', 'spellSkin', 'cardBack', 'attackFx', 'winFx', 'icon', 'iconFrame', 'title'];
@@ -265,21 +266,12 @@ export class CollectionView {
     hint.hidden = true;
     const skip = el('button', 'plank-btn gacha-close', 'とじる');
     skip.hidden = true;
-    launch.addEventListener('click', (event) => {
-      event.stopPropagation();
-      launch.hidden = true;title.textContent='宝箱の中身';wrap.classList.add('opened');
-      capsule.hidden = true;
-      grid.hidden = false;
-      hint.hidden = false;
-      skip.hidden = false;
-      if (this.reducedMotion() || matchMedia('(prefers-reduced-motion: reduce)').matches) wrap.classList.add('all');
-      skip.focus({ preventScroll: true });
-    }, { once: true }); skip.type = 'button';
-    skip.addEventListener('click',e=>{e.stopPropagation();wrap.close()});
+    skip.type='button';
     wrap.addEventListener('close',()=>{wrap.remove();this.part('body').querySelector('[data-act=pull]')?.focus({preventScroll:true})});
-    wrap.addEventListener('click', () => wrap.classList.add('all'));
     wrap.append(title,capsule, launch, grid, hint, skip);
-    this.part('reveals').append(wrap);wrap.showModal();
+    this.part('reveals').append(wrap);
+    new GachaPresentation({wrap,capsule,launch,grid,hint,skip,title,results,reducedMotion:this.reducedMotion()});
+    wrap.showModal();
     launch.focus({ preventScroll: true });
   }
 }

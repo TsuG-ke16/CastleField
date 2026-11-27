@@ -1,0 +1,22 @@
+[
+  {
+    "device": "pc",
+    "realPulls": 2,
+    "nativeDialog": true,
+    "singleEntry": true,
+    "independentDestinations": true,
+    "back": true,
+    "escapeReturnsToGacha": true,
+    "errors": []
+  },
+  {
+    "device": "mobile",
+    "realPulls": 2,
+    "nativeDialog": true,
+    "singleEntry": true,
+    "independentDestinations": true,
+    "back": true,
+    "escapeReturnsToGacha": true,
+    "errors": []
+  }
+]
