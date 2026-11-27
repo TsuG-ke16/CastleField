@@ -846,3 +846,17 @@ PR #184 のフィールド設計資料（`review/field-backgrounds-v2/`）およ
 | `models/diorama/castle_field_diorama.glb`・`castle_field_diorama.blend`・`tripo_castles/*.glb` | Tripo Studio（Web生成3Dスカルプト4城＋4バイオーム浮遊島）を Blender 5.3 + Python（`scripts/prepare_tripo_*.py`, `build_diorama.py`）で最適化・発光マップ合成・空間統合 | Tripo Studio 利用規約（プロジェクト向け生成出力）＋本リポジトリのコードと同一 | 2026-11-23 |
 | `models/diorama/renders/*`・`config/*`・`scripts/*` | Blender 5.3 Cycles OPTIX レンダリングおよび手書き Python スクリプト | 本リポジトリのコードと同一 | 2026-11-23 |
 | `js/ui/HomeDioramaGL.js` | Three.js + 手書き GLSL スカイドームシェーダー（外部背景画像なし） | 本リポジトリのコードと同一 | 2026-11-23 |
+
+## 王国UI監査（2026-11-26）
+
+`assets/review/kingdom-fantasy/` はこのリポジトリの画面をPlaywright/Chromiumで撮影した比較画像・検証記録と、既存素材を並べた確認用コンタクトシート。新規の画像生成・外部素材の追加はなし。元の素材の利用条件は各項目に従う。
+
+## 王国UI 専用生成素材 v2（2026-11-26）
+
+`assets/ui/kingdom-v2/*.png` の14枚はOpenAI画像生成でこのプロジェクト用に新規制作。参照はプロジェクト既存の `style-reference.png`、生成した `groups.png`、既存の `cards/card-fireball.png`。外部作品の素材は使用していない。利用条件は本ファイル「本番用PNG」のOpenAI規約・AI生成の記述に従う。各画像の一覧・セル用途・寸法・ハッシュは同ディレクトリのREADME.mdとimage-inventory.jsonを参照。
+
+`assets/review/kingdom-fantasy-v2/` はPlaywright/Chromiumで実画面・実際の画像対応コードを描画した確認資料。追加の外部素材はなし。
+
+## 第3版の画像配信（2026-11-27）
+
+生成した14枚のPNG原画を `assets/review/kingdom-fantasy-v3/sources/` へ保存し、Pillow/libwebpで配信用WebPを `assets/ui/kingdom-v2/` に生成。原画のデザインは変更しない。カード・人物・枠は無劣化、効果アイコンは品質95、アルファは全て保持。元画像の利用条件は上記と同じ。

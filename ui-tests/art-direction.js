@@ -29,7 +29,7 @@ try{
   await page.locator('#menu-open').click();await page.locator('#menu-settings').click();
   await page.locator('#settings').waitFor({state:'visible'});
   await page.screenshot({path:new URL(`./artifacts/kingdom-settings-${width}.png`,import.meta.url).pathname});
-  await page.locator('.settings-close').click();
+  await page.keyboard.press('Escape');
   if(await page.locator('#menu').isVisible()) await page.locator('#menu-close').click();
   await page.locator('#menu-open').click();await page.locator('#menu-catalog').click();
   await page.locator('#card-guide').waitFor({state:'visible'});

@@ -1,0 +1,114 @@
+[
+  {
+    "delivery": "cards-extra.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/cards-extra.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1915308,
+    "sha256": "dee6bdbffdaffb0fb82f1a52029198f28fa8062be5b47fe15b97f5a586b91aba"
+  },
+  {
+    "delivery": "cards-extra2.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/cards-extra2.png",
+    "width": 1536,
+    "height": 1024,
+    "bytes": 1747306,
+    "sha256": "675ab18e8ce8f38ec42b90a8d682d6a12e8efbbe403a8ce6af3e075ade0caaaf"
+  },
+  {
+    "delivery": "classic-spells.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/classic-spells.png",
+    "width": 2172,
+    "height": 724,
+    "bytes": 983212,
+    "sha256": "b2cf89ec5b6bab14a5565f1e15983c8ab81f14062a58cf192b659ff81c1b751d"
+  },
+  {
+    "delivery": "decor.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/decor.png",
+    "width": 1774,
+    "height": 887,
+    "bytes": 1347366,
+    "sha256": "f91b98dae77f0844a96561f52d4c57283bee0870f5037641114502695abd947e"
+  },
+  {
+    "delivery": "groups.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/groups.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1486152,
+    "sha256": "253c551ef5ba6e9a2fe84a54a9d501b8f68bff351de8c5a498cbe586f26baaa0"
+  },
+  {
+    "delivery": "navigation.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/navigation.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 1306582,
+    "sha256": "870e83a023ddb4e62b76e83ed7148f89d87e9d26c2aadc6690c56592c92a4af1"
+  },
+  {
+    "delivery": "skills-0.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/skills-0.png",
+    "width": 1267,
+    "height": 1241,
+    "bytes": 800132,
+    "sha256": "0d77dc53d25b9b8349a769ef38c4556b320dcaaf170166ae7c4fd60fc0b4f76c"
+  },
+  {
+    "delivery": "skills-1.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/skills-1.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 873262,
+    "sha256": "542af18ad55087a2f8790a25bab8277c6710068093f9c78f19c232de0e1c5fb0"
+  },
+  {
+    "delivery": "skills-2.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/skills-2.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 851472,
+    "sha256": "d6a0aa24a357a25c2adccee672f9d5bc2a34adc3afdb45b9c0d99c31dc3f2d45"
+  },
+  {
+    "delivery": "skills-3.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/skills-3.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 982242,
+    "sha256": "7c17c7c5782bfd29bba45413f3006f01e26bf9f1ceee7d519a08fb1629355f6a"
+  },
+  {
+    "delivery": "skills-4.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/skills-4.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 865538,
+    "sha256": "a0fbde0562890f0781ed208559a57f21f199d2fabbadc3cd714028564acf9e00"
+  },
+  {
+    "delivery": "skills-5.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/skills-5.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 794640,
+    "sha256": "262d2c82d9d63afc49f77e09be30f0206aa1ee6e9109fae0e953c92fc1010a0b"
+  },
+  {
+    "delivery": "skills-6.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/skills-6.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 801506,
+    "sha256": "a69981bc360ff4a5cf181ea418635a298145c755c4d326a54f97413430e635d6"
+  },
+  {
+    "delivery": "skills-7.webp",
+    "source": "../../review/kingdom-fantasy-v3/sources/skills-7.png",
+    "width": 1254,
+    "height": 1254,
+    "bytes": 906092,
+    "sha256": "97554e10a1eea3e3c02b46ed59584745cfedc10c9ecd673f196e9567efbce7b6"
+  }
+]

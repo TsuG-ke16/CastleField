@@ -1,3 +1,4 @@
+import { presentView, dismissView } from './viewPlacement.js';
 import { UI_CONFIG } from './config.js';
 import { sound } from './Sound.js';
 import { HOME_SKY_MODES, HOME_SKY_LABELS } from './HomeDioramaGL.js';
@@ -30,20 +31,14 @@ export class Settings {
       </section>
       <section class="set-group"><h3>画面と演出</h3>
         ${pills('homeSky','ホームの空（時間帯）',HOME_SKY_MODES.map((k)=>[k,HOME_SKY_LABELS[k]]),true)}
-        <p class="set-note">基本は現在時刻に合わせて宇宙と光が変化します。好みの時間帯に固定もできます。</p>
+        <p class="set-note">基本は現在時刻に合わせて空と光が変化します。好みの時間帯に固定もできます。</p>
         ${pills('speed','演出の速さ',[['normal','ふつう'],['fast','はやい'],['skip','スキップ']])}
         ${pills('reduced','動きを減らす',[['true','ON'],['false','OFF']])}
         <p class="set-note">揺れや点滅を抑え、カードの獲得は静止画で表示します。</p>
         ${pills('text','文字の大きさ',[['small','小'],['normal','中'],['large','大']])}
         <p class="settings-reading-preview">兵士は次の自分の番から進軍します。</p>
       </section>
-      <section class="set-group set-account" hidden><h3>アカウント</h3>
-        <p class="set-note set-account-note"></p>
-        <button type="button" class="plank-btn set-account-btn"></button>
-      </section>
-      <section class="set-group set-name-group"><h3>なまえ</h3>
-        <label class="set-row"><span class="set-name">あなたの名前</span><input name="name" maxlength="16" autocomplete="nickname" placeholder="なまえ"></label>
-      </section>
+      <input name="name" type="hidden">
       <section class="set-group"><h3>戦績</h3>
         <p class="set-note set-record" aria-live="polite"></p>
         <button type="button" class="small-btn set-record-clear">戦績をリセット</button>
@@ -71,11 +66,10 @@ export class Settings {
     });
     this.box.querySelector('.settings-close').onclick=()=>this.close();
     this.box.querySelector('.set-record-clear').onclick=()=>{ this.onClearRecord?.(); this.setRecord(this.recordText); };
-    this.box.querySelector('.set-account-btn').onclick=()=>{ const open=this.onAccount; this.close(); open?.(); };
     this.box.addEventListener('click',e=>{if(e.target===this.box)this.close();});
     this.box.addEventListener('keydown',e=>{
       if(e.key==='Escape'){e.stopPropagation();this.close();}
-      if(e.key==='Tab'){
+      if(e.key==='Tab'&&!this.box.classList.contains('embedded-view')){
         const list=[...this.box.querySelectorAll('input, select, button')];const first=list[0],last=list.at(-1);
         if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus();}
         else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus();}
@@ -92,27 +86,14 @@ export class Settings {
     for(const group of this.box.querySelectorAll('.pill-group'))for(const pill of group.children){const on=String(v[group.dataset.for])===pill.dataset.value;pill.classList.toggle('on',on);pill.setAttribute('aria-pressed',String(on));}
     this.onChange(v);
   }
-  open(){this.opener=document.activeElement;this.box.hidden=false;this.box.querySelector('input').focus();}
-  /**
-   * アカウントの欄（サーバーのアカウント機能があるときだけ出す）。info は { label, note, onOpen } か null
-   * ゲストには「アカウントを作成」、作成済みなら「アカウント」を出し、押すとアカウントの画面を開く
-   */
+  setName(name){const input=this.box.querySelector('[name=name]');input.value=name.slice(0,16);input.dispatchEvent(new Event('input',{bubbles:true}));}
+  embed(host){presentView(this,host);}
+  open(){presentView(this);this.box.querySelector('input').focus();}
   /** 戦績（タイトルにあった「戦績を消す」を、設定に移した）。text は「3勝 2敗 · 1連勝」など */
   setRecord(text, onClear) {
     this.recordText = text; if (onClear) this.onClearRecord = onClear;
     this.box.querySelector('.set-record').textContent = text ?? '';
   }
 
-  setAccount(info) {
-    const sec=this.box.querySelector('.set-account');
-    sec.hidden=!info;
-    // アカウントがあるときは、名前はアカウントの表示名だけ（プロフィールで変える）。ここの名前は出さない
-    this.box.querySelector('.set-name-group').hidden=!!info;
-    if(!info)return;
-    sec.querySelector('.set-account-note').textContent=info.note;
-    sec.querySelector('.set-account-btn').textContent=info.label;
-    this.onAccount=info.onOpen;
-  }
-
-  close(){this.box.hidden=true;this.opener?.focus();}
+  close(){dismissView(this);}
 }

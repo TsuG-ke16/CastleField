@@ -1,3 +1,5 @@
+import { CARD_VISUALS } from './cardVisuals.js';
+import { atlasMarkup } from './KingdomArt.js';
 // 絵（PNGと代替SVG）。assets/STYLE.md の絵柄（太いこげ茶の輪郭線・明るい色・2頭身のちびキャラ）に合わせて、コードで描いている。
 // - 本番PNGを読み込み、読み込み前・失敗時にはコードで描いたSVGを表示する
 // - どの種類にどの絵を使うかは、ここで決める（data/ には画像の情報を入れない）
@@ -493,6 +495,9 @@ function beastArt(beast, name, cls) {
 }
 
 export function cardArt(type, color = 'blue', name = '') {
+  const visual=CARD_VISUALS[type];
+  if(visual?.sheet)return atlasMarkup(visual,'art card-art-svg',100);
+  if(visual?.path)return imageArt(visual.path,'','art card-art-svg');
   const factionPath = factionCardPath(type);
   if (factionPath) return imageArt(factionPath, '', 'art card-art-svg');
   if (beastOf(type)) return beastArt(beastOf(type), name, 'card-art-svg');
@@ -506,6 +511,12 @@ export function cardArt(type, color = 'blue', name = '') {
   return CARD_TYPES.has(type) ? imageArt(`cards/card-${kebab(type)}.png`, fallback, 'art card-art-svg') : fallback;
 }
 export function unitArt(type, color, name = '') {
+  // Faction/classic soldier portraits also serve as unit art. Standard units keep team-colour files.
+  const visual=CARD_VISUALS[type];
+  if(type.startsWith('fac_') || type.startsWith('classic_')) {
+    if(visual?.sheet)return atlasMarkup(visual,'art unit-art',100);
+    if(visual?.path)return imageArt(visual.path,'','art unit-art');
+  }
   const factionPath = factionUnitPath(type);
   if (factionPath) return imageArt(factionPath, '', 'art unit-art');
   if (beastOf(type)) return beastArt(beastOf(type), name, 'unit-art');

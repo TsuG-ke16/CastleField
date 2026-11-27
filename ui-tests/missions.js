@@ -56,8 +56,7 @@ try {
   await page.click('#missions .collection-close');
   assert.match(await page.locator('#home [data-part=coins] b').textContent(), /120/); // 週のミッション 120 コイン
   // データの書き出し
-  await page.click('#home .home-tab[data-tab=battle]'); await page.click('#home [data-act=start]'); await page.click('#levels-back');
-  await page.click('#home .home-tab[data-tab=settings]'); await page.click('#home .home-tile[data-id=settings]'); await page.click('.set-account-btn');
+  await page.click('#home .home-tab[data-tab=menu]'); await page.click('#home .home-tile[data-id=account]');
   const [download] = await Promise.all([page.waitForEvent('download'), page.click('#account [data-act=export]')]);
   assert.equal(download.suggestedFilename(), 'castlefield-my-data.json');
   assert.deepEqual(errors, []);

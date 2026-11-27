@@ -33,7 +33,7 @@ try {
   };
   const A = await open('A'); const B = await open('B');
   // ゲストはフレンド機能を使えない
-  await A.click('#home .home-tab[data-tab=account]'); await A.click('#home .home-tile[data-id=friend]');
+  await A.click('#home .home-tab[data-tab=battle]'); await A.click('#home .home-tile[data-id=friend]');
   await A.locator('#social:not([hidden]) .social-note').waitFor();
   assert.match(await A.locator('#social .social-note').textContent(), /アカウントを作成/);
   await A.click('#social .social-close');
@@ -47,7 +47,7 @@ try {
   }
   db.close();
   // A が B を検索して申請
-  await A.click('#home .home-tab[data-tab=account]'); await A.click('#home .home-tile[data-id=friend]');
+  await A.click('#home .home-tab[data-tab=battle]'); await A.click('#home .home-tile[data-id=friend]');
   await A.locator('#social .social-tab[data-tab=search]').click();
   await A.fill('#social input[name=q]', 'ボブ');
   await A.click('#social .social-search button');
@@ -58,8 +58,8 @@ try {
   // B：知らせの印が出て、申請を承認
   await B.waitForTimeout(300);
   await B.reload(); await B.locator('#home:not([hidden]):not(.home-local)').waitFor();
-  await B.click('#home .home-tab[data-tab=account]'); await B.locator('#home .home-tile[data-id=friend] .home-badge').waitFor({ timeout: 8000 });
-  await B.click('#home .home-tab[data-tab=account]'); await B.click('#home .home-tile[data-id=friend]');
+  await B.click('#home .home-tab[data-tab=battle]'); await B.locator('#home .home-tile[data-id=friend] .home-badge').waitFor({ timeout: 8000 });
+  await B.click('#home .home-tab[data-tab=battle]'); await B.click('#home .home-tile[data-id=friend]');
   await B.locator('#social .social-tab[data-tab=requests]').click();
   await B.screenshot({ path: resolve(artifacts, 'social-requests.png') });
   await B.click('#social [data-act=accept]');
@@ -67,7 +67,7 @@ try {
   await B.locator('#social .social-row', { hasText: 'アリス' }).waitFor();
   await B.click('#social .social-close');
   // A：フレンド一覧に B がオンラインで出る → 招待
-  await A.click('#home .home-tab[data-tab=account]'); await A.click('#home .home-tile[data-id=friend]');
+  await A.click('#home .home-tab[data-tab=battle]'); await A.click('#home .home-tile[data-id=friend]');
   await A.locator('#social .social-row .social-status', { hasText: 'ボブ' }).or(A.locator('#social .social-row', { hasText: 'ボブ' }).locator('.social-status')).waitFor({ timeout: 8000 });
   assert.match(await A.locator('#social .social-row', { hasText: 'ボブ' }).textContent(), /オンライン/);
   await A.waitForTimeout(600);

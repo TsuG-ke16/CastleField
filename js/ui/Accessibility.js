@@ -3,7 +3,7 @@ export function setupAccessibility() {
   const ids=['result','menu','help','card-guide','progress-screen','settings'];
   const closers={menu:'#menu-close',help:'#help-close','card-guide':'.round-btn','progress-screen':'.round-btn',settings:'.settings-close'};
   const visible=el=>Boolean(el&&!el.hidden&&el.getClientRects().length&&getComputedStyle(el).visibility!=='hidden');
-  const top=()=>ids.map(id=>document.getElementById(id)).filter(visible).sort((a,b)=>{const z=Number(getComputedStyle(a).zIndex)-Number(getComputedStyle(b).zIndex);return z || (a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1);}).at(-1);
+  const top=()=>ids.map(id=>document.getElementById(id)).filter(el=>visible(el)&&!el.classList.contains('embedded-view')).sort((a,b)=>{const z=Number(getComputedStyle(a).zIndex)-Number(getComputedStyle(b).zIndex);return z || (a.compareDocumentPosition(b)&Node.DOCUMENT_POSITION_FOLLOWING?-1:1);}).at(-1);
   const items=el=>[...el.querySelectorAll('button:not(:disabled),input:not(:disabled),select:not(:disabled),summary,[tabindex="0"]')].filter(visible);
   const openers=new Map();
   const autoLabels=new WeakSet();
@@ -27,7 +27,7 @@ export function setupAccessibility() {
     }
   },true);
   const observer=new MutationObserver(records=>{
-    for(const r of records){if(r.type==='childList'){for(const node of r.addedNodes)labelButtons(node);labelButton(r.target.closest?.('button'));continue;}const el=r.target;if(!ids.includes(el.id))continue;
+    for(const r of records){if(r.type==='childList'){for(const node of r.addedNodes)labelButtons(node);labelButton(r.target.closest?.('button'));continue;}const el=r.target;if(!ids.includes(el.id)||el.classList.contains('embedded-view'))continue;
       if(!el.hidden){openers.set(el,document.activeElement);if(top()===el)items(el)[0]?.focus({preventScroll:true});}
       else {const opener=openers.get(el);if(visible(opener))opener.focus({preventScroll:true});openers.delete(el);}
     }
