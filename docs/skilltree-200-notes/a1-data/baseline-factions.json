@@ -1,0 +1,108 @@
+{
+  "mode": "factions",
+  "games": 50,
+  "seeds": [
+    1,
+    2
+  ],
+  "strategy": "smart",
+  "rulesPatch": {},
+  "rows": [
+    {
+      "name": "kingdom",
+      "games": 600,
+      "decided": 600,
+      "winRate": 0.47333333333333333,
+      "avgTurns": 84.90333333333334,
+      "cardsPerTurn": 1.171102812648975,
+      "attackSpellsPerTurn": 0.23708882885746066,
+      "maxAttackSpellsInTurn": 1,
+      "mpEndRatio": 0.02578062927061814,
+      "mpHighEndRate": 0,
+      "mpFullEndRate": 0,
+      "mpShortRate": 0.9843079612267599,
+      "comboRate": 0.09073573812172255,
+      "coinsGainedPerGame": 48.80166666666667,
+      "coinsSpentPerGame": 47.888333333333335,
+      "coinsByReasonPerGame": {
+        "turn": 42.32833333333333,
+        "upgrade": -47.888333333333335,
+        "weather": 6.473333333333334
+      },
+      "monsterKillsPerGame": 3.091666666666667,
+      "turnsPerGame": 41.95333333333333
+    },
+    {
+      "name": "forest",
+      "games": 600,
+      "decided": 600,
+      "winRate": 0.49,
+      "avgTurns": 69.03333333333333,
+      "cardsPerTurn": 1.262766217870257,
+      "attackSpellsPerTurn": 0.5897674418604651,
+      "maxAttackSpellsInTurn": 1,
+      "mpEndRatio": 0.030261933904528793,
+      "mpHighEndRate": 0.0011260709914320685,
+      "mpFullEndRate": 0,
+      "mpShortRate": 0.9491309669522644,
+      "comboRate": 0.22536107711138312,
+      "coinsGainedPerGame": 39.865,
+      "coinsSpentPerGame": 39.02166666666667,
+      "coinsByReasonPerGame": {
+        "turn": 34.41833333333334,
+        "weather": 5.446666666666666,
+        "upgrade": -39.02166666666667
+      },
+      "monsterKillsPerGame": 1.2133333333333334,
+      "turnsPerGame": 34.041666666666664
+    },
+    {
+      "name": "demon",
+      "games": 600,
+      "decided": 600,
+      "winRate": 0.5233333333333333,
+      "avgTurns": 73.74333333333334,
+      "cardsPerTurn": 1.3514688386565388,
+      "attackSpellsPerTurn": 0.5418687654433971,
+      "maxAttackSpellsInTurn": 1,
+      "mpEndRatio": 0.03166468381074402,
+      "mpHighEndRate": 0.0010066806991855038,
+      "mpFullEndRate": 0,
+      "mpShortRate": 0.8922394069735518,
+      "comboRate": 0.19515878100118972,
+      "coinsGainedPerGame": 42.64333333333333,
+      "coinsSpentPerGame": 41.69166666666667,
+      "coinsByReasonPerGame": {
+        "turn": 36.81333333333333,
+        "upgrade": -41.69166666666667,
+        "weather": 5.83
+      },
+      "monsterKillsPerGame": 2.21,
+      "turnsPerGame": 36.42333333333333
+    },
+    {
+      "name": "dragon",
+      "games": 600,
+      "decided": 600,
+      "winRate": 0.545,
+      "avgTurns": 73.55833333333334,
+      "cardsPerTurn": 1.270851483332569,
+      "attackSpellsPerTurn": 0.26562428355266177,
+      "maxAttackSpellsInTurn": 1,
+      "mpEndRatio": 0.030469072401302193,
+      "mpHighEndRate": 0.00009170525929662066,
+      "mpFullEndRate": 0,
+      "mpShortRate": 0.9843184006602779,
+      "comboRate": 0.11394378467605117,
+      "coinsGainedPerGame": 42.361666666666665,
+      "coinsSpentPerGame": 41.44833333333333,
+      "coinsByReasonPerGame": {
+        "turn": 36.735,
+        "upgrade": -41.44833333333333,
+        "weather": 5.626666666666667
+      },
+      "monsterKillsPerGame": 3.02,
+      "turnsPerGame": 36.348333333333336
+    }
+  ]
+}
