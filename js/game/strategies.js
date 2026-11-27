@@ -715,10 +715,58 @@ export const CPU_SKILL_SAFE_HP_RATIO = 0.5;
 const maxBy = (key) => (options) => options.reduce((best, o) => (key(o) > key(best) ? o : best), options[0]);
 const mpRoom = (me) => (me.maxMp ?? Infinity) - (me.mp ?? 0);
 
+/** 点数が最大の選択肢（最低点 min 以上のものだけ。なければ null＝このアクションは見送る）。同点は一覧の先頭（安定順） */
+const bestBy = (score, min = -Infinity) => (options, env) => {
+  let best = null;
+  let bestScore = -Infinity;
+  for (const o of options) {
+    const sc = score(o, env);
+    if (sc > bestScore) {
+      best = o;
+      bestScore = sc;
+    }
+  }
+  return bestScore >= min ? best : null;
+};
+
+/**
+ * 対象を選ぶための見取り図（毎回 getState から作る。乱数なし）。soldiers は盤面の兵士（自分・相手）の soldierId → 状態、
+ * laneEnemies(roadId) はそのレーンの相手の兵士、L はレーンの長さ（ctx.rules.laneLength。なければ 5）
+ */
+function skillEnv(game, pid) {
+  const state = game.getState(pid);
+  const me = state.players[pid];
+  const side = (id) => state.players[id].castleOwner ?? id;
+  const foes = Object.keys(state.players).filter((id) => side(id) !== side(pid));
+  const foeSoldiers = foes.flatMap((id) => state.players[id].soldiers.map((s) => ({ ...s, ownerId: id })));
+  const soldiers = new Map([...me.soldiers, ...foeSoldiers].map((s) => [s.soldierId, s]));
+  return {
+    state, me, foeSoldiers, soldiers,
+    L: curCtx?.rules?.laneLength ?? 5,
+    laneEnemies: (roadId) => foeSoldiers.filter((s) => s.roadId === roadId),
+    laneScore: (roadId) => foeSoldiers.filter((s) => s.roadId === roadId).length * 2 + (state.monsters.some((m) => m.roadId === roadId) ? 1 : 0),
+  };
+}
+const toughness = (s) => (s.hp ?? 0) + (s.shield ?? 0);
+/** カードの使いやすさ（高いほど欲しい）：MP で出せる兵士 3・出せる魔法など 2・今の MP で出せない／不明 0 */
+const cardWorth = (type, mp) => {
+  const d = curCards[type];
+  return !d || (d.mpCost ?? 0) > mp ? 0 : d.kind === 'soldier' ? 3 : 2;
+};
+/** 回収・蘇生で戻したいカードの強さ（兵士は体力＋攻撃×2。魔法などは MP コスト。兵士のほうを優先） */
+const cardPower = (type) => {
+  const d = curCards[type];
+  return !d ? 0 : d.kind === 'soldier' ? 10 + (d.hp ?? 0) + (d.attack ?? 0) * 2 : d.mpCost ?? 0;
+};
+const typeOfLabel = (o) => String(o.label ?? '').split('（')[0]; // G04・G06 の一覧は「種類（履歴ID）」
+const handType = (me, cardId) => me.hand.find((c) => c.cardId === cardId)?.type;
+/** レーンを移すときの点数の差（移した先 − 今のレーン。相手の兵士 1体＝2・魔物＝1。pickLane と同じ考え方） */
+const laneGain = (o, env) => env.laneScore(o.args.roadId) - env.laneScore(env.soldiers.get(o.args.soldierId)?.roadId);
+
 /**
  * CPU が使う任意アクション（actionId → { phase, when?, pick? }）。ここにないものは使わない（docs/skilltree-200-handoff.md の「CPU 未対応」）。
  *   phase "pre"：カードを出す前（ドロー・回収・MP回復）、"post"：出したあと（残った資源で召喚・シールド・追撃・移動）
- *   when(me, option)：資源の余裕の条件。pick(options)：対象・量の選び方（省略すると一覧の先頭＝安定順）
+ *   when(me, option)：資源の余裕の条件。pick(options, env)：対象・量の選び方（省略すると一覧の先頭＝安定順。null を返すとそのターンは見送る）
  */
 export const CPU_SKILL_ACTIONS = {
   // ---- 先に（手札・MP を増やす）----
@@ -726,29 +774,135 @@ export const CPU_SKILL_ACTIONS = {
   X04: { phase: 'pre' }, // 貯蔵MP2 → 1枚ドロー
   B06: { phase: 'pre', when: (me) => mpRoom(me) >= 1 }, // 血気3 → MP1
   P03: { phase: 'pre', when: (me) => mpRoom(me) >= 2 && (me.coins ?? 0) >= 2 }, // コイン1 → MP2（コインが2枚以上あるときだけ）
-  H03: { phase: 'pre' }, // 捨て札から1枚回収（試合中1回）
+  H03: { phase: 'pre', pick: bestBy((o) => cardPower(o.preview?.type)) }, // 捨て札から1枚回収（試合中1回）：強い兵士を優先
   H04: { phase: 'pre' }, // 山札の最初の兵士を引く（試合中1回）
   H05: { phase: 'pre' }, // 山札の最初の魔法を引く（試合中1回）
-  G04: { phase: 'pre' }, // 墓地の兵士カードを手札へ（試合中1回）
+  G04: { phase: 'pre', pick: bestBy((o) => cardPower(typeOfLabel(o))) }, // 墓地の兵士カードを手札へ（試合中1回）：強い兵士を優先
   T06: { phase: 'pre' }, // 次の自ターンに追加ドローを予約（試合中2回）
   I01: { phase: 'pre' }, // 相手の山札の先頭を見る（情報だけ）
   B02: { phase: 'pre', hp: true }, // 城HP3 → 1枚ドロー（城HPに余裕があるときだけ）
+  // 運命操作：今の MP で出せない手札を、山札の上3枚のうち出せるカード（出せる兵士が最良）と交換（得点差2以上のときだけ）
+  H08: {
+    phase: 'pre',
+    pick: bestBy((o, env) => {
+      const mp = env.me.mp ?? 0;
+      const mine = cardWorth(handType(env.me, o.args.handCardId), mp);
+      return mine > 0 ? -Infinity : cardWorth(o.preview?.reveal?.[o.args.index], mp);
+    }, 2),
+  },
+  // 再編成：手札が2枚以上で、今の MP より3以上重い魔法（兵士以外）があるとき、いちばん重いものを捨てて1枚引く
+  H07: {
+    phase: 'pre',
+    pick: (options, env) => {
+      if (env.me.hand.length < 2) return null;
+      return bestBy((o) => {
+        const d = curCards[o.preview?.type ?? handType(env.me, o.args.cardId)];
+        return d && d.kind !== 'soldier' && (d.mpCost ?? 0) >= (env.me.mp ?? 0) + 3 ? d.mpCost : -Infinity;
+      }, 0)(options, env);
+    },
+  },
   // ---- あとで（残った資源で）----
-  G06: { phase: 'post' }, // 魂3で蘇生
-  I08: { phase: 'post' }, // 敵兵士の弱体トークンを自陣に
+  // 送還：MP に空きがあるとき、体力が3分の1以下の（もうすぐ倒れる）トークンをMPに替える
+  V05: { phase: 'post', when: (me) => mpRoom(me) >= 1, pick: bestBy((o, env) => { const s = env.soldiers.get(o.args.soldierId); return s && s.hp * 3 <= s.maxHp ? -s.hp / s.maxHp : -Infinity; }, -1) },
+  // 生贄の儀式：城HPかMPが2以上回復できるとき、体力が3分の1以下で敵城に届かない兵士を生贄にする（死亡扱いにならない）
+  X29: {
+    phase: 'post',
+    pick: (options, env) => {
+      if (!(env.me.castleMaxHp - env.me.castleHp >= 2 || mpRoom(env.me) >= 2)) return null;
+      return bestBy((o) => { const s = env.soldiers.get(o.args.soldierId); return s && s.hp * 3 <= s.maxHp && s.position < env.L - 1 ? -s.hp / s.maxHp : -Infinity; }, -1)(options, env);
+    },
+  },
+  G06: { phase: 'post', pick: bestBy((o) => cardPower(typeOfLabel(o))) }, // 魂3で蘇生：強い兵士を優先
+  I08: { phase: 'post', pick: bestBy((o, env) => { const s = env.soldiers.get(o.args.targetId); return s ? s.attack * 2 + s.maxHp : 0; }) }, // 敵兵士の弱体トークンを自陣に：強い敵の写し
   V07: { phase: 'post' }, // MP3で使い魔
-  X43: { phase: 'post' }, // MP2で武器を持つ兵士の次の通常攻撃+3
+  // 魔力装填：武器を持つ兵士のうち、次の通常攻撃で敵兵士を倒せる（+3込み）・敵がいるレーンの前の兵士を優先
+  X43: {
+    phase: 'post',
+    pick: bestBy((o, env) => {
+      const s = env.soldiers.get(o.args.soldierId);
+      if (!s) return 0;
+      const foes = env.laneEnemies(s.roadId);
+      const kill = foes.some((f) => toughness(f) <= s.attack + 3 && toughness(f) > s.attack);
+      return (foes.length ? 5 : 0) + (kill ? 5 : 0) + s.position;
+    }),
+  },
   Q08: { phase: 'post' }, // SP10：攻撃力+3・シールド3
   Q06: { phase: 'post' }, // SP5：味方全員の攻撃力+1
   Q03: { phase: 'post' }, // SP3：シールド3
   Q05: { phase: 'post' }, // SP3：次の会心率+20pt
-  D07: { phase: 'post' }, // 味方1体の被ダメージ-2
-  T04: { phase: 'post' }, // 味方の持続ダメージを1回延期
-  S08: { phase: 'post', pick: maxBy((o) => (typeof o.preview === 'object' && o.preview ? o.preview.damage ?? o.preview.amount ?? 0 : 0)) }, // 疫病の即時精算
-  T08: { phase: 'post' }, // 前ターンの単体攻撃魔法を再発動（試合中1回）
-  B07: { phase: 'post', pick: maxBy((o) => o.args.amount ?? 0) }, // 血気で敵兵士に固定ダメージ
-  K04: { phase: 'post' }, // 隣のレーンへ移動＋シールド1
-  K08: { phase: 'post' }, // 味方1体を1マス進軍
+  // 守護の誓い：敵のいるレーンの、いちばん前の兵士（同じなら体力の少ない方）
+  D07: { phase: 'post', pick: bestBy((o, env) => { const s = env.soldiers.get(o.args.soldierId); return s ? (env.laneEnemies(s.roadId).length ? 10 : 0) + s.position - s.hp / 100 : 0; }) },
+  T04: { phase: 'post', pick: bestBy((o, env) => -(env.soldiers.get(o.args.soldierId)?.hp ?? 99)) }, // 持続ダメージの延期：体力がいちばん少ない兵士（倒れそうな順）
+  // 疫病の即時精算：倒せる敵（即時ダメージ ≥ 体力＋シールド）を優先、なければいちばん前の敵
+  S08: {
+    phase: 'post',
+    pick: bestBy((o, env) => {
+      const s = env.soldiers.get(o.args.soldierId);
+      const dmg = typeof o.preview === 'object' && o.preview ? o.preview.damage ?? o.preview.amount ?? 0 : 0;
+      return (s && dmg >= toughness(s) ? 100 : 0) + dmg + (s?.position ?? 0);
+    }),
+  },
+  // 時の残響：倒せる敵（威力 ≥ 体力＋シールド）のうちいちばん前、倒せなければいちばん前で攻撃力の高い敵
+  T08: {
+    phase: 'post',
+    pick: bestBy((o, env) => {
+      const s = env.soldiers.get(o.args.targetId);
+      if (!s) return 0;
+      const power = o.preview?.power ?? 0;
+      return (power >= toughness(s) ? 100 : 0) + s.position * 2 + s.attack / 10;
+    }),
+  },
+  // 血気の固定ダメージ：倒せる敵は、倒せるいちばん少ない量で（前の敵優先）。倒せないなら最大量でいちばん前の敵
+  B07: {
+    phase: 'post',
+    pick: bestBy((o, env) => {
+      const s = env.soldiers.get(o.args.soldierId);
+      const n = o.args.amount ?? 0;
+      if (!s) return 0;
+      return toughness(s) <= n ? 100 - n + s.position : n * 10 + s.position;
+    }),
+  },
+  // 交代：敵のいるレーンの前後の近接兵士で、後ろの方が攻撃力が高く体力も下がらないとき、強い方を前に（差が2以上）
+  K05: {
+    phase: 'post',
+    pick: bestBy((o, env) => {
+      const back = env.soldiers.get(o.args.backId);
+      const front = env.soldiers.get(o.args.frontId);
+      if (!back || !front || back.role !== 'melee' || front.role !== 'melee' || !env.laneEnemies(front.roadId).length) return -Infinity;
+      if (back.attack < front.attack || toughness(back) < toughness(front)) return -Infinity;
+      return (back.attack - front.attack) * 2 + (toughness(back) - toughness(front));
+    }, 2),
+  },
+  // 戦術転換：敵のいないレーンにいる近接兵士（体力が半分以上）を、敵のいるレーンへ（点数差2以上）
+  U06: {
+    phase: 'post',
+    pick: bestBy((o, env) => {
+      const s = env.soldiers.get(o.args.soldierId);
+      if (!s || s.role !== 'melee' || s.hp * 2 < s.maxHp || env.laneEnemies(s.roadId).length) return -Infinity;
+      return laneGain(o, env);
+    }, 2),
+  },
+  K04: { phase: 'post', pick: bestBy((o, env) => laneGain(o, env)) }, // 隣のレーンへ移動＋シールド1：敵のいるレーンへ
+  // 1マス進軍：敵のいないレーンで前にいる兵士を優先（敵がいるレーンは、倒せる相手がいるときだけ少し加点）
+  K08: {
+    phase: 'post',
+    pick: bestBy((o, env) => {
+      const s = env.soldiers.get(o.args.soldierId);
+      if (!s) return 0;
+      const foes = env.laneEnemies(s.roadId);
+      if (!foes.length) return s.position + 1 >= env.L - 1 ? 20 + s.attack : s.position;
+      return foes.some((f) => toughness(f) <= s.attack) ? s.position - 1 : -5 + s.position;
+    }),
+  },
+  // 先読み：次の通常ドローの先頭2枚のうち、2枚目のほうが出しやすい（次ターンの最大MPで）ときだけ入れ替える
+  X44: {
+    phase: 'post',
+    pick: (options, env) => {
+      const top = options[0]?.preview?.top ?? [];
+      const mp = env.me.maxMp ?? env.me.mp ?? 0;
+      return top.length >= 2 && cardWorth(top[1], mp) > cardWorth(top[0], mp) ? options.find((o) => o.args.swap === true) ?? null : null;
+    },
+  },
 };
 
 /** CPU が城HPを n 使ってよいか（債務がなく、払ったあとも最大HPの CPU_SKILL_SAFE_HP_RATIO 以上残る） */
@@ -762,8 +916,13 @@ function cpuHpOk(game, pid, n) {
 /**
  * スキルの任意アクションを使う（phase "pre" / "post"）。使った [{ actionId, args }] を返す。
  * 合法手は Game.listSkillActions、実行は Game.skillAction（原子的。失敗しても何も消費しない）
+ * ctx を渡すと、そのカード表・ルール（レーンの長さ）で対象を評価する（takeTurn の中では設定済み。単体で呼ぶテスト用）
  */
-export function takeSkillActions(game, pid, phase) {
+export function takeSkillActions(game, pid, phase, ctx = null) {
+  if (ctx) {
+    curCards = ctx.cards ?? curCards;
+    curCtx = ctx;
+  }
   const used = [];
   for (let guard = 0; guard < 40; guard++) {
     const st = game.getState(null);
@@ -778,7 +937,9 @@ export function takeSkillActions(game, pid, phase) {
       if (!a) continue;
       const options = a.options.filter((o) => (!rule.when || rule.when(me, o)) && (!(o.cost?.hp > 0) || (rule.hp && cpuHpOk(game, pid, o.cost.hp))));
       if (!options.length) continue;
-      chosen = { actionId, args: (rule.pick ?? ((os) => os[0]))(options).args };
+      const o = rule.pick ? rule.pick(options, skillEnv(game, pid)) : options[0];
+      if (!o) continue; // 対象を評価して「今は見送る」
+      chosen = { actionId, args: o.args };
       break;
     }
     if (!chosen) break;
