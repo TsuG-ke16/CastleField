@@ -176,7 +176,7 @@
 | X12 | 奇跡の詠唱 | X | handler | - | - |
 | X13 | 元素の賽 | X | handler | - | - |
 | X14 | 九死一生 | X | handler | - | - |
-| X15 | 運命の引き寄せ | X | handler | - | - |
+| X15 | 運命の引き寄せ | X | handler | X15pick | skip |
 | X16 | 黄金の祝福 | X | handler | - | - |
 | X17 | 致命傷 | X | core | - | - |
 | X18 | 時空の残響 | X | handler | - | - |

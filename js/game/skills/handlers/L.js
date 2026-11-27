@@ -43,7 +43,8 @@ export default {
         if (!ctx.fromHand || ctx.done) return;
         const first = ctx.value;
         const second = ctx.reroll();
-        const choice = ctx.options?.diceChoice ?? 'high';
+        // 手札1枚ごとの指定（skillOptions.diceChoice）→ 本人の設定（setSkillPrefs の L06.diceChoice）→ 大きい方
+        const choice = ctx.options?.diceChoice ?? api.pref('diceChoice', 'high');
         let value;
         if (choice === 'first') value = first;
         else if (choice === 'second') value = second;
