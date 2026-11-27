@@ -349,6 +349,8 @@ pub fn build_router(state: Arc<AppState>, repo_root: Option<PathBuf>) -> Router 
         .route("/api/ranked/summary", post(ranked::api_ranked_summary))
         .route("/api/ranked/leaderboard", get(ranked::api_ranked_leaderboard))
         .route("/api/ranked/claimIdle", post(ranked::api_ranked_claim_idle))
+        .route("/api/ranked/seasonRewards", post(ranked::api_ranked_season_rewards))
+        .route("/api/ranked/claimSeason", post(ranked::api_ranked_claim_season))
         .layer(CorsLayer::permissive())
         .with_state(state);
 
@@ -791,7 +793,7 @@ async fn handle_ws(mut socket: WebSocket, room_arc: Arc<Mutex<Room>>, seat_id: S
     }
 }
 
-fn load_profile(db: &Database, user_id: &str) -> EconomyProfile {
+pub(crate) fn load_profile(db: &Database, user_id: &str) -> EconomyProfile {
     let Ok(read_txn) = db.begin_read() else {
         return EconomyProfile { user_id: user_id.into(), ..Default::default() };
     };
@@ -806,7 +808,7 @@ fn load_profile(db: &Database, user_id: &str) -> EconomyProfile {
     EconomyProfile { user_id: user_id.into(), ..Default::default() }
 }
 
-fn save_profile(db: &Database, profile: &EconomyProfile) -> Result<(), String> {
+pub(crate) fn save_profile(db: &Database, profile: &EconomyProfile) -> Result<(), String> {
     let write_txn = db.begin_write().map_err(|e| e.to_string())?;
     {
         let mut table = write_txn.open_table(PROFILES_TABLE).map_err(|e| e.to_string())?;

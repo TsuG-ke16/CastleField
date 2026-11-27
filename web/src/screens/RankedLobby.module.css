@@ -171,3 +171,23 @@
     align-items: center;
   }
 }
+
+/* シーズン報酬 */
+.reward {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 3px solid;
+  border-radius: var(--cf-radius-md, 12px);
+  background: #fff6dc;
+  color: var(--cf-ink);
+  font-size: 13px;
+}
+
+.rewardMsg {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--cf-ink);
+}

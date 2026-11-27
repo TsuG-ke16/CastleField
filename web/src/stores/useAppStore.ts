@@ -192,6 +192,8 @@ interface AppStoreState {
   setRankedLobbyRequested: (open: boolean) => void;
   spendCoinsAndRollGacha: (count: 1 | 10) => GachaRecord[] | null;
   buyShopItem: (itemId: string, price: number, usePoints?: boolean) => boolean;
+  /** シーズン報酬などで受け取った品を所持品に入れる */
+  grantOwnedItems: (itemIds: string[]) => void;
   equipSkin: (kind: 'castle' | 'soldier' | 'back', skinId: string) => void;
   toggleSkillNode: (nodeId: string) => void;
   resetSkills: () => void;
@@ -436,6 +438,11 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       return results;
     },
 
+    grantOwnedItems: (itemIds) => {
+      const owned = get().ownedSkins;
+      const add = itemIds.filter((id) => !owned.includes(id));
+      if (add.length) savePatch({ ownedSkins: [...owned, ...add] });
+    },
     buyShopItem: (itemId, price, usePoints = false) => {
       const { coins, points, ownedSkins, data } = get();
       if (ownedSkins.includes(itemId)) return false;

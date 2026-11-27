@@ -223,3 +223,61 @@ async fn rank_rewards_and_unpriced_items_cannot_be_bought() {
         }
     }
 }
+
+#[tokio::test]
+async fn season_rewards_after_season_ends_once() {
+    let e = env("season");
+    let a = guest(&e, "Alice").await;
+    let b = guest(&e, "Bob").await;
+    let c = guest(&e, "Carol").await;
+    for _ in 0..5 {
+        let (_, (tb, _)) = match_two(&e, &a, &b).await;
+        post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    }
+    // Carol は1試合だけ（認定戦が終わっていない）
+    let (_, (tc, _)) = match_two(&e, &a, &c).await;
+    post(&e, "/api/action", &json!({ "token": tc, "method": "surrender", "args": [] })).await;
+
+    // シーズン中は、まだ受け取れない
+    let r = post(&e, "/api/ranked/seasonRewards", &a).await;
+    assert_eq!(r["rewards"].as_array().unwrap().len(), 0);
+    let mut claim_a = a.clone();
+    claim_a["season"] = json!(1);
+    let r = post(&e, "/api/ranked/claimSeason", &claim_a).await;
+    assert_eq!(r["ok"], false);
+
+    // 56日たってシーズン2
+    e.clock.fetch_add(56 * 86_400_000, Ordering::SeqCst);
+    let r = post(&e, "/api/ranked/seasonRewards", &a).await;
+    assert_eq!(r["season"], 2);
+    let s1 = &r["rewards"][0];
+    assert_eq!(s1["season"], 1);
+    assert_eq!(s1["eligible"], true, "{s1}");
+    assert_eq!(s1["claimed"], false);
+    let tier = s1["peak"]["tierId"].as_str().unwrap().to_string();
+    assert_eq!(s1["items"], json!([format!("frame_{tier}"), format!("back_rank_{tier}")]));
+
+    let r = post(&e, "/api/ranked/claimSeason", &claim_a).await;
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(r["items"].as_array().unwrap().len(), 2);
+    let r = post(&e, "/api/ranked/claimSeason", &claim_a).await;
+    assert_eq!(r["ok"], false, "2回目は受け取れない");
+    let prof = post(&e, "/api/economy/profile", &json!({ "userId": a["userId"], "secret": a["secret"] })).await;
+    assert!(prof["profile"]["ownedSkins"].as_array().unwrap().contains(&json!(format!("frame_{tier}"))));
+    let r = post(&e, "/api/ranked/seasonRewards", &a).await;
+    assert_eq!(r["rewards"][0]["claimed"], true);
+
+    // 認定戦が終わっていない人は受け取れない
+    let r = post(&e, "/api/ranked/seasonRewards", &c).await;
+    assert_eq!(r["rewards"][0]["eligible"], false);
+    let mut claim_c = c.clone();
+    claim_c["season"] = json!(1);
+    let r = post(&e, "/api/ranked/claimSeason", &claim_c).await;
+    assert_eq!(r["ok"], false);
+    assert!(r["reason"].as_str().unwrap().contains("5試合"));
+
+    // 新しいシーズンは認定戦をやり直す（ソフトリセット）
+    let s = post(&e, "/api/ranked/summary", &a).await;
+    assert_eq!(s["season"], 2);
+    assert_eq!(s["placementLeft"], 2);
+}

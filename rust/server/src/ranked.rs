@@ -36,19 +36,35 @@ pub struct RankedConfig {
     pub seasons: SeasonConfig,
     /// 相手が操作しないまま、この時間がたったら、待っている人は勝ちを申し出られる（ranks.json の ranked.idleTurnMs）
     pub idle_turn_ms: i64,
+    /// 階級 → シーズン報酬の品（seasons.json の rewards。アイコンフレーム・カード裏面）
+    pub rewards: HashMap<String, Vec<String>>,
+    /// 報酬をもらうのに要る、そのシーズンのランク戦の試合数（認定戦を含む）
+    pub min_matches_for_reward: u32,
 }
 
 pub fn load_ranked_config(data_dir: &std::path::Path) -> Result<RankedConfig, String> {
     let read = |f: &str| fs::read_to_string(data_dir.join(f)).map_err(|e| format!("{f}: {e}"));
     let ranks_v = parse_json(&read("ranks.json")?)?;
     let ranks = RankConfig::from_json(&ranks_v)?;
-    let seasons = SeasonConfig::from_json(&parse_json(&read("seasons.json")?)?)?;
+    let seasons_v = parse_json(&read("seasons.json")?)?;
+    let seasons = SeasonConfig::from_json(&seasons_v)?;
+    let mut rewards = HashMap::new();
+    if let Some(map) = seasons_v.get("rewards").and_then(|v| v.as_object()) {
+        for (tier, rw) in map {
+            let items: Vec<String> = ["iconFrame", "cardBack"]
+                .iter()
+                .filter_map(|k| rw.get(k).and_then(|v| v.as_str()).map(String::from))
+                .collect();
+            rewards.insert(tier.clone(), items);
+        }
+    }
+    let min_matches_for_reward = seasons_v.get("minMatchesForReward").and_then(|v| v.as_u32()).unwrap_or(5);
     let idle_turn_ms = ranks_v
         .get("ranked")
         .and_then(|r| r.get("idleTurnMs"))
         .and_then(|v| v.as_i64())
         .unwrap_or(180_000);
-    Ok(RankedConfig { ranks, seasons, idle_turn_ms })
+    Ok(RankedConfig { ranks, seasons, idle_turn_ms, rewards, min_matches_for_reward })
 }
 
 // ---------------------------------------------------------------------------
@@ -98,6 +114,9 @@ pub struct RankRecord {
     pub recent: Vec<(String, i64)>,
     /// 直近のランク戦の結果（結果画面用。MMR は入れない）
     pub last_change: Option<Value>,
+    /// シーズン報酬を受け取ったシーズン
+    #[serde(default)]
+    pub claimed_seasons: Vec<u32>,
 }
 
 fn read_json<T: for<'de> Deserialize<'de>>(db: &Database, table: TableDefinition<&str, &str>, key: &str) -> Option<T> {
@@ -638,4 +657,86 @@ pub async fn api_ranked_claim_idle(State(state): State<Arc<AppState>>, Json(req)
     crate::settle_ranked(&state, &mut room);
     room.push_sync();
     (StatusCode::OK, Json(json!({ "ok": r.ok, "state": state_to_value(&room.game.get_state(Some(&seat))) })))
+}
+
+// ---------------------------------------------------------------------------
+// シーズン報酬（終わったシーズンの最高到達ランクで、アイコンフレーム＋カード裏面を1組。コインはなし）
+// ---------------------------------------------------------------------------
+
+/// 終わったシーズンごとの報酬（新しい順）
+pub fn season_rewards(cfg: &RankedConfig, rec: &RankRecord, current_season: u32) -> Vec<Value> {
+    let mut list: Vec<&StoredEntry> = rec.seasons.iter().filter(|e| e.season < current_season).collect();
+    list.sort_by_key(|e| std::cmp::Reverse(e.season));
+    list.into_iter()
+        .map(|e| {
+            let eligible = e.placement_left == 0 && e.matches >= cfg.min_matches_for_reward;
+            let peak = cfg.ranks.display_rank(e.peak_rp, None);
+            let items: Vec<String> = if eligible { cfg.rewards.get(&peak.tier_id).cloned().unwrap_or_default() } else { Vec::new() };
+            json!({
+                "season": e.season,
+                "eligible": eligible && !items.is_empty(),
+                "claimed": rec.claimed_seasons.contains(&e.season),
+                "peak": if eligible { rank_value(&peak) } else { Value::Null },
+                "items": items,
+                "matches": e.matches,
+                "minMatches": cfg.min_matches_for_reward,
+            })
+        })
+        .collect()
+}
+
+pub async fn api_ranked_season_rewards(State(state): State<Arc<AppState>>, Json(req): Json<AuthReq>) -> impl IntoResponse {
+    state.requests_total.fetch_add(1, Ordering::Relaxed);
+    let acc = match auth(&state, &req) {
+        Ok(a) => a,
+        Err(e) => return e,
+    };
+    let rec = record_of(&state, &acc);
+    let (season, _, _) = state.ranked.seasons.season_at((state.clock)());
+    (StatusCode::OK, Json(json!({ "ok": true, "season": season, "rewards": season_rewards(&state.ranked, &rec, season) })))
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaimSeasonReq {
+    user_id: String,
+    secret: String,
+    season: u32,
+}
+
+/// シーズン報酬を受け取る（1シーズン1回）。品はサーバーの所持品に入れ、受け取った品の ID を返す
+pub async fn api_ranked_claim_season(State(state): State<Arc<AppState>>, Json(req): Json<ClaimSeasonReq>) -> impl IntoResponse {
+    state.requests_total.fetch_add(1, Ordering::Relaxed);
+    let acc = match authenticate(&state, &req.user_id, &req.secret) {
+        Ok(a) => a,
+        Err(e) => return e,
+    };
+    let (current, _, _) = state.ranked.seasons.season_at((state.clock)());
+    let db = state.db.lock().unwrap();
+    let mut rec: RankRecord = read_json(&db, RANKED_TABLE, &acc.user_id).unwrap_or_default();
+    rec.user_id = acc.user_id.clone();
+    rec.name = acc.name.clone();
+    let list = season_rewards(&state.ranked, &rec, current);
+    let Some(r) = list.iter().find(|r| r["season"] == req.season) else {
+        return (StatusCode::OK, Json(json!({ "ok": false, "reason": "そのシーズンの報酬はありません（終わったシーズンだけ受け取れます）" })));
+    };
+    if r["claimed"] == true {
+        return (StatusCode::OK, Json(json!({ "ok": false, "reason": "もう受け取っています" })));
+    }
+    if r["eligible"] != true {
+        let min = state.ranked.min_matches_for_reward;
+        return (StatusCode::OK, Json(json!({ "ok": false, "reason": format!("報酬には、認定戦を終えて{min}試合以上のランク戦が必要です") })));
+    }
+    let items: Vec<String> = serde_json::from_value(r["items"].clone()).unwrap_or_default();
+    let mut prof = crate::load_profile(&db, &acc.user_id);
+    for it in &items {
+        if !prof.owned_skins.contains(it) {
+            prof.owned_skins.push(it.clone());
+        }
+    }
+    rec.claimed_seasons.push(req.season);
+    if let Err(e) = crate::save_profile(&db, &prof).and_then(|_| write_json(&db, RANKED_TABLE, &rec.user_id, &rec)) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "ok": false, "reason": e })));
+    }
+    (StatusCode::OK, Json(json!({ "ok": true, "season": req.season, "items": items, "peak": r["peak"].clone() })))
 }
