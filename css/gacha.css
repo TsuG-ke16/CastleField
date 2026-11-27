@@ -1,0 +1,99 @@
+/* Royal gacha: compositor-only 3D, scoped away from battle UI. */
+#collection.is-gacha .collection-box { position:relative; width:min(100%,640px); height:min(94dvh,860px); overflow:hidden; background:#fff6df; }
+#collection.is-gacha .collection-body { overscroll-behavior:contain; }
+.royal-gacha-hero { position:relative; display:flex; flex-direction:column; align-items:center; min-height:310px; overflow:hidden; border:2px solid #906025; border-radius:16px; background:linear-gradient(#174974aa,#15394bdc),url('../assets/bg/home-gacha.png') center/cover; color:#fff5d6; text-align:center; box-shadow:inset 0 0 35px #071d39; }
+.royal-gacha-hero h3 { font-size:26px; margin:5px 0; letter-spacing:.12em; text-shadow:0 3px #382819; }
+.royal-gacha-hero p { font-size:14px; z-index:1; margin:0 0 12px; }
+.royal-gacha-crest { position:absolute; width:100px; height:100px; object-fit:contain; opacity:.18; right:8px; top:5px; }
+.royal-eyebrow { font:12px Georgia,serif; letter-spacing:.3em; color:#edcf8a; margin-top:19px; }
+#collection .gacha-head { margin-top:12px; }
+#collection .gacha-head small { font-size:13px; line-height:1.6; }
+#collection .gacha-pull { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+#collection .gacha-pull button { min-height:58px; }
+#collection .gacha-rates summary { min-height:44px; display:flex; align-items:center; cursor:pointer; }
+.royal-chest-camera { position:relative; flex-shrink:0; width:280px; height:200px; perspective:850px; }
+.royal-chest { position:absolute; left:40px; top:62px; width:200px; height:108px; transform-style:preserve-3d; transform:rotateX(-17deg) rotateY(-24deg); transition:transform .65s ease; }
+.chest-body,.chest-lid { position:absolute; width:200px; height:108px; transform-style:preserve-3d; }
+.royal-chest i { position:absolute; display:block; border:5px solid #d5a548; box-shadow:inset 0 0 0 2px #68441c,inset 0 0 14px #35251e88; background:repeating-linear-gradient(0deg,#264e6a 0 23px,#19394e 24px 26px); backface-visibility:hidden; }
+.royal-chest i:after { content:''; position:absolute; inset:7px; border:2px solid #c49642; border-radius:5px; }
+.chest-front { width:200px; height:108px; transform:translateZ(65px); }
+.chest-back { width:200px; height:108px; transform:rotateY(180deg) translateZ(65px); }
+.chest-left { width:130px; height:108px; transform:translateX(-65px) rotateY(-90deg); }
+.chest-right { width:130px; height:108px; transform:translateX(135px) rotateY(90deg); }
+.chest-floor { width:200px; height:130px; transform:translateY(43px) rotateX(-90deg); }
+.chest-crest { position:absolute; left:74px; top:21px; z-index:1; display:grid; place-items:center; width:44px; height:58px; background:linear-gradient(110deg,#fff0a2,#c58a29); color:#5b391b; border:3px solid #6c451e; border-radius:8px 8px 18px 18px; font-size:30px; font-style:normal; box-shadow:0 3px 0 #30241e; }
+.chest-lid { height:32px; top:-32px; transform-origin:50% 32px -65px; transition:transform .65s cubic-bezier(.2,.7,.3,1); }
+.royal-chest .lid-top { width:200px; height:130px; transform:translateY(-65px) rotateX(90deg); background:linear-gradient(90deg,#dab256 0 12%,#275775 12% 43%,#e2bd64 43% 57%,#275775 57% 88%,#dab256 88%); }
+.lid-top span { display:grid; height:100%; place-items:center; font-size:54px; color:#ffe4a0; }
+.lid-front { width:200px; height:32px; transform:translateZ(65px); }
+.lid-back { width:200px; height:32px; transform:rotateY(180deg) translateZ(65px); }
+.lid-left { width:130px; height:32px; transform:translateX(-65px) rotateY(-90deg); }
+.lid-right { width:130px; height:32px; transform:translateX(135px) rotateY(90deg); }
+.royal-reveal { --glow:#a3d8ef; position:absolute; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 16px max(18px,env(safe-area-inset-bottom)); background:radial-gradient(ellipse at 50% 43%,#2d5970,#112c49 65%,#0c2038); border:3px solid #cea557; border-radius:14px; color:#fff1ce; overflow:auto; overscroll-behavior:contain; }
+.royal-reveal[data-rarity=uncommon] { --glow:#8be9ad; }
+.royal-reveal[data-rarity=rare] { --glow:#63cdff; }
+.royal-reveal[data-rarity=epic] { --glow:#cf92ff; }
+.royal-reveal[data-rarity=legendary] { --glow:#ffcf62; background:radial-gradient(ellipse at 50% 43%,#775625,#142a43 70%); }
+.royal-reveal[data-rarity=special] { --glow:#ffb5ed; background:conic-gradient(from 30deg at 50% 45%,#24335f,#654572,#235b73,#24335f); }
+.royal-reveal-title { margin:5px 0; font-size:24px; text-align:center; color:#ffe6a5; }
+.royal-skip { align-self:flex-end; min-height:44px; padding:6px 16px; font-size:14px; }
+.royal-stage { position:relative; display:grid; place-items:center; width:100%; min-height:280px; flex:1; perspective:1000px; isolation:isolate; }
+.royal-stage .royal-chest-camera { z-index:2; }
+.royal-halo { position:absolute; width:240px; height:240px; border:1px solid var(--glow); border-radius:50%; background:radial-gradient(circle,color-mix(in srgb,var(--glow) 40%,transparent),transparent 68%); box-shadow:0 0 45px color-mix(in srgb,var(--glow) 30%,transparent),inset 0 0 30px color-mix(in srgb,var(--glow) 25%,transparent); animation:royal-pulse 1.8s ease-in-out infinite alternate; }
+.royal-halo:after { content:'✦'; position:absolute; inset:14px; border:1px dashed var(--glow); border-radius:50%; color:var(--glow); font-size:26px; text-align:center; }
+.royal-particles { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+.royal-particles i { --a:calc(var(--n) * 22.5deg); position:absolute; left:50%; top:50%; width:4px; height:4px; border-radius:50%; background:var(--glow); box-shadow:0 0 8px var(--glow); animation:royal-gather 1.6s calc(var(--n) * -0.1s) linear infinite; }
+.royal-reveal[data-phase=open] .royal-chest { transform:scale(1.18) rotateX(-17deg) rotateY(-15deg); }
+.royal-reveal[data-phase=open] .chest-lid { transform:rotateX(-110deg); }
+.royal-reveal[data-phase=card] .royal-chest-camera,.royal-reveal[data-phase=inspect] .royal-chest-camera { display:none; }
+.royal-card-slot { display:none; position:relative; z-index:3; width:210px; height:300px; perspective:900px; }
+.royal-reveal[data-phase=card] .royal-card-slot,.royal-reveal[data-phase=inspect] .royal-card-slot { display:block; }
+.royal-card { position:relative; width:100%; height:100%; transform-style:preserve-3d; touch-action:none; transition:transform .18s ease-out; }
+.royal-reveal[data-phase=card] .royal-card { animation:royal-card-rise .7s both; }
+.royal-card-front,.royal-card-back { position:absolute; inset:0; border:5px solid #d2a854; border-radius:16px; backface-visibility:hidden; box-shadow:0 12px 30px #0007,inset 0 0 0 2px #6b481f; overflow:hidden; }
+.royal-card-front { display:flex; flex-direction:column; align-items:center; padding:16px 10px; background:radial-gradient(ellipse at 50% 35%,#fff9dd,#e9d19a); color:#4d321d; transform:translateZ(2px); }
+.royal-card-front:after { content:''; position:absolute; inset:6px; border:1px solid #b18a45; border-radius:7px; pointer-events:none; }
+.royal-card-crest { width:36px; height:36px; object-fit:contain; opacity:.7; margin-bottom:6px; }
+.royal-card-front .item-preview { width:150px!important; height:145px!important; flex-shrink:0; background:none; border:0; }
+.royal-card-front .item-preview img { width:100%; height:100%; object-fit:contain; }
+.royal-card-name { margin:8px 0; font-size:18px; text-align:center; overflow-wrap:anywhere; }
+.royal-card-back { transform:rotateY(180deg) translateZ(2px); background:#1b4265; }
+.royal-card-back img { width:100%; height:100%; object-fit:fill; }
+.royal-rarity { font-size:13px; letter-spacing:.04em; }
+.royal-new,.royal-duplicate { display:block; font-size:12px; font-weight:900; border-radius:4px; padding:3px 7px; background:#d78128; color:white; }
+.royal-duplicate { background:#325477; }
+.royal-card .royal-new,.royal-card .royal-duplicate { position:absolute; top:12px; left:10px; z-index:2; }
+.royal-hint { font-size:14px; line-height:1.6; text-align:center; margin:0; }
+.royal-controls { display:flex; flex-wrap:wrap; gap:8px; justify-content:center; width:100%; }
+.royal-controls button { min-height:44px; font-size:14px; }
+.royal-rotation { width:100%; height:36px; accent-color:#f2cd72; }
+.royal-results { display:grid; grid-template-columns:repeat(auto-fit,minmax(100px,1fr)); gap:10px; width:100%; margin:auto 0; }
+#collection .royal-result { display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:6px; min-width:0; height:auto; min-height:155px; padding:8px 4px; border:2px solid #b59862; border-radius:9px; background:#fff4d8; color:#4a321f; box-shadow:0 3px 0 #060f1f; white-space:normal; text-shadow:none; }
+#collection .royal-result .item-preview { width:64px; height:64px; background:none; border:0; }
+#collection .royal-result .item-preview img { width:100%; height:100%; object-fit:contain; }
+.royal-result strong { font-size:13px; overflow-wrap:anywhere; }
+#collection .royal-result.r-epic { border-color:#ca92ed; }
+#collection .royal-result.r-legendary { border-color:#ffd05e; box-shadow:0 0 12px #f6c95088; }
+#collection .royal-result.r-special { border-color:#e7a8f3; background:linear-gradient(140deg,#fff4d8,#d4f4ff,#f6d5ef); }
+.royal-results:has(> :only-child) { grid-template-columns:minmax(130px,200px); justify-content:center; }
+.royal-reveal:has(.royal-results > :only-child) .royal-result .item-preview { width:115px!important; height:115px!important; }
+@keyframes royal-pulse { to { transform:scale(1.12); opacity:.5; } }
+@keyframes royal-gather { from { transform:rotate(var(--a)) translateX(160px) scale(.5); opacity:0; } 30% { opacity:1; } to { transform:rotate(var(--a)) translateX(30px); opacity:0; } }
+@keyframes royal-card-rise { from { opacity:0; transform:translateY(90px) rotateY(160deg) scale(.6); } to { opacity:1; transform:translateY(0) rotateY(0); } }
+@media(max-width:520px) {
+ .royal-results { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+ #collection .royal-result { min-height:145px; }
+ .royal-reveal { padding:12px; gap:10px; }
+ .royal-gacha-hero { min-height:290px; }
+}
+@media(max-height:650px) { .royal-stage { min-height:220px; } .royal-card-slot { width:175px; height:250px; } .royal-card-front .item-preview { width:110px!important; height:100px!important; } .royal-reveal-title { font-size:20px; } }
+@media(prefers-reduced-motion:reduce) { .royal-reveal *, .royal-chest, .chest-lid { animation:none!important; transition:none!important; } }
+:root[data-fx=lite] .royal-particles { display:none; }
+
+#collection .collection-box:has(.royal-reveal) > :not(.royal-reveal) { visibility:hidden; }
+.royal-reveal[data-rarity=legendary] .royal-halo:before,.royal-reveal[data-rarity=special] .royal-halo:before { content:'✧   ✦   ✧'; position:absolute; inset:-32px; border:2px double var(--glow); border-radius:50%; text-align:center; color:var(--glow); font-size:22px; }
+.chest-crest:after { content:''; position:absolute; width:12px; height:12px; bottom:5px; background:linear-gradient(135deg,#c0f5ff,#288cca 50%,#154b81); transform:rotate(45deg); border:1px solid #ffe7a1; }
+.royal-reveal.fx-lite .royal-particles { display:none; }
+.royal-results { flex:1; min-height:0; overflow-y:auto; align-content:start; margin:0; padding:4px; }
+.royal-results:has(> :only-child) { align-content:center; }
+.royal-reveal-title,.royal-hint,.royal-controls,.royal-skip { flex-shrink:0; }

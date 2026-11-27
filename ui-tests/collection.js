@@ -32,6 +32,7 @@ try {
   page.on('pageerror', (e) => errors.push(e.message));
   page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); });
   const startUrl=new URL(base);if(process.env.UI_TEST_FIELD3D)startUrl.searchParams.set('field3d',process.env.UI_TEST_FIELD3D);
+  if(process.env.UI_TEST_FX)startUrl.searchParams.set('fx',process.env.UI_TEST_FX);
   await page.goto(startUrl.href);
   await page.locator('#home:not([hidden]):not(.home-local)').waitFor({ timeout: 8000 });
   const id = await page.evaluate(async () => (await (await fetch('/api/me', { credentials: 'same-origin' })).json()).user.id);
@@ -66,18 +67,18 @@ try {
   await page.click('#collection .social-tab[data-tab=gacha]');
   await page.locator('#collection .gacha-pull').waitFor();
   await page.locator('#collection .gacha-pull [data-count="1"]').click();
-  await page.locator('#collection .gacha-open').click();
-  await page.locator('#collection .gacha-reveal .gacha-card').first().waitFor();
-  assert.equal(await page.locator('#collection .gacha-reveal .gacha-card').count(), 1);
-  await page.click('#collection .gacha-reveal .gacha-close');
+  await page.locator('.royal-skip').click();
+  assert.equal(await page.locator('.royal-result').count(), 1);
+  await page.locator('.royal-result').click();
+  await page.getByRole('button', { name: '裏返す', exact: true }).click();
+  assert.equal(await page.locator('.royal-rotation').inputValue(), '180');
+  await page.keyboard.press('Escape');
+  await page.getByRole('button', { name: '結果を閉じる', exact: true }).click();
   await page.locator('#collection .gacha-pull [data-count="10"]').click();
-  await page.locator('#collection .gacha-open').click();
-  await page.locator('#collection .gacha-reveal .gacha-card').nth(9).waitFor();
-  await page.click('#collection .gacha-reveal'); // タップで全部見る
-  await page.waitForTimeout(400);
+  await page.locator('.royal-skip').click();
+  assert.equal(await page.locator('.royal-result').count(), 10);
   await page.screenshot({ path: resolve(artifacts, 'gacha-result.png') });
-  assert.equal(await page.locator('#collection .gacha-reveal .gacha-card').count(), 10);
-  await page.click('#collection .gacha-reveal .gacha-close');
+  await page.getByRole('button', { name: '結果を閉じる', exact: true }).click();
   assert.equal(Number(await page.locator('#collection [data-part=wallet] b').first().textContent()), 900); // 2500 - 600（買い物）- 1000（ガチャ）
   assert.deepEqual(errors, []);
   // 装備したスキンが、ひとりで遊ぶ盤面に出る（自分の城だけ。CPU の城は標準）

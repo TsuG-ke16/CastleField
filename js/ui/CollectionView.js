@@ -3,8 +3,9 @@
 import { account } from './Account.js';
 import { itemPreview } from './Cosmetics.js';
 import { skinArt } from './skinArt.js';
+import { GachaPresentation, treasureChest } from './GachaPresentation.js';
 
-const RARITY_NAME = { common: 'コモン', uncommon: 'アンコモン', rare: 'レア', epic: 'エピック', legendary: 'レジェンド' };
+const RARITY_NAME = { common: 'コモン', uncommon: 'アンコモン', rare: 'レア', epic: 'エピック', legendary: 'レジェンド', special: 'スペシャル' };
 const SLOT_ORDER = ['unit', 'castle', 'charSkin', 'spellSkin', 'cardBack', 'attackFx', 'winFx', 'icon', 'iconFrame', 'title'];
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
@@ -29,7 +30,7 @@ export class CollectionView {
     document.getElementById('app').append(box);
     this.part = (n) => box.querySelector(`[data-part="${n}"]`);
     box.querySelector('.collection-close').addEventListener('click', () => this.close());
-    box.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const r = this.part('body').querySelector('.gacha-reveal'); if (r) r.remove(); else this.close(); } });
+    box.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (!this.pulling) this.close(); } });
     box.addEventListener('click', (e) => this.onClick(e));
   }
 
@@ -45,7 +46,7 @@ export class CollectionView {
     const btn = this.box.querySelector(`[data-act=pull][data-count="${count}"]`);
     if (btn && !btn.disabled) btn.click();
   }
-  close() { this.box.hidden = true; }
+  close() { if (this.pulling) return; this.presentation?.close(); this.box.hidden = true; }
   say(t, bad = false) { const m = this.part('msg'); m.textContent = t; m.classList.toggle('bad', bad); }
 
   async call(method, path, body) {
@@ -63,6 +64,7 @@ export class CollectionView {
   }
 
   render() {
+    this.box.classList.toggle('is-gacha', this.tab === 'gacha');
     const titles = { shop: 'ショップ', gacha: 'ガチャ', collection: 'スキン・所持品' };
     this.box.querySelector('h2').textContent = titles[this.tab];
     const w = this.part('wallet'); w.replaceChildren();
@@ -124,6 +126,10 @@ export class CollectionView {
 
   renderGacha(body) {
     const g = this.gacha;
+    const hero = el('div', 'royal-gacha-hero');
+    const crest = new Image(); crest.src = 'assets/ui/kingdom-crest.png'; crest.alt = ''; crest.className = 'royal-gacha-crest';
+    hero.append(crest, el('span', 'royal-eyebrow', 'ROYAL TREASURY'), el('h3', null, '王家の宝物庫'), treasureChest(), el('p', null, '宝箱を開き、あなただけの装いを。'));
+    body.append(hero);
     const head = el('div', 'gacha-head');
     head.append(el('strong', null, g.banner.name), el('small', null, `天井：エピック以上が出ないまま ${g.pity.epicAt} 回で確定（いま ${g.pity.sinceEpic} 回）　10連はレア以上が1つ確定`));
     body.append(head);
@@ -145,7 +151,7 @@ export class CollectionView {
     const rates = el('details', 'gacha-rates'); rates.open = false;
     rates.append(el('summary', null, '排出率・景品の一覧'));
     const table = el('div', 'gacha-rate-list');
-    for (const r of ['legendary', 'epic', 'rare', 'uncommon', 'common']) {
+    for (const r of ['special', 'legendary', 'epic', 'rare', 'uncommon', 'common']) {
       if (g.rates[r] == null) continue;
       const sec = el('div', 'gacha-rate-row'); sec.append(this.rarityBadge(r), el('b', null, `${g.rates[r]}%`));
       table.append(sec);
@@ -180,6 +186,7 @@ export class CollectionView {
   }
 
   async onClick(e) {
+    if (e.target.closest('.royal-reveal') || this.pulling || this.presentation) return;
     const tab = e.target.closest('.social-tab[data-tab]');
     if (tab) { this.tab = tab.dataset.tab; this.say(''); this.render(); return; }
     const slot = e.target.closest('.collection-slot');
@@ -199,8 +206,18 @@ export class CollectionView {
       const r = await this.call('POST', '/api/gacha/exchange', { itemId: id });
       if (r) { this.toast(`${r.item.name} と交換しました`, 'info'); await this.reload(); }
     } else if (act === 'pull') {
-      const r = await this.call('POST', '/api/gacha/pull', { count: Number(btn.dataset.count) });
-      if (r) { this.reveal(r.results); await this.reload(false); }
+      this.pulling = true;
+      const controls = [...this.box.querySelectorAll('button')];
+      const previous = controls.map(b => b.disabled);
+      controls.forEach(b => { b.disabled = true; });
+      this.say('宝箱を準備しています…');
+      try {
+        const r = await this.call('POST', '/api/gacha/pull', { count: Number(btn.dataset.count) });
+        if (r) { this.say(''); this.reveal(r.results); await this.reload(false); }
+      } finally {
+        this.pulling = false;
+        controls.forEach((b, i) => { b.disabled = previous[i]; });
+      }
     }
     btn.disabled = false;
   }
@@ -209,46 +226,18 @@ export class CollectionView {
     const [shop, gacha] = await Promise.all([this.call('GET', '/api/shop'), this.call('GET', '/api/gacha/info')]);
     if (shop && gacha) { this.shop = shop; this.gacha = gacha; this.onBalance(shop); if (rerender) this.render(); else this.refreshHeader(); }
   }
-  refreshHeader() { const keep = this.part('body').querySelector('.gacha-reveal'); this.render(); if (keep) this.part('body').prepend(keep); }
+  refreshHeader() { this.render(); }
 
-  /** 結果の演出。レアリティが高いほど派手に。タップで飛ばせる */
+  /** Results are already granted by the server. Skipping never calls the API again. */
   reveal(results) {
-    const wrap = el('div', 'gacha-reveal');
-    wrap.setAttribute('role', 'dialog'); wrap.setAttribute('aria-label', 'ガチャの結果');
-    const grid = el('div', 'gacha-reveal-grid');
-    const best = results.reduce((m, r) => Math.max(m, ['common', 'uncommon', 'rare', 'epic', 'legendary'].indexOf(r.rarity)), 0);
-    wrap.dataset.best = String(best);
-    results.forEach((r, i) => {
-      const c = el('div', `gacha-card r-${r.rarity}${r.duplicate ? ' dup' : ''}`);
-      c.style.setProperty('--i', String(i));
-      c.append(itemPreview(r.item), this.rarityBadge(r.rarity), el('strong', null, r.item.name), el('small', null, r.duplicate ? `重複 → +${r.pointsGained} ポイント` : 'NEW'));
-      grid.append(c);
+    this.presentation?.close();
+    this.presentation = new GachaPresentation({
+      host: this.box.querySelector('.collection-box'), results,
+      reducedMotion: this.reducedMotion(),
+      onClose: () => {
+        this.presentation = null;
+        this.box.querySelector('[data-act="pull"]:not(:disabled)')?.focus({ preventScroll: true });
+      },
     });
-    grid.hidden = true;
-    const capsule = new Image(104, 104);
-    capsule.className = 'gacha-capsule';
-    capsule.src = 'assets/ui/home/gacha.png';
-    capsule.alt = '';
-    const launch = el('button', 'plank-btn gacha-open', '景品を開く');
-    launch.type = 'button';
-    const hint = el('small', 'gacha-hint', 'タップで全部見る');
-    hint.hidden = true;
-    const skip = el('button', 'plank-btn gacha-close', 'とじる');
-    skip.hidden = true;
-    launch.addEventListener('click', (event) => {
-      event.stopPropagation();
-      launch.hidden = true;
-      capsule.hidden = true;
-      grid.hidden = false;
-      hint.hidden = false;
-      skip.hidden = false;
-      if (this.reducedMotion() || matchMedia('(prefers-reduced-motion: reduce)').matches) wrap.classList.add('all');
-      skip.focus({ preventScroll: true });
-    }, { once: true }); skip.type = 'button';
-    skip.addEventListener('click', (e) => { e.stopPropagation(); wrap.remove(); });
-    wrap.addEventListener('click', () => wrap.classList.add('all'));
-    wrap.append(capsule, launch, grid, hint, skip);
-    this.part('body').prepend(wrap);
-    launch.focus({ preventScroll: true });
   }
 }
