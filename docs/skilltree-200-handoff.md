@@ -3,7 +3,7 @@
 仕様：docs/skilltree-200-spec.md ／ 進捗：docs/skilltree-200-progress.md ／ 担当別メモ：docs/skilltree-200-notes/*.md ／ ハンドラ有無の自動表：docs/skilltree-200-coverage.md
 
 - 対象 branch：`skillD2`（worktree /tmp/skill200-wt7）。土台は `skill200` の HEAD `d486eb0`（段階A〜C 統合済み）。この文書は段階D2 のコミットに含まれる（最終 commit は `git log skillD2` で確認）
-- **UI（ツリー画面・戦闘中のスキルボタン・血魔術の実費プレビュー・E04/X25/X35/X15 の選択UI）は別担当（D1）**。この文書の作成時点で UI は**未確認**。`js/ui/precache.js` には js/game/skills/ のファイルが入っていない（オフライン用一覧の更新は D1／統合時に `node js/ui/build-precache.js`）
+- **UI（ツリー画面・戦闘中のスキルボタン・血魔術の実費プレビュー・E04/X25 の選択UI）は別担当（D1）**。X15・L06・X35 の選択UI は feature/skill-choice-ui（`docs/skilltree-200-notes/skill-choice-ui.md`）。この文書の作成時点で UI は**未確認**。`js/ui/precache.js` には js/game/skills/ のファイルが入っていない（オフライン用一覧の更新は D1／統合時に `node js/ui/build-precache.js`）
 - 勝率・バランスは**一切測っていない**。下の「実行した最小テスト」以外の検証はしていない
 
 ## 1. 変更ファイル（24ノード版の上 38287fc からの差分）
@@ -109,8 +109,8 @@ trigger・roll（p と成否）・crit（p・倍率・前後の量）・damage /
 - 手札の選択 `cpuSkillOptions`：`hpForMp`（MP で払えれば 0＝置換しない／足りなければ城HPに余裕があるときだけ不足分）、`bloodBlade`・`bloodEcho`（城HPに余裕があるとき true）、`diceChoice: 'high'`（L06）。`deferHp` は渡さない（本人設定に従う）。HP置換が要るのに余裕がないカードは「出せる」に数えない
 - H01：`mulliganChoice` が H01 を持つときだけ「今のMPで撃てない重い非兵士カード」を重い順に最大2枚戻す。兵士が1枚もなければ従来どおり全部
 - E04 / X25：ビルドの config（プリセットの config か、データの初期値）。CPU の探索はしない
-- X15：本人設定 `pick`（"cost"＝MPコストの大きい方・既定／"first"／"second"）。CPU は既定
-- **X35 の自動延期は既定 OFF**（`params.autoDefer: false`）。理由：延期すると債務が残る間は以後の任意HP支払（B01 置換・B03・X27・B02）がすべてできなくなり、CPU・人間とも意図せず手が止まるため安全側にした。切り替えは `game.setSkillPrefs(pid, { X35: { autoDefer: true } })`（人間・CPU 共通、相手には見えない）、手札1枚ごとは `playCard(id, target, { deferHp: true/false })`。UI の切り替えは D1 の担当
+- X15：本人設定 `pick`（"cost"＝MPコストの大きい方・既定／"first"／"second"／"ask"＝毎回選ぶ）。"ask" は2枚を本人だけの選択待ち（getState の `skillState.choice`）にし、任意アクション `X15pick { index }` で選ぶ。選ばずにほかの公開メソッドを呼ぶと "cost" で自動決定。CPU は既定
+- **X35 の自動延期は既定 OFF**（`params.autoDefer: false`）。理由：延期すると債務が残る間は以後の任意HP支払（B01 置換・B03・X27・B02）がすべてできなくなり、CPU・人間とも意図せず手が止まるため安全側にした。切り替えは `game.setSkillPrefs(pid, { X35: { autoDefer: true } })`（人間・CPU 共通、相手には見えない）、手札1枚ごとは `playCard(id, target, { deferHp: true/false })`。UI：対戦中のスキルパネル「スキルの設定」の ON/OFF（説明つき・端末に保存して次の試合でも送る）と、HPを払う選択があるカードのダイアログの「延期する」（skill-choice-ui.md）
 - 未対応の戦術：任意アクションの対象の評価（どの兵士を守る・動かすか）は先頭を選ぶだけ。K04/K08 の移動・T08 の対象・B07 の対象は改善の余地あり。勝率は測っていない
 
 ## 7. ノード別の状況（docs/skilltree-200-notes/*.md の集約）
@@ -122,7 +122,7 @@ trigger・roll（p と成否）・crit（p・倍率・前後の量）・damage /
 | C 会心 | C01/C02/C03/C05 基盤。C04（出血はスキル専用の最小定義）・C06・C07・C08 実装 |
 | M 魔法 | M01〜M06・M08 実装。**M07 実データ休眠**（クラシックの魔法はメイン枠で1ターン1枚なので2枚目が出ない） |
 | E 属性 | E01/E04/E06 static。E02（持続のみ。既存付着に「消費回数」がない）・E03・E05・E07・E08 実装 |
-| L 幸運 | L01/L02/L03/L08 基盤。L04・L05・L07 実装。**L06 実データ休眠**（クラシックにサイコロカードがない。選択は skillOptions.diceChoice、既定は大きい方。2つの出目を見てから選ぶ2段階UIは未対応） |
+| L 幸運 | L01/L02/L03/L08 基盤。L04・L05・L07 実装。**L06 実データ休眠**（クラシックにサイコロカードがない。選択は skillOptions.diceChoice、既定は大きい方。2つの出目を見てから選ぶ2段階は不可（Game が1操作を同期で解決するため。skill-choice-ui.md）。事前指定は本人設定 `setSkillPrefs(pid, { L06: { diceChoice } })` とカードごとのダイアログ） |
 | P 魔力 | P01/P07 static。P02〜P06・P08 実装 |
 | H 手札 | H01（既存マリガンで戻す枚数1〜2のとき先に引く）・H02〜H08 実装 |
 | U 兵士 | U01/U04 static。U02・U03・U05・U06・U07・U08 実装 |
@@ -145,7 +145,7 @@ trigger・roll（p と成否）・crit（p・倍率・前後の量）・damage /
 ## 8. 段階D2 の判断メモ
 - **D08 と A01/X39（敵スキルの固定ダメージ）**：以前は source kind "skill" が「敵由来」に入っておらず、A01・X39・D02 反射の固定ダメージの致死を X14・D08 が防げなかった。仕様の「敵由来の致死ダメージ」に当たると判断し、**致死防止（castleLethal）だけ**対象に加えた（`ctx.enemyOrigin`）。軽減（D04・D06・X38 の castleReduce）は直接攻撃が対象なので通さない。HP支払・自傷・強制終了は従来どおり対象外
 - **X48 の counters**：SP20以上の加算が乗った判定で会心が出たときだけ1回数える（確定会心は確率補正を使わないので数えない）
-- **X15/L06 の選択**：L06 は playCard の skillOptions.diceChoice で受けられる（確認済み）。X15 は通常ドロー（カード使用ではない）なので skillOptions ではなく本人設定 `setSkillPrefs(pid, { X15: { pick } })`
+- **X15/L06 の選択**：L06 は playCard の skillOptions.diceChoice で受けられる（確認済み）。X15 は通常ドロー（カード使用ではない）なので skillOptions ではなく本人設定 `setSkillPrefs(pid, { X15: { pick } })`。その後 skill-choice-ui で X15 の "ask"（選択待ち＋X15pick）と L06 の本人設定を追加
 - **費用の見積もり**：`game.previewSkillCost(cardId, skillOptions)`（乱数なし）を追加。画面の実費プレビューと CPU が同じものを使える
 
 ## 9. 実行した最小テストと結果（段階D2 の時点）
@@ -168,7 +168,7 @@ trigger・roll（p と成否）・crit（p・倍率・前後の量）・damage /
 - 勝率は複数シード・先後入替・複数CPU戦略・未使用シードで再検証すること。CPU が未対応の任意アクション（H07・H08・U06・K05・V05・X29・X44）を含むビルドや、休眠・実データ休眠のノードを「弱い」と断定しないこと
 
 ## 11. 既知の制限
-- **オンライン対戦（対応済み・feature/online-skills）**：任意スキル・カード使用前の選択・支払いの見積もり・発動ログ（本人の分だけ）・スキルの設定（setSkillPrefs）がサーバー経由で使える。未対応：設定（X35 の自動延期・X15 の選び方）を切り替える画面はない（API だけ）。相手の発動ログは送らない。相手の `skillState` の `resources`・`debt` は getState の決まりどおり公開のまま（貯蔵MPなどを隠すなら getState 側の変更が要る）。くわしくは `docs/skilltree-200-notes/online-skills.md`
+- **オンライン対戦（対応済み・feature/online-skills）**：任意スキル・カード使用前の選択・支払いの見積もり・発動ログ（本人の分だけ）・スキルの設定（setSkillPrefs）がサーバー経由で使える。設定（X35 の自動延期・X15 の選び方・L06 の出目）の切り替え画面と X15 の選択ダイアログは feature/skill-choice-ui で追加（`docs/skilltree-200-notes/skill-choice-ui.md`）。相手の発動ログは送らない。相手の `skillState` の `resources`・`debt` は getState の決まりどおり公開のまま（貯蔵MPなどを隠すなら getState 側の変更が要る）。くわしくは `docs/skilltree-200-notes/online-skills.md`
 - 休眠9ノード・実データ休眠（M07・L06・R07・X21・X37）・対応づけ（F01/F03/F04/F07/A02/A03/X25/X43・T05・T07・I06）は上の表のとおり
 - 進軍中の死亡などに対する効果は、公開メソッドの終わり（進軍のあと）に解決される（基盤の決まり）
 - 盤面に枠の上限がないので「空き枠」は「自分の城の前（マス0）に自分の兵士がいない道」
