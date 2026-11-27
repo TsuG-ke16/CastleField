@@ -773,7 +773,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 | URL | 送る JSON | 返る JSON |
 |---|---|---|
 | `POST /api/join` | `{ passphrase, name }` … 合言葉（1〜32文字）と表示名（1〜16文字） | `{ ok: true, roomId, playerId, token }` か `{ ok: false, reason }`。`token` はその人だけの鍵（以後ずっと使う） |
-| `POST /api/action` | `{ token, method, args }` … `method` は試合の操作 `playCard` / `discard` / `endTurn` / `buyUpgrade` / `fuse` / `defend` / `passDefense` と、部屋の操作 `start` / `setRules` / `setSeat` / `addCpu` / `removeCpu` / `backToRoom` / `rematch` / `surrender` / `leave` のどれか（部屋の操作は自分の番でなくても送れる。`defend`・`passDefense` は攻撃を受ける人だけが送れる。部屋の操作の中身は下の「部屋（ロビー）」）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
+| `POST /api/action` | `{ token, method, args }` … `method` は試合の操作 `playCard` / `discard` / `endTurn` / `buyUpgrade` / `fuse` / `defend` / `passDefense`（クラシックのスキルの `skillAction` / `listSkillActions` / `previewSkillCost` / `setSkillPrefs` は「クラシックのスキルツリー」）と、部屋の操作 `start` / `setRules` / `setSeat` / `addCpu` / `removeCpu` / `backToRoom` / `rematch` / `surrender` / `leave` のどれか（部屋の操作は自分の番でなくても送れる。`defend`・`passDefense` は攻撃を受ける人だけが送れる。部屋の操作の中身は下の「部屋（ロビー）」）。`args` は Game のメソッドに渡す引数の配列（例：`["c07", { "playerId": "p2" }]`） | Game のメソッドの返り値（`{ ok }` / `{ ok: false, reason }`）。自分の番でない人の操作は `{ ok: false, reason: "あなたの番ではありません" }` |
 
 - `rematch`：人が全員送ったら（CPU は送らない）、同じ部屋・同じ席・同じ設定で新しい試合が始まる（負けた人もすぐ「もう1回」できるように）
 
@@ -1575,6 +1575,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **効く効果は単純な初期値系の10ノードだけ**（`STATIC_HANDLERS`：P01・P07・D01・D05・U01・U04・R01・E01・E04・E06）。ほかは「新ハンドラ未実装」（段階B/C）。旧キーの Game 側の処理は休眠として残した
 - **CPU**：`chooseSkillBuild(tree, rng, style)` → `{ ids, config }`（none / random / プリセット（仕様 第10章の4ビルド）/ 戦い方の名前 / `"C01+C02"`）。部屋の `setSeat({ skills })` も同じ検証
 - 通常モード・4陣営は `skillTree` を渡さないので、スキルの処理も乱数も使わない（シミュレーションの出力は変更前と一致）
+- **オンライン対戦（対応済み）**：`POST /api/action` の `method` に `skillAction`（`args: [actionId, args]`。自分の席・自分の番だけ。メイン行動中か・回数・支払いは Game が確かめる。返事は `{ ok }` / `{ ok: false, reason }` だけ）・`listSkillActions`（自分の席の一覧。いつでも。`{ ok, actions }`）・`previewSkillCost`（`args: [cardId, skillOptions]`。自分の番・自分の手札だけ。`{ ok: true, preview: { ok, reason, mp, hp } | null }`。状態は送り直さない）・`setSkillPrefs`（`args: [{ X35: { autoDefer: true } }]`。自分の席だけ。いつでも）。`playCard` の第3引数 `skillOptions` は、知っているキー（`hpForMp`・`bloodBlade`・`bloodEcho`・`deferHp`・`diceChoice`）と値の形だけを通す（ほかは `{ ok: false }`）。任意スキルの `args` は JSON の値だけ・深さ3・値64個・文字列64字・配列16個まで、`__proto__` などのキーは拒否。状態は今までどおり `getState(席)`（相手の `skillState` は公開部分だけ）。発動ログは `{ type: "skillLog", entries }` で**本人の発動（trigger・diagnostic）だけ**を本人に送る（表示に使うキーだけ。相手の発動は送らない）。つなぎ直すと状態（回数・資源）と、最近40件のログ（`replace: true`）が届く。画面は `js/ui/OnlineClient.js` の `skillAction` / `previewCardCost`（Promise）/ `setSkillPrefs` と、`SkillBattleView` の `receiveLog`。くわしくは `docs/skilltree-200-notes/online-skills.md`
 
 ## クラシック：王国の「守りを貫く手段」（案A 聖壁の号砲。人間の指示。数値は仮）
 

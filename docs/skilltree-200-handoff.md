@@ -17,7 +17,7 @@
 | 効果ハンドラ | `js/game/skills/handlers/{C,M,E,L,P,H,U,G,R,D,A,T,S,K,F,Q,V,I,B,X,X_c1..X_c5}.js`、登録表 `handlers/index.js` |
 | QA 公開API（D2） | `js/game/skills/qa.js` |
 | CPU（A・D2） | `js/game/strategies.js`（ビルド選択 `chooseSkillBuild`・任意アクション `takeSkillActions`・手札の選択 `cpuSkillOptions`） |
-| サーバー | `server/rooms.js`（席のビルド） |
+| サーバー | `server/rooms.js`（席のビルド。**オンラインのスキル操作**：skillAction・listSkillActions・previewSkillCost・setSkillPrefs・playCard の skillOptions の検証・発動ログの配信。`docs/skilltree-200-notes/online-skills.md`） |
 | ツール（D2） | `tools/skilltree-coverage.mjs`（カバレッジ表の生成・`--check`） |
 | テスト | `tests/classic-skilltree*.test.js`、`tests/classic-skills-{core,C1,c2,c3,c4,blood,d2}.test.js`、`tests/sim/{skills,run}.js` |
 | 文書 | `docs/classic-skilltree.md`、`docs/skilltree-200-*.md`、CLAUDE.md の該当節 |
@@ -168,6 +168,7 @@ trigger・roll（p と成否）・crit（p・倍率・前後の量）・damage /
 - 勝率は複数シード・先後入替・複数CPU戦略・未使用シードで再検証すること。CPU が未対応の任意アクション（H07・H08・U06・K05・V05・X29・X44）を含むビルドや、休眠・実データ休眠のノードを「弱い」と断定しないこと
 
 ## 11. 既知の制限
+- **オンライン対戦（対応済み・feature/online-skills）**：任意スキル・カード使用前の選択・支払いの見積もり・発動ログ（本人の分だけ）・スキルの設定（setSkillPrefs）がサーバー経由で使える。未対応：設定（X35 の自動延期・X15 の選び方）を切り替える画面はない（API だけ）。相手の発動ログは送らない。相手の `skillState` の `resources`・`debt` は getState の決まりどおり公開のまま（貯蔵MPなどを隠すなら getState 側の変更が要る）。くわしくは `docs/skilltree-200-notes/online-skills.md`
 - 休眠9ノード・実データ休眠（M07・L06・R07・X21・X37）・対応づけ（F01/F03/F04/F07/A02/A03/X25/X43・T05・T07・I06）は上の表のとおり
 - 進軍中の死亡などに対する効果は、公開メソッドの終わり（進軍のあと）に解決される（基盤の決まり）
 - 盤面に枠の上限がないので「空き枠」は「自分の城の前（マス0）に自分の兵士がいない道」
