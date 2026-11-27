@@ -312,7 +312,7 @@ export function skillLogText(tree, entry, viewerId) {
   if (!entry || entry.playerId !== viewerId) return null;
   const name = (id) => treeIndex(tree).byId.get(id)?.name ?? id;
   if (entry.kind === 'trigger' && entry.skillId) return `${name(entry.skillId)}（${entry.skillId}）が発動${entry.count > 1 ? `・${entry.count}回目` : ''}`;
-  if (entry.kind === 'diagnostic') return `スキルの上限に達しました（${entry.type ?? entry.reason ?? ''}）`;
+  if (entry.kind === 'diagnostic') return `スキルの上限に達しました（${entry.type ?? entry.reason ?? entry.code ?? ''}）`;
   return null;
 }
 

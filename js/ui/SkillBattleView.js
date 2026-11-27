@@ -3,6 +3,8 @@
 //   任意スキルのメニュー（Game.listSkillActions の結果だけを使う：対象・コスト・プレビュー・キャンセル・実行）、発動ログ
 // - カード使用前のダイアログ：playCard の第3引数 skillOptions（B01/B08 の HP置換・B03・X27・L06）。費用の見積もりは
 //   セッションの previewCardCost（Game の費用計画をそのまま使う。画面で計算しない）
+// 同じ端末（LocalSession：Game を直接）とオンライン（OnlineClient：サーバー経由）は、セッションのメソッドの呼び方が同じ。
+// 違いは、オンラインの見積もりが Promise で返ることと、発動ログがサーバーから届くこと（receiveLog）だけ
 // 相手については getState の公開部分（skills・skillState の公開キー）だけを出す。ルールは Game 側だけにある。
 
 import { treeIndex } from '../game/SkillTree.js';
@@ -84,13 +86,21 @@ export class SkillBattleView {
   }
 
   /** 発動ログの1件（game.observeSkills から）。自分のもの以外は skillLogText が null を返す */
-  addLog(entry) {
-    const text = skillLogText(this.tree, entry, this.viewerId);
+  addLog(entry, viewerId = this.viewerId) {
+    const text = skillLogText(this.tree, entry, viewerId);
     if (!text) return;
     this.log.push({ turn: entry.turn, text });
     if (this.log.length > LOG_MAX) this.log.shift();
     if (this.panel.hidden) this.unread += 1;
     this.renderBadge();
+  }
+
+  /** オンライン：サーバーから届いた発動ログ（自分の分だけ）。replace はつなぎ直したときの送り直し */
+  receiveLog(msg, viewerId) {
+    if (msg.replace) { this.log = []; this.unread = 0; }
+    for (const entry of msg.entries ?? []) this.addLog(entry, viewerId);
+    if (msg.replace) { this.unread = 0; this.renderBadge(); }
+    if (!this.panel.hidden) this.render();
   }
 
   /** 状態の更新（settle のたび） */
@@ -154,7 +164,7 @@ export class SkillBattleView {
       <div class="sb-head"><h2>スキル</h2><button type="button" class="sb-close" data-close="1" aria-label="閉じる">×</button></div>
       <h3>あなた</h3>${section(this.viewerId, true)}
       ${actionsHtml}
-      ${this.session?.online ? '' : `<details${this.log.length ? ' open' : ''}><summary>発動ログ（${this.log.length}）</summary><ul class="sb-log">${this.log.slice().reverse().map((l) => `<li>${l.turn ? `${l.turn}手目：` : ''}${esc(l.text)}</li>`).join('') || '<li>まだありません</li>'}</ul></details>`}
+      ${`<details${this.log.length ? ' open' : ''}><summary>発動ログ（${this.log.length}）</summary><ul class="sb-log">${this.log.slice().reverse().map((l) => `<li>${l.turn ? `${l.turn}手目：` : ''}${esc(l.text)}</li>`).join('') || '<li>まだありません</li>'}</ul></details>`}
       ${foes.map((id) => `<h3>${esc(playerName(id))}</h3>${section(id, false)}`).join('')}`;
     this.highlight();
   }
@@ -239,21 +249,51 @@ export class SkillBattleView {
       dlg.setAttribute('aria-modal', 'true');
       dlg.setAttribute('aria-label', `${def?.name ?? 'カード'}のスキル選択`);
       const answers = Object.fromEntries(questions.map((q) => [q.key, q.default ?? (q.type === 'range' ? q.min : undefined)]));
-      const draw = () => {
+      // 見積もり：同じ端末ならすぐ、オンラインならサーバーに聞く（Promise）。古い答えは捨てる
+      let pvSeq = 0;
+      let pvTimer = null;
+      let done = false;
+      const pvHtml = (pv, opts) => {
+        if (pv === 'pending') return '<p class="sb-note">実際の支払いを確かめています…</p>';
+        if (!pv) return '<p class="sb-note">実際の支払いの見積もりはありません。</p>';
+        return pv.ok ? `<p class="sb-preview">実際の支払い：MP ${pv.mp}${pv.hp ? `・城HP ${pv.hp}` : ''}${opts.bloodBlade ? '（血の刃は命中時に城HP2）' : ''}${opts.bloodEcho ? '（血のやまびこは命中後に城HP2）' : ''}</p>` : `<p class="sb-preview bad">${esc(pv.reason)}</p>`;
+      };
+      const showPreview = (pv, opts) => {
+        const box = dlg.querySelector('.sb-pv');
+        if (box) box.innerHTML = pvHtml(pv, opts);
+        const ok = dlg.querySelector('[data-ok]');
+        if (pv && pv !== 'pending' && !pv.ok) ok?.setAttribute('aria-disabled', 'true');
+        else ok?.removeAttribute('aria-disabled');
+      };
+      const refreshPreview = () => {
         const opts = answersToOptions(questions, answers);
-        const pv = session.previewCardCost ? session.previewCardCost(cardId, opts) : null;
-        const pvHtml = pv ? (pv.ok ? `<p class="sb-preview">実際の支払い：MP ${pv.mp}${pv.hp ? `・城HP ${pv.hp}` : ''}${opts.bloodBlade ? '（血の刃は命中時に城HP2）' : ''}${opts.bloodEcho ? '（血のやまびこは命中後に城HP2）' : ''}</p>` : `<p class="sb-preview bad">${esc(pv.reason)}</p>`)
-          : '<p class="sb-note">オンラインでは、実際の支払いはサーバーで決まります。</p>';
+        const seq = ++pvSeq;
+        clearTimeout(pvTimer);
+        if (!session.previewCardCost) return showPreview(null, opts);
+        if (session.online) {
+          // つまみを動かしているあいだに何度も送らないよう、少し待ってから聞く
+          showPreview('pending', opts);
+          pvTimer = setTimeout(async () => {
+            let pv = null;
+            try { pv = await session.previewCardCost(cardId, opts); } catch { pv = null; }
+            if (!done && seq === pvSeq) showPreview(pv, opts);
+          }, 150);
+          return;
+        }
+        showPreview(session.previewCardCost(cardId, opts), opts);
+      };
+      const draw = () => {
         dlg.innerHTML = `<div class="sb-head"><h2>「${esc(def?.name ?? type)}」を使う</h2></div>
           ${questions.map((q) => {
             if (q.type === 'range') return `<div class="sb-q"><label for="sbq-${q.key}">${esc(q.label)}：<b>${answers[q.key]}</b></label><input id="sbq-${q.key}" type="range" min="${q.min}" max="${q.max}" step="1" value="${answers[q.key]}" data-q="${q.key}"></div>`;
             if (q.type === 'toggle') return `<div class="sb-q"><label><input type="checkbox" data-q="${q.key}"${answers[q.key] ? ' checked' : ''}>${esc(q.label)}</label></div>`;
             return `<div class="sb-q"><label>${esc(q.label)}<select data-q="${q.key}">${q.choices.map(([v, l]) => `<option value="${v}"${answers[q.key] === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>`;
           }).join('')}
-          ${pvHtml}
-          <div class="sb-confirm"><button type="button" class="plank-btn" data-ok="1"${pv && !pv.ok ? ' aria-disabled="true"' : ''}>使う</button><button type="button" class="small-btn" data-no="1">キャンセル</button></div>`;
+          <div class="sb-pv"></div>
+          <div class="sb-confirm"><button type="button" class="plank-btn" data-ok="1">使う</button><button type="button" class="small-btn" data-no="1">キャンセル</button></div>`;
+        refreshPreview();
       };
-      const finish = (v) => { dlg.remove(); resolve(v); };
+      const finish = (v) => { done = true; clearTimeout(pvTimer); dlg.remove(); resolve(v); };
       dlg.addEventListener('input', (e) => {
         const k = e.target.dataset?.q;
         if (!k) return;
