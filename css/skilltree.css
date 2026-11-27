@@ -148,3 +148,12 @@ html.skilltree-open, html.skilltree-open body { overflow:hidden; }
 .sb-q { display:grid; gap:4px; margin:8px 0; } .sb-q input[type="range"] { width:100%; min-height:32px; }
 .sb-q label { display:flex; gap:8px; align-items:center; min-height:40px; } .sb-q input[type="checkbox"] { width:22px; height:22px; }
 .sb-q select { min-height:40px; font:inherit; }
+
+/* スキルの選択UI（js/ui/skillChoiceDialogs.js）：設定の行・X15 の2枚から選ぶダイアログ */
+.sb-prefs { display:grid; gap:4px; }
+.sb-pref { border-top:1px dashed #d9c48a; padding-top:6px; }
+.sb-pref .sb-note { margin:0; }
+.sb-choice { z-index:960; }
+.sb-choice p { margin:6px 0; }
+.sb-cards .sb-option b { display:block; }
+.sb-cards .sb-option small { display:block; color:inherit; opacity:.85; }

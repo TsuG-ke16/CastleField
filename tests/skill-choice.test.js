@@ -126,3 +126,18 @@ test('画面：設定の行（取ったノードだけ・今の値）と、X35 �
   const dice = cardSkillQuestions(['L06'], { kind: 'spell', effect: 'dice' }, { prefs: { L06: { diceChoice: 'low' } } });
   assert.equal(dice[0].default, 'low');
 });
+
+test('画面：端末に覚えた設定は、取ったノード・選べる値の分だけ送る', async () => {
+  const { savedPrefsFor, loadSavedPrefs, savePrefs, prefFromInput } = await import('../js/ui/skillChoiceDialogs.js');
+  const mem = new Map();
+  const storage = { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, v) };
+  savePrefs(storage, { X35: { autoDefer: true } });
+  savePrefs(storage, { X15: { pick: 'ask' } });
+  assert.deepEqual(loadSavedPrefs(storage), { X35: { autoDefer: true }, X15: { pick: 'ask' } });
+  assert.deepEqual(savedPrefsFor(['X35'], loadSavedPrefs(storage)), { X35: { autoDefer: true } });
+  assert.deepEqual(savedPrefsFor(['X15', 'X35'], { X15: { pick: 'zzz' }, X35: { autoDefer: 'yes' }, B01: { a: 1 } }), {});
+  mem.set('cf-skill-prefs', '{壊れ');
+  assert.deepEqual(loadSavedPrefs(storage), {});
+  assert.deepEqual(prefFromInput({ dataset: { pref: 'X35', key: 'autoDefer' }, type: 'checkbox', checked: false }), { X35: { autoDefer: false } });
+  assert.equal(prefFromInput({ dataset: {} }), null);
+});
