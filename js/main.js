@@ -993,6 +993,7 @@ async function joinOnline() {
     },
     onConnection: (ok, info) => { if (session === client) onConnection(ok, info); },
     onChat: (m) => { if (session === client) onChat(m); },
+    onSkillLog: (m) => { if (session === client) skillBattle?.receiveLog(m, client.playerId); },
   });
   session = client;
   batches = [];
@@ -1048,6 +1049,7 @@ function resumeOnline() {
     },
     onConnection: (ok, info) => { if (session === client) onConnection(ok, info, { resuming: true }); },
     onChat: (m) => { if (session === client) onChat(m); },
+    onSkillLog: (m) => { if (session === client) skillBattle?.receiveLog(m, client.playerId); },
   });
   session = client;
   batches = [];

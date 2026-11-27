@@ -64,8 +64,8 @@
 | H04 | 軍備調達 | H | handler | H04 | use |
 | H05 | 魔導書 | H | handler | H05 | use |
 | H06 | 加速思考 | H | handler | - | - |
-| H07 | 再編成 | H | handler | H07 | skip |
-| H08 | 運命操作 | H | handler | H08 | skip |
+| H07 | 再編成 | H | handler | H07 | use |
+| H08 | 運命操作 | H | handler | H08 | use |
 | I01 | 盗み見 | I | handler | I01 | use |
 | I02 | 魔法模倣 | I | handler | - | - |
 | I03 | 戦術の模倣 | I | handler | - | - |
@@ -78,7 +78,7 @@
 | V02 | 使い魔 | V | handler | - | - |
 | V03 | 召喚の盾 | V | handler | - | - |
 | V04 | 群れの力 | V | handler | - | - |
-| V05 | 送還 | V | handler | V05 | skip |
+| V05 | 送還 | V | handler | V05 | use |
 | V06 | 契約更新 | V | handler | - | - |
 | V07 | 召喚の門 | V | handler | V07 | use |
 | V08 | 軍勢の創造 | V | handler | - | - |
@@ -127,14 +127,14 @@
 | U03 | 先制部隊 | U | handler | - | - |
 | U04 | 長弓 | U | static | - | - |
 | U05 | 戦術支援 | U | handler | - | - |
-| U06 | 戦術転換 | U | handler | U06 | skip |
+| U06 | 戦術転換 | U | handler | U06 | use |
 | U07 | 進軍の旗 | U | handler | - | - |
 | U08 | 軍団指揮 | U | handler | - | - |
 | K01 | 挟撃 | K | **dormant** | - | - |
 | K02 | 横隊 | K | handler | - | - |
 | K03 | 縦隊 | K | handler | - | - |
 | K04 | 迂回 | K | handler | K04 | use |
-| K05 | 交代 | K | handler | K05 | skip |
+| K05 | 交代 | K | handler | K05 | use |
 | K06 | 待ち伏せ | K | handler | - | - |
 | K07 | 追い風 | K | handler | - | - |
 | K08 | 電撃作戦 | K | handler | K08 | use |
@@ -176,7 +176,7 @@
 | X12 | 奇跡の詠唱 | X | handler | - | - |
 | X13 | 元素の賽 | X | handler | - | - |
 | X14 | 九死一生 | X | handler | - | - |
-| X15 | 運命の引き寄せ | X | handler | - | - |
+| X15 | 運命の引き寄せ | X | handler | X15pick | skip |
 | X16 | 黄金の祝福 | X | handler | - | - |
 | X17 | 致命傷 | X | core | - | - |
 | X18 | 時空の残響 | X | handler | - | - |
@@ -190,7 +190,7 @@
 | X26 | 鮮血の一撃 | X | handler | - | - |
 | X27 | 血のやまびこ | X | handler | - | - |
 | X28 | 生命機関 | X | handler | - | - |
-| X29 | 生贄の儀式 | X | handler | X29 | skip |
+| X29 | 生贄の儀式 | X | handler | X29 | use |
 | X30 | 血液感染 | X | handler | - | - |
 | X31 | 血の眷属 | X | handler | - | - |
 | X32 | 悪魔の賭け | X | handler | - | - |
@@ -205,7 +205,7 @@
 | X41 | 機動射撃 | X | handler | - | - |
 | X42 | 伏兵配置 | X | **dormant** | - | - |
 | X43 | 魔力装填 | X | handler | X43 | use |
-| X44 | 先読み | X | handler | X44 | skip |
+| X44 | 先読み | X | handler | X44 | use |
 | X45 | 元素病 | X | handler | - | - |
 | X46 | 魂の器 | X | handler | - | - |
 | X47 | 知識の複製 | X | handler | - | - |

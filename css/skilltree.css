@@ -101,3 +101,12 @@ html.skilltree-open,html.skilltree-open body{overflow:hidden}
  .st-legend{max-width:220px}.st-legend summary{font-size:11px}
  .skilltree:has(.st-detail:not([hidden])){grid-template-columns:minmax(0,1fr) 280px}
 }
+
+/* スキルの選択UI（js/ui/skillChoiceDialogs.js）：設定の行・X15 の2枚から選ぶダイアログ */
+.sb-prefs { display:grid; gap:4px; }
+.sb-pref { border-top:1px dashed #d9c48a; padding-top:6px; }
+.sb-pref .sb-note { margin:0; }
+.sb-choice { z-index:960; }
+.sb-choice p { margin:6px 0; }
+.sb-cards .sb-option b { display:block; }
+.sb-cards .sb-option small { display:block; color:inherit; opacity:.85; }

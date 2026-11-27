@@ -60,6 +60,11 @@ export class LocalSession {
     return this.game.skillAction(playerId, actionId, args);
   }
 
+  /** スキルの設定（X35 の自動延期など。Game.setSkillPrefs） */
+  async setSkillPrefs(playerId, prefs) {
+    return this.game.setSkillPrefs(playerId, prefs);
+  }
+
   /**
    * 手札のカードの実際の支払い（MP・城HP）の見積もり。Game の費用計画（スキルの MP軽減→HP置換）を乱数なしで呼ぶだけ。
    * スキルのないゲームでは null。{ ok, mp, hp, reason }

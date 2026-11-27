@@ -31,11 +31,14 @@ const LOG_MAX = 5000;
 /**
  * 段階D2：プレイ中に本人が切り替えられる仮ルールの選択（人間・CPU 共通。既定は params の値）。
  * X35.autoDefer：任意HP支払の自動延期（既定 false＝延期しない。params.autoDefer）。playCard の skillOptions.deferHp で1枚ごとに上書きできる
- * X15.pick：先頭2枚からの選び方（"cost"＝MPコストの大きい方・同じなら先頭／"first"／"second"。既定 params.pick）
+ * X15.pick：先頭2枚からの選び方（"cost"＝MPコストの大きい方・同じなら先頭／"first"／"second"／"ask"＝毎回本人が選ぶ。既定 params.pick）。
+ *   "ask" は2枚を保留（state.choice）にして、任意アクション X15pick で選ぶ。選ぶ前にほかの公開メソッドを呼ぶと "cost" で自動決定
+ * L06.diceChoice：手札のサイコロの2つの出目からの選び方（"high"／"low"／"first"／"second"）。playCard の skillOptions.diceChoice が優先
  */
 export const SKILL_PREFS = {
   X35: { autoDefer: (v) => typeof v === 'boolean' },
-  X15: { pick: (v) => ['cost', 'first', 'second'].includes(v) },
+  X15: { pick: (v) => ['cost', 'first', 'second', 'ask'].includes(v) },
+  L06: { diceChoice: (v) => ['high', 'low', 'first', 'second'].includes(v) },
 };
 
 class PlayerSkillState {
@@ -72,6 +75,8 @@ class PlayerSkillState {
     this.counts = {};
     /** 段階D2：仮ルールの選択（SKILL_PREFS。本人だけに見せる） */
     this.prefs = {};
+    /** 本人の選択待ち（X15 の "ask"）：{ skillId, kind, cards }。なければ null。本人だけに見せる */
+    this.choice = null;
   }
 }
 
@@ -137,6 +142,8 @@ export class SkillRuntime {
     for (const m of SETTLE_METHODS) {
       const orig = game[m].bind(game);
       game[m] = (...args) => {
+        // 選択待ち（X15 の "ask"）を残したまま別の操作をしたら、先に既定の選び方で決める（山札の先頭が宙に浮かないように）
+        if (!(m === 'skillAction' && this.isChoiceAction(args[0], args[1]))) this.resolveChoices();
         const r = orig(...args);
         this.settle();
         return r;
@@ -190,6 +197,25 @@ export class SkillRuntime {
   prefOf(playerId, skillId, key, fallback) {
     const v = this.states[playerId]?.prefs?.[skillId]?.[key];
     return v === undefined ? this.param(skillId, key, fallback) : v;
+  }
+
+  /** その人の選択待ちを解決する任意アクションか（ハンドラの actions の choice: true） */
+  isChoiceAction(playerId, actionId) {
+    const st = this.states[playerId];
+    return Boolean(st?.choice && HANDLERS[st.choice.skillId]?.actions?.[actionId]?.choice);
+  }
+
+  /** 残っている選択待ちを、ハンドラの resolveChoice（index null＝既定の選び方）で決める。選択待ちがなければ何もしない */
+  resolveChoices() {
+    for (const st of Object.values(this.states)) {
+      if (!st.choice) continue;
+      const h = HANDLERS[st.choice.skillId]?.resolveChoice;
+      if (typeof h !== 'function') { st.choice = null; continue; }
+      this.beginRoot('system', { playerId: st.playerId });
+      h(this.api(st.playerId, st.choice.skillId, null), null);
+      st.choice = null;
+      this.drain();
+    }
   }
 
   nextEventId() {
@@ -1096,6 +1122,7 @@ export class SkillRuntime {
     for (const { actionId, skillId, def } of this.actionDefs(playerId)) {
       const { scope, limit, key } = this.actionLimit(playerId, skillId, def);
       const api = this.api(playerId, skillId, null);
+      if (def.hidden?.(api)) continue; // 選択待ちのときだけ出すアクション（X15pick など）
       const base = { actionId, skillId, label: def.label ?? this.node(skillId)?.name ?? actionId, scope, limit, used: this.used(playerId, skillId, key, scope) };
       if (!phase.ok) {
         out.push({ ...base, ok: false, reason: phase.reason, options: [] });
@@ -1141,8 +1168,11 @@ export class SkillRuntime {
     } finally {
       this.ctxStack.pop();
     }
-    this.consume(playerId, skillId, key, 1, scope);
-    this.countSuccess(playerId, skillId, { action: actionId, origin: 'skillActive' });
+    // free：選択待ちの解決など（回数・成功は保留を作ったときに数えてある）
+    if (!def.free) {
+      this.consume(playerId, skillId, key, 1, scope);
+      this.countSuccess(playerId, skillId, { action: actionId, origin: 'skillActive' });
+    }
     this.drain();
     this.game.checkGameOver();
     return { ok: true, result: result ?? null };
@@ -1176,6 +1206,7 @@ export class SkillRuntime {
         grave: st.grave.map((g) => ({ historyId: g.historyId, type: g.type, roadId: g.roadId, maxHp: g.maxHp })),
         peek: st.peek ? structuredClone(st.peek) : null,
         prefs: structuredClone(st.prefs),
+        ...(st.choice ? { choice: { skillId: st.choice.skillId, kind: st.choice.kind, options: st.choice.cards.map((c, index) => ({ index, cardId: c.cardId, type: c.type, mpCost: this.game.mpCostOf(c) })) } } : {}),
         counters: this.counters(playerId),
         actions: this.listActions(playerId),
       },

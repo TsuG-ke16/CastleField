@@ -312,8 +312,38 @@ export function skillLogText(tree, entry, viewerId) {
   if (!entry || entry.playerId !== viewerId) return null;
   const name = (id) => treeIndex(tree).byId.get(id)?.name ?? id;
   if (entry.kind === 'trigger' && entry.skillId) return `${name(entry.skillId)}（${entry.skillId}）が発動${entry.count > 1 ? `・${entry.count}回目` : ''}`;
-  if (entry.kind === 'diagnostic') return `スキルの上限に達しました（${entry.type ?? entry.reason ?? ''}）`;
+  if (entry.kind === 'diagnostic') return `スキルの上限に達しました（${entry.type ?? entry.reason ?? entry.code ?? ''}）`;
   return null;
+}
+
+/** L06 の出目の選び方 */
+const DICE_CHOICES = [['high', '大きい方'], ['low', '小さい方'], ['first', '1回目'], ['second', '2回目']];
+/** 城HPを払う選択（X35 の延期を聞くきっかけ） */
+const HP_KEYS = new Set(['hpForMp', 'bloodBlade', 'bloodEcho']);
+
+/**
+ * 対戦中に切り替えるスキルの設定（Game.setSkillPrefs。js/game/skills/Runtime.js の SKILL_PREFS）の行。取ったノードだけ、今の値つき。
+ * @param {string[]} skills 取得済みID
+ * @param {object} prefs skillState.prefs（＋画面で変えたばかりの値）
+ * @returns {{ skillId: string, key: string, type: 'choice'|'toggle', label: string, value: any, choices?: [string, string][], note: string }[]}
+ */
+export function skillPrefRows(skills, prefs = {}) {
+  const have = new Set(skills ?? []);
+  const out = [];
+  if (have.has('X15')) {
+    out.push({ skillId: 'X15', key: 'pick', type: 'choice', label: '運命の引き寄せ（X15）：2枚からの選び方', value: prefs?.X15?.pick ?? 'cost',
+      choices: [['cost', '自動：MPコストの大きい方（既定）'], ['ask', '毎回選ぶ'], ['first', '自動：1枚目'], ['second', '自動：2枚目']],
+      note: '「毎回選ぶ」は、発動したとき2枚を見せて選んでもらいます。選ばずにほかの操作をすると、MPコストの大きい方になります。' });
+  }
+  if (have.has('L06')) {
+    out.push({ skillId: 'L06', key: 'diceChoice', type: 'choice', label: '幸運の賽（L06）：2つの出目からの選び方', value: prefs?.L06?.diceChoice ?? 'high', choices: DICE_CHOICES,
+      note: '出目を見てから選ぶことはできないので、先に決めておきます（サイコロのカードを使うとき、カードごとにも選べます）。クラシックの山札にはサイコロのカードがないため、ふだんは発動しません。' });
+  }
+  if (have.has('X35')) {
+    out.push({ skillId: 'X35', key: 'autoDefer', type: 'toggle', label: '遅延代償（X35）：任意のHP支払を自動で延期する', value: Boolean(prefs?.X35?.autoDefer),
+      note: 'ONにすると、各ターン最初の任意のHP支払のうち最大2を次の自分のターンの始めに払います。延期した分（債務）が残るあいだは、そのターンのほかの任意のHP支払（血の代償・血の刃・血のやまびこ・血の契約など）ができなくなります。カードごとにも選べます。' });
+  }
+  return out;
 }
 
 /**
@@ -321,10 +351,10 @@ export function skillLogText(tree, entry, viewerId) {
  * 実際の費用はセッションの previewCardCost（Game の費用計画）で確かめる。
  * @param {string[]} skills 取得済みID
  * @param {object} def カードの定義（cards[type]）
- * @param {{ mp: number, cost: number }} ctx 今のMPと、カードのMPコスト（mpCosts）
+ * @param {{ mp: number, cost: number, prefs?: object }} ctx 今のMPと、カードのMPコスト（mpCosts）、本人の設定（skillState.prefs。既定の答えに使う）
  * @returns {{ key: string, skillId: string, type: 'range'|'toggle'|'choice', label: string, min?: number, max?: number, choices?: [string, string][] }[]}
  */
-export function cardSkillQuestions(skills, def, { mp = 0, cost: mpCost = 0 } = {}) {
+export function cardSkillQuestions(skills, def, { mp = 0, cost: mpCost = 0, prefs = {} } = {}) {
   const have = new Set(skills ?? []);
   if (!def) return [];
   const isSpell = def.kind === 'spell';
@@ -339,7 +369,11 @@ export function cardSkillQuestions(skills, def, { mp = 0, cost: mpCost = 0 } = {
   }
   if (attack && have.has('B03')) out.push({ key: 'bloodBlade', skillId: 'B03', type: 'toggle', label: '血の刃：城HP2を払って最初の命中+4（各自ターン1回）', default: false });
   if (single && have.has('X27')) out.push({ key: 'bloodEcho', skillId: 'X27', type: 'toggle', label: '血のやまびこ：命中後に城HP2を払って威力50%で再発動（各自ターン1回）', default: false });
-  if (def.effect === 'dice' && have.has('L06')) out.push({ key: 'diceChoice', skillId: 'L06', type: 'choice', label: '幸運の賽：2回振った出目のどちらを使うか', choices: [['high', '大きい方'], ['low', '小さい方'], ['first', '1回目'], ['second', '2回目']], default: 'high' });
+  if (def.effect === 'dice' && have.has('L06')) out.push({ key: 'diceChoice', skillId: 'L06', type: 'choice', label: '幸運の賽：2回振った出目のどちらを使うか', choices: DICE_CHOICES, default: prefs?.L06?.diceChoice ?? 'high' });
+  // X35：このカードで城HPを払う選択があるときだけ、延期するかを聞く（既定は本人の設定）。false も送るので、設定の ON を1枚だけ止められる
+  if (have.has('X35') && out.some((q) => HP_KEYS.has(q.key))) {
+    out.push({ key: 'deferHp', skillId: 'X35', type: 'toggle', label: '遅延代償：払う城HPのうち2を次の自分のターンへ延期（延期した債務が残るあいだ、ほかの任意のHP支払はできません）', default: Boolean(prefs?.X35?.autoDefer), always: true });
+  }
   return out;
 }
 
@@ -351,7 +385,8 @@ export function answersToOptions(questions, answers) {
     if (q.key === 'hpForMp') {
       if (q.type === 'toggle') { if (!v) out.hpForMp = 0; } else out.hpForMp = Math.max(q.min, Math.min(q.max, Number(v) || 0));
     } else if (q.type === 'toggle') {
-      if (v) out[q.key] = true;
+      if (q.always) out[q.key] = Boolean(v);
+      else if (v) out[q.key] = true;
     } else if (v !== undefined) out[q.key] = v;
   }
   return out;

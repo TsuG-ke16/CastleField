@@ -3,11 +3,18 @@
 //   任意スキルのメニュー（Game.listSkillActions の結果だけを使う：対象・コスト・プレビュー・キャンセル・実行）、発動ログ
 // - カード使用前のダイアログ：playCard の第3引数 skillOptions（B01/B08 の HP置換・B03・X27・L06）。費用の見積もりは
 //   セッションの previewCardCost（Game の費用計画をそのまま使う。画面で計算しない）
+// 同じ端末（LocalSession：Game を直接）とオンライン（OnlineClient：サーバー経由）は、セッションのメソッドの呼び方が同じ。
+// 違いは、オンラインの見積もりが Promise で返ることと、発動ログがサーバーから届くこと（receiveLog）だけ
 // 相手については getState の公開部分（skills・skillState の公開キー）だけを出す。ルールは Game 側だけにある。
+// スキルの設定（X15 の選び方・L06 の出目・X35 の自動延期）と X15 の「2枚から選ぶ」ダイアログは skillChoiceDialogs.js
 
 import { treeIndex } from '../game/SkillTree.js';
 import { skillStatusRows, skillLogText, usesText, cardSkillQuestions, answersToOptions, implementationOf } from './skillTreeModel.js';
 import { playerName } from './text.js';
+import { prefsSectionHtml, prefFromInput, loadSavedPrefs, savePrefs, savedPrefsFor, openX15Dialog } from './skillChoiceDialogs.js';
+
+/** localStorage（使えない環境では null） */
+const defaultStorage = () => { try { return globalThis.localStorage ?? null; } catch { return null; } };
 
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const COST_NAMES = { mp: 'MP', sp: 'SP', hp: '城HP', soul: '魂', blood: '血気', storedMp: '貯蔵MP', healStore: '回復貯蔵', coins: 'コイン' };
@@ -31,8 +38,11 @@ export class SkillBattleView {
    *           onRun: (actionId: string, args: object) => Promise<{ok:boolean, reason?:string}|null>,
    *           canAct: () => boolean }} o
    */
-  constructor({ tree, cards, renderer, toast = () => {}, onRun, canAct = () => true }) {
-    Object.assign(this, { tree, cards, renderer, toast, onRun, canAct });
+  constructor({ tree, cards, renderer, toast = () => {}, onRun, canAct = () => true, storage = defaultStorage() }) {
+    Object.assign(this, { tree, cards, renderer, toast, onRun, canAct, storage });
+    this.prefCache = {};          // 席ごとの、画面で変えたばかりの設定（状態が届くまでの表示用）
+    this.prefsSent = new Set();   // 覚えた設定を送った席（試合ごと）
+    this.choiceDlg = null;        // X15 のダイアログ { close, el, key }
     this.ix = treeIndex(tree);
     this.log = [];
     this.unread = 0;
@@ -62,6 +72,7 @@ export class SkillBattleView {
     toggle.addEventListener('click', (e) => { e.stopPropagation(); this.setOpen(panel.hidden); });
     panel.addEventListener('click', (e) => { e.stopPropagation(); this.onClick(e); });
     panel.addEventListener('pointerdown', (e) => e.stopPropagation());
+    panel.addEventListener('change', (e) => { e.stopPropagation(); this.onPrefChange(e.target); });
   }
 
   setOpen(open) {
@@ -78,19 +89,30 @@ export class SkillBattleView {
     this.log = [];
     this.unread = 0;
     this.state = null;
+    this.prefCache = {};
+    this.prefsSent.clear();
+    this.closeChoice();
     this.clearPick();
     this.setOpen(false);
     this.toggle.hidden = true;
   }
 
   /** 発動ログの1件（game.observeSkills から）。自分のもの以外は skillLogText が null を返す */
-  addLog(entry) {
-    const text = skillLogText(this.tree, entry, this.viewerId);
+  addLog(entry, viewerId = this.viewerId) {
+    const text = skillLogText(this.tree, entry, viewerId);
     if (!text) return;
     this.log.push({ turn: entry.turn, text });
     if (this.log.length > LOG_MAX) this.log.shift();
     if (this.panel.hidden) this.unread += 1;
     this.renderBadge();
+  }
+
+  /** オンライン：サーバーから届いた発動ログ（自分の分だけ）。replace はつなぎ直したときの送り直し */
+  receiveLog(msg, viewerId) {
+    if (msg.replace) { this.log = []; this.unread = 0; }
+    for (const entry of msg.entries ?? []) this.addLog(entry, viewerId);
+    if (msg.replace) { this.unread = 0; this.renderBadge(); }
+    if (!this.panel.hidden) this.render();
   }
 
   /** 状態の更新（settle のたび） */
@@ -100,7 +122,9 @@ export class SkillBattleView {
     this.session = session;
     const anySkills = st && Object.values(st.players ?? {}).some((p) => p.skills?.length);
     this.toggle.hidden = !anySkills || st.phase === 'gameOver';
-    if (this.toggle.hidden) { this.setOpen(false); return; }
+    if (this.toggle.hidden) { this.setOpen(false); this.closeChoice(); return; }
+    this.sendSavedPrefs();
+    this.syncChoice();
     // H01 戦略的準備：最初の手札の引き直しで、戻す枚数が0〜2枚なら「先に引いてから戻したカードを混ぜる」
     if (st.phase === 'mulligan' && st.mulligan?.pending?.includes(viewerId) && st.players[viewerId]?.skills?.includes('H01') && !this.h01Told) {
       this.h01Told = true;
@@ -154,7 +178,8 @@ export class SkillBattleView {
       <div class="sb-head"><h2>スキル</h2><button type="button" class="sb-close" data-close="1" aria-label="閉じる">×</button></div>
       <h3>あなた</h3>${section(this.viewerId, true)}
       ${actionsHtml}
-      ${this.session?.online ? '' : `<details${this.log.length ? ' open' : ''}><summary>発動ログ（${this.log.length}）</summary><ul class="sb-log">${this.log.slice().reverse().map((l) => `<li>${l.turn ? `${l.turn}手目：` : ''}${esc(l.text)}</li>`).join('') || '<li>まだありません</li>'}</ul></details>`}
+      ${me?.skills?.length ? prefsSectionHtml(me.skills, this.myPrefs()) : ''}
+      ${`<details${this.log.length ? ' open' : ''}><summary>発動ログ（${this.log.length}）</summary><ul class="sb-log">${this.log.slice().reverse().map((l) => `<li>${l.turn ? `${l.turn}手目：` : ''}${esc(l.text)}</li>`).join('') || '<li>まだありません</li>'}</ul></details>`}
       ${foes.map((id) => `<h3>${esc(playerName(id))}</h3>${section(id, false)}`).join('')}`;
     this.highlight();
   }
@@ -189,6 +214,8 @@ export class SkillBattleView {
     if (!res) return;
     if (!res.ok) { this.toast(res.reason ?? '使えませんでした'); return; }
     this.clearPick();
+    // オンラインでは新しい状態が返事より先に届くことがあるので、選択を閉じた表示に描き直す
+    if (!this.panel.hidden) this.render();
     this.toast(`${a.label}を使いました`, 'info');
   }
 
@@ -220,6 +247,76 @@ export class SkillBattleView {
     return true;
   }
 
+  // ================= スキルの設定・X15 の選択 =================
+
+  /** 自分の設定（状態の prefs に、画面で変えたばかりの値を重ねる） */
+  myPrefs() {
+    const prefs = structuredClone(this.state?.players?.[this.viewerId]?.skillState?.prefs ?? {});
+    for (const [id, kv] of Object.entries(this.prefCache[this.viewerId] ?? {})) prefs[id] = { ...(prefs[id] ?? {}), ...kv };
+    return prefs;
+  }
+
+  /** 設定を Game（オンラインはサーバー）へ送る。成功したら表示用に覚え、端末にも保存する */
+  async sendPrefs(prefs, { quiet = false } = {}) {
+    if (!this.session?.setSkillPrefs || !this.viewerId) return false;
+    let res = null;
+    try { res = await this.session.setSkillPrefs(this.viewerId, prefs); } catch { res = null; }
+    if (!res?.ok) {
+      if (!quiet) this.toast(res?.reason ?? '設定を変えられませんでした');
+      return false;
+    }
+    const cache = (this.prefCache[this.viewerId] ??= {});
+    for (const [id, kv] of Object.entries(prefs)) cache[id] = { ...(cache[id] ?? {}), ...kv };
+    return true;
+  }
+
+  async onPrefChange(target) {
+    const prefs = prefFromInput(target);
+    if (!prefs) return;
+    if (await this.sendPrefs(prefs)) {
+      savePrefs(this.storage, prefs);
+      this.toast('スキルの設定を変えました', 'info');
+    }
+    if (!this.panel.hidden) this.render();
+  }
+
+  /** 試合の始めに、端末に覚えた設定を（取ったノードの分だけ）送る。席ごとに1回 */
+  sendSavedPrefs() {
+    const me = this.state?.players?.[this.viewerId];
+    if (!me?.skills?.length || !this.session || this.prefsSent.has(this.viewerId)) return;
+    this.prefsSent.add(this.viewerId);
+    const prefs = savedPrefsFor(me.skills, loadSavedPrefs(this.storage));
+    if (Object.keys(prefs).length) this.sendPrefs(prefs, { quiet: true });
+  }
+
+  /** X15 の選択待ち（自分の番・メイン）があればダイアログを出し、なくなったら閉じる */
+  syncChoice() {
+    const st = this.state;
+    const choice = st?.players?.[this.viewerId]?.skillState?.choice;
+    const show = choice?.skillId === 'X15' && st.phase === 'main' && st.currentPlayer === this.viewerId;
+    const key = show ? `${this.viewerId}:${st.turn ?? ''}:${choice.options.map((o) => o.cardId).join(',')}` : null;
+    if (this.choiceDlg && this.choiceDlg.key !== key) this.closeChoice();
+    if (!show || this.choiceDlg || this.choiceShown === key) return;
+    this.choiceShown = key; // 「あとで選ぶ」で閉じたら、同じ選択待ちでは出し直さない（パネルの「スキルを使う」から選べる）
+    const dlg = openX15Dialog({
+      choice, cards: this.cards,
+      onPick: async (index) => {
+        if (!this.canAct()) return this.toast('演出が終わってから選べます', 'info');
+        const res = await this.onRun('X15pick', { index });
+        if (!res) return;
+        if (!res.ok) return this.toast(res.reason ?? '選べませんでした');
+        this.closeChoice();
+        if (!this.panel.hidden) this.render();
+      },
+    });
+    this.choiceDlg = { ...dlg, key };
+  }
+
+  closeChoice() {
+    this.choiceDlg?.close();
+    this.choiceDlg = null;
+  }
+
   // ================= カード使用前の選択 =================
 
   /**
@@ -230,7 +327,7 @@ export class SkillBattleView {
     const st = this.state;
     const me = st?.players?.[this.viewerId];
     const def = this.cards[type];
-    const questions = me?.skills?.length && st.phase === 'main' ? cardSkillQuestions(me.skills, def, { mp: me.mp ?? 0, cost: st.mpCosts?.[type] ?? 0 }) : [];
+    const questions = me?.skills?.length && st.phase === 'main' ? cardSkillQuestions(me.skills, def, { mp: me.mp ?? 0, cost: st.mpCosts?.[type] ?? 0, prefs: this.myPrefs() }) : [];
     if (!questions.length) return Promise.resolve(undefined);
     return new Promise((resolve) => {
       const dlg = document.createElement('div');
@@ -239,21 +336,51 @@ export class SkillBattleView {
       dlg.setAttribute('aria-modal', 'true');
       dlg.setAttribute('aria-label', `${def?.name ?? 'カード'}のスキル選択`);
       const answers = Object.fromEntries(questions.map((q) => [q.key, q.default ?? (q.type === 'range' ? q.min : undefined)]));
-      const draw = () => {
+      // 見積もり：同じ端末ならすぐ、オンラインならサーバーに聞く（Promise）。古い答えは捨てる
+      let pvSeq = 0;
+      let pvTimer = null;
+      let done = false;
+      const pvHtml = (pv, opts) => {
+        if (pv === 'pending') return '<p class="sb-note">実際の支払いを確かめています…</p>';
+        if (!pv) return '<p class="sb-note">実際の支払いの見積もりはありません。</p>';
+        return pv.ok ? `<p class="sb-preview">実際の支払い：MP ${pv.mp}${pv.hp ? `・城HP ${pv.hp}` : ''}${opts.bloodBlade ? '（血の刃は命中時に城HP2）' : ''}${opts.bloodEcho ? '（血のやまびこは命中後に城HP2）' : ''}</p>` : `<p class="sb-preview bad">${esc(pv.reason)}</p>`;
+      };
+      const showPreview = (pv, opts) => {
+        const box = dlg.querySelector('.sb-pv');
+        if (box) box.innerHTML = pvHtml(pv, opts);
+        const ok = dlg.querySelector('[data-ok]');
+        if (pv && pv !== 'pending' && !pv.ok) ok?.setAttribute('aria-disabled', 'true');
+        else ok?.removeAttribute('aria-disabled');
+      };
+      const refreshPreview = () => {
         const opts = answersToOptions(questions, answers);
-        const pv = session.previewCardCost ? session.previewCardCost(cardId, opts) : null;
-        const pvHtml = pv ? (pv.ok ? `<p class="sb-preview">実際の支払い：MP ${pv.mp}${pv.hp ? `・城HP ${pv.hp}` : ''}${opts.bloodBlade ? '（血の刃は命中時に城HP2）' : ''}${opts.bloodEcho ? '（血のやまびこは命中後に城HP2）' : ''}</p>` : `<p class="sb-preview bad">${esc(pv.reason)}</p>`)
-          : '<p class="sb-note">オンラインでは、実際の支払いはサーバーで決まります。</p>';
+        const seq = ++pvSeq;
+        clearTimeout(pvTimer);
+        if (!session.previewCardCost) return showPreview(null, opts);
+        if (session.online) {
+          // つまみを動かしているあいだに何度も送らないよう、少し待ってから聞く
+          showPreview('pending', opts);
+          pvTimer = setTimeout(async () => {
+            let pv = null;
+            try { pv = await session.previewCardCost(cardId, opts); } catch { pv = null; }
+            if (!done && seq === pvSeq) showPreview(pv, opts);
+          }, 150);
+          return;
+        }
+        showPreview(session.previewCardCost(cardId, opts), opts);
+      };
+      const draw = () => {
         dlg.innerHTML = `<div class="sb-head"><h2>「${esc(def?.name ?? type)}」を使う</h2></div>
           ${questions.map((q) => {
             if (q.type === 'range') return `<div class="sb-q"><label for="sbq-${q.key}">${esc(q.label)}：<b>${answers[q.key]}</b></label><input id="sbq-${q.key}" type="range" min="${q.min}" max="${q.max}" step="1" value="${answers[q.key]}" data-q="${q.key}"></div>`;
             if (q.type === 'toggle') return `<div class="sb-q"><label><input type="checkbox" data-q="${q.key}"${answers[q.key] ? ' checked' : ''}>${esc(q.label)}</label></div>`;
             return `<div class="sb-q"><label>${esc(q.label)}<select data-q="${q.key}">${q.choices.map(([v, l]) => `<option value="${v}"${answers[q.key] === v ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select></label></div>`;
           }).join('')}
-          ${pvHtml}
-          <div class="sb-confirm"><button type="button" class="plank-btn" data-ok="1"${pv && !pv.ok ? ' aria-disabled="true"' : ''}>使う</button><button type="button" class="small-btn" data-no="1">キャンセル</button></div>`;
+          <div class="sb-pv"></div>
+          <div class="sb-confirm"><button type="button" class="plank-btn" data-ok="1">使う</button><button type="button" class="small-btn" data-no="1">キャンセル</button></div>`;
+        refreshPreview();
       };
-      const finish = (v) => { dlg.remove(); resolve(v); };
+      const finish = (v) => { done = true; clearTimeout(pvTimer); dlg.remove(); resolve(v); };
       dlg.addEventListener('input', (e) => {
         const k = e.target.dataset?.q;
         if (!k) return;

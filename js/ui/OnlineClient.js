@@ -32,9 +32,11 @@ export class OnlineClient {
    * @param {(batch: {events: {type: string, payload: object}[], state: object, playable: object[], upgrades: object}) => void} h.onBatch
    * @param {(connected: boolean, info: { fatal: boolean }) => void} h.onConnection fatal：もうつなぎ直せない（部屋がなくなった）
    * @param {(msg: object) => void} [h.onChat] チャット（{ type: "chat", playerId, name, text | stamp } か、履歴 { type: "chatLog", messages }）
+   * @param {(msg: { entries: object[], replace?: boolean }) => void} [h.onSkillLog] スキルの発動ログ（自分の分だけ。replace はつなぎ直しの送り直し）
    */
-  constructor({ onRoom, onBatch, onConnection, onChat }) {
+  constructor({ onRoom, onBatch, onConnection, onChat, onSkillLog }) {
     this.onChat = onChat;
+    this.onSkillLog = onSkillLog;
     this.online = true;
     this.onRoom = onRoom;
     this.onBatch = onBatch;
@@ -86,7 +88,7 @@ export class OnlineClient {
   close() {
     this.source?.close();
     this.source = null;
-    this.onRoom = this.onBatch = this.onConnection = this.onChat = null;
+    this.onRoom = this.onBatch = this.onConnection = this.onChat = this.onSkillLog = null;
   }
 
   receive(msg) {
@@ -95,6 +97,8 @@ export class OnlineClient {
       this.onRoom?.(msg);
     } else if (msg.type === 'chat' || msg.type === 'chatLog') {
       this.onChat?.(msg);
+    } else if (msg.type === 'skillLog') {
+      if (Array.isArray(msg.entries)) this.onSkillLog?.(msg);
     } else if (msg.type === 'event') {
       this.pending.push(this.adapt(msg.event, msg.payload));
     } else if (msg.type === 'state') {
@@ -145,14 +149,25 @@ export class OnlineClient {
 
   fuse(a, b) { return this.act('fuse', [a, b]); }
   playCard(cardId, target, skillOptions) {
-    // クラシックのスキルの選択（HP置換の量など）は playCard の第3引数でサーバーの Game にそのまま渡る
+    // クラシックのスキルの選択（HP置換の量など）は playCard の第3引数。サーバーが形を確かめてから Game に渡す
     if (skillOptions !== undefined) return this.act('playCard', [cardId, target ?? null, skillOptions]);
     return this.act('playCard', target ? [cardId, target] : [cardId]);
   }
-  /** スキルの任意アクションの一覧：サーバーが送る自分の状態（skillState.actions）をそのまま読む */
+  /** スキルの任意アクションの一覧：サーバーが送る自分の状態（skillState.actions）をそのまま読む（同じ端末の LocalSession と同じ形） */
   listSkillActions(playerId) { return this.state?.players?.[playerId]?.skillState?.actions ?? []; }
-  /** スキルの任意アクション：今のサーバーは受け付けない（server/rooms.js の操作に未追加。段階D1 の範囲外） */
-  async skillAction() { return { ok: false, reason: 'オンラインの部屋では、任意スキルはまだ使えません' }; }
+  /** スキルの任意アクションを使う。だれが使うかはサーバーが席で決める（playerId は LocalSession と呼び方を合わせるためだけ） */
+  skillAction(playerId, actionId, args) { return this.act('skillAction', [actionId, args ?? {}]); }
+  /**
+   * 手札のカードの実際の支払いの見積もり（サーバーの Game.previewSkillCost）。LocalSession と違って Promise を返す。
+   * { ok, mp, hp, reason } か null（スキルのないゲーム）。送れなかったときは { ok: false, reason }
+   */
+  async previewCardCost(cardId, skillOptions = {}) {
+    const res = await this.act('previewSkillCost', [cardId, skillOptions ?? {}]);
+    if (!res.ok) return { ok: false, reason: res.reason ?? '支払いを確かめられませんでした' };
+    return res.preview ?? null;
+  }
+  /** スキルの設定（X35 の自動延期など）を変える（自分の席だけ） */
+  setSkillPrefs(playerId, prefs) { return this.act('setSkillPrefs', [prefs]); }
   buyUpgrade(id) { return this.act('buyUpgrade', [id]); }
   endTurn() { return this.act('endTurn'); }
   /** 攻撃を受けたとき、防御カードを出す／防御しない（自分の番でなくても送れる） */

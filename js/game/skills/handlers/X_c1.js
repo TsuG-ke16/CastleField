@@ -11,6 +11,32 @@ import * as Units from '../Units.js';
 const myDamageReaction = (api, ev) => ev.ownerId === api.playerId && ev.victimOwnerId
   && api.game.side(ev.victimOwnerId) !== api.game.side(api.playerId) && ev.damage > 0;
 
+/** X15 の選び方（"cost"＝MPコストの大きい方・同じなら先頭／"first"／"second"）で、何枚目かを返す */
+function x15Pick(game, cards, how) {
+  if (how === 'second') return cards.length - 1;
+  let i = 0;
+  if (how === 'cost') for (let j = 1; j < cards.length; j++) if (game.mpCostOf(cards[j]) > game.mpCostOf(cards[i])) i = j;
+  return i;
+}
+
+/** X15 で選んだ1枚を手札に入れる（ふつうのドローとして数える） */
+function x15Draw(api, card) {
+  api.player.hand.push(card);
+  api.rt.withDrawKind('normal', api.skillId, null, () => api.game.emit('cardDrawn', { playerId: api.playerId, cardIds: [card.cardId] }));
+}
+
+/** X15 の選択待ちを決める：選んだ1枚を手札へ、残りは山札の先頭へ元の順で戻す（index が範囲外・null なら "cost"） */
+function x15Resolve(api, index) {
+  const ch = api.state.choice;
+  if (!ch || ch.skillId !== 'X15') return false;
+  const i = Number.isInteger(index) && index >= 0 && index < ch.cards.length ? index : x15Pick(api.game, ch.cards, 'cost');
+  const card = ch.cards[i];
+  api.state.choice = null;
+  api.game.pileOf(api.playerId).deck.unshift(...ch.cards.filter((_, j) => j !== i));
+  x15Draw(api, card);
+  return true;
+}
+
 export default {
   // X01 会心の残響：手札由来の単体攻撃魔法が直接会心したとき 25% で威力50%の追加発動（各自ターン1回）。やまびこの合計上限は echo.js（M02 と共有）
   X01: {
@@ -149,16 +175,38 @@ export default {
         const top = pile.deck.slice(0, api.params.reveal ?? 2);
         // 段階D2：選び方は本人の選択（game.setSkillPrefs(pid, { X15: { pick } })）→ params.pick（既定 "cost"）
         const how = api.pref('pick', 'cost');
-        let pickIndex = 0;
-        if (how === 'second') pickIndex = top.length - 1;
-        else if (how === 'cost') for (let i = 1; i < top.length; i++) if (game.mpCostOf(top[i]) > game.mpCostOf(top[pickIndex])) pickIndex = i;
-        if (!api.trigger({ revealed: top.length, picked: pickIndex })) return;
-        api.consume();
-        const [card] = pile.deck.splice(pickIndex, 1);
-        api.player.hand.push(card);
-        api.rt.withDrawKind('normal', api.skillId, null, () => game.emit('cardDrawn', { playerId: api.playerId, cardIds: [card.cardId] }));
+        if (how === 'ask') {
+          // 毎回選ぶ：2枚を山札から外して本人の選択待ち（state.choice）にする。任意アクション X15pick で選ぶ。
+          // 選ばずにほかの操作をしたら Runtime.resolveChoices が既定（cost）で決める。外しておくのは、選ぶ前の別のドローで引かれないように
+          if (!api.trigger({ revealed: top.length, picked: null, ask: true })) return;
+          api.consume();
+          api.state.choice = { skillId: 'X15', kind: 'draw', cards: pile.deck.splice(0, top.length) };
+        } else {
+          const pickIndex = x15Pick(game, top, how);
+          if (!api.trigger({ revealed: top.length, picked: pickIndex })) return;
+          api.consume();
+          const [card] = pile.deck.splice(pickIndex, 1);
+          x15Draw(api, card);
+        }
         ctx.count -= 1;
         if (ctx.count <= 0) ctx.handled = true;
+      },
+    },
+    /** 選択待ちを決める（index null＝既定の "cost"。Runtime.resolveChoices から） */
+    resolveChoice: (api, index) => x15Resolve(api, index),
+    actions: {
+      // 選択待ちのときだけ一覧に出る（hidden）。回数・成功は保留を作ったときに数えてある（free）
+      X15pick: {
+        label: '運命の引き寄せ：引くカードを選ぶ', choice: true, free: true, key: 'pick', limit: 99,
+        hidden: (api) => api.state.choice?.skillId !== 'X15',
+        list: (api) => api.state.choice.cards.map((c, index) => ({ args: { index }, label: c.def?.name ?? c.type })),
+        check(api, args) {
+          const ch = api.state.choice;
+          if (ch?.skillId !== 'X15') return { ok: false, reason: '選ぶカードはありません' };
+          if (!Number.isInteger(args?.index) || args.index < 0 || args.index >= ch.cards.length) return { ok: false, reason: '選べるのは表になった2枚のどちらかです' };
+          return { ok: true, cost: {} };
+        },
+        run: (api, args) => (x15Resolve(api, args.index) ? { picked: args.index } : null),
       },
     },
   },
