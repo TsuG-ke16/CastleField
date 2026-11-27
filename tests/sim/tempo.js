@@ -4,6 +4,7 @@
 //   node tests/sim/tempo.js --builds none,mpLine     … 比べるビルド（none / random / presets のID / 下の EXTRA_BUILDS / "P01+P02" の取得順）
 //   node tests/sim/tempo.js --mode factions          … 4陣営：陣営ごとに、ほかの3陣営と席を入れかえて回す（スキルなし）
 //   node tests/sim/tempo.js --rules '{"mpPerTurn":3}' … data/ を書き換えずにルールの一部だけ試す
+//   node tests/sim/tempo.js --cards '{"fac_king_hero":{"mpCost":4}}' … カードの一部だけ試す（カードごとに中身をまぜる）
 //   node tests/sim/tempo.js --json
 // 出す数字（ビルド側・陣営側の席だけを数える。sim.js の newTempo）：
 //   勝率・平均手番（決着した試合）・1ターンのカード枚数・攻撃魔法/ターン・MP余剰（ターン終了時 MP≧上限の50% の割合）・MP満タン終了率・
@@ -36,13 +37,23 @@ const mode = opt('mode', 'classic');
 if (!Number.isInteger(games) || games < 1) die('--games は1以上の整数にしてください');
 if (seeds.some((s) => !Number.isInteger(s))) die('--seeds は整数のカンマ区切りにしてください');
 let rulesPatch;
+let cardsPatch;
 try {
   rulesPatch = JSON.parse(opt('rules', '{}'));
+  cardsPatch = JSON.parse(opt('cards', '{}'));
 } catch (err) {
-  die(`--rules は JSON で書いてください（${err.message}）`);
+  die(`--rules / --cards は JSON で書いてください（${err.message}）`);
 }
-const { rules, cards } = buildData({ mode, rules: rulesPatch });
+const { rules, cards } = buildData({ mode, rules: rulesPatch, cards: cardsPatch });
 const gameOptions = loadOptionalData(mode);
+// 4陣営：デッキ（陣営のカード表の count）にも --cards の count を反映する（0 で抜く）
+for (const deck of Object.values(gameOptions.decks ?? {})) {
+  for (const [t, p] of Object.entries(cardsPatch)) {
+    if (p?.count === undefined || !(t in deck.cards)) continue;
+    if (p.count > 0) deck.cards[t] = p.count;
+    else delete deck.cards[t];
+  }
+}
 
 /** 試合をまとめて回す（試合ごとの結果の配列） */
 function play({ seed, skills = null, decks = null }) {
@@ -102,7 +113,7 @@ const pct = (x) => (x === null || x === undefined ? 'null' : `${Math.round(x * 1
 const f1 = (x) => (x === null || x === undefined ? 'null' : x.toFixed(1));
 const f2 = (x) => (x === null || x === undefined ? 'null' : x.toFixed(2));
 if (args.includes('--json')) {
-  console.log(JSON.stringify({ mode, games, seeds, strategy, rulesPatch, rows }, null, 2));
+  console.log(JSON.stringify({ mode, games, seeds, strategy, rulesPatch, cardsPatch, rows }, null, 2));
 } else {
   console.log(`モード ${mode}・戦い方 ${strategy} 同士・1つの向きに ${games} 試合 × シード ${seeds.join(',')}（席を入れかえて）`);
   console.log('| ビルド/陣営 | 試合 | 決着 | 勝率 | 平均手番 | 自ターン/試合 | カード/ターン | 攻撃魔法/ターン | MP≧50%で終了 | MP満タン終了 | MP不足 | コンボ | コイン獲得/試合 | コイン消費/試合 | 魔物討伐/試合 |');

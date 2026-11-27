@@ -13,7 +13,7 @@
 - [x] (4) 撃破/魔物/城HP50% のコイン報酬と無限獲得防止
 - [x] (5) 経済系カード6種＋CPU
 - [x] (6) 攻撃魔法1ターン2回
-- [ ] (7) 変更前後の比較表と整合メモ
+- [x] (7) 変更前後の比較表と整合メモ（`docs/a1-tempo-comparison.md`）
 
 ## 計測のしかた（段階1）
 
@@ -121,6 +121,28 @@
 - 0MP のカードの一律の制限は入れていない（測った結果、下の比較表で極端な値は出ていないため）
 - 小規模の確認（10試合）：クラシックの none で攻撃魔法/ターン 0.93→1.47、MP≧50%終了 97%→42%、MP不足 0%→38%（MP の使い道ができ、MP系統の価値が戻る）
 
+### (7) 比較表とスキルの整合
+- 表・所見・スキルノードの変更案（提示のみ）：`docs/a1-tempo-comparison.md`。生データ：`a1-data/after-*.json`
+- tempo.js に `--cards`（カードの一部を変える。4陣営はデッキの count にも反映）を足し、4陣営の偏りの要因を1つずつ戻して測った（比較表の「4陣営の勝率の偏り」）
+- 要点：テンポは目的どおり上がった（カード/ターン 1.84→3.27、MP不足 73%→33%、コンボ 41%→71%、手番 100.7→82.9）。MP系統・血魔術・経済の none との差は +28→+21／+14→+27／+33→+32 で、どれも価値は残っている。**4陣営は王国・竜に偏った**（MP の豊富さ＋コインで今の強化を買えることが主因。A2 のあとに測り直す）
+
 ## 未確認
 
+- 画面（ブラウザ）で遊んでの確認はしていない。UI は説明文（slotNote・cardShort）と state の追従（attackSpellsThisTurn・economy）だけで、HUD に「攻撃魔法 n/2」や金鉱・投資の予約は出していない（A2 の UI でまとめて）
+- オンライン（server/rooms.js）は Game をそのまま使うので新しいルール・カードも動くはずだが、オンラインのテストは既存のものだけ（経済のカード・撃破報酬のオンライン専用テストはない。A4）
+- 4陣営の勝率の偏り（王国・竜 77% 前後）。大規模測定はしていない
+- 継続ダメージ（毒・やけど・出血など）で倒したときに撃破報酬を出さない決めは暫定（付与した人を Game が持っていないため。スキルの statusSource はスキルのあるゲームだけ）。毒・感染系（S）のビルドのコインが少し不利
+- 撃破報酬の「ターン」は通算 turn（相手のターン中の撃破は相手のターンの枠に数える）。1ラウンド単位にするかは未決
+- クラシックの陣営カード表（data/classic/factions/*.json）は MP を作り直していない（山札に入らない。テスト・sim だけが読む）
+- 精密な調整（カードの MP・経済のカードの枚数・コイン報酬の値）は QA の大規模測定の結果待ち
+
 ## A2 への引き継ぎ
+
+- **強化は「新設」ではなく「モード別データへの置き換え」**：今の強化は `data/upgrades.json`（全モード共通。tests/helpers.js の loadOptionalData・server/server.js・js/main.js がそのまま渡す）と `Game.canBuyUpgrade / buyUpgrade / upgradeCostOf`（コインで買う・1試合の `limit`・`costs` の段階価格）。A2 は
+  1. `data/modes.json` の各モードに `upgradesSet`（例 `data/classic/upgrades.json`・`data/factions/upgrades.json`）を足し、ブラウザ・サーバー・helpers が rulesSet と同じように読む（通常モードは今の data/upgrades.json のまま）
+  2. 26種を effect で書く。今ある effect：repairCastle・drawCards・sharpenSoldiers・trainArmy・fortifyArmy（そのまま使える）、gainCard・boostDrops・permanentLuck（レアリティ前提＝クラシック/4陣営では買えない。A3 で廃止）
+  3. 「即時強化は1ターン1回」：強化の定義に区分（例 `timing: "instant"`）を足し、Player に「このターンに買った即時強化の数」を持たせて canBuyUpgrade で弾く（A1 の attackSpellsThisTurn と同じ形。リセットは beginTurn/passTurn の2か所）
+  4. 特殊強化 18〜20 コイン：A1 後のコイン獲得は 1試合 約171（自ターン約41回で 1ターン約4.2）。今の強化は全部買い切られている（1試合の消費 ≒ 獲得）。値段はこの量を前提に
+- CPU（strategies.js の `buyUpgrades`）は今の強化を effect の固定の順で買う。A2 の強化に合わせて作り直す（A1 では触っていない）
+- コイン報酬の値（rules の killCoins・monsterCoinRewards・castleHalfCoins、経済のカードの count・amount）は全部データ。A2 の値段と合わせて調整できる
+- スキルノードの変更案（P04・P01・P07・P03。提示のみ）は `docs/a1-tempo-comparison.md`

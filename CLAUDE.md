@@ -1445,6 +1445,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **MP の自然回復**（`rules.mpPerTurn`）：自分のターンの始め（コインのあと、ドローの前）に増える（`mpChanged` の `reason: "turn"`。上限まで）
 - **後攻のマナ**（`rules.secondPlayerMp`）：先攻以外の人の最初の MP がこれだけ多い（上限まで。イベントは出さない）
 - クラシック（仮）：`initialMp` 10・`maxMp` 20・`mpPerTurn` 3・`secondPlayerMp` 2（後攻の優遇は少し弱めた：城壁5→3・MP3→2。手札+1はそのまま）。`data/classic/cards.json` の全カードに `mpCost` を書いた（兵士1〜2・武器1〜2・防御1〜2・回復1〜3・攻撃の魔法2〜4）
+- **段階A1 で変えた**：`mpPerTurn` 3→5、全カードの MP を作り直した（下の「段階A1：戦闘テンポ」・`docs/a1-card-mp.md`）。サイコロでも `mpCost` を書いたカード（経済のカードの宝探し）は mpAllCards のモードでその MP を使う
 
 ### 敵兵士1体にダメージ（`effect: "singleDamage"`、`amount`）
 - 対象は相手の見える兵士1体 `{ soldierId }`（忍者・暗殺者は選べない）。ダメージは `amount`（ステージの魔法の増加は乗る）。盾が先に受ける。霧で外れる。属性なし
@@ -1576,6 +1577,20 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **CPU**：`chooseSkillBuild(tree, rng, style)` → `{ ids, config }`（none / random / プリセット（仕様 第10章の4ビルド）/ 戦い方の名前 / `"C01+C02"`）。部屋の `setSeat({ skills })` も同じ検証
 - 通常モード・4陣営は `skillTree` を渡さないので、スキルの処理も乱数も使わない（シミュレーションの出力は変更前と一致）
 - **オンライン対戦（対応済み）**：`POST /api/action` の `method` に `skillAction`（`args: [actionId, args]`。自分の席・自分の番だけ。メイン行動中か・回数・支払いは Game が確かめる。返事は `{ ok }` / `{ ok: false, reason }` だけ）・`listSkillActions`（自分の席の一覧。いつでも。`{ ok, actions }`）・`previewSkillCost`（`args: [cardId, skillOptions]`。自分の番・自分の手札だけ。`{ ok: true, preview: { ok, reason, mp, hp } | null }`。状態は送り直さない）・`setSkillPrefs`（`args: [{ X35: { autoDefer: true } }]`。自分の席だけ。いつでも）。`playCard` の第3引数 `skillOptions` は、知っているキー（`hpForMp`・`bloodBlade`・`bloodEcho`・`deferHp`・`diceChoice`）と値の形だけを通す（ほかは `{ ok: false }`）。任意スキルの `args` は JSON の値だけ・深さ3・値64個・文字列64字・配列16個まで、`__proto__` などのキーは拒否。状態は今までどおり `getState(席)`（相手の `skillState` は公開部分だけ）。発動ログは `{ type: "skillLog", entries }` で**本人の発動（trigger・diagnostic）だけ**を本人に送る（表示に使うキーだけ。相手の発動は送らない）。つなぎ直すと状態（回数・資源）と、最近40件のログ（`replace: true`）が届く。画面は `js/ui/OnlineClient.js` の `skillAction` / `previewCardCost`（Promise）/ `setSkillPrefs` と、`SkillBattleView` の `receiveLog`。くわしくは `docs/skilltree-200-notes/online-skills.md`
+
+## 段階A1：戦闘テンポ・MP・コイン経済（クラシック・4陣営。人間の暫定仕様。数値はすべて仮）
+
+大規模改修仕様書の段階A1（A2 強化26種とUI／A3 旧仕様の廃止・保存データ移行／A4 オンライン整合 は別）。判断メモ・未確認・A2 への引き継ぎ・比較表：`docs/skilltree-200-notes/a1-battle-tempo.md`。カードの MP 新旧表：`docs/a1-card-mp.md`。
+**通常モードは変えない**：足したキーは Game の既定値が「機能なし」で、`data/rules.json`・`data/cards.json` には書いていない（`node tests/sim/run.js` の出力は変更前と一致）。
+
+- **モード別の設定の置き場所**：各モードの rules.json（`data/classic/rules.json`・`data/factions/rules.json`）。ブラウザ・サーバー・CPU・sim は同じファイルを読む
+- **基本の数値**：MP 初期10・上限20・毎ターン+5（`mpPerTurn`）、手札上限8（`maxHand`）、毎ターン2枚ドロー、兵士は1ターン3体、コイン初期2（`initialCoins`）・毎ターン2（`coinPerTurn`）。戦闘のコインはアカウントの通貨（ガチャ）とは別物（もともと別）
+- **カードの MP**：通常兵士1・特殊/大型兵士2・武器と盾0（+2 の武器と追加効果つきは1）・城壁1・回復1〜3・攻撃の魔法2〜5。4陣営の切り札と天罰の光は5、1枚制限のカードは3以上、森の属性魔法は3のまま、竜は兵士を1段重く（`docs/a1-card-mp.md`）
+- **攻撃の魔法は1ターン2回**（`rules.attackSpellsPerTurn`。0＝今までどおりメイン1枚）：メイン（slot "main"）のうち、回復・蘇生などの `NON_ATTACK_MAIN_EFFECTS`（js/game/Card.js）以外を数える。数えるのは手札からの使用（playCard）だけで、スキルの追加の詠唱は数えない。`getState().players.pX.attackSpellsThisTurn`・`getState().attackSpellsPerTurn`
+- **コイン報酬**：敵兵士の撃破 `killCoins` 1（1人1ターン `killCoinsPerTurn` 3まで。reason `kill`）。戦い・射撃は相手の兵士の持ち主、魔法・反応・精霊・スキル・身代わりは手番の人。継続ダメージ・天候・魔物では出ない。**トークン（`soldier.token`）・蘇生した兵士（`soldier.noBounty`）が倒された／倒したときは出ない**（無限獲得の防止）。魔物は `monsterCoinRewards`（種類ごとのコイン：小型2・中型3〜4・ドラゴン6・魔王10。monsters.json の reward の代わり。getState の monsters[].reward もこの値）・`monsterCardRewards: false`（レアリティのカードを出さない）。城HPが初めて50%以下になった人に `castleHalfCoins` 3（各1回。reason `castleHalf`）
+- **経済のカード6種**（カードに `economy: true`。slot "support"＝攻撃の魔法に数えない。1ターンの枚数は既存の `rules.coinCardsPerTurn`＝1）：徴税（gainCoins +3・MP1）・貿易（gainCoins +5・MP3）・金鉱（`coinMine`：次の自ターンから3回+2・MP2）・略奪（`plunderCoins`：相手から2枚まで・MP1）・投資（`investCoins`：コイン3を払い3回あとの自ターンに+6・MP0）・宝探し（コインサイコロ per 1＝出目1〜6・MP1。既存の rollDice・注入 RNG）。クラシックは山札80枚のまま8枚を入れ替え、4陣営は各陣営2種（王国＝徴税・投資／森＝宝探し・貿易／魔族＝略奪・徴税／竜＝金鉱・宝探し）。金鉱・投資の予約は `getState().players.pX.economy`（{ mines, investments }。使ったことがある人だけ）。CPU は smart がほかに出すものがないときに使う
+- **強化（コインで買う `buyUpgrade` / `data/upgrades.json`）は A1 では変えていない**：コインが増えたぶん smart が今の強化を多く買う。A2 でモード別のデータ（26種）に置き換える（a1-battle-tempo.md の「A2 への引き継ぎ」）
+- 小規模の比較（`node tests/sim/tempo.js`。ビルド×none／陣営×ほか3陣営。1ターンのカード枚数・MP 余剰/不足・コンボ・コイン・魔物）：a1-battle-tempo.md の表
 
 ## クラシック：王国の「守りを貫く手段」（案A 聖壁の号砲。人間の指示。数値は仮）
 
