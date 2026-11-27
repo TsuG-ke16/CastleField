@@ -103,8 +103,8 @@ trigger・roll（p と成否）・crit（p・倍率・前後の量）・damage /
 
 ## 6. CPU（段階D2）
 - 既存の戦い方（smart など）はそのまま。`STRATEGIES[name].takeTurn` の前後で `takeSkillActions(game, pid, 'pre' | 'post')` が `game.listSkillActions` の合法手だけを `game.skillAction` で使う（画面・headless と同じAPI）。pass は使わない
-- 使う任意アクションは `CPU_SKILL_ACTIONS`（strategies.js）：pre＝P08・X04・B06・P03（コイン2以上）・H03・H04・H05・G04・T06・I01・B02（城HP条件）、post＝G06・I08・V07・X43・Q08・Q06・Q03・Q05・D07・T04・S08・T08・B07・K04・K08。選び方は一覧の先頭（安定順）か量の最大
-- **使わない（未対応）**：H07（捨てる札の評価が要る）・H08（交換の評価）・U06・K05（移動の評価）・V05（トークンを失う）・X29（兵士を失う）・X44（順序の評価。既定のまま）
+- 使う任意アクションは `CPU_SKILL_ACTIONS`（strategies.js）：pre＝P08・X04・B06・P03（コイン2以上）・H03・H04・H05・G04・T06・I01・B02（城HP条件）・H08・H07、post＝V05・X29・G06・I08・V07・X43・Q08・Q06・Q03・Q05・D07・T04・S08・T08・B07・K05・U06・K04・K08・X44。対象は `pick(options, env)` の単純な点数で選ぶ（倒せる敵・前の敵・減った味方・敵のいるレーンなど。同点は一覧の先頭＝安定順）。点数が足りなければ見送る。くわしくは `docs/skilltree-200-notes/cpu-more-actions.md`
+- **CPU が使わない任意アクションは、なし**（H07・H08・U06・K05・V05・X29・X44 も、損をしにくい条件のときだけ使う。条件は cpu-more-actions.md。勝率は未測定）
 - 城HPを使う判断：債務がなく、払ったあとも最大HPの50%（`CPU_SKILL_SAFE_HP_RATIO`）以上残るときだけ（B02・HP置換・B03・X27）
 - 手札の選択 `cpuSkillOptions`：`hpForMp`（MP で払えれば 0＝置換しない／足りなければ城HPに余裕があるときだけ不足分）、`bloodBlade`・`bloodEcho`（城HPに余裕があるとき true）、`diceChoice: 'high'`（L06）。`deferHp` は渡さない（本人設定に従う）。HP置換が要るのに余裕がないカードは「出せる」に数えない
 - H01：`mulliganChoice` が H01 を持つときだけ「今のMPで撃てない重い非兵士カード」を重い順に最大2枚戻す。兵士が1枚もなければ従来どおり全部
@@ -165,7 +165,7 @@ trigger・roll（p と成否）・crit（p・倍率・前後の量）・damage /
 7. 時間予約と債務（T01/T05/T06/T07/T08・R04・X07・I07・X35 の債務の優先支払）
 8. 7/10/12/15pt の合法ビルド（`qa.apply(..., budget)`）
 9. 無取得クラシックと通常モードの回帰（乱数消費ゼロ）
-- 勝率は複数シード・先後入替・複数CPU戦略・未使用シードで再検証すること。CPU が未対応の任意アクション（H07・H08・U06・K05・V05・X29・X44）を含むビルドや、休眠・実データ休眠のノードを「弱い」と断定しないこと
+- 勝率は複数シード・先後入替・複数CPU戦略・未使用シードで再検証すること。CPU の新ルール（H07・H08・U06・K05・V05・X29・X44 と対象選択の点数。勝率未測定）を含むビルドや、休眠・実データ休眠のノードを「弱い」と断定しないこと
 
 ## 11. 既知の制限
 - **オンライン対戦（対応済み・feature/online-skills）**：任意スキル・カード使用前の選択・支払いの見積もり・発動ログ（本人の分だけ）・スキルの設定（setSkillPrefs）がサーバー経由で使える。設定（X35 の自動延期・X15 の選び方・L06 の出目）の切り替え画面と X15 の選択ダイアログは feature/skill-choice-ui で追加（`docs/skilltree-200-notes/skill-choice-ui.md`）。相手の発動ログは送らない。相手の `skillState` の `resources`・`debt` は getState の決まりどおり公開のまま（貯蔵MPなどを隠すなら getState 側の変更が要る）。くわしくは `docs/skilltree-200-notes/online-skills.md`
