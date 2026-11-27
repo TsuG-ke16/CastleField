@@ -229,3 +229,30 @@ export function rankLabel(s: RankedSummary | null): string {
   }
   return s.rank ? `${s.rank.divisionLabel}・${s.rank.rp}RP` : 'ランク未参加';
 }
+
+/** 別の端末への引き継ぎ（引き継ぎコード。24時間・1回だけ。使うと元の端末の鍵は使えなくなる） */
+export const transferApi = {
+  async issue(serverUrl: string | undefined): Promise<{ ok: boolean; reason?: string; code?: string; expiresAt?: number }> {
+    // 黙ってゲストを作り直さない（空のゲストのコードを出してしまうため）
+    const id = loadIdentity(serverUrl);
+    if (!id) return { ok: false, reason: 'まだサーバーに記録がありません（お財布をサーバーに保存するか、ランクマッチを遊んでください）' };
+    const { json } = await postJson<{ ok: boolean; reason?: string; code?: string; expiresAt?: number }>(
+      serverUrl,
+      '/api/account/transferCode',
+      { userId: id.userId, secret: id.secret }
+    );
+    return json;
+  },
+  /** コードを使って、この端末を引き継いだゲストにする（この端末の今のゲストの鍵は捨てる） */
+  async redeem(serverUrl: string | undefined, code: string): Promise<{ ok: boolean; reason?: string; name?: string }> {
+    const { json } = await postJson<{ ok: boolean; reason?: string; userId?: string; secret?: string; name?: string }>(
+      serverUrl,
+      '/api/account/redeem',
+      { code }
+    );
+    if (json.ok && json.userId && json.secret) {
+      saveIdentity({ userId: json.userId, secret: json.secret, server: serverKey(serverUrl) });
+    }
+    return { ok: json.ok, reason: json.reason, name: json.name };
+  },
+};

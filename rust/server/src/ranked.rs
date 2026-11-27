@@ -24,6 +24,8 @@ use crate::{state_to_value, AppState, Room};
 
 pub(crate) const ACCOUNTS_TABLE: TableDefinition<&str, &str> = TableDefinition::new("accounts");
 pub(crate) const RANKED_TABLE: TableDefinition<&str, &str> = TableDefinition::new("ranked");
+/// 引き継ぎコード → { userId, expiresAt }（1回使うと消す）
+pub(crate) const TRANSFER_TABLE: TableDefinition<&str, &str> = TableDefinition::new("transfer_codes");
 
 pub use crate::util::random_hex;
 
@@ -839,4 +841,105 @@ pub async fn api_account_profile(State(state): State<Arc<AppState>>, Json(req): 
     let mut v = public_profile(&state, &acc.user_id);
     v["ok"] = json!(true);
     (StatusCode::OK, Json(v))
+}
+
+// ---------------------------------------------------------------------------
+// 別の端末への引き継ぎ（引き継ぎコード。24時間・1回だけ。使うと元の端末の鍵は使えなくなる）
+// ---------------------------------------------------------------------------
+
+const TRANSFER_TTL_MS: i64 = 24 * 60 * 60 * 1000;
+/// 読みまちがえやすい文字（0・O・1・I）を除いた32文字
+const CODE_ALPHABET: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TransferCode {
+    user_id: String,
+    expires_at: i64,
+}
+
+fn new_code() -> String {
+    let hex = random_hex(10);
+    (0..10)
+        .map(|i| {
+            let b = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16).unwrap_or(0);
+            CODE_ALPHABET[(b as usize) % CODE_ALPHABET.len()] as char
+        })
+        .collect()
+}
+
+fn normalize_code(s: &str) -> String {
+    s.chars().filter(|c| c.is_ascii_alphanumeric()).map(|c| c.to_ascii_uppercase()).collect()
+}
+
+/// 引き継ぎコードを出す（前に出したコードは使えなくなる）
+pub async fn api_transfer_code(State(state): State<Arc<AppState>>, Json(req): Json<AuthReq>) -> impl IntoResponse {
+    state.requests_total.fetch_add(1, Ordering::Relaxed);
+    let acc = match auth(&state, &req) {
+        Ok(a) => a,
+        Err(e) => return e,
+    };
+    let now = (state.clock)();
+    let code = new_code();
+    let db = state.db.lock().unwrap();
+    let res = (|| -> Result<(), String> {
+        let txn = db.begin_write().map_err(|e| e.to_string())?;
+        {
+            let mut t = txn.open_table(TRANSFER_TABLE).map_err(|e| e.to_string())?;
+            // この人の古いコードと、期限切れのコードを消す
+            let stale: Vec<String> = t
+                .iter()
+                .map_err(|e| e.to_string())?
+                .filter_map(|r| r.ok())
+                .filter_map(|(k, v)| {
+                    let tc: TransferCode = serde_json::from_str(v.value()).ok()?;
+                    (tc.user_id == acc.user_id || tc.expires_at <= now).then(|| k.value().to_string())
+                })
+                .collect();
+            for k in stale {
+                t.remove(k.as_str()).map_err(|e| e.to_string())?;
+            }
+            let v = serde_json::to_string(&TransferCode { user_id: acc.user_id.clone(), expires_at: now + TRANSFER_TTL_MS }).map_err(|e| e.to_string())?;
+            t.insert(code.as_str(), v.as_str()).map_err(|e| e.to_string())?;
+        }
+        txn.commit().map_err(|e| e.to_string())
+    })();
+    if let Err(e) = res {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "ok": false, "reason": e })));
+    }
+    (StatusCode::OK, Json(json!({ "ok": true, "code": code, "expiresAt": now + TRANSFER_TTL_MS })))
+}
+
+#[derive(Deserialize)]
+pub struct RedeemReq {
+    code: String,
+}
+
+/// 引き継ぎコードを使う。新しい鍵（secret）を返し、元の端末の鍵は使えなくする
+pub async fn api_transfer_redeem(State(state): State<Arc<AppState>>, Json(req): Json<RedeemReq>) -> impl IntoResponse {
+    state.requests_total.fetch_add(1, Ordering::Relaxed);
+    let code = normalize_code(&req.code);
+    let now = (state.clock)();
+    let db = state.db.lock().unwrap();
+    let found: Option<TransferCode> = read_json(&db, TRANSFER_TABLE, &code);
+    let bad = || (StatusCode::OK, Json(json!({ "ok": false, "reason": "引き継ぎコードがちがうか、期限が切れています" })));
+    let Some(tc) = found else { return bad() };
+    // コードは1回だけ（期限切れでも消す）
+    let removed = (|| -> Result<(), String> {
+        let txn = db.begin_write().map_err(|e| e.to_string())?;
+        {
+            let mut t = txn.open_table(TRANSFER_TABLE).map_err(|e| e.to_string())?;
+            t.remove(code.as_str()).map_err(|e| e.to_string())?;
+        }
+        txn.commit().map_err(|e| e.to_string())
+    })();
+    if removed.is_err() || tc.expires_at <= now {
+        return bad();
+    }
+    let Some(mut acc) = read_json::<Account>(&db, ACCOUNTS_TABLE, &tc.user_id) else { return bad() };
+    acc.secret = random_hex(24);
+    if let Err(e) = write_json(&db, ACCOUNTS_TABLE, &acc.user_id, &acc) {
+        return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "ok": false, "reason": e })));
+    }
+    (StatusCode::OK, Json(json!({ "ok": true, "userId": acc.user_id, "secret": acc.secret, "name": acc.name })))
 }

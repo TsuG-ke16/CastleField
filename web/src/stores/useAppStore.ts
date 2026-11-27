@@ -4,6 +4,7 @@ import { loadAllGameData } from '../engine/dataLoader';
 import { soundManager } from '../audio/soundManager';
 import type { PublicProfile, RankedSummary } from '../engine/rankedClient';
 import { economyApi, type ServerWallet } from '../engine/economyClient';
+import { transferApi } from '../engine/rankedClient';
 
 /** お財布（コイン・交換pt・所持品）をどこで持つか。server はサーバーが正（端末の値は表示用の写し） */
 export type WalletMode = 'local' | 'server';
@@ -220,6 +221,8 @@ interface AppStoreState {
   /** お財布をサーバーに切りかえる（端末の所持品を1回だけ移す。コインは移らない） */
   enableServerWallet: () => Promise<{ ok: boolean; reason?: string }>;
   disableServerWallet: () => void;
+  /** 引き継ぎコードで、この端末を別の端末のゲストにする（お財布はサーバーに切りかえる） */
+  redeemTransferCode: (code: string) => Promise<{ ok: boolean; reason?: string }>;
   refreshWallet: () => Promise<void>;
   /** ガチャ（お財布の場所に合わせて、端末かサーバーで引く） */
   rollGacha: (count: 1 | 10) => Promise<GachaRecord[] | null>;
@@ -593,6 +596,19 @@ export const useAppStore = create<AppStoreState>((set, get) => {
         if (!w.ok) return { ok: false, reason: w.reason };
         get().applyWallet(w);
         savePatch({ walletMode: 'server' });
+        return { ok: true };
+      } catch (e) {
+        return { ok: false, reason: e instanceof Error ? e.message : String(e) };
+      }
+    },
+
+    redeemTransferCode: async (code) => {
+      const { onlineServerUrl } = get();
+      try {
+        const r = await transferApi.redeem(onlineServerUrl, code.trim());
+        if (!r.ok) return { ok: false, reason: r.reason || '引き継げませんでした' };
+        savePatch({ walletMode: 'server', rankedSummary: null, ...(r.name ? { playerName: r.name } : {}) });
+        await get().refreshWallet();
         return { ok: true };
       } catch (e) {
         return { ok: false, reason: e instanceof Error ? e.message : String(e) };

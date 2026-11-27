@@ -5,6 +5,7 @@ import { getSkinFilter, getSkinPreviewImage } from '../engine/skinUtils';
 import { GameButton } from '../components/ui/GameButton';
 import { PaintedIcon, type PaintedIconName } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
+import { transferApi } from '../engine/rankedClient';
 
 export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void }) {
   const {
@@ -30,9 +31,14 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     walletMode,
     enableServerWallet,
     disableServerWallet,
+    redeemTransferCode,
+    onlineServerUrl,
   } = useAppStore();
   const [walletBusy, setWalletBusy] = useState(false);
   const [walletNote, setWalletNote] = useState<string | null>(null);
+  const [transferCode, setTransferCode] = useState<{ code: string; expiresAt: number } | null>(null);
+  const [codeInput, setCodeInput] = useState('');
+  const [transferNote, setTransferNote] = useState<string | null>(null);
   const [subPage, setSubPage] = useState<'main' | 'skins' | 'missions' | 'guide'>('main');
   const [benchBusy, setBenchBusy] = useState(false);
   const [benchResult, setBenchResult] = useState<RustBenchmarkResult | null>(null);
@@ -406,6 +412,70 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
             {walletBusy ? '切りかえ中…' : walletMode === 'server' ? 'この端末の保存に戻す' : 'サーバーに保存する'}
           </GameButton>
           {walletNote && <div style={{ fontSize: 12, fontWeight: 800 }}>{walletNote}</div>}
+
+          <div style={{ borderTop: '1.5px dashed #c9b075', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <strong style={{ fontSize: 13 }}>別の端末へ引き継ぐ</strong>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)', lineHeight: 1.5 }}>
+              今の端末でコードを出し、新しい端末で入れると、サーバーのお財布とランクの続きから遊べます。コードは24時間・1回だけ。使うと、元の端末では続きを遊べなくなります。
+            </div>
+            {transferCode ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                <span
+                  className="tabular"
+                  style={{ fontSize: 24, fontWeight: 900, letterSpacing: 3, userSelect: 'all' }}
+                  aria-label="引き継ぎコード"
+                >
+                  {transferCode.code.slice(0, 5)}-{transferCode.code.slice(5)}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 700 }}>
+                  {new Date(transferCode.expiresAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })} まで有効
+                </span>
+              </div>
+            ) : (
+              <GameButton
+                size="sm"
+                fullWidth
+                onClick={async () => {
+                  setTransferNote(null);
+                  try {
+                    const r = await transferApi.issue(onlineServerUrl);
+                    if (r.ok && r.code && r.expiresAt) setTransferCode({ code: r.code, expiresAt: r.expiresAt });
+                    else setTransferNote(r.reason || 'コードを出せませんでした');
+                  } catch (e) {
+                    setTransferNote(e instanceof Error ? e.message : String(e));
+                  }
+                }}
+              >
+                引き継ぎコードを出す
+              </GameButton>
+            )}
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input
+                type="text"
+                inputMode="text"
+                autoCapitalize="characters"
+                placeholder="コードを入れる（例 ABCDE-FGH23）"
+                aria-label="引き継ぎコードを入れる"
+                value={codeInput}
+                maxLength={16}
+                onChange={(e) => setCodeInput(e.target.value)}
+                style={{ flex: 1, minWidth: 0, padding: '8px 10px', borderRadius: 10, border: '2px solid #4a2e1a', background: '#fffdf7', fontSize: 14, fontWeight: 800 }}
+              />
+              <GameButton
+                size="sm"
+                variant="primary-gold"
+                disabled={codeInput.replace(/[^a-zA-Z0-9]/g, '').length < 10}
+                onClick={async () => {
+                  const r = await redeemTransferCode(codeInput);
+                  setTransferNote(r.ok ? '引き継ぎました。サーバーのお財布で続きから遊べます' : r.reason || '引き継げませんでした');
+                  if (r.ok) setCodeInput('');
+                }}
+              >
+                引き継ぐ
+              </GameButton>
+            </div>
+            {transferNote && <div style={{ fontSize: 12, fontWeight: 800 }}>{transferNote}</div>}
+          </div>
         </ParchmentSheet>
 
         <div style={{ fontSize: 13, fontWeight: 900, paddingLeft: 4 }}>環境・外遊び設定</div>

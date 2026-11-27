@@ -123,3 +123,45 @@ async fn missions_check_server_counts_and_pay_once() {
     let r = post(&e, "/api/economy/mission", m("no_such")).await;
     assert_eq!(r["ok"], false);
 }
+
+#[tokio::test]
+async fn transfer_code_moves_account_once_and_retires_old_secret() {
+    let e = env("transfer");
+    let a = guest(&e).await;
+    post(&e, "/api/economy/gacha", with(&a, json!({ "count": 1 }))).await;
+    let before = post(&e, "/api/economy/wallet", a.clone()).await;
+
+    // 出し直すと、前のコードは使えない
+    let old = post(&e, "/api/account/transferCode", a.clone()).await;
+    let c = post(&e, "/api/account/transferCode", a.clone()).await;
+    assert_eq!(c["ok"], true);
+    let code = c["code"].as_str().unwrap().to_string();
+    assert_eq!(code.len(), 10);
+    let r = post(&e, "/api/account/redeem", json!({ "code": old["code"] })).await;
+    assert_eq!(r["ok"], false, "古いコードは使えない");
+
+    // 小文字・ハイフン入りでも通る
+    let typed = format!("{}-{}", &code[..5], &code[5..]).to_lowercase();
+    let r = post(&e, "/api/account/redeem", json!({ "code": typed })).await;
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(r["userId"], a["userId"]);
+    let b = json!({ "userId": r["userId"], "secret": r["secret"] });
+    assert_ne!(b["secret"], a["secret"]);
+    let w = post(&e, "/api/economy/wallet", b.clone()).await;
+    assert_eq!(w["coins"], before["coins"]);
+    assert_eq!(w["ownedSkins"], before["ownedSkins"]);
+    // 元の端末の鍵は使えない
+    let r = post(&e, "/api/economy/wallet", a.clone()).await;
+    assert_eq!(r["ok"], false);
+    // コードは1回だけ
+    let r = post(&e, "/api/account/redeem", json!({ "code": code })).await;
+    assert_eq!(r["ok"], false);
+
+    // 期限切れ
+    let c = post(&e, "/api/account/transferCode", b.clone()).await;
+    e.clock.fetch_add(24 * 3_600_000 + 1, Ordering::SeqCst);
+    let r = post(&e, "/api/account/redeem", json!({ "code": c["code"] })).await;
+    assert_eq!(r["ok"], false);
+    let r = post(&e, "/api/economy/wallet", b.clone()).await;
+    assert_eq!(r["ok"], true, "期限切れのコードを使われても、今の鍵はそのまま");
+}
