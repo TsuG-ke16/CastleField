@@ -22,6 +22,14 @@ export interface DisplayRank {
   position: number | null;
 }
 
+/** ほかの人に見せるプロフィール（サーバーが決める。フレームはサーバーの所持品にあるものだけ） */
+export interface PublicProfile {
+  name: string;
+  avatar: string | null;
+  iconFrame: string | null;
+  rank: DisplayRank | null;
+}
+
 export interface RankedChange {
   matchId: string;
   result: 'win' | 'loss';
@@ -65,6 +73,7 @@ export type RankedStatus =
       token: string;
       playerId: 'p1' | 'p2';
       opponentName: string;
+      opponent: PublicProfile | null;
       finished: boolean;
       gameState: GameState;
     };
@@ -82,6 +91,8 @@ export interface SeasonReward {
 export interface LeaderboardEntry {
   position: number;
   name: string;
+  avatar?: string | null;
+  iconFrame?: string | null;
   rp: number;
   matches: number;
   wins: number;
@@ -178,6 +189,22 @@ export const rankedApi = {
       userId: id.userId,
       secret: id.secret,
       season,
+    });
+    return json;
+  },
+  /** 名前・アバター・アイコンフレームをサーバーに伝える（ほかの人に見せる）。iconFrame は null で外す、省略で変えない */
+  async updateProfile(
+    serverUrl: string | undefined,
+    name: string,
+    patch: { avatar?: string; iconFrame?: string | null }
+  ): Promise<(PublicProfile & { ok: boolean; reason?: string }) | null> {
+    const id = loadIdentity(serverUrl);
+    if (!id) return null; // まだランクマッチを遊んでいない端末は送らない
+    const { json } = await postJson<PublicProfile & { ok: boolean; reason?: string }>(serverUrl, '/api/account/profile', {
+      userId: id.userId,
+      secret: id.secret,
+      name,
+      ...patch,
     });
     return json;
   },

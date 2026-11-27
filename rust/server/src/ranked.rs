@@ -78,6 +78,12 @@ pub struct Account {
     pub secret: String,
     pub name: String,
     pub created_at: i64,
+    /// アバター（兵士のカード種類）。ほかの人にも見える
+    #[serde(default)]
+    pub avatar: Option<String>,
+    /// 付けているアイコンフレーム（サーバーの所持品にあるものだけ）。ほかの人にも見える
+    #[serde(default)]
+    pub icon_frame: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -404,6 +410,8 @@ pub async fn api_account_guest(State(state): State<Arc<AppState>>, Json(req): Js
         secret: random_hex(24),
         name: clean_name(req.name.as_deref()),
         created_at: (state.clock)(),
+        avatar: None,
+        icon_frame: None,
     };
     let db = state.db.lock().unwrap();
     if let Err(e) = write_json(&db, ACCOUNTS_TABLE, &acc.user_id, &acc) {
@@ -471,12 +479,19 @@ fn status_value(state: &AppState, mm: &mut Matchmaker, user_id: &str) -> Value {
             };
             let room = room.lock().unwrap();
             let opponent = room.seats.iter().find(|(k, _)| **k != player_id).map(|(_, v)| v.clone()).unwrap_or_default();
+            let opponent_profile = room
+                .ranked
+                .as_ref()
+                .and_then(|m| m.users.iter().find(|(seat, _)| *seat != player_id).map(|(_, uid)| uid.clone()))
+                .map(|uid| public_profile(state, &uid))
+                .unwrap_or(Value::Null);
             let finished = room.game.phase() == "gameOver";
             json!({
                 "state": "matched",
                 "token": token,
                 "playerId": player_id,
                 "opponentName": opponent,
+                "opponent": opponent_profile,
                 "finished": finished,
                 "gameState": state_to_value(&room.game.get_state(Some(&player_id))),
             })
@@ -586,9 +601,14 @@ pub async fn api_ranked_leaderboard(State(state): State<Arc<AppState>>, Query(q)
     state.requests_total.fetch_add(1, Ordering::Relaxed);
     let cfg = &state.ranked;
     let (season, _, _) = cfg.seasons.season_at((state.clock)());
-    let records = {
+    let (records, accounts) = {
         let db = state.db.lock().unwrap();
-        all_records(&db)
+        let recs = all_records(&db);
+        let accs: HashMap<String, Account> = recs
+            .iter()
+            .filter_map(|r| read_json::<Account>(&db, ACCOUNTS_TABLE, &r.user_id).map(|a| (r.user_id.clone(), a)))
+            .collect();
+        (recs, accs)
     };
     let mut rows: Vec<(&RankRecord, StoredEntry)> = records
         .iter()
@@ -605,6 +625,8 @@ pub async fn api_ranked_leaderboard(State(state): State<Arc<AppState>>, Query(q)
             json!({
                 "position": pos,
                 "name": if r.name.is_empty() { "ゲスト".to_string() } else { r.name.clone() },
+                "avatar": accounts.get(&r.user_id).and_then(|a| a.avatar.clone()),
+                "iconFrame": accounts.get(&r.user_id).and_then(|a| a.icon_frame.clone()),
                 "rp": e.rp,
                 "matches": e.matches,
                 "wins": e.wins,
@@ -739,4 +761,78 @@ pub async fn api_ranked_claim_season(State(state): State<Arc<AppState>>, Json(re
         return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "ok": false, "reason": e })));
     }
     (StatusCode::OK, Json(json!({ "ok": true, "season": req.season, "items": items, "peak": r["peak"].clone() })))
+}
+
+// ---------------------------------------------------------------------------
+// ほかの人に見せるプロフィール（名前・アバター・アイコンフレーム・ランク）
+// ---------------------------------------------------------------------------
+
+/// ほかの人に見せてよい情報だけ（userId・secret・MMR は出さない）
+pub fn public_profile(state: &AppState, user_id: &str) -> Value {
+    let (acc, rec) = {
+        let db = state.db.lock().unwrap();
+        (read_json::<Account>(&db, ACCOUNTS_TABLE, user_id), read_json::<RankRecord>(&db, RANKED_TABLE, user_id).unwrap_or_default())
+    };
+    let Some(acc) = acc else { return Value::Null };
+    let (season, _, _) = state.ranked.seasons.season_at((state.clock)());
+    let e = current_entry(&state.ranked, &rec, season);
+    let rank = if e.placement_left == 0 { rank_value(&state.ranked.ranks.display_rank(e.rp, None)) } else { Value::Null };
+    json!({ "name": acc.name, "avatar": acc.avatar, "iconFrame": acc.icon_frame, "rank": rank })
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProfileReq {
+    user_id: String,
+    secret: String,
+    #[serde(default)]
+    name: Option<String>,
+    /// 省略すると変えない
+    #[serde(default)]
+    avatar: Option<String>,
+    /// 省略すると変えない。null は外す
+    #[serde(default, deserialize_with = "double_option")]
+    icon_frame: Option<Option<String>>,
+}
+
+/// 「キーがない」と「null」を区別する
+fn double_option<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<Option<String>>, D::Error> {
+    Ok(Some(Option::deserialize(d)?))
+}
+
+/// 自分のプロフィール（名前・アバター・アイコンフレーム）を変える。フレームはサーバーの所持品にあるものだけ
+pub async fn api_account_profile(State(state): State<Arc<AppState>>, Json(req): Json<ProfileReq>) -> impl IntoResponse {
+    state.requests_total.fetch_add(1, Ordering::Relaxed);
+    let mut acc = match authenticate(&state, &req.user_id, &req.secret) {
+        Ok(a) => a,
+        Err(e) => return e,
+    };
+    if let Some(n) = req.name.as_deref() {
+        acc.name = clean_name(Some(n));
+    }
+    if let Some(av) = req.avatar.as_deref() {
+        let ok = !av.starts_with("beast_") && state.base_config.cards.get(av).map(|c| c.kind == "soldier").unwrap_or(false);
+        if !ok {
+            return (StatusCode::OK, Json(json!({ "ok": false, "reason": "そのアバターは使えません" })));
+        }
+        acc.avatar = Some(av.to_string());
+    }
+    {
+        let db = state.db.lock().unwrap();
+        if let Some(frame) = &req.icon_frame {
+            if let Some(f) = frame {
+                let owned = crate::load_profile(&db, &acc.user_id).owned_skins.contains(f);
+                if !f.starts_with("frame_") || !owned {
+                    return (StatusCode::OK, Json(json!({ "ok": false, "reason": "持っていないフレームは付けられません" })));
+                }
+            }
+            acc.icon_frame = frame.clone();
+        }
+        if let Err(e) = write_json(&db, ACCOUNTS_TABLE, &acc.user_id, &acc) {
+            return (StatusCode::INTERNAL_SERVER_ERROR, Json(json!({ "ok": false, "reason": e })));
+        }
+    }
+    let mut v = public_profile(&state, &acc.user_id);
+    v["ok"] = json!(true);
+    (StatusCode::OK, Json(v))
 }

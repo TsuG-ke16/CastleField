@@ -5,6 +5,7 @@ import { rankedApi, type LeaderboardEntry, type RankedStatus, type SeasonReward 
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
+import { FramedAvatar } from '../components/ui/FramedAvatar';
 import styles from './RankedLobby.module.css';
 
 const POLL_MS = 2000;
@@ -22,6 +23,8 @@ export function RankedLobby({ onClose }: { onClose: () => void }) {
     startRankedBattle,
     data,
     grantOwnedItems,
+    avatarCardType,
+    selectedIconFrame,
   } = useAppStore();
   const [rewards, setRewards] = useState<SeasonReward[]>([]);
   const [rewardMsg, setRewardMsg] = useState<string | null>(null);
@@ -52,7 +55,13 @@ export function RankedLobby({ onClose }: { onClose: () => void }) {
           setStatus('idle');
           return;
         }
-        startRankedBattle({ token: st.token, playerId: st.playerId, opponentName: st.opponentName, state: st.gameState });
+        startRankedBattle({
+          token: st.token,
+          playerId: st.playerId,
+          opponentName: st.opponentName,
+          opponent: st.opponent ?? null,
+          state: st.gameState,
+        });
         return;
       }
       setStatus(st.state);
@@ -90,6 +99,11 @@ export function RankedLobby({ onClose }: { onClose: () => void }) {
         const sum = await rankedApi.summary(onlineServerUrl, playerName);
         if (!aliveRef.current) return;
         if (sum.ok) setRankedSummary(sum);
+        // ゲスト登録した直後でも、今のアバター・フレームが相手に見えるように送っておく
+        rankedApi
+          .updateProfile(onlineServerUrl, playerName, { avatar: avatarCardType })
+          .then(() => rankedApi.updateProfile(onlineServerUrl, playerName, { iconFrame: selectedIconFrame }))
+          .catch(() => {});
         rankedApi
           .seasonRewards(onlineServerUrl, playerName)
           .then((r) => {
@@ -327,7 +341,10 @@ export function RankedLobby({ onClose }: { onClose: () => void }) {
                 board.map((e) => (
                   <li key={e.position} className={styles.boardRow}>
                     <span className={styles.pos}>{e.position}</span>
-                    <span className={styles.boardName}>{e.name}</span>
+                    <span className={styles.boardName}>
+                      <FramedAvatar cardType={e.avatar || 'infantry'} frameId={e.iconFrame} size={22} />
+                      <span className={styles.boardNameText}>{e.name}</span>
+                    </span>
                     <span className={styles.boardRank} style={{ color: e.rank.color }}>
                       {e.rank.divisionLabel}
                     </span>

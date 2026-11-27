@@ -17,6 +17,7 @@ import { GameCard } from '../components/ui/GameCard';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
 import { ResultOverlay } from './ResultOverlay';
+import { FramedAvatar } from '../components/ui/FramedAvatar';
 import styles from './BattleScreen.module.css';
 
 interface MatchSummary {
@@ -734,6 +735,17 @@ export function BattleScreen() {
       <div className={styles.arenaWrap}>
         <div className={styles.hpOverlayTop}>
           <div className={styles.castleSign}>
+            {playMode === 'ranked' && rankedTicket?.opponent && (
+              // ランクマッチの相手：アバターと、サーバーが認めたフレーム・ランク
+              <span style={{ display: 'inline-flex', margin: rankedTicket.opponent.iconFrame ? '0 6px 0 4px' : 0 }}>
+                <FramedAvatar
+                  cardType={rankedTicket.opponent.avatar || 'infantry'}
+                  frameId={rankedTicket.opponent.iconFrame}
+                  size={24}
+                  alt="相手のアバター"
+                />
+              </span>
+            )}
             <span>
               {playMode === 'local'
                 ? oppSide === 'p1'
@@ -745,6 +757,11 @@ export function BattleScreen() {
                     ? rankedTicket?.opponentName || '対戦相手'
                     : `CPU (${cpuLevel})`}
             </span>
+            {playMode === 'ranked' && rankedTicket?.opponent?.rank && (
+              <span style={{ color: rankedTicket.opponent.rank.color, textShadow: '0 1px 0 rgba(74,46,26,0.5)' }}>
+                {rankedTicket.opponent.rank.divisionLabel}
+              </span>
+            )}
             <span>手札{pOpp.handCount}</span>
             {pOpp.castleHp > 0 && pOpp.castleHp <= Math.floor(pOpp.castleMaxHp / 3) && (
               <span className={styles.odBadge}>⚡OD</span>

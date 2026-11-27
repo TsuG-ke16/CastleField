@@ -281,3 +281,65 @@ async fn season_rewards_after_season_ends_once() {
     assert_eq!(s["season"], 2);
     assert_eq!(s["placementLeft"], 2);
 }
+
+#[tokio::test]
+async fn public_profile_frame_must_be_owned_and_is_shown_to_opponent() {
+    let e = env("profile");
+    let a = guest(&e, "Alice").await;
+    let b = guest(&e, "Bob").await;
+    let with = |base: &Value, extra: Value| {
+        let mut v = base.clone();
+        for (k, x) in extra.as_object().unwrap() {
+            v[k] = x.clone();
+        }
+        v
+    };
+    // アバターは兵士のカードだけ
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "avatar": "paladin" }))).await;
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(r["avatar"], "paladin");
+    assert!(r.get("userId").is_none() && r.get("secret").is_none());
+    for bad in ["fireball", "beast_goblin", "nope"] {
+        let r = post(&e, "/api/account/profile", &with(&a, json!({ "avatar": bad }))).await;
+        assert_eq!(r["ok"], false, "{bad}");
+    }
+    // 持っていないフレームは付けられない
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "iconFrame": "frame_gold" }))).await;
+    assert_eq!(r["ok"], false);
+
+    // シーズン1で5試合 → シーズン2で報酬を受け取る → そのフレームは付けられる
+    for _ in 0..5 {
+        let (_, (tb, _)) = match_two(&e, &a, &b).await;
+        post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    }
+    e.clock.fetch_add(56 * 86_400_000, Ordering::SeqCst);
+    let claim = post(&e, "/api/ranked/claimSeason", &with(&a, json!({ "season": 1 }))).await;
+    let frame = claim["items"][0].as_str().unwrap().to_string();
+    assert!(frame.starts_with("frame_"));
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "iconFrame": frame }))).await;
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(r["iconFrame"], frame.as_str());
+
+    // 次の試合で、相手（Bob）に Alice のアバター・フレームが見える
+    let (_, (tb, _)) = match_two(&e, &a, &b).await;
+    let sb = post(&e, "/api/ranked/status", &b).await;
+    assert_eq!(sb["opponent"]["name"], "Alice");
+    assert_eq!(sb["opponent"]["avatar"], "paladin");
+    assert_eq!(sb["opponent"]["iconFrame"], frame.as_str());
+    assert!(sb["opponent"].get("userId").is_none());
+
+    // ランキングにも出る（シーズン2の認定戦2試合を終えてから）
+    post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    let (_, (tb, _)) = match_two(&e, &a, &b).await;
+    post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    let (_, board) = req(&e.app, "GET", "/api/ranked/leaderboard", None).await;
+    let alice = board["entries"].as_array().unwrap().iter().find(|x| x["name"] == "Alice").unwrap().clone();
+    assert_eq!(alice["iconFrame"], frame.as_str());
+
+    // null で外せる。省略したときは変えない
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "name": "Alice2" }))).await;
+    assert_eq!(r["iconFrame"], frame.as_str());
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "iconFrame": null }))).await;
+    assert_eq!(r["ok"], true);
+    assert!(r["iconFrame"].is_null());
+}

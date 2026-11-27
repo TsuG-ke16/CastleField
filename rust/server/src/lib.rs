@@ -343,6 +343,7 @@ pub fn build_router(state: Arc<AppState>, repo_root: Option<PathBuf>) -> Router 
         .route("/api/economy/gacha", post(api_economy_gacha))
         .route("/api/economy/buy", post(api_economy_buy))
         .route("/api/account/guest", post(ranked::api_account_guest))
+        .route("/api/account/profile", post(ranked::api_account_profile))
         .route("/api/ranked/queue", post(ranked::api_ranked_queue))
         .route("/api/ranked/status", post(ranked::api_ranked_status))
         .route("/api/ranked/leave", post(ranked::api_ranked_leave))

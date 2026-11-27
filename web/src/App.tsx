@@ -9,6 +9,7 @@ import { PaintedIcon } from './components/ui/PaintedIcon';
 import { ParchmentSheet } from './components/ui/Surfaces';
 import { GameButton, RoundButton } from './components/ui/GameButton';
 import { FramedAvatar, iconFrameImage } from './components/ui/FramedAvatar';
+import { rankedApi } from './engine/rankedClient';
 
 const BattleScreen = lazy(() => import('./screens/BattleScreen').then((m) => ({ default: m.BattleScreen })));
 const DeckScreen = lazy(() => import('./screens/DeckScreen').then((m) => ({ default: m.DeckScreen })));
@@ -54,6 +55,7 @@ export function App() {
     selectedIconFrame,
     equipSkin,
     data,
+    onlineServerUrl,
     setPlayMode,
     setOnlinePassphrase,
     setSelectedStageId,
@@ -67,6 +69,22 @@ export function App() {
   const shopName = (id: string) => (shopItems && !Array.isArray(shopItems) && shopItems[id]?.name) || id;
   // 持っているアイコンフレーム（絵のあるものだけ）
   const ownedFrames = ownedSkins.filter((id) => iconFrameImage(id) !== null);
+
+  // アバター・フレーム・名前を変えたら、サーバーにも伝える（ランクマッチの相手・ランキングに見える）。
+  // まだランクマッチを遊んでいない端末（ゲスト登録なし）は何もしない。フレームはサーバーの所持品にあるものだけ通る
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      void (async () => {
+        try {
+          await rankedApi.updateProfile(onlineServerUrl, playerName, { avatar: avatarCardType });
+          await rankedApi.updateProfile(onlineServerUrl, playerName, { iconFrame: selectedIconFrame });
+        } catch {
+          // つながらないときは、次に変えたときに送る
+        }
+      })();
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [onlineServerUrl, playerName, avatarCardType, selectedIconFrame]);
 
   useEffect(() => {
     init();

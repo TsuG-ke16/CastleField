@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { AppTab, CpuLevel, LoadedGameData, ModeId, PlayMode, QualityMode } from '../engine/types';
 import { loadAllGameData } from '../engine/dataLoader';
 import { soundManager } from '../audio/soundManager';
-import type { RankedSummary } from '../engine/rankedClient';
+import type { PublicProfile, RankedSummary } from '../engine/rankedClient';
 import type { GameState } from '../engine/types';
 
 /** ランクマッチで成立した試合の席（サーバーが発行した鍵）。対戦画面がこれでつなぐ */
@@ -10,6 +10,8 @@ export interface RankedTicket {
   token: string;
   playerId: 'p1' | 'p2';
   opponentName: string;
+  /** 相手のアバター・フレーム・ランク（サーバーから） */
+  opponent: PublicProfile | null;
   state: GameState;
 }
 
