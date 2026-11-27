@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
-import { rankedApi, type LeaderboardEntry, type RankedStatus } from '../engine/rankedClient';
+import { rankedApi, type LeaderboardEntry, type RankedStatus, type SeasonReward } from '../engine/rankedClient';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
@@ -11,8 +11,20 @@ const POLL_MS = 2000;
 
 /** ランクマッチの待合室：今のランク・相手を探す・ランキング */
 export function RankedLobby({ onClose }: { onClose: () => void }) {
-  const { mode, setMode, setPlayMode, playerName, onlineServerUrl, rankedSummary, setRankedSummary, startRankedBattle } =
-    useAppStore();
+  const {
+    mode,
+    setMode,
+    setPlayMode,
+    playerName,
+    onlineServerUrl,
+    rankedSummary,
+    setRankedSummary,
+    startRankedBattle,
+    data,
+    grantOwnedItems,
+  } = useAppStore();
+  const [rewards, setRewards] = useState<SeasonReward[]>([]);
+  const [rewardMsg, setRewardMsg] = useState<string | null>(null);
   const [status, setStatus] = useState<RankedStatus['state'] | 'loading' | 'error'>('loading');
   const [message, setMessage] = useState<string | null>(null);
   const [waitedSec, setWaitedSec] = useState(0);
@@ -78,6 +90,16 @@ export function RankedLobby({ onClose }: { onClose: () => void }) {
         const sum = await rankedApi.summary(onlineServerUrl, playerName);
         if (!aliveRef.current) return;
         if (sum.ok) setRankedSummary(sum);
+        rankedApi
+          .seasonRewards(onlineServerUrl, playerName)
+          .then((r) => {
+            if (!aliveRef.current || !r.ok) return;
+            setRewards(r.rewards || []);
+            // サーバーで受け取り済みなのに、この端末の所持品にない品を入れる（端末を変えたときなど）
+            const got = (r.rewards || []).filter((x) => x.claimed).flatMap((x) => x.items);
+            if (got.length) grantOwnedItems(got);
+          })
+          .catch(() => {});
         const st = await rankedApi.status(onlineServerUrl, playerName);
         handleStatus(st);
         if (st.state === 'queued') poll();
@@ -143,6 +165,27 @@ export function RankedLobby({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const itemName = (id: string) => {
+    const items = (data?.shop as { items?: Record<string, { name?: string }> } | undefined)?.items;
+    return (items && !Array.isArray(items) && items[id]?.name) || id;
+  };
+  const claimable = rewards.filter((r) => r.eligible && !r.claimed);
+
+  const handleClaim = async (season: number) => {
+    try {
+      const r = await rankedApi.claimSeason(onlineServerUrl, playerName, season);
+      if (!r.ok) {
+        setRewardMsg(r.reason || '受け取れませんでした');
+        return;
+      }
+      grantOwnedItems(r.items || []);
+      setRewards((prev) => prev.map((x) => (x.season === season ? { ...x, claimed: true } : x)));
+      setRewardMsg(`受け取りました：${(r.items || []).map(itemName).join('・')}（ショップで装備できます）`);
+    } catch (err) {
+      setRewardMsg(err instanceof Error ? err.message : String(err));
+    }
+  };
+
   const wrongMode = mode !== 'kingdom';
   const s = rankedSummary;
   const placementDone = s ? s.placementTotal - s.placementLeft : 0;
@@ -202,6 +245,20 @@ export function RankedLobby({ onClose }: { onClose: () => void }) {
               )}
             </div>
           </div>
+
+          {claimable.map((r) => (
+            <div key={r.season} className={styles.reward} style={{ borderColor: r.peak?.color || '#c9a227' }}>
+              <PaintedIcon name="crown" size={30} />
+              <div className={styles.rankTexts}>
+                <strong>シーズン{r.season}の報酬（最高 {r.peak?.divisionLabel}）</strong>
+                <span className={styles.small}>{r.items.map(itemName).join('・')}</span>
+              </div>
+              <GameButton size="sm" variant="primary-gold" onClick={() => void handleClaim(r.season)}>
+                受け取る
+              </GameButton>
+            </div>
+          ))}
+          {rewardMsg && <p className={styles.rewardMsg}>{rewardMsg}</p>}
 
           {wrongMode ? (
             <div className={styles.notice}>

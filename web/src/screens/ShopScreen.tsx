@@ -49,7 +49,7 @@ export function ShopScreen() {
         return false;
       }
       const price = usePoints ? (it.pointCost ?? 150) : (it.price ?? 300);
-      if (affordableOnly && (usePoints ? points < price : coins < price)) return false;
+      if (affordableOnly && (it.price === null || (usePoints ? points < price : coins < price))) return false;
       return true;
     });
   }, [data, category, query, affordableOnly, usePoints, coins, points]);
@@ -120,7 +120,9 @@ export function ShopScreen() {
         {items.map((item) => {
           const owned = ownedSkins.includes(item.id);
           const price = usePoints ? (item.pointCost ?? 150) : (item.price ?? 300);
-          const canBuy = !owned && (usePoints ? points >= price : coins >= price);
+          // price が null の品は売り物でない（以前は 300 で買えてしまった）
+          const notForSale = item.price === null;
+          const canBuy = !owned && !notForSale && (usePoints ? points >= price : coins >= price);
           const slot = String(item.slot || item.category || item.id);
           const previewImg = getSkinPreviewImage(slot);
           const filterCss = item.filters?.blue;
@@ -173,7 +175,15 @@ export function ShopScreen() {
                   disabled={!canBuy}
                   onClick={() => buyShopItem(item.id, price, usePoints)}
                 >
-                  {owned ? '所持済み' : usePoints ? `交換 ${price}pt` : `買う ${price}`}
+                  {owned
+                    ? '所持済み'
+                    : notForSale
+                      ? item.rankReward
+                        ? 'ランク報酬'
+                        : 'ガチャで入手'
+                      : usePoints
+                        ? `交換 ${price}pt`
+                        : `買う ${price}`}
                 </GameButton>
               )}
             </div>

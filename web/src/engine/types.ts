@@ -143,8 +143,12 @@ export interface ShopItem {
   slot?: string;
   category?: string;
   rarity: string;
+  /** null は売り物でない（ランク報酬・ガチャ限定） */
   price?: number | null;
   pointCost?: number;
+  /** ランク報酬の階級（シーズン報酬だけでもらえる） */
+  rankReward?: string | null;
+  gacha?: boolean;
   target?: string;
   desc?: string;
   description?: string;

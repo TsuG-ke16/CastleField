@@ -38,6 +38,17 @@ Phase 7（#214）の上に積んだ変更。v2 のホームで「ランクマッ
 - 計算：`castlefield_core::rank`（純 Rust。`Math.round` と同じ丸め。旧サーバーの式で計算した値と一致することを単体テストで確かめた）
 - 待ち行列はメモリだけ（再起動で空になる。成立前の人は探し直し）
 
+## シーズン報酬
+
+- 終わったシーズンの**最高到達ランク**で、`data/seasons.json` の `rewards` の品（アイコンフレーム＋カード裏面）を1組。コインはなし。条件は、認定戦を終えて `minMatchesForReward`（5）試合以上（旧サーバーの `missions.js` と同じ）。1シーズン1回
+- `POST /api/ranked/seasonRewards`（`{ userId, secret }` → `{ season, rewards: [{ season, eligible, claimed, peak, items, matches, minMatches }] }`）、`POST /api/ranked/claimSeason`（`{ userId, secret, season }` → `{ ok, items }`）。品はサーバーの所持品（`/api/economy/profile` の `ownedSkins`）に入る
+- 画面：待合室に「シーズン○の報酬」と「受け取る」。受け取った品はこの端末の所持品にも入れ、ショップで装備できる（カード裏面。アイコンフレームは v2 にまだ装備する場所がない）。サーバーで受け取り済みなのに端末にない品は、待合室を開いたときに入れ直す
+- 上位階級（Master・Champion）は順位で決まるので、最高到達の判定では Diamond 止まり（旧サーバーと同じ）
+
+## 売り物でない品
+
+- `data/shop.json` で `price` が null の品（ランク報酬16・ガチャ限定11）が、v2 のショップと Rust サーバーで**300コインで買えていた**。画面は「ランク報酬」「ガチャで入手」と出して押せなくし、サーバーの `buy` も断る。ランク報酬の品はガチャの景品からも外した
+
 ## 一緒に直したこと（サーバー）
 
 - **相手の手札が見えていた**：WebSocket・SSE がイベントをそのまま流していて、相手の `cardDrawn` のカードID・合成の中身が届いていた。`js/game/visibility.js` と同じ決まりで席ごとに隠すようにした（`filter_event_for`）
@@ -56,7 +67,7 @@ Phase 7（#214）の上に積んだ変更。v2 のホームで「ランクマッ
 
 ## まだやっていないこと・気づいたこと
 
-- シーズン報酬（`seasons.json` の `rewards`）は v2 の所持品とつないでいない
+- ~~シーズン報酬~~ → 作った（下の「シーズン報酬」）。以前の行：シーズン報酬（`seasons.json` の `rewards`）は v2 の所持品とつないでいない
 - 接続が切れたまま戻らない相手は、「勝ちを申し出る」で決着させる（自動では決着しない）
 - ~~3D のモデルが Draco の部品を外部（gstatic.com）から読んでいる~~ → 直した：three.js 0.172.0 の部品を `web/public/draco/` に置き、`web/src/scene3d/dracoPath.ts` の場所から読む（前はネットのない環境・オフラインで GLB が全部読めず、ホームの城が出なかった）
 - `castlefield-core` の `cargo clippy -D warnings` は、前からある `game.rs` の5件で落ちる（今回の `rank.rs` には警告なし）

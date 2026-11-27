@@ -69,6 +69,16 @@ export type RankedStatus =
       gameState: GameState;
     };
 
+export interface SeasonReward {
+  season: number;
+  eligible: boolean;
+  claimed: boolean;
+  peak: DisplayRank | null;
+  items: string[];
+  matches: number;
+  minMatches: number;
+}
+
 export interface LeaderboardEntry {
   position: number;
   name: string;
@@ -160,6 +170,17 @@ export const rankedApi = {
   queue: (serverUrl: string | undefined, name: string) => authed<RankedStatus>(serverUrl, name, '/api/ranked/queue'),
   status: (serverUrl: string | undefined, name: string) => authed<RankedStatus>(serverUrl, name, '/api/ranked/status'),
   leave: (serverUrl: string | undefined, name: string) => authed<{ ok: boolean; reason?: string }>(serverUrl, name, '/api/ranked/leave'),
+  seasonRewards: (serverUrl: string | undefined, name: string) =>
+    authed<{ ok: boolean; reason?: string; season: number; rewards: SeasonReward[] }>(serverUrl, name, '/api/ranked/seasonRewards'),
+  async claimSeason(serverUrl: string | undefined, name: string, season: number): Promise<{ ok: boolean; reason?: string; items?: string[] }> {
+    const id = await ensureIdentity(serverUrl, name);
+    const { json } = await postJson<{ ok: boolean; reason?: string; items?: string[] }>(serverUrl, '/api/ranked/claimSeason', {
+      userId: id.userId,
+      secret: id.secret,
+      season,
+    });
+    return json;
+  },
   async leaderboard(serverUrl?: string, limit = 20): Promise<{ ok: boolean; season: number; entries: LeaderboardEntry[] }> {
     const res = await fetch(`${base(serverUrl)}/api/ranked/leaderboard?limit=${limit}`);
     return (await res.json()) as { ok: boolean; season: number; entries: LeaderboardEntry[] };
