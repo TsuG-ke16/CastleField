@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
+import type { GameEngineAdapter } from '../engine/adapter';
 import { JsLegacyAdapter } from '../engine/jsLegacyAdapter';
+import { WasmEngineAdapter } from '../engine/wasmAdapter';
 import type { GameEvent, GameState, HandCard, PlayTarget } from '../engine/types';
 import { soundManager } from '../audio/soundManager';
 import { BattleFieldScene } from '../scene3d/BattleFieldScene';
@@ -21,9 +23,10 @@ interface MatchSummary {
 }
 
 export function BattleScreen() {
-  const { data, selectedDeckId, cpuLevel, quality, exitBattle, grantRewardCoins } = useAppStore();
+  const { data, selectedDeckId, cpuLevel, engineMode, quality, exitBattle, grantRewardCoins } = useAppStore();
   const [matchSeed, setMatchSeed] = useState(() => Date.now());
-  const adapterRef = useRef<JsLegacyAdapter | null>(null);
+  const adapterRef = useRef<GameEngineAdapter | null>(null);
+  const [activeEngine, setActiveEngine] = useState<'rust-wasm' | 'js-legacy'>(engineMode);
 
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedCard, setSelectedCard] = useState<HandCard | null>(null);
@@ -54,65 +57,94 @@ export function BattleScreen() {
 
   useEffect(() => {
     if (!data) return;
+    let cancelled = false;
+    let unsub: (() => void) | undefined;
+    let created: GameEngineAdapter | null = null;
     statsAccRef.current = { damageDealt: 0, cardsPlayed: 0, monstersDefeated: 0 };
-    const adapter = new JsLegacyAdapter(data, selectedDeckId, 'meadow', matchSeed);
-    adapterRef.current = adapter;
 
-    const unsub = adapter.onEvent((ev: GameEvent) => {
-      if (ev.type === 'turnStarted') {
-        if (ev.playerId === 'p1') setToastMsg('あなたの番！カードを出そう');
-        else setToastMsg('相手の番です…');
-      } else if (ev.type === 'castleDamaged') {
-        const amt = Number(ev.amount || 0);
-        if (ev.playerId === 'p2') statsAccRef.current.damageDealt += amt;
-        soundManager.play('hit');
-        setShakePower(Math.min(1.6, 0.5 + amt * 0.08));
-        setTimeout(() => setShakePower(0), 220);
-        setDamagePop({ id: ++popCounterRef.current, text: `-${amt}` });
-        setTimeout(() => setDamagePop(null), 650);
-      } else if (ev.type === 'soldierDeployed') {
-        soundManager.play('deploy');
-      } else if (ev.type === 'spellCast') {
-        soundManager.play('spell');
-      } else if (ev.type === 'castleHealed') {
-        soundManager.play('heal');
-      } else if (ev.type === 'cardPlayed' && ev.playerId === 'p1') {
-        statsAccRef.current.cardsPlayed += 1;
-      } else if (ev.type === 'monsterDefeated' && ev.playerId === 'p1') {
-        statsAccRef.current.monstersDefeated += 1;
-      } else if (ev.type === 'gameOver') {
-        const w = String(ev.winner || '');
-        if (w === 'p1') {
-          soundManager.play('victory');
-          grantRewardCoins(150);
-        } else {
-          soundManager.play('defeat');
-          grantRewardCoins(40);
+    const initEngine = async () => {
+      let adapter: GameEngineAdapter;
+      let resolvedMode: 'rust-wasm' | 'js-legacy' = 'js-legacy';
+      if (engineMode === 'rust-wasm') {
+        try {
+          adapter = await WasmEngineAdapter.create(data, selectedDeckId, 'meadow', matchSeed);
+          resolvedMode = 'rust-wasm';
+        } catch (err) {
+          console.warn('[CastleField] Rust WASM load failed, falling back to JS engine:', err);
+          adapter = new JsLegacyAdapter(data, selectedDeckId, 'meadow', matchSeed);
         }
-        const finalSt = adapter.getState('p1');
-        setSummary({
-          winner: w || null,
-          turns: finalSt.turn,
-          damageDealt: statsAccRef.current.damageDealt,
-          cardsPlayed: statsAccRef.current.cardsPlayed,
-          monstersDefeated: statsAccRef.current.monstersDefeated,
-        });
+      } else {
+        adapter = new JsLegacyAdapter(data, selectedDeckId, 'meadow', matchSeed);
       }
-    });
 
-    adapter.start();
-    const initial = adapter.getState('p1');
-    setGameState(initial);
-    setSelectedCard(null);
-    setTargets([]);
-    setDiscardSelected([]);
+      if (cancelled) {
+        adapter.dispose();
+        return;
+      }
+
+      created = adapter;
+      adapterRef.current = adapter;
+      setActiveEngine(resolvedMode);
+
+      unsub = adapter.onEvent((ev: GameEvent) => {
+        if (ev.type === 'turnStarted') {
+          if (ev.playerId === 'p1') setToastMsg('あなたの番！カードを出そう');
+          else setToastMsg('相手の番です…');
+        } else if (ev.type === 'castleDamaged') {
+          const amt = Number(ev.amount || 0);
+          if (ev.playerId === 'p2') statsAccRef.current.damageDealt += amt;
+          soundManager.play('hit');
+          setShakePower(Math.min(1.6, 0.5 + amt * 0.08));
+          setTimeout(() => setShakePower(0), 220);
+          setDamagePop({ id: ++popCounterRef.current, text: `-${amt}` });
+          setTimeout(() => setDamagePop(null), 650);
+        } else if (ev.type === 'soldierDeployed') {
+          soundManager.play('deploy');
+        } else if (ev.type === 'spellCast') {
+          soundManager.play('spell');
+        } else if (ev.type === 'castleHealed') {
+          soundManager.play('heal');
+        } else if (ev.type === 'cardPlayed' && ev.playerId === 'p1') {
+          statsAccRef.current.cardsPlayed += 1;
+        } else if (ev.type === 'monsterDefeated' && ev.playerId === 'p1') {
+          statsAccRef.current.monstersDefeated += 1;
+        } else if (ev.type === 'gameOver') {
+          const w = String(ev.winner || '');
+          if (w === 'p1') {
+            soundManager.play('victory');
+            grantRewardCoins(150);
+          } else {
+            soundManager.play('defeat');
+            grantRewardCoins(40);
+          }
+          const finalSt = adapter.getState('p1');
+          setSummary({
+            winner: w || null,
+            turns: finalSt.turn,
+            damageDealt: statsAccRef.current.damageDealt,
+            cardsPlayed: statsAccRef.current.cardsPlayed,
+            monstersDefeated: statsAccRef.current.monstersDefeated,
+          });
+        }
+      });
+
+      adapter.start();
+      const initial = adapter.getState('p1');
+      setGameState(initial);
+      setSelectedCard(null);
+      setTargets([]);
+      setDiscardSelected([]);
+    };
+
+    void initEngine();
 
     return () => {
-      unsub();
-      adapter.dispose();
+      cancelled = true;
+      unsub?.();
+      created?.dispose();
       adapterRef.current = null;
     };
-  }, [data, selectedDeckId, matchSeed, grantRewardCoins]);
+  }, [data, selectedDeckId, matchSeed, engineMode, grantRewardCoins]);
 
   // Automatic CPU turn driver when currentPlayer === 'p2' or p2 needs defense
   useEffect(() => {
@@ -201,7 +233,7 @@ export function BattleScreen() {
 
     soundManager.play('card');
     const check = adapter.canPlayCard(c.cardId);
-    if (!check.ok) {
+    if (!check.ok && !check.needsTarget) {
       setSelectedCard(c);
       setTargets([]);
       showToast(check.reason || 'いまは出せません');
@@ -239,7 +271,7 @@ export function BattleScreen() {
   const handlePlaySelected = () => {
     if (!selectedCard || !adapterRef.current) return;
     const check = adapterRef.current.canPlayCard(selectedCard.cardId);
-    if (!check.ok) {
+    if (!check.ok && !check.needsTarget) {
       showToast(check.reason || 'いまは出せません');
       return;
     }
@@ -282,6 +314,12 @@ export function BattleScreen() {
         </span>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span
+            className={styles.hudPill}
+            title={activeEngine === 'rust-wasm' ? 'Rust WebAssembly エンジン稼働中' : 'Legacy JS エンジン稼働中'}
+          >
+            {activeEngine === 'rust-wasm' ? '🦀 Rust' : 'JS'}
+          </span>
           <span className={`${styles.hudPill} tabular`}>
             {gameState.round}周目
           </span>

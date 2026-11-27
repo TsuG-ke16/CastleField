@@ -1,0 +1,10 @@
+[package]
+name = "castlefield-wasm"
+version.workspace = true
+edition.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+castlefield-core = { path = "../castlefield-core" }

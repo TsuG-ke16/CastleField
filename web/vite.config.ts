@@ -83,7 +83,10 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,woff2}'],
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith('/assets/') || url.pathname.startsWith('/data/'),
+            urlPattern: ({ url }) =>
+              url.pathname.startsWith('/assets/') ||
+              url.pathname.startsWith('/data/') ||
+              url.pathname.startsWith('/wasm/'),
             handler: 'StaleWhileRevalidate',
             options: {
               cacheName: 'castlefield-runtime-assets',

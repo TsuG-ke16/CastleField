@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
 import type { CpuLevel, ModeId, PlayMode } from '../engine/types';
 import { cardTypeToImagePath } from '../engine/dataLoader';
+import { checkServerHealth } from '../engine/onlineClient';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon, type PaintedIconName } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
@@ -37,6 +38,10 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     setCpuLevel,
     selectedDeckId,
     setSelectedDeckId,
+    onlinePassphrase,
+    setOnlinePassphrase,
+    onlineServerUrl,
+    setOnlineServerUrl,
     unlockedSkills,
     data,
     startBattle,
@@ -44,6 +49,13 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
   } = useAppStore();
 
   const [sheet, setSheet] = useState<'none' | 'deck' | 'match'>('none');
+  const [serverStatus, setServerStatus] = useState<string | null>(null);
+
+  const handleCheckServer = async () => {
+    setServerStatus('接続確認中…');
+    const ok = await checkServerHealth(onlineServerUrl);
+    setServerStatus(ok ? 'Rustサーバー接続OK' : 'サーバー未接続（ローカルCPUで遊べます）');
+  };
 
   const activeMode = MODES.find((m) => m.id === mode) || MODES[0];
   const deckEntry = data?.decks?.[selectedDeckId];
@@ -247,7 +259,56 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                       </>
                     )}
 
-                    {playMode !== 'cpu' && (
+                    {playMode === 'casual' && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 800 }}>
+                          合言葉（ルームID）
+                          <input
+                            type="text"
+                            value={onlinePassphrase}
+                            onChange={(e) => setOnlinePassphrase(e.target.value)}
+                            placeholder="例: castle-777"
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: 10,
+                              border: '2px solid #c9b075',
+                              background: '#fffdf7',
+                              fontSize: 14,
+                              fontWeight: 700,
+                            }}
+                          />
+                        </label>
+                        <label style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12, fontWeight: 800 }}>
+                          サーバーURL（同一オリジンなら空欄）
+                          <input
+                            type="url"
+                            value={onlineServerUrl}
+                            onChange={(e) => setOnlineServerUrl(e.target.value)}
+                            placeholder="http://127.0.0.1:8787"
+                            style={{
+                              padding: '8px 10px',
+                              borderRadius: 10,
+                              border: '2px solid #c9b075',
+                              background: '#fffdf7',
+                              fontSize: 13,
+                              fontWeight: 700,
+                            }}
+                          />
+                        </label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <GameButton size="sm" variant="normal-stone" onClick={handleCheckServer}>
+                            サーバー接続テスト
+                          </GameButton>
+                          {serverStatus && (
+                            <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--cf-ink-muted)' }}>
+                              {serverStatus}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {playMode !== 'cpu' && playMode !== 'casual' && (
                       <p style={{ margin: 0, fontSize: 12, color: 'var(--cf-ink-muted)', fontWeight: 700 }}>
                         ※ オンライン部屋（合言葉）／ローカル端末対戦は現行サーバー・セッション仕様と接続可能です。すぐに1人対戦を試す場合は「CPU対戦」から出陣できます。
                       </p>

@@ -1,0 +1,18 @@
+[package]
+name = "castlefield-server"
+version = "2.0.0"
+edition = "2021"
+
+[dependencies]
+axum = { version = "0.8", features = ["ws"] }
+castlefield-core = { path = "../crates/castlefield-core" }
+futures-util = "0.3"
+redb = "2.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = { version = "1.42", features = ["full"] }
+tower-http = { version = "0.6", features = ["cors", "fs", "trace"] }
+
+[dev-dependencies]
+http-body-util = "0.1"
+tower = { version = "0.5", features = ["util"] }

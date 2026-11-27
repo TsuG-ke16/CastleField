@@ -1,0 +1,6 @@
+[package]
+name = "castlefield-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

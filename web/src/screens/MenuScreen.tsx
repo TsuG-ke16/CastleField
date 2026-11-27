@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppStore } from '../stores/useAppStore';
+import { runRustWasmBenchmark, type RustBenchmarkResult } from '../engine/wasmAdapter';
 import { GameButton } from '../components/ui/GameButton';
 import { PaintedIcon, type PaintedIconName } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
@@ -10,12 +11,32 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     setQuality,
     muted,
     toggleMute,
+    engineMode,
+    setEngineMode,
+    data,
     ownedSkins,
     selectedCastleSkin,
     selectedSoldierSkin,
     equipSkin,
   } = useAppStore();
   const [subPage, setSubPage] = useState<'main' | 'skins'>('main');
+  const [benchBusy, setBenchBusy] = useState(false);
+  const [benchResult, setBenchResult] = useState<RustBenchmarkResult | null>(null);
+  const [benchError, setBenchError] = useState<string | null>(null);
+
+  const handleRunBench = async () => {
+    if (!data || benchBusy) return;
+    setBenchBusy(true);
+    setBenchError(null);
+    try {
+      const res = await runRustWasmBenchmark(data, 200, 20261127);
+      setBenchResult(res);
+    } catch (e) {
+      setBenchError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBenchBusy(false);
+    }
+  };
 
   if (subPage === 'skins') {
     return (
@@ -175,6 +196,80 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
             >
               {muted ? 'ミュート中' : 'ON'}
             </GameButton>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 900 }}>ゲームエンジン（計算コア）</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>
+                Rust WebAssembly（標準）／ JS互換フォールバック
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <GameButton
+                size="sm"
+                variant={engineMode === 'rust-wasm' ? 'selected-royal' : 'normal-stone'}
+                onClick={() => setEngineMode('rust-wasm')}
+              >
+                🦀 Rust WASM
+              </GameButton>
+              <GameButton
+                size="sm"
+                variant={engineMode === 'js-legacy' ? 'selected-royal' : 'normal-stone'}
+                onClick={() => setEngineMode('js-legacy')}
+              >
+                JS
+              </GameButton>
+            </div>
+          </div>
+
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+              paddingTop: 6,
+              borderTop: '1px dashed #d3be86',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+              <div>
+                <div style={{ fontSize: 14, fontWeight: 900 }}>Rust WASM 200試合ベンチマーク</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>
+                  AI同士の200試合フル対戦をブラウザ内WASMで計測
+                </div>
+              </div>
+              <GameButton
+                size="sm"
+                variant="primary-gold"
+                disabled={benchBusy || !data}
+                onClick={handleRunBench}
+              >
+                {benchBusy ? '計測中…' : 'Rust 200試合ベンチマーク実行'}
+              </GameButton>
+            </div>
+
+            {benchResult && (
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 800,
+                  padding: '8px 10px',
+                  borderRadius: 10,
+                  background: '#fbf3dc',
+                  border: '1px solid #d4bc7d',
+                }}
+                className="tabular"
+              >
+                完了 {benchResult.elapsedMs.toFixed(1)} ms ・ P1勝 {benchResult.p1Wins} / P2勝{' '}
+                {benchResult.p2Wins}（引分 {benchResult.draws}）・ 平均 {benchResult.avgTurns.toFixed(1)} ターン
+              </div>
+            )}
+            {benchError && (
+              <div style={{ fontSize: 12, fontWeight: 800, color: '#a52a2a' }}>
+                計測エラー: {benchError}
+              </div>
+            )}
           </div>
         </ParchmentSheet>
       </div>

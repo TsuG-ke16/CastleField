@@ -16,3 +16,6 @@ data-store/
 # v2 web build & raw source sheets
 web/dist/
 assets/v2/raw/
+
+# Rust build artifacts
+rust/target/

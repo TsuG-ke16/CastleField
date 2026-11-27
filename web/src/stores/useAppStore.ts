@@ -10,11 +10,16 @@ interface GachaRecord {
   isNew: boolean;
 }
 
+export type EngineMode = 'rust-wasm' | 'js-legacy';
+
 interface AppStoreState {
   tab: AppTab;
   mode: ModeId;
   playMode: PlayMode;
   cpuLevel: CpuLevel;
+  engineMode: EngineMode;
+  onlinePassphrase: string;
+  onlineServerUrl: string;
   selectedDeckId: string;
   selectedCastleSkin: string;
   selectedSoldierSkin: string;
@@ -37,6 +42,9 @@ interface AppStoreState {
   setMode: (mode: ModeId) => void;
   setPlayMode: (playMode: PlayMode) => void;
   setCpuLevel: (level: CpuLevel) => void;
+  setEngineMode: (engineMode: EngineMode) => void;
+  setOnlinePassphrase: (passphrase: string) => void;
+  setOnlineServerUrl: (url: string) => void;
   setSelectedDeckId: (deckId: string) => void;
   setQuality: (q: QualityMode) => void;
   toggleMute: () => void;
@@ -55,6 +63,9 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
   mode: 'kingdom',
   playMode: 'cpu',
   cpuLevel: 'normal',
+  engineMode: 'rust-wasm',
+  onlinePassphrase: '',
+  onlineServerUrl: '',
   selectedDeckId: 'costBalance',
   selectedCastleSkin: 'castle-blue',
   selectedSoldierSkin: 'infantry-blue',
@@ -99,6 +110,12 @@ export const useAppStore = create<AppStoreState>((set, get) => ({
     soundManager.play('tap');
     set({ cpuLevel });
   },
+  setEngineMode: (engineMode) => {
+    soundManager.play('tap');
+    set({ engineMode });
+  },
+  setOnlinePassphrase: (onlinePassphrase) => set({ onlinePassphrase }),
+  setOnlineServerUrl: (onlineServerUrl) => set({ onlineServerUrl }),
   setSelectedDeckId: (selectedDeckId) => {
     soundManager.play('tap');
     set({ selectedDeckId });

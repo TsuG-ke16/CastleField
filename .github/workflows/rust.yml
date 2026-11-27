@@ -1,0 +1,33 @@
+name: Rust Core, WASM & Server CI
+
+on:
+  push:
+    branches: [ main, "feature/**" ]
+  pull_request:
+
+jobs:
+  rust-and-wasm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run castlefield-core native tests
+        run: cargo test --manifest-path rust/Cargo.toml --workspace
+
+      - name: Build castlefield-wasm for wasm32-unknown-unknown
+        run: |
+          cargo build --manifest-path rust/Cargo.toml -p castlefield-wasm --target wasm32-unknown-unknown --release
+          mkdir -p web/public/wasm
+          cp rust/target/wasm32-unknown-unknown/release/castlefield_wasm.wasm web/public/wasm/castlefield_wasm.wasm
+
+      - name: Verify compiled WASM against Node parity suite
+        run: node --test rust/tests/wasm_parity.test.mjs
+
+      - name: Run castlefield-server tests
+        run: cargo test --manifest-path rust/server/Cargo.toml
