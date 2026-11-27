@@ -3,9 +3,10 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import type { AppTab, ModeId } from '../engine/types';
+import { DRACO_PATH } from './dracoPath';
 
 function DioramaModel({ mode }: { mode: ModeId }) {
-  const { scene } = useGLTF('/assets/v2/models/home-diorama-v2.glb');
+  const { scene } = useGLTF('/assets/v2/models/home-diorama-v2.glb', DRACO_PATH);
   const cloned = useMemo(() => scene.clone(), [scene]);
   const groupRef = useRef<THREE.Group>(null);
 
@@ -56,7 +57,7 @@ function CameraRig({ tab }: { tab: AppTab }) {
 
 export function HomeDioramaScene({ tab, mode, quality }: { tab: AppTab; mode: ModeId; quality: '3d' | '2d' }) {
   useEffect(() => {
-    useGLTF.preload('/assets/v2/models/home-diorama-v2.glb');
+    useGLTF.preload('/assets/v2/models/home-diorama-v2.glb', DRACO_PATH);
   }, []);
 
   if (quality === '2d') {

@@ -2,9 +2,10 @@ import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useAnimations, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import { DRACO_PATH } from './dracoPath';
 
 function ChestMesh({ opening }: { opening: boolean }) {
-  const { scene, animations } = useGLTF('/assets/v2/models/gacha-chest-v2.glb');
+  const { scene, animations } = useGLTF('/assets/v2/models/gacha-chest-v2.glb', DRACO_PATH);
   const cloned = useMemo(() => scene.clone(), [scene]);
   const group = useRef<THREE.Group>(null);
   const { actions } = useAnimations(animations, group);
