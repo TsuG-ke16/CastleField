@@ -440,6 +440,11 @@ fn auth(state: &AppState, req: &AuthReq) -> Result<Account, (StatusCode, Json<Va
     }
 }
 
+/// ほかの API（ガチャ・ショップ）からも使う本人確認。db の鍵を取る前に呼ぶ
+pub(crate) fn authenticate(state: &AppState, user_id: &str, secret: &str) -> Result<Account, (StatusCode, Json<Value>)> {
+    auth(state, &AuthReq { user_id: user_id.to_string(), secret: secret.to_string(), name: None })
+}
+
 fn constant_eq(a: &str, b: &str) -> bool {
     a.len() == b.len() && a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
 }
