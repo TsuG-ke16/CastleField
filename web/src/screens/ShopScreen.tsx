@@ -4,6 +4,7 @@ import { getSkinPreviewImage } from '../engine/skinUtils';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
 import styles from './ShopScreen.module.css';
+import { iconFrameImage } from '../components/ui/FramedAvatar';
 
 const CATEGORIES = [
   { id: 'all', label: 'すべて' },
@@ -24,6 +25,7 @@ export function ShopScreen() {
     selectedCastleSkin,
     selectedSoldierSkin,
     selectedBackSkin,
+    selectedIconFrame,
     buyShopItem,
     equipSkin,
   } = useAppStore();
@@ -124,10 +126,12 @@ export function ShopScreen() {
           const notForSale = item.price === null;
           const canBuy = !owned && !notForSale && (usePoints ? points >= price : coins >= price);
           const slot = String(item.slot || item.category || item.id);
-          const previewImg = getSkinPreviewImage(slot);
+          const previewImg = iconFrameImage(item.id) ?? getSkinPreviewImage(slot);
           const filterCss = item.filters?.blue;
           const equipKind =
-            slot === 'castle' || item.id.startsWith('castle')
+            slot === 'iconFrame'
+              ? 'frame'
+              : slot === 'castle' || item.id.startsWith('castle')
               ? 'castle'
               : slot === 'cardBack' || item.id.includes('back')
                 ? 'back'
@@ -137,7 +141,8 @@ export function ShopScreen() {
           const isEquipped =
             selectedCastleSkin === item.id ||
             selectedSoldierSkin === item.id ||
-            selectedBackSkin === item.id;
+            selectedBackSkin === item.id ||
+            selectedIconFrame === item.id;
 
           return (
             <div key={item.id} className={styles.itemCard}>
@@ -163,7 +168,9 @@ export function ShopScreen() {
                   size="sm"
                   fullWidth
                   variant={isEquipped ? 'selected-royal' : 'normal-stone'}
-                  onClick={() => equipSkin(equipKind, item.id)}
+                  onClick={() =>
+                    equipKind === 'frame' && isEquipped ? equipSkin('frame', null) : equipSkin(equipKind, item.id)
+                  }
                 >
                   {isEquipped ? '装備中' : '装備する'}
                 </GameButton>

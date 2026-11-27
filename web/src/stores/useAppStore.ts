@@ -70,6 +70,7 @@ interface SavedSlice {
   selectedCastleSkin?: string;
   selectedSoldierSkin?: string;
   selectedBackSkin?: string;
+  selectedIconFrame?: string | null;
   selectedDeckId?: string;
   selectedStageId?: string;
   selectedFactionId?: FactionId;
@@ -108,6 +109,7 @@ function persistState(s: AppStoreState): void {
       selectedCastleSkin: s.selectedCastleSkin,
       selectedSoldierSkin: s.selectedSoldierSkin,
       selectedBackSkin: s.selectedBackSkin,
+      selectedIconFrame: s.selectedIconFrame,
       selectedDeckId: s.selectedDeckId,
       selectedStageId: s.selectedStageId,
       selectedFactionId: s.selectedFactionId,
@@ -144,6 +146,8 @@ interface AppStoreState {
   selectedCastleSkin: string;
   selectedSoldierSkin: string;
   selectedBackSkin: string;
+  /** 装備しているアイコンフレーム（shop.json の frame_*）。なければ null */
+  selectedIconFrame: string | null;
   quality: QualityMode;
   muted: boolean;
   bgmMuted: boolean;
@@ -194,7 +198,7 @@ interface AppStoreState {
   buyShopItem: (itemId: string, price: number, usePoints?: boolean) => boolean;
   /** シーズン報酬などで受け取った品を所持品に入れる */
   grantOwnedItems: (itemIds: string[]) => void;
-  equipSkin: (kind: 'castle' | 'soldier' | 'back', skinId: string) => void;
+  equipSkin: (kind: 'castle' | 'soldier' | 'back' | 'frame', skinId: string | null) => void;
   toggleSkillNode: (nodeId: string) => void;
   resetSkills: () => void;
   grantRewardCoins: (amount: number) => void;
@@ -233,6 +237,7 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     selectedCastleSkin: initial.selectedCastleSkin ?? 'castle-blue',
     selectedSoldierSkin: initial.selectedSoldierSkin ?? 'infantry-blue',
     selectedBackSkin: initial.selectedBackSkin ?? 'card-back',
+    selectedIconFrame: initial.selectedIconFrame ?? null,
     quality: initial.quality ?? '3d',
     muted: initial.muted ?? false,
     bgmMuted: initial.bgmMuted ?? false,
@@ -463,6 +468,12 @@ export const useAppStore = create<AppStoreState>((set, get) => {
 
     equipSkin: (kind, skinId) => {
       soundManager.play('tap');
+      if (kind === 'frame') {
+        // 持っていないフレームは付けられない（null は外す）
+        if (skinId === null || get().ownedSkins.includes(skinId)) savePatch({ selectedIconFrame: skinId });
+        return;
+      }
+      if (skinId === null) return;
       if (kind === 'castle') savePatch({ selectedCastleSkin: skinId });
       if (kind === 'soldier') savePatch({ selectedSoldierSkin: skinId });
       if (kind === 'back') savePatch({ selectedBackSkin: skinId });

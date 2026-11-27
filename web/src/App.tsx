@@ -8,6 +8,7 @@ import { HomeScreen } from './screens/HomeScreen';
 import { PaintedIcon } from './components/ui/PaintedIcon';
 import { ParchmentSheet } from './components/ui/Surfaces';
 import { GameButton, RoundButton } from './components/ui/GameButton';
+import { FramedAvatar, iconFrameImage } from './components/ui/FramedAvatar';
 
 const BattleScreen = lazy(() => import('./screens/BattleScreen').then((m) => ({ default: m.BattleScreen })));
 const DeckScreen = lazy(() => import('./screens/DeckScreen').then((m) => ({ default: m.DeckScreen })));
@@ -49,6 +50,10 @@ export function App() {
     stats,
     setPlayerName,
     setAvatarCardType,
+    ownedSkins,
+    selectedIconFrame,
+    equipSkin,
+    data,
     setPlayMode,
     setOnlinePassphrase,
     setSelectedStageId,
@@ -58,6 +63,10 @@ export function App() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(playerName);
   const [invitedRoom, setInvitedRoom] = useState<string | null>(null);
+  const shopItems = (data?.shop as { items?: Record<string, { name?: string; slot?: string }> } | undefined)?.items;
+  const shopName = (id: string) => (shopItems && !Array.isArray(shopItems) && shopItems[id]?.name) || id;
+  // 持っているアイコンフレーム（絵のあるものだけ）
+  const ownedFrames = ownedSkins.filter((id) => iconFrameImage(id) !== null);
 
   useEffect(() => {
     init();
@@ -190,11 +199,14 @@ export function App() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fbf3dc', padding: 10, borderRadius: 12, border: '1.5px solid #d4bc7d' }}>
-                <img
-                  src={cardTypeToImagePath(avatarCardType)}
-                  alt="アバター"
-                  style={{ width: 56, height: 56, borderRadius: 12, border: '2px solid #4a2e1a', background: '#fffaf0', objectFit: 'contain' }}
-                />
+                <span style={{ padding: selectedIconFrame ? 12 : 0 }}>
+                  <FramedAvatar
+                    cardType={avatarCardType}
+                    frameId={selectedIconFrame}
+                    size={56}
+                    style={{ borderRadius: 12, border: '2px solid #4a2e1a', background: '#fffaf0' }}
+                  />
+                </span>
                 <div style={{ flex: 1, fontSize: 12, fontWeight: 900 }}>
                   <div style={{ fontSize: 15 }}>Lv.{prog.level} {prog.title}</div>
                   <div>総XP: {prog.xp} ・ 勝率 {winRate}% ({stats.wins}/{stats.matchesPlayed})</div>
@@ -214,6 +226,43 @@ export function App() {
                   style={{ padding: '8px 10px', borderRadius: 10, border: '2px solid #4a2e1a', background: '#fffdf7', fontSize: 14, fontWeight: 800 }}
                 />
               </label>
+
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 6 }}>アイコンフレーム</div>
+                {ownedFrames.length === 0 ? (
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>
+                    ランクマッチのシーズン報酬でもらえます（最高到達ランクのフレーム）
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 6 }}>
+                    {[null, ...ownedFrames].map((fid) => (
+                      <button
+                        key={fid ?? 'none'}
+                        type="button"
+                        onClick={() => equipSkin('frame', fid)}
+                        aria-label={fid ? shopName(fid) : 'フレームなし'}
+                        aria-pressed={selectedIconFrame === fid}
+                        style={{
+                          padding: 4,
+                          borderRadius: 10,
+                          border: selectedIconFrame === fid ? '2.5px solid #3465cc' : '2px solid #c9b075',
+                          background: selectedIconFrame === fid ? '#ebf2ff' : '#fffdf6',
+                          cursor: 'pointer',
+                          fontSize: 10,
+                          fontWeight: 900,
+                          minHeight: 48,
+                        }}
+                      >
+                        {fid ? (
+                          <img src={iconFrameImage(fid) ?? ''} alt="" style={{ width: '100%', height: 40, objectFit: 'contain' }} />
+                        ) : (
+                          'なし'
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div>
                 <div style={{ fontSize: 12, fontWeight: 900, marginBottom: 6 }}>アバターを選択</div>

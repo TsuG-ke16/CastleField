@@ -1,5 +1,5 @@
 import { computePlayerProgression, useAppStore } from '../../stores/useAppStore';
-import { cardTypeToImagePath } from '../../engine/dataLoader';
+import { FramedAvatar } from '../ui/FramedAvatar';
 import type { AppTab } from '../../engine/types';
 import { PaintedIcon, type PaintedIconName } from '../ui/PaintedIcon';
 import { RoundButton } from '../ui/GameButton';
@@ -20,7 +20,7 @@ export function TopBar({
   onOpenNotice?: () => void;
   onOpenProfile?: () => void;
 }) {
-  const { coins, setTab, playerName, avatarCardType, stats } = useAppStore();
+  const { coins, setTab, playerName, avatarCardType, stats, selectedIconFrame } = useAppStore();
   const prog = computePlayerProgression(stats);
 
   return (
@@ -31,11 +31,10 @@ export function TopBar({
         onClick={onOpenProfile}
         aria-label="プレイヤープロフィール"
       >
-        <img
-          src={cardTypeToImagePath(avatarCardType)}
-          alt="アバター"
-          className={styles.avatar}
-        />
+        {/* 枠はアイコンより大きいので、付けているときは名前とのあいだを空ける */}
+        <span style={{ display: 'inline-flex', margin: selectedIconFrame ? '0 10px 0 6px' : 0 }}>
+          <FramedAvatar cardType={avatarCardType} frameId={selectedIconFrame} size={38} className={styles.avatar} />
+        </span>
         <div className={styles.playerMeta}>
           <span className={styles.playerName}>{playerName}</span>
           <span className={styles.playerRank}>Lv.{prog.level} {prog.title}</span>
