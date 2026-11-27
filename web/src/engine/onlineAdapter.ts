@@ -155,11 +155,16 @@ export class OnlineEngineAdapter implements GameEngineAdapter {
   }
 
   private fire(method: string, args: unknown[] = []): ActionResult {
-    void sendOnlineAction(this.token, method, args, this.serverUrl).then((resp) => {
-      if (resp.state) {
-        this.emitState(resp.state);
-      }
-    });
+    void sendOnlineAction(this.token, method, args, this.serverUrl)
+      .then((resp) => {
+        if (resp.state) {
+          this.emitState(resp.state);
+        }
+      })
+      .catch(() => {
+        // 回線が切れた：盤面はつなぎ直したときに届く
+        this.onStatus?.('reconnecting');
+      });
     return { ok: true };
   }
 
@@ -219,7 +224,7 @@ export class OnlineEngineAdapter implements GameEngineAdapter {
   }
 
   sendStamp(stampId: string): void {
-    void sendOnlineAction(this.token, 'stamp', [stampId], this.serverUrl);
+    void sendOnlineAction(this.token, 'stamp', [stampId], this.serverUrl).catch(() => {});
   }
 
   runCpuTurn(_playerId: string, _level: CpuLevel): void {
