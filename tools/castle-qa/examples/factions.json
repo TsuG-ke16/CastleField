@@ -1,0 +1,11 @@
+{
+  "mode": "factions",
+  "seed": 42,
+  "games": 100,
+  "candidates": [
+    {"label": "王国", "strategy": "smart", "deck": "kingdom", "build": []},
+    {"label": "森", "strategy": "smart", "deck": "forest", "build": []},
+    {"label": "魔族", "strategy": "smart", "deck": "demon", "build": []},
+    {"label": "竜族", "strategy": "smart", "deck": "dragon", "build": []}
+  ]
+}

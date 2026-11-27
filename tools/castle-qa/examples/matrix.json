@@ -1,0 +1,11 @@
+{
+  "mode": "classic",
+  "seed": 20261126,
+  "games": 100,
+  "candidates": [
+    {"label": "Smart", "strategy": "smart", "build": []},
+    {"label": "Aggro", "strategy": "aggro", "build": []},
+    {"label": "Defensive", "strategy": "defensive", "build": []},
+    {"label": "Random", "strategy": "random", "build": []}
+  ]
+}
