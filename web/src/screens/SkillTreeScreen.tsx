@@ -118,21 +118,44 @@ export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
           justifyContent: 'space-between',
           gap: 8,
           padding: '8px 12px',
-          background: 'linear-gradient(180deg, #4b7ee3 0%, #2d59ba 100%)',
+          background: 'linear-gradient(180deg, #3e6fd4 0%, #24499e 58%, #1a377d 100%)',
           borderBottom: '3px solid #4a2e1a',
+          boxShadow: 'inset 0 1px 0 rgba(255, 250, 240, 0.32), inset 0 -2px 0 #ffd98a, 0 4px 10px rgba(20, 38, 88, 0.28)',
           color: '#fffaf0',
         }}
       >
         <GameButton size="sm" variant="normal-stone" onClick={onBack}>
           もどる
         </GameButton>
-        <strong style={{ fontSize: 15 }}>スキル作戦図（PixiJS）</strong>
-        <span className="tabular" style={{ fontWeight: 900, fontSize: 13 }}>
+        <strong style={{ fontSize: 15, textShadow: '0 1.5px 2px rgba(0, 0, 0, 0.45)' }}>スキル作戦図（PixiJS）</strong>
+        <span
+          className="tabular"
+          style={{
+            fontWeight: 900,
+            fontSize: 12,
+            padding: '3px 10px',
+            borderRadius: 999,
+            background: 'linear-gradient(180deg, #27489e 0%, #152b69 100%)',
+            border: '1.5px solid #ffd98a',
+            color: '#ffe37a',
+            boxShadow: 'inset 0 1px 0 rgba(255, 245, 210, 0.35), 0 2px 0 rgba(20, 38, 88, 0.45)',
+          }}
+        >
           {unlockedSkills.length}/12pt
         </span>
       </header>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#fff6e0', borderBottom: '2px solid #c9ad7b' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 12px',
+          background: 'linear-gradient(180deg, #fffaf0 0%, #f7e6bf 100%)',
+          borderBottom: '2px solid #c9ad7b',
+          boxShadow: 'inset 0 1px 0 #ffffff',
+        }}
+      >
         <input
           type="search"
           placeholder="スキル名・効果で探す…"
@@ -183,7 +206,14 @@ export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
               padding: '4px 10px',
               borderRadius: 999,
               border: '2px solid #4a2e1a',
-              background: activeGroup === null ? '#3465cc' : '#fffaf0',
+              background:
+                activeGroup === null
+                  ? 'linear-gradient(180deg, #5b8ef2 0%, #3465cc 60%, #22479b 100%)'
+                  : 'linear-gradient(180deg, #fffef8 0%, #f4e3bd 100%)',
+              boxShadow:
+                activeGroup === null
+                  ? 'inset 0 1.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 1.5px #ffd98a, 0 2px 0 rgba(26, 48, 104, 0.45)'
+                  : 'inset 0 1.5px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.22)',
               color: activeGroup === null ? '#fffaf0' : '#4a2e1a',
               fontSize: 11,
               fontWeight: 900,
@@ -202,7 +232,14 @@ export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
                 padding: '4px 10px',
                 borderRadius: 999,
                 border: '2px solid #4a2e1a',
-                background: activeGroup === g ? '#3465cc' : '#fffaf0',
+                background:
+                  activeGroup === g
+                    ? 'linear-gradient(180deg, #5b8ef2 0%, #3465cc 60%, #22479b 100%)'
+                    : 'linear-gradient(180deg, #fffef8 0%, #f4e3bd 100%)',
+                boxShadow:
+                  activeGroup === g
+                    ? 'inset 0 1.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 1.5px #ffd98a, 0 2px 0 rgba(26, 48, 104, 0.45)'
+                    : 'inset 0 1.5px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.22)',
                 color: activeGroup === g ? '#fffaf0' : '#4a2e1a',
                 fontSize: 11,
                 fontWeight: 900,

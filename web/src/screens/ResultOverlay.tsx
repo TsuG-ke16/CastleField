@@ -103,6 +103,8 @@ export function ResultOverlay({
         inset: 0,
         zIndex: 70,
         background: won ? 'radial-gradient(circle, rgba(255,227,122,0.85) 0%, rgba(74,46,26,0.72) 100%)' : 'rgba(24, 34, 62, 0.78)',
+        backdropFilter: 'blur(5px)',
+        WebkitBackdropFilter: 'blur(5px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -118,20 +120,38 @@ export function ResultOverlay({
         <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, maxHeight: '92dvh', overflowY: 'auto' }}>
           <RibbonBanner tone={won ? 'victory' : 'defeat'} label={won ? 'あなたの勝ち！' : '敗北…'} />
 
-          <img
-            src={won ? '/assets/ui/result-victory.png' : '/assets/ui/result-defeat.png'}
-            alt=""
-            style={{ width: 136, height: 136, objectFit: 'contain' }}
-          />
+          <div
+            style={{
+              width: 148,
+              height: 148,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: won
+                ? 'radial-gradient(circle, rgba(255, 232, 136, 0.82) 0%, rgba(255, 246, 224, 0.16) 72%, transparent 100%)'
+                : 'radial-gradient(circle, rgba(110, 138, 208, 0.42) 0%, rgba(255, 246, 224, 0.08) 72%, transparent 100%)',
+              border: won ? '2px solid rgba(242, 183, 40, 0.55)' : '2px solid rgba(74, 96, 154, 0.35)',
+              boxShadow: won ? 'inset 0 2px 8px rgba(255, 255, 255, 0.75)' : 'inset 0 2px 6px rgba(20, 34, 72, 0.18)',
+              flexShrink: 0,
+            }}
+          >
+            <img
+              src={won ? '/assets/ui/result-victory.png' : '/assets/ui/result-defeat.png'}
+              alt=""
+              style={{ width: 130, height: 130, objectFit: 'contain' }}
+            />
+          </div>
 
           {rankedChange !== undefined && <RankedPanel change={rankedChange} />}
 
           <div
             style={{
               width: '100%',
-              background: '#f6e4ba',
+              background: 'linear-gradient(180deg, #fffdf5 0%, #f6e4ba 100%)',
               border: '2px solid #8a562d',
               borderRadius: 12,
+              boxShadow: 'inset 0 1.5px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.2)',
               padding: '10px 14px',
               display: 'grid',
               gridTemplateColumns: '1fr auto',
@@ -173,12 +193,13 @@ export function ResultOverlay({
                   XP {progression.currentLevelXp}/{progression.nextLevelXp}
                 </span>
               </div>
-              <div style={{ height: 8, borderRadius: 999, background: '#dfca9f', border: '1.5px solid #4a2e1a', overflow: 'hidden' }}>
+              <div style={{ height: 8, borderRadius: 999, background: '#dfca9f', border: '1.5px solid #4a2e1a', boxShadow: 'inset 0 1px 2px rgba(74, 46, 26, 0.22)', overflow: 'hidden' }}>
                 <div
                   style={{
                     width: `${Math.min(100, Math.round((progression.currentLevelXp / Math.max(1, progression.nextLevelXp)) * 100))}%`,
                     height: '100%',
-                    background: '#3465cc',
+                    background: 'linear-gradient(90deg, #5b8ef2 0%, #3465cc 100%)',
+                    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.55)',
                   }}
                 />
               </div>
