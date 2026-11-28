@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from 'react';
+import { SceneErrorBoundary } from '../components/ui/ErrorBoundary';
 
 const LazyGachaChest = lazy(() =>
   import('./GachaChestScene').then((m) => ({ default: m.GachaChestScene }))
@@ -59,8 +60,10 @@ export function GachaChestView({ opening, quality }: { opening: boolean; quality
     return <GachaChestLite opening={opening} />;
   }
   return (
-    <Suspense fallback={<GachaChestLite opening={opening} />}>
-      <LazyGachaChest opening={opening} quality={quality} />
-    </Suspense>
+    <SceneErrorBoundary fallback={<GachaChestLite opening={opening} />}>
+      <Suspense fallback={<GachaChestLite opening={opening} />}>
+        <LazyGachaChest opening={opening} quality={quality} />
+      </Suspense>
+    </SceneErrorBoundary>
   );
 }
