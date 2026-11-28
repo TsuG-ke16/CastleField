@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import type { CardDef } from '../../engine/types';
 import { cardTypeToImagePath } from '../../engine/dataLoader';
@@ -31,7 +31,11 @@ export function GameCard({
   width,
   onClick,
 }: GameCardProps) {
-  const [imgSrc, setImgSrc] = useState(() => cardTypeToImagePath(typeKey));
+  const [imgFailed, setImgFailed] = useState(false);
+  useEffect(() => {
+    setImgFailed(false);
+  }, [typeKey]);
+  const imgSrc = imgFailed ? '/assets/cards/card-infantry.png' : cardTypeToImagePath(typeKey);
   const rarityClass = styles[`rarity-${card.rarity || 'common'}`] || styles['rarity-common'];
 
   return (
@@ -71,8 +75,8 @@ export function GameCard({
           alt={card.name}
           className={styles.artImg}
           onError={() => {
-            if (!imgSrc.endsWith('card-infantry.png')) {
-              setImgSrc('/assets/cards/card-infantry.png');
+            if (!imgFailed) {
+              setImgFailed(true);
             }
           }}
         />
