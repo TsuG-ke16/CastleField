@@ -94,7 +94,6 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
               width: 60,
               height: 60,
               objectFit: 'contain',
-              filter: oppSide === 'p1' ? props.myCastleFilter : undefined,
             }}
           />
         </button>
@@ -191,7 +190,7 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
                                 borderRadius: 8,
                                 border: `2px solid ${isSolTarget ? '#ffe37a' : pid === 'p1' ? '#2a6cab' : '#c05a1c'}`,
                                 background: '#fffaf0',
-                                filter: pid === 'p1' ? props.mySoldierFilter : undefined,
+                                filter: pid === mySide ? props.mySoldierFilter : undefined,
                               }}
                             />
                             <span
@@ -207,7 +206,7 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
                                 whiteSpace: 'nowrap',
                               }}
                             >
-                              ⚔{s.attack} ❤{s.hp}
+                              ⚔{s.attack} ❤{s.hp}{s.shield > 0 ? ` 🛡${s.shield}` : ''}
                             </span>
                           </button>
                         );
@@ -281,7 +280,7 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
             height: 64,
             objectFit: 'contain',
             flexShrink: 0,
-            filter: mySide === 'p1' ? props.myCastleFilter : undefined,
+            filter: props.myCastleFilter,
           }}
         />
       </div>
