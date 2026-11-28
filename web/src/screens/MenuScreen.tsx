@@ -15,10 +15,14 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     toggleMute,
     bgmMuted,
     toggleBgmMute,
+    volume,
+    setVolume,
     mulliganEnabled,
     toggleMulliganEnabled,
     reducedMotion,
     toggleReducedMotion,
+    resetTutorial,
+    matchHistory,
     engineMode,
     setEngineMode,
     data,
@@ -41,7 +45,9 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
   const [transferCode, setTransferCode] = useState<{ code: string; expiresAt: number } | null>(null);
   const [codeInput, setCodeInput] = useState('');
   const [transferNote, setTransferNote] = useState<string | null>(null);
-  const [subPage, setSubPage] = useState<'main' | 'skins' | 'missions' | 'guide'>('main');
+  const [subPage, setSubPage] = useState<'main' | 'skins' | 'missions' | 'history' | 'guide'>('main');
+  const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
+  const [tutorialResetNote, setTutorialResetNote] = useState(false);
   const [benchBusy, setBenchBusy] = useState(false);
   const [benchResult, setBenchResult] = useState<RustBenchmarkResult | null>(null);
   const [benchError, setBenchError] = useState<string | null>(null);
@@ -321,10 +327,120 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     );
   }
 
+  if (subPage === 'history') {
+    return (
+      <section
+        style={{
+          position: 'relative',
+          zIndex: 10,
+          height: '100%',
+          overflowY: 'auto',
+          padding: '12px 14px 90px',
+          maxWidth: 760,
+          margin: '0 auto',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 10,
+        }}
+        aria-label="戦績・対戦履歴"
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
+            ← メニュー
+          </GameButton>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>対戦履歴（直近12戦）</h1>
+        </div>
+
+        {matchHistory.length === 0 ? (
+          <ParchmentSheet style={{ textAlign: 'center', fontWeight: 800, fontSize: 13 }}>
+            まだ対戦履歴がありません。バトルを終えると自動で記録されます。
+          </ParchmentSheet>
+        ) : (
+          matchHistory.map((m) => {
+            const expanded = expandedMatchId === m.id;
+            const stageName = (data?.stages?.[m.stage]?.name || m.stage || '草原').split('（')[0];
+            return (
+              <ParchmentSheet key={m.id} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span
+                      style={{
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        fontSize: 11,
+                        fontWeight: 900,
+                        background: m.won ? '#4ea85f' : '#a82a24',
+                        color: '#fffaf0',
+                      }}
+                    >
+                      {m.won ? '勝利' : '敗北'}
+                    </span>
+                    <strong style={{ fontSize: 13 }}>
+                      {stageName} / {m.deckLabel}
+                    </strong>
+                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>
+                    {new Date(m.at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, fontWeight: 800, display: 'flex', gap: 10, flexWrap: 'wrap' }} className="tabular">
+                  <span>{m.turns}周</span>
+                  <span>与ダメ {m.damageDealt}</span>
+                  <span>札 {m.cardsPlayed}枚</span>
+                  <span>魔物撃破 {m.monstersDefeated}</span>
+                </div>
+                {m.log.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedMatchId(expanded ? null : m.id)}
+                    style={{
+                      alignSelf: 'flex-start',
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                      fontSize: 11,
+                      fontWeight: 900,
+                      color: '#24479b',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {expanded ? '▲ バトルログを閉じる' : `▼ バトルログを見る (${m.log.length}件)`}
+                  </button>
+                )}
+                {expanded && (
+                  <div
+                    style={{
+                      maxHeight: 150,
+                      overflowY: 'auto',
+                      background: '#fbf3dc',
+                      border: '1.5px solid #d4bc7d',
+                      borderRadius: 8,
+                      padding: 6,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 3,
+                    }}
+                  >
+                    {m.log.map((line, i) => (
+                      <div key={i}>{line}</div>
+                    ))}
+                  </div>
+                )}
+              </ParchmentSheet>
+            );
+          })
+        )}
+      </section>
+    );
+  }
+
   const menuRows: Array<{ label: string; desc: string; icon: PaintedIconName; action: () => void }> = [
     { label: 'スキン装備', desc: '持っている見た目を城や兵士に装備する', icon: 'skin', action: () => setSubPage('skins') },
     { label: 'スキル作戦図（200種）', desc: 'クラシックモードのスキルツリーを編集', icon: 'crown', action: onOpenSkillTree },
     { label: 'ランキング・実績ミッション', desc: '戦績確認とミッション報酬（コイン獲得）', icon: 'ranking', action: () => setSubPage('missions') },
+    { label: '戦績・対戦履歴', desc: `直近のバトル結果とログを確認（${matchHistory.length}件）`, icon: 'mission', action: () => setSubPage('history') },
     { label: '遊び方ガイド', desc: '属性相性と城攻め・合成の基本ルール', icon: 'help', action: () => setSubPage('guide') },
   ];
 
@@ -530,6 +646,19 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
             </GameButton>
           </div>
 
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ fontSize: 14, fontWeight: 900 }}>マスター音量 ({Math.round(volume * 100)}%)</div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(volume * 100)}
+              aria-label="マスター音量"
+              onChange={(e) => setVolume(Number(e.target.value) / 100)}
+              style={{ width: 130, accentColor: '#3465cc' }}
+            />
+          </div>
+
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <div>
               <div style={{ fontSize: 14, fontWeight: 900 }}>初期手札マリガン</div>
@@ -559,6 +688,25 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               onClick={toggleReducedMotion}
             >
               {reducedMotion ? 'ON' : 'OFF'}
+            </GameButton>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 900 }}>初回バトルヒント</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>
+                {tutorialResetNote ? '次回のバトルでヒントを再表示します' : 'カード出し方・ターン終了ヒントをもう一度見る'}
+              </div>
+            </div>
+            <GameButton
+              size="sm"
+              variant="normal-stone"
+              onClick={() => {
+                resetTutorial();
+                setTutorialResetNote(true);
+              }}
+            >
+              再表示
             </GameButton>
           </div>
 

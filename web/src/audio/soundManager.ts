@@ -27,6 +27,11 @@ class SoundManager {
       };
       window.addEventListener('pointerdown', unlock, { passive: true });
       window.addEventListener('keydown', unlock, { passive: true });
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', () => {
+          this.syncBgmTimer();
+        });
+      }
     }
   }
 
@@ -69,6 +74,7 @@ class SoundManager {
       window.clearInterval(this.bgmTimer);
       this.bgmTimer = null;
     }
+    if (typeof document !== 'undefined' && document.hidden) return;
     if (this.muted || this.bgmMuted || this.bgmMode === 'none') return;
 
     const tempoMs = this.bgmMode === 'home' ? 520 : this.bgmMode === 'battle' ? 340 : 230;

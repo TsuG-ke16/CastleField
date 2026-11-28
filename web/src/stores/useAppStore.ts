@@ -69,6 +69,21 @@ export interface CustomDeckSlot {
   cards: Record<string, number>;
 }
 
+export interface MatchHistoryEntry {
+  id: string;
+  at: number;
+  mode: ModeId;
+  playMode: PlayMode;
+  stage: string;
+  won: boolean;
+  turns: number;
+  damageDealt: number;
+  cardsPlayed: number;
+  monstersDefeated: number;
+  deckLabel: string;
+  log: string[];
+}
+
 const STORAGE_KEY = 'castlefield_v2_save_v1';
 
 interface SavedSlice {
@@ -93,8 +108,11 @@ interface SavedSlice {
   quality?: QualityMode;
   muted?: boolean;
   bgmMuted?: boolean;
+  volume?: number;
   mulliganEnabled?: boolean;
   reducedMotion?: boolean;
+  tutorialSeen?: boolean;
+  matchHistory?: MatchHistoryEntry[];
   engineMode?: EngineMode;
   stats?: PlayerStats;
   claimedMissions?: string[];
@@ -136,8 +154,11 @@ function persistState(s: AppStoreState): void {
       quality: s.quality,
       muted: s.muted,
       bgmMuted: s.bgmMuted,
+      volume: s.volume,
       mulliganEnabled: s.mulliganEnabled,
       reducedMotion: s.reducedMotion,
+      tutorialSeen: s.tutorialSeen,
+      matchHistory: s.matchHistory,
       engineMode: s.engineMode,
       stats: s.stats,
       claimedMissions: s.claimedMissions,
@@ -173,8 +194,11 @@ interface AppStoreState {
   quality: QualityMode;
   muted: boolean;
   bgmMuted: boolean;
+  volume: number;
   mulliganEnabled: boolean;
   reducedMotion: boolean;
+  tutorialSeen: boolean;
+  matchHistory: MatchHistoryEntry[];
   coins: number;
   points: number;
   pityCount: number;
@@ -216,8 +240,12 @@ interface AppStoreState {
   setQuality: (q: QualityMode) => void;
   toggleMute: () => void;
   toggleBgmMute: () => void;
+  setVolume: (vol: number) => void;
   toggleMulliganEnabled: () => void;
   toggleReducedMotion: () => void;
+  markTutorialSeen: () => void;
+  resetTutorial: () => void;
+  addMatchHistory: (entry: MatchHistoryEntry) => void;
   startBattle: () => void;
   exitBattle: () => void;
   startRankedBattle: (ticket: RankedTicket) => void;
@@ -296,12 +324,15 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     quality: initial.quality ?? '3d',
     muted: initial.muted ?? false,
     bgmMuted: initial.bgmMuted ?? false,
+    volume: typeof initial.volume === 'number' ? initial.volume : 0.75,
     mulliganEnabled: initial.mulliganEnabled ?? false,
     reducedMotion:
       initial.reducedMotion ??
       (typeof window !== 'undefined' && typeof window.matchMedia === 'function'
         ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
         : false),
+    tutorialSeen: initial.tutorialSeen ?? false,
+    matchHistory: Array.isArray(initial.matchHistory) ? initial.matchHistory.slice(0, 12) : [],
     coins: initial.coins ?? 2400,
     points: initial.points ?? 350,
     pityCount: initial.pityCount ?? 0,
@@ -322,6 +353,9 @@ export const useAppStore = create<AppStoreState>((set, get) => {
 
     init: async () => {
       try {
+        soundManager.setVolume(get().volume);
+        soundManager.setMuted(get().muted);
+        soundManager.setBgmMuted(get().bgmMuted);
         const data = await loadAllGameData();
         const deckKeys = Object.keys(data.decks || {});
         const savedDeck = get().selectedDeckId;
@@ -459,6 +493,11 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       soundManager.setBgmMuted(next);
       savePatch({ bgmMuted: next });
     },
+    setVolume: (vol) => {
+      const clamped = Math.max(0, Math.min(1, vol));
+      soundManager.setVolume(clamped);
+      savePatch({ volume: clamped });
+    },
     toggleMulliganEnabled: () => {
       soundManager.play('tap');
       savePatch({ mulliganEnabled: !get().mulliganEnabled });
@@ -466,6 +505,17 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     toggleReducedMotion: () => {
       soundManager.play('tap');
       savePatch({ reducedMotion: !get().reducedMotion });
+    },
+    markTutorialSeen: () => {
+      if (!get().tutorialSeen) savePatch({ tutorialSeen: true });
+    },
+    resetTutorial: () => {
+      soundManager.play('tap');
+      savePatch({ tutorialSeen: false });
+    },
+    addMatchHistory: (entry) => {
+      const next = [entry, ...get().matchHistory].slice(0, 12);
+      savePatch({ matchHistory: next });
     },
     startBattle: () => {
       soundManager.play('deploy');

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: castlefield-v2
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PORT
+        value: "8787"
+      - key: CF_ROOT
+        value: "/app"
+      - key: CF_REDB_PATH
+        value: "/app/data-store/castlefield.redb"
+    disk:
+      name: castlefield-data
+      mountPath: /app/data-store
+      sizeGB: 1
