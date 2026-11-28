@@ -47,6 +47,10 @@ export const EFFECTS = {
     healCastleOrMp: ['amount'], // スライムのカード：城HPか MP のどちらかをランダムに amount 回復
     healAndArmor: ['amount', 'armor'], // トレントのカード：自分の城HPを amount 回復し、城壁を armor 置く
     stealCoins: ['amount'], // ミミックのカード：相手のコインを amount 枚まで奪う
+    // 段階A1：経済のカード（クラシック・4陣営。slot は "support"＝攻撃の魔法の回数に数えない。1ターンの枚数は rules.coinCardsPerTurn）
+    plunderCoins: ['amount'], // 略奪：相手のコインを amount 枚まで奪う（コインを持っている相手だけ）
+    coinMine: ['amount', 'turns'], // 金鉱：次の自分のターンから turns 回、自分のターンの始めにコイン amount
+    investCoins: ['amount', 'cost', 'turns'], // 投資：コイン cost を払い、turns 回あとの自分のターンの始めにコイン amount
     damageEnemyAll: ['amount'], // 魔王のカード：相手の城と、相手の兵士全員に amount ダメージ
     dice: [], // サイコロ：1〜6の目 × per の効果（dice で種類を決める。下の DICE_KINDS）
     // 4陣営モード（CLAUDE.md「4陣営モード」）
@@ -71,7 +75,10 @@ export const EFFECTS = {
 export const LANE_SCOPE_EFFECTS = ['damageEnemySoldiers', 'poisonEnemySoldiers', 'freezeEnemySoldiers', 'pushBackEnemySoldiers'];
 
 /** 攻撃ではない魔法（精霊・コイン）。メインを使わず、何枚でも出せる（slot は "support"） */
-export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison'];
+export const SUPPORT_EFFECTS = ['summonSpirit', 'gainCoins', 'gainMp', 'curePoison', 'plunderCoins', 'coinMine', 'investCoins'];
+
+/** 段階A1：rules.attackSpellsPerTurn のモードで、メイン（slot "main"）の魔法のうち攻撃の魔法に数えないもの（自分にだけ効く回復・蘇生・強化など） */
+export const NON_ATTACK_MAIN_EFFECTS = new Set(['healOwnCastle', 'healSoldier', 'healCastleAndSoldiers', 'reviveFallen', 'bloodPact', 'healCastleOrMp', 'healAndArmor', 'redrawHand', 'setTime', 'changeWeather']);
 
 /** MP を使う魔法（攻撃の魔法と精霊）。コストはレアリティ（rarities.json の mpCost）か、カードの mpCost。rules.maxMp が 0 のときは MP を使わない */
 /**

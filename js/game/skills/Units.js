@@ -143,6 +143,7 @@ export function revive(rt, ownerId, entry, { auto = false, skillId = null, hpRat
   soldier.maxHp = entry.maxHp;
   soldier.hp = Math.max(1, Math.floor(entry.maxHp * hpRatio));
   soldier.skillHistoryId = entry.historyId;
+  soldier.noBounty = true; // 段階A1：スキルで蘇った兵士は撃破報酬の対象外
   owner.soldiers.push(soldier);
   if (soldier.stealth) (game.stealthSides ??= new Map()).set(soldierId, game.side(ownerId));
   rt.withOrigin('resurrection', skillId, parent, () => game.emit('soldierDeployed', {

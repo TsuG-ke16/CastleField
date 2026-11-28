@@ -12,7 +12,7 @@ test('buildData: mode を省略すると今までと同じ。classic はクラ�
   assert.ok(normal.cards.infantry);
   const classic = buildData({ mode: 'classic' });
   assert.equal(classic.rules.drawPerTurn, 2);
-  assert.equal(classic.rules.maxHand, 6);
+  assert.equal(classic.rules.maxHand, 8); // 段階A1：手札上限8
   assert.ok(classic.cards.classic_king_infantry);
   assert.equal(classic.cards.infantry, undefined);
   assert.throws(() => buildData({ mode: 'nothing' }), /cardSet/);
@@ -25,9 +25,9 @@ test('クラシックのルールは、決めた値だけが通常モードと�
   const { rules } = buildData({ mode: 'classic' });
   const changed = Object.keys({ ...normal, ...rules }).filter((k) => normal[k] !== rules[k]).sort();
   assert.deepEqual(changed, [
-    'castleSpellHitsFront', 'collapseAnnounceRound', 'collapseDamage', 'collapseStartRound',
-    'drawPerPlayed', 'drawPerTurn', 'drawUntilHand', 'firstTurnDraw', 'maxHand', 'maxRounds',
-    'mpAllCards', 'mpPerTurn', 'secondPlayerArmor', 'secondPlayerMp',
+    'attackSpellsPerTurn', 'castleHalfCoins', 'castleSpellHitsFront', 'coinPerTurn', 'collapseAnnounceRound', 'collapseDamage', 'collapseStartRound',
+    'drawPerPlayed', 'drawPerTurn', 'drawUntilHand', 'firstTurnDraw', 'initialCoins', 'killCoins', 'killCoinsPerTurn', 'maxRounds',
+    'monsterCardRewards', 'monsterCoinRewards', 'mpAllCards', 'mpPerTurn', 'secondPlayerArmor', 'secondPlayerMp',
   ]);
 });
 
@@ -63,7 +63,7 @@ test('部屋: mode を選ぶと、その部屋はクラシックのカードで�
   const { room } = lobby.findSeat(a.token);
   assert.equal(room.modeId, 'classic');
   assert.ok(room.data.cards.classic_king_infantry);
-  assert.equal(room.data.rules.maxHand, 6);
+  assert.equal(room.data.rules.maxHand, 8); // 段階A1：手札上限8
   assert.equal(lobby.join('abc', 'B').ok, false); // 通常モードでは入れない
   assert.equal(lobby.join('abc', 'B', null, 'classic').ok, true);
   assert.equal(lobby.join('xyz', 'C', null, 'nothing').ok, false);

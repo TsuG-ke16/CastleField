@@ -565,6 +565,13 @@ function smartStep(game, pid, ctx) {
   if (playFirst(game, playable, typesWithEffect(ctx, 'reviveFallen'))) return true;
   // 出すものがないとき、コインを増やすカード
   if (playFirst(game, playable, typesWithEffect(ctx, 'gainCoins'))) return true;
+  // 段階A1：経済のカード（クラシック・4陣営）。ほかに出すものがないときに、先に効く順（金鉱・投資は早いほど得）。
+  // 投資はコインが足りるとき、略奪は相手にコインがあるときだけ playable に入る（listTargets）。ないモードでは何もしない（乱数も使わない）
+  // 経済のカードはデータの economy: true で見分ける（通常モードのコインサイコロなどには当たらない）
+  {
+    const eco = (effect) => typesWithEffect(ctx, effect).filter((t) => ctx.cards[t].economy);
+    if (playFirst(game, playable, [...eco('coinMine'), ...eco('investCoins'), ...eco('plunderCoins'), ...eco('dice')])) return true;
+  }
   // 出すものがないとき：相手の手札が多ければ盗賊、自分の手札が弱ければ天の恵み、最後に神頼み
   // 精霊：今いなければ、1体呼ぶ（大精霊は使い切りなので、城HPが半分を切ったときだけ）
   // 刻の魔法：自分に獣（魔物の駒）・暗殺者がいれば夜に。夜で相手に獣が見えるか、魔物がいれば昼に戻す

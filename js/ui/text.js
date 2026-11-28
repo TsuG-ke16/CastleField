@@ -2,6 +2,7 @@ import { RARITY_NAMES } from './rarity.js';
 // 画面に出す文章。カード名と数値は cards.json / rules.json / monsters.json / upgrades.json から入れる。
 
 import { ELEMENT_LOOK, STATUS_ICON, ICON } from './look.js';
+import { NON_ATTACK_MAIN_EFFECTS } from '../game/Card.js';
 
 // オンライン対戦では、部屋に入るときに入れた名前を出す（同じ端末のときは空）
 let customNames = {};
@@ -24,14 +25,20 @@ export const KIND_LABEL = {
 };
 
 /** 1ターンに出せる枚数の説明（kind で決まる。CLAUDE.md「1ターンに出せる枚数」） */
-export function slotNote(def) {
+export function slotNote(def, rules = null) {
   if (!def) return '';
   if (def.kind === 'weapon') return '付加：何枚でも出せる';
   if (def.effect === 'reflectSpell' || def.effect === 'nullifySoldier') return '防御：攻撃を受けたときだけ出せる';
   if (def.kind === 'defense') return '防御：何枚でも出せる';
   if (def.effect === 'wild') return '合成専用：どのカードとでも合成できる（出せません）';
   if (def.kind === 'soldier') return '兵士：1ターンに複数枚出せる';
+  // 段階A1：経済のカード（クラシック・4陣営）。攻撃の魔法の回数に数えない
+  if (def.economy) return '経済：攻撃の魔法の回数に数えない（コインのカードは1ターンに決まった枚数まで）';
   if (['summonSpirit', 'gainCoins', 'gainMp'].includes(def.effect)) return '精霊・コイン・マナ：何枚でも出せる（メインを使わない）';
+  // 段階A1（クラシック・4陣営）：攻撃の魔法は1ターン attackSpellsPerTurn 回まで（回復・蘇生などは数えない）
+  if (rules?.attackSpellsPerTurn > 0) {
+    return NON_ATTACK_MAIN_EFFECTS.has(def.effect) ? '回復・蘇生など：何枚でも出せる（攻撃の魔法の回数に数えない）' : `攻撃の魔法：1ターンに${rules.attackSpellsPerTurn}回まで`;
+  }
   return 'メイン：攻撃の魔法・回復は1ターンに1枚';
 }
 
@@ -138,6 +145,11 @@ export function cardShort(def) {
   switch (def.effect) {
     case 'summonSpirit': return [{ icon: ELEMENT_LOOK[def.spirit]?.iconName ?? 'crown', text: `${def.amount}・${def.turns}回` }];
     case 'gainCoins': return [{ icon: 'coin', text: `+${def.amount}` }];
+    // 段階A1：経済のカード
+    case 'plunderCoins': return [{ icon: 'coin', text: `奪う${def.amount}` }];
+    case 'coinMine': return [{ icon: 'coin', text: `+${def.amount}×${def.turns}` }];
+    case 'investCoins': return [{ icon: 'coin', text: `-${def.cost}→+${def.amount}` }];
+    case 'dice': return def.economy && def.dice === 'coin' ? [{ icon: 'coin', text: '1〜6' }] : [];
     case 'gainMp': return [{ icon: 'water', text: `MP+${def.amount}` }];
     case 'damageEnemyCastle': return [{ icon: 'fire', text: `城 -${def.amount}` }];
     case 'damageEnemySoldiers': return [{ icon: 'sword', text: `兵士 -${def.amount}` }];

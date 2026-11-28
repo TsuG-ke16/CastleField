@@ -63,6 +63,8 @@ export class Soldier {
     this.attachments = [];
     /** トークン（魔族の「死者を従える」で生まれた骸骨兵）。カードではない。tokenName は表示名（なければ null） */
     this.token = false;
+    // 段階A1：撃破報酬（rules.killCoins）の対象外（蘇生した兵士）。トークン（token）も対象外
+    this.noBounty = false;
     this.tokenName = null;
   }
 

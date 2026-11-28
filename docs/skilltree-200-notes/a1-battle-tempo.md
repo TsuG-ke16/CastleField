@@ -1,0 +1,148 @@
+# 段階A1：基本ルール・MP・コイン経済（戦闘テンポの改善）
+
+- branch：`feature/battle-tempo-a1`（worktree /tmp/a1-wt）。土台：`feature/skill-choice-ui` の `d6ae041`（PR #205 の先頭）
+- 対象：クラシックモード（`data/classic/`）と4陣営モード（`data/factions/`）。通常モード（`data/rules.json`・`data/cards.json`）の戦闘仕様・sim 出力は変えない
+- 範囲外：A2（26種の強化・特殊強化18〜20コイン・即時強化の1ターン1回）、A3（旧仕様の廃止・レアリティ表示/合成/入手券の廃止・保存データ移行）、A4（オンライン整合）
+- 最優先は戦闘テンポ。バランスを理由にした行動制限は足さない。数値はすべて暫定（data/ で変えられる）
+
+## 進捗
+
+- [x] (1) ベースライン計測と sim 指標の追加（`tests/sim/sim.js` の `tempo: true`・`tests/sim/tempo.js`）
+- [x] (2) データ分離・基本数値（MP/ドロー/手札/コイン）
+- [x] (3) カードMP再設計（クラシック → 4陣営）
+- [x] (4) 撃破/魔物/城HP50% のコイン報酬と無限獲得防止
+- [x] (5) 経済系カード6種＋CPU
+- [x] (6) 攻撃魔法1ターン2回
+- [x] (7) 変更前後の比較表と整合メモ（`docs/a1-tempo-comparison.md`）
+
+## 計測のしかた（段階1）
+
+`node tests/sim/tempo.js`（クラシック：ビルド × none を席を入れかえて。`--mode factions`：陣営ごとにほかの3陣営と席を入れかえて）。
+指標は `tests/sim/sim.js` の `newTempo` / `summarizeTempo`（`runMatch({ tempo: true })` のときだけ集める。乱数は使わないので、tempo なしの sim 出力は土台と一致：run.js の通常・クラシック・4陣営で diff なしを確認）。
+
+| 指標 | 定義 |
+|---|---|
+| カード/ターン | 自分のメインのターンに手札から出した枚数（防御・スキルの無料発動 `free` は数えない） |
+| 攻撃魔法/ターン | そのうち `kind: "spell"` の枚数（クラシック/4陣営のカードの魔法は全部 slot "main"） |
+| MP≧50%終了（MP余剰率） | ターン終了時に MP が上限（スキル込み）の50%以上残っていたターンの割合。`mpFullEndRate`（満タン）・`mpEndRatio`（平均）も JSON にある |
+| MP不足率 | ターン終了時、対象はあるのに「MPが足りません」でだけ出せないカードが手札に残ったターンの割合（＝出したい手が MP で打てない目安。CPU が出したいと思ったかは見ていない） |
+| コンボ率 | 同じターンに 兵士・武器・魔法・属性反応（reactionTriggered）のうち2種類以上 |
+| コイン獲得/消費 | QA 契約 `observe("coinsChanged")` の metric の正負の合計（1試合・その席だけ）。内訳は reason ごと |
+| 魔物討伐 | monsterDefeated の playerId がその席 |
+
+ビルド：プリセット4種＋`EXTRA_BUILDS`（mpLine＝P01〜P08、bloodLine＝B01〜B08、economy＝P01+P03+P02+P04+X16）。相手はすべて none。
+
+### ベースライン（A1 着手前 = d6ae041。smart 同士・各向き100試合 × シード1,2 ＝ 1ビルド400試合）
+
+生データ：`docs/skilltree-200-notes/a1-data/baseline-classic.json`・`baseline-factions.json`
+
+クラシック：
+
+| ビルド | 勝率 | 平均手番 | カード/ターン | 攻撃魔法/ターン | MP≧50%終了 | MP不足 | コンボ | コイン獲得/試合 | コイン消費/試合 | 魔物討伐/試合 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| none | 51% | 100.7 | 1.84 | 0.67 | 1% | 73% | 41% | 58.9 | 58.1 | 3.29 |
+| critMagicLuck | 69% | 99.5 | 1.93 | 0.69 | 5% | 65% | 46% | 57.8 | 57.0 | 3.59 |
+| bloodHealDefense | 81% | 75.1 | 1.92 | 0.75 | 1% | 72% | 46% | 43.6 | 42.6 | 2.82 |
+| elementManaMagic | 69% | 100.7 | 1.94 | 0.70 | 5% | 63% | 48% | 57.8 | 56.9 | 3.60 |
+| graveTroopsSummon | 99% | 52.1 | 2.11 | 0.73 | 16% | 34% | 53% | 30.3 | 29.1 | 2.63 |
+| mpLine | 78% | 96.8 | 2.12 | 0.79 | 94% | 0% | 54% | 58.1 | 57.0 | 3.28 |
+| bloodLine | 64% | 80.8 | 1.98 | 0.76 | 2% | 65% | 48% | 46.9 | 46.1 | 3.15 |
+| economy | 83% | 88.5 | 2.14 | 0.79 | 89% | 0% | 55% | 63.9 | 62.6 | 3.19 |
+
+4陣営（スキルなし。各向き50試合 × 3相手 × シード1,2 ＝ 1陣営600試合）：
+
+| 陣営 | 勝率 | 平均手番 | カード/ターン | 攻撃魔法/ターン | MP≧50%終了 | MP不足 | コンボ | コイン獲得/試合 | コイン消費/試合 | 魔物討伐/試合 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| kingdom | 47% | 84.9 | 1.17 | 0.24 | 0% | 98% | 9% | 48.8 | 47.9 | 3.09 |
+| forest | 49% | 69.0 | 1.26 | 0.59 | 0% | 95% | 23% | 39.9 | 39.0 | 1.21 |
+| demon | 52% | 73.7 | 1.35 | 0.54 | 0% | 89% | 20% | 42.6 | 41.7 | 2.21 |
+| dragon | 55% | 73.6 | 1.27 | 0.27 | 0% | 98% | 11% | 42.4 | 41.4 | 3.02 |
+
+所見（ベースライン）：
+- 4陣営は MP 不足がほぼ毎ターン（89〜98%）、1ターン1.2〜1.35枚。テンポの詰まりの主因は MP
+- クラシックも MP不足 63〜73%。MP系統（mpLine・economy）は P03（コイン→MP）・P02（貯蔵）で MP不足 0%・MP余剰 89〜94% になり、ここが勝率の差（78〜83%）になっている＝**MP が乏しいことが MP系統の価値の源泉**。A1 で MP が豊富になると、この差は縮むはず（段階7で確認）
+- 魔物を倒してもクラシック/4陣営ではコインが出ない（魔物の reward が未設定・レアリティのカード報酬はレアリティのないモードでは何も出ない）。コインはほぼ毎ターンの収入（turn）と天候（weather）だけで、強化（upgrade）に全部使われている
+
+## 判断メモ
+
+### (2) データ分離・基本数値
+- **モード別の置き場所は各モードの rules.json**（通常 `data/rules.json`・クラシック `data/classic/rules.json`・4陣営 `data/factions/rules.json`）。
+  理由：rules はすでにモードごとに分かれていて、ブラウザ（js/main.js → HomeRuleSet.js の rulesSet）・サーバー（server/server.js の rulesSet）・CPU（ctx.rules）・sim（tests/helpers.js の buildData）が同じファイルを読む。新しい読み込み口を作らずに「同じ設定」を保証できる。A1 で足すキーも全部ここに置き、Game の既定値（DEFAULT_RULES）は「機能なし」にして通常モードを変えない
+- 変えた値（クラシック・4陣営とも）：mpPerTurn 3→5、maxHand 6→8、initialCoins 0→2、coinPerTurn 1→2。initialMp 10・maxMp 20・drawPerTurn 2・soldiersPerTurn 3 は既に仕様どおり（変更なし）。後攻の secondPlayerMp 2 はそのまま
+- テストの期待値の更新（仕様変更で必然的に変わる箇所だけ）：classic-mode（maxHand・通常モードとの差分キー）、factions-mode（maxHand）、classic-skills-c2 の P02（回復量を rules.mpPerTurn から計算）、online-skills（P03 の前に MP を0に：回復5で満タンになりうる）、skill-choice（X15 のテストは maxHand 6 に固定：手札8だと同じビルドの L04 の追加ドローが先に起きて山札の先頭がずれる）
+
+### (3) カードMP再設計
+- 新旧表と例外の決め方：`docs/a1-card-mp.md`（生成元の対応表は段階3のコミットの差分）。平均MP/枚：クラシック 1.96→1.60、王国 3.06→2.03、森 2.64→1.61、魔族 2.59→1.73、竜 2.86→2.10
+- 守った既存の決まり：4陣営の切り札・天罰の光は MP5（人間の指示）、森の属性魔法は MP3（人間の指示で戻した値）、1枚制限のカードは MP3 以上（tests/new-cards.test.js）
+- 陣営の特徴：竜は兵士を1段重く（竜系の兵士3）、魔族は追加効果つきの武器を1、王国・森の +1 武器は0
+- テストの更新：classic-revive（カオスパルス 3→2）、factions-mode（カード表の MP 列・身代わり 3→2）、forest-spirits（武器 MP をデータから計算）。
+  スキルの単体テスト（classic-skills-blood / c2 / c3）は「ホーリーレイ MP4」「聖鉄の剣 MP2」を前提に費用の計算を確かめているので、そのファイルの buildData でだけ元の値に固定した（スキルの仕様の確認であってカードの MP の確認ではないため）
+- 小規模の確認（10試合）：クラシックは MP≧50%で終了 がほぼ100%・MP不足0%（MP が余る）。攻撃魔法1ターン1枚の制限が効いている（段階6で2回に）
+
+### (4) コイン報酬（rules の新しいキー。Game の既定値は「なし」なので通常モードは変わらない）
+| キー | 既定 | クラシック/4陣営 | 中身 |
+|---|---|---|---|
+| `killCoins` | 0 | 1 | 敵兵士の撃破報酬（reason `kill`） |
+| `killCoinsPerTurn` | 0（上限なし） | 3 | 1人が1ターン（通算 turn。相手のターン中の撃破も、その turn に数える）にもらえる上限 |
+| `castleHalfCoins` | 0 | 3 | 城HPが初めて最大の50%以下になった人（城の持ち主）に1回（reason `castleHalf`）。原因は問わない（血魔術の自傷でも1回） |
+| `monsterCoinRewards` | null | 小型（スライム・コウモリ）2／中型（ゴブリン・スケルトン・ゴースト・トレント・ミミック）3／中型の上（ゴーレム・デーモン・ヴァンパイア）4／ドラゴン6／魔王10 | 魔物の種類ごとのコイン（monsters.json の reward の代わり。reason `reward`）。getState の monsters[].reward もこの値 |
+| `monsterCardRewards` | true | false | false ならレアリティのカード報酬を出さない（getState の rewardRarity も null） |
+
+- 撃破のだれが倒したか（Game の中だけで決める。スキルの lastHit は使わない＝スキルの有無で結果が変わらない）：戦い（fight）は相手の兵士の持ち主、射撃は撃った兵士の持ち主、`damageSoldier` の cause が spell・reaction・spirit・shot・skill・guard なら手番の人。**毒・やけど・砂・凍傷・出血（継続ダメージ）・天候・噴火・魔物との戦いはだれでもない（報酬なし）**
+- 無限獲得の防止：倒された兵士・倒した兵士のどちらかが `token`（骸骨兵・スキルの使い魔/分身など）か `noBounty`（蘇生のカード・スキルの蘇生で戻った兵士。Soldier に追加）なら出ない。味方どうし（チーム戦）も出ない
+- 4陣営も魔物は出る（monsters.json を共通で使う。ベースラインで1試合1.2〜3.1体）ので同じ表を設定した
+- 魔物のごほうびのレアリティのカードは、もともとレアリティのないクラシック/4陣営では何も出ていなかった（sampleTypeOfRarity が該当なし）。A1 では rules で明示的に止め、コインに置き換えた。レアリティ表示・合成・入手券の廃止は A3
+- 小規模の確認（10試合）：コイン獲得が 1試合 約58 → 約134（turn 85・kill 32・reward 8・castleHalf 3）。全部 smart の強化購入（buyUpgrades）に使われる。強化の中身は A2 で置き換える
+
+### (5) 経済のカード6種
+| カード | effect（中身） | MP | クラシック枚数 | 4陣営 |
+|---|---|---|---|---|
+| 徴税 | gainCoins（コイン+3。既存の effect） | 1 | 2 | 王国2・魔族1（貢ぎ物） |
+| 貿易 | gainCoins（コイン+5） | 3 | 1 | 森1 |
+| 金鉱 | coinMine（新。次の自ターンから3回、ターンの始めに+2。reason `mine`） | 2 | 1 | 竜2（財宝の山） |
+| 略奪 | plunderCoins（新。相手のコインを2枚まで。コインのない相手には出せない） | 1 | 2 | 魔族2 |
+| 投資 | investCoins（新。コイン3を払い、3回あとの自ターンの始めに+6。reason `invest`） | 0 | 1 | 王国1 |
+| 宝探し | dice（dice "coin"・per 1＝出目1〜6のコイン。既存のサイコロ rollDice・rollDie＝注入 RNG を使う） | 1 | 1 | 森2・竜1 |
+
+- 置き場所：カードの定義（各モードのカード表）。枚数（count）・MP（mpCost）・量はデータで変えられる。1ターンの枚数は既存の `rules.coinCardsPerTurn`（クラシック/4陣営とも1のまま）で、経済のカード全部を数える（isCoinCard を広げた）
+- 経済のカードは slot "support"（SUPPORT_EFFECTS に足した）＝**攻撃の魔法の回数に数えない**。略奪は既存の stealCoins（ミミックの駒・slot main）を使わず新しい effect にした（通常モードの魔物の駒を変えないため）
+- `economy: true` をカードに書いて見分ける（CPU・UI 用）。通常モードのコインサイコロなどには付いていないので、CPU が通常モードで使い始めることはない（通常モードの sim は土台と一致）
+- 宝探しのサイコロ：クラシックに既存の rollDice / rollDie（Game の注入 RNG）があったのでそれを使った。サイコロのカードは MP を使わない決まりだったが、mpCost を書いたサイコロだけ mpAllCards のモードでその MP を使うようにした（Game.mpCostOf。通常モードは mpAllCards なしで変わらない）
+- クラシックの山札は80枚のまま：8枚を経済のカードにし、同じ数を減らした（歩兵・骸骨兵 4→3、盾・骨の盾・城壁・血の膜・小回復・魂の欠片 3→2）。4陣営は各陣営に2種（3枚）を足した（38/36/47/32枚）
+- 予約の状態は getState の `players[id].economy`（{ mines, investments }。一度も使っていなければキーなし）。相手にも見える（出したカードは公開情報）
+- CPU（strategies.js smartStep）：ほかに出すものがないとき、徴税・貿易（既存の gainCoins の手）→ 金鉱 → 投資 → 略奪 → 宝探し
+- テストの更新（仕様変更で必然）：4陣営のカード表の種類数（factions-mode の FACTIONS・PLAN、kingdom-light 20→22、new-cards の魔族 22→24）。
+  スキルの単体テスト（classic-skills-blood / c2 / c3 / c4）は helper のルールに `defenseReaction: false` を足した：山札の中身が変わって、相手の手札に0MPの盾が来ると攻撃が「防御待ち（defend）」で止まり、スキルのキューが処理されないため（スキルの仕様の確認で、防御の確認ではない）
+
+### (6) 攻撃の魔法は1ターン2回
+- `rules.attackSpellsPerTurn`（既定0＝今までどおり「メイン（slot "main"）は1ターン1枚」。クラシック/4陣営は2）。1以上のモードでは、**メインの魔法のうち攻撃の魔法だけを数え**、回復・蘇生など自分にだけ効くもの（`NON_ATTACK_MAIN_EFFECTS`：healOwnCastle・healSoldier・healCastleAndSoldiers・reviveFallen・bloodPact ほか。js/game/Card.js）は数えずに何枚でも出せる（既存の「魔法は1ターン1枚」を置き換え。テンポ優先で回復を縛らない）
+- 数えるのは playCard（手札からの使用）だけ。スキルの追加の詠唱（やまびこ・連鎖・予約・複製など）は playCard を通らないので数えない（テストで M02 を確認）。経済のカード・精霊などの slot "support" も数えない
+- getState：`players[id].attackSpellsThisTurn`（全モードで出す。通常モードは常に0）、`attackSpellsPerTurn`（1以上のモードだけ）。UI はカードの説明（slotNote）に「攻撃の魔法：1ターンに2回まで」を出すだけ
+- 0MP のカードの一律の制限は入れていない（測った結果、下の比較表で極端な値は出ていないため）
+- 小規模の確認（10試合）：クラシックの none で攻撃魔法/ターン 0.93→1.47、MP≧50%終了 97%→42%、MP不足 0%→38%（MP の使い道ができ、MP系統の価値が戻る）
+
+### (7) 比較表とスキルの整合
+- 表・所見・スキルノードの変更案（提示のみ）：`docs/a1-tempo-comparison.md`。生データ：`a1-data/after-*.json`
+- tempo.js に `--cards`（カードの一部を変える。4陣営はデッキの count にも反映）を足し、4陣営の偏りの要因を1つずつ戻して測った（比較表の「4陣営の勝率の偏り」）
+- 要点：テンポは目的どおり上がった（カード/ターン 1.84→3.27、MP不足 73%→33%、コンボ 41%→71%、手番 100.7→82.9）。MP系統・血魔術・経済の none との差は +28→+21／+14→+27／+33→+32 で、どれも価値は残っている。**4陣営は王国・竜に偏った**（MP の豊富さ＋コインで今の強化を買えることが主因。A2 のあとに測り直す）
+
+## 未確認
+
+- 画面（ブラウザ）で遊んでの確認はしていない。UI は説明文（slotNote・cardShort）と state の追従（attackSpellsThisTurn・economy）だけで、HUD に「攻撃魔法 n/2」や金鉱・投資の予約は出していない（A2 の UI でまとめて）
+- オンライン（server/rooms.js）は Game をそのまま使うので新しいルール・カードも動くはずだが、オンラインのテストは既存のものだけ（経済のカード・撃破報酬のオンライン専用テストはない。A4）
+- 4陣営の勝率の偏り（王国・竜 77% 前後）。大規模測定はしていない
+- 継続ダメージ（毒・やけど・出血など）で倒したときに撃破報酬を出さない決めは暫定（付与した人を Game が持っていないため。スキルの statusSource はスキルのあるゲームだけ）。毒・感染系（S）のビルドのコインが少し不利
+- 撃破報酬の「ターン」は通算 turn（相手のターン中の撃破は相手のターンの枠に数える）。1ラウンド単位にするかは未決
+- クラシックの陣営カード表（data/classic/factions/*.json）は MP を作り直していない（山札に入らない。テスト・sim だけが読む）
+- 精密な調整（カードの MP・経済のカードの枚数・コイン報酬の値）は QA の大規模測定の結果待ち
+
+## A2 への引き継ぎ
+
+- **強化は「新設」ではなく「モード別データへの置き換え」**：今の強化は `data/upgrades.json`（全モード共通。tests/helpers.js の loadOptionalData・server/server.js・js/main.js がそのまま渡す）と `Game.canBuyUpgrade / buyUpgrade / upgradeCostOf`（コインで買う・1試合の `limit`・`costs` の段階価格）。A2 は
+  1. `data/modes.json` の各モードに `upgradesSet`（例 `data/classic/upgrades.json`・`data/factions/upgrades.json`）を足し、ブラウザ・サーバー・helpers が rulesSet と同じように読む（通常モードは今の data/upgrades.json のまま）
+  2. 26種を effect で書く。今ある effect：repairCastle・drawCards・sharpenSoldiers・trainArmy・fortifyArmy（そのまま使える）、gainCard・boostDrops・permanentLuck（レアリティ前提＝クラシック/4陣営では買えない。A3 で廃止）
+  3. 「即時強化は1ターン1回」：強化の定義に区分（例 `timing: "instant"`）を足し、Player に「このターンに買った即時強化の数」を持たせて canBuyUpgrade で弾く（A1 の attackSpellsThisTurn と同じ形。リセットは beginTurn/passTurn の2か所）
+  4. 特殊強化 18〜20 コイン：A1 後のコイン獲得は 1試合 約171（自ターン約41回で 1ターン約4.2）。今の強化は全部買い切られている（1試合の消費 ≒ 獲得）。値段はこの量を前提に
+- CPU（strategies.js の `buyUpgrades`）は今の強化を effect の固定の順で買う。A2 の強化に合わせて作り直す（A1 では触っていない）
+- コイン報酬の値（rules の killCoins・monsterCoinRewards・castleHalfCoins、経済のカードの count・amount）は全部データ。A2 の値段と合わせて調整できる
+- スキルノードの変更案（P04・P01・P07・P03。提示のみ）は `docs/a1-tempo-comparison.md`

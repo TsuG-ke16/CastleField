@@ -384,7 +384,7 @@ export class HandView {
     const reason = this.blocked.get(card.cardId);
     this.el.detailHint.classList.toggle('warn', Boolean(reason));
     if (reason) this.el.detailHint.textContent = `いまは出せません：${reason}`;
-    else this.el.detailHint.textContent = slotNote(def);
+    else this.el.detailHint.textContent = slotNote(def, this.rules);
     const rarity = this.rarities?.[def.rarity];
     const badge = this.el.detail.querySelector('.detail-rarity');
     badge.textContent = rarity?.name ?? '';

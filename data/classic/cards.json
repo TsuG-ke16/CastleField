@@ -6,7 +6,7 @@
     "attack": 3,
     "speed": 2,
     "mpCost": 1,
-    "count": 4
+    "count": 3
   },
   "classic_king_cavalry": {
     "name": "騎兵",
@@ -14,7 +14,7 @@
     "hp": 4,
     "attack": 4,
     "speed": 3,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 3
   },
   "classic_king_archer": {
@@ -55,7 +55,7 @@
     "kind": "weapon",
     "attackBonus": 2,
     "element": "light",
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "classic_king_lumina_lance": {
@@ -63,7 +63,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "element": "light",
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 2
   },
   "classic_king_lumina": {
@@ -73,7 +73,7 @@
     "element": "light",
     "amount": 2,
     "scope": "lane",
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 3
   },
   "classic_king_minor_heal": {
@@ -82,7 +82,7 @@
     "effect": "healOwnCastle",
     "amount": 5,
     "mpCost": 1,
-    "count": 3
+    "count": 2
   },
   "classic_king_heal": {
     "name": "ヒール",
@@ -97,16 +97,16 @@
     "kind": "defense",
     "effect": "shieldSoldier",
     "amount": 3,
-    "mpCost": 1,
-    "count": 3
+    "mpCost": 0,
+    "count": 2
   },
   "classic_king_wall": {
     "name": "城壁",
     "kind": "defense",
     "effect": "armorCastle",
     "amount": 5,
-    "mpCost": 2,
-    "count": 3
+    "mpCost": 1,
+    "count": 2
   },
   "classic_king_purify": {
     "name": "浄化",
@@ -123,7 +123,7 @@
     "effect": "singleDamage",
     "element": "light",
     "amount": 5,
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 2
   },
   "classic_king_holy_fireball": {
@@ -151,7 +151,7 @@
     "attack": 3,
     "speed": 2,
     "mpCost": 1,
-    "count": 4
+    "count": 3
   },
   "classic_demon_imp": {
     "name": "小悪魔",
@@ -159,7 +159,7 @@
     "hp": 3,
     "attack": 4,
     "speed": 3,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 3
   },
   "classic_demon_curser": {
@@ -179,7 +179,7 @@
     "kind": "weapon",
     "attackBonus": 2,
     "element": "dark",
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "classic_demon_frost_blade": {
@@ -187,7 +187,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "element": "ice",
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 2
   },
   "classic_demon_chaos_rod": {
@@ -195,7 +195,7 @@
     "kind": "weapon",
     "attackBonus": 1,
     "element": "chaos",
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 2
   },
   "classic_demon_frost_breath": {
@@ -213,7 +213,7 @@
     "kind": "spell",
     "effect": "poisonEnemy",
     "amount": 1,
-    "mpCost": 1,
+    "mpCost": 2,
     "count": 3
   },
   "classic_demon_soul_shard": {
@@ -222,8 +222,8 @@
     "effect": "damageCastleAndHeal",
     "amount": 3,
     "heal": 3,
-    "mpCost": 2,
-    "count": 3,
+    "mpCost": 3,
+    "count": 2,
     "description": "相手の城に3ダメージ、自分の城を3回復する"
   },
   "classic_demon_blood_veil": {
@@ -232,15 +232,15 @@
     "effect": "armorCastle",
     "amount": 4,
     "mpCost": 1,
-    "count": 3
+    "count": 2
   },
   "classic_demon_bone_shield": {
     "name": "骨の盾",
     "kind": "defense",
     "effect": "shieldSoldier",
     "amount": 3,
-    "mpCost": 1,
-    "count": 3
+    "mpCost": 0,
+    "count": 2
   },
   "classic_demon_shadow": {
     "name": "シャドウ",
@@ -248,7 +248,7 @@
     "effect": "singleDamage",
     "element": "dark",
     "amount": 4,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 3
   },
   "classic_demon_curse_mark": {
@@ -282,7 +282,71 @@
     "kind": "spell",
     "effect": "randomElementDamage",
     "amount": 3,
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
+  },
+  "classic_econ_tax": {
+    "name": "徴税",
+    "kind": "spell",
+    "economy": true,
+    "effect": "gainCoins",
+    "amount": 3,
+    "description": "コイン+3（コインのカードは1ターンに rules.coinCardsPerTurn 枚まで。攻撃の魔法の回数には数えない）",
+    "mpCost": 1,
+    "count": 2
+  },
+  "classic_econ_trade": {
+    "name": "貿易",
+    "kind": "spell",
+    "economy": true,
+    "effect": "gainCoins",
+    "amount": 5,
+    "description": "MP3 を使ってコイン+5",
+    "mpCost": 3,
+    "count": 1
+  },
+  "classic_econ_gold_mine": {
+    "name": "金鉱",
+    "kind": "spell",
+    "economy": true,
+    "effect": "coinMine",
+    "amount": 2,
+    "turns": 3,
+    "description": "次の自分のターンから3ターン、ターンの始めにコイン+2",
+    "mpCost": 2,
+    "count": 1
+  },
+  "classic_econ_plunder": {
+    "name": "略奪",
+    "kind": "spell",
+    "economy": true,
+    "effect": "plunderCoins",
+    "amount": 2,
+    "description": "相手のコインを2枚まで奪う（コインを持っている相手だけ）",
+    "mpCost": 1,
+    "count": 2
+  },
+  "classic_econ_invest": {
+    "name": "投資",
+    "kind": "spell",
+    "economy": true,
+    "effect": "investCoins",
+    "cost": 3,
+    "amount": 6,
+    "turns": 3,
+    "description": "コインを3払い、3回あとの自分のターンの始めにコイン+6",
+    "mpCost": 0,
+    "count": 1
+  },
+  "classic_econ_treasure": {
+    "name": "宝探し",
+    "kind": "spell",
+    "economy": true,
+    "effect": "dice",
+    "dice": "coin",
+    "per": 1,
+    "description": "サイコロを振り、出た目（1〜6）のコインをもらう",
+    "mpCost": 1,
+    "count": 1
   }
 }

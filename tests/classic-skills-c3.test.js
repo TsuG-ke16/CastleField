@@ -8,7 +8,9 @@ import { Soldier } from '../js/game/Soldier.js';
 import { buildData, loadOptionalData } from './helpers.js';
 
 function classicGame(skills, { rng = () => 0 } = {}) {
-  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan: false } });
+  // 聖鉄の剣は MP2 として書いたテスト（段階A1 でデータは MP1 になったので、ここだけ元の値に固定）。
+  // defenseReaction: false … 段階A1 で山札の中身（経済のカード）と盾の MP0 が変わり、相手が防御待ち（defend）になってスキルの処理が止まる手札があるため
+  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan: false, defenseReaction: false }, cards: { classic_king_holy_sword: { mpCost: 2 } } });
   const opts = loadOptionalData('classic');
   delete opts.stages;
   delete opts.weather;

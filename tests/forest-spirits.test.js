@@ -412,7 +412,7 @@ test('本物のデータ：森の陣営は最初のターンにイフリート�
   assert.equal(game.players.p2.castle.hp, hp - (4 - dmg.blocked));
   assert.equal(game.getState('p1').players.p1.passiveSpirit.next, 'water');
   assert.equal(game.getState('p1').players.p2.passiveSpirit, null);
-  // 武器（属性つき・MP2）と改名した魔法（MP3）
+  // 武器（属性つき。段階A1 で MP0）と改名した魔法（MP3）
   game.debugSetHand('p1', ['fac_forest_beastman', 'fac_forest_flame_sword', 'fac_forest_flare_seed']);
   game.players.p1.mp = 20;
   const hand = () => game.players.p1.hand;
@@ -421,7 +421,7 @@ test('本物のデータ：森の陣営は最初のターンにイフリート�
   const s = game.players.p1.soldiers[0];
   assert.equal(game.playCard(hand().find((c) => c.type === 'fac_forest_flame_sword').cardId, { soldierId: s.soldierId }).ok, true);
   assert.equal(s.element, 'fire');
-  assert.equal(game.players.p1.mp, 20 - 2 - 2);
+  assert.equal(game.players.p1.mp, 20 - cards.fac_forest_beastman.mpCost - cards.fac_forest_flame_sword.mpCost);
   assert.equal(game.getState('p1').mpCosts.fac_forest_flare_seed, 3);
   assert.equal(loadJson('rules.json').deckMode !== 'own', true);
 });

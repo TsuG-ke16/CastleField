@@ -1316,6 +1316,7 @@ function modelFromState(st) {
       armyAttack: p.armyAttack ?? 0, armyHp: p.armyHp ?? 0,
       handCount: p.handCount,
       playedThisTurn: p.playedThisTurn,
+      attackSpellsThisTurn: p.attackSpellsThisTurn ?? 0, // 段階A1
       soldiersPlayedThisTurn: p.soldiersPlayedThisTurn,
       cardsPlayedThisTurn: p.cardsPlayedThisTurn ?? 0,
       soldiers: p.soldiers.map((s) => structuredClone(s)),

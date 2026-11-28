@@ -66,8 +66,8 @@ test('新カード：別の陣営のカード表・既存カードの数値を�
   assert.equal(CARDS.fac_forest_life_drop.amount, 3);
   assert.equal(CARDS.fac_dragon_fireball.amount, 5);
   assert.equal(CARDS.fac_dragon_blood_drop.amount, 4);
-  // 魔族のカード表は新カード側では触っていない（魔族の強化で22種になった）
-  assert.equal(Object.keys(loadFactionCards(MODE, 'demon')).length, 22);
+  // 魔族のカード表は新カード側では触っていない（魔族の強化で22種、段階A1 の経済のカード2種で24種になった）
+  assert.equal(Object.keys(loadFactionCards(MODE, 'demon')).length, 24);
 });
 
 test('新カード：どの新カードも、すでにある効果（effect・role・武器のキー）だけで書いてある', () => {

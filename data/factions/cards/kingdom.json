@@ -5,7 +5,7 @@
     "hp": 5,
     "attack": 3,
     "speed": 2,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "fac_king_cavalry": {
@@ -14,7 +14,7 @@
     "hp": 4,
     "attack": 4,
     "speed": 3,
-    "mpCost": 3,
+    "mpCost": 1,
     "count": 2
   },
   "fac_king_archer": {
@@ -26,7 +26,7 @@
     "range": 2,
     "stay": 2,
     "description": "動かずに、2マス先までの相手の兵士1体を撃つ（反撃を受けない）。2ターンで帰る",
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_king_heavy": {
@@ -35,7 +35,7 @@
     "hp": 9,
     "attack": 2,
     "speed": 1,
-    "mpCost": 4,
+    "mpCost": 2,
     "count": 2
   },
   "fac_king_hero": {
@@ -62,7 +62,7 @@
     "stay": 2,
     "innateElement": "light",
     "description": "動かずに、2マス先までの相手の兵士1体を撃つ。兵士・魔物がいなければ、狙った相手の城を撃つ。2ターンで帰る。光の属性で撃つ",
-    "mpCost": 4,
+    "mpCost": 2,
     "count": 2
   },
   "fac_king_holy_sword": {
@@ -70,7 +70,7 @@
     "kind": "weapon",
     "attackBonus": 2,
     "element": "light",
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "fac_king_lumina_lance": {
@@ -80,7 +80,7 @@
     "element": "light",
     "rangeBonus": 1,
     "description": "攻撃+1・光。射程+1（弓兵・魔法使いは撃てる距離が1のびる。進む兵士は2マス先の相手を、反撃を受けずに突く）",
-    "mpCost": 2,
+    "mpCost": 0,
     "count": 2
   },
   "fac_king_god_sword": {
@@ -101,7 +101,7 @@
     "element": "light",
     "amount": 2,
     "scope": "lane",
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_king_holy_ray": {
@@ -110,7 +110,7 @@
     "effect": "singleDamage",
     "element": "light",
     "amount": 5,
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 2
   },
   "fac_king_heal": {
@@ -118,7 +118,7 @@
     "kind": "spell",
     "effect": "healOwnCastle",
     "amount": 10,
-    "mpCost": 4,
+    "mpCost": 3,
     "count": 2
   },
   "fac_king_shield": {
@@ -126,7 +126,7 @@
     "kind": "defense",
     "effect": "shieldSoldier",
     "amount": 3,
-    "mpCost": 1,
+    "mpCost": 0,
     "count": 2
   },
   "fac_king_god_shield": {
@@ -146,7 +146,7 @@
     "kind": "defense",
     "effect": "armorCastle",
     "amount": 5,
-    "mpCost": 2,
+    "mpCost": 1,
     "count": 2
   },
   "fac_king_decoy": {
@@ -154,7 +154,7 @@
     "kind": "defense",
     "effect": "guardCastle",
     "description": "自分の兵士1体を選ぶ。次に城が受ける攻撃を、その兵士が代わりに受ける（盾は効く。城壁は使わない）",
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_king_purify": {
@@ -174,7 +174,7 @@
     "attack": 6,
     "speed": 1,
     "description": "のろい（速さ1）が、城に着けば攻撃6×2の大ダメージ。HPが低く、着くまでに倒されやすい",
-    "mpCost": 3,
+    "mpCost": 2,
     "count": 2
   },
   "fac_king_judgement": {
@@ -199,5 +199,27 @@
     "mpCost": 3,
     "count": 1,
     "maxCopies": 1
+  },
+  "fac_king_tax": {
+    "name": "徴税",
+    "kind": "spell",
+    "economy": true,
+    "effect": "gainCoins",
+    "amount": 3,
+    "description": "コイン+3（コインのカードは1ターンに rules.coinCardsPerTurn 枚まで。攻撃の魔法の回数には数えない）",
+    "mpCost": 1,
+    "count": 2
+  },
+  "fac_king_invest": {
+    "name": "投資",
+    "kind": "spell",
+    "economy": true,
+    "effect": "investCoins",
+    "cost": 3,
+    "amount": 6,
+    "turns": 3,
+    "description": "コインを3払い、3回あとの自分のターンの始めにコイン+6",
+    "mpCost": 0,
+    "count": 1
   }
 }

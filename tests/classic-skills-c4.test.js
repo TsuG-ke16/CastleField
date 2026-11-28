@@ -58,7 +58,8 @@ const HEAL_SOLDIER = { name: 'テスト回復', kind: 'spell', effect: 'healSold
 
 /** クラシックのゲーム（マリガンなし）。p1 のターン1 */
 function classicGame(skills, { seed = 1, cards = {} } = {}) {
-  const { cards: cardDefs, rules } = buildData({ mode: 'classic', rules: { mulligan: false }, cards });
+  // defenseReaction: false … 段階A1 で山札の中身（経済のカード）と盾の MP0 が変わり、相手が防御待ち（defend）になってスキルの処理が止まる手札があるため
+  const { cards: cardDefs, rules } = buildData({ mode: 'classic', rules: { mulligan: false, defenseReaction: false }, cards });
   const opts = loadOptionalData('classic');
   delete opts.stages;
   delete opts.weather;

@@ -309,5 +309,5 @@ test('クラシック：残響の魂・カオスパルスがあり、全カー�
   game.start();
   const st = game.getState(null);
   assert.equal(st.mpCosts.classic_demon_echo_soul, 3);
-  assert.equal(st.mpCosts.classic_demon_chaos_pulse, 3);
+  assert.equal(st.mpCosts.classic_demon_chaos_pulse, 2); // 段階A1：通常攻撃魔法 3→2
 });

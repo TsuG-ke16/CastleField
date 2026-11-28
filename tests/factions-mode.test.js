@@ -12,7 +12,7 @@ import { loadFixture, loadJson, seededRng, recordEvents, buildData, loadOptional
 import { runMatch } from './sim/sim.js';
 
 const MODE = 'factions';
-const FACTIONS = { kingdom: 20, forest: 18, demon: 22, dragon: 16 }; // 新カード（王国3・森4・竜4）を足した // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
+const FACTIONS = { kingdom: 22, forest: 20, demon: 24, dragon: 18 }; // 段階A1：経済のカードを2種ずつ足した // // 新カード（王国3・森4・竜4）を足した // 王国：小回復を外し、切り札3枚（神剣・勇者・神盾）を足した
 const ELEMENTS = loadOptionalData(MODE).elements;
 
 // ================= データ =================
@@ -36,19 +36,19 @@ test('データ：4陣営のカード表は FACTIONS の種類数。各陣営の
   // 入れないと決めたカード：聖壁の号砲（armorBlast）・竜の鼓動（竜威は保留）
   assert.equal(Object.values(cards).some((d) => d.effect === 'armorBlast'), false);
   assert.equal(Object.values(cards).some((d) => d.name === '竜の鼓動'), false);
-  // 王国の防御は身代わり（3MP）
+  // 王国の防御は身代わり（段階A1 で 3→2MP）
   const decoy = Object.values(loadFactionCards(MODE, 'kingdom')).find((d) => d.name === '身代わり');
   assert.equal(decoy.effect, 'guardCastle');
-  assert.equal(decoy.mpCost, 3);
+  assert.equal(decoy.mpCost, 2);
 });
 
-test('データ：4陣営のルールは専用（2枚ドロー固定・手札6枚・全カードでMP・各自のデッキ）。全モード共通の rules.json は変えない', () => {
+test('データ：4陣営のルールは専用（2枚ドロー固定・手札8枚（段階A1）・全カードでMP・各自のデッキ）。全モード共通の rules.json は変えない', () => {
   const { rules } = buildData({ mode: MODE });
   assert.equal(rules.drawPerTurn, 2);
   assert.equal(rules.firstTurnDraw, 2);
   assert.equal(rules.drawUntilHand, 0);
   assert.equal(rules.drawPerPlayed, false);
-  assert.equal(rules.maxHand, 6);
+  assert.equal(rules.maxHand, 8);
   assert.equal(rules.mpAllCards, true);
   assert.equal(rules.maxMp, 20);
   assert.equal(rules.deckMode, 'own');
@@ -651,63 +651,72 @@ test('生まれつきの属性が反応で消えるときは、elementCleared �
 // [名前, MP, 中身（書いたキーだけ比べる）]。兵士は 攻撃・HP・足（弓兵・魔法使いは足なし）
 const S = (attack, hp, speed, extra = {}) => ({ kind: 'soldier', attack, hp, ...(speed ? { speed } : {}), ...extra });
 const PLAN = {
+  // 段階A1：MP は docs/a1-card-mp.md の新しい値（兵士1〜2・武器と盾0〜1・城壁1・回復1〜3・攻撃魔法2〜5）
   kingdom: [
-    ['歩兵', 2, S(3, 5, 2)], ['騎兵', 3, S(4, 4, 3)], ['弓兵', 3, S(3, 3, 0, { role: 'archer' })], ['重装兵', 4, S(2, 9, 1)],
+    ['歩兵', 1, S(3, 5, 2)], ['騎兵', 1, S(4, 4, 3)], ['弓兵', 2, S(3, 3, 0, { role: 'archer' })], ['重装兵', 2, S(2, 9, 1)],
     // 切り札（神剣・勇者・神盾）：各1枚・MP5（人間の指示。数値は仮）。小回復は外した
     ['勇者', 5, S(10, 14, 2, { innateElement: 'light', noRevive: true, count: 1, maxCopies: 1 })],
-    ['聖術師', 4, S(2, 4, 0, { role: 'mage', innateElement: 'light' })],
-    ['聖鉄の剣', 2, { kind: 'weapon', attackBonus: 2, element: 'light' }], ['ルミナスランス', 2, { kind: 'weapon', attackBonus: 1, element: 'light', rangeBonus: 1 }],
+    ['聖術師', 2, S(2, 4, 0, { role: 'mage', innateElement: 'light' })],
+    ['聖鉄の剣', 1, { kind: 'weapon', attackBonus: 2, element: 'light' }], ['ルミナスランス', 0, { kind: 'weapon', attackBonus: 1, element: 'light', rangeBonus: 1 }],
     ['神剣', 5, { kind: 'weapon', attackBonus: 9, element: 'light', count: 1, maxCopies: 1 }],
-    ['ルミナ', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'light', scope: 'lane' }], ['ホーリーレイ', 4, { effect: 'singleDamage', amount: 5, element: 'light' }],
-    ['ヒール', 4, { effect: 'healOwnCastle', amount: 10 }],
-    ['盾', 1, { effect: 'shieldSoldier', amount: 3 }], ['神盾', 5, { effect: 'shieldSoldier', amount: 15, statusWard: true, count: 1, maxCopies: 1 }], ['城壁', 2, { effect: 'armorCastle', amount: 5 }], ['身代わり', 3, { effect: 'guardCastle' }],
+    ['ルミナ', 2, { effect: 'damageEnemySoldiers', amount: 2, element: 'light', scope: 'lane' }], ['ホーリーレイ', 3, { effect: 'singleDamage', amount: 5, element: 'light' }],
+    ['ヒール', 3, { effect: 'healOwnCastle', amount: 10 }],
+    ['盾', 0, { effect: 'shieldSoldier', amount: 3 }], ['神盾', 5, { effect: 'shieldSoldier', amount: 15, statusWard: true, count: 1, maxCopies: 1 }], ['城壁', 1, { effect: 'armorCastle', amount: 5 }], ['身代わり', 2, { effect: 'guardCastle' }],
     ['浄化', 2, { effect: 'purifyFlare', amount: 0, clearEnemyAttachments: true }],
     // 新カード（docs/new-cards-proposal.md）
-    ['攻城兵', 3, S(6, 4, 1)], ['天罰の光', 5, { effect: 'damageEnemyCastle', amount: 9, element: 'light', exhaust: true, count: 1, maxCopies: 1 }],
+    ['攻城兵', 2, S(6, 4, 1)], ['天罰の光', 5, { effect: 'damageEnemyCastle', amount: 9, element: 'light', exhaust: true, count: 1, maxCopies: 1 }],
     ['聖鎖の剣', 3, { kind: 'weapon', attackBonus: 1, element: 'light', freezeOnHit: 1, count: 1, maxCopies: 1 }],
+    // 段階A1：経済のカード
+    ['徴税', 1, { effect: 'gainCoins', amount: 3, count: 2 }], ['投資', 0, { effect: 'investCoins', cost: 3, amount: 6, turns: 3, count: 1 }],
   ],
   forest: [
-    ['獣人', 2, S(4, 5, 2)], ['エルフ', 3, S(3, 3, 0, { role: 'archer' })], ['ドルイド', 4, S(2, 4, 0, { role: 'mage', spellBoost: { elements: ['fire', 'water', 'wind', 'earth'], amount: 1 } })],
+    ['獣人', 1, S(4, 5, 2)], ['エルフ', 2, S(3, 3, 0, { role: 'archer' })], ['ドルイド', 2, S(2, 4, 0, { role: 'mage', spellBoost: { elements: ['fire', 'water', 'wind', 'earth'], amount: 1 } })],
     // 精霊のカード4枚は、常時の精霊（陣営の特性）に変えてなくし、属性の武器4枚にした（人間の指示）
-    ['フレイムソード', 2, { kind: 'weapon', attackBonus: 1, element: 'fire' }], ['アクアスピア', 2, { kind: 'weapon', attackBonus: 1, element: 'water' }],
-    ['ゲイルボウ', 2, { kind: 'weapon', attackBonus: 1, element: 'wind' }], ['アースハンマー', 2, { kind: 'weapon', attackBonus: 1, element: 'earth' }],
+    ['フレイムソード', 0, { kind: 'weapon', attackBonus: 1, element: 'fire' }], ['アクアスピア', 0, { kind: 'weapon', attackBonus: 1, element: 'water' }],
+    ['ゲイルボウ', 0, { kind: 'weapon', attackBonus: 1, element: 'wind' }], ['アースハンマー', 0, { kind: 'weapon', attackBonus: 1, element: 'earth' }],
     // 属性魔法は改名した（効果・MP3 は同じ。いったん MP2 にしたが、人間の指示で3に戻した）
     ['フレアシード', 3, { effect: 'singleDamage', amount: 4, element: 'fire' }], ['スプリングウェーブ', 3, { effect: 'singleDamage', amount: 3, element: 'water', attachTurns: 8 }],
     ['リーフストーム', 3, { effect: 'damageEnemySoldiers', amount: 2, element: 'wind', scope: 'lane' }], ['ルートバインド', 3, { effect: 'singleDamage', amount: 3, element: 'earth', freezeTurns: 1 }],
-    ['生命の雫', 3, { effect: 'healCastleAndSoldiers' }], ['茨の壁', 2, { effect: 'armorCastle', amount: 4 }], ['樹皮の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
+    ['生命の雫', 2, { effect: 'healCastleAndSoldiers' }], ['茨の壁', 1, { effect: 'armorCastle', amount: 4 }], ['樹皮の盾', 0, { effect: 'shieldSoldier', amount: 3 }],
     // 新カード
-    ['森の番人', 3, S(2, 8, 0, { role: 'guard', stay: 3 })], ['樹人', 4, S(3, 7, 1, { count: 1, maxCopies: 1 })],
-    ['薬草の湿布', 3, { effect: 'healOwnCastle', amount: 5, count: 1, maxCopies: 1 }], ['古木の根', 4, { effect: 'armorCastle', amount: 9, count: 1, maxCopies: 1 }],
+    ['森の番人', 2, S(2, 8, 0, { role: 'guard', stay: 3 })], ['樹人', 3, S(3, 7, 1, { count: 1, maxCopies: 1 })],
+    ['薬草の湿布', 3, { effect: 'healOwnCastle', amount: 5, count: 1, maxCopies: 1 }], ['古木の根', 3, { effect: 'armorCastle', amount: 9, count: 1, maxCopies: 1 }],
+    // 段階A1：経済のカード
+    ['宝探し', 1, { effect: 'dice', dice: 'coin', per: 1, count: 2 }], ['貿易', 3, { effect: 'gainCoins', amount: 5, count: 1 }],
   ],
   demon: [
-    ['骸骨兵', 2, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 2, S(4, 3, 3, { innateElement: 'dark' })],
-    ['ゾンビ', 4, S(2, 9, 1, { innateElement: 'dark' })], ['氷の亡者', 3, S(2, 6, 2, { innateElement: 'ice' })],
-    ['混沌の落とし子', 3, S(3, 4, 2, { innateElement: 'chaos', attachRandomElement: true })],
-    ['呪術師', 3, S(2, 3, 0, { role: 'mage', spellBoost: { elements: ['dark', 'ice', 'chaos'], amount: 1 } })],
-    ['シャドウサイズ', 2, { kind: 'weapon', attackBonus: 2, element: 'dark' }], ['フロストブレード', 2, { kind: 'weapon', attackBonus: 1, element: 'ice', freezeOnHit: 1 }],
-    ['カオスロッド', 2, { kind: 'weapon', attackBonus: 1, element: 'chaos', attachRandomElement: true }], ['吸命の剣', 2, { kind: 'weapon', attackBonus: 1, lifesteal: 0.5, keepElement: true }],
-    ['シャドウ', 3, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 3, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
-    ['カオスパルス', 3, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
+    ['骸骨兵', 1, S(3, 5, 2, { innateElement: 'dark' })], ['小悪魔', 1, S(4, 3, 3, { innateElement: 'dark' })],
+    ['ゾンビ', 2, S(2, 9, 1, { innateElement: 'dark' })], ['氷の亡者', 2, S(2, 6, 2, { innateElement: 'ice' })],
+    ['混沌の落とし子', 2, S(3, 4, 2, { innateElement: 'chaos', attachRandomElement: true })],
+    ['呪術師', 2, S(2, 3, 0, { role: 'mage', spellBoost: { elements: ['dark', 'ice', 'chaos'], amount: 1 } })],
+    ['シャドウサイズ', 1, { kind: 'weapon', attackBonus: 2, element: 'dark' }], ['フロストブレード', 1, { kind: 'weapon', attackBonus: 1, element: 'ice', freezeOnHit: 1 }],
+    ['カオスロッド', 0, { kind: 'weapon', attackBonus: 1, element: 'chaos', attachRandomElement: true }], ['吸命の剣', 1, { kind: 'weapon', attackBonus: 1, lifesteal: 0.5, keepElement: true }],
+    ['シャドウ', 2, { effect: 'singleDamage', amount: 4, element: 'dark', target: 'front' }], ['氷の息', 2, { effect: 'freezeEnemySoldiers', turns: 1, element: 'ice', scope: 'lane' }],
+    ['カオスパルス', 2, { effect: 'randomElementDamage', amount: 3, element: 'chaos', target: 'front' }],
     ['毒の霧', 3, { effect: 'poisonEnemyCastle', amount: 2, turns: 3, maxTurns: 3 }], ['呪いの印', 2, { effect: 'weakenAttack', amount: 2, turns: 2, soldiers: 3 }],
     ['脆弱', 3, { effect: 'vulnerableCastle', ratio: 0.25, maxRatio: 0.5, turns: 3, maxTurns: 6 }],
-    ['血の契約', 3, { effect: 'bloodPact', selfDamage: 6, amount: 3, soldiers: 2 }],
+    ['血の契約', 2, { effect: 'bloodPact', selfDamage: 6, amount: 3, soldiers: 2 }],
     ['封魔', 2, { effect: 'sealMp', amount: 1, turns: 2, maxTurns: 4 }],
-    ['魂の欠片', 3, { effect: 'damageCastleAndHeal', amount: 3, heal: 3 }], ['残響の魂', 4, { effect: 'reviveFallen', amount: 0.5 }],
-    ['血の膜', 2, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 1, { effect: 'shieldSoldier', amount: 3 }],
+    ['魂の欠片', 3, { effect: 'damageCastleAndHeal', amount: 3, heal: 3 }], ['残響の魂', 3, { effect: 'reviveFallen', amount: 0.5 }],
+    ['血の膜', 1, { effect: 'armorCastle', amount: 4, bloodArmor: true }], ['骨の盾', 0, { effect: 'shieldSoldier', amount: 3 }],
+    // 段階A1：経済のカード
+    ['略奪', 1, { effect: 'plunderCoins', amount: 2, count: 2 }], ['徴税', 1, { effect: 'gainCoins', amount: 3, count: 1 }],
   ],
   dragon: [
-    ['竜人の新兵', 2, S(4, 5, 2)], ['竜騎兵', 3, S(5, 3, 3)], ['幼炎竜', 4, S(5, 5, 2, { innateElement: 'fire' })], ['幼雷竜', 4, S(4, 4, 3, { innateElement: 'thunder' })],
-    ['竜牙剣', 2, { kind: 'weapon', attackBonus: 2, element: 'fire' }], ['雷牙槍', 2, { kind: 'weapon', attackBonus: 2, element: 'thunder', rangeBonus: 1 }],
-    ['ファイアボール', 2, { effect: 'damageEnemyCastle', amount: 5, element: 'fire' }], ['雷光', 4, { effect: 'damageEnemySoldiers', amount: 3, element: 'thunder', scope: 'lane' }],
-    ['火炎の吐息', 4, { effect: 'breathAttack', amount: 4, castleAmount: 4, element: 'fire' }], ['竜血の雫', 2, { effect: 'healSoldier' }],
-    ['火山灰の幕', 2, { effect: 'armorCastle', amount: 3 }], ['幼竜の鱗', 1, { effect: 'shieldSoldier', amount: 2 }],
+    ['竜人の新兵', 1, S(4, 5, 2)], ['竜騎兵', 2, S(5, 3, 3)], ['幼炎竜', 3, S(5, 5, 2, { innateElement: 'fire' })], ['幼雷竜', 3, S(4, 4, 3, { innateElement: 'thunder' })],
+    ['竜牙剣', 1, { kind: 'weapon', attackBonus: 2, element: 'fire' }], ['雷牙槍', 1, { kind: 'weapon', attackBonus: 2, element: 'thunder', rangeBonus: 1 }],
+    ['ファイアボール', 3, { effect: 'damageEnemyCastle', amount: 5, element: 'fire' }], ['雷光', 3, { effect: 'damageEnemySoldiers', amount: 3, element: 'thunder', scope: 'lane' }],
+    ['火炎の吐息', 4, { effect: 'breathAttack', amount: 4, castleAmount: 4, element: 'fire' }], ['竜血の雫', 1, { effect: 'healSoldier' }],
+    ['火山灰の幕', 1, { effect: 'armorCastle', amount: 3 }], ['幼竜の鱗', 0, { effect: 'shieldSoldier', amount: 2 }],
     // 新カード
-    ['竜術師', 4, S(3, 4, 0, { role: 'mage', innateElement: 'fire', spellBoost: { elements: ['fire', 'thunder'], amount: 1 } })], ['竜鱗兵', 4, S(3, 9, 1, { count: 1, maxCopies: 1 })],
-    ['古竜の障壁', 4, { effect: 'armorCastle', amount: 8, count: 1, maxCopies: 1 }], ['竜翼の身代わり', 3, { effect: 'guardCastle', count: 1, maxCopies: 1 }],
+    ['竜術師', 3, S(3, 4, 0, { role: 'mage', innateElement: 'fire', spellBoost: { elements: ['fire', 'thunder'], amount: 1 } })], ['竜鱗兵', 3, S(3, 9, 1, { count: 1, maxCopies: 1 })],
+    ['古竜の障壁', 3, { effect: 'armorCastle', amount: 8, count: 1, maxCopies: 1 }], ['竜翼の身代わり', 3, { effect: 'guardCastle', count: 1, maxCopies: 1 }],
+    // 段階A1：経済のカード
+    ['金鉱', 2, { effect: 'coinMine', amount: 2, turns: 3, count: 2 }], ['宝探し', 1, { effect: 'dice', dice: 'coin', per: 1, count: 1 }],
   ],
 };
 
-test('カード表：58種の名前・攻撃・HP・足・MP・効果量・属性が案の表と同じ', () => {
+test('カード表：66種（段階A1 の経済のカード8種を含む）の名前・攻撃・HP・足・MP・効果量・属性が案の表と同じ', () => {
   for (const [f, rows] of Object.entries(PLAN)) {
     const set = Object.values(loadFactionCards(MODE, f));
     assert.deepEqual(set.map((d) => d.name), rows.map((r) => r[0]), `${f} のカードの並び`);

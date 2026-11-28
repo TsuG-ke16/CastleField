@@ -44,7 +44,9 @@ const HEAL = 'classic_king_minor_heal';
 const INF = 'classic_king_infantry';
 
 function classicGame(skills, { seed = 1, mulligan = false } = {}) {
-  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan } });
+  // ホーリーレイは MP4 として書いたテスト（段階A1 でデータは MP3 になったので、ここだけ元の値に固定）。
+  // defenseReaction: false … 段階A1 で山札の中身（経済のカード）と盾の MP0 が変わり、相手が防御待ち（defend）になってスキルの処理が止まる手札があるため
+  const { cards, rules } = buildData({ mode: 'classic', rules: { mulligan, defenseReaction: false }, cards: { classic_king_holy_ray: { mpCost: 4 } } });
   const opts = loadOptionalData('classic');
   delete opts.stages;
   delete opts.weather;
@@ -112,8 +114,8 @@ test('P02/P08：上限超過のMPを貯蔵（最大5）。自ターン開始に1
   assert.equal(game.skillAction('p1', 'P08', { amount: 1 }).ok, false); // 各自ターン1回
   p1.mp = 0;
   endTurn(game);
-  endTurn(game); // p1 のターン開始：回復 +3 のあとに貯蔵から1
-  assert.equal(p1.mp, 4);
+  endTurn(game); // p1 のターン開始：回復（rules.mpPerTurn。段階A1 で 3→5）のあとに貯蔵から1
+  assert.equal(p1.mp, game.rules.mpPerTurn + 1);
   assert.equal(st.res.storedMp, 1);
   assert.ok(used(game, 'p1', 'P02') >= 3 && used(game, 'p1', 'P08') === 1);
 });
