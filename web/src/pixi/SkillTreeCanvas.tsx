@@ -103,9 +103,22 @@ export const SkillTreeCanvas = forwardRef<SkillTreeCanvasHandle, SkillTreeCanvas
           resetView,
         };
 
+        const bgLayer = new Graphics();
         const edgeLayer = new Graphics();
         const nodeLayer = new Container();
-        world.addChild(edgeLayer, nodeLayer);
+        world.addChild(bgLayer, edgeLayer, nodeLayer);
+
+        for (const mult of [0.16, 0.3, 0.44, 0.56]) {
+          bgLayer.circle(cx, cy, span * mult).stroke({ width: 2, color: 0xb8924f, alpha: 0.22 });
+        }
+        const outerR = span * 0.58;
+        for (let i = 0; i < 8; i++) {
+          const ang = (Math.PI * 2 * i) / 8;
+          bgLayer
+            .moveTo(cx, cy)
+            .lineTo(cx + Math.cos(ang) * outerR, cy + Math.sin(ang) * outerR)
+            .stroke({ width: 1.5, color: 0xb8924f, alpha: 0.16 });
+        }
 
         const draw = () => {
           const {
@@ -132,12 +145,17 @@ export const SkillTreeCanvas = forwardRef<SkillTreeCanvasHandle, SkillTreeCanvas
             const bothUnlocked = unlockedSet.has(aId) && unlockedSet.has(bId);
             const oneUnlocked =
               unlockedSet.has(aId) || unlockedSet.has(bId) || aId === 'START' || bId === 'START';
-            edgeLayer.moveTo(a.x, a.y);
             const mx = (a.x + b.x) * 0.5;
             const my = (a.y + b.y) * 0.5 - 12;
+            if (bothUnlocked && !dimmed) {
+              edgeLayer.moveTo(a.x, a.y);
+              edgeLayer.quadraticCurveTo(mx, my, b.x, b.y);
+              edgeLayer.stroke({ width: 9, color: 0xffe37a, alpha: 0.32 });
+            }
+            edgeLayer.moveTo(a.x, a.y);
             edgeLayer.quadraticCurveTo(mx, my, b.x, b.y);
             edgeLayer.stroke({
-              width: bothUnlocked ? 5 : oneUnlocked ? 3.5 : 2,
+              width: bothUnlocked ? 4.5 : oneUnlocked ? 3.5 : 2,
               color: bothUnlocked ? 0x3465cc : oneUnlocked ? 0xd99b38 : 0xc6ad82,
               alpha: dimmed ? 0.14 : bothUnlocked ? 0.95 : oneUnlocked ? 0.8 : 0.5,
             });
@@ -153,9 +171,10 @@ export const SkillTreeCanvas = forwardRef<SkillTreeCanvasHandle, SkillTreeCanvas
             const r = isStart ? 26 : isUltimate ? 20 : 13;
 
             const g = new Graphics();
-            if (isUltimate || isSelected) {
+            g.circle(0, 3, r).fill({ color: 0x4a2e1a, alpha: isDimmed ? 0.08 : 0.24 });
+            if (isStart || isUltimate || isSelected) {
               g.circle(0, 0, r + 6);
-              g.fill({ color: isSelected ? 0x3465cc : 0xffe37a, alpha: isDimmed ? 0.12 : 0.35 });
+              g.fill({ color: isSelected ? 0x3465cc : 0xffe37a, alpha: isDimmed ? 0.12 : 0.36 });
             }
             g.circle(0, 0, r);
             g.fill({
@@ -166,6 +185,17 @@ export const SkillTreeCanvas = forwardRef<SkillTreeCanvasHandle, SkillTreeCanvas
               width: isSelected ? 4 : 2.5,
               color: isSelected ? 0xffb833 : 0x4a2e1a,
               alpha: isDimmed ? 0.3 : 1,
+            });
+            if (isStart || isUltimate || isUnlocked) {
+              g.circle(0, 0, Math.max(4, r - 3)).stroke({
+                width: 1.5,
+                color: 0xffe37a,
+                alpha: isDimmed ? 0.18 : 0.7,
+              });
+            }
+            g.circle(-r * 0.28, -r * 0.28, r * 0.26).fill({
+              color: 0xffffff,
+              alpha: isDimmed ? 0.12 : 0.48,
             });
             g.position.set(n.x, n.y);
             g.eventMode = 'static';
@@ -281,7 +311,7 @@ export const SkillTreeCanvas = forwardRef<SkillTreeCanvasHandle, SkillTreeCanvas
         style={{
           width: '100%',
           height: '100%',
-          background: 'radial-gradient(circle at 50% 50%, #fff8e2 0%, #f3dfb2 100%)',
+          background: 'radial-gradient(circle at 50% 45%, #fffaf0 0%, #f5e2b5 58%, #dfc082 100%)',
           touchAction: 'none',
           cursor: 'grab',
         }}
