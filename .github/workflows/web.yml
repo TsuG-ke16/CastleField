@@ -1,0 +1,31 @@
+name: Web Frontend & Asset Guard CI
+
+on:
+  push:
+    branches: [ main, "feature/**" ]
+  pull_request:
+
+jobs:
+  web-build-and-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install web dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: TypeScript check & Vite PWA production build
+        working-directory: web
+        run: npm run build
+
+      - name: Verify v2 guardrails (no SVG, no !important, no legacy buttons)
+        run: |
+          if grep -rnE '<svg|\.svg|data:image/svg|!important|btn-end-turn|button-end-turn|assets/ui/btn-|assets/ui/natural' web/src; then
+            echo "Forbidden v2 pattern found in web/src!"
+            exit 1
+          fi
+          echo "v2 static guard passed cleanly."

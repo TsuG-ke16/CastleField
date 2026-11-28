@@ -1,0 +1,22 @@
+{
+  "_note": "v2 のお財布（コイン）の数値（仮）。サーバーと v2 の画面が読む。ここを直して再起動・リロードするだけで調整できる",
+  "matchReward": {
+    "_note": "CPU対戦・同じ端末・合言葉対戦の報酬。端末の申告なので、1日（UTC）に受け取れる回数に上限をつける",
+    "win": 150,
+    "loss": 40,
+    "dailyLimit": 10
+  },
+  "rankedReward": {
+    "_note": "ランクマッチの報酬。サーバーが決着を確かめて渡す（上限なし）",
+    "win": 150,
+    "loss": 40
+  },
+  "missions": [
+    { "id": "welcome_gift", "title": "王国へようこそ（初陣準備ボーナス）", "kind": "always", "goal": 1, "reward": 150 },
+    { "id": "first_match", "title": "初めての出陣を経験する", "kind": "matches", "goal": 1, "reward": 200 },
+    { "id": "win_three", "title": "バトルで3回勝利する", "kind": "wins", "goal": 3, "reward": 500 },
+    { "id": "gacha_ten", "title": "王国の宝箱を10回引く", "kind": "gachaRolls", "goal": 10, "reward": 300 },
+    { "id": "collect_skins", "title": "スキンを5個集める", "kind": "skins", "goal": 5, "reward": 300 },
+    { "id": "unlock_skills", "title": "スキルを3個解放する", "kind": "skills", "goal": 3, "reward": 250 }
+  ]
+}

@@ -1,0 +1,215 @@
+.homeRoot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+}
+
+.modeBarWrap {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 12px 0;
+}
+
+.modePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 2.5px solid var(--cf-ink);
+  background: linear-gradient(180deg, #fffdf6 0%, #f4e4c1 100%);
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--cf-ink);
+  cursor: pointer;
+  box-shadow: 0 3px 0 rgba(74, 46, 26, 0.25);
+}
+
+.modePillActive {
+  background: linear-gradient(180deg, #5b8df0 0%, #3465cc 100%);
+  color: #fffaf0;
+  box-shadow: inset 0 0 0 2px #ffd98a, 0 3px 0 rgba(35, 71, 153, 0.45);
+}
+
+.stageSpacer {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
+
+.heroTitle {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-shadow: 0 2px 0 #fffaf0, 0 4px 12px rgba(255, 255, 255, 0.8);
+}
+
+.brandSmall {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: var(--cf-royal-lo);
+}
+
+.heroHeading {
+  margin: 0;
+  font-size: clamp(24px, 6vw, 34px);
+  font-weight: 900;
+  line-height: 1.15;
+  color: var(--cf-ink);
+}
+
+.seasonChip {
+  align-self: flex-start;
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 246, 224, 0.92);
+  border: 2px solid var(--cf-ink);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.thumbConsole {
+  position: relative;
+  z-index: 15;
+  padding: 0 14px calc(78px + var(--cf-safe-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 460px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.prepChips {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.prepChip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  border: 2.5px solid var(--cf-ink);
+  background: rgba(255, 248, 228, 0.96);
+  box-shadow: 0 4px 0 rgba(74, 46, 26, 0.25);
+  cursor: pointer;
+  text-align: left;
+}
+
+.chipThumbs {
+  display: flex;
+  align-items: center;
+}
+
+.chipThumbImg {
+  width: 24px;
+  height: 34px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1.5px solid var(--cf-ink);
+  background: #fff;
+}
+
+.chipThumbImg + .chipThumbImg {
+  margin-left: -10px;
+  transform: rotate(6deg);
+}
+
+.chipTexts {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chipLabel {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--cf-ink-muted);
+}
+
+.chipValue {
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(31, 20, 10, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+}
+
+.sheetCard {
+  width: 100%;
+  max-width: 460px;
+  max-height: 75vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sheetHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sheetTitle {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 960px) {
+  .stageSpacer {
+    padding: 18px 24px 18px 124px;
+  }
+  .thumbConsole {
+    position: absolute;
+    right: 28px;
+    bottom: 28px;
+    padding: 0;
+    width: 360px;
+    margin: 0;
+  }
+  .sheetBackdrop {
+    align-items: center;
+  }
+}

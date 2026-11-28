@@ -1,0 +1,351 @@
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicI64, Ordering};
+use std::sync::Arc;
+
+use axum::body::Body;
+use axum::http::{Request, StatusCode};
+use castlefield_server::{build_router, create_state_with_clock};
+use http_body_util::BodyExt;
+use serde_json::{json, Value};
+use tower::ServiceExt;
+
+fn repo_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).parent().unwrap().parent().unwrap().to_path_buf()
+}
+
+async fn req(app: &axum::Router, method: &str, uri: &str, body: Option<Value>) -> (StatusCode, Value) {
+    let r = Request::builder()
+        .method(method)
+        .uri(uri)
+        .header("content-type", "application/json")
+        .body(match body {
+            Some(b) => Body::from(b.to_string()),
+            None => Body::empty(),
+        })
+        .unwrap();
+    let resp = app.clone().oneshot(r).await.unwrap();
+    let status = resp.status();
+    let bytes = resp.into_body().collect().await.unwrap().to_bytes();
+    (status, serde_json::from_slice(&bytes).unwrap_or(Value::Null))
+}
+
+struct Env {
+    app: axum::Router,
+    clock: Arc<AtomicI64>,
+    db: PathBuf,
+}
+
+impl Drop for Env {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_file(&self.db);
+    }
+}
+
+fn env(name: &str) -> Env {
+    let db = std::env::temp_dir().join(format!("cf_ranked_{name}_{}.redb", std::process::id()));
+    let _ = std::fs::remove_file(&db);
+    // シーズン1の途中（data/seasons.json の起点 2026-11-01 から10日後）
+    let clock = Arc::new(AtomicI64::new(1_793_491_200_000 + 10 * 86_400_000));
+    let c2 = clock.clone();
+    let state = create_state_with_clock(&repo_root().join("data"), &db, Arc::new(move || c2.load(Ordering::SeqCst))).unwrap();
+    Env { app: build_router(state, None), clock, db }
+}
+
+async fn guest(e: &Env, name: &str) -> Value {
+    let (st, g) = req(&e.app, "POST", "/api/account/guest", Some(json!({ "name": name }))).await;
+    assert_eq!(st, StatusCode::OK);
+    assert_eq!(g["ok"], true);
+    json!({ "userId": g["userId"], "secret": g["secret"] })
+}
+
+async fn post(e: &Env, uri: &str, body: &Value) -> Value {
+    let (st, v) = req(&e.app, "POST", uri, Some(body.clone())).await;
+    assert_eq!(st, StatusCode::OK, "{uri}: {v}");
+    v
+}
+
+/// 2人を組み合わせて、(a の席, b の席) の (token, playerId) を返す
+async fn match_two(e: &Env, a: &Value, b: &Value) -> ((String, String), (String, String)) {
+    let qa = post(e, "/api/ranked/queue", a).await;
+    assert_eq!(qa["state"], "queued");
+    let mut qb = post(e, "/api/ranked/queue", b).await;
+    // MMR が離れていると、待つほど探す範囲が広がってから組まれる
+    for _ in 0..20 {
+        if qb["state"] == "matched" {
+            break;
+        }
+        e.clock.fetch_add(10_000, Ordering::SeqCst);
+        qb = post(e, "/api/ranked/status", b).await;
+    }
+    assert_eq!(qb["state"], "matched", "{qb}");
+    let sa = post(e, "/api/ranked/status", a).await;
+    assert_eq!(sa["state"], "matched");
+    let seat = |v: &Value| (v["token"].as_str().unwrap().to_string(), v["playerId"].as_str().unwrap().to_string());
+    let (x, y) = (seat(&sa), seat(&qb));
+    assert_ne!(x.0, y.0);
+    assert_ne!(x.1, y.1);
+    assert_eq!(sa["gameState"]["phase"], "main");
+    // 本人の手札は見え、相手の手札は見えない
+    assert!(sa["gameState"]["players"][&x.1]["hand"].is_array());
+    assert!(sa["gameState"]["players"][&y.1]["hand"].is_null());
+    (x, y)
+}
+
+#[tokio::test]
+async fn guest_auth_is_required() {
+    let e = env("auth");
+    let a = guest(&e, "Alice").await;
+    let bad = json!({ "userId": a["userId"], "secret": "nope" });
+    let (st, v) = req(&e.app, "POST", "/api/ranked/queue", Some(bad)).await;
+    assert_eq!(st, StatusCode::FORBIDDEN);
+    assert_eq!(v["ok"], false);
+    let s = post(&e, "/api/ranked/summary", &a).await;
+    assert_eq!(s["placed"], false);
+    assert_eq!(s["placementLeft"], 5);
+    assert_eq!(s["season"], 1);
+    assert_eq!(s["name"], "Alice");
+}
+
+#[tokio::test]
+async fn ranked_match_settles_once_and_counts_placement() {
+    let e = env("settle");
+    let a = guest(&e, "Alice").await;
+    let b = guest(&e, "Bob").await;
+    let ((ta, pa), (tb, pb)) = match_two(&e, &a, &b).await;
+
+    // 合言葉で ranked の部屋に入れない
+    let (_, j) = req(&e.app, "POST", "/api/join", Some(json!({ "passphrase": "ranked:x" }))).await;
+    assert_eq!(j["ok"], false);
+
+    // 手番でない人は操作できない。防御は攻撃を受けている人だけ
+    let (cur_tok, other_tok) = {
+        let s = post(&e, "/api/ranked/status", &a).await;
+        if s["gameState"]["currentPlayer"] == pa.as_str() { (ta.clone(), tb.clone()) } else { (tb.clone(), ta.clone()) }
+    };
+    let r = post(&e, "/api/action", &json!({ "token": other_tok, "method": "endTurn", "args": [] })).await;
+    assert_eq!(r["ok"], false, "{r}");
+    let r = post(&e, "/api/action", &json!({ "token": other_tok, "method": "passDefense", "args": [] })).await;
+    assert_eq!(r["ok"], false, "{r}");
+    let r = post(&e, "/api/action", &json!({ "token": cur_tok, "method": "start", "args": [] })).await;
+    assert_eq!(r["ok"], false);
+
+    // Bob が降参 → Alice の勝ち
+    let r = post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    assert_eq!(r["state"]["phase"], "gameOver");
+    assert_eq!(r["state"]["winner"], pa.as_str());
+    // もう一度送っても二重に反映しない
+    let _ = post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+
+    let sa = post(&e, "/api/ranked/summary", &a).await;
+    let sb = post(&e, "/api/ranked/summary", &b).await;
+    assert_eq!((sa["matches"].clone(), sa["wins"].clone(), sa["placementLeft"].clone()), (json!(1), json!(1), json!(4)));
+    assert_eq!((sb["matches"].clone(), sb["wins"].clone(), sb["placementLeft"].clone()), (json!(1), json!(0), json!(4)));
+    assert_eq!(sa["lastChange"]["result"], "win");
+    // ランクマッチの報酬はサーバーが渡す（勝ち150・負け40。data/v2/economy.json）
+    assert_eq!(sa["lastChange"]["coins"], 150);
+    assert_eq!(sb["lastChange"]["coins"], 40);
+    let wa = post(&e, "/api/economy/wallet", &a).await;
+    assert_eq!(wa["coins"], 2400 + 150);
+    assert_eq!((wa["matches"].clone(), wa["wins"].clone()), (json!(1), json!(1)));
+    assert_eq!(sa["lastChange"]["placement"], true);
+    assert_eq!(sb["lastChange"]["result"], "loss");
+    let _ = pb;
+
+    // 試合が終わったら、もう一度並べる
+    let q = post(&e, "/api/ranked/queue", &a).await;
+    assert_eq!(q["state"], "queued");
+    let l = post(&e, "/api/ranked/leave", &a).await;
+    assert_eq!(l["ok"], true);
+}
+
+#[tokio::test]
+async fn placement_finishes_and_leaderboard_lists_players() {
+    let e = env("board");
+    let a = guest(&e, "Alice").await;
+    let b = guest(&e, "Bob").await;
+    for _ in 0..5 {
+        let (_, (tb, _)) = match_two(&e, &a, &b).await;
+        post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    }
+    let sa = post(&e, "/api/ranked/summary", &a).await;
+    assert_eq!(sa["placed"], true);
+    assert_eq!(sa["lastChange"]["placedNow"], true);
+    assert!(sa["rank"]["divisionLabel"].is_string());
+    assert_eq!(sa["position"], 1);
+    // 6試合目からは RP が動く
+    let (_, (tb, _)) = match_two(&e, &a, &b).await;
+    post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    let sa2 = post(&e, "/api/ranked/summary", &a).await;
+    assert!(sa2["lastChange"]["rpDelta"].as_i64().unwrap() > 0);
+    let (_, board) = req(&e.app, "GET", "/api/ranked/leaderboard?limit=10", None).await;
+    let list = board["entries"].as_array().unwrap();
+    assert_eq!(list.len(), 2);
+    assert_eq!(list[0]["name"], "Alice");
+    assert_eq!(list[0]["position"], 1);
+    assert!(list[0].get("userId").is_none(), "userId はランキングに出さない");
+}
+
+#[tokio::test]
+async fn queue_times_out_and_idle_opponent_can_be_claimed() {
+    let e = env("idle");
+    let a = guest(&e, "Alice").await;
+    let q = post(&e, "/api/ranked/queue", &a).await;
+    assert_eq!(q["state"], "queued");
+    e.clock.fetch_add(91_000, Ordering::SeqCst);
+    let s = post(&e, "/api/ranked/status", &a).await;
+    assert_eq!(s["state"], "timeout");
+    let s = post(&e, "/api/ranked/status", &a).await;
+    assert_eq!(s["state"], "idle", "タイムアウトの知らせは1回だけ");
+
+    let b = guest(&e, "Bob").await;
+    let ((ta, pa), (tb, pb)) = match_two(&e, &a, &b).await;
+    let st = post(&e, "/api/ranked/status", &a).await;
+    let cur = st["gameState"]["currentPlayer"].as_str().unwrap().to_string();
+    let (waiting_tok, waiting_pid) = if cur == pa { (tb, pb) } else { (ta, pa) };
+    let r = post(&e, "/api/ranked/claimIdle", &json!({ "token": waiting_tok })).await;
+    assert_eq!(r["ok"], false);
+    e.clock.fetch_add(181_000, Ordering::SeqCst);
+    let r = post(&e, "/api/ranked/claimIdle", &json!({ "token": waiting_tok })).await;
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(r["state"]["phase"], "gameOver");
+    assert_eq!(r["state"]["winner"], waiting_pid.as_str());
+}
+
+#[tokio::test]
+async fn rank_rewards_and_unpriced_items_cannot_be_bought() {
+    let e = env("shop");
+    let a = guest(&e, "Alice").await;
+    let buy = |item: &str| json!({ "userId": a["userId"], "secret": a["secret"], "itemId": item });
+    let r = post(&e, "/api/economy/buy", &buy("frame_gold")).await;
+    assert_eq!(r["ok"], false, "ランク報酬は買えない: {r}");
+    let r = post(&e, "/api/economy/buy", &buy("unit_gold")).await;
+    assert_eq!(r["ok"], false, "値段のない品は買えない: {r}");
+    // ガチャからもランク報酬は出ない
+    for _ in 0..2 {
+        let g = post(&e, "/api/economy/gacha", &json!({ "userId": a["userId"], "secret": a["secret"], "count": 10 })).await;
+        for it in g["results"].as_array().unwrap() {
+            let id = it["id"].as_str().unwrap();
+            assert!(!id.starts_with("frame_") && !id.starts_with("back_rank_"), "{id}");
+        }
+    }
+}
+
+#[tokio::test]
+async fn season_rewards_after_season_ends_once() {
+    let e = env("season");
+    let a = guest(&e, "Alice").await;
+    let b = guest(&e, "Bob").await;
+    let c = guest(&e, "Carol").await;
+    for _ in 0..5 {
+        let (_, (tb, _)) = match_two(&e, &a, &b).await;
+        post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    }
+    // Carol は1試合だけ（認定戦が終わっていない）
+    let (_, (tc, _)) = match_two(&e, &a, &c).await;
+    post(&e, "/api/action", &json!({ "token": tc, "method": "surrender", "args": [] })).await;
+
+    // シーズン中は、まだ受け取れない
+    let r = post(&e, "/api/ranked/seasonRewards", &a).await;
+    assert_eq!(r["rewards"].as_array().unwrap().len(), 0);
+    let mut claim_a = a.clone();
+    claim_a["season"] = json!(1);
+    let r = post(&e, "/api/ranked/claimSeason", &claim_a).await;
+    assert_eq!(r["ok"], false);
+
+    // 56日たってシーズン2
+    e.clock.fetch_add(56 * 86_400_000, Ordering::SeqCst);
+    let r = post(&e, "/api/ranked/seasonRewards", &a).await;
+    assert_eq!(r["season"], 2);
+    let s1 = &r["rewards"][0];
+    assert_eq!(s1["season"], 1);
+    assert_eq!(s1["eligible"], true, "{s1}");
+    assert_eq!(s1["claimed"], false);
+    let tier = s1["peak"]["tierId"].as_str().unwrap().to_string();
+    assert_eq!(s1["items"], json!([format!("frame_{tier}"), format!("back_rank_{tier}")]));
+
+    let r = post(&e, "/api/ranked/claimSeason", &claim_a).await;
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(r["items"].as_array().unwrap().len(), 2);
+    let r = post(&e, "/api/ranked/claimSeason", &claim_a).await;
+    assert_eq!(r["ok"], false, "2回目は受け取れない");
+    let prof = post(&e, "/api/economy/profile", &json!({ "userId": a["userId"], "secret": a["secret"] })).await;
+    assert!(prof["profile"]["ownedSkins"].as_array().unwrap().contains(&json!(format!("frame_{tier}"))));
+    let r = post(&e, "/api/ranked/seasonRewards", &a).await;
+    assert_eq!(r["rewards"][0]["claimed"], true);
+
+    // 認定戦が終わっていない人は受け取れない
+    let r = post(&e, "/api/ranked/seasonRewards", &c).await;
+    assert_eq!(r["rewards"][0]["eligible"], false);
+    let mut claim_c = c.clone();
+    claim_c["season"] = json!(1);
+    let r = post(&e, "/api/ranked/claimSeason", &claim_c).await;
+    assert_eq!(r["ok"], false);
+    assert!(r["reason"].as_str().unwrap().contains("5試合"));
+
+    // 新しいシーズンは認定戦をやり直す（ソフトリセット）
+    let s = post(&e, "/api/ranked/summary", &a).await;
+    assert_eq!(s["season"], 2);
+    assert_eq!(s["placementLeft"], 2);
+}
+
+#[tokio::test]
+async fn public_profile_frame_must_be_owned_and_is_shown_to_opponent() {
+    let e = env("profile");
+    let a = guest(&e, "Alice").await;
+    let b = guest(&e, "Bob").await;
+    let with = |base: &Value, extra: Value| {
+        let mut v = base.clone();
+        for (k, x) in extra.as_object().unwrap() {
+            v[k] = x.clone();
+        }
+        v
+    };
+    // アバターは兵士のカードだけ
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "avatar": "paladin" }))).await;
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(r["avatar"], "paladin");
+    assert!(r.get("userId").is_none() && r.get("secret").is_none());
+    for bad in ["fireball", "beast_goblin", "nope"] {
+        let r = post(&e, "/api/account/profile", &with(&a, json!({ "avatar": bad }))).await;
+        assert_eq!(r["ok"], false, "{bad}");
+    }
+    // 持っていないフレームは付けられない
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "iconFrame": "frame_gold" }))).await;
+    assert_eq!(r["ok"], false);
+
+    // シーズン1で5試合 → シーズン2で報酬を受け取る → そのフレームは付けられる
+    for _ in 0..5 {
+        let (_, (tb, _)) = match_two(&e, &a, &b).await;
+        post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    }
+    e.clock.fetch_add(56 * 86_400_000, Ordering::SeqCst);
+    let claim = post(&e, "/api/ranked/claimSeason", &with(&a, json!({ "season": 1 }))).await;
+    let frame = claim["items"][0].as_str().unwrap().to_string();
+    assert!(frame.starts_with("frame_"));
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "iconFrame": frame }))).await;
+    assert_eq!(r["ok"], true, "{r}");
+    assert_eq!(r["iconFrame"], frame.as_str());
+
+    // 次の試合で、相手（Bob）に Alice のアバター・フレームが見える
+    let (_, (tb, _)) = match_two(&e, &a, &b).await;
+    let sb = post(&e, "/api/ranked/status", &b).await;
+    assert_eq!(sb["opponent"]["name"], "Alice");
+    assert_eq!(sb["opponent"]["avatar"], "paladin");
+    assert_eq!(sb["opponent"]["iconFrame"], frame.as_str());
+    assert!(sb["opponent"].get("userId").is_none());
+
+    // ランキングにも出る（シーズン2の認定戦2試合を終えてから）
+    post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    let (_, (tb, _)) = match_two(&e, &a, &b).await;
+    post(&e, "/api/action", &json!({ "token": tb, "method": "surrender", "args": [] })).await;
+    let (_, board) = req(&e.app, "GET", "/api/ranked/leaderboard", None).await;
+    let alice = board["entries"].as_array().unwrap().iter().find(|x| x["name"] == "Alice").unwrap().clone();
+    assert_eq!(alice["iconFrame"], frame.as_str());
+
+    // null で外せる。省略したときは変えない
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "name": "Alice2" }))).await;
+    assert_eq!(r["iconFrame"], frame.as_str());
+    let r = post(&e, "/api/account/profile", &with(&a, json!({ "iconFrame": null }))).await;
+    assert_eq!(r["ok"], true);
+    assert!(r["iconFrame"].is_null());
+}

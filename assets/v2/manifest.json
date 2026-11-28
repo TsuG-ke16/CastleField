@@ -1,0 +1,178 @@
+{
+  "buttons": [
+    {
+      "file": "ui/buttons/btn-primary-gold.webp",
+      "bytes": 5466
+    },
+    {
+      "file": "ui/buttons/btn-normal-stone.webp",
+      "bytes": 5624
+    },
+    {
+      "file": "ui/buttons/btn-selected-royal.webp",
+      "bytes": 6486
+    },
+    {
+      "file": "ui/buttons/btn-danger-ruby.webp",
+      "bytes": 5328
+    },
+    {
+      "file": "ui/buttons/btn-round-gold.webp",
+      "bytes": 4396
+    },
+    {
+      "file": "ui/buttons/btn-round-stone.webp",
+      "bytes": 4164
+    }
+  ],
+  "frames": [
+    {
+      "file": "ui/frames/frame-parchment.webp",
+      "bytes": 14268
+    },
+    {
+      "file": "ui/frames/frame-wood-board.webp",
+      "bytes": 15392
+    },
+    {
+      "file": "ui/frames/banner-victory-ribbon.webp",
+      "bytes": 20062
+    },
+    {
+      "file": "ui/frames/banner-defeat-ribbon.webp",
+      "bytes": 20874
+    }
+  ],
+  "icons": [
+    {
+      "file": "icons/cpu.webp",
+      "bytes": 8472
+    },
+    {
+      "file": "icons/online.webp",
+      "bytes": 9400
+    },
+    {
+      "file": "icons/local.webp",
+      "bytes": 11770
+    },
+    {
+      "file": "icons/filter.webp",
+      "bytes": 8300
+    },
+    {
+      "file": "icons/bell.webp",
+      "bytes": 6896
+    },
+    {
+      "file": "icons/close.webp",
+      "bytes": 8048
+    },
+    {
+      "file": "icons/check.webp",
+      "bytes": 6104
+    },
+    {
+      "file": "icons/arrow.webp",
+      "bytes": 5764
+    },
+    {
+      "file": "icons/rank-unranked.webp",
+      "bytes": 7488
+    },
+    {
+      "file": "icons/shop.webp",
+      "bytes": 6736
+    },
+    {
+      "file": "icons/skin.webp",
+      "bytes": 8932
+    },
+    {
+      "file": "icons/ranking.webp",
+      "bytes": 8766
+    },
+    {
+      "file": "icons/mission.webp",
+      "bytes": 6966
+    },
+    {
+      "file": "icons/crown.webp",
+      "bytes": 8604
+    },
+    {
+      "file": "icons/battle.webp",
+      "bytes": 9996
+    },
+    {
+      "file": "icons/deck.webp",
+      "bytes": 8934
+    },
+    {
+      "file": "icons/gacha.webp",
+      "bytes": 8234
+    },
+    {
+      "file": "icons/catalog.webp",
+      "bytes": 9614
+    },
+    {
+      "file": "icons/settings.webp",
+      "bytes": 8372
+    },
+    {
+      "file": "icons/profile.webp",
+      "bytes": 9882
+    },
+    {
+      "file": "icons/rank.webp",
+      "bytes": 9502
+    },
+    {
+      "file": "icons/friend.webp",
+      "bytes": 9066
+    },
+    {
+      "file": "icons/coin.webp",
+      "bytes": 5490
+    },
+    {
+      "file": "icons/heart.webp",
+      "bytes": 4294
+    },
+    {
+      "file": "icons/mp.webp",
+      "bytes": 5284
+    },
+    {
+      "file": "icons/help.webp",
+      "bytes": 8668
+    },
+    {
+      "file": "icons/fire.webp",
+      "bytes": 5244
+    },
+    {
+      "file": "icons/water.webp",
+      "bytes": 4882
+    },
+    {
+      "file": "icons/wind.webp",
+      "bytes": 6766
+    },
+    {
+      "file": "icons/earth.webp",
+      "bytes": 4998
+    }
+  ],
+  "models": [
+    "models/home-diorama-v2.glb",
+    "models/gacha-chest-v2.glb",
+    "models/field-meadow-v2.glb",
+    "models/field-lava-v2.glb",
+    "models/field-ice-v2.glb",
+    "models/field-ruins-v2.glb",
+    "models/field-darkForest-v2.glb",
+    "models/field-desert-v2.glb"
+  ]
+}
