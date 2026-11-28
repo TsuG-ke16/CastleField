@@ -363,12 +363,16 @@ export function App() {
           style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(28,17,8,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
           onClick={() => setNoticeOpen(false)}
         >
-          <div style={{ width: '100%', maxWidth: 380 }} onClick={(e) => e.stopPropagation()}>
-            <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <strong style={{ fontSize: 17 }}>王国のお知らせ</strong>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.6 }}>
-                CastleField v2（脱SVG・新ボタン・Blender 3D・Rust WASM・4陣営/クラシック・スタンプ＆URL招待）へ完全刷新！外でもスマホ片手で快適に対戦できます。
-              </p>
+          <div style={{ width: '100%', maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+            <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '80dvh', overflowY: 'auto' }}>
+              <strong style={{ fontSize: 17 }}>王国のお知らせ（v2 更新情報）</strong>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, fontWeight: 700, lineHeight: 1.65, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <li>2D省エネモード &amp; 3Dジオラマ描画を対戦メニューからいつでも切替できます。</li>
+                <li>マイデッキ4枠（コピー・名前変更・採用中絞り込み・レアリティ分布グラフ）に対応。</li>
+                <li>バトル終了後に自動記録される対戦履歴（直近12戦・ログ展開）＆リザルト XP/ログ確認。</li>
+                <li>ショップ並び替え・レア度色分け＆ガチャ獲得時の1タップ装備を追加。</li>
+                <li>PC操作：<code>1</code>〜<code>9</code> 手札選択 / <code>Space</code>・<code>Enter</code> ターン終了 / <code>Esc</code> メニュー。</li>
+              </ul>
               <GameButton variant="primary-gold" fullWidth onClick={() => setNoticeOpen(false)}>
                 わかった
               </GameButton>
