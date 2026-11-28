@@ -163,6 +163,10 @@
     {
       "file": "icons/earth.webp",
       "bytes": 4998
+    },
+    {
+      "file": "icons/emblem-castlefield.webp",
+      "bytes": 14568
     }
   ],
   "models": [

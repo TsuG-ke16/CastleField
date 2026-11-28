@@ -17,7 +17,17 @@
   border-image-fill: fill;
   border-image-repeat: stretch;
   filter: drop-shadow(0 3px 0 rgba(74, 46, 26, 0.25));
-  transition: filter 120ms ease;
+  transition: transform 110ms ease, filter 110ms ease;
+}
+
+.btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 4px 0 rgba(74, 46, 26, 0.3)) brightness(1.04);
+}
+
+.btn:not(:disabled):active {
+  transform: translateY(2px);
+  filter: drop-shadow(0 1px 0 rgba(74, 46, 26, 0.28));
 }
 
 .btn:disabled {
@@ -60,6 +70,10 @@
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55);
 }
 
+.primary-gold:not(:disabled) {
+  filter: drop-shadow(0 3px 0 rgba(74, 46, 26, 0.28)) drop-shadow(0 4px 10px rgba(255, 198, 56, 0.36));
+}
+
 .normal-stone {
   border-image-source: url('/assets/v2/ui/buttons/btn-normal-stone.webp');
   color: #4a2e1a;
@@ -90,6 +104,17 @@
   background-repeat: no-repeat;
   cursor: pointer;
   filter: drop-shadow(0 2px 0 rgba(74, 46, 26, 0.28));
+  transition: transform 110ms ease, filter 110ms ease;
+}
+
+.round:not(:disabled):hover {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 3px 0 rgba(74, 46, 26, 0.32)) brightness(1.04);
+}
+
+.round:not(:disabled):active {
+  transform: translateY(2px);
+  filter: drop-shadow(0 1px 0 rgba(74, 46, 26, 0.28));
 }
 
 .roundStone {
@@ -108,4 +133,17 @@
   height: 24px;
   pointer-events: none;
   filter: drop-shadow(0 2px 2px rgba(74, 46, 26, 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .round {
+    transition: none;
+  }
+  .btn:not(:disabled):hover,
+  .btn:not(:disabled):active,
+  .round:not(:disabled):hover,
+  .round:not(:disabled):active {
+    transform: none;
+  }
 }

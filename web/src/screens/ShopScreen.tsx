@@ -204,20 +204,22 @@ export function ShopScreen() {
               selectedIconFrame === item.id;
 
             return (
-              <div key={item.id} className={styles.itemCard}>
+              <div key={item.id} className={`${styles.itemCard} ${styles[`itemCard-${rk}`] || ''}`}>
                 <span className={`${styles.rarityTag} ${styles[`rarity-${rk}`] || ''}`}>
                   {rarityInfo?.label || rk}
                 </span>
-              <img
-                src={previewImg}
-                alt={item.name}
-                style={{
-                  width: 54,
-                  height: 54,
-                  objectFit: 'contain',
-                  filter: filterCss,
-                }}
-              />
+                <div className={styles.itemPreviewWell}>
+                  <img
+                    src={previewImg}
+                    alt={item.name}
+                    style={{
+                      width: 54,
+                      height: 54,
+                      objectFit: 'contain',
+                      filter: filterCss,
+                    }}
+                  />
+                </div>
               <div className={styles.itemName}>{item.name}</div>
               {(item.desc || item.description) && (
                 <div style={{ fontSize: 10, color: 'var(--cf-ink-muted)', fontWeight: 700, textAlign: 'center', lineHeight: 1.35 }}>

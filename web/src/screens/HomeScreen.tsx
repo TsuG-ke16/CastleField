@@ -190,9 +190,17 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
       </div>
 
       <div className={styles.stageSpacer}>
-        <div className={styles.heroTitle}>
-          <span className={styles.brandSmall}>CASTLE FIELD</span>
-          <h1 className={styles.heroHeading}>{activeMode.headline}</h1>
+        <div className={styles.heroHeaderRow}>
+          <img
+            src="/assets/v2/icons/emblem-castlefield.webp"
+            alt=""
+            aria-hidden="true"
+            className={styles.heroEmblem}
+          />
+          <div className={styles.heroTitle}>
+            <span className={styles.brandSmall}>CASTLE FIELD</span>
+            <h1 className={styles.heroHeading}>{activeMode.headline}</h1>
+          </div>
         </div>
 
         <button
