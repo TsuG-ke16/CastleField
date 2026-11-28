@@ -287,8 +287,12 @@ export function BattleScreen() {
         }
         const myS = viewerSideRef.current;
         if (ev.type === 'turnStarted') {
-          if (ev.playerId === myS || playMode === 'local') setToastMsg('あなたの番！カードを出そう');
-          else setToastMsg('相手の番です…');
+          if (ev.playerId === myS || playMode === 'local') {
+            soundManager.play('turn');
+            setToastMsg('あなたの番！カードを出そう');
+          } else {
+            setToastMsg('相手の番です…');
+          }
         } else if (ev.type === 'castleDamaged') {
           const amt = Number(ev.amount || 0);
           if (ev.playerId !== myS) statsAccRef.current.damageDealt += amt;
@@ -304,11 +308,17 @@ export function BattleScreen() {
           soundManager.play('deploy');
           fxRef.current?.burst('deploy');
         } else if (ev.type === 'soldiersClashed') {
+          soundManager.play('clash');
           fxRef.current?.burst('clash');
         } else if (ev.type === 'spellCast') {
-          soundManager.play('spell');
           const stName = String(ev.spellType || '').toLowerCase();
-          fxRef.current?.burst(stName.includes('thunder') || stName.includes('bolt') || stName.includes('frost') ? 'thunder' : 'fire');
+          const isThunder = stName.includes('thunder') || stName.includes('bolt') || stName.includes('frost') || stName.includes('ice');
+          soundManager.play(isThunder ? 'thunder' : 'spell');
+          fxRef.current?.burst(isThunder ? 'thunder' : 'fire');
+        } else if (ev.type === 'spellReflected') {
+          soundManager.play('shield');
+        } else if (ev.type === 'cardsFused') {
+          soundManager.play('fuse');
         } else if (ev.type === 'castleHealed') {
           soundManager.play('heal');
           fxRef.current?.burst('heal');
@@ -321,15 +331,19 @@ export function BattleScreen() {
             setCutIn({ id: cid, name: def.name, typeKey: cardType, rarity: def.rarity });
             setTimeout(() => setCutIn((cur) => (cur?.id === cid ? null : cur)), 950);
           }
-        } else if (ev.type === 'monsterDefeated' && ev.playerId === myS) {
-          statsAccRef.current.monstersDefeated += 1;
+        } else if (ev.type === 'monsterAppeared') {
+          soundManager.play('monster');
+        } else if (ev.type === 'monsterDefeated') {
+          soundManager.play('monsterDown');
+          if (ev.playerId === myS) statsAccRef.current.monstersDefeated += 1;
         } else if (ev.type === 'diceRolled') {
           const val = ev.roll ?? ev.value ?? ev.result ?? '';
           const did = ++popCounterRef.current;
-          soundManager.play('tap');
+          soundManager.play('dice');
           setDicePop({ id: did, text: `🎲 ダイス結果: ${val}` });
           setTimeout(() => setDicePop((cur) => (cur?.id === did ? null : cur)), 1350);
         } else if (ev.type === 'stampSent' && ev.playerId !== myS) {
+          soundManager.play('stamp');
           const sid = String(ev.stampId || '');
           const found = (data.stamps || []).find((s) => s.id === sid);
           const id = ++popCounterRef.current;
@@ -483,8 +497,13 @@ export function BattleScreen() {
 
   useEffect(() => {
     if (!pMe || pMe.castleMaxHp <= 0) return;
-    soundManager.setBgmMode(pMe.castleHp / pMe.castleMaxHp <= 0.34 ? 'pinch' : 'battle');
-  }, [pMe?.castleHp, pMe?.castleMaxHp]);
+    const hpRatio = pMe.castleHp / pMe.castleMaxHp;
+    const hasMonster = (gameState?.monsters?.length || 0) > 0;
+    const isNight = gameState?.time === 'night';
+    soundManager.setBgmMode(
+      hpRatio <= 0.34 ? 'pinch' : hasMonster ? 'monster' : isNight ? 'night' : 'battle'
+    );
+  }, [pMe?.castleHp, pMe?.castleMaxHp, gameState?.monsters?.length, gameState?.time]);
 
   const myCastleFilter = useMemo(
     () => getSkinFilter(data, selectedCastleSkin, 'blue'),
@@ -660,7 +679,7 @@ export function BattleScreen() {
   };
 
   const handleSendStamp = (stamp: StampDef) => {
-    soundManager.play('tap');
+    soundManager.play('stamp');
     setShowStamps(false);
     const id = ++popCounterRef.current;
     setMyStamp({ id, text: `${stamp.icon} ${stamp.label}` });

@@ -141,3 +141,21 @@ test('deckCode share helper round-trips deck maps and vite PWA config prevents s
   const bad = decodeDeckCode('INVALID-123', realCards);
   assert.equal(bad.ok, false);
 });
+
+test('soundManager provides 5-layer BGM scenes, DynamicsCompressor, delay, visibility pause, and 18 SFX keys', () => {
+  const src = fs.readFileSync(path.join(WEB_DIR, 'src/audio/soundManager.ts'), 'utf8');
+  assert.match(src, /createDynamicsCompressor/);
+  assert.match(src, /createDelay/);
+  assert.match(src, /visibilitychange/);
+  for (const scene of ['home:', 'battle:', 'night:', 'monster:', 'pinch:']) {
+    assert.ok(src.includes(scene), `Missing BGM scene: ${scene}`);
+  }
+  const sfxKeys = [
+    'tap', 'card', 'deploy', 'hit', 'spell', 'thunder', 'heal', 'coin',
+    'clash', 'shield', 'dice', 'fuse', 'monster', 'monsterDown', 'turn',
+    'stamp', 'victory', 'defeat',
+  ];
+  for (const k of sfxKeys) {
+    assert.ok(src.includes(`case '${k}':`), `Missing SFX handler: ${k}`);
+  }
+});
