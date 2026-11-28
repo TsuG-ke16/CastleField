@@ -85,8 +85,20 @@ const AVATAR_CHOICES = [
 
 function RouteFallback() {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', fontWeight: 900 }}>
-      読み込み中…
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+      <span
+        style={{
+          padding: '8px 18px',
+          borderRadius: 999,
+          border: '2px solid #4a2e1a',
+          background: 'linear-gradient(180deg, rgba(255, 252, 240, 0.96) 0%, rgba(246, 230, 188, 0.96) 100%)',
+          boxShadow: 'inset 0 1.5px 0 #ffffff, 0 3px 0 rgba(74, 46, 26, 0.25)',
+          fontWeight: 900,
+          fontSize: 13,
+        }}
+      >
+        読み込み中…
+      </span>
     </div>
   );
 }
@@ -184,9 +196,65 @@ export function App() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 12 }}>
-        <img src="/assets/castles/castle-blue.png" alt="" style={{ width: 96, height: 96, objectFit: 'contain' }} />
-        <strong style={{ fontSize: 18 }}>キャッスルフィールド v2 を読み込み中…</strong>
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          height: '100%',
+          gap: 12,
+          background: 'radial-gradient(circle at 50% 42%, #fff8e2 0%, #bfe6ff 58%, #7ec7ff 100%)',
+        }}
+      >
+        <div
+          style={{
+            width: 132,
+            height: 132,
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'radial-gradient(circle, rgba(255, 232, 140, 0.78) 0%, rgba(255, 250, 240, 0.16) 70%, transparent 100%)',
+          }}
+        >
+          <img
+            src="/assets/v2/icons/emblem-castlefield.webp"
+            alt=""
+            style={{
+              width: 112,
+              height: 112,
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 4px 0 rgba(74, 46, 26, 0.34)) drop-shadow(0 8px 16px rgba(255, 214, 102, 0.45))',
+            }}
+          />
+        </div>
+        <span
+          style={{
+            fontSize: 11,
+            fontWeight: 900,
+            letterSpacing: '0.16em',
+            color: '#ffe896',
+            background: 'linear-gradient(180deg, #2b54b2 0%, #1b3982 100%)',
+            border: '1.5px solid #ffd98a',
+            borderRadius: 999,
+            padding: '3px 12px',
+            boxShadow: '0 2px 0 rgba(74, 46, 26, 0.35)',
+          }}
+        >
+          CASTLE FIELD
+        </span>
+        <strong
+          style={{
+            fontSize: 18,
+            color: '#fffaf0',
+            WebkitTextStroke: '3px #4a2e1a',
+            paintOrder: 'stroke fill',
+            textShadow: '0 2px 0 #4a2e1a',
+          }}
+        >
+          読み込み中…
+        </strong>
       </div>
     );
   }
@@ -284,10 +352,10 @@ export function App() {
             padding: '8px 14px',
             borderRadius: 12,
             border: '2px solid #4a2e1a',
-            background: '#fff6dc',
+            background: 'linear-gradient(180deg, #fffdf5 0%, #f6e4ba 100%)',
             fontSize: 13,
             fontWeight: 900,
-            boxShadow: 'var(--cf-shadow-float)',
+            boxShadow: 'inset 0 1.5px 0 #ffffff, var(--cf-shadow-float)',
           }}
         >
           {walletMessage}
