@@ -1097,6 +1097,7 @@ export function BattleScreen() {
           weatherId={gameState.weather?.id}
           isNight={gameState.time === 'night'}
           quality={quality}
+          reducedMotion={reducedMotion}
         />
 
         <div className={styles.hpOverlayBottom}>

@@ -261,6 +261,7 @@ interface AppStoreState {
   resetCustomDeck: () => void;
   selectCustomSlot: (slot: number) => void;
   renameCustomDeck: (slot: number, name: string) => void;
+  importCustomDeck: (cards: Record<string, number>, name?: string) => void;
   setQuality: (q: QualityMode) => void;
   toggleMute: () => void;
   toggleBgmMute: () => void;
@@ -502,6 +503,16 @@ export const useAppStore = create<AppStoreState>((set, get) => {
         i === idx ? { ...s, name: cleaned || `デッキ${idx + 1}` } : s
       );
       savePatch({ customDecks: nextSlots });
+    },
+    importCustomDeck: (cards, name) => {
+      soundManager.play('tap');
+      const idx = get().activeCustomSlot;
+      const nextCards = { ...cards };
+      const cleanedName = name?.trim().slice(0, 14);
+      const nextSlots = get().customDecks.map((s, i) =>
+        i === idx ? { name: cleanedName || s.name || `デッキ${idx + 1}`, cards: nextCards } : s
+      );
+      savePatch({ customDecks: nextSlots, customDeck: nextCards, selectedDeckId: 'custom' });
     },
     setQuality: (quality) => {
       soundManager.play('tap');
