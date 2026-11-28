@@ -164,6 +164,11 @@ const SOUNDS = {
     s.tone({ freq: 1760, dur: 0.12, type: 'sine', gain: 0.08, at: 0.08 });
   },
   poison: (s) => [0, 0.08, 0.17].forEach((at, i) => s.tone({ freq: 180 + i * 50, endFreq: 320 + i * 60, dur: 0.07, gain: 0.16, at })),
+  // 罠（クラシック）：パチン（金具が閉じる）＋低い音
+  trap: (s) => {
+    s.noise({ dur: 0.06, gain: 0.22, freq: 5200, endFreq: 1800, type: 'bandpass', q: 2.5 });
+    s.tone({ freq: 160, endFreq: 70, dur: 0.22, gain: 0.2, type: 'square', at: 0.04 });
+  },
   gust: (s) => s.noise({ dur: 0.45, gain: 0.2, freq: 400, endFreq: 2200, type: 'bandpass', q: 0.8 }),
   freeze: (s) => [2093, 2637, 3136].forEach((f, i) => s.tone({ freq: f, dur: 0.18, type: 'sine', gain: 0.08, at: i * 0.05 })),
   coin: (s) => {

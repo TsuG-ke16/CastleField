@@ -21,6 +21,7 @@ export const KIND_LABEL = {
   spell: '魔法',
   weapon: '武器',
   defense: '防御',
+  trap: '罠',
 };
 
 /** 1ターンに出せる枚数の説明（kind で決まる。CLAUDE.md「1ターンに出せる枚数」） */
@@ -29,6 +30,7 @@ export function slotNote(def) {
   if (def.kind === 'weapon') return '付加：何枚でも出せる';
   if (def.effect === 'reflectSpell' || def.effect === 'nullifySoldier') return '防御：攻撃を受けたときだけ出せる';
   if (def.kind === 'defense') return '防御：何枚でも出せる';
+  if (def.kind === 'trap') return '罠：1ターンに1枚。自分の側の道に隠して置く';
   if (def.effect === 'wild') return '合成専用：どのカードとでも合成できる（出せません）';
   if (def.kind === 'soldier') return '兵士：1ターンに複数枚出せる';
   if (['summonSpirit', 'gainCoins', 'gainMp'].includes(def.effect)) return '精霊・コイン・マナ：何枚でも出せる（メインを使わない）';
@@ -102,6 +104,9 @@ export function cardDescription(def, rules, opts = {}) {
       text += `・${el}属性`;
       text += rules?.elementBonus ? `（${weak}の相手に+${rules.elementBonus}）` : `（${weak}に強い）`;
     }
+  } else if (def.kind === 'trap') {
+    const parts = [def.damage ? `${def.damage}ダメージ` : '', def.freeze ? `${def.freeze}回休ませる` : '', def.element ? `${elementName(def.element)}を付ける` : ''].filter(Boolean);
+    text = `自分の側の道に隠して置く。相手の兵士が入ると止めて${parts.join('・')}`;
   } else {
     const make = EFFECT_TEXT[def.effect];
     text = make ? make(def, rules ?? {}, opts) : '';
@@ -153,7 +158,15 @@ export function cardShort(def) {
     case 'pushBackEnemySoldiers': return [{ icon: 'boot', text: `${def.amount}マス戻す` }];
     case 'shieldSoldier': return [{ icon: 'shield', text: `盾 +${def.amount}` }];
     case 'armorCastle': return [{ icon: 'wall', text: `城壁 ${def.amount}` }];
-    default: return [];
+    default:
+      // 罠：入った兵士へのダメージ・凍結
+      if (def.kind === 'trap') {
+        const list = [];
+        if (def.damage) list.push({ icon: 'sword', text: `罠 -${def.damage}` });
+        if (def.freeze) list.push({ icon: 'snow', text: `${def.freeze}回休み` });
+        return list;
+      }
+      return [];
   }
 }
 

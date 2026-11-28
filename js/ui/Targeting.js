@@ -52,11 +52,14 @@ export class Targeting {
     setTimeout(() => { t.armed = true; }, 0);
     this.renderer.setTargets(targets);
     this.handView.cardEl(cardId)?.classList.add('choosing');
-    const kinds = new Set(targets.map((x) => (x.soldierId ? '兵士' : x.monsterId ? '魔物' : x.roadId ? '道' : '城')));
+    const kinds = new Set(targets.map((x) => (x.soldierId ? '兵士' : x.monsterId ? '魔物' : x.square !== undefined ? 'マス' : x.roadId ? '道' : '城')));
     const isSoldierCard = targets.every((x) => x.roadId && x.playerId) && !targets.some((x) => x.soldierId || x.monsterId);
-    this.el.msg.textContent = isSoldierCard
-      ? `「${cardName}」をどの道に使う？ 光っている道をタップ`
-      : `「${cardName}」をどこに使う？ 光っている${[...kinds].join('か')}をタップ`;
+    const isTrap = targets.every((x) => x.square !== undefined);
+    this.el.msg.textContent = isTrap
+      ? `「${cardName}」をどこに隠す？ 光っているマスをタップ（相手には見えません）`
+      : isSoldierCard
+        ? `「${cardName}」をどの道に使う？ 光っている道をタップ`
+        : `「${cardName}」をどこに使う？ 光っている${[...kinds].join('か')}をタップ`;
     this.el.bar.hidden = false;
   }
 

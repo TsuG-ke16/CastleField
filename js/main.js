@@ -1308,6 +1308,9 @@ function modelFromState(st) {
       castleMaxHp: p.castleMaxHp,
       armor: p.armor ?? 0,
       castlePoison: p.castlePoison ?? null,
+      // 罠（クラシック）：数はだれにでも、場所は自分の陣地の罠だけ（相手は null）
+      trapCount: p.trapCount ?? 0,
+      traps: p.traps ? structuredClone(p.traps) : null,
       spirit: p.spirit ?? null,
       coins: p.coins ?? 0,
       mp: p.mp ?? 0,

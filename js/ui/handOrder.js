@@ -10,7 +10,7 @@ import { UI_CONFIG } from './config.js';
 /** 「特殊」に入れる魔法の効果（攻めでも回復でも状態異常でも精霊でもないもの） */
 const SPECIAL_EFFECTS = new Set(['redrawHand', 'randomEffect', 'stealCard', 'gainCoins', 'gainMp']);
 
-/** カード定義が入るグループ名："soldier" | "weapon" | "spell" | "defense" | "special" */
+/** カード定義が入るグループ名："soldier" | "weapon" | "spell" | "defense" | "trap" | "special" */
 export function groupOf(def) {
   if (!def) return 'special';
   if (def.kind === 'spell' && SPECIAL_EFFECTS.has(def.effect)) return 'special';

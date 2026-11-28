@@ -15,7 +15,7 @@
 | D2 | CPU任意行動・QA公開API・引継ぎ文書・X48修正 | 完了 |
 | E | 最小確認 | 完了（下記） |
 
-休眠9ノード: K01 F02 F05 F06 F08 A06 X06 X23 X42（既存仕様に対象が無い。詳細は docs/skilltree-200-coverage.md・skilltree-200-handoff.md）
+休眠ノード：なし（罠を新設して F02 F05 F06 F08 X23 X42 を実装し、K01 A06 X06 は今のルールに合わせて読み替えた。CLAUDE.md「クラシックの罠」）
 詳細な担当別メモ: docs/skilltree-200-notes/*.md ／ Codex向け: docs/skilltree-200-handoff.md
 
 ## 主な未完・制限
@@ -132,7 +132,7 @@ export default {
 - mods 名と ctx：hitEvade（ctx.evaded=true）、hitBaseAdd / hitBasePct / hitReduce / critChance / critMultiplier（数を返す）、castlePierce（ctx.pierce）、castleReduce / castleLethal（ctx.loss）、reactionDamage（ctx.damage）、dotAmount（ctx.amount）、dotHold（ctx.hold）、healAmount（ctx.amount）、healOverflow（ctx.remaining を減らして使う）、mpOverflow（ctx.overflow）、mpCost（ctx.cost。ctx.preview なら乱数を使わない）、mpToHp（ctx.cost / ctx.hp、ctx.options）、hpPayWaive（ctx.waived）、hpPayDefer（ctx.deferred）、luckFinalFail（ctx.entry・ctx.retry）、beforeNormalDraw（ctx.count・ctx.handled）、turnEnd
 
 ### 既存仕様に存在しないもの（調べた結果）
-- **罠**：Game にもクラシックのカードにも罠はない（advanceSoldiers のコメントの「トラップ」は実装なし）。`onTrap` は名前だけ予約し、発行しない。F02・F05・F06・F08・X23・X42 は罠の新設が必要
+- **罠**：のちに新設した（js/game/Traps.js、クラシックの罠のカード2種）。`onTrap` を発行する（phase "set" / "triggered" / "removed"）。CLAUDE.md「クラシックの罠」
 - **固定兵器**：ない（クラシックの「武器」は兵士に装備するカード）。`onWeaponAttack` は発行しない。A02・F01・F03・F04・X25・X43 は対象がない
 - **通常攻撃**：兵士の行動は進軍中の自動の戦い（fight）と、弓兵・魔法使いの射撃（shoot）だけ。別の「攻撃する」操作はない。どちらも origin "normalAttack"
 - **出血**：ない → スキル専用の最小定義（`soldier.skillBleed`。対象の持ち主のターン開始に固定ダメージ、盾無視、同種は期限の大きい方、同じ付与元は加算しない。`api.bleed`）。毒・やけどは既存

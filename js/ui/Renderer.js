@@ -442,6 +442,7 @@ export class Renderer {
       this.setCastleHp(id, p.castleHp, { instant: true, max: p.castleMaxHp });
       this.setArmor(id, p.armor);
       this.setCastlePoison(id, p.castlePoison);
+      this.setTrapCount(id, p.trapCount);
       this.setOverdrive(id, p.overdrive);
       this.setSpirit(id, p.spirit);
       this.setCoins(id, p.coins);
@@ -449,6 +450,8 @@ export class Renderer {
     }
     this.syncSoldiers(model);
     this.syncMonsters(model);
+    // 罠：見ている人の陣地（チーム戦なら味方も）の罠だけ、場所が分かる
+    this.setTraps(this.playerOrder.filter((id) => this.sideOf(id) === 'me').flatMap((id) => model.players[id]?.traps ?? []));
     this.updateThreatWarnings();
     this.sync3D();
   }
@@ -653,6 +656,74 @@ export class Renderer {
       badge.querySelector('b').textContent = `毒 ${amount}`;
       badge.title = `城が毒にかかっています。自分のターンの始めに${amount}ダメージ（解毒薬か、時間で治る）`;
     }
+  }
+
+  /**
+   * 罠（クラシック）：置いた罠の数を、城のそばのバッジで見せる（0なら隠す）。相手の罠は場所が見えないので、数だけ
+   * @param {number|null|undefined} count getState の trapCount（罠のないゲームでは undefined）
+   */
+  setTrapCount(playerId, count) {
+    const castle = this.castleEl(playerId);
+    if (!castle) return;
+    let badge = castle.querySelector('.castle-traps');
+    if (!badge) {
+      const armor = castle.querySelector('.castle-armor');
+      if (!armor) return;
+      badge = document.createElement('div');
+      badge.className = 'castle-traps';
+      badge.hidden = true;
+      armor.after(badge);
+    }
+    const n = Number(count) || 0;
+    badge.hidden = n <= 0;
+    badge.textContent = n > 0 ? `罠 ${n}` : '';
+    badge.title = n > 0 ? (this.sideOf(playerId) === 'me' ? `道に罠が${n}つあります（相手には見えない）` : `相手が道に罠を${n}つ隠しています`) : '';
+  }
+
+  // ---------- 罠（クラシック）：見ている人の陣地の罠だけ、マスに印を出す ----------
+
+  /** レーン lane・上から row 行目のマス */
+  cellAt(lane, row) {
+    return this.el.road.querySelector(`.cell[data-lane="${lane}"][data-row="${row}"]`);
+  }
+
+  /** 罠の場所（roadId と、罠の持ち主の城から数えた square）のマス。持ち主を省略すると見ている人 */
+  trapCell(roadId, square, ownerId = this.viewerId) {
+    if (this.isPlaza) return null;
+    const row = this.sideOf(ownerId) === 'me' ? this.laneLength - 1 - square : square;
+    return this.cellAt(this.laneOf(roadId), row);
+  }
+
+  /** 見えている罠をまとめて描き直す（traps は見ている人の陣地の罠。getState の players.pX.traps） */
+  setTraps(traps) {
+    for (const mark of this.el.road.querySelectorAll('.trap-mark')) {
+      mark.closest('.cell')?.classList.remove('has-trap');
+      mark.remove();
+    }
+    for (const t of traps ?? []) this.addTrap(t);
+  }
+
+  addTrap(t, ownerId = this.viewerId) {
+    const cell = this.trapCell(t.roadId, t.square, ownerId);
+    if (!cell) return null;
+    cell.querySelector(`.trap-mark[data-trap-id="${t.trapId}"]`)?.remove();
+    const mark = document.createElement('span');
+    mark.className = 'trap-mark';
+    mark.dataset.trapId = t.trapId;
+    mark.textContent = t.freeze && !t.damage ? '❄' : '⚠';
+    mark.title = `${t.name ?? '罠'}${t.turnsLeft ? `（あと${t.turnsLeft}ターン）` : ''}`;
+    mark.setAttribute('aria-label', mark.title);
+    cell.append(mark);
+    cell.classList.add('has-trap');
+    return mark;
+  }
+
+  removeTrap(trapId) {
+    const mark = this.el.road.querySelector(`.trap-mark[data-trap-id="${trapId}"]`);
+    if (!mark) return;
+    const cell = mark.closest('.cell');
+    mark.remove();
+    if (cell && !cell.querySelector('.trap-mark')) cell.classList.remove('has-trap');
   }
 
   /** 来ている精霊を、城のそばのバッジで見せる（なければ隠す） */
@@ -1075,7 +1146,7 @@ export class Renderer {
     for(const t of this.targets){const el=this.elOfTarget(t);if(!el||this.targetRestore.some(x=>x.el===el))continue;
       this.targetRestore.push({el,tab:el.getAttribute('tabindex'),role:el.getAttribute('role'),label:el.getAttribute('aria-label')});
       el.classList.add('targetable');el.tabIndex=0;el.setAttribute('role','button');
-      el.setAttribute('aria-label',t.roadId?`道${this.laneOf(t.roadId)+1}、${playerName(t.playerId)}`:t.monsterId?'魔物を狙う':t.soldierId?'兵士を選ぶ':`${playerName(t.playerId)}の城を選ぶ`);
+      el.setAttribute('aria-label',t.square!==undefined?`道${this.laneOf(t.roadId)+1}、自分の城から${t.square}マス目`:t.roadId?`道${this.laneOf(t.roadId)+1}、${playerName(t.playerId)}`:t.monsterId?'魔物を狙う':t.soldierId?'兵士を選ぶ':`${playerName(t.playerId)}の城を選ぶ`);
     }
     this.targetRestore[0]?.el.focus({preventScroll:true});
     this.sync3D();
@@ -1138,6 +1209,7 @@ export class Renderer {
   }
 
   elOfTarget(t) {
+    if (t.square !== undefined && t.roadId) return this.trapCell(t.roadId, t.square); // 罠を置くマス
     if (t.soldierId) return this.soldierEl(t.soldierId);
     if (t.monsterId) return this.monsterEl(t.monsterId);
     if (t.roadId) return this.laneEl(t.roadId); // 兵士を出す道・魔法で狙う道
@@ -1159,6 +1231,11 @@ export class Renderer {
       const playerId = cEl.dataset.playerId ?? (cEl === this.el.castle.me ? this.viewerId : this.opponentOf(this.viewerId));
       const options = this.targets.filter(x => this.ownerOf(x.playerId) === playerId && !x.roadId && !x.soldierId && !x.monsterId);
       return options.length > 1 ? {options} : options[0] ?? null;
+    }
+    // 罠を置くマス：タップしたマスそのもの（光っていないマスなら null）
+    if (this.targets.some((x) => x.square !== undefined)) {
+      if (!cellEl) return null;
+      return this.targets.find((x) => x.square !== undefined && this.trapCell(x.roadId, x.square) === cellEl) ?? null;
     }
     if (cellEl && cellEl.dataset.lane !== undefined) {
       const laneIdx = Number(cellEl.dataset.lane);
@@ -1187,6 +1264,15 @@ export class Renderer {
         const options = this.targets.filter((x) => this.ownerOf(x.playerId) === playerId && !x.roadId && !x.soldierId && !x.monsterId);
         if (options.length) return options.length > 1 ? { options } : options[0];
       }
+    }
+    // 罠を置くマス：踏み石（lane・row）が当たったときだけ（ほかのマスで光っているマスを選ばないように）
+    if (this.targets.some((x) => x.square !== undefined)) {
+      for (const h of pick.hits) {
+        if (typeof h.lane !== 'number' || typeof h.row !== 'number') continue;
+        const found = this.targets.find((x) => x.square !== undefined && this.laneOf(x.roadId) === h.lane && this.laneLength - 1 - x.square === h.row);
+        if (found) return found;
+      }
+      return null;
     }
     // 2. Lane target match (from hitting any of the 5 stepping stones, soldier, or monster in that lane)
     if (!this.isPlaza) {

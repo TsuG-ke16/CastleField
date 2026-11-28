@@ -103,6 +103,7 @@ js/
     Soldier.js
     Road.js        … 道（となりの席どうし・広場の通り道）
     Monster.js     … 魔物と、強化のデータのチェック
+    Traps.js       … 罠（クラシック）：置く・隠す・踏むと発動・期限で消える。Game のメソッドとして足す
     Weather.js     … 天候のデータのチェック
     Stage.js       … ステージ（マップ）のデータのチェックと選び方
     SkillTree.js   … スキルツリー（クラシック。200ノードのグラフ）のデータのチェック・取得/解除の判定・保存・初期値系の効果の合計
@@ -294,7 +295,7 @@ UIはゲームの状態を直接書き換えない。必ず Game のメソッド
   - 道の `players[1]` の兵士：道のマス番号 = `laneLength - 1 - position`
 - 兵士の `targetId` は、その兵士が向かっている相手（道の向こうの人）
 - スキルツリー（`skillTree` を渡したゲームだけ）：`players.pX.skills`（取得順のノードIDの配列。相手にも見せる）・`players.pX.skillConfig`（E04 などの設定値）・`players.pX.maxMp`（その人の MP の上限）・`players.pX.skillError`（不正で空ビルドにしたときだけ）。「クラシックのスキルツリー」
-- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.castleAttachments`（城に付いている属性 `[{ element, turns }]`。`rules.castleAttach` のゲームだけ。試作）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）、`players.pX.castleVulnerable`（魔族の脆弱 `{ ratio, maxRatio, turns }` か null。脆弱のカードがあるゲームだけ）・`players.pX.mpSeal`（魔族の封魔 `{ amount, turns }` か null。封魔のカードがあるゲームだけ）。くわしくは「4陣営モード」
+- 4陣営モードで足すキー（そのデータを使うゲームだけ。今までのモードの形は変わらない）：兵士の `rangeBonus`（射程+。1以上のときだけ）、`statuses.slowed`（鈍足 `{ amount, turns }` か null）・`statuses.blinded`（目くらまし `{ chance, turns }` か null。どちらも反応に鈍足・目くらましがあるゲームだけ）、`players.pX.castleGuard`（身代わりの兵士のID か null。身代わりのカードがあるゲームだけ）・`bloodArmor`（血の膜の残り。血の膜のカードがあるゲームだけ）・`castleHealCut`（回復量減少 `{ ratio, turns }` か null。反応に回復量減少があるゲームだけ）、`statuses.sand` / `statuses.frostbite`（砂・凍傷 `{ amount, turns }` か null。反応にあるゲームだけ）、`players.pX.trapCount`・`players.pX.traps`（罠。クラシックの「クラシックの罠」。罠のカードかスキルツリーがあるゲームだけ）、`players.pX.castleAttachments`（城に付いている属性 `[{ element, turns }]`。`rules.castleAttach` のゲームだけ。試作）、`players.pX.passiveSpirit`（森の常時の精霊 `{ next, name, element, effect, amount, order, everyTurns, turnsUntilAct }` か null。`next` は次に動く精霊、`turnsUntilAct` は自分のターンの始めがあと何回来たら動くか（1＝次の自分のターン）。だれかが常時の精霊を持つゲームだけ）、`players.pX.castleVulnerable`（魔族の脆弱 `{ ratio, maxRatio, turns }` か null。脆弱のカードがあるゲームだけ）・`players.pX.mpSeal`（魔族の封魔 `{ amount, turns }` か null。封魔のカードがあるゲームだけ）。くわしくは「4陣営モード」
 
 ### Gameが出すイベント
 
@@ -317,7 +318,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `soldierDeployed` | `{ playerId, soldierId, type, roadId, targetId, position, hp, attack, revived?, raised?, name? }` … `raised: true` は魔族の「死者を従える」で生まれた骸骨兵（`type` は `"raisedSoldier"`、`name` は表示名。「魔族の死者を従える」）。`hp` / `attack` は出した時点の値。`revived: true` は蘇生（`reviveFallen`）で生き返った兵士 |
 | `soldierMoved` | `{ playerId, soldierId, roadId, from, to, cause?, slipped? }` … `cause` は押し戻されたときだけ `"pushed"`（ゲイルフォース。`to` が `from` より小さい）。`slipped: true` は氷のステージで滑って1マス余分に進んだとき |
 | `soldiersClashed` | `{ attacker: { playerId, soldierId }, defender: { playerId, soldierId }, roadId, square }` … 道の上で兵士同士がぶつかった。`attacker` は進軍中の側。`square` は**攻める側が止まったマス**の道のマス番号（1マス先の相手と戦うときも攻める側のマス） |
-| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）/ `"reaction"`（属性の反応の追加ダメージ。クラシック）/ `"guard"`（身代わりとして城への攻撃を受けた。4陣営）/ `"spirit"`（森の常時の精霊。4陣営）/ `"sand"`・`"frostbite"`（砂・凍傷の継続ダメージ。4陣営）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
+| `soldierDamaged` | `{ playerId, soldierId, amount, hp, cause, blocked }` … `cause` は `"fight"` / `"spell"` / `"poison"` / `"shot"`（弓兵・魔法使いに撃たれた）/ `"burn"`（やけど）/ `"heat"`（溶岩の灼熱）/ `"eruption"`（噴火）/ `"reaction"`（属性の反応の追加ダメージ。クラシック）/ `"guard"`（身代わりとして城への攻撃を受けた。4陣営）/ `"spirit"`（森の常時の精霊。4陣営）/ `"sand"`・`"frostbite"`（砂・凍傷の継続ダメージ。4陣営）/ `"trap"`（罠。クラシック）。`blocked` は盾が受けた量（`amount` は与えようとしたダメージ） |
 | `soldierDestroyed` | `{ playerId, soldierId, reason }` … `reason` は `"killed"` / `"reachedCastle"` / `"eliminated"`（持ち主が抜けた）/ `"roadClosed"`（道がなくなった）/ `"returned"`（弓兵・魔法使いが帰った） |
 | `soldierShot` | `{ playerId, soldierId, role, target, amount }` … 弓兵・魔法使いが撃った。`target` は `{ kind: "soldier", playerId, soldierId }` / `{ kind: "monster", monsterId }` / `{ kind: "castle", playerId }`。このあと `soldierDamaged`（`cause: "shot"`）／`monsterDamaged` …／`castleDamaged`（`source: { kind: "soldier", soldierId }`） |
 | `spellCast` | `{ playerId, type, target, targetKind, roadId?, soldierId? }` … `roadId` は、レーンを選んだ魔法（`scope: "lane"`）と、`castleSpellHitsFront` の城への魔法（道が決まるとき）に入る。`soldierId` は、城への魔法が先頭の兵士に当たるとき（`castleSpellHitsFront`）とチェーン・ブラストのときだけ入る（このあと `soldierDamaged`（`cause: "spell"`））。`element` は、ランダム属性ダメージ（`randomElementDamage`）で選ばれた属性（`"fire"` / `"water"` / `"wind"` / `"earth"`）。 `target` は効果を受けるプレイヤーIDか魔物IDの**文字列**、`targetKind` は `"player"` か `"monster"`（`playCard` に渡す `target` のオブジェクトとは形が違う）（ファイアボール・サンダーは相手、ヒールは自分） |
@@ -371,6 +372,10 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 | `castleElementAttached` | `{ playerId, element, turns, source }` … 城に属性が付いた（4陣営・試作。`rules.castleAttach`）。`playerId` は城の持ち主（チーム戦は代表）。`source` は当たった攻撃の `castleDamaged.source`（森の精霊の付着は `{ kind: "passiveSpirit", spirit }`）。同じ属性なら残りは長い方 |
 | `castleElementCleared` | `{ playerId, element, reason }` … 城の属性が消えた。`reason` は `"reaction"`（反応で使われた）か `"expired"`（城の持ち主のターンの終わりに残りが0） |
 | `castleReactionTriggered` | `{ playerId, reaction, name, elements, damage, consumed, armorBroken? }` … 城で反応が起きた（4陣営・試作）。このあと `castleElementCleared`（`"reaction"`）…→（`healCut` なら `castleHealCut`）→ `castleDamaged`（`source: { kind: "reaction", reaction }`）。`armorBroken` は溶岩が追加で削った城壁 |
+| `trapSet` | `{ playerId, trapId, type, name, roadId, square, turns, generated, fromHand, source?, stealth }` … 罠を置いた（クラシック。`square` は置いた人の城から数えたマス。`generated` はスキルが作った罠、`source` は作ったスキルのID）。`stealth`（持ち主の陣地）が付くので、相手には送らない |
+| `trapTriggered` | `{ playerId, trapId, type, name, roadId, square, victimId, soldierId, damage, freeze, element, generated, fromHand, chained? }` … 罠が発動した（だれにでも見える）。`playerId` は罠の持ち主、`victimId` / `soldierId` は踏んだ兵士。このあと `soldierDamaged`（`cause: "trap"`）→（生き残れば）凍結の `statusApplied` → 属性の付着・反応 → `trapRemoved`（`"triggered"`）。`chained: true` は連鎖起爆（F08）でつられて発動した罠 |
+| `trapRemoved` | `{ playerId, trapId, type, reason, roadId, square, generated, fromHand, noRegen }` … 罠が消えた。`reason` は `"triggered"`（発動した。だれにでも見える）／`"expired"`（期限）／`"eliminated"`（持ち主が抜けた）／`"roadClosed"`（道がなくなった）。`"triggered"` 以外は `stealth` 付き（相手に送らない） |
+| `trapMoved` | `{ playerId, trapId, fromRoadId, fromSquare, roadId, square, stealth }` … 罠を動かした（伏兵配置 X42。相手には送らない） |
 | `gameOver` | `{ winner, reason }` … `reason` は `"castleDestroyed"` / `"lastStanding"` / `"roundLimit"` / `"surrender"`（降参）/ `"collapse"`（崩壊の刻のダメージで決着） |
 
 #### イベントの順番
@@ -443,7 +448,7 @@ UIはこれを受けてアニメーションする。イベントを増やすと
 - カードの `scope`（`damageEnemySoldiers` / `poisonEnemySoldiers` / `freezeEnemySoldiers` の魔法だけ。省略すると `"all"`）：`"all"` は相手の全レーンの兵士に効く。`"lane"` は選んだ1レーンの相手の兵士だけに効く（対象は `{ playerId, roadId }`）。`laneCount` が1のときは `"lane"` でも `"all"` と同じ（対象を選ばない）
 - `monsterFirstRound`：魔物が出はじめる周回（省略すると3）。`monsterCooldownRounds`：魔物を倒した道に次の魔物が出ない周回の数（省略すると0）。`monsterSpawnChance`：周回の始めに、魔物がいない道ごとに魔物が出る確率（0〜1の数。省略すると0）
 - `elementBonus`：属性が強いときに増えるダメージ（省略すると0）
-- カードの `kind`：`soldier` / `spell` / `weapon`（`attackBonus`、`element`）/ `defense`（`effect`: `shieldSoldier` / `armorCastle`、`amount`）。魔法の `effect` に `poisonEnemySoldiers`（`amount`, `turns`）と `freezeEnemySoldiers`（`turns`）が増えた。`element` は `fire` / `water` / `wind` / `earth`
+- カードの `kind`：`soldier` / `spell` / `weapon`（`attackBonus`、`element`）/ `defense`（`effect`: `shieldSoldier` / `armorCastle`、`amount`）/ `trap`（罠。クラシックだけ。`damage`・`freeze`・`element`・`stay`。「クラシックの罠」）。魔法の `effect` に `poisonEnemySoldiers`（`amount`, `turns`）と `freezeEnemySoldiers`（`turns`）が増えた。`element` は `fire` / `water` / `wind` / `earth`
 - `secondPlayerCastleBonus`：後攻（p2）の城だけ、HPと上限がこのぶん多い（先攻有利をやわらげるため）。0以上の整数
 - `advanceAfterWin`：`true` なら、戦いで相手だけが消えたとき、残りの歩数で進み続ける（`false` ならそのターンはその場で止まる）。省略すると `false`
 - `soldierCastleDamageMultiplier`：城に着いた兵士が与えるダメージ ＝ 攻撃力 × この値（1以上の整数）。省略すると 1
@@ -552,7 +557,7 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 
 ## STEP 2：カード拡張（武器・防御・属性・状態異常）
 
-トラップ（落とし穴）は、ルールがややこしくなるため**入れない**（レビューで決めた）。
+トラップ（落とし穴）は、ルールがややこしくなるため**通常モードには入れない**（レビューで決めた）。のちにクラシックだけ、スキルツリーの罠のノードのために入れた（人間に確認して決めた。下の「クラシックの罠」）。
 
 **数値はすべて仮**（`data/cards.json`・`data/rules.json` で調整する）。カードの枚数と数値は、実装のPRでシミュレーションして決める。
 
@@ -1572,10 +1577,38 @@ STEP 1 は、2人が同じ端末で交互に遊ぶ最小版。数値はすべて
 - **データ**：`data/classic/skilltree.json`（version 3）は `node tools/build-skilltree.mjs` が仕様書の表から作る（手で直さない。`--check` とテストが一致を確かめる）。ノードは `{ id, group, name, desc, cost, ultimate, cross, ends, requires, handler, params, config?, layout }`。E04・X25 はノード内の選択（`config`）
 - **API**（`js/game/SkillTree.js`）：`canAcquire / validate（取得順に当てる）/ cost / acquirableIds / release / validateConfig / normalizeBuild / serializeBuild / deserializeBuild（旧版は振り直し）/ skillTreeApi`
 - **`new Game({ skillTree, setup: { skills: [ids | { ids, config }, ...] } })`**：クラシックだけ。開始時に再検証し、不正な席は空ビルド（理由は `game.skillFallbacks`・`players.pX.skillError`）。getState に `skills`（取得順のID）・`skillConfig`・`maxMp`。クラシックでは城の種類の補正を使わず標準城の値（見た目は残す）
-- **効く効果は単純な初期値系の10ノードだけ**（`STATIC_HANDLERS`：P01・P07・D01・D05・U01・U04・R01・E01・E04・E06）。ほかは「新ハンドラ未実装」（段階B/C）。旧キーの Game 側の処理は休眠として残した
+- **効果**：初期値系の10ノード（`STATIC_HANDLERS`：P01・P07・D01・D05・U01・U04・R01・E01・E04・E06）・基盤の11ノード・ハンドラの179ノード。**休眠のノードはない**（区分の表は `docs/skilltree-200-coverage.md`）。罠を使う F02・F05・F06・F08・X23・X42 と、読み替えた K01・A06・X06 は「クラシックの罠」。旧キーの Game 側の処理は休眠として残した
 - **CPU**：`chooseSkillBuild(tree, rng, style)` → `{ ids, config }`（none / random / プリセット（仕様 第10章の4ビルド）/ 戦い方の名前 / `"C01+C02"`）。部屋の `setSeat({ skills })` も同じ検証
 - 通常モード・4陣営は `skillTree` を渡さないので、スキルの処理も乱数も使わない（シミュレーションの出力は変更前と一致）
 - **オンライン対戦（対応済み）**：`POST /api/action` の `method` に `skillAction`（`args: [actionId, args]`。自分の席・自分の番だけ。メイン行動中か・回数・支払いは Game が確かめる。返事は `{ ok }` / `{ ok: false, reason }` だけ）・`listSkillActions`（自分の席の一覧。いつでも。`{ ok, actions }`）・`previewSkillCost`（`args: [cardId, skillOptions]`。自分の番・自分の手札だけ。`{ ok: true, preview: { ok, reason, mp, hp } | null }`。状態は送り直さない）・`setSkillPrefs`（`args: [{ X35: { autoDefer: true } }]`。自分の席だけ。いつでも）。`playCard` の第3引数 `skillOptions` は、知っているキー（`hpForMp`・`bloodBlade`・`bloodEcho`・`deferHp`・`diceChoice`）と値の形だけを通す（ほかは `{ ok: false }`）。任意スキルの `args` は JSON の値だけ・深さ3・値64個・文字列64字・配列16個まで、`__proto__` などのキーは拒否。状態は今までどおり `getState(席)`（相手の `skillState` は公開部分だけ）。発動ログは `{ type: "skillLog", entries }` で**本人の発動（trigger・diagnostic）だけ**を本人に送る（表示に使うキーだけ。相手の発動は送らない）。つなぎ直すと状態（回数・資源）と、最近40件のログ（`replace: true`）が届く。画面は `js/ui/OnlineClient.js` の `skillAction` / `previewCardCost`（Promise）/ `setSkillPrefs` と、`SkillBattleView` の `receiveLog`。くわしくは `docs/skilltree-200-notes/online-skills.md`
+
+## クラシックの罠（人間に確認して決めた。数値はすべて仮）
+
+スキルツリーに罠を使うノード（F02・F05・F06・F08・X23・X42）があったが、罠がなく休眠していた。人間の指示で**罠を新しく作り、隠す・クラシックの山札に入れる・画面もこちらで作る**と決めた。通常モード・4陣営には入れない（`data/cards.json` に罠のカードはない）。
+
+- **カード**：`kind: "trap"`（`damage`：入った兵士へのダメージ、`freeze`：凍結の回数。どちらか1以上。`element`：付ける属性。`stay`：残る自分のターンの数。省略すると `rules.trapStay`）。出し方（`slot`）は `"trap"`：**1ターン `rules.trapsPerTurn`（省略すると1）枚まで**。MP はカードの `mpCost`
+- **置ける場所**：自分の側の道のマス（**自分の城から数えて1〜`rules.trapSquares` マス目**。省略すると道の真ん中まで＝道5マスなら1・2マス目）。対象は `{ roadId, square }`（`square` は置いた人の城から数えたマス）。1マスに1つ（チーム戦は陣地で1つ）。場に置けるのは1人 `rules.trapMax`（省略すると3）つまで。**広場（3人以上の `roadLayout: "plaza"`）には置けない**（「広場の道には罠を置けません」）
+- **発動**：相手の兵士が**進軍でそのマスに入った**とき（通り過ぎるときも）。兵士はそこで止まり（そのターンは戦わない）、`damage`（盾が先に受ける。土の精霊は効く。会心はない）→（生き残れば）凍結 → 属性の付着・反応。発動した罠は消える。**忍者・暗殺者（見えない兵士）・魔物では発動しない**。スキルの移動（レーン移動・追加進軍など）では発動しない
+- **期限**：置いてから**持ち主のターンの始めが `stay`（3）回来たら消える**。持ち主が抜けたとき・道がなくなったときも消える
+- **隠す**：`getState(viewer)` の `players.pX.traps`（`[{ trapId, type, name, roadId, square, turnsLeft, damage, freeze, element, generated }]`）は**同じ陣地の人にだけ**入る（相手は `null`）。数 `players.pX.trapCount` はだれにでも見える。`cardPlayed`（罠のカードの種類）も見える。`trapSet` / `trapRemoved`（発動以外）/ `trapMoved` は `stealth`（持ち主の陣地）付きで、`visibility.js` が相手に送らない。発動（`trapTriggered` と、そのときの `trapRemoved`）はだれにでも見える。どちらも「罠を使うゲーム」（罠のカードがあるか、スキルツリーを渡したとき）だけキーを足す
+- **クラシックのカード**（`data/classic/cards.json`。80枚のまま）：落とし穴（`classic_king_pitfall`。4ダメージ・MP2・2枚）／氷の罠（`classic_demon_ice_trap`。凍結1・氷を付ける・MP2・2枚）。代わりに盾・骨の盾・城壁・血の膜を各3 → 2枚にした（罠も守りのカード）
+- **スキル**（`js/game/skills/handlers/F.js`・`X_c6.js`。スキルイベント `onTrap`：`phase` は `"set"` / `"triggered"` / `"removed"`）
+  - F02 再設置：手札から置いた罠が発動・期限で消えたあと20%で、同じマスに同じ罠を作り直す（作り直した罠は再設置しない）
+  - F05 連動装置：罠が発動した敵を、射程に入っている「武器を持った味方の兵士」（固定兵器の読み替え。F01 と同じ）1体が威力50%で追撃
+  - F06 罠の回収：手札から置いた罠が消える（発動・期限）と MP+1
+  - F07 工兵の知恵：自ターン最初の武器か**罠**の MP−1（罠も対象にした）
+  - F08 奥義 連鎖起爆：罠が発動すると、隣の自分の罠（同じ道の前後のマスか、となりのレーンの同じマス）1つも同じ敵に発動（つられた罠からは連鎖しない）
+  - X23 死者の地雷：味方の兵士（トークン以外）が倒れたら、その道の倒れたマスにいちばん近い置けるマスに一時罠（固定2。`type` は `"deadMine"`）
+  - X42 伏兵配置：任意アクション。自分の罠1つを、となりのレーンの同じマス（空き）へ動かす
+  - 各自ターン1回（`params.perTurn`）。数値は `data/classic/skilltree.json` の `params`
+- **今のルールに合わせて読み替えたノード**（仕様書 `docs/skilltree-200-spec.md` の説明文も直した）
+  - K01 挟撃：同じ自ターンに、ほかの味方兵士がすでに通常攻撃した敵兵士へ、別の味方兵士が通常攻撃すると、盾を1無視（盾があるとき基礎ダメージ+1。HPに入る量は盾1を無視したのと同じ）。対象ごと各自ターン1回
+  - A06 総攻撃：手札から城への攻撃魔法を撃ったあと、その相手の城の前のマス（`position` が `laneLength - 1`）にいる進む味方兵士1体が、相手の城を攻撃力ぶん攻撃（城に着いたときの倍率はかけない。兵士は消えない。城壁は受ける。防御は聞かない）
+  - X06 戦士の遺産：武器を持った味方の兵士（トークン以外）が倒れたら、その武器（攻撃の加算の合計と属性）を、次に手札から出す兵士が受け継ぐ（`weaponEquipped` に `legacy: true`）。**次の自分のターンが終わるまで**に出さなければ消える（仕様書は「次自ターン開始まで」だが、相手のターンに倒れると使えないので延ばした）
+- **CPU**（`js/game/strategies.js` の `playSupports`。smart・defensive・rush・guard）：相手の兵士（進む兵士）がいるとき、いちばん自分の城に近い兵士の道の、その兵士が次に入るマスに置く。相手の兵士がいなければ置かない。random は出せる罠をランダムに置く。X42 は使わない
+- **画面**：罠を置くときは、光っているマスをタップ（`js/ui/Targeting.js`・`Renderer.js` の `trapCell`）。自分の罠はマスの右上に印（⚠ / ❄）、城のそばに「罠 N」（相手の罠は数だけ）。発動すると印が光って画面が揺れ、罠の名前を大きく出す（`Animations.js` の `trapTriggered`。音は `Sound.js` の `trap`）。CSS は `css/traps.css`。罠の絵は仮（落とし穴＝土嚢の絵、氷の罠＝大氷結の絵。`js/ui/cardVisuals.js`）
+- 確かめたこと（`node tests/sim/run.js --mode classic --games 100 --seed 1 --match smart,smart`）：100/100 決着・平均101.8手番（入れる前は98.9）・先攻の勝率55%±10%（入れる前は52%）。罠は smart 同士で1試合に約5回置かれ、約3.6回発動。smart vs random は約5.5回置いて2.2回、random 同士は1.3回。罠のスキルを全部取ったビルド・読み替えた3ノードのビルド・ランダムなビルドの smart 同士180試合はすべて決着し、エラー0。通常モードのシミュレーション（`--games 100 --seed 1 --json`）は変更前と完全に一致
+- テスト：`tests/traps.test.js`（罠の土台）・`tests/classic-skills-traps.test.js`（9ノード）
 
 ## クラシック：王国の「守りを貫く手段」（案A 聖壁の号砲。人間の指示。数値は仮）
 
@@ -2009,7 +2042,7 @@ STEP 2 以降で作り直しにならないよう、Game をどう広げるか�
 
 STEP 2 以降で追加する。今のSTEPで頼まれていないものは先回りして作らない。作り方の見通しは上の「全体の設計」に書いた。
 
-1. カード拡張：武器・防御・属性・状態異常（STEP 2 で作った。トラップは入れない）
+1. カード拡張：武器・防御・属性・状態異常（STEP 2 で作った。トラップは通常モードには入れない。クラシックだけ「クラシックの罠」）
 2. 魔物とコイン：中央に出る魔物（ランダム）、とどめボーナス、コインでの強化（STEP 3 で作った）
 3. 見た目：イラスト、演出、城が壊れていく表現、効果音
 4. オンライン対戦：合言葉で部屋に入る（STEP 4 で作った。上の「STEP 4」）

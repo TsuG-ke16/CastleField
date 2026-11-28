@@ -419,6 +419,10 @@ export class Animations {
       case 'shieldBroken': return this.factionNote(`盾が砕けた！（${p.amount ?? 0}）`, p.playerId, 'block', p.soldierId);
       case 'castleHealCut': return this.factionNote(`🩸 城の回復が減る（あと${p.turns}ターン）`, p.playerId);
       case 'castleHealCutEnded': return this.factionNote('城の回復が元に戻った', p.playerId);
+      case 'trapSet': return this.trapSet(p, model);
+      case 'trapTriggered': return this.trapTriggered(p, model);
+      case 'trapRemoved': return this.trapRemoved(p, model);
+      case 'trapMoved': return this.trapMoved(p, model);
       case 'collapseAnnounced': return this.banner(`⚠️ ${p.startRound ?? '?'}周目から崩壊が始まる`, UI_CONFIG.timing.shuffle, 'small');
       case 'collapseStarted': return this.banner('💥 崩壊が始まった！', UI_CONFIG.timing.shuffle, 'small');
       default:
@@ -767,6 +771,77 @@ export class Animations {
       this.banner(text, UI_CONFIG.timing.shuffle, 'small');
     }
     await this.delay(UI_CONFIG.timing.statusCleared);
+  }
+
+  // ---------- 罠（クラシック）：自分の陣地の罠だけマスに印。発動はだれにでも見える ----------
+
+  trapsOf(model, playerId) {
+    return model.players[playerId] ?? null;
+  }
+
+  async trapSet(p, model) {
+    const pl = this.trapsOf(model, p.playerId);
+    const trap = { trapId: p.trapId, type: p.type, name: p.name, roadId: p.roadId, square: p.square, turnsLeft: p.turns, generated: p.generated };
+    if (pl) {
+      pl.trapCount = (pl.trapCount ?? 0) + 1;
+      if (pl.traps) pl.traps.push(trap);
+    }
+    this.renderer.setTrapCount(p.playerId, pl?.trapCount);
+    // 相手の罠の場所は見せない（オンライン・ひとりで遊ぶでは、そもそもこのイベントが届かない）
+    if (this.renderer.sideOf(p.playerId) !== 'me') return;
+    const mark = this.renderer.addTrap(trap, p.playerId);
+    if (this.skipping || !mark) return;
+    sound.play('equip');
+    const small = UI_CONFIG.smallNumber;
+    this.number(mark.closest('.cell') ?? mark, p.generated ? '罠が再び！' : '罠を隠した', { size: small.size, duration: small.duration, kind: 'block' });
+    await this.flashClass(mark, 'trap-new', UI_CONFIG.timing.armor);
+  }
+
+  async trapTriggered(p, model) {
+    const cell = this.renderer.trapCell(p.roadId, p.square, p.playerId);
+    const soldierEl = this.renderer.soldierEl(p.soldierId);
+    if (this.skipping) return;
+    // 相手の罠：その場で姿を見せる（このあと消える）
+    if (cell && !cell.querySelector(`.trap-mark[data-trap-id="${p.trapId}"]`)) this.renderer.addTrap({ ...p, turnsLeft: 0 }, p.playerId);
+    const mark = cell?.querySelector(`.trap-mark[data-trap-id="${p.trapId}"]`);
+    mark?.classList.add('trap-sprung');
+    sound.play('trap', 0.6);
+    // 手応え：一瞬止める・揺らす・名前を大きく出す（凍結だけの罠は控えめに）
+    const strong = (p.damage ?? 0) > 0;
+    this.screenShake('spell', strong ? 7 : 4);
+    if (this.renderer.fieldGL && cell) {
+      const lane = this.renderer.laneOf(p.roadId);
+      const row = Number(cell.dataset.row);
+      this.renderer.fieldGL.triggerEffect(p.freeze && !p.damage ? 'ice' : 'eruption', { to: this.renderer.fieldGL.cellWorldPos(lane, row) });
+    }
+    await this.hitstop(strong ? 90 : 50);
+    this.number(soldierEl ?? cell ?? this.renderer.el.road, `${p.chained ? '連鎖！' : ''}${p.name ?? '罠'}！`, { size: UI_CONFIG.smallNumber.size + 8, duration: UI_CONFIG.smallNumber.duration, kind: 'damage' });
+    await this.delay(UI_CONFIG.timing.statusCleared);
+  }
+
+  async trapRemoved(p, model) {
+    const pl = this.trapsOf(model, p.playerId);
+    if (pl) {
+      pl.trapCount = Math.max(0, (pl.trapCount ?? 1) - 1);
+      if (pl.traps) pl.traps = pl.traps.filter((t) => t.trapId !== p.trapId);
+    }
+    this.renderer.setTrapCount(p.playerId, pl?.trapCount);
+    const mark = this.renderer.el.road.querySelector(`.trap-mark[data-trap-id="${p.trapId}"]`);
+    if (mark && !this.skipping && p.reason === 'expired') {
+      mark.classList.add('trap-fade');
+      await this.delay(UI_CONFIG.timing.armor * 0.6);
+    }
+    this.renderer.removeTrap(p.trapId);
+  }
+
+  async trapMoved(p, model) {
+    const pl = this.trapsOf(model, p.playerId);
+    const t = pl?.traps?.find((x) => x.trapId === p.trapId);
+    if (t) Object.assign(t, { roadId: p.roadId, square: p.square });
+    this.renderer.removeTrap(p.trapId);
+    if (this.renderer.sideOf(p.playerId) !== 'me') return;
+    const mark = this.renderer.addTrap(t ?? { trapId: p.trapId, roadId: p.roadId, square: p.square }, p.playerId);
+    if (!this.skipping && mark) await this.flashClass(mark, 'trap-new', UI_CONFIG.timing.armor);
   }
 
   patchAttachments(model, { playerId, soldierId }, fn) {

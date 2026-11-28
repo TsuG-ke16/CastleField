@@ -150,7 +150,7 @@ export const UI_CONFIG = {
 
   // 手札の並び：種類のグループの順（js/ui/handOrder.js）。その中はレアリティの高い順
   hand: {
-    groupOrder: ['soldier', 'weapon', 'spell', 'defense', 'special'],
+    groupOrder: ['soldier', 'weapon', 'spell', 'defense', 'trap', 'special'],
   },
 
   // カードの使い方（どれも同時に有効にできる。デバッグパネルから切り替えられる）
