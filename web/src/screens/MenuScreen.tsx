@@ -289,7 +289,16 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
       skins: ownedSkins.length,
       skills: unlockedSkills.length,
     };
-    const missions = (data?.economy?.missions || []).map((m) => ({ ...m, cur: progressOf[m.kind] ?? 0 }));
+    const priorityOf = (done: boolean, claimed: boolean) => (done && !claimed ? 0 : !claimed ? 1 : 2);
+    const missions = (data?.economy?.missions || [])
+      .map((m) => ({ ...m, cur: progressOf[m.kind] ?? 0 }))
+      .sort((a, b) => {
+        const pa = priorityOf(a.cur >= a.goal, claimedMissions.includes(a.id));
+        const pb = priorityOf(b.cur >= b.goal, claimedMissions.includes(b.id));
+        return pa - pb;
+      });
+    const claimableList = missions.filter((m) => m.cur >= m.goal && !claimedMissions.includes(m.id));
+    const claimableCoins = claimableList.reduce((sum, m) => sum + m.reward, 0);
 
     return (
       <section
@@ -306,14 +315,14 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
             ← メニュー
           </GameButton>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>ランキング・実績ミッション</h1>
         </div>
 
-        <ParchmentSheet style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center' }}>
+        <ParchmentSheet style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center', flexShrink: 0 }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--cf-ink-muted)' }}>総試合</div>
             <div style={{ fontSize: 18, fontWeight: 900 }} className="tabular">{stats.matchesPlayed}</div>
@@ -332,7 +341,23 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           </div>
         </ParchmentSheet>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {claimableList.length >= 2 && (
+          <div style={{ flexShrink: 0 }}>
+            <GameButton
+              variant="primary-gold"
+              size="md"
+              fullWidth
+              crown
+              onClick={() => {
+                for (const m of claimableList) claimMissionReward(m.id, m.reward);
+              }}
+            >
+              まとめて受け取る（+{claimableCoins} コイン / {claimableList.length}件）
+            </GameButton>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
           {missions.map((m) => {
             const done = m.cur >= m.goal;
             const claimed = claimedMissions.includes(m.id);
@@ -383,21 +408,21 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
             ← メニュー
           </GameButton>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>遊び方ガイド</h1>
         </div>
 
-        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
           <strong style={{ fontSize: 15 }}>1. 勝利条件と基本ターン</strong>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.65 }}>
             左・中央・右の3本の道に兵士を送り込み、相手の城HP（初期60）を0にした方の勝ちです。カードはタップまたは上方向スワイプで発動できます。
           </p>
         </ParchmentSheet>
 
-        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
           <strong style={{ fontSize: 15 }}>2. 属性4すくみ相性</strong>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '6px 0' }}>
             <div style={{ textAlign: 'center', fontSize: 12, fontWeight: 900 }}>
@@ -426,17 +451,31 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           </p>
         </ParchmentSheet>
 
-        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
           <strong style={{ fontSize: 15 }}>3. 合成進化と防御カード</strong>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.65 }}>
             同じカードを2枚選ぶと「合成」で上位レアカードに進化できます（「適応」はどのカードとも合成可能）。「反射」「身代わり」などの防御カードは相手の直接攻撃時に割り込んで発動します。
           </p>
         </ParchmentSheet>
 
-        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
           <strong style={{ fontSize: 15 }}>4. 友達と対戦（合言葉 / 同じ端末）</strong>
           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.65 }}>
             「同じ端末」なら1台のスマホを交互に受け渡して対戦でき、「合言葉対戦」では Rust サーバー経由で離れた友達とリアルタイム同期対戦が可能です。
+          </p>
+        </ParchmentSheet>
+
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+          <strong style={{ fontSize: 15 }}>5. マイデッキ編成と共有コード（CF2-）</strong>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.65 }}>
+            デッキ画面では4つのマイデッキ枠に名前を付けてコスト上限100以内で編成できます。「採用中のみ」やレア度で絞り込みでき、「共有コード」から現在のデッキを `CF2-` コードとしてコピー・友達の枠へ読み込みできます。
+          </p>
+        </ParchmentSheet>
+
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+          <strong style={{ fontSize: 15 }}>6. 省エネ描画とキーボード操作</strong>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, lineHeight: 1.65 }}>
+            バトル中の「対戦メニュー」やメインメニューから「3D / 2D省エネ」や効果音・BGM、さらに「動きを減らす」を切り替えられます。PCでは数字キー `1`〜`9` で手札選択、`Space` / `Enter` でターン終了、`Esc` でメニュー開閉ができます。
           </p>
         </ParchmentSheet>
       </section>
@@ -460,7 +499,7 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
         }}
         aria-label="戦績・対戦履歴"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
             ← メニュー
           </GameButton>

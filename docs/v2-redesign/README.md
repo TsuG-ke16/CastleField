@@ -47,6 +47,7 @@
 | `04-rust-core-and-server.md` | **Track D（Rustコア/WASM）/ Track E（Rustサーバー）** | `rust/` Cargo構成、JSONデータ互換、Gameイベント契約、JS版とのゴールデンテスト、`axum` WebSocket/HTTP API仕様 |
 | `07-phase8-ranked.md` | **全AI（ランク・サーバーを触るとき）** | Phase 8：ランクマッチ（ゲスト本人確認・待ち行列・結果の反映・ランキング）と、一緒に直したサーバーの不具合 |
 | `08-server-wallet.md` | **全AI（コイン・所持品を触るとき）** | v2 のお財布をサーバーで持つ（移行・対戦報酬の上限・ミッション・ランク報酬） |
+| `06-deploy-and-play.md` | **全AI / 運用** | ローカル起動・Docker・Render / Fly.io 本番デプロイ手順とヘルスチェック |
 | `05-ai-work-orders.md` | **人間（司令塔）向け** | 各AIへそのままコピペして発注できる Track A〜E 別の作業依頼プロンプト＆受け入れ条件 |
 
 ---
@@ -74,3 +75,5 @@
 | **Phase 3** | **Rustコア＆サーバー接続**（Track D + E） | `castlefield-core` が既存JS版との同一シード100試合ゴールデンテストに100%一致し、`castlefield-wasm` で `web/` が動作、さらに `castlefield-server` でスマホ2台のオンライン対戦が通る |
 | **Phase 4** | **全画面移植＆外遊びPWA仕上げ**（Track C + E） | ガチャ・ショップ・デッキ編成・図鑑・スキン装備・PixiJS 200ノードスキルツリー・メニュー・ランク/フレンドを全移植。4G回線・スマホ実機で初回ロード＆電池消費を検証し、旧フロントから切替 |
 | **Phase 8** | **ランクマッチ**（Track D + E + C） | `data/ranks.json` の式でサーバーが MMR・RP を決め、v2 の待合室→対戦→結果（RP の増減）まで通る。くわしくは `07-phase8-ranked.md` |
+| **Phase 8〜10** | **2D省エネ描画・4枠デッキ・SkillTree＆CI統合**（PR #226〜#228） | Blender 2Dプリレンダ、Lazy 3D、モード固有カード28枚切り出し、4枠マイデッキ＆構成グラフ、SkillTreeピンチズーム/系統フィルタ、`v2_integrity.test.mjs` CI を確立 |
+| **Phase 11〜16** | **UX磨き上げ・共有・配布仕上げ**（PR #229〜#234） | 対戦履歴12戦＆ログ・初回ヒント・BGM省エネ＆Render/Fly設定（#229）、ショップ並び替え/レア度色分け＆スキン刷新（#230）、1行HUD＆リザルトXP＆PCキー操作（#231〜#232）、PWAキャッシュ修正＆`CF2-`共有コード＆スキル効果検索（#233）、ミッション一括受取＆ガイド拡充（#234） |
