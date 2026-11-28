@@ -73,6 +73,8 @@ export function BattleScreen() {
     selectedFactionId,
     unlockedSkills,
     customDeck,
+    customDecks,
+    activeCustomSlot,
     cpuLevel,
     engineMode,
     onlinePassphrase,
@@ -82,6 +84,9 @@ export function BattleScreen() {
     quality,
     mulliganEnabled,
     reducedMotion,
+    tutorialSeen,
+    markTutorialSeen,
+    addMatchHistory,
     exitBattle,
     reportMatchReward,
     recordMatchResult,
@@ -139,6 +144,8 @@ export function BattleScreen() {
   const popCounterRef = useRef(0);
   const recordedMatchRef = useRef(false);
   const viewerSideRef = useRef<'p1' | 'p2'>('p1');
+  const battleLogRef = useRef<string[]>([]);
+  battleLogRef.current = battleLog;
 
   const showToast = (msg: string) => {
     setToastMsg(msg);
@@ -314,9 +321,27 @@ export function BattleScreen() {
         } else if (ev.type === 'gameOver') {
           const w = String(ev.winner || '');
           const won = w === myS;
+          const finalSt = adapter.getState(myS);
           if (!recordedMatchRef.current) {
             recordedMatchRef.current = true;
             recordMatchResult(won, statsAccRef.current.cardsPlayed);
+            addMatchHistory({
+              id: `${Date.now()}`,
+              at: Date.now(),
+              mode,
+              playMode,
+              stage: finalSt.stage || selectedStageId,
+              won,
+              turns: finalSt.turn,
+              damageDealt: statsAccRef.current.damageDealt,
+              cardsPlayed: statsAccRef.current.cardsPlayed,
+              monstersDefeated: statsAccRef.current.monstersDefeated,
+              deckLabel:
+                selectedDeckId === 'custom'
+                  ? customDecks[activeCustomSlot]?.name || `デッキ${activeCustomSlot + 1}`
+                  : data.decks?.[selectedDeckId]?.name || selectedDeckId,
+              log: battleLogRef.current.slice(0, 15),
+            });
             if (won) {
               soundManager.play('victory');
               fxRef.current?.burst('victory');
@@ -326,7 +351,6 @@ export function BattleScreen() {
               reportMatchReward(false, playMode === 'ranked');
             }
           }
-          const finalSt = adapter.getState(myS);
           setSummary({
             winner: w || null,
             turns: finalSt.turn,
@@ -603,7 +627,10 @@ export function BattleScreen() {
     setTargets([]);
     const res = adapter.endTurn();
     if (!res.ok) showToast(res.reason || 'ターンを終えられません');
-    else showToast(playMode === 'local' ? '端末を相手へ渡してください…' : '相手の番です…');
+    else {
+      if (!tutorialSeen) markTutorialSeen();
+      showToast(playMode === 'local' ? '端末を相手へ渡してください…' : '相手の番です…');
+    }
     refreshState();
   };
 
@@ -992,6 +1019,40 @@ export function BattleScreen() {
       </div>
 
       <footer className={styles.controlsDock}>
+        {!tutorialSeen && playMode === 'cpu' && gameState.phase === 'main' && myTurn && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              padding: '5px 10px',
+              borderRadius: 10,
+              background: '#fff3cd',
+              border: '2px solid #4a2e1a',
+              fontSize: 11,
+              fontWeight: 900,
+              color: '#4a2e1a',
+            }}
+            role="status"
+          >
+            <span>
+              {statsAccRef.current.cardsPlayed > 0
+                ? '③ 行動が終わったら右下の「ターン終了」を押そう！'
+                : selectedCard
+                  ? '② 「使う」または光っている場所をタップして発動！'
+                  : '① 下の手札からカードをタップして選ぼう！'}
+            </span>
+            <button
+              type="button"
+              onClick={markTutorialSeen}
+              aria-label="ヒントを閉じる"
+              style={{ background: 'none', border: 'none', fontWeight: 900, fontSize: 14, cursor: 'pointer', padding: '0 4px' }}
+            >
+              ×
+            </button>
+          </div>
+        )}
         <div className={styles.toastBanner}>{toastMsg}</div>
         <AnimatePresence>
           {selectedCard && cards[selectedCard.type] && !isDefensePrompt && (

@@ -52,6 +52,9 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     selectedFactionId,
     setSelectedFactionId,
     customDeck,
+    customDecks,
+    activeCustomSlot,
+    selectCustomSlot,
     onlinePassphrase,
     setOnlinePassphrase,
     onlineServerUrl,
@@ -127,7 +130,8 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
 
   const activeMode = MODES.find((m) => m.id === mode) || MODES[0];
   const deckEntry = selectedDeckId === 'custom' ? null : data?.decks?.[selectedDeckId];
-  const deckName = selectedDeckId === 'custom' ? '★ オリジナル' : (deckEntry?.name || 'バランス（コスト制）');
+  const activeCustomName = customDecks[activeCustomSlot]?.name || `デッキ${activeCustomSlot + 1}`;
+  const deckName = selectedDeckId === 'custom' ? `★ ${activeCustomName}` : (deckEntry?.name || 'バランス（コスト制）');
   const deckPreviewCards =
     selectedDeckId === 'custom'
       ? Object.keys(customDeck).slice(0, 2)
@@ -309,17 +313,24 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
 
                 {sheet === 'deck' && data?.decks && (
                   <>
+                    <div className={styles.chipLabel}>マイデッキ（4枠）</div>
                     <div className={styles.optionGrid}>
-                      <GameButton
-                        size="sm"
-                        variant={selectedDeckId === 'custom' ? 'selected-royal' : 'normal-stone'}
-                        onClick={() => {
-                          setSelectedDeckId('custom');
-                          setSheet('none');
-                        }}
-                      >
-                        ★ オリジナル
-                      </GameButton>
+                      {customDecks.map((slot, idx) => (
+                        <GameButton
+                          key={`slot-${idx}`}
+                          size="sm"
+                          variant={selectedDeckId === 'custom' && activeCustomSlot === idx ? 'selected-royal' : 'normal-stone'}
+                          onClick={() => {
+                            selectCustomSlot(idx);
+                            setSheet('none');
+                          }}
+                        >
+                          ★ {slot.name || `デッキ${idx + 1}`}
+                        </GameButton>
+                      ))}
+                    </div>
+                    <div className={styles.chipLabel}>プリセットデッキ</div>
+                    <div className={styles.optionGrid}>
                       {Object.entries(data.decks).map(([id, deck]) => (
                         <GameButton
                           key={id}

@@ -84,3 +84,7 @@ docker run -d -p 8787:8787 -v castlefield_data:/app/data-store castlefield-v2
 - ヘルスチェックエンドポイント: `GET /healthz`, `GET /readyz`
 - Prometheus メトリクス: `GET /metrics`
 - WebSocket 差分再送: `GET /api/ws?token=...&lastSeq=...`
+
+### クラウド 1-Click デプロイ設定
+- **Render**: リポジトリ直下の [render.yaml](../../render.yaml) を Blueprint として読み込むだけで Docker ビルド＋`/app/data-store` 永続ディスク付きでデプロイ可能
+- **Fly.io**: リポジトリ直下の [fly.toml](../../fly.toml) を使い、`fly volumes create castlefield_data --size 1 && fly deploy` でそのまま公開可能
