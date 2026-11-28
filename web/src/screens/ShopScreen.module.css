@@ -108,13 +108,42 @@
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.8), 0 5px 0 rgba(74, 46, 26, 0.28);
 }
 
+.itemCard-rare {
+  background: linear-gradient(180deg, #f3f8ff 0%, #dbeafe 65%, #bfdbfe 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.88), inset 0 0 0 1.5px #578ee0, 0 5px 0 rgba(36, 70, 145, 0.3);
+}
+
+.itemCard-epic {
+  background: linear-gradient(180deg, #fcf5ff 0%, #edd9ff 65%, #dab6fc 100%);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.88), inset 0 0 0 1.5px #9b59d6, 0 5px 0 rgba(76, 36, 128, 0.34);
+}
+
+.itemCard-legendary {
+  background: linear-gradient(180deg, #fffce6 0%, #ffea9c 62%, #f5c34f 100%);
+  box-shadow: inset 0 2px 0 #ffffff, inset 0 0 0 2px #f2b728, 0 5px 0 rgba(122, 68, 12, 0.38), 0 8px 16px rgba(255, 198, 56, 0.22);
+}
+
+.itemPreviewWell {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 2px solid rgba(74, 46, 26, 0.45);
+  background: radial-gradient(circle at 50% 38%, #ffffff 0%, #f6e7c7 68%, #e2c58a 100%);
+  box-shadow: inset 0 3px 6px rgba(74, 46, 26, 0.16), 0 1.5px 0 rgba(255, 255, 255, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .rarityTag {
   font-size: 10px;
   font-weight: 900;
   padding: 2px 8px;
   border-radius: 999px;
+  border: 1.5px solid rgba(74, 46, 26, 0.7);
   background: #3465cc;
   color: #fffaf0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .rarity-common {

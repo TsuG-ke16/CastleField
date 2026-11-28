@@ -66,6 +66,7 @@
   border-radius: 999px;
   background: #e2cfa4;
   border: 1.5px solid var(--cf-ink);
+  box-shadow: inset 0 1.5px 2px rgba(74, 46, 26, 0.22);
   overflow: hidden;
 }
 
@@ -97,6 +98,7 @@
   overflow: hidden;
   border: 1.5px solid var(--cf-ink);
   background: #e2cfa4;
+  box-shadow: inset 0 1.5px 2px rgba(74, 46, 26, 0.22);
 }
 
 .stackedSeg {
@@ -161,15 +163,17 @@
   padding: 5px 10px;
   border-radius: 999px;
   border: 2px solid var(--cf-ink);
-  background: #fffaf0;
+  background: linear-gradient(180deg, #fffef8 0%, #f4e3bd 100%);
+  box-shadow: inset 0 1.5px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.24);
   font-size: 11px;
   font-weight: 900;
   cursor: pointer;
 }
 
 .chipActive {
-  background: #3465cc;
+  background: linear-gradient(180deg, #5b8ef2 0%, #3465cc 60%, #22479b 100%);
   color: #fffaf0;
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 1.5px #ffd98a, 0 2px 0 rgba(26, 48, 104, 0.45);
 }
 
 .cardsCol {
@@ -195,10 +199,11 @@
   grid-template-columns: 28px 1fr 28px;
   align-items: center;
   gap: 4px;
-  background: rgba(255, 246, 224, 0.94);
+  background: linear-gradient(180deg, #fffdf5 0%, #f6e7c5 100%);
   border: 2px solid var(--cf-ink);
   border-radius: 10px;
   padding: 2px;
+  box-shadow: inset 0 1.5px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.24);
   font-size: 12px;
   font-weight: 900;
   text-align: center;
@@ -208,7 +213,8 @@
   height: 24px;
   border: none;
   border-radius: 7px;
-  background: #e5c989;
+  background: linear-gradient(180deg, #fae2a3 0%, #e0ba68 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.65);
   color: var(--cf-ink);
   font-size: 14px;
   font-weight: 900;
@@ -225,6 +231,8 @@
   inset: 0;
   z-index: 60;
   background: rgba(28, 17, 8, 0.58);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -247,7 +255,8 @@
   padding: 6px 8px;
   border-radius: 10px;
   border: 2px solid #c9b075;
-  background: #fffdf6;
+  background: linear-gradient(180deg, #fffef8 0%, #f7e9c8 100%);
+  box-shadow: inset 0 1px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.18);
   cursor: pointer;
   flex-shrink: 0;
   font-size: 11px;
@@ -256,7 +265,8 @@
 
 .chainNodeActive {
   border-color: #3465cc;
-  background: #ebf2ff;
+  background: linear-gradient(180deg, #eef4ff 0%, #d4e4ff 100%);
+  box-shadow: inset 0 1px 0 #ffffff, 0 2px 0 rgba(52, 101, 204, 0.28);
 }
 
 .tiltWrap {

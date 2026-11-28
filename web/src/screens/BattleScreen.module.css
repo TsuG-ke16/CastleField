@@ -39,8 +39,9 @@
   gap: 5px;
   padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(21, 39, 89, 0.72);
+  background: linear-gradient(180deg, #27489e 0%, #152b69 100%);
   border: 1.5px solid #ffd98a;
+  box-shadow: inset 0 1px 0 rgba(255, 245, 210, 0.35), 0 2px 0 rgba(20, 38, 88, 0.45);
   font-size: 12px;
   font-weight: 900;
   white-space: nowrap;
@@ -53,6 +54,7 @@
   font-size: 12px;
   font-weight: 900;
   border: 2px solid var(--cf-ink);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.55), 0 2px 0 rgba(74, 46, 26, 0.32);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -85,7 +87,7 @@
 }
 
 .turnOpp {
-  background: #e9effa;
+  background: linear-gradient(180deg, #f7faff 0%, #dce7f9 100%);
   color: #24479b;
 }
 
@@ -274,6 +276,8 @@
   inset: 0;
   z-index: 200;
   background: rgba(28, 17, 8, 0.58);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -304,8 +308,9 @@
 .envPill {
   padding: 3px 9px;
   border-radius: 999px;
-  background: rgba(255, 248, 226, 0.92);
+  background: linear-gradient(180deg, rgba(255, 252, 240, 0.96) 0%, rgba(246, 231, 192, 0.96) 100%);
   border: 1.5px solid var(--cf-ink);
+  box-shadow: inset 0 1px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.26);
   font-size: 11px;
   font-weight: 900;
   cursor: pointer;
@@ -341,9 +346,9 @@
   z-index: 25;
   padding: 5px 12px;
   border-radius: 999px;
-  background: #fffdf6;
+  background: linear-gradient(180deg, #fffef8 0%, #f6e7c5 100%);
   border: 2.5px solid var(--cf-ink);
-  box-shadow: 0 3px 0 rgba(74, 46, 26, 0.28);
+  box-shadow: inset 0 1.5px 0 #ffffff, 0 3px 0 rgba(74, 46, 26, 0.28);
   font-size: 13px;
   font-weight: 900;
   white-space: nowrap;
@@ -355,9 +360,10 @@
   gap: 6px;
   overflow-x: auto;
   padding: 6px 4px;
-  background: rgba(255, 248, 226, 0.96);
+  background: linear-gradient(180deg, rgba(255, 252, 240, 0.96) 0%, rgba(245, 229, 191, 0.96) 100%);
   border: 2px solid var(--cf-ink);
   border-radius: 12px;
+  box-shadow: inset 0 1.5px 0 #ffffff;
   scrollbar-width: none;
 }
 
@@ -369,7 +375,8 @@
   padding: 5px 9px;
   border-radius: 999px;
   border: 2px solid #c9b075;
-  background: #fffdf6;
+  background: linear-gradient(180deg, #fffef8 0%, #f7e8c6 100%);
+  box-shadow: inset 0 1px 0 #ffffff;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
@@ -386,9 +393,9 @@
   gap: 10px;
   padding: 8px 16px;
   border-radius: 16px;
-  background: linear-gradient(90deg, rgba(46, 26, 78, 0.94) 0%, rgba(164, 58, 34, 0.94) 100%);
+  background: linear-gradient(90deg, rgba(46, 26, 78, 0.95) 0%, rgba(164, 58, 34, 0.95) 100%);
   border: 3px solid #ffe37a;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.35), 0 8px 24px rgba(0, 0, 0, 0.45);
   color: #fffaf0;
   pointer-events: none;
   white-space: nowrap;

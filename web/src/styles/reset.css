@@ -33,6 +33,18 @@ img {
   -webkit-user-drag: none;
 }
 
+button:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 3px solid #ffe37a;
+  outline-offset: 2px;
+}
+
+* {
+  scrollbar-color: #c9a25e rgba(255, 246, 224, 0.35);
+  scrollbar-width: thin;
+}
+
 .tabular {
   font-variant-numeric: tabular-nums;
 }
