@@ -227,12 +227,16 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1.5px dashed #c9a25e;
 }
 
 .sheetTitle {
   margin: 0;
   font-size: 17px;
   font-weight: 900;
+  color: var(--cf-ink);
+  letter-spacing: 0.02em;
 }
 
 .optionGrid {
