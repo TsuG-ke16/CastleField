@@ -126,7 +126,19 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
             ← メニュー
           </GameButton>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>スキン装備</h1>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 20,
+              fontWeight: 900,
+              color: '#fffaf0',
+              WebkitTextStroke: '3px #4a2e1a',
+              paintOrder: 'stroke fill',
+              textShadow: '0 2px 0 #4a2e1a',
+            }}
+          >
+            スキン装備
+          </h1>
         </div>
 
         <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
@@ -319,7 +331,19 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
             ← メニュー
           </GameButton>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>ランキング・実績ミッション</h1>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 20,
+              fontWeight: 900,
+              color: '#fffaf0',
+              WebkitTextStroke: '3px #4a2e1a',
+              paintOrder: 'stroke fill',
+              textShadow: '0 2px 0 #4a2e1a',
+            }}
+          >
+            ランキング・実績ミッション
+          </h1>
         </div>
 
         <ParchmentSheet style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, textAlign: 'center', flexShrink: 0 }}>
@@ -412,7 +436,19 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
             ← メニュー
           </GameButton>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>遊び方ガイド</h1>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 20,
+              fontWeight: 900,
+              color: '#fffaf0',
+              WebkitTextStroke: '3px #4a2e1a',
+              paintOrder: 'stroke fill',
+              textShadow: '0 2px 0 #4a2e1a',
+            }}
+          >
+            遊び方ガイド
+          </h1>
         </div>
 
         <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
@@ -503,7 +539,19 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
             ← メニュー
           </GameButton>
-          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>対戦履歴（直近12戦）</h1>
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 20,
+              fontWeight: 900,
+              color: '#fffaf0',
+              WebkitTextStroke: '3px #4a2e1a',
+              paintOrder: 'stroke fill',
+              textShadow: '0 2px 0 #4a2e1a',
+            }}
+          >
+            対戦履歴（直近12戦）
+          </h1>
         </div>
 
         {matchHistory.length === 0 ? (
@@ -621,12 +669,35 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
       }}
       aria-label="王国メニュー"
     >
-      <h1 style={{ margin: 0, fontSize: 22, fontWeight: 900, textShadow: '0 2px 0 #fffaf0' }}>
+      <h1
+        style={{
+          margin: 0,
+          fontSize: 22,
+          fontWeight: 900,
+          color: '#fffaf0',
+          WebkitTextStroke: '3.5px #4a2e1a',
+          paintOrder: 'stroke fill',
+          textShadow: '0 2px 0 #4a2e1a, 0 4px 10px rgba(74, 46, 26, 0.25)',
+        }}
+      >
         王国メニュー
       </h1>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ fontSize: 13, fontWeight: 900, paddingLeft: 4 }}>自分の王国</div>
+        <div
+          style={{
+            alignSelf: 'flex-start',
+            fontSize: 12,
+            fontWeight: 900,
+            padding: '2px 10px',
+            borderRadius: 999,
+            background: 'rgba(255, 248, 228, 0.94)',
+            border: '1.5px solid #4a2e1a',
+            boxShadow: '0 2px 0 rgba(74, 46, 26, 0.22)',
+          }}
+        >
+          自分の王国
+        </div>
         <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {menuRows.map((row) => (
             <button
@@ -675,7 +746,20 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <div style={{ fontSize: 13, fontWeight: 900, paddingLeft: 4 }}>お財布（コイン・所持品）</div>
+        <div
+          style={{
+            alignSelf: 'flex-start',
+            fontSize: 12,
+            fontWeight: 900,
+            padding: '2px 10px',
+            borderRadius: 999,
+            background: 'rgba(255, 248, 228, 0.94)',
+            border: '1.5px solid #4a2e1a',
+            boxShadow: '0 2px 0 rgba(74, 46, 26, 0.22)',
+          }}
+        >
+          お財布（コイン・所持品）
+        </div>
         <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1.6 }}>
             {walletMode === 'server'
@@ -773,7 +857,20 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           </div>
         </ParchmentSheet>
 
-        <div style={{ fontSize: 13, fontWeight: 900, paddingLeft: 4 }}>環境・外遊び設定</div>
+        <div
+          style={{
+            alignSelf: 'flex-start',
+            fontSize: 12,
+            fontWeight: 900,
+            padding: '2px 10px',
+            borderRadius: 999,
+            background: 'rgba(255, 248, 228, 0.94)',
+            border: '1.5px solid #4a2e1a',
+            boxShadow: '0 2px 0 rgba(74, 46, 26, 0.22)',
+          }}
+        >
+          環境・外遊び設定
+        </div>
         <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
             <div>

@@ -18,6 +18,60 @@ const ShopScreen = lazy(() => import('./screens/ShopScreen').then((m) => ({ defa
 const MenuScreen = lazy(() => import('./screens/MenuScreen').then((m) => ({ default: m.MenuScreen })));
 const SkillTreeScreen = lazy(() => import('./screens/SkillTreeScreen').then((m) => ({ default: m.SkillTreeScreen })));
 
+const TAB_BACKDROPS: Partial<Record<'deck' | 'gacha' | 'shop' | 'menu', { src: string; alt: string; veil: string }>> = {
+  gacha: {
+    src: '/assets/v2/renders/bg-gacha-vault.webp',
+    alt: '王国の召喚宝物庫',
+    veil: 'linear-gradient(180deg, rgba(255, 248, 232, 0.22) 0%, rgba(255, 242, 210, 0.1) 48%, rgba(56, 30, 12, 0.24) 100%)',
+  },
+  shop: {
+    src: '/assets/v2/renders/bg-shop-stall.webp',
+    alt: '王国のアイテムショップ',
+    veil: 'linear-gradient(180deg, rgba(255, 250, 240, 0.28) 0%, rgba(255, 246, 224, 0.18) 52%, rgba(74, 46, 26, 0.2) 100%)',
+  },
+  deck: {
+    src: '/assets/v2/renders/bg-deck-table.webp',
+    alt: '王国の作戦卓',
+    veil: 'linear-gradient(180deg, rgba(44, 24, 10, 0.18) 0%, rgba(255, 246, 224, 0.08) 55%, rgba(44, 24, 10, 0.26) 100%)',
+  },
+  menu: {
+    src: '/assets/v2/renders/bg-menu-hall.webp',
+    alt: '王宮のギャラリー回廊',
+    veil: 'linear-gradient(180deg, rgba(255, 250, 240, 0.24) 0%, rgba(255, 248, 232, 0.12) 55%, rgba(35, 71, 153, 0.14) 100%)',
+  },
+};
+
+function TabBackdrop({ tab }: { tab: 'battle' | 'deck' | 'gacha' | 'shop' | 'menu' }) {
+  if (tab === 'battle') return null;
+  const spec = TAB_BACKDROPS[tab];
+  if (!spec) return null;
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: 'absolute',
+        inset: 0,
+        zIndex: 1,
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    >
+      <img
+        src={spec.src}
+        alt=""
+        style={{
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          objectPosition: '50% 45%',
+          display: 'block',
+        }}
+      />
+      <div style={{ position: 'absolute', inset: 0, background: spec.veil }} />
+    </div>
+  );
+}
+
 const AVATAR_CHOICES = [
   'infantry',
   'knight',
@@ -164,7 +218,7 @@ export function App() {
       <TopBar onOpenNotice={() => setNoticeOpen(true)} onOpenProfile={() => setProfileOpen(true)} />
 
       <main style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {tab === 'battle' && <HomeBackdrop tab={tab} mode={mode} quality={quality} />}
+        {tab === 'battle' ? <HomeBackdrop tab={tab} mode={mode} quality={quality} /> : <TabBackdrop tab={tab} />}
 
         {tab === 'battle' && invitedRoom && (
           <div

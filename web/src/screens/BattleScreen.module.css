@@ -16,8 +16,9 @@
   justify-content: space-between;
   gap: 6px;
   padding: calc(6px + var(--cf-safe-top)) 10px 6px;
-  background: linear-gradient(180deg, #4b7ee3 0%, #2d59ba 100%);
+  background: linear-gradient(180deg, #3e6fd4 0%, #24499e 58%, #1a377d 100%);
   border-bottom: 3px solid var(--cf-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 250, 240, 0.32), inset 0 -2px 0 #ffd98a, 0 4px 10px rgba(20, 38, 88, 0.28);
   color: #fffaf0;
 }
 
@@ -164,8 +165,8 @@
   padding: 5px 10px;
   border-radius: 12px;
   border: 2.5px solid var(--cf-ink);
-  background: rgba(255, 246, 224, 0.94);
-  box-shadow: 0 3px 0 rgba(74, 46, 26, 0.28);
+  background: linear-gradient(180deg, rgba(255, 252, 240, 0.96) 0%, rgba(246, 232, 194, 0.96) 100%);
+  box-shadow: inset 0 1.5px 0 #ffffff, 0 3px 0 rgba(74, 46, 26, 0.32);
   font-size: 12px;
   font-weight: 900;
 }
@@ -181,13 +182,15 @@
 
 .hpBarFillMe {
   height: 100%;
-  background: linear-gradient(90deg, #4da3e8 0%, #63d471 100%);
+  background: linear-gradient(180deg, #7be687 0%, #4da3e8 100%);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.55);
   transition: width 240ms ease;
 }
 
 .hpBarFillOpp {
   height: 100%;
-  background: linear-gradient(90deg, #f5923e 0%, #de4f46 100%);
+  background: linear-gradient(180deg, #ffab5e 0%, #de4f46 100%);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.45);
   transition: width 240ms ease;
 }
 
@@ -225,9 +228,9 @@
   min-width: 0;
   max-width: 100%;
   padding: 6px 10px calc(8px + var(--cf-safe-bottom));
-  background: linear-gradient(180deg, #6b4222 0%, #4a2e1a 100%);
+  background: linear-gradient(180deg, #754925 0%, #4a2e1a 60%, #3a2212 100%);
   border-top: 3px solid var(--cf-ink);
-  box-shadow: inset 0 2px 0 #c9955a;
+  box-shadow: inset 0 2px 0 #e6b875, inset 0 4px 0 rgba(255, 250, 240, 0.14);
   display: flex;
   flex-direction: column;
   gap: 6px;

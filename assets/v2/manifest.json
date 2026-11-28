@@ -195,7 +195,11 @@
     "renders/chest-open-08.webp",
     "renders/chest-open-09.webp",
     "renders/chest-open-10.webp",
-    "renders/chest-open-11.webp"
+    "renders/chest-open-11.webp",
+    "renders/bg-gacha-vault.webp",
+    "renders/bg-shop-stall.webp",
+    "renders/bg-deck-table.webp",
+    "renders/bg-menu-hall.webp"
   ],
   "cards": [
     "cards/card-fac-king-chain-sword.webp",

@@ -117,7 +117,21 @@ export function GachaScreen() {
       <div className={styles.headerRow}>
         <div>
           <h1 className={styles.title}>王国の宝箱</h1>
-          <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--cf-ink-muted)' }} className="tabular">
+          <div
+            style={{
+              display: 'inline-block',
+              marginTop: 3,
+              padding: '2px 10px',
+              borderRadius: 999,
+              background: 'rgba(255, 248, 228, 0.94)',
+              border: '1.5px solid #4a2e1a',
+              boxShadow: '0 2px 0 rgba(74, 46, 26, 0.25)',
+              fontSize: 12,
+              fontWeight: 900,
+              color: 'var(--cf-ink)',
+            }}
+            className="tabular"
+          >
             コイン {coins.toLocaleString()} ・ 交換pt {points.toLocaleString()}
             {walletMode === 'server' ? '（サーバー）' : ''}
           </div>
