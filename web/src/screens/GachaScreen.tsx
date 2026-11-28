@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
 import { getSkinFilter, getSkinPreviewImage } from '../engine/skinUtils';
-import { GachaChestScene } from '../scene3d/GachaChestScene';
+import { GachaChestView } from '../scene3d/GachaChestView';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
 import { ParchmentSheet, RibbonBanner } from '../components/ui/Surfaces';
@@ -52,7 +52,7 @@ export function GachaScreen() {
       </div>
 
       <div className={styles.stageBox}>
-        <GachaChestScene opening={opening} quality={quality} />
+        <GachaChestView opening={opening} quality={quality} />
       </div>
 
       <div className={styles.pityBox}>

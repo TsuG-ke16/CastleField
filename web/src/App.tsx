@@ -3,7 +3,7 @@ import { computePlayerProgression, useAppStore } from './stores/useAppStore';
 import { cardTypeToImagePath } from './engine/dataLoader';
 import { soundManager } from './audio/soundManager';
 import { TopBar, BottomNav } from './components/nav/NavChrome';
-import { HomeDioramaScene } from './scene3d/HomeDioramaScene';
+import { HomeBackdrop } from './scene3d/HomeBackdrop';
 import { HomeScreen } from './screens/HomeScreen';
 import { PaintedIcon } from './components/ui/PaintedIcon';
 import { ParchmentSheet } from './components/ui/Surfaces';
@@ -164,7 +164,7 @@ export function App() {
       <TopBar onOpenNotice={() => setNoticeOpen(true)} onOpenProfile={() => setProfileOpen(true)} />
 
       <main style={{ position: 'relative', flex: 1, minHeight: 0, overflow: 'hidden' }}>
-        {tab === 'battle' && <HomeDioramaScene tab={tab} mode={mode} quality={quality} />}
+        {tab === 'battle' && <HomeBackdrop tab={tab} mode={mode} quality={quality} />}
 
         {tab === 'battle' && invitedRoom && (
           <div
