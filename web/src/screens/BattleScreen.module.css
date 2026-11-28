@@ -382,6 +382,35 @@
   cursor: pointer;
 }
 
+.turnBanner {
+  position: absolute;
+  top: 46%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 38;
+  padding: 7px 20px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.turnBannerMe {
+  background: linear-gradient(180deg, #ffe98a 0%, #f5b726 100%);
+  color: #4a2e1a;
+  border: 2.5px solid #4a2e1a;
+  box-shadow: inset 0 2px 0 #ffffff, 0 6px 18px rgba(74, 46, 26, 0.38);
+}
+
+.turnBannerOpp {
+  background: linear-gradient(180deg, #3b68cc 0%, #203f8c 100%);
+  color: #fffaf0;
+  border: 2.5px solid #ffd98a;
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(20, 38, 88, 0.45);
+}
+
 .cutInBanner {
   position: absolute;
   top: 42%;

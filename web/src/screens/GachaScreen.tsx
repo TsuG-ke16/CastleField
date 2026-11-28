@@ -236,16 +236,18 @@ export function GachaScreen() {
                       transition={{ delay: i * 0.05, type: 'spring', stiffness: 360, damping: 24 }}
                       className={`${styles.rewardTile} ${rarityCls}`}
                     >
-                      <img
-                        src={iconFrameImage(r.id) ?? getSkinPreviewImage(shopMap[r.id]?.slot || r.id)}
-                        alt={r.name}
-                        style={{
-                          width: 42,
-                          height: 42,
-                          objectFit: 'contain',
-                          filter: getSkinFilter(data, r.id, 'blue'),
-                        }}
-                      />
+                      <div className={styles.rewardPreviewWell}>
+                        <img
+                          src={iconFrameImage(r.id) ?? getSkinPreviewImage(shopMap[r.id]?.slot || r.id)}
+                          alt={r.name}
+                          style={{
+                            width: 42,
+                            height: 42,
+                            objectFit: 'contain',
+                            filter: getSkinFilter(data, r.id, 'blue'),
+                          }}
+                        />
+                      </div>
                       <span>{r.name}</span>
                       <span style={{ fontSize: 10, opacity: 0.75 }}>{RARITY_LABEL[r.rarity] || r.rarity.toUpperCase()}</span>
                       <span style={{ fontSize: 10, color: r.isNew ? '#de4f46' : '#7a5638' }}>

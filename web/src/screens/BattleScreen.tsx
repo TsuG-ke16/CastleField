@@ -154,6 +154,8 @@ export function BattleScreen() {
   const [mulliganSelected, setMulliganSelected] = useState<string[]>([]);
   const [cutIn, setCutIn] = useState<{ id: number; name: string; typeKey: string; rarity: string } | null>(null);
   const [dicePop, setDicePop] = useState<{ id: number; text: string } | null>(null);
+  const [turnBanner, setTurnBanner] = useState<{ id: number; mine: boolean; text: string } | null>(null);
+  const prevTurnKeyRef = useRef<string | null>(null);
   const [battleLog, setBattleLog] = useState<string[]>([]);
   const reducedRef = useRef(reducedMotion);
   reducedRef.current = reducedMotion;
@@ -317,13 +319,24 @@ export function BattleScreen() {
           fxRef.current?.burst('clash');
         } else if (ev.type === 'spellCast') {
           const stName = String(ev.spellType || '').toLowerCase();
-          const isThunder = stName.includes('thunder') || stName.includes('bolt') || stName.includes('frost') || stName.includes('ice');
-          soundManager.play(isThunder ? 'thunder' : 'spell');
-          fxRef.current?.burst(isThunder ? 'thunder' : 'fire');
+          const fxKind =
+            stName.includes('thunder') || stName.includes('bolt') || stName.includes('lightning')
+              ? 'thunder'
+              : stName.includes('water') || stName.includes('aqua') || stName.includes('ice') || stName.includes('frost') || stName.includes('spring') || stName.includes('wave')
+                ? 'water'
+                : stName.includes('wind') || stName.includes('gale') || stName.includes('leaf') || stName.includes('storm')
+                  ? 'wind'
+                  : stName.includes('earth') || stName.includes('quake') || stName.includes('rock') || stName.includes('root') || stName.includes('meteor') || stName.includes('hammer')
+                    ? 'earth'
+                    : 'fire';
+          soundManager.play(fxKind === 'thunder' ? 'thunder' : 'spell');
+          fxRef.current?.burst(fxKind);
         } else if (ev.type === 'spellReflected') {
           soundManager.play('shield');
+          fxRef.current?.burst('shield');
         } else if (ev.type === 'cardsFused') {
           soundManager.play('fuse');
+          fxRef.current?.burst('fuse');
         } else if (ev.type === 'castleHealed') {
           soundManager.play('heal');
           fxRef.current?.burst('heal');
@@ -461,6 +474,18 @@ export function BattleScreen() {
 
   viewerSideRef.current = activeSide;
   const oppSide: 'p1' | 'p2' = activeSide === 'p1' ? 'p2' : 'p1';
+
+  useEffect(() => {
+    if (!gameState || gameState.phase !== 'main') return;
+    const turnKey = `${gameState.turn}:${gameState.currentPlayer}`;
+    if (prevTurnKeyRef.current === turnKey) return;
+    prevTurnKeyRef.current = turnKey;
+    const mine = gameState.currentPlayer === activeSide;
+    const bid = ++popCounterRef.current;
+    setTurnBanner({ id: bid, mine, text: mine ? '⚔ あなたのターン' : '🛡 相手のターン' });
+    const t = window.setTimeout(() => setTurnBanner((cur) => (cur?.id === bid ? null : cur)), 780);
+    return () => window.clearTimeout(t);
+  }, [gameState?.turn, gameState?.currentPlayer, gameState?.phase, activeSide]);
 
   // Automatic CPU turn driver only when playMode === 'cpu'
   useEffect(() => {
@@ -1062,6 +1087,21 @@ export function BattleScreen() {
               className={styles.damagePop}
             >
               {damagePop.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {turnBanner && (
+            <motion.div
+              key={turnBanner.id}
+              initial={reducedMotion ? { opacity: 1, x: '-50%', y: '-50%' } : { scale: 0.8, x: '-50%', y: '-42%', opacity: 0 }}
+              animate={{ scale: 1, x: '-50%', y: '-50%', opacity: 1 }}
+              exit={reducedMotion ? { opacity: 0, x: '-50%', y: '-50%' } : { scale: 0.94, x: '-50%', y: '-56%', opacity: 0 }}
+              transition={{ duration: reducedMotion ? 0.01 : 0.2 }}
+              className={`${styles.turnBanner} ${turnBanner.mine ? styles.turnBannerMe : styles.turnBannerOpp}`}
+            >
+              {turnBanner.text}
             </motion.div>
           )}
         </AnimatePresence>

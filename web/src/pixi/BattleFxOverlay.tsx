@@ -1,7 +1,18 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef } from 'react';
 import { Application, Graphics } from 'pixi.js';
 
-export type FxKind = 'fire' | 'thunder' | 'heal' | 'deploy' | 'clash' | 'victory';
+export type FxKind =
+  | 'fire'
+  | 'thunder'
+  | 'water'
+  | 'wind'
+  | 'earth'
+  | 'shield'
+  | 'fuse'
+  | 'heal'
+  | 'deploy'
+  | 'clash'
+  | 'victory';
 
 export interface BattleFxHandle {
   burst: (kind: FxKind) => void;
@@ -59,7 +70,8 @@ export const BattleFxOverlay = forwardRef<BattleFxHandle, BattleFxOverlayProps>(
         const list = particlesRef.current;
 
         if (kind === 'fire') {
-          ringsRef.current.push({ x: cx, y: h * 0.25, r: 8, maxR: 72, life: 0.42, maxLife: 0.42, color: 0xff7b29 });
+          ringsRef.current.push({ x: cx, y: h * 0.25, r: 8, maxR: 78, life: 0.44, maxLife: 0.44, color: 0xff7b29 });
+          ringsRef.current.push({ x: cx, y: h * 0.25, r: 4, maxR: 48, life: 0.34, maxLife: 0.34, color: 0xffe066 });
           for (let i = 0; i < count; i++) {
             const ang = (Math.PI * 2 * i) / count + Math.random() * 0.3;
             const spd = 70 + Math.random() * 140;
@@ -76,7 +88,8 @@ export const BattleFxOverlay = forwardRef<BattleFxHandle, BattleFxOverlayProps>(
             });
           }
         } else if (kind === 'thunder') {
-          ringsRef.current.push({ x: cx, y: cy, r: 10, maxR: 86, life: 0.35, maxLife: 0.35, color: 0x70e4ff });
+          ringsRef.current.push({ x: cx, y: cy, r: 10, maxR: 92, life: 0.36, maxLife: 0.36, color: 0x70e4ff });
+          ringsRef.current.push({ x: cx, y: cy, r: 6, maxR: 54, life: 0.26, maxLife: 0.26, color: 0xfff07a });
           for (let i = 0; i < count; i++) {
             const ang = Math.random() * Math.PI * 2;
             const spd = 120 + Math.random() * 190;
@@ -90,6 +103,94 @@ export const BattleFxOverlay = forwardRef<BattleFxHandle, BattleFxOverlayProps>(
               size: 2.5 + Math.random() * 3,
               color: i % 2 === 0 ? 0x8ef3ff : 0xfff07a,
               kind: 'streak',
+            });
+          }
+        } else if (kind === 'water') {
+          ringsRef.current.push({ x: cx, y: cy, r: 8, maxR: 78, life: 0.46, maxLife: 0.46, color: 0x44d1ff });
+          ringsRef.current.push({ x: cx, y: cy, r: 4, maxR: 46, life: 0.32, maxLife: 0.32, color: 0xffffff });
+          for (let i = 0; i < count; i++) {
+            const ang = (Math.PI * 2 * i) / count + Math.random() * 0.25;
+            const spd = 65 + Math.random() * 115;
+            list.push({
+              x: cx,
+              y: cy,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd - 20,
+              life: 0.5 + Math.random() * 0.25,
+              maxLife: 0.75,
+              size: 3.5 + Math.random() * 4,
+              color: i % 3 === 0 ? 0xffffff : i % 2 === 0 ? 0x7ee8ff : 0x3ba8f5,
+              kind: 'circle',
+            });
+          }
+        } else if (kind === 'wind') {
+          ringsRef.current.push({ x: cx, y: cy, r: 10, maxR: 84, life: 0.4, maxLife: 0.4, color: 0x6ce8a0 });
+          for (let i = 0; i < count; i++) {
+            const ang = -Math.PI * 0.35 + (Math.random() - 0.5) * 0.9;
+            const spd = 135 + Math.random() * 145;
+            list.push({
+              x: cx + (Math.random() - 0.5) * 100,
+              y: cy + (Math.random() - 0.5) * 60,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd,
+              life: 0.36 + Math.random() * 0.2,
+              maxLife: 0.56,
+              size: 2.5 + Math.random() * 2.5,
+              color: i % 2 === 0 ? 0x9ff5c4 : 0xe3fff0,
+              kind: 'streak',
+            });
+          }
+        } else if (kind === 'earth') {
+          ringsRef.current.push({ x: cx, y: cy, r: 10, maxR: 74, life: 0.42, maxLife: 0.42, color: 0xd48b3b });
+          for (let i = 0; i < count; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = 55 + Math.random() * 105;
+            list.push({
+              x: cx + (Math.random() - 0.5) * 50,
+              y: cy + (Math.random() - 0.5) * 30,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd - 15,
+              life: 0.48 + Math.random() * 0.22,
+              maxLife: 0.7,
+              size: 4 + Math.random() * 4.5,
+              color: i % 3 === 0 ? 0xf2c56b : i % 2 === 0 ? 0xc97a2e : 0x8c5628,
+              kind: 'confetti',
+            });
+          }
+        } else if (kind === 'shield') {
+          ringsRef.current.push({ x: cx, y: h * 0.68, r: 12, maxR: 76, life: 0.44, maxLife: 0.44, color: 0x5da4ff });
+          ringsRef.current.push({ x: cx, y: h * 0.68, r: 8, maxR: 54, life: 0.36, maxLife: 0.36, color: 0xffe37a });
+          for (let i = 0; i < count; i++) {
+            const ang = (Math.PI * 2 * i) / count;
+            const spd = 75 + Math.random() * 90;
+            list.push({
+              x: cx,
+              y: h * 0.68,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd,
+              life: 0.38 + Math.random() * 0.18,
+              maxLife: 0.56,
+              size: 2.5 + Math.random() * 2.5,
+              color: i % 2 === 0 ? 0xffe885 : 0x8ac4ff,
+              kind: 'streak',
+            });
+          }
+        } else if (kind === 'fuse') {
+          ringsRef.current.push({ x: cx, y: h * 0.62, r: 8, maxR: 82, life: 0.52, maxLife: 0.52, color: 0xc77dff });
+          ringsRef.current.push({ x: cx, y: h * 0.62, r: 6, maxR: 52, life: 0.42, maxLife: 0.42, color: 0xffd24c });
+          for (let i = 0; i < count; i++) {
+            const ang = (Math.PI * 2 * i) / count + Math.random() * 0.2;
+            const spd = 60 + Math.random() * 110;
+            list.push({
+              x: cx,
+              y: h * 0.62,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd - 24,
+              life: 0.54 + Math.random() * 0.24,
+              maxLife: 0.78,
+              size: 3.5 + Math.random() * 4,
+              color: i % 3 === 0 ? 0xffffff : i % 2 === 0 ? 0xffe37a : 0xd69eff,
+              kind: 'circle',
             });
           }
         } else if (kind === 'heal') {

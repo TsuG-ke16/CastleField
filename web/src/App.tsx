@@ -296,7 +296,18 @@ export function App() {
 
       {profileOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(28,17,8,0.58)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 60,
+            background: 'rgba(28,17,8,0.58)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
           onClick={() => setProfileOpen(false)}
         >
           <div style={{ width: '100%', maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
@@ -308,7 +319,18 @@ export function App() {
                 </RoundButton>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fbf3dc', padding: 10, borderRadius: 12, border: '1.5px solid #d4bc7d' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  background: 'linear-gradient(180deg, #fffdf6 0%, #f7e9c8 100%)',
+                  padding: 10,
+                  borderRadius: 12,
+                  border: '1.5px solid #c9a25e',
+                  boxShadow: 'inset 0 1.5px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.16)',
+                }}
+              >
                 <span style={{ padding: selectedIconFrame ? 12 : 0 }}>
                   <FramedAvatar
                     cardType={avatarCardType}
@@ -320,8 +342,8 @@ export function App() {
                 <div style={{ flex: 1, fontSize: 12, fontWeight: 900 }}>
                   <div style={{ fontSize: 15 }}>Lv.{prog.level} {prog.title}</div>
                   <div>総XP: {prog.xp} ・ 勝率 {winRate}% ({stats.wins}/{stats.matchesPlayed})</div>
-                  <div style={{ marginTop: 4, height: 8, borderRadius: 999, background: '#dfca9f', border: '1.5px solid #4a2e1a', overflow: 'hidden' }}>
-                    <div style={{ width: `${prog.currentLevelXp}%`, height: '100%', background: '#3465cc' }} />
+                  <div style={{ marginTop: 4, height: 8, borderRadius: 999, background: '#dfca9f', border: '1.5px solid #4a2e1a', boxShadow: 'inset 0 1px 2px rgba(74, 46, 26, 0.22)', overflow: 'hidden' }}>
+                    <div style={{ width: `${prog.currentLevelXp}%`, height: '100%', background: 'linear-gradient(90deg, #5b8ef2 0%, #3465cc 100%)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.55)' }} />
                   </div>
                 </div>
               </div>
@@ -414,13 +436,25 @@ export function App() {
 
       {noticeOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 60, background: 'rgba(28,17,8,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 60,
+            background: 'rgba(28,17,8,0.55)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 16,
+          }}
           onClick={() => setNoticeOpen(false)}
         >
           <div style={{ width: '100%', maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
             <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: '80dvh', overflowY: 'auto' }}>
               <strong style={{ fontSize: 17 }}>王国のお知らせ（v2 更新情報）</strong>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: 12, fontWeight: 700, lineHeight: 1.65, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <li>手描きの専用背景イラスト・王宮紋章エンブレム・SR/URカード光沢＆属性バトル演出を追加！</li>
                 <li>2D省エネモード &amp; 3Dジオラマ描画を対戦メニューからいつでも切替できます。</li>
                 <li>マイデッキ4枠（コピー・名前変更・採用中絞り込み・レアリティ分布グラフ）に対応。</li>
                 <li>バトル終了後に自動記録される対戦履歴（直近12戦・ログ展開）＆リザルト XP/ログ確認。</li>
