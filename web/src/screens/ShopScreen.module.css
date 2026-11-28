@@ -72,6 +72,17 @@
   font-weight: 700;
 }
 
+.sortSelect {
+  min-height: 40px;
+  padding: 4px 10px;
+  border-radius: 10px;
+  border: 2px solid var(--cf-ink);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--cf-ink);
+}
+
 .grid {
   flex: 1;
   min-height: 0;
@@ -102,6 +113,27 @@
   border-radius: 999px;
   background: #3465cc;
   color: #fffaf0;
+}
+
+.rarity-common {
+  background: #6b7280;
+}
+
+.rarity-uncommon {
+  background: #2e8b57;
+}
+
+.rarity-rare {
+  background: #3465cc;
+}
+
+.rarity-epic {
+  background: #8e44ad;
+}
+
+.rarity-legendary {
+  background: linear-gradient(180deg, #f5b726 0%, #c97a08 100%);
+  color: #3a1f09;
 }
 
 .itemName {

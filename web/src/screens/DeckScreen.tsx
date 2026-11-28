@@ -43,6 +43,7 @@ export function DeckScreen() {
   const [subMode, setSubMode] = useState<'deck' | 'catalog'>('deck');
   const [kindFilter, setKindFilter] = useState('all');
   const [rarityFilter, setRarityFilter] = useState('all');
+  const [inDeckOnly, setInDeckOnly] = useState(false);
   const [query, setQuery] = useState('');
   const [inspectType, setInspectType] = useState<string | null>(null);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 50, active: false });
@@ -103,6 +104,11 @@ export function DeckScreen() {
       return true;
     });
   }, [cards, kindFilter, rarityFilter, query]);
+
+  const deckEditorCards = useMemo(() => {
+    if (!inDeckOnly) return filteredCatalog;
+    return filteredCatalog.filter(([key]) => (customDeck[key] ?? 0) > 0);
+  }, [filteredCatalog, inDeckOnly, customDeck]);
 
   const fusionChain = useMemo(() => {
     if (!inspectType || !cards[inspectType]) return [];
@@ -296,6 +302,16 @@ export function DeckScreen() {
                   </GameButton>
                 )}
               </div>
+              {isCustom && stats.totalCost > 100 && (
+                <div style={{ fontSize: 11, fontWeight: 900, color: '#a82a24', background: '#fde8e8', border: '1.5px solid #de4f46', borderRadius: 8, padding: '4px 8px' }}>
+                  コスト上限(100)を超えています（現在 {stats.totalCost}）。カードを減らしてください。
+                </div>
+              )}
+              {isCustom && stats.total === 0 && (
+                <div style={{ fontSize: 11, fontWeight: 900, color: '#8a562d', background: '#fff3cd', border: '1.5px solid #d4a64a', borderRadius: 8, padding: '4px 8px' }}>
+                  カードが0枚です。1枚以上追加してください。
+                </div>
+              )}
             </ParchmentSheet>
 
             {isCustom ? (
@@ -319,9 +335,31 @@ export function DeckScreen() {
                     </button>
                   ))}
                 </div>
+                <div className={styles.filterRow}>
+                  <button
+                    type="button"
+                    className={`${styles.chip} ${inDeckOnly ? styles.chipActive : ''}`}
+                    onClick={() => setInDeckOnly((v) => !v)}
+                  >
+                    採用中のみ ({stats.entries.length}種)
+                  </button>
+                  {RARITY_FILTERS.map((r) => (
+                    <button
+                      key={r.id}
+                      type="button"
+                      className={`${styles.chip} ${rarityFilter === r.id ? styles.chipActive : ''}`}
+                      onClick={() => setRarityFilter(r.id)}
+                    >
+                      {r.label}
+                    </button>
+                  ))}
+                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 900 }} className="tabular">
+                    {deckEditorCards.length} 件
+                  </span>
+                </div>
 
                 <div className={styles.cardsCol}>
-                  {filteredCatalog.map(([typeKey, def]) => {
+                  {deckEditorCards.map(([typeKey, def]) => {
                     const cnt = customDeck[typeKey] ?? 0;
                     return (
                       <div key={typeKey} className={styles.cardTile}>
@@ -529,14 +567,24 @@ export function DeckScreen() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {(customDeck[inspectType] ?? 0) > 0 && (
+                  <GameButton
+                    size="sm"
+                    variant="normal-stone"
+                    onClick={() => updateCustomDeckCard(inspectType, -1)}
+                  >
+                    -1
+                  </GameButton>
+                )}
                 <GameButton
                   size="sm"
                   variant="normal-stone"
-                  style={{ flex: 1 }}
+                  style={{ flex: '1 1 160px', minWidth: 0 }}
+                  disabled={(customDeck[inspectType] ?? 0) >= 6}
                   onClick={() => updateCustomDeckCard(inspectType, 1)}
                 >
-                  オリジナルに追加 ({customDeck[inspectType] ?? 0}枚)
+                  ★ {activeCustomName} に追加 ({customDeck[inspectType] ?? 0}枚)
                 </GameButton>
                 <GameButton size="sm" variant="primary-gold" onClick={() => setInspectType(null)}>
                   閉じる

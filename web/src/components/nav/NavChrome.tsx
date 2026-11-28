@@ -1,4 +1,4 @@
-import { computePlayerProgression, useAppStore } from '../../stores/useAppStore';
+import { computePlayerProgression, countClaimableMissions, useAppStore } from '../../stores/useAppStore';
 import { FramedAvatar } from '../ui/FramedAvatar';
 import type { AppTab } from '../../engine/types';
 import { PaintedIcon, type PaintedIconName } from '../ui/PaintedIcon';
@@ -60,12 +60,14 @@ export function TopBar({
 }
 
 export function BottomNav() {
-  const { tab, setTab } = useAppStore();
+  const { tab, setTab, data, stats, ownedSkins, unlockedSkills, claimedMissions } = useAppStore();
+  const claimableMissions = countClaimableMissions(data, stats, ownedSkins, unlockedSkills, claimedMissions);
 
   return (
     <nav className={styles.bottomDock} aria-label="メインナビゲーション">
       {NAV_ITEMS.map((item) => {
         const active = tab === item.id;
+        const badgeCount = item.id === 'menu' ? claimableMissions : 0;
         return (
           <button
             key={item.id}
@@ -76,6 +78,11 @@ export function BottomNav() {
           >
             <PaintedIcon name={item.icon} size={24} />
             <span>{item.label}</span>
+            {badgeCount > 0 && (
+              <span className={styles.badge} aria-label={`受取可能な報酬 ${badgeCount}件`}>
+                {badgeCount}
+              </span>
+            )}
           </button>
         );
       })}

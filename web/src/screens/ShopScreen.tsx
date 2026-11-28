@@ -16,6 +16,16 @@ const CATEGORIES = [
   { id: 'iconFrame', label: 'フレーム' },
 ];
 
+const RARITY_META: Record<string, { label: string; rank: number }> = {
+  common: { label: 'コモン', rank: 1 },
+  uncommon: { label: 'アンコモン', rank: 2 },
+  rare: { label: 'レア', rank: 3 },
+  epic: { label: 'エピック', rank: 4 },
+  legendary: { label: 'レジェンド', rank: 5 },
+};
+
+type ShopSortMode = 'default' | 'priceAsc' | 'priceDesc' | 'rarityDesc';
+
 export function ShopScreen() {
   const {
     data,
@@ -34,6 +44,7 @@ export function ShopScreen() {
   const [showFilter, setShowFilter] = useState(false);
   const [query, setQuery] = useState('');
   const [affordableOnly, setAffordableOnly] = useState(false);
+  const [sortBy, setSortBy] = useState<ShopSortMode>('default');
 
   const items = useMemo(() => {
     const raw = data?.shop;
@@ -42,7 +53,7 @@ export function ShopScreen() {
       : Array.isArray(raw?.items)
         ? raw.items
         : Object.entries(raw?.items || {}).map(([id, v]) => ({ id, ...v }));
-    return list.filter((it) => {
+    const filtered = list.filter((it) => {
       const cat = String(it.slot || it.category || '');
       if (category !== 'all' && cat !== category && !String(it.id || '').includes(category)) {
         return false;
@@ -54,7 +65,19 @@ export function ShopScreen() {
       if (affordableOnly && (it.price === null || (usePoints ? points < price : coins < price))) return false;
       return true;
     });
-  }, [data, category, query, affordableOnly, usePoints, coins, points]);
+    if (sortBy === 'default') return filtered;
+    const itemPrice = (it: (typeof list)[number], fallback: number): number => {
+      if (it.price === null) return fallback;
+      return usePoints ? (it.pointCost ?? 150) : (it.price ?? 300);
+    };
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'priceAsc') return itemPrice(a, Number.MAX_SAFE_INTEGER) - itemPrice(b, Number.MAX_SAFE_INTEGER);
+      if (sortBy === 'priceDesc') return itemPrice(b, -1) - itemPrice(a, -1);
+      const ra = RARITY_META[String(a.rarity || 'common').toLowerCase()]?.rank ?? 0;
+      const rb = RARITY_META[String(b.rarity || 'common').toLowerCase()]?.rank ?? 0;
+      return rb - ra;
+    });
+  }, [data, category, query, affordableOnly, usePoints, coins, points, sortBy]);
 
   return (
     <section className={styles.page} aria-label="王国ショップ">
@@ -94,6 +117,17 @@ export function ShopScreen() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          <select
+            aria-label="並び替え"
+            className={styles.sortSelect}
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as ShopSortMode)}
+          >
+            <option value="default">おすすめ順</option>
+            <option value="priceAsc">価格が安い順</option>
+            <option value="priceDesc">価格が高い順</option>
+            <option value="rarityDesc">レア度が高い順</option>
+          </select>
           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800 }}>
             <input
               type="checkbox"
@@ -102,6 +136,9 @@ export function ShopScreen() {
             />
             いま買えるものだけ
           </label>
+          <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 900, alignSelf: 'center', color: 'var(--cf-ink-muted)' }} className="tabular">
+            表示 {items.length}件 ・ 所持 {ownedSkins.length}件
+          </span>
         </div>
       )}
 
@@ -119,34 +156,58 @@ export function ShopScreen() {
       </div>
 
       <div className={styles.grid}>
-        {items.map((item) => {
-          const owned = ownedSkins.includes(item.id);
-          const price = usePoints ? (item.pointCost ?? 150) : (item.price ?? 300);
-          // price が null の品は売り物でない（以前は 300 で買えてしまった）
-          const notForSale = item.price === null;
-          const canBuy = !owned && !notForSale && (usePoints ? points >= price : coins >= price);
-          const slot = String(item.slot || item.category || item.id);
-          const previewImg = iconFrameImage(item.id) ?? getSkinPreviewImage(slot);
-          const filterCss = item.filters?.blue;
-          const equipKind =
-            slot === 'iconFrame'
-              ? 'frame'
-              : slot === 'castle' || item.id.startsWith('castle')
-              ? 'castle'
-              : slot === 'cardBack' || item.id.includes('back')
-                ? 'back'
-                : slot === 'unit' || item.id.startsWith('unit')
-                  ? 'soldier'
-                  : null;
-          const isEquipped =
-            selectedCastleSkin === item.id ||
-            selectedSoldierSkin === item.id ||
-            selectedBackSkin === item.id ||
-            selectedIconFrame === item.id;
+        {items.length === 0 ? (
+          <div
+            className={styles.itemCard}
+            style={{ gridColumn: '1 / -1', padding: 20, gap: 10 }}
+          >
+            <strong style={{ fontSize: 14 }}>条件に合うアイテムがありません</strong>
+            <GameButton
+              size="sm"
+              variant="primary-gold"
+              onClick={() => {
+                setCategory('all');
+                setQuery('');
+                setAffordableOnly(false);
+                setSortBy('default');
+              }}
+            >
+              絞り込みをリセット
+            </GameButton>
+          </div>
+        ) : (
+          items.map((item) => {
+            const owned = ownedSkins.includes(item.id);
+            const price = usePoints ? (item.pointCost ?? 150) : (item.price ?? 300);
+            // price が null の品は売り物でない（以前は 300 で買えてしまった）
+            const notForSale = item.price === null;
+            const canBuy = !owned && !notForSale && (usePoints ? points >= price : coins >= price);
+            const slot = String(item.slot || item.category || item.id);
+            const previewImg = iconFrameImage(item.id) ?? getSkinPreviewImage(slot);
+            const filterCss = item.filters?.blue;
+            const rk = String(item.rarity || 'common').toLowerCase();
+            const rarityInfo = RARITY_META[rk];
+            const equipKind =
+              slot === 'iconFrame'
+                ? 'frame'
+                : slot === 'castle' || item.id.startsWith('castle')
+                ? 'castle'
+                : slot === 'cardBack' || item.id.includes('back')
+                  ? 'back'
+                  : slot === 'unit' || item.id.startsWith('unit')
+                    ? 'soldier'
+                    : null;
+            const isEquipped =
+              selectedCastleSkin === item.id ||
+              selectedSoldierSkin === item.id ||
+              selectedBackSkin === item.id ||
+              selectedIconFrame === item.id;
 
-          return (
-            <div key={item.id} className={styles.itemCard}>
-              <span className={styles.rarityTag}>{item.rarity || 'common'}</span>
+            return (
+              <div key={item.id} className={styles.itemCard}>
+                <span className={`${styles.rarityTag} ${styles[`rarity-${rk}`] || ''}`}>
+                  {rarityInfo?.label || rk}
+                </span>
               <img
                 src={previewImg}
                 alt={item.name}
@@ -195,7 +256,7 @@ export function ShopScreen() {
               )}
             </div>
           );
-        })}
+        }))}
       </div>
     </section>
   );

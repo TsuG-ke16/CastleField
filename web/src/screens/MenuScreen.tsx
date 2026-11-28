@@ -1,11 +1,27 @@
 import { useState } from 'react';
-import { useAppStore } from '../stores/useAppStore';
+import { countClaimableMissions, useAppStore } from '../stores/useAppStore';
 import { runRustWasmBenchmark, type RustBenchmarkResult } from '../engine/wasmAdapter';
-import { getSkinFilter, getSkinPreviewImage } from '../engine/skinUtils';
+import { getShopItemMap, getSkinFilter, getSkinPreviewImage } from '../engine/skinUtils';
 import { GameButton } from '../components/ui/GameButton';
 import { PaintedIcon, type PaintedIconName } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
+import { iconFrameImage } from '../components/ui/FramedAvatar';
 import { transferApi } from '../engine/rankedClient';
+
+const SKIN_FILTER_TABS: Array<{ id: 'all' | 'castle' | 'soldier' | 'back' | 'frame'; label: string }> = [
+  { id: 'all', label: 'すべて' },
+  { id: 'castle', label: '城' },
+  { id: 'soldier', label: '兵士' },
+  { id: 'back', label: 'カード裏面' },
+  { id: 'frame', label: 'フレーム' },
+];
+
+const SKIN_SLOT_LABEL: Record<'castle' | 'soldier' | 'back' | 'frame', string> = {
+  castle: '城',
+  soldier: '兵士',
+  back: '裏面',
+  frame: 'フレーム',
+};
 
 export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void }) {
   const {
@@ -32,8 +48,11 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     ownedSkins,
     selectedCastleSkin,
     selectedSoldierSkin,
+    selectedBackSkin,
+    selectedIconFrame,
     unlockedSkills,
     equipSkin,
+    setTab,
     walletMode,
     enableServerWallet,
     disableServerWallet,
@@ -46,11 +65,30 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
   const [codeInput, setCodeInput] = useState('');
   const [transferNote, setTransferNote] = useState<string | null>(null);
   const [subPage, setSubPage] = useState<'main' | 'skins' | 'missions' | 'history' | 'guide'>('main');
+  const [skinFilter, setSkinFilter] = useState<'all' | 'castle' | 'soldier' | 'back' | 'frame'>('all');
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [tutorialResetNote, setTutorialResetNote] = useState(false);
   const [benchBusy, setBenchBusy] = useState(false);
   const [benchResult, setBenchResult] = useState<RustBenchmarkResult | null>(null);
   const [benchError, setBenchError] = useState<string | null>(null);
+
+  const shopMap = getShopItemMap(data);
+  const claimableMissions = countClaimableMissions(data, stats, ownedSkins, unlockedSkills, claimedMissions);
+
+  const skinDisplayName = (sid: string): string => {
+    if (sid === 'castle-blue' || sid === 'castle_default') return '標準の城';
+    if (sid === 'infantry-blue' || sid === 'soldier_default') return '標準の兵士';
+    if (sid === 'card-back' || sid === 'back_default') return '標準裏面';
+    return shopMap[sid]?.name || sid;
+  };
+
+  const classifySkin = (sid: string): 'castle' | 'soldier' | 'back' | 'frame' => {
+    const slot = shopMap[sid]?.slot;
+    if (iconFrameImage(sid) !== null || slot === 'iconFrame' || sid.startsWith('frame_')) return 'frame';
+    if (slot === 'castle' || sid.includes('castle')) return 'castle';
+    if (slot === 'cardBack' || sid.includes('back') || sid.includes('Back')) return 'back';
+    return 'soldier';
+  };
 
   const handleRunBench = async () => {
     if (!data || benchBusy) return;
@@ -67,6 +105,8 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
   };
 
   if (subPage === 'skins') {
+    const filteredSkins = ownedSkins.filter((sid) => skinFilter === 'all' || classifySkin(sid) === skinFilter);
+
     return (
       <section
         style={{
@@ -82,17 +122,17 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           gap: 12,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <GameButton size="sm" variant="normal-stone" onClick={() => setSubPage('main')}>
             ← メニュー
           </GameButton>
           <h1 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>スキン装備</h1>
         </div>
 
-        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10, flexShrink: 0 }}>
           <strong style={{ fontSize: 15 }}>現在の装備</strong>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, textAlign: 'center', fontSize: 12, fontWeight: 800 }}>
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <img
                 src="/assets/castles/castle-blue.png"
                 alt="城"
@@ -100,13 +140,21 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                   width: 72,
                   height: 72,
                   objectFit: 'contain',
-                  margin: '0 auto',
                   filter: getSkinFilter(data, selectedCastleSkin, 'blue'),
                 }}
               />
-              <span>{selectedCastleSkin}</span>
+              <span>{skinDisplayName(selectedCastleSkin)}</span>
+              {selectedCastleSkin !== 'castle-blue' && selectedCastleSkin !== 'castle_default' && (
+                <button
+                  type="button"
+                  onClick={() => equipSkin('castle', 'castle-blue')}
+                  style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, border: '1.5px solid #8a562d', background: '#fffaf0', cursor: 'pointer' }}
+                >
+                  標準に戻す
+                </button>
+              )}
             </div>
-            <div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
               <img
                 src="/assets/cards/card-infantry.png"
                 alt="兵士"
@@ -114,51 +162,119 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                   width: 72,
                   height: 72,
                   objectFit: 'contain',
-                  margin: '0 auto',
                   filter: getSkinFilter(data, selectedSoldierSkin, 'blue'),
                 }}
               />
-              <span>{selectedSoldierSkin}</span>
+              <span>{skinDisplayName(selectedSoldierSkin)}</span>
+              {selectedSoldierSkin !== 'infantry-blue' && selectedSoldierSkin !== 'soldier_default' && (
+                <button
+                  type="button"
+                  onClick={() => equipSkin('soldier', 'infantry-blue')}
+                  style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, border: '1.5px solid #8a562d', background: '#fffaf0', cursor: 'pointer' }}
+                >
+                  標準に戻す
+                </button>
+              )}
             </div>
-            <div>
-              <img src="/assets/ui/card-back.png" alt="カード裏面" style={{ width: 52, height: 72, objectFit: 'contain', margin: '0 auto' }} />
-              <span>標準裏面</span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+              <img
+                src="/assets/ui/card-back.png"
+                alt="カード裏面"
+                style={{
+                  width: 52,
+                  height: 72,
+                  objectFit: 'contain',
+                  filter: getSkinFilter(data, selectedBackSkin, 'blue'),
+                }}
+              />
+              <span>{skinDisplayName(selectedBackSkin)}</span>
+              {selectedBackSkin !== 'card-back' && selectedBackSkin !== 'back_default' && (
+                <button
+                  type="button"
+                  onClick={() => equipSkin('back', 'card-back')}
+                  style={{ fontSize: 10, fontWeight: 800, padding: '2px 8px', borderRadius: 999, border: '1.5px solid #8a562d', background: '#fffaf0', cursor: 'pointer' }}
+                >
+                  標準に戻す
+                </button>
+              )}
             </div>
           </div>
+          {selectedIconFrame && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6, borderTop: '1px dashed #c9b075', fontSize: 12, fontWeight: 800 }}>
+              <span>フレーム: {skinDisplayName(selectedIconFrame)}</span>
+              <button
+                type="button"
+                onClick={() => equipSkin('frame', null)}
+                style={{ fontSize: 11, fontWeight: 900, padding: '3px 10px', borderRadius: 999, border: '1.5px solid #8a562d', background: '#fffaf0', cursor: 'pointer' }}
+              >
+                外す
+              </button>
+            </div>
+          )}
         </ParchmentSheet>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-          {ownedSkins.map((sid) => {
-            const isCastle = sid.includes('castle');
-            const isBack = sid.includes('back') || sid.includes('Back');
-            const equipKind = isCastle ? 'castle' : isBack ? 'back' : 'soldier';
-            const equipped =
-              selectedCastleSkin === sid || selectedSoldierSkin === sid;
-            return (
-              <ParchmentSheet key={sid} style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
-                <img
-                  src={getSkinPreviewImage(sid)}
-                  alt={sid}
-                  style={{
-                    width: 48,
-                    height: 48,
-                    objectFit: 'contain',
-                    filter: getSkinFilter(data, sid, 'blue'),
-                  }}
-                />
-                <strong style={{ fontSize: 12 }}>{sid}</strong>
-                <GameButton
-                  size="sm"
-                  fullWidth
-                  variant={equipped ? 'selected-royal' : 'normal-stone'}
-                  onClick={() => equipSkin(equipKind, sid)}
-                >
-                  {equipped ? '装備中' : '装備する'}
-                </GameButton>
-              </ParchmentSheet>
-            );
-          })}
+        <div role="tablist" aria-label="スキンカテゴリ" style={{ display: 'flex', flexWrap: 'wrap', gap: 6, flexShrink: 0 }}>
+          {SKIN_FILTER_TABS.map((f) => (
+            <GameButton
+              key={f.id}
+              size="sm"
+              aria-pressed={skinFilter === f.id}
+              variant={skinFilter === f.id ? 'selected-royal' : 'normal-stone'}
+              onClick={() => setSkinFilter(f.id)}
+            >
+              {f.label}
+            </GameButton>
+          ))}
         </div>
+
+        {filteredSkins.length === 0 ? (
+          <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, textAlign: 'center' }}>
+            <strong style={{ fontSize: 13 }}>このカテゴリの所持スキンがありません</strong>
+            <GameButton size="sm" variant="primary-gold" onClick={() => setTab('shop')}>
+              ショップを見る
+            </GameButton>
+          </ParchmentSheet>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+            {filteredSkins.map((sid) => {
+              const equipKind = classifySkin(sid);
+              const equipped =
+                (equipKind === 'castle' && selectedCastleSkin === sid) ||
+                (equipKind === 'soldier' && selectedSoldierSkin === sid) ||
+                (equipKind === 'back' && selectedBackSkin === sid) ||
+                (equipKind === 'frame' && selectedIconFrame === sid);
+              const previewSrc = iconFrameImage(sid) ?? getSkinPreviewImage(shopMap[sid]?.slot || sid);
+              return (
+                <ParchmentSheet key={sid} style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 999, background: '#e5cfa1', color: '#4a2e1a' }}>
+                    {SKIN_SLOT_LABEL[equipKind]}
+                  </span>
+                  <img
+                    src={previewSrc}
+                    alt={skinDisplayName(sid)}
+                    style={{
+                      width: 48,
+                      height: 48,
+                      objectFit: 'contain',
+                      filter: getSkinFilter(data, sid, 'blue'),
+                    }}
+                  />
+                  <strong style={{ fontSize: 12, textAlign: 'center' }}>{skinDisplayName(sid)}</strong>
+                  <GameButton
+                    size="sm"
+                    fullWidth
+                    variant={equipped ? 'selected-royal' : 'normal-stone'}
+                    onClick={() =>
+                      equipKind === 'frame' && equipped ? equipSkin('frame', null) : equipSkin(equipKind, sid)
+                    }
+                  >
+                    {equipped ? '装備中' : '装備する'}
+                  </GameButton>
+                </ParchmentSheet>
+              );
+            })}
+          </div>
+        )}
       </section>
     );
   }
@@ -436,10 +552,16 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     );
   }
 
-  const menuRows: Array<{ label: string; desc: string; icon: PaintedIconName; action: () => void }> = [
+  const menuRows: Array<{ label: string; desc: string; icon: PaintedIconName; badge?: string; action: () => void }> = [
     { label: 'スキン装備', desc: '持っている見た目を城や兵士に装備する', icon: 'skin', action: () => setSubPage('skins') },
     { label: 'スキル作戦図（200種）', desc: 'クラシックモードのスキルツリーを編集', icon: 'crown', action: onOpenSkillTree },
-    { label: 'ランキング・実績ミッション', desc: '戦績確認とミッション報酬（コイン獲得）', icon: 'ranking', action: () => setSubPage('missions') },
+    {
+      label: 'ランキング・実績ミッション',
+      desc: '戦績確認とミッション報酬（コイン獲得）',
+      icon: 'ranking',
+      badge: claimableMissions > 0 ? `受取可 ${claimableMissions}件` : undefined,
+      action: () => setSubPage('missions'),
+    },
     { label: '戦績・対戦履歴', desc: `直近のバトル結果とログを確認（${matchHistory.length}件）`, icon: 'mission', action: () => setSubPage('history') },
     { label: '遊び方ガイド', desc: '属性相性と城攻め・合成の基本ルール', icon: 'help', action: () => setSubPage('guide') },
   ];
@@ -491,6 +613,22 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                 <div style={{ fontSize: 14, fontWeight: 900 }}>{row.label}</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>{row.desc}</div>
               </div>
+              {row.badge && (
+                <span
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                    background: '#de4f46',
+                    border: '1.5px solid #ffd98a',
+                    color: '#fffaf0',
+                    fontSize: 11,
+                    fontWeight: 900,
+                    flexShrink: 0,
+                  }}
+                >
+                  {row.badge}
+                </span>
+              )}
               <PaintedIcon name="arrow" size={16} />
             </button>
           ))}
