@@ -22,6 +22,9 @@ jobs:
         working-directory: web
         run: npm run build
 
+      - name: Run v2 integrity, asset budget & lazy-bundle tests
+        run: node --test web/tests/v2_integrity.test.mjs
+
       - name: Verify v2 guardrails (no SVG, no !important, no legacy buttons)
         run: |
           if grep -rnE '<svg|\.svg|data:image/svg|!important|btn-end-turn|button-end-turn|assets/ui/btn-|assets/ui/natural' web/src; then

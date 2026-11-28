@@ -114,6 +114,7 @@ export function BattleScreen() {
   const [showMenu, setShowMenu] = useState(false);
   const [showLog, setShowLog] = useState(false);
   const [showStamps, setShowStamps] = useState(false);
+  const [showEnvDetail, setShowEnvDetail] = useState(false);
   const [myStamp, setMyStamp] = useState<{ id: number; text: string } | null>(null);
   const [oppStamp, setOppStamp] = useState<{ id: number; text: string } | null>(null);
   const [showUpgrades, setShowUpgrades] = useState(false);
@@ -796,16 +797,72 @@ export function BattleScreen() {
         </div>
 
         <div className={styles.envBadges}>
-          <span className={styles.envPill}>
-            {stageInfo?.icon || '🌿'} {(stageInfo?.name || '草原').split('（')[0]}
-          </span>
+          <button
+            type="button"
+            className={styles.envPill}
+            onClick={() => setShowEnvDetail((v) => !v)}
+            aria-label="地形と天候の詳細"
+          >
+            {stageInfo?.icon || '🌿'} {(stageInfo?.name || '草原').split('（')[0]} ⓘ
+          </button>
           {gameState.weather && (
-            <span className={styles.envPill}>
+            <button
+              type="button"
+              className={styles.envPill}
+              onClick={() => setShowEnvDetail((v) => !v)}
+            >
               ☁ {gameState.weather.name || gameState.weather.id}
-            </span>
+            </button>
           )}
-          {gameState.time === 'night' && <span className={styles.envPill}>🌙 夜</span>}
+          {gameState.time === 'night' && (
+            <button
+              type="button"
+              className={styles.envPill}
+              onClick={() => setShowEnvDetail((v) => !v)}
+            >
+              🌙 夜
+            </button>
+          )}
         </div>
+
+        {showEnvDetail && (
+          <div className={styles.envPopover}>
+            <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong style={{ fontSize: 13 }}>
+                  {stageInfo?.icon || '🌿'} {stageInfo?.name || '草原'}
+                </strong>
+                <button
+                  type="button"
+                  onClick={() => setShowEnvDetail(false)}
+                  aria-label="地形詳細を閉じる"
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: 16,
+                    fontWeight: 900,
+                    cursor: 'pointer',
+                    padding: '0 4px',
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)', lineHeight: 1.5 }}>
+                {stageInfo?.description || '標準の戦場です。'}
+              </div>
+              {gameState.weather && (
+                <div style={{ fontSize: 11, fontWeight: 800, borderTop: '1px dashed #c9b075', paddingTop: 4 }}>
+                  ☁ {gameState.weather.name || gameState.weather.id}:{' '}
+                  {data?.weather?.[gameState.weather.id]?.description || '戦場全体に天候効果が発生中'}
+                </div>
+              )}
+              <div style={{ fontSize: 11, fontWeight: 800 }}>
+                {gameState.time === 'night' ? '🌙 夜：獣・隠密・魔物の攻撃が強化' : '☀ 昼：通常コンディション'}
+              </div>
+            </ParchmentSheet>
+          </div>
+        )}
 
         <AnimatePresence>
           {dicePop && (

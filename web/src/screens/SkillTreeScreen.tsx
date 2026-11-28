@@ -1,13 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useAppStore } from '../stores/useAppStore';
-import { SkillTreeCanvas } from '../pixi/SkillTreeCanvas';
+import { SkillTreeCanvas, type SkillTreeCanvasHandle } from '../pixi/SkillTreeCanvas';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
 import { ParchmentSheet } from '../components/ui/Surfaces';
 
 export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
   const { data, unlockedSkills, toggleSkillNode, resetSkills } = useAppStore();
+  const canvasRef = useRef<SkillTreeCanvasHandle | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const [search, setSearch] = useState('');
 
   const nodes = useMemo(() => {
@@ -61,10 +63,23 @@ export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
     return expanded;
   }, [data]);
 
+  const groups = useMemo(() => {
+    const set = new Set<string>();
+    for (const n of nodes) {
+      if (n.group && n.group !== 'START') set.add(n.group);
+    }
+    return Array.from(set);
+  }, [nodes]);
+
   const filteredNodes = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return nodes;
-    return nodes.filter((n) => n.id === 'START' || n.name.toLowerCase().includes(q) || n.id.toLowerCase().includes(q));
+    return nodes.filter((n) => {
+      if (n.id === 'START') return true;
+      if (q && !n.name.toLowerCase().includes(q) && !n.id.toLowerCase().includes(q)) {
+        return false;
+      }
+      return true;
+    });
   }, [nodes, search]);
 
   const selectedNode = useMemo(
@@ -120,14 +135,93 @@ export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
         </GameButton>
       </div>
 
+      {groups.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            overflowX: 'auto',
+            padding: '6px 12px',
+            background: '#faecc4',
+            borderBottom: '2px solid #c9ad7b',
+            flexShrink: 0,
+            scrollbarWidth: 'none',
+          }}
+          aria-label="スキル系統フィルタ"
+        >
+          <button
+            type="button"
+            onClick={() => setActiveGroup(null)}
+            style={{
+              flexShrink: 0,
+              padding: '4px 10px',
+              borderRadius: 999,
+              border: '2px solid #4a2e1a',
+              background: activeGroup === null ? '#3465cc' : '#fffaf0',
+              color: activeGroup === null ? '#fffaf0' : '#4a2e1a',
+              fontSize: 11,
+              fontWeight: 900,
+              cursor: 'pointer',
+            }}
+          >
+            すべて
+          </button>
+          {groups.map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => setActiveGroup(activeGroup === g ? null : g)}
+              style={{
+                flexShrink: 0,
+                padding: '4px 10px',
+                borderRadius: 999,
+                border: '2px solid #4a2e1a',
+                background: activeGroup === g ? '#3465cc' : '#fffaf0',
+                color: activeGroup === g ? '#fffaf0' : '#4a2e1a',
+                fontSize: 11,
+                fontWeight: 900,
+                cursor: 'pointer',
+              }}
+            >
+              {g}系
+            </button>
+          ))}
+        </div>
+      )}
+
       <div style={{ position: 'relative', flex: 1, minHeight: 0 }}>
         <SkillTreeCanvas
+          ref={canvasRef}
           nodes={filteredNodes.length ? filteredNodes : nodes}
           edges={edges}
           unlockedIds={unlockedSkills}
           selectedId={selectedId}
+          activeGroup={activeGroup}
           onSelectNode={setSelectedId}
         />
+
+        <div
+          style={{
+            position: 'absolute',
+            right: 12,
+            bottom: selectedNode ? 132 : 14,
+            zIndex: 8,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+          }}
+          aria-label="ズーム操作"
+        >
+          <RoundButton onClick={() => canvasRef.current?.zoomBy(1.25)} aria-label="拡大">
+            <span style={{ fontWeight: 900, fontSize: 18 }}>＋</span>
+          </RoundButton>
+          <RoundButton onClick={() => canvasRef.current?.zoomBy(0.8)} aria-label="縮小">
+            <span style={{ fontWeight: 900, fontSize: 18 }}>－</span>
+          </RoundButton>
+          <RoundButton onClick={() => canvasRef.current?.resetView()} aria-label="全体表示">
+            <span style={{ fontWeight: 900, fontSize: 11 }}>全体</span>
+          </RoundButton>
+        </div>
 
         {selectedNode && (
           <div style={{ position: 'absolute', left: 12, right: 12, bottom: 12, zIndex: 10, maxWidth: 460, margin: '0 auto' }}>
