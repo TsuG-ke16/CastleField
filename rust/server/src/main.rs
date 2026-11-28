@@ -7,7 +7,13 @@ use castlefield_server::{build_router, create_state};
 async fn main() {
     let repo_root = env::var("CF_ROOT")
         .map(PathBuf::from)
-        .unwrap_or_else(|_| PathBuf::from("../.."));
+        .unwrap_or_else(|_| {
+            if PathBuf::from("data/cards.json").exists() {
+                PathBuf::from(".")
+            } else {
+                PathBuf::from("../..")
+            }
+        });
     let data_dir = env::var("CF_DATA_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| repo_root.join("data"));

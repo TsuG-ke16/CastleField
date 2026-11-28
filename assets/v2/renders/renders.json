@@ -1,0 +1,26 @@
+{
+  "battle": {
+    "cameraThree": [
+      0,
+      18.2,
+      16.5
+    ],
+    "target": [
+      0,
+      0,
+      0
+    ],
+    "fovY": 44,
+    "width": 1600,
+    "height": 800
+  },
+  "homePortrait": {
+    "width": 780,
+    "height": 1300
+  },
+  "homeLandscape": {
+    "width": 1600,
+    "height": 900
+  },
+  "chestFrames": 12
+}

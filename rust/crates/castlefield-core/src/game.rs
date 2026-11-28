@@ -15,6 +15,7 @@ struct PendingDefense {
     kind: String, // "castle" | "soldiers"
     amount: i32,
     source_kind: String,
+    #[allow(dead_code)]
     spell_type: Option<String>,
     attacker_soldier_id: Option<String>,
     soldier_ids: Vec<String>,

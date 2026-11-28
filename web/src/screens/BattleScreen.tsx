@@ -11,7 +11,7 @@ import { getSkinFilter } from '../engine/skinUtils';
 import type { CardDef, GameEvent, GameState, HandCard, PlayTarget, StampDef } from '../engine/types';
 import { soundManager } from '../audio/soundManager';
 import { BattleFxOverlay, type BattleFxHandle } from '../pixi/BattleFxOverlay';
-import { BattleFieldScene } from '../scene3d/BattleFieldScene';
+import { BattleFieldView } from '../scene3d/BattleFieldView';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { GameCard } from '../components/ui/GameCard';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
@@ -857,7 +857,7 @@ export function BattleScreen() {
           )}
         </AnimatePresence>
 
-        <BattleFieldScene
+        <BattleFieldView
           state={gameState}
           quality={quality}
           shakePower={shakePower}

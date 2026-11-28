@@ -174,5 +174,27 @@
     "models/field-ruins-v2.glb",
     "models/field-darkForest-v2.glb",
     "models/field-desert-v2.glb"
+  ],
+  "renders": [
+    "renders/home-portrait.webp",
+    "renders/home-landscape.webp",
+    "renders/battle-meadow.webp",
+    "renders/battle-lava.webp",
+    "renders/battle-ice.webp",
+    "renders/battle-ruins.webp",
+    "renders/battle-darkForest.webp",
+    "renders/battle-desert.webp",
+    "renders/chest-open-00.webp",
+    "renders/chest-open-01.webp",
+    "renders/chest-open-02.webp",
+    "renders/chest-open-03.webp",
+    "renders/chest-open-04.webp",
+    "renders/chest-open-05.webp",
+    "renders/chest-open-06.webp",
+    "renders/chest-open-07.webp",
+    "renders/chest-open-08.webp",
+    "renders/chest-open-09.webp",
+    "renders/chest-open-10.webp",
+    "renders/chest-open-11.webp"
   ]
 }

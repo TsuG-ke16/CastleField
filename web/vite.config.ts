@@ -106,11 +106,43 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'zustand'],
-          'vendor-motion': ['motion', 'howler'],
-          'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
-          'vendor-pixi': ['pixi.js'],
+        manualChunks(id: string) {
+          const norm = id.replace(/\\/g, '/');
+          if (norm.includes('preload-helper') || norm.includes('commonjsHelpers')) {
+            return 'vendor-react';
+          }
+          if (!norm.includes('/node_modules/')) return undefined;
+          if (
+            norm.includes('/node_modules/react/') ||
+            norm.includes('/node_modules/react-dom/') ||
+            norm.includes('/node_modules/scheduler/') ||
+            norm.includes('/node_modules/zustand/')
+          ) {
+            return 'vendor-react';
+          }
+          if (
+            norm.includes('/node_modules/three/') ||
+            norm.includes('/node_modules/@react-three/') ||
+            norm.includes('/node_modules/three-stdlib/') ||
+            norm.includes('/node_modules/camera-controls/') ||
+            norm.includes('/node_modules/maath/') ||
+            norm.includes('/node_modules/suspend-react/') ||
+            norm.includes('/node_modules/troika-') ||
+            norm.includes('/node_modules/react-reconciler/')
+          ) {
+            return 'vendor-three';
+          }
+          if (
+            norm.includes('/node_modules/motion/') ||
+            norm.includes('/node_modules/framer-motion/') ||
+            norm.includes('/node_modules/howler/')
+          ) {
+            return 'vendor-motion';
+          }
+          if (norm.includes('/node_modules/pixi.js/') || norm.includes('/node_modules/@pixi/')) {
+            return 'vendor-pixi';
+          }
+          return undefined;
         },
       },
     },

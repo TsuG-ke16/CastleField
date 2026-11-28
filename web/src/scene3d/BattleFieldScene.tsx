@@ -5,24 +5,7 @@ import * as THREE from 'three';
 import type { GameState, MonsterState, RoadState, SoldierState } from '../engine/types';
 import { cardTypeToImagePath } from '../engine/dataLoader';
 import { DRACO_PATH } from './dracoPath';
-
-interface BattleFieldSceneProps {
-  state: GameState;
-  quality: '3d' | '2d';
-  shakePower: number;
-  stageId?: string;
-  viewerSide?: 'p1' | 'p2';
-  myCastleFilter?: string;
-  mySoldierFilter?: string;
-  highlightRoadIds: string[];
-  highlightSoldierIds: string[];
-  highlightMonsterIds: string[];
-  highlightEnemyCastle: boolean;
-  onSelectRoad: (roadId: string) => void;
-  onSelectSoldier: (soldierId: string) => void;
-  onSelectMonster: (monsterId: string) => void;
-  onSelectEnemyCastle: () => void;
-}
+import type { BattleFieldSceneProps } from './BattleFieldView';
 
 const LANE_X = [-2.8, 0, 2.8];
 const SQUARE_Z_FROM_ME = [5.0, 2.5, 0.0, -2.5, -5.0];
