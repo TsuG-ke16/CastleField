@@ -64,6 +64,30 @@ export function computePlayerProgression(stats: PlayerStats): {
   };
 }
 
+export function countClaimableMissions(
+  data: LoadedGameData | null,
+  stats: PlayerStats,
+  ownedSkins: string[],
+  unlockedSkills: string[],
+  claimedMissions: string[]
+): number {
+  const missions = data?.economy?.missions || [];
+  const progressOf: Record<string, number> = {
+    always: 1,
+    matches: stats.matchesPlayed,
+    wins: stats.wins,
+    gachaRolls: stats.gachaRolls,
+    skins: ownedSkins.length,
+    skills: unlockedSkills.length,
+  };
+  let count = 0;
+  for (const m of missions) {
+    if (claimedMissions.includes(m.id)) continue;
+    if ((progressOf[m.kind] ?? 0) >= m.goal) count += 1;
+  }
+  return count;
+}
+
 export interface CustomDeckSlot {
   name: string;
   cards: Record<string, number>;
