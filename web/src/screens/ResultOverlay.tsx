@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import { GameButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
@@ -18,6 +19,14 @@ interface ResultOverlayProps {
   rankedChange?: RankedChange | null;
   /** 獲得コイン（null は計算中）。省略すると勝ち150・負け40 */
   coinReward?: number | null;
+  progression?: {
+    level: number;
+    title: string;
+    xp: number;
+    currentLevelXp: number;
+    nextLevelXp: number;
+  };
+  battleLog?: string[];
 }
 
 function RankedPanel({ change }: { change: RankedChange | null }) {
@@ -82,7 +91,11 @@ export function ResultOverlay({
   rematchLabel,
   rankedChange,
   coinReward,
+  progression,
+  battleLog,
 }: ResultOverlayProps) {
+  const [showLog, setShowLog] = useState(false);
+
   return (
     <div
       style={{
@@ -102,7 +115,7 @@ export function ResultOverlay({
         transition={{ type: 'spring', stiffness: 320, damping: 24 }}
         style={{ width: '100%', maxWidth: 400 }}
       >
-        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+        <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, maxHeight: '92dvh', overflowY: 'auto' }}>
           <RibbonBanner tone={won ? 'victory' : 'defeat'} label={won ? 'あなたの勝ち！' : '敗北…'} />
 
           <img
@@ -138,6 +151,82 @@ export function ResultOverlay({
             <span>獲得経験値</span>
             <span className="tabular">+{won ? 85 : 25} XP</span>
           </div>
+
+          {progression && (
+            <div
+              style={{
+                width: '100%',
+                background: '#fbf3dc',
+                border: '1.5px solid #c9b075',
+                borderRadius: 10,
+                padding: '8px 12px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                fontSize: 12,
+                fontWeight: 900,
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Lv.{progression.level} {progression.title}</span>
+                <span className="tabular" style={{ fontSize: 11, color: 'var(--cf-ink-muted)' }}>
+                  XP {progression.currentLevelXp}/{progression.nextLevelXp}
+                </span>
+              </div>
+              <div style={{ height: 8, borderRadius: 999, background: '#dfca9f', border: '1.5px solid #4a2e1a', overflow: 'hidden' }}>
+                <div
+                  style={{
+                    width: `${Math.min(100, Math.round((progression.currentLevelXp / Math.max(1, progression.nextLevelXp)) * 100))}%`,
+                    height: '100%',
+                    background: '#3465cc',
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          {battleLog && battleLog.length > 0 && (
+            <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <button
+                type="button"
+                onClick={() => setShowLog((v) => !v)}
+                style={{
+                  alignSelf: 'flex-start',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  fontSize: 12,
+                  fontWeight: 900,
+                  color: '#24479b',
+                  cursor: 'pointer',
+                }}
+              >
+                {showLog ? '▲ バトルログを閉じる' : `▼ バトルログを見る (${battleLog.length}件)`}
+              </button>
+              {showLog && (
+                <div
+                  style={{
+                    width: '100%',
+                    maxHeight: 110,
+                    overflowY: 'auto',
+                    background: '#fbf3dc',
+                    border: '1.5px solid #d4bc7d',
+                    borderRadius: 8,
+                    padding: '6px 8px',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                  }}
+                >
+                  {battleLog.map((line, i) => (
+                    <div key={i}>• {line}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <GameButton variant="primary-gold" size="lg" fullWidth crown onClick={onRematch}>
             {rematchLabel || 'もう1回'}

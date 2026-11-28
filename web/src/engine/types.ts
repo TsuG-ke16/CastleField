@@ -178,7 +178,7 @@ export interface LoadedGameData {
   cards: Record<string, CardDef>;
   rules: Record<string, unknown>;
   monsters: Record<string, { name: string; hp: number; attack: number; element: string; reward: number }>;
-  upgrades: Record<string, { name: string; cost: number; description?: string }>;
+  upgrades: Record<string, { name: string; cost: number; description?: string; effect?: string; amount?: number; limit?: number }>;
   castles: Record<string, { name: string; hp?: number; maxHand?: number }>;
   decks: Record<string, { name: string; cards: Record<string, number>; costDeck?: boolean }>;
   rarities: Record<string, { name: string; color?: string; rate?: number; deckCost?: number }>;

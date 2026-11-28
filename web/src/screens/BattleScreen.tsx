@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useAppStore } from '../stores/useAppStore';
+import { computePlayerProgression, useAppStore } from '../stores/useAppStore';
 import type { GameEngineAdapter } from '../engine/adapter';
 import { cardTypeToImagePath, loadModeBundle } from '../engine/dataLoader';
 import { JsLegacyAdapter } from '../engine/jsLegacyAdapter';
@@ -26,6 +26,20 @@ interface MatchSummary {
   damageDealt: number;
   cardsPlayed: number;
   monstersDefeated: number;
+}
+
+function describeUpgrade(u: { description?: string; effect?: string; amount?: number }): string {
+  if (u.description && u.description.trim()) return u.description;
+  switch (u.effect) {
+    case 'repairCastle':
+      return `城HPを${u.amount ?? 0}回復`;
+    case 'drawCards':
+      return `カードを${u.amount ?? 0}枚引く`;
+    case 'sharpenSoldiers':
+      return `盤面の味方兵士の攻撃+${u.amount ?? 0}`;
+    default:
+      return 'コインで戦力を強化';
+  }
 }
 
 function summarizeEvent(ev: GameEvent): string | null {
@@ -81,7 +95,14 @@ export function BattleScreen() {
     onlineServerUrl,
     selectedCastleSkin,
     selectedSoldierSkin,
+    selectedBackSkin,
     quality,
+    setQuality,
+    muted,
+    toggleMute,
+    bgmMuted,
+    toggleBgmMute,
+    stats,
     mulliganEnabled,
     reducedMotion,
     tutorialSeen,
@@ -473,6 +494,10 @@ export function BattleScreen() {
     () => getSkinFilter(data, selectedSoldierSkin, 'blue'),
     [data, selectedSoldierSkin]
   );
+  const myBackFilter = useMemo(
+    () => getSkinFilter(data, selectedBackSkin, 'blue'),
+    [data, selectedBackSkin]
+  );
 
   const highlightRoadIds = useMemo(
     () => targets.map((t) => t.roadId).filter((x): x is string => Boolean(x)),
@@ -653,6 +678,72 @@ export function BattleScreen() {
     }
   };
 
+  const shortcutRef = useRef({
+    handleCardTap: (_c: HandCard) => {},
+    handleEndTurn: () => {},
+    hand: [] as HandCard[],
+    phase: '' as string,
+    myTurn: false,
+    showMenu: false,
+    showUpgrades: false,
+    showStamps: false,
+    showEnvDetail: false,
+    selectedCard: null as HandCard | null,
+    fuseMode: false,
+    blocked: false,
+  });
+  shortcutRef.current = {
+    handleCardTap,
+    handleEndTurn,
+    hand: pMe?.hand || [],
+    phase: gameState?.phase || '',
+    myTurn,
+    showMenu,
+    showUpgrades,
+    showStamps,
+    showEnvDetail,
+    selectedCard,
+    fuseMode,
+    blocked: Boolean(onlineError || !gameState || (playMode === 'local' && activeSide !== confirmedSide)),
+  };
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT')) {
+        return;
+      }
+      const s = shortcutRef.current;
+      if (s.blocked || s.phase === 'gameOver') return;
+      if (e.key === 'Escape') {
+        if (s.showUpgrades) setShowUpgrades(false);
+        else if (s.showStamps) setShowStamps(false);
+        else if (s.showEnvDetail) setShowEnvDetail(false);
+        else if (s.showMenu) setShowMenu(false);
+        else if (s.selectedCard || s.fuseMode) {
+          setSelectedCard(null);
+          setTargets([]);
+          setFuseMode(false);
+          setFuseFirst(null);
+        } else {
+          setShowMenu(true);
+        }
+        return;
+      }
+      if ((e.key === ' ' || e.key === 'Enter') && !s.showMenu && !s.showUpgrades && !s.selectedCard && s.myTurn && s.phase === 'main') {
+        e.preventDefault();
+        s.handleEndTurn();
+        return;
+      }
+      if (e.key >= '1' && e.key <= '9' && !s.showMenu && !s.showUpgrades && s.myTurn) {
+        const card = s.hand[Number(e.key) - 1];
+        if (card) s.handleCardTap(card);
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   if (onlineError) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: 20 }}>
@@ -742,7 +833,14 @@ export function BattleScreen() {
               {pMe.mp ?? 0}/{pMe.maxMp}
             </span>
           )}
-          <span className={`${styles.hudPill} tabular`}>山{gameState.deckCount ?? 0}</span>
+          <span className={`${styles.hudPill} tabular`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <img
+              src="/assets/ui/card-back.png"
+              alt="山札"
+              style={{ width: 11, height: 15, objectFit: 'contain', filter: myBackFilter }}
+            />
+            山{gameState.deckCount ?? 0} 捨{gameState.discardCount ?? 0}
+          </span>
           <RoundButton onClick={() => setShowMenu(true)} aria-label="対戦メニュー">
             <PaintedIcon name="settings" size={18} />
           </RoundButton>
@@ -1313,22 +1411,39 @@ export function BattleScreen() {
                   <PaintedIcon name="close" size={16} />
                 </RoundButton>
               </div>
-              {Object.entries(data.upgrades).map(([uid, u]) => (
-                <GameButton
-                  key={uid}
-                  size="sm"
-                  fullWidth
-                  variant="normal-stone"
-                  disabled={!adapterRef.current?.canBuyUpgrade(uid).ok}
-                  onClick={() => {
-                    adapterRef.current?.buyUpgrade(uid);
-                    soundManager.play('coin');
-                    refreshState();
-                  }}
-                >
-                  {u.name}（🪙{u.cost}）
-                </GameButton>
-              ))}
+              <div style={{ maxHeight: '62dvh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {Object.entries(data.upgrades).map(([uid, u]) => (
+                  <div
+                    key={uid}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      background: '#fbf3dc',
+                      border: '1.5px solid #d4bc7d',
+                      borderRadius: 10,
+                      padding: 6,
+                    }}
+                  >
+                    <GameButton
+                      size="sm"
+                      fullWidth
+                      variant="normal-stone"
+                      disabled={!adapterRef.current?.canBuyUpgrade(uid).ok}
+                      onClick={() => {
+                        adapterRef.current?.buyUpgrade(uid);
+                        soundManager.play('coin');
+                        refreshState();
+                      }}
+                    >
+                      {u.name}（🪙{u.cost}）
+                    </GameButton>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)', padding: '0 4px', lineHeight: 1.4 }}>
+                      {describeUpgrade(u)}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </ParchmentSheet>
           </div>
         </div>
@@ -1339,6 +1454,29 @@ export function BattleScreen() {
           <div style={{ width: '100%', maxWidth: 360 }} onClick={(e) => e.stopPropagation()}>
             <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <strong style={{ fontSize: 17, textAlign: 'center' }}>対戦メニュー</strong>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                <GameButton
+                  size="sm"
+                  variant={muted ? 'normal-stone' : 'selected-royal'}
+                  onClick={toggleMute}
+                >
+                  効果音 {muted ? 'OFF' : 'ON'}
+                </GameButton>
+                <GameButton
+                  size="sm"
+                  variant={bgmMuted ? 'normal-stone' : 'selected-royal'}
+                  onClick={toggleBgmMute}
+                >
+                  BGM {bgmMuted ? 'OFF' : 'ON'}
+                </GameButton>
+                <GameButton
+                  size="sm"
+                  variant={quality === '3d' ? 'selected-royal' : 'normal-stone'}
+                  onClick={() => setQuality(quality === '3d' ? '2d' : '3d')}
+                >
+                  {quality === '3d' ? '3D' : '2D省エネ'}
+                </GameButton>
+              </div>
               <GameButton
                 size="sm"
                 variant="normal-stone"
@@ -1381,6 +1519,8 @@ export function BattleScreen() {
           damageDealt={summary.damageDealt}
           cardsPlayed={summary.cardsPlayed}
           monstersDefeated={summary.monstersDefeated}
+          progression={computePlayerProgression(stats)}
+          battleLog={battleLog}
           onRematch={() => {
             if (playMode === 'ranked') {
               // ランクマッチの「もう1回」は、待合室で次の相手を探す

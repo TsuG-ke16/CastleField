@@ -347,7 +347,7 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
                           height: 34,
                           borderRadius: 8,
                           objectFit: 'contain',
-                          filter: props.state.players.p1?.soldiers.some((ps) => ps.soldierId === s.soldierId)
+                          filter: props.state.players[mySide]?.soldiers.some((ps) => ps.soldierId === s.soldierId)
                             ? props.mySoldierFilter
                             : undefined,
                         }}
@@ -435,7 +435,6 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
               width: 68,
               height: 68,
               objectFit: 'contain',
-              filter: oppSide === 'p1' ? props.myCastleFilter : undefined,
             }}
           />
         </button>
@@ -452,7 +451,7 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
             width: 72,
             height: 72,
             objectFit: 'contain',
-            filter: mySide === 'p1' ? props.myCastleFilter : undefined,
+            filter: props.myCastleFilter,
           }}
         />
 
@@ -496,7 +495,7 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
                     borderRadius: 10,
                     border: `2.5px solid ${isTarget ? '#ffe37a' : pid === 'p1' ? '#2a6cab' : '#c05a1c'}`,
                     background: '#fffaf0',
-                    filter: pid === 'p1' ? props.mySoldierFilter : undefined,
+                    filter: pid === mySide ? props.mySoldierFilter : undefined,
                   }}
                 />
                 <span
