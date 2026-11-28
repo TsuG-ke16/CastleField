@@ -61,7 +61,9 @@ export function GameCard({
         .join(' ')}
     >
       <div className={styles.topRow}>
-        <span className={styles.kindTag}>{KIND_LABELS[card.kind] || card.kind}</span>
+        <span className={`${styles.kindTag} ${styles[`kind-${card.kind}`] || ''}`}>
+          {KIND_LABELS[card.kind] || card.kind}
+        </span>
         {(card.mpCost ?? 0) > 0 ? (
           <span className={styles.costPill}>MP {card.mpCost}</span>
         ) : card.cost !== undefined ? (

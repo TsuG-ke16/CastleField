@@ -94,6 +94,7 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
               width: 60,
               height: 60,
               objectFit: 'contain',
+              filter: 'drop-shadow(0 4px 8px rgba(34, 20, 8, 0.38))',
             }}
           />
         </button>
@@ -123,8 +124,11 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
                 onClick={() => isTarget && props.onSelectRoad(road.roadId)}
                 style={{
                   borderRadius: 14,
-                  background: isTarget ? 'rgba(255, 227, 122, 0.34)' : 'rgba(255, 248, 226, 0.14)',
-                  border: isTarget ? '3px solid #ffe37a' : '1.5px solid rgba(74, 46, 26, 0.32)',
+                  background: isTarget ? 'rgba(255, 227, 122, 0.34)' : 'rgba(255, 248, 226, 0.16)',
+                  border: isTarget ? '3px solid #ffe37a' : '1.5px solid rgba(74, 46, 26, 0.34)',
+                  boxShadow: isTarget
+                    ? 'inset 0 0 18px rgba(255, 227, 122, 0.45), 0 0 12px rgba(255, 214, 102, 0.5)'
+                    : 'inset 0 1px 0 rgba(255, 255, 255, 0.22)',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
@@ -148,8 +152,8 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
                         width: 44,
                         height: 44,
                         borderRadius: '50%',
-                        background: 'transparent',
-                        border: 'none',
+                        background: 'rgba(255, 248, 226, 0.2)',
+                        border: '1.5px dashed rgba(74, 46, 26, 0.25)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -190,19 +194,26 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
                                 borderRadius: 8,
                                 border: `2px solid ${isSolTarget ? '#ffe37a' : pid === 'p1' ? '#2a6cab' : '#c05a1c'}`,
                                 background: '#fffaf0',
+                                boxShadow: isSolTarget
+                                  ? '0 0 10px rgba(255, 227, 122, 0.85), 0 3px 5px rgba(74, 46, 26, 0.35)'
+                                  : '0 2px 4px rgba(74, 46, 26, 0.3)',
                                 filter: pid === mySide ? props.mySoldierFilter : undefined,
                               }}
                             />
                             <span
                               style={{
                                 marginTop: -5,
-                                background: pid === 'p1' ? '#234799' : '#c05a1c',
+                                background:
+                                  pid === 'p1'
+                                    ? 'linear-gradient(180deg, #3b6fd4 0%, #234799 100%)'
+                                    : 'linear-gradient(180deg, #e06d26 0%, #a84210 100%)',
                                 color: '#fffaf0',
                                 fontSize: 9,
                                 fontWeight: 900,
                                 padding: '0 4px',
                                 borderRadius: 999,
                                 border: '1px solid #4a2e1a',
+                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.25)',
                                 whiteSpace: 'nowrap',
                               }}
                             >
@@ -243,18 +254,22 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
                                 borderRadius: 10,
                                 border: `2.5px solid ${isMonTarget ? '#ffe37a' : '#a82a24'}`,
                                 background: '#fff2ee',
+                                boxShadow: isMonTarget
+                                  ? '0 0 12px rgba(255, 227, 122, 0.85), 0 3px 6px rgba(74, 46, 26, 0.35)'
+                                  : '0 2px 5px rgba(74, 46, 26, 0.32)',
                               }}
                             />
                             <span
                               style={{
                                 marginTop: -5,
-                                background: '#a82a24',
+                                background: 'linear-gradient(180deg, #cf3a32 0%, #8f1d17 100%)',
                                 color: '#fffaf0',
                                 fontSize: 9,
                                 fontWeight: 900,
                                 padding: '0 4px',
                                 borderRadius: 999,
                                 border: '1px solid #4a2e1a',
+                                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.25)',
                                 whiteSpace: 'nowrap',
                               }}
                             >
@@ -280,7 +295,7 @@ export function BattleFieldLite(props: BattleFieldSceneProps) {
             height: 64,
             objectFit: 'contain',
             flexShrink: 0,
-            filter: props.myCastleFilter,
+            filter: [props.myCastleFilter, 'drop-shadow(0 4px 8px rgba(34, 20, 8, 0.38))'].filter(Boolean).join(' '),
           }}
         />
       </div>
