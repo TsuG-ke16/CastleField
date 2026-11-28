@@ -330,8 +330,9 @@ pub fn create_state_with_clock(
     db_path: &Path,
     clock: Arc<dyn Fn() -> i64 + Send + Sync>,
 ) -> Result<Arc<AppState>, String> {
-    if let Some(parent) = db_path.parent() {
-        let _ = fs::create_dir_all(parent);
+    if let Some(parent) = db_path.parent().filter(|p| !p.as_os_str().is_empty()) {
+        fs::create_dir_all(parent)
+            .map_err(|e| format!("failed to create db dir {}: {e}", parent.display()))?;
     }
     let db = Database::create(db_path).map_err(|e| format!("redb open failed: {e}"))?;
     {

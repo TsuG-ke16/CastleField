@@ -43,7 +43,10 @@ npx vite --host 0.0.0.0 --port 5173
    cargo run --manifest-path rust/server/Cargo.toml --release
    # http://0.0.0.0:8787 で待機（ブラウザで http://localhost:8787 を開く）
    ```
-   > **補足（Windows）**: Windows Smart App Control が有効な環境ではローカル `.exe` 実行がブロックされる場合があります。その場合は下記の Docker、または WSL2 (Ubuntu) 上で `cargo run` を使用してください。
+   > **補足（Windows）**: Windows Smart App Control が有効な環境ではローカル `.exe` 実行がブロックされる場合があります。その場合は下記の Docker、または WSL2 (Ubuntu) 上で実行してください。WSL2 の `/mnt/c/...` 配下では `redb` のロックや I/O を Linux 側へ逃がすと高速＆安定します：
+   > ```bash
+   > CF_ROOT=. CF_REDB_PATH=$HOME/castlefield.redb cargo run --manifest-path rust/server/Cargo.toml --release
+   > ```
 3. **URL 招待で1タップ参加**:
    - ホストがホーム画面の `対戦形式` → `合言葉対戦` → **`招待URLをコピー`** を押すと `https://<ホスト>/?room=castle-XXXX&stage=...` が生成されます。
    - LINE / Discord 等で共有すると、友達はリンクを開くだけで同じルームへ入室できます。
