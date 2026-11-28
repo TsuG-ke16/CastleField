@@ -712,13 +712,29 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                 minHeight: 54,
                 padding: '8px 10px',
                 borderRadius: 12,
-                border: '2px solid #d9c48a',
-                background: '#fffdf6',
+                border: '2px solid #c9a25e',
+                background: 'linear-gradient(180deg, #fffef8 0%, #f7e9c8 100%)',
+                boxShadow: 'inset 0 1.5px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.16)',
                 cursor: 'pointer',
                 textAlign: 'left',
               }}
             >
-              <PaintedIcon name={row.icon} size={32} />
+              <span
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle at 50% 38%, #ffffff 0%, #f6e7c7 72%, #e2c58a 100%)',
+                  border: '1.5px solid rgba(74, 46, 26, 0.36)',
+                  boxShadow: 'inset 0 2px 4px rgba(74, 46, 26, 0.14), 0 1px 0 rgba(255, 255, 255, 0.72)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <PaintedIcon name={row.icon} size={30} />
+              </span>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 900 }}>{row.label}</div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>{row.desc}</div>

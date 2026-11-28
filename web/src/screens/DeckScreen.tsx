@@ -538,6 +538,22 @@ export function DeckScreen() {
                   onPointerLeave={() => setTilt({ rx: 0, ry: 0, gx: 50, gy: 50, active: false })}
                   style={{
                     transform: `perspective(560px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) scale(${tilt.active ? 1.04 : 1})`,
+                    borderColor:
+                      inspectedDef.rarity === 'legendary'
+                        ? '#d98212'
+                        : inspectedDef.rarity === 'epic'
+                          ? '#8837b8'
+                          : inspectedDef.rarity === 'rare'
+                            ? '#2f65c4'
+                            : inspectedDef.rarity === 'uncommon'
+                              ? '#2f7d44'
+                              : '#4a2e1a',
+                    boxShadow:
+                      inspectedDef.rarity === 'legendary'
+                        ? '0 6px 16px rgba(255, 184, 51, 0.42), inset 0 1.5px 0 #ffffff'
+                        : inspectedDef.rarity === 'epic'
+                          ? '0 6px 14px rgba(154, 72, 209, 0.36), inset 0 1.5px 0 #ffffff'
+                          : '0 4px 10px rgba(74, 46, 26, 0.24), inset 0 1.5px 0 #ffffff',
                   }}
                 >
                   <img
@@ -556,23 +572,43 @@ export function DeckScreen() {
                     />
                   )}
                 </div>
-                <div style={{ flex: 1, fontSize: 12, fontWeight: 800, display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <div>種別: {KIND_FILTERS.find((k) => k.id === inspectedDef.kind)?.label || inspectedDef.kind}</div>
-                  <div>レア度: {rarities[inspectedDef.rarity || 'common']?.name || inspectedDef.rarity || 'コモン'}（編成コスト {cardDeckCost(inspectType)}）</div>
-                  {inspectedDef.mpCost !== undefined && <div>消費MP: {inspectedDef.mpCost}</div>}
+                <div style={{ flex: 1, fontSize: 11, fontWeight: 900, display: 'flex', flexWrap: 'wrap', gap: 5, alignContent: 'flex-start' }}>
+                  <span style={{ padding: '2px 8px', borderRadius: 999, background: '#fffaf0', border: '1.5px solid #c9a25e' }}>
+                    {KIND_FILTERS.find((k) => k.id === inspectedDef.kind)?.label || inspectedDef.kind}
+                  </span>
+                  <span style={{ padding: '2px 8px', borderRadius: 999, background: '#fffaf0', border: '1.5px solid #c9a25e' }}>
+                    {rarities[inspectedDef.rarity || 'common']?.name || inspectedDef.rarity || 'コモン'}（コスト {cardDeckCost(inspectType)}）
+                  </span>
+                  {inspectedDef.mpCost !== undefined && (
+                    <span style={{ padding: '2px 8px', borderRadius: 999, background: '#ebf2ff', border: '1.5px solid #3465cc', color: '#22479b' }}>
+                      消費MP {inspectedDef.mpCost}
+                    </span>
+                  )}
                   {inspectedDef.kind === 'soldier' && (
-                    <div>
+                    <span style={{ padding: '2px 8px', borderRadius: 999, background: '#fffaf0', border: '1.5px solid #c9a25e' }}>
                       攻撃 {inspectedDef.attack ?? 0} / HP {inspectedDef.hp ?? 0}
                       {inspectedDef.range && inspectedDef.range > 1
                         ? ` / 射程 ${inspectedDef.range}`
                         : ` / 速度 ${inspectedDef.speed ?? 1}`}
-                    </div>
+                    </span>
                   )}
                 </div>
               </div>
 
               {inspectedDef.description && (
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 700, lineHeight: 1.55, background: '#fbf3dc', padding: 8, borderRadius: 10 }}>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    lineHeight: 1.55,
+                    background: 'linear-gradient(180deg, #fffdf6 0%, #f7e9c8 100%)',
+                    border: '1.5px solid #c9a25e',
+                    boxShadow: 'inset 0 1.5px 0 #ffffff',
+                    padding: 9,
+                    borderRadius: 10,
+                  }}
+                >
                   {inspectedDef.description}
                 </p>
               )}
