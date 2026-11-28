@@ -72,8 +72,13 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
 
   const [sheet, setSheet] = useState<'none' | 'deck' | 'match' | 'faction'>('none');
   const [serverStatus, setServerStatus] = useState<string | null>(null);
+  const [deckWarning, setDeckWarning] = useState<string | null>(null);
   const lobbyOpen = rankedLobbyRequested;
   const setLobbyOpen = setRankedLobbyRequested;
+
+  useEffect(() => {
+    setDeckWarning(null);
+  }, [selectedDeckId, activeCustomSlot, mode, customDeck]);
 
   // 前にランクマッチを遊んだ端末なら、今のランクを静かに読む（つながらなければ何もしない）
   useEffect(() => {
@@ -101,6 +106,27 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
       setSheet('match');
       return;
     }
+    if (mode === 'kingdom' && selectedDeckId === 'custom') {
+      const cardsMap = data?.cards || {};
+      const raritiesMap = data?.rarities || {};
+      let totalCards = 0;
+      let totalCost = 0;
+      for (const [k, cnt] of Object.entries(customDeck || {})) {
+        if (!cnt || cnt <= 0) continue;
+        totalCards += cnt;
+        const r = cardsMap[k]?.rarity || 'common';
+        totalCost += (raritiesMap[r]?.deckCost ?? 1) * cnt;
+      }
+      if (totalCards === 0) {
+        setDeckWarning('カスタムデッキが空です。デッキ画面でカードを1枚以上追加してください。');
+        return;
+      }
+      if (totalCost > 100) {
+        setDeckWarning(`カスタムデッキのコストが上限(100)を超えています（現在 ${totalCost}）。`);
+        return;
+      }
+    }
+    setDeckWarning(null);
     startBattle();
   };
 
@@ -247,6 +273,31 @@ export function HomeScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
             </div>
           </button>
         </div>
+
+        {deckWarning && (
+          <div
+            role="alert"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              padding: '6px 10px',
+              borderRadius: 12,
+              border: '2px solid #de4f46',
+              background: 'rgba(255, 240, 238, 0.96)',
+              color: '#8c1d18',
+              fontSize: 11,
+              fontWeight: 900,
+              boxShadow: '0 3px 0 rgba(74, 46, 26, 0.25)',
+            }}
+          >
+            <span style={{ flex: 1, lineHeight: 1.35 }}>{deckWarning}</span>
+            <GameButton size="sm" variant="normal-stone" onClick={() => setTab('deck')}>
+              デッキを編集
+            </GameButton>
+          </div>
+        )}
 
         <GameButton
           variant="primary-gold"

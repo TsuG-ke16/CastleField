@@ -90,6 +90,7 @@ export function BattleScreen() {
     customDecks,
     activeCustomSlot,
     cpuLevel,
+    playerName,
     engineMode,
     onlinePassphrase,
     onlineServerUrl,
@@ -128,7 +129,10 @@ export function BattleScreen() {
   const [onlineSeatId, setOnlineSeatId] = useState<'p1' | 'p2'>('p1');
   const [onlineStatus, setOnlineStatus] = useState<OnlineConnStatus | null>(null);
   const [onlineError, setOnlineError] = useState<string | null>(null);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const [confirmedSide, setConfirmedSide] = useState<'p1' | 'p2'>('p1');
+  const playerNameRef = useRef(playerName);
+  playerNameRef.current = playerName;
 
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [selectedCard, setSelectedCard] = useState<HandCard | null>(null);
@@ -235,6 +239,7 @@ export function BattleScreen() {
           try {
             const online = await OnlineEngineAdapter.connect(data, onlinePassphrase.trim(), {
               serverUrl: onlineServerUrl,
+              name: playerNameRef.current,
               onStatus: (st) => !cancelled && setOnlineStatus(st),
             });
             adapter = online;
@@ -836,6 +841,10 @@ export function BattleScreen() {
             {activeEngine === 'online' ? (
               onlineStatus === 'waiting' ? (
                 <>⏳<span className={styles.engineText}> 相手待ち</span></>
+              ) : onlineStatus === 'reconnecting' ? (
+                <>🟡<span className={styles.engineText}> 再接続中</span></>
+              ) : onlineStatus === 'closed' ? (
+                <>🔴<span className={styles.engineText}> 切断</span></>
               ) : (
                 <>🟢<span className={styles.engineText}> オンライン</span></>
               )
@@ -869,6 +878,23 @@ export function BattleScreen() {
           </RoundButton>
         </div>
       </header>
+
+      {activeEngine === 'online' && onlineStatus === 'reconnecting' && (
+        <div
+          role="status"
+          style={{
+            padding: '5px 10px',
+            background: '#fff3cd',
+            borderBottom: '2px solid #4a2e1a',
+            color: '#6b4200',
+            fontSize: 11,
+            fontWeight: 900,
+            textAlign: 'center',
+          }}
+        >
+          🟡 サーバーと再接続しています… 電波が安定すると自動で再開します
+        </div>
+      )}
 
       {playMode === 'ranked' &&
         gameState.phase !== 'gameOver' &&
@@ -1400,6 +1426,36 @@ export function BattleScreen() {
           </div>
         )}
       </footer>
+
+      {activeEngine === 'online' && onlineStatus === 'waiting' && gameState.phase === 'ready' && (
+        <div className={styles.handoffCurtain}>
+          <ParchmentSheet style={{ maxWidth: 360, width: '100%', display: 'flex', flexDirection: 'column', gap: 10, textAlign: 'center' }}>
+            <strong style={{ fontSize: 18 }}>対戦相手を待っています…</strong>
+            <div style={{ fontSize: 13, fontWeight: 900, background: '#fbf3dc', padding: '6px 10px', borderRadius: 10, border: '1.5px solid #c9b075' }}>
+              合言葉：{onlinePassphrase}
+            </div>
+            <GameButton
+              variant="primary-gold"
+              fullWidth
+              onClick={async () => {
+                const url = `${window.location.origin}/?room=${encodeURIComponent(onlinePassphrase.trim())}&stage=${encodeURIComponent(selectedStageId)}`;
+                try {
+                  await navigator.clipboard?.writeText(url);
+                  setInviteCopied(true);
+                  setTimeout(() => setInviteCopied(false), 2400);
+                } catch {
+                  setInviteCopied(false);
+                }
+              }}
+            >
+              {inviteCopied ? 'コピーしました！' : '招待URLをコピー'}
+            </GameButton>
+            <GameButton variant="normal-stone" size="sm" fullWidth onClick={exitBattle}>
+              ホームへ戻る
+            </GameButton>
+          </ParchmentSheet>
+        </div>
+      )}
 
       {showHandoff && (
         <div className={styles.handoffCurtain}>
