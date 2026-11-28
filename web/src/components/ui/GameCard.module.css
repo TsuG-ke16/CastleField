@@ -6,7 +6,7 @@
   border-radius: 12px;
   border: 2.5px solid var(--cf-ink);
   background: linear-gradient(180deg, #fffdf6 0%, #f5e5c2 100%);
-  box-shadow: 0 4px 0 rgba(74, 46, 26, 0.28);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.72), 0 4px 0 rgba(74, 46, 26, 0.32);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -30,12 +30,71 @@
   filter: saturate(0.65);
 }
 
-.rarity-common { background: linear-gradient(180deg, #fffdf6 0%, #efe1c4 100%); }
-.rarity-uncommon { background: linear-gradient(180deg, #effcf1 0%, #bfe8c6 100%); }
-.rarity-rare { background: linear-gradient(180deg, #eef6ff 0%, #b7d7ff 100%); }
-.rarity-epic { background: linear-gradient(180deg, #faf0ff 0%, #deb8ff 100%); }
-.rarity-legendary { background: linear-gradient(180deg, #fff9dc 0%, #ffd266 100%); }
-.rarity-special { background: linear-gradient(135deg, #ffe7f3 0%, #e4f4ff 50%, #fff3c4 100%); }
+.rarity-common {
+  background: linear-gradient(180deg, #fffdf6 0%, #f4e4c2 60%, #e4cd9e 100%);
+}
+.rarity-uncommon {
+  background: linear-gradient(180deg, #f1fdf3 0%, #c6edc9 60%, #9fd8a6 100%);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.78), inset 0 0 0 1.5px #6fb878, 0 4px 0 rgba(74, 46, 26, 0.32);
+}
+.rarity-rare {
+  background: linear-gradient(180deg, #eff7ff 0%, #badbff 58%, #8abcf5 100%);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.85), inset 0 0 0 1.5px #578ee0, 0 4px 0 rgba(36, 70, 145, 0.36);
+}
+.rarity-epic {
+  background: linear-gradient(180deg, #fbf2ff 0%, #e4c2ff 56%, #c691f7 100%);
+  box-shadow: inset 0 1.5px 0 rgba(255, 255, 255, 0.85), inset 0 0 0 2px #a464e0, 0 4px 0 rgba(76, 36, 128, 0.4);
+}
+.rarity-legendary {
+  background: linear-gradient(180deg, #fffbe2 0%, #ffe285 52%, #f4b73f 100%);
+  box-shadow: inset 0 1.5px 0 #ffffff, inset 0 0 0 2px #ffd859, 0 4px 0 rgba(122, 68, 12, 0.45), 0 6px 14px rgba(255, 198, 56, 0.28);
+}
+.rarity-special {
+  background: linear-gradient(135deg, #ffe7f3 0%, #e4f4ff 50%, #fff3c4 100%);
+  box-shadow: inset 0 1.5px 0 #ffffff, inset 0 0 0 2px #ff9ec7, 0 4px 0 rgba(74, 46, 26, 0.36);
+}
+
+.rarity-epic::after,
+.rarity-legendary::after {
+  content: '';
+  position: absolute;
+  inset: -30%;
+  background: linear-gradient(
+    115deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.36) 49%,
+    rgba(255, 252, 224, 0.52) 52%,
+    transparent 62%
+  );
+  transform: translateX(-120%) rotate(8deg);
+  animation: cfCardSweep 4.6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.rarity-epic::after {
+  animation-duration: 5.4s;
+  opacity: 0.7;
+}
+
+@keyframes cfCardSweep {
+  0%, 62% {
+    transform: translateX(-120%) rotate(8deg);
+  }
+  100% {
+    transform: translateX(120%) rotate(8deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    transition: none;
+  }
+  .rarity-epic::after,
+  .rarity-legendary::after {
+    animation: none;
+    display: none;
+  }
+}
 
 .topRow {
   display: flex;
@@ -59,17 +118,19 @@
   font-weight: 900;
   padding: 1px 6px;
   border-radius: 999px;
-  background: #3465cc;
+  background: linear-gradient(180deg, #5d91f5 0%, #2b59bd 100%);
   color: #fffaf0;
   border: 1.5px solid #4a2e1a;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1.5px 0 rgba(74, 46, 26, 0.42);
 }
 
 .artBox {
   flex: 1;
   min-height: 0;
   border-radius: 8px;
-  border: 1.5px solid rgba(74, 46, 26, 0.35);
+  border: 1.5px solid rgba(74, 46, 26, 0.42);
   background: radial-gradient(circle at 50% 42%, #ffffff 0%, #f6e7c7 100%);
+  box-shadow: inset 0 2px 4px rgba(74, 46, 26, 0.16), 0 1px 0 rgba(255, 255, 255, 0.65);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -84,8 +145,8 @@
 }
 
 .namePlate {
-  background: #fff9ec;
-  border: 1.5px solid rgba(74, 46, 26, 0.6);
+  background: linear-gradient(180deg, #fffef8 0%, #f6e7c4 100%);
+  border: 1.5px solid rgba(74, 46, 26, 0.65);
   border-radius: 6px;
   padding: 2px 4px;
   text-align: center;
@@ -95,6 +156,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  box-shadow: inset 0 1px 0 #ffffff;
 }
 
 .statBar {

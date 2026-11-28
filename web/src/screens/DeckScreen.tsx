@@ -368,7 +368,19 @@ export function DeckScreen() {
                       {r.label}
                     </button>
                   ))}
-                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 900 }} className="tabular">
+                  <span
+                    style={{
+                      marginLeft: 'auto',
+                      fontSize: 11,
+                      fontWeight: 900,
+                      padding: '2px 9px',
+                      borderRadius: 999,
+                      background: 'rgba(255, 248, 228, 0.94)',
+                      border: '1.5px solid #4a2e1a',
+                      boxShadow: '0 2px 0 rgba(74, 46, 26, 0.22)',
+                    }}
+                    className="tabular"
+                  >
                     {deckEditorCards.length} 件
                   </span>
                 </div>
@@ -466,7 +478,19 @@ export function DeckScreen() {
                 {r.label}
               </button>
             ))}
-            <span style={{ marginLeft: 'auto', fontSize: 12, fontWeight: 900 }} className="tabular">
+            <span
+              style={{
+                marginLeft: 'auto',
+                fontSize: 12,
+                fontWeight: 900,
+                padding: '2px 9px',
+                borderRadius: 999,
+                background: 'rgba(255, 248, 228, 0.94)',
+                border: '1.5px solid #4a2e1a',
+                boxShadow: '0 2px 0 rgba(74, 46, 26, 0.22)',
+              }}
+              className="tabular"
+            >
               {filteredCatalog.length} 件
             </span>
           </div>
