@@ -139,6 +139,20 @@ const ARMOR_CHARGE = 15;
  *   城壁：城HPが半分以下のときだけ（手札が1枚減り、MP を使うルールでは MP も使うため）。
  *         chargeArmor が true なら、castleSpellHitsFront のルールで城壁をぶつける魔法を持っているとき、ARMOR_CHARGE まで貯める（smart・guard だけ）
  */
+/**
+ * 罠を置くマス（targets は getTargets の { roadId, square }）。相手の兵士（getState の形。position は相手の城から数えたマス）ごとに、
+ * その兵士のいるマス（自分の城から数えて L-1-position）より手前の置けるマスのうち、いちばん近いマス。いちばん自分の城に近い兵士から選ぶ。なければ null
+ */
+function trapSpot(targets, enemySoldiers, L) {
+  const coming = enemySoldiers.filter((s) => s.role !== 'archer' && s.role !== 'mage' && s.role !== 'guard').sort((a, b) => b.position - a.position);
+  for (const s of coming) {
+    const at = L - 1 - s.position;
+    const spots = targets.filter((t) => t.roadId === s.roadId && t.square < at).sort((a, b) => b.square - a.square);
+    if (spots.length) return spots[0];
+  }
+  return null;
+}
+
 function playSupports(game, pid, ctx, { chargeArmor = false } = {}) {
   // 属性の付着と反応（クラシック）があるゲームだけ、反応を起こせる武器を先に選ぶ（ないゲームでは今までどおり）
   for (let guard = 0; guard < 20; guard++) {
@@ -168,6 +182,11 @@ function playSupports(game, pid, ctx, { chargeArmor = false } = {}) {
         const near = enemySoldiers.some((s) => s.position >= L - 2);
         const sturdy = [...me.soldiers].sort((a, b) => b.hp + b.shield - (a.hp + a.shield))[0];
         if (near && !me.castleGuard && sturdy) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === sturdy.soldierId));
+      } else if (def.kind === 'trap') {
+        // 罠（クラシック）：相手の兵士が来ている道の、その兵士が次に入るマス（自分の城から数えて、兵士のいるマスより手前でいちばん近いマス）に置く。
+        // 相手の兵士がいなければ置かない（MP と罠の枠を残す）
+        const spot = trapSpot(game.getTargets(c.cardId), enemySoldiers, ctx.rules?.laneLength ?? 5);
+        if (spot) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.roadId === spot.roadId && t.square === spot.square));
       } else if (def.effect === 'shieldSoldier') {
         if (front.length) played = playWith(game, c.cardId, (ts) => ts.find((t) => t.soldierId === front[0].soldierId));
       } else if (def.effect === 'armorCastle') {
