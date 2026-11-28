@@ -30,6 +30,7 @@ import { validateWeather } from './Weather.js';
 import { validateStages, pickStage } from './Stage.js';
 import { validateSkillTree, normalizeBuild, skillMods, emptyBuild, STATIC_HANDLERS, REACTION_SKILL_EFFECTS, REACTION_DAMAGE_KEYS } from './SkillTree.js';
 import { SkillRuntime } from './skills/Runtime.js';
+import { TrapMethods } from './Traps.js';
 
 /** 身代わり（guardCastle）が代わりに受ける、城へのダメージの出どころ（相手からの攻撃）。自分で払うコスト・崩壊・天候・毒は受けない */
 /** 4陣営の反応の継続ダメージ（reactions.json の dot.status） */
@@ -121,6 +122,11 @@ export const EVENT_TYPES = [
   'castleElementAttached',
   'castleElementCleared',
   'castleReactionTriggered',
+  // 罠（クラシック。js/game/Traps.js）
+  'trapSet',
+  'trapTriggered',
+  'trapRemoved',
+  'trapMoved',
   'gameOver',
 ];
 
@@ -395,6 +401,9 @@ export class Game {
     this.nextCardNumber = 1;
     this.nextSoldierNumber = 1;
     this.nextMonsterNumber = 1;
+    this.nextTrapNumber = 1;
+    /** 罠を使うゲームか（罠のカードがあるか、スキルツリーを渡したとき）。getState に罠のキーを足すかどうかにも使う */
+    this.trapsOn = Object.values(cards).some((d) => d.kind === 'trap') || Boolean(skillTree);
     /** @type {Monster[]} */
     this.monsters = [];
     /** 2人の組（道の pairId）→ この周回より前には魔物が出ない */
@@ -753,6 +762,12 @@ export class Game {
       if (rules[key] !== undefined && !(Number.isInteger(rules[key]) && rules[key] >= 0)) {
         throw new Error(`rules.json の ${key} は0以上の整数にしてください（書かなければ 0）`);
       }
+    }
+    for (const key of ['trapsPerTurn', 'trapMax', 'trapStay', 'trapSquares']) {
+      if (rules[key] !== undefined && !(Number.isInteger(rules[key]) && rules[key] >= 1)) throw new Error(`rules.json の ${key} は1以上の整数にしてください`);
+    }
+    if (rules.trapSquares !== undefined && Number.isInteger(rules.laneLength) && rules.trapSquares > Math.floor(rules.laneLength / 2)) {
+      throw new Error('rules.json の trapSquares は、道の真ん中（laneLength の半分。切り捨て）以下にしてください');
     }
     if (rules.drawPerPlayed !== undefined && typeof rules.drawPerPlayed !== 'boolean') {
       throw new Error('rules.json の drawPerPlayed は true か false にしてください（書かなければ false）');
@@ -1160,6 +1175,7 @@ export class Game {
     player.playedThisTurn = false;
     player.soldiersPlayedThisTurn = 0;
     player.coinCardsPlayedThisTurn = 0;
+    player.trapsPlayedThisTurn = 0;
     const playedLastTurn = player.cardsPlayedThisTurn;
     player.cardsPlayedThisTurn = 0;
     this.emit('turnStarted', { playerId, turn: this.turn });
@@ -1207,6 +1223,8 @@ export class Game {
     this.tickHealCut(player);
     // 脆弱（魔族）：同じく、城の持ち主のターンの始めに残りを1減らす
     this.tickVulnerable(player);
+    // 罠：持ち主のターンの始めに残りを1減らし、0で消える
+    if (this.trapsOn) this.tickTraps(player);
     if (player.eliminated) {
       this.beginTurn(this.nextPlayerAfter(playerId), { continueRound: true });
       return;
@@ -1357,23 +1375,28 @@ export class Game {
         let opponent = this.findClashTarget(soldier, player);
         monster = opponent ? null : this.findMonsterInRange(soldier, player);
         let moved = 0;
+        // 罠：相手の罠のマスに入ったら、そこで止まって発動する（罠を使わないゲームでは null のまま）
+        let trapHit = null;
         const speed = this.speedOf(player, soldier);
       while (!opponent && !monster && steps < speed) {
           soldier.moveForward();
           steps += 1;
           moved += 1;
           if (soldier.hasReachedCastle(laneLength)) break;
+          trapHit = this.trapAt(player, soldier);
+          if (trapHit) break;
           opponent = this.findClashTarget(soldier, player);
           if (!opponent) monster = this.findMonsterInRange(soldier, player);
         }
         // 氷のステージ：止められずに歩き切ったら、滑って1マス余分に進むことがある
         let slipped = false;
         const slip = this.stageDef()?.slipChance ?? 0;
-        if (slip > 0 && moved > 0 && steps >= speed && !opponent && !monster && !soldier.hasReachedCastle(laneLength) && this.rng() < slip) {
+        if (slip > 0 && moved > 0 && steps >= speed && !opponent && !monster && !trapHit && !soldier.hasReachedCastle(laneLength) && this.rng() < slip) {
           soldier.moveForward();
           moved += 1;
           slipped = true;
-          if (!soldier.hasReachedCastle(laneLength)) {
+          if (!soldier.hasReachedCastle(laneLength)) trapHit = this.trapAt(player, soldier);
+          if (!soldier.hasReachedCastle(laneLength) && !trapHit) {
             opponent = this.findClashTarget(soldier, player);
             if (!opponent) monster = this.findMonsterInRange(soldier, player);
           }
@@ -1389,6 +1412,12 @@ export class Game {
             to: reached ? laneLength : soldier.position,
             ...(slipped ? { slipped: true } : {}),
           });
+        }
+        if (trapHit) {
+          this.triggerTrap(trapHit.trapOwner, trapHit.trap, player, soldier);
+          // 罠の属性の反応（轟雷爆炎など）で城が落ちたら、ここで止める
+          if (this.reactionDefs && this.checkGameOver()) return;
+          break;
         }
         if (!opponent) break;
         this.fight(player, soldier, opponent.owner, opponent.soldier, opponent.q - soldier.position > 1);
@@ -3191,6 +3220,8 @@ export class Game {
         });
         return { targets, reason: '兵士を送れる相手がいません' };
       }
+      case 'trap':
+        return this.trapTargets(player);
       case 'weapon': {
         // 武器は何本でも重ねられる（攻撃力は足し算。属性は最後に持たせた武器になる）
         const targets = player.soldiers.map((x) => ({ soldierId: x.soldierId }));
@@ -3494,6 +3525,7 @@ export class Game {
       return fail(`このターンに出せる兵士は${this.soldiersPerTurnOf(player)}枚までです`);
     }
     if (card.slot === 'main' && player.playedThisTurn) return fail('このターンはもうメインのカードを出しました');
+    if (card.slot === 'trap' && player.trapsPlayedThisTurn >= this.trapRules().perTurn) return fail(`罠は1ターンに${this.trapRules().perTurn}枚までです`);
     if (isCoinCard(card.def) && this.rules.coinCardsPerTurn && player.coinCardsPlayedThisTurn >= this.rules.coinCardsPerTurn) {
       return fail(`コインのカードは1ターンに${this.rules.coinCardsPerTurn}枚までです`);
     }
@@ -3568,6 +3600,7 @@ export class Game {
     if (card.slot === 'main') player.playedThisTurn = true;
     if (isCoinCard(card.def)) player.coinCardsPlayedThisTurn += 1;
     if (card.slot === 'soldier') player.soldiersPlayedThisTurn += 1;
+    if (card.slot === 'trap') player.trapsPlayedThisTurn += 1;
     player.cardsPlayedThisTurn += 1;
     // 使ったカードは（兵士も）すぐ捨て札へ。使い切りのカードは、二度と山札に戻らない置き場へ
     this.throwAway(player.id, card);
@@ -3584,6 +3617,10 @@ export class Game {
   applyCard(player, card, target) {
     if (card.def.effect === 'dice') {
       this.rollDice(player, card, target);
+      return;
+    }
+    if (card.kind === 'trap') {
+      this.placeTrap(player, card.type, card.def, target.roadId, target.square, { fromHand: true, cardId: card.cardId });
       return;
     }
     if (card.isSoldier) {
@@ -4851,6 +4888,7 @@ export class Game {
     player.eliminated = true;
     this.emit('playerEliminated', { playerId: player.id, by });
     for (const s of [...player.soldiers]) this.removeSoldier(player, s, 'eliminated');
+    if (this.trapsOn) this.clearTraps(player, 'eliminated');
     for (const c of player.hand) this.throwAway(player.id, c, { used: false });
     player.hand = [];
     const { opened, closed } = this.rebuildRoads();
@@ -4861,6 +4899,7 @@ export class Game {
       for (const id of this.alivePlayerIds()) {
         const p = this.players[id];
         for (const s of p.soldiers.filter((x) => x.roadId === road.roadId)) this.removeSoldier(p, s, 'roadClosed');
+        if (this.trapsOn) this.clearTraps(p, 'roadClosed', road.roadId);
       }
     }
     for (const road of opened) this.emit('roadOpened', { roadId: road.roadId, players: [...road.players] });
@@ -4941,6 +4980,8 @@ export class Game {
         ...(this.extState.mpSeal ? { mpSeal: p.mpSeal ? { ...p.mpSeal } : null } : {}),
         // 4陣営（試作）：城に付いている属性（castleAttach のゲームだけキーを足す。チーム戦は城を共有）
         ...(this.rules.castleAttach && this.reactionDefs ? { castleAttachments: p.castle.attachments.map((a) => ({ ...a })) } : {}),
+        // 罠（罠を使うゲームだけキーを足す）：数はだれにでも、中身（場所）は同じ陣地の人にだけ
+        ...(this.trapsOn ? this.trapState(p, viewerId) : {}),
         // 強化の今の値段（costs で買うたびに上がる強化があるので、人ごと）
         upgradeCosts: Object.fromEntries(Object.keys(this.upgradeDefs).map((u) => [u, this.upgradeCostOf(p, u)])),
       };
@@ -5096,3 +5137,6 @@ export class Game {
     return unknown === undefined ? null : `"${unknown}" というカードはありません`;
   }
 }
+
+// 罠（js/game/Traps.js）のメソッドを足す
+Object.assign(Game.prototype, TrapMethods);

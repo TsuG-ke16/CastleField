@@ -1,7 +1,7 @@
 // カード1枚。数値は data/cards.json の定義から受け取る（コードに数値を書かない）。
 // DOM は使わない（後でサーバーに移すため）。
 
-export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense'];
+export const CARD_KINDS = ['soldier', 'spell', 'weapon', 'defense', 'trap'];
 /** 兵士の役割：melee（進んで戦う）・archer（弓兵：動かず、射程の中の1体を撃つ）・mage（魔法使い：動かず、兵士がいなければ城を撃つ） */
 /** guard（護衛）：自分の城の前から動かず、左右のとなりの道の城の前も守る。stay ターンで帰る */
 export const SOLDIER_ROLES = ['melee', 'archer', 'mage', 'ninja', 'guard'];
@@ -97,6 +97,7 @@ export const SLOT_OF_KIND = {
   spell: 'main',
   weapon: 'addon',
   defense: 'defense',
+  trap: 'trap', // 罠（クラシック）：1ターン rules.trapsPerTurn 枚まで
 };
 
 export class Card {
@@ -115,7 +116,7 @@ export class Card {
     return this.def.kind;
   }
 
-  /** "soldier" | "main" | "addon" | "defense" | "support" */
+  /** "soldier" | "main" | "addon" | "defense" | "support" | "trap" */
   get slot() {
     if (this.def.kind === 'spell' && SUPPORT_EFFECTS.includes(this.def.effect)) return 'support';
     if (this.def.effect === 'dice' && SUPPORT_DICE.includes(this.def.dice)) return 'support';
@@ -189,8 +190,8 @@ export class Card {
         throw new Error(`${where}: exhaust は true か false にしてください（書かなければ false）`);
       }
       // 魔法の element はデータとして持つだけ（効果・ダメージは変わらない。のちの付着・反応で使う）
-      if (def.element !== undefined && def.kind !== 'weapon' && def.kind !== 'spell') {
-        throw new Error(`${where}: element を書けるのは武器（kind: "weapon"）と魔法（kind: "spell"）だけです`);
+      if (def.element !== undefined && def.kind !== 'weapon' && def.kind !== 'spell' && def.kind !== 'trap') {
+        throw new Error(`${where}: element を書けるのは武器（kind: "weapon"）・魔法（kind: "spell"）・罠（kind: "trap"）だけです`);
       }
       // 兵士の innateElement は生まれつきの属性（4陣営モード。武器の属性と同じに扱い、武器を持つと上書きされる）
       if (def.innateElement !== undefined && (def.kind !== 'soldier' || !elements.includes(def.innateElement))) {
@@ -321,6 +322,13 @@ export class Card {
         if (!moving && def.speed !== undefined) throw new Error(`${where}: 弓兵・魔法使い（role: ${role}）は動かないので speed は書けません`);
       } else if (def.kind === 'weapon') {
         if (!isCount(def.attackBonus)) throw new Error(`${where}: attackBonus は0以上の整数にしてください`);
+      } else if (def.kind === 'trap') {
+        // 罠：damage（入った兵士へのダメージ）・freeze（凍結の回数）のどちらか1つ以上。stay（残る自分のターンの数）は省略すると rules.trapStay
+        for (const key of ['damage', 'freeze']) {
+          if (def[key] !== undefined && !isCount(def[key])) throw new Error(`${where}: 罠の ${key} は0以上の整数にしてください`);
+        }
+        if (!((def.damage ?? 0) > 0 || (def.freeze ?? 0) > 0)) throw new Error(`${where}: 罠には damage か freeze を1以上で書いてください`);
+        if (def.stay !== undefined && !isPositive(def.stay)) throw new Error(`${where}: 罠の stay は1以上の整数にしてください`);
       } else {
         const effects = EFFECTS[def.kind];
         if (!Object.hasOwn(effects, def.effect)) {

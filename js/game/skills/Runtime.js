@@ -595,6 +595,18 @@ export class SkillRuntime {
       case 'weaponEquipped':
         this.enqueue('onWeaponEquip', { ownerId: payload.playerId, targetId: payload.soldierId, cardType: payload.type });
         break;
+      case 'trapSet':
+      case 'trapTriggered':
+      case 'trapRemoved': {
+        // 罠（js/game/Traps.js）：phase "set"（置いた）/ "triggered"（発動した）/ "removed"（消えた。reason つき）
+        const phase = type === 'trapSet' ? 'set' : type === 'trapTriggered' ? 'triggered' : 'removed';
+        this.enqueue('onTrap', {
+          phase, ownerId: payload.playerId, trapId: payload.trapId, trapType: payload.type, roadId: payload.roadId, square: payload.square,
+          reason: payload.reason ?? null, generated: Boolean(payload.generated), fromHand: Boolean(payload.fromHand), noRegen: Boolean(payload.noRegen),
+          chained: Boolean(payload.chained), victimOwnerId: payload.victimId ?? null, targetId: payload.soldierId ?? null, origin: 'trap',
+        });
+        break;
+      }
       case 'soldierMoved':
         this.enqueue('onUnitMoved', {
           ownerId: payload.playerId, targetId: payload.soldierId, roadId: payload.roadId, fromRoadId: payload.fromRoadId ?? payload.roadId,

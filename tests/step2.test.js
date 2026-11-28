@@ -169,7 +169,9 @@ test('cards.json の間違いは例外', () => {
   assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'weapon', count: 1 } }, rules }), /attackBonus/);
   assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'weapon', attackBonus: 1, element: 'ice', count: 1 } }, rules }), /element/);
   assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'defense', effect: 'boom', count: 1 } }, rules }), /effect/);
-  assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'trap', effect: 'pit', amount: 3, count: 1 } }, rules }), /kind/);
+  // 罠（kind: "trap"）はクラシックのために入れた。damage も freeze もない罠は例外
+  assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'trap', effect: 'pit', amount: 3, count: 1 } }, rules }), /damage か freeze/);
+  assert.throws(() => new Game({ cards: { ...cards, x: { name: 'x', kind: 'trick', count: 1 } }, rules }), /kind/);
   assert.throws(() => new Game({ cards, rules: { ...rules, elementBonus: -1 } }), /elementBonus/);
 });
 

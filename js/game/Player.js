@@ -17,6 +17,9 @@ export class Player {
     this.playedThisTurn = false;
     this.soldiersPlayedThisTurn = 0;
     this.coinCardsPlayedThisTurn = 0;
+    /** 罠（クラシック。js/game/Traps.js）：置いた罠と、このターンに出した罠のカードの枚数。罠の中身は相手に見せない（toState に入れない） */
+    this.traps = [];
+    this.trapsPlayedThisTurn = 0;
     /** 負けて抜けたか（3人以上のとき） */
     this.eliminated = false;
     /** このターンに出したカードの枚数（メイン・付加・防御すべて） */

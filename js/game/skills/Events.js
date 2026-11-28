@@ -29,8 +29,8 @@ export const SKILL_EVENTS = [
   'onWeaponEquip', // 武器の装備（weaponEquipped）
   'onUnitMoved', // 兵士が動いた（soldierMoved。kind "march"＝進軍 / "lane"＝スキルのレーン移動 / "step"＝スキルの追加進軍・位置交換）
   'onEnemyCardPlayed', // 相手が手札からカードを使った（模倣系用。相手の手札は見せない）
+  'onTrap', // 罠（js/game/Traps.js）：ev.phase "set" / "triggered" / "removed"（ev.reason）。ev.trapId・roadId・square・generated・fromHand・chained・victimOwnerId・targetId
   // 既存仕様に存在しないもの（発行されない。段階C で既存機能が追加されたときのために名前だけ予約）
-  'onTrap', // 罠：クラシックに罠のカードがない
   'onWeaponAttack', // 固定兵器の攻撃：クラシックに固定兵器がない（武器は兵士に付ける装備）
   'onDiagnostic', // 上限超過などの診断（ハンドラは購読しなくてよい）
 ];
@@ -40,7 +40,7 @@ export const ORIGINS = [
   'hand', 'normalAttack', 'echo', 'chain', 'reaction', 'dot', 'reflect', 'resurrection', 'token', 'copy',
   'scheduled', 'sacrifice', 'hpCost', 'skillActive',
   // 細分化
-  'turnStart', 'turnEnd', 'system', 'monster', 'free', 'defense', 'extraAttack',
+  'turnStart', 'turnEnd', 'system', 'monster', 'free', 'defense', 'extraAttack', 'trap',
 ];
 
 /** 追加発動の origin（ここから新しい追加発動は原則生まれない） */
