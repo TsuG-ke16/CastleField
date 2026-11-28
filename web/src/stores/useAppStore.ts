@@ -64,6 +64,11 @@ export function computePlayerProgression(stats: PlayerStats): {
   };
 }
 
+export interface CustomDeckSlot {
+  name: string;
+  cards: Record<string, number>;
+}
+
 const STORAGE_KEY = 'castlefield_v2_save_v1';
 
 interface SavedSlice {
@@ -82,11 +87,14 @@ interface SavedSlice {
   selectedStageId?: string;
   selectedFactionId?: FactionId;
   customDeck?: Record<string, number>;
+  customDecks?: CustomDeckSlot[];
+  activeCustomSlot?: number;
   unlockedSkills?: string[];
   quality?: QualityMode;
   muted?: boolean;
   bgmMuted?: boolean;
   mulliganEnabled?: boolean;
+  reducedMotion?: boolean;
   engineMode?: EngineMode;
   stats?: PlayerStats;
   claimedMissions?: string[];
@@ -122,11 +130,14 @@ function persistState(s: AppStoreState): void {
       selectedStageId: s.selectedStageId,
       selectedFactionId: s.selectedFactionId,
       customDeck: s.customDeck,
+      customDecks: s.customDecks,
+      activeCustomSlot: s.activeCustomSlot,
       unlockedSkills: s.unlockedSkills,
       quality: s.quality,
       muted: s.muted,
       bgmMuted: s.bgmMuted,
       mulliganEnabled: s.mulliganEnabled,
+      reducedMotion: s.reducedMotion,
       engineMode: s.engineMode,
       stats: s.stats,
       claimedMissions: s.claimedMissions,
@@ -152,6 +163,8 @@ interface AppStoreState {
   selectedStageId: string;
   selectedFactionId: FactionId;
   customDeck: Record<string, number>;
+  customDecks: CustomDeckSlot[];
+  activeCustomSlot: number;
   selectedCastleSkin: string;
   selectedSoldierSkin: string;
   selectedBackSkin: string;
@@ -161,6 +174,7 @@ interface AppStoreState {
   muted: boolean;
   bgmMuted: boolean;
   mulliganEnabled: boolean;
+  reducedMotion: boolean;
   coins: number;
   points: number;
   pityCount: number;
@@ -197,10 +211,13 @@ interface AppStoreState {
   clonePresetToCustomDeck: (presetId: string) => void;
   updateCustomDeckCard: (cardKey: string, delta: number) => void;
   resetCustomDeck: () => void;
+  selectCustomSlot: (slot: number) => void;
+  renameCustomDeck: (slot: number, name: string) => void;
   setQuality: (q: QualityMode) => void;
   toggleMute: () => void;
   toggleBgmMute: () => void;
   toggleMulliganEnabled: () => void;
+  toggleReducedMotion: () => void;
   startBattle: () => void;
   exitBattle: () => void;
   startRankedBattle: (ticket: RankedTicket) => void;
@@ -259,6 +276,19 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     selectedStageId: initial.selectedStageId ?? 'meadow',
     selectedFactionId: initial.selectedFactionId ?? 'kingdom',
     customDeck: initial.customDeck ?? {},
+    customDecks:
+      Array.isArray(initial.customDecks) && initial.customDecks.length === 4
+        ? initial.customDecks
+        : [
+            { name: 'デッキ1', cards: initial.customDeck ?? {} },
+            { name: 'デッキ2', cards: {} },
+            { name: 'デッキ3', cards: {} },
+            { name: 'デッキ4', cards: {} },
+          ],
+    activeCustomSlot:
+      typeof initial.activeCustomSlot === 'number' && initial.activeCustomSlot >= 0 && initial.activeCustomSlot < 4
+        ? initial.activeCustomSlot
+        : 0,
     selectedCastleSkin: initial.selectedCastleSkin ?? 'castle-blue',
     selectedSoldierSkin: initial.selectedSoldierSkin ?? 'infantry-blue',
     selectedBackSkin: initial.selectedBackSkin ?? 'card-back',
@@ -267,6 +297,11 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     muted: initial.muted ?? false,
     bgmMuted: initial.bgmMuted ?? false,
     mulliganEnabled: initial.mulliganEnabled ?? false,
+    reducedMotion:
+      initial.reducedMotion ??
+      (typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+        ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        : false),
     coins: initial.coins ?? 2400,
     points: initial.points ?? 350,
     pityCount: initial.pityCount ?? 0,
@@ -297,15 +332,26 @@ export const useAppStore = create<AppStoreState>((set, get) => {
               ? 'costBalance'
               : deckKeys[0] || 'balanced';
         const fallbackCards = data.decks?.['costBalance']?.cards || data.decks?.[firstDeckKey]?.cards || {};
+        const slotPresets = ['costBalance', 'costAssault', 'costDefense', 'costSpell'];
         const existingCustom = get().customDeck;
-        const seededCustom =
-          existingCustom && Object.keys(existingCustom).length > 0
-            ? existingCustom
-            : { ...fallbackCards };
+        const currentSlots = get().customDecks;
+        const seededSlots: CustomDeckSlot[] = [0, 1, 2, 3].map((i) => {
+          const cur = currentSlots[i];
+          if (cur && Object.keys(cur.cards || {}).length > 0) return cur;
+          if (i === 0 && existingCustom && Object.keys(existingCustom).length > 0) {
+            return { name: cur?.name || 'デッキ1', cards: { ...existingCustom } };
+          }
+          const presetKey = slotPresets[i];
+          const src = data.decks?.[presetKey]?.cards || fallbackCards;
+          return { name: cur?.name || `デッキ${i + 1}`, cards: { ...src } };
+        });
+        const slotIdx = get().activeCustomSlot;
+        const seededCustom = { ...(seededSlots[slotIdx]?.cards || fallbackCards) };
         savePatch({
           data,
           loading: false,
           selectedDeckId: firstDeckKey,
+          customDecks: seededSlots,
           customDeck: seededCustom,
         });
       } catch (e) {
@@ -360,7 +406,9 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       const src = decks[presetId]?.cards;
       if (!src) return;
       soundManager.play('tap');
-      savePatch({ customDeck: { ...src }, selectedDeckId: 'custom' });
+      const idx = get().activeCustomSlot;
+      const nextSlots = get().customDecks.map((s, i) => (i === idx ? { ...s, cards: { ...src } } : s));
+      savePatch({ customDecks: nextSlots, customDeck: { ...src }, selectedDeckId: 'custom' });
     },
     updateCustomDeckCard: (cardKey, delta) => {
       const next = { ...get().customDeck };
@@ -369,13 +417,33 @@ export const useAppStore = create<AppStoreState>((set, get) => {
       if (updated === 0) delete next[cardKey];
       else next[cardKey] = updated;
       soundManager.play('tap');
-      savePatch({ customDeck: next, selectedDeckId: 'custom' });
+      const idx = get().activeCustomSlot;
+      const nextSlots = get().customDecks.map((s, i) => (i === idx ? { ...s, cards: next } : s));
+      savePatch({ customDecks: nextSlots, customDeck: next, selectedDeckId: 'custom' });
     },
     resetCustomDeck: () => {
       const decks = get().data?.decks || {};
-      const base = decks['costBalance']?.cards || Object.values(decks)[0]?.cards || {};
+      const slotPresets = ['costBalance', 'costAssault', 'costDefense', 'costSpell'];
+      const idx = get().activeCustomSlot;
+      const base = decks[slotPresets[idx]]?.cards || decks['costBalance']?.cards || Object.values(decks)[0]?.cards || {};
       soundManager.play('tap');
-      savePatch({ customDeck: { ...base }, selectedDeckId: 'custom' });
+      const nextSlots = get().customDecks.map((s, i) => (i === idx ? { ...s, cards: { ...base } } : s));
+      savePatch({ customDecks: nextSlots, customDeck: { ...base }, selectedDeckId: 'custom' });
+    },
+    selectCustomSlot: (slot) => {
+      const idx = Math.max(0, Math.min(3, slot));
+      const slots = get().customDecks;
+      const picked = slots[idx]?.cards || {};
+      soundManager.play('tap');
+      savePatch({ activeCustomSlot: idx, customDeck: { ...picked }, selectedDeckId: 'custom' });
+    },
+    renameCustomDeck: (slot, name) => {
+      const idx = Math.max(0, Math.min(3, slot));
+      const cleaned = name.slice(0, 14);
+      const nextSlots = get().customDecks.map((s, i) =>
+        i === idx ? { ...s, name: cleaned || `デッキ${idx + 1}` } : s
+      );
+      savePatch({ customDecks: nextSlots });
     },
     setQuality: (quality) => {
       soundManager.play('tap');
@@ -394,6 +462,10 @@ export const useAppStore = create<AppStoreState>((set, get) => {
     toggleMulliganEnabled: () => {
       soundManager.play('tap');
       savePatch({ mulliganEnabled: !get().mulliganEnabled });
+    },
+    toggleReducedMotion: () => {
+      soundManager.play('tap');
+      savePatch({ reducedMotion: !get().reducedMotion });
     },
     startBattle: () => {
       soundManager.play('deploy');

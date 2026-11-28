@@ -58,6 +58,44 @@
   min-width: 0;
 }
 
+@keyframes cfDefendPulse {
+  0%, 100% {
+    box-shadow: inset 0 0 0 4px rgba(222, 79, 70, 0.9);
+  }
+  50% {
+    box-shadow: inset 0 0 0 8px rgba(255, 198, 92, 0.95);
+  }
+}
+
+.defendAlert {
+  animation: cfDefendPulse 0.95s ease-in-out infinite;
+}
+
+.diceBanner {
+  position: absolute;
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 36;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: rgba(34, 49, 98, 0.94);
+  color: #ffe37a;
+  border: 2.5px solid #ffe37a;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.38);
+  font-size: 13px;
+  font-weight: 900;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .defendAlert {
+    animation: none;
+    box-shadow: inset 0 0 0 4px #de4f46;
+  }
+}
+
 .hpOverlayTop {
   position: absolute;
   top: 8px;

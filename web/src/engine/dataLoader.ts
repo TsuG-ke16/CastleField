@@ -271,13 +271,81 @@ export function cardTypeToImagePath(type: string): string {
     apocalypse: 'card-apocalypse.png',
     adapt: 'card-adapt.png',
     beast_demonKing: 'card-beast-demon-king.png',
+    // 4-Factions aliases & Classic deck cards matching js/ui/cardVisuals.js
+    fac_king_hero: 'card-hero.png',
+    fac_king_god_sword: 'card-god-sword.png',
+    fac_king_god_shield: 'card-god-shield.png',
+    fac_king_judgement: 'card-judgment.png',
+    classic_king_infantry: 'card-fac-king-infantry.png',
+    classic_king_cavalry: 'card-fac-king-cavalry.png',
+    classic_king_archer: 'card-fac-king-archer.png',
+    classic_king_heavy: 'card-fac-king-heavy.png',
+    classic_king_priest: 'card-fac-king-priest.png',
+    classic_king_holy_sword: 'card-fac-king-holy-sword.png',
+    classic_king_lumina_lance: 'card-fac-king-lumina-lance.png',
+    classic_king_lumina: 'card-fac-king-lumina.png',
+    classic_king_minor_heal: 'card-minor-heal.png',
+    classic_king_heal: 'card-fac-king-heal.png',
+    classic_king_shield: 'card-fac-king-shield.png',
+    classic_king_wall: 'card-fac-king-wall.png',
+    classic_king_purify: 'card-fac-king-purify.png',
+    classic_king_holy_ray: 'card-fac-king-holy-ray.png',
+    classic_demon_skeleton: 'card-fac-demon-skeleton.png',
+    classic_demon_imp: 'card-fac-demon-imp.png',
+    classic_demon_curser: 'card-fac-demon-curser.png',
+    classic_demon_shadow_scythe: 'card-fac-demon-shadow-scythe.png',
+    classic_demon_frost_blade: 'card-fac-demon-frost-blade.png',
+    classic_demon_chaos_rod: 'card-fac-demon-chaos-rod.png',
+    classic_demon_frost_breath: 'card-fac-demon-frost-breath.png',
+    classic_demon_poison_mist: 'card-fac-demon-poison-mist.png',
+    classic_demon_soul_shard: 'card-fac-demon-soul-shard.png',
+    classic_demon_blood_veil: 'card-fac-demon-blood-veil.png',
+    classic_demon_bone_shield: 'card-fac-demon-bone-shield.png',
+    classic_demon_shadow: 'card-fac-demon-shadow.png',
+    classic_demon_curse_mark: 'card-fac-demon-curse-mark.png',
+    classic_demon_echo_soul: 'card-fac-demon-echo-soul.png',
+    classic_demon_chaos_pulse: 'card-fac-demon-chaos-pulse.png',
   };
 
+  const V2_SLICED_CARDS = new Set([
+    'fac_king_chain_sword',
+    'fac_forest_flame_sword',
+    'fac_forest_aqua_spear',
+    'fac_forest_gale_bow',
+    'fac_forest_earth_hammer',
+    'fac_forest_flare_seed',
+    'fac_forest_spring_wave',
+    'fac_forest_leaf_storm',
+    'fac_forest_root_bind',
+    'fac_forest_warden',
+    'fac_forest_treant',
+    'fac_forest_herb',
+    'fac_forest_old_root',
+    'fac_demon_zombie',
+    'fac_demon_ice_wraith',
+    'fac_demon_chaos_spawn',
+    'fac_demon_drain_blade',
+    'fac_demon_vulnerable',
+    'fac_demon_blood_pact',
+    'fac_demon_mana_seal',
+    'fac_dragon_mage',
+    'fac_dragon_scale_guard',
+    'fac_dragon_ancient_barrier',
+    'fac_dragon_wing_decoy',
+    'fac_king_siege',
+    'classic_king_holy_fireball',
+    'classic_demon_dark_fireball',
+    'classic_king_rampart_volley',
+  ]);
+
+  if (V2_SLICED_CARDS.has(type)) {
+    return `/assets/v2/cards/card-${type.replace(/_/g, '-')}.webp`;
+  }
   if (DIRECT_MAP[type]) return `/assets/cards/${DIRECT_MAP[type]}`;
   if (type.startsWith('beast_')) {
-    const slug = type.slice(6).replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+    const slug = type.slice(6).replace(/_/g, '-').replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
     return `/assets/cards/card-beast-${slug}.png`;
   }
-  const kebab = type.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
+  const kebab = type.replace(/_/g, '-').replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase();
   return `/assets/cards/card-${kebab}.png`;
 }
