@@ -81,6 +81,17 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,woff2}'],
+        cleanupOutdatedCaches: true,
+        skipWaiting: true,
+        clientsClaim: true,
+        navigateFallbackDenylist: [
+          /^\/api\//,
+          /^\/assets\//,
+          /^\/data\//,
+          /^\/wasm\//,
+          /^\/draco\//,
+          /\/[^/?]+\.[^/]+$/,
+        ],
         runtimeCaching: [
           {
             urlPattern: ({ url }) =>

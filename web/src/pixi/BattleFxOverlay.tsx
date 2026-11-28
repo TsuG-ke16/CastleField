@@ -12,6 +12,7 @@ interface BattleFxOverlayProps {
   weatherId?: string | null;
   isNight?: boolean;
   quality: '3d' | '2d';
+  reducedMotion?: boolean;
 }
 
 interface Particle {
@@ -39,12 +40,12 @@ interface Ring {
 const CONFETTI_COLORS = [0xffd24c, 0x4da3e8, 0xf25b4b, 0x63d471, 0xc77dff];
 
 export const BattleFxOverlay = forwardRef<BattleFxHandle, BattleFxOverlayProps>(
-  function BattleFxOverlay({ stageId = 'meadow', weatherId = null, isNight = false, quality }, ref) {
+  function BattleFxOverlay({ stageId = 'meadow', weatherId = null, isNight = false, quality, reducedMotion = false }, ref) {
     const hostRef = useRef<HTMLDivElement>(null);
     const particlesRef = useRef<Particle[]>([]);
     const ringsRef = useRef<Ring[]>([]);
-    const propsRef = useRef({ stageId, weatherId, isNight, quality });
-    propsRef.current = { stageId, weatherId, isNight, quality };
+    const propsRef = useRef({ stageId, weatherId, isNight, quality, reducedMotion });
+    propsRef.current = { stageId, weatherId, isNight, quality, reducedMotion };
 
     useImperativeHandle(ref, () => ({
       burst(kind: FxKind) {
@@ -53,7 +54,8 @@ export const BattleFxOverlay = forwardRef<BattleFxHandle, BattleFxOverlayProps>(
         const h = el?.clientHeight || 360;
         const cx = w * 0.5;
         const cy = kind === 'deploy' ? h * 0.62 : kind === 'victory' ? h * 0.35 : h * 0.45;
-        const count = propsRef.current.quality === '2d' ? 14 : 30;
+        const baseCount = propsRef.current.quality === '2d' ? 14 : 30;
+        const count = propsRef.current.reducedMotion ? Math.max(4, Math.floor(baseCount * 0.4)) : baseCount;
         const list = particlesRef.current;
 
         if (kind === 'fire') {
@@ -195,12 +197,13 @@ export const BattleFxOverlay = forwardRef<BattleFxHandle, BattleFxOverlayProps>(
             const dt = Math.min(0.05, ticker.deltaMS / 1000);
             const w = el.clientWidth || 360;
             const h = el.clientHeight || 360;
-            const { stageId: st, weatherId: wt, isNight: night, quality: q } = propsRef.current;
+            const { stageId: st, weatherId: wt, isNight: night, quality: q, reducedMotion: rm } = propsRef.current;
 
-            // Ambient weather & biome particles
-            ambientAcc += dt * (q === '2d' ? 6 : 16);
-            while (ambientAcc >= 1) {
-              ambientAcc -= 1;
+            // Ambient weather & biome particles (skipped in reducedMotion mode)
+            if (!rm) {
+              ambientAcc += dt * (q === '2d' ? 6 : 16);
+              while (ambientAcc >= 1) {
+                ambientAcc -= 1;
               if (wt === 'rain' || wt === 'storm') {
                 particlesRef.current.push({
                   x: Math.random() * (w + 60),
@@ -262,6 +265,7 @@ export const BattleFxOverlay = forwardRef<BattleFxHandle, BattleFxOverlayProps>(
                   kind: 'circle',
                 });
               }
+            }
             }
 
             gfx.clear();

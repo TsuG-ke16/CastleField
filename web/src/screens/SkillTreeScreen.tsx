@@ -75,12 +75,22 @@ export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
     const q = search.trim().toLowerCase();
     return nodes.filter((n) => {
       if (n.id === 'START') return true;
-      if (q && !n.name.toLowerCase().includes(q) && !n.id.toLowerCase().includes(q)) {
+      if (
+        q &&
+        !n.name.toLowerCase().includes(q) &&
+        !n.id.toLowerCase().includes(q) &&
+        !(n.desc || '').toLowerCase().includes(q)
+      ) {
         return false;
       }
       return true;
     });
   }, [nodes, search]);
+
+  const matchedCount = useMemo(
+    () => filteredNodes.filter((n) => n.id !== 'START').length,
+    [filteredNodes]
+  );
 
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedId) || null,
@@ -122,7 +132,7 @@ export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
         </span>
       </header>
 
-      <div style={{ display: 'flex', gap: 8, padding: '8px 12px', background: '#fff6e0', borderBottom: '2px solid #c9ad7b' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: '#fff6e0', borderBottom: '2px solid #c9ad7b' }}>
         <input
           type="search"
           placeholder="スキル名・効果で探す…"
@@ -130,6 +140,22 @@ export function SkillTreeScreen({ onBack }: { onBack: () => void }) {
           onChange={(e) => setSearch(e.target.value)}
           style={{ flex: 1, minHeight: 38, borderRadius: 10, border: '2px solid #4a2e1a', padding: '4px 10px', fontWeight: 700 }}
         />
+        {search.trim() && (
+          <span
+            className="tabular"
+            style={{
+              flexShrink: 0,
+              padding: '4px 8px',
+              borderRadius: 999,
+              background: '#3465cc',
+              color: '#fffaf0',
+              fontSize: 11,
+              fontWeight: 900,
+            }}
+          >
+            ヒット {matchedCount}件
+          </span>
+        )}
         <GameButton size="sm" variant="danger-ruby" onClick={resetSkills}>
           全リセット
         </GameButton>

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useAppStore } from '../stores/useAppStore';
 import { cardTypeToImagePath } from '../engine/dataLoader';
+import { decodeDeckCode, encodeDeckCode } from '../engine/deckCode';
 import { GameCard } from '../components/ui/GameCard';
 import { GameButton, RoundButton } from '../components/ui/GameButton';
 import { PaintedIcon } from '../components/ui/PaintedIcon';
@@ -37,6 +38,7 @@ export function DeckScreen() {
     clonePresetToCustomDeck,
     updateCustomDeckCard,
     resetCustomDeck,
+    importCustomDeck,
     setTab,
   } = useAppStore();
 
@@ -47,6 +49,9 @@ export function DeckScreen() {
   const [query, setQuery] = useState('');
   const [inspectType, setInspectType] = useState<string | null>(null);
   const [tilt, setTilt] = useState({ rx: 0, ry: 0, gx: 50, gy: 50, active: false });
+  const [shareOpen, setShareOpen] = useState(false);
+  const [importDraft, setImportDraft] = useState('');
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
 
   const decks = data?.decks || {};
   const cards = data?.cards || {};
@@ -301,6 +306,16 @@ export function DeckScreen() {
                     初期に戻す
                   </GameButton>
                 )}
+                <GameButton
+                  variant="normal-stone"
+                  size="sm"
+                  onClick={() => {
+                    setShareOpen(true);
+                    setShareStatus(null);
+                  }}
+                >
+                  共有コード
+                </GameButton>
               </div>
               {isCustom && stats.totalCost > 100 && (
                 <div style={{ fontSize: 11, fontWeight: 900, color: '#a82a24', background: '#fde8e8', border: '1.5px solid #de4f46', borderRadius: 8, padding: '4px 8px' }}>
@@ -590,6 +605,106 @@ export function DeckScreen() {
                   閉じる
                 </GameButton>
               </div>
+            </ParchmentSheet>
+          </div>
+        </div>
+      )}
+
+      {shareOpen && (
+        <div className={styles.modalBackdrop} onClick={() => setShareOpen(false)}>
+          <div style={{ width: '100%', maxWidth: 420 }} onClick={(e) => e.stopPropagation()}>
+            <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                <strong style={{ fontSize: 17 }}>デッキ共有コード</strong>
+                <RoundButton onClick={() => setShareOpen(false)} aria-label="閉じる">
+                  <PaintedIcon name="close" size={16} />
+                </RoundButton>
+              </div>
+
+              <div style={{ fontSize: 12, fontWeight: 800, color: 'var(--cf-ink-muted)' }}>
+                現在のデッキ（{activeDeckName}）の共有コード：
+              </div>
+              <textarea
+                readOnly
+                rows={3}
+                aria-label="共有コード出力"
+                value={encodeDeckCode(activeCardsMap)}
+                style={{
+                  width: '100%',
+                  padding: 8,
+                  borderRadius: 10,
+                  border: '2px solid #4a2e1a',
+                  background: '#fffdf7',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  resize: 'none',
+                  wordBreak: 'break-all',
+                }}
+              />
+              <GameButton
+                size="sm"
+                variant="normal-stone"
+                fullWidth
+                onClick={async () => {
+                  const code = encodeDeckCode(activeCardsMap);
+                  try {
+                    await navigator.clipboard?.writeText(code);
+                    setShareStatus('共有コードをコピーしました！');
+                  } catch {
+                    setShareStatus('上の枠からテキストをコピーしてください。');
+                  }
+                }}
+              >
+                コードをコピー
+              </GameButton>
+
+              <div style={{ borderTop: '1.5px dashed #c9b075', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <strong style={{ fontSize: 13 }}>共有コードを読み込む</strong>
+                <textarea
+                  rows={2}
+                  aria-label="共有コード入力"
+                  placeholder="CF2-..."
+                  value={importDraft}
+                  onChange={(e) => setImportDraft(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: 8,
+                    borderRadius: 10,
+                    border: '2px solid #4a2e1a',
+                    background: '#fff',
+                    fontSize: 12,
+                    fontWeight: 700,
+                    resize: 'none',
+                  }}
+                />
+                <GameButton
+                  size="sm"
+                  variant="primary-gold"
+                  fullWidth
+                  onClick={() => {
+                    const res = decodeDeckCode(importDraft, cards);
+                    if (!res.ok) {
+                      setShareStatus(res.reason);
+                      return;
+                    }
+                    importCustomDeck(res.cards);
+                    setImportDraft('');
+                    setShareStatus(
+                      res.skipped > 0
+                        ? `読み込み完了！（${Object.keys(res.cards).length}種・未対応${res.skipped}件除外）`
+                        : `読み込み完了！（${Object.keys(res.cards).length}種）`
+                    );
+                  }}
+                >
+                  ★ {activeCustomName} に読み込む
+                </GameButton>
+              </div>
+
+              {shareStatus && (
+                <div style={{ fontSize: 12, fontWeight: 900, color: '#24479b', textAlign: 'center' }} role="status">
+                  {shareStatus}
+                </div>
+              )}
             </ParchmentSheet>
           </div>
         </div>

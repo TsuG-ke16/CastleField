@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const WEB_DIR = path.resolve(__dirname, '..');
@@ -107,4 +110,34 @@ test('web/src contains zero SVGs, zero !important, and zero banned legacy button
     }
   }
   assert.deepEqual(hits, []);
+});
+
+test('deckCode share helper round-trips deck maps and vite PWA config prevents stale cache fallback', async () => {
+  const viteCfg = fs.readFileSync(path.join(WEB_DIR, 'vite.config.ts'), 'utf8');
+  assert.match(viteCfg, /cleanupOutdatedCaches:\s*true/);
+  assert.match(viteCfg, /navigateFallbackDenylist:/);
+
+  const deckCodePath = path.join(WEB_DIR, 'src/engine/deckCode.ts');
+  assert.ok(fs.existsSync(deckCodePath));
+  const ts = require(path.join(WEB_DIR, 'node_modules/typescript/lib/typescript.js'));
+  const tsSource = fs.readFileSync(deckCodePath, 'utf8');
+  const { outputText } = ts.transpileModule(tsSource, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2020 },
+  });
+  const { encodeDeckCode, decodeDeckCode } = await import(
+    `data:text/javascript;base64,${Buffer.from(outputText, 'utf8').toString('base64')}`
+  );
+  const realCards = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'data/cards.json'), 'utf8'));
+  const keys = Object.keys(realCards).slice(0, 3);
+  const sample = { [keys[0]]: 4, [keys[1]]: 2, [keys[2]]: 9 };
+
+  const code = encodeDeckCode(sample);
+  assert.ok(code.startsWith('CF2-'));
+  const decoded = decodeDeckCode(code, realCards);
+  assert.equal(decoded.ok, true);
+  assert.deepEqual(decoded.cards, { [keys[0]]: 4, [keys[1]]: 2, [keys[2]]: 6 });
+  assert.equal(decoded.skipped, 0);
+
+  const bad = decodeDeckCode('INVALID-123', realCards);
+  assert.equal(bad.ok, false);
 });
