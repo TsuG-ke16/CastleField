@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import { computePlayerProgression, useAppStore } from './stores/useAppStore';
 import { cardTypeToImagePath } from './engine/dataLoader';
 import { soundManager } from './audio/soundManager';
@@ -111,6 +112,7 @@ export function App() {
     tab,
     mode,
     quality,
+    reducedMotion,
     inBattle,
     playerName,
     avatarCardType,
@@ -322,13 +324,26 @@ export function App() {
           </div>
         )}
 
-        {tab === 'battle' && <HomeScreen onOpenSkillTree={() => setSkillTreeOpen(true)} />}
-        <Suspense fallback={<RouteFallback />}>
-          {tab === 'deck' && <DeckScreen />}
-          {tab === 'gacha' && <GachaScreen />}
-          {tab === 'shop' && <ShopScreen />}
-          {tab === 'menu' && <MenuScreen onOpenSkillTree={() => setSkillTreeOpen(true)} />}
-        </Suspense>
+        <motion.div
+          key={tab}
+          initial={reducedMotion ? false : { opacity: 0.72, y: 4 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.14 }}
+          style={{
+            position: 'relative',
+            zIndex: 10,
+            width: '100%',
+            height: '100%',
+          }}
+        >
+          {tab === 'battle' && <HomeScreen onOpenSkillTree={() => setSkillTreeOpen(true)} />}
+          <Suspense fallback={<RouteFallback />}>
+            {tab === 'deck' && <DeckScreen />}
+            {tab === 'gacha' && <GachaScreen />}
+            {tab === 'shop' && <ShopScreen />}
+            {tab === 'menu' && <MenuScreen onOpenSkillTree={() => setSkillTreeOpen(true)} />}
+          </Suspense>
+        </motion.div>
       </main>
 
       <BottomNav />

@@ -145,16 +145,30 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
           <strong style={{ fontSize: 15 }}>現在の装備</strong>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, textAlign: 'center', fontSize: 12, fontWeight: 800 }}>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <img
-                src="/assets/castles/castle-blue.png"
-                alt="城"
+              <div
                 style={{
-                  width: 72,
-                  height: 72,
-                  objectFit: 'contain',
-                  filter: getSkinFilter(data, selectedCastleSkin, 'blue'),
+                  width: 76,
+                  height: 76,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle at 50% 38%, #ffffff 0%, #f6e7c7 70%, #e2c58a 100%)',
+                  border: '1.5px solid rgba(74, 46, 26, 0.4)',
+                  boxShadow: 'inset 0 2px 5px rgba(74, 46, 26, 0.16), 0 1px 0 rgba(255, 255, 255, 0.72)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-              />
+              >
+                <img
+                  src="/assets/castles/castle-blue.png"
+                  alt="城"
+                  style={{
+                    width: 60,
+                    height: 60,
+                    objectFit: 'contain',
+                    filter: getSkinFilter(data, selectedCastleSkin, 'blue'),
+                  }}
+                />
+              </div>
               <span>{skinDisplayName(selectedCastleSkin)}</span>
               {selectedCastleSkin !== 'castle-blue' && selectedCastleSkin !== 'castle_default' && (
                 <button
@@ -167,16 +181,30 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <img
-                src="/assets/cards/card-infantry.png"
-                alt="兵士"
+              <div
                 style={{
-                  width: 72,
-                  height: 72,
-                  objectFit: 'contain',
-                  filter: getSkinFilter(data, selectedSoldierSkin, 'blue'),
+                  width: 76,
+                  height: 76,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle at 50% 38%, #ffffff 0%, #f6e7c7 70%, #e2c58a 100%)',
+                  border: '1.5px solid rgba(74, 46, 26, 0.4)',
+                  boxShadow: 'inset 0 2px 5px rgba(74, 46, 26, 0.16), 0 1px 0 rgba(255, 255, 255, 0.72)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-              />
+              >
+                <img
+                  src="/assets/cards/card-infantry.png"
+                  alt="兵士"
+                  style={{
+                    width: 60,
+                    height: 60,
+                    objectFit: 'contain',
+                    filter: getSkinFilter(data, selectedSoldierSkin, 'blue'),
+                  }}
+                />
+              </div>
               <span>{skinDisplayName(selectedSoldierSkin)}</span>
               {selectedSoldierSkin !== 'infantry-blue' && selectedSoldierSkin !== 'soldier_default' && (
                 <button
@@ -189,16 +217,30 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-              <img
-                src="/assets/ui/card-back.png"
-                alt="カード裏面"
+              <div
                 style={{
-                  width: 52,
-                  height: 72,
-                  objectFit: 'contain',
-                  filter: getSkinFilter(data, selectedBackSkin, 'blue'),
+                  width: 76,
+                  height: 76,
+                  borderRadius: '50%',
+                  background: 'radial-gradient(circle at 50% 38%, #ffffff 0%, #f6e7c7 70%, #e2c58a 100%)',
+                  border: '1.5px solid rgba(74, 46, 26, 0.4)',
+                  boxShadow: 'inset 0 2px 5px rgba(74, 46, 26, 0.16), 0 1px 0 rgba(255, 255, 255, 0.72)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
-              />
+              >
+                <img
+                  src="/assets/ui/card-back.png"
+                  alt="カード裏面"
+                  style={{
+                    width: 44,
+                    height: 60,
+                    objectFit: 'contain',
+                    filter: getSkinFilter(data, selectedBackSkin, 'blue'),
+                  }}
+                />
+              </div>
               <span>{skinDisplayName(selectedBackSkin)}</span>
               {selectedBackSkin !== 'card-back' && selectedBackSkin !== 'back_default' && (
                 <button
@@ -258,19 +300,33 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               const previewSrc = iconFrameImage(sid) ?? getSkinPreviewImage(shopMap[sid]?.slot || sid);
               return (
                 <ParchmentSheet key={sid} style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
-                  <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 999, background: '#e5cfa1', color: '#4a2e1a' }}>
+                  <span style={{ fontSize: 10, fontWeight: 900, padding: '2px 8px', borderRadius: 999, border: '1px solid #8a562d', background: 'linear-gradient(180deg, #f5e5c2 0%, #dfc084 100%)', color: '#4a2e1a' }}>
                     {SKIN_SLOT_LABEL[equipKind]}
                   </span>
-                  <img
-                    src={previewSrc}
-                    alt={skinDisplayName(sid)}
+                  <div
                     style={{
-                      width: 48,
-                      height: 48,
-                      objectFit: 'contain',
-                      filter: getSkinFilter(data, sid, 'blue'),
+                      width: 62,
+                      height: 62,
+                      borderRadius: '50%',
+                      background: 'radial-gradient(circle at 50% 38%, #ffffff 0%, #f6e7c7 70%, #e2c58a 100%)',
+                      border: '1.5px solid rgba(74, 46, 26, 0.4)',
+                      boxShadow: 'inset 0 2px 5px rgba(74, 46, 26, 0.16), 0 1px 0 rgba(255, 255, 255, 0.72)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                     }}
-                  />
+                  >
+                    <img
+                      src={previewSrc}
+                      alt={skinDisplayName(sid)}
+                      style={{
+                        width: 46,
+                        height: 46,
+                        objectFit: 'contain',
+                        filter: getSkinFilter(data, sid, 'blue'),
+                      }}
+                    />
+                  </div>
                   <strong style={{ fontSize: 12, textAlign: 'center' }}>{skinDisplayName(sid)}</strong>
                   <GameButton
                     size="sm"
@@ -394,8 +450,17 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
                     {Math.min(m.cur, m.goal)}/{m.goal}
                   </span>
                 </div>
-                <div style={{ height: 8, borderRadius: 999, background: '#e2cfa4', border: '1.5px solid #4a2e1a', overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', background: done ? '#4ea85f' : '#3465cc' }} />
+                <div style={{ height: 8, borderRadius: 999, background: '#e2cfa4', border: '1.5px solid #4a2e1a', boxShadow: 'inset 0 1px 2px rgba(74, 46, 26, 0.22)', overflow: 'hidden' }}>
+                  <div
+                    style={{
+                      width: `${pct}%`,
+                      height: '100%',
+                      background: done
+                        ? 'linear-gradient(90deg, #62cc75 0%, #3a944b 100%)'
+                        : 'linear-gradient(90deg, #5b8ef2 0%, #3465cc 100%)',
+                      boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.5)',
+                    }}
+                  />
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 12, fontWeight: 800 }}>報酬: 🪙{m.reward}</span>

@@ -1281,7 +1281,19 @@ export function BattleScreen() {
         </AnimatePresence>
 
         {isDefensePrompt && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#fff3cd', padding: '6px 10px', borderRadius: 12, border: '2px solid #4a2e1a' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              background: 'linear-gradient(180deg, #fff4d1 0%, #f9d89c 100%)',
+              padding: '6px 10px',
+              borderRadius: 12,
+              border: '2px solid #a82a24',
+              boxShadow: 'inset 0 1.5px 0 #ffffff, 0 3px 0 rgba(168, 42, 36, 0.28)',
+            }}
+          >
             <span style={{ fontSize: 12, fontWeight: 900 }}>
               攻撃（{gameState.defense?.amount}）が飛んできた！防御カードを出すか選択：
             </span>
@@ -1299,7 +1311,19 @@ export function BattleScreen() {
         )}
 
         {gameState.phase === 'mulligan' && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#e7f2ff', padding: '6px 10px', borderRadius: 12, border: '2px solid #4a2e1a' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              background: 'linear-gradient(180deg, #f0f6ff 0%, #d4e4ff 100%)',
+              padding: '6px 10px',
+              borderRadius: 12,
+              border: '2px solid #22479b',
+              boxShadow: 'inset 0 1.5px 0 #ffffff, 0 3px 0 rgba(34, 71, 155, 0.24)',
+            }}
+          >
             <span style={{ fontSize: 12, fontWeight: 900 }}>
               初期手札マリガン：引き直すカードを選択 ({mulliganSelected.length}枚)
             </span>
@@ -1323,7 +1347,19 @@ export function BattleScreen() {
         )}
 
         {needDiscardCount > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, background: '#ffe3cd', padding: '6px 10px', borderRadius: 12, border: '2px solid #4a2e1a' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 8,
+              background: 'linear-gradient(180deg, #fff1dc 0%, #fad0a2 100%)',
+              padding: '6px 10px',
+              borderRadius: 12,
+              border: '2px solid #b85616',
+              boxShadow: 'inset 0 1.5px 0 #ffffff, 0 3px 0 rgba(184, 86, 22, 0.24)',
+            }}
+          >
             <span style={{ fontSize: 12, fontWeight: 900 }}>
               手札上限オーバー！あと {needDiscardCount} 枚選んで捨てる ({discardSelected.length}/{needDiscardCount})
             </span>
