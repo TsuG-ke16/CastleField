@@ -423,6 +423,7 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
             background: 'none',
             border: props.highlightEnemyCastle ? '3px solid #ffe37a' : 'none',
             borderRadius: 16,
+            boxShadow: props.highlightEnemyCastle ? '0 0 16px rgba(255, 227, 122, 0.85)' : undefined,
             padding: 0,
             pointerEvents: props.highlightEnemyCastle ? 'auto' : 'none',
             cursor: props.highlightEnemyCastle ? 'pointer' : 'default',
@@ -435,6 +436,7 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
               width: 68,
               height: 68,
               objectFit: 'contain',
+              filter: 'drop-shadow(0 6px 10px rgba(34, 20, 8, 0.44))',
             }}
           />
         </button>
@@ -451,7 +453,7 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
             width: 72,
             height: 72,
             objectFit: 'contain',
-            filter: props.myCastleFilter,
+            filter: [props.myCastleFilter, 'drop-shadow(0 6px 10px rgba(34, 20, 8, 0.44))'].filter(Boolean).join(' '),
           }}
         />
 
@@ -495,19 +497,26 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
                     borderRadius: 10,
                     border: `2.5px solid ${isTarget ? '#ffe37a' : pid === 'p1' ? '#2a6cab' : '#c05a1c'}`,
                     background: '#fffaf0',
+                    boxShadow: isTarget
+                      ? '0 0 14px rgba(255, 227, 122, 0.9), 0 4px 8px rgba(74, 46, 26, 0.4)'
+                      : '0 3px 6px rgba(74, 46, 26, 0.36)',
                     filter: pid === mySide ? props.mySoldierFilter : undefined,
                   }}
                 />
                 <span
                   style={{
                     marginTop: -6,
-                    background: pid === 'p1' ? '#234799' : '#c05a1c',
+                    background:
+                      pid === 'p1'
+                        ? 'linear-gradient(180deg, #3b6fd4 0%, #234799 100%)'
+                        : 'linear-gradient(180deg, #e06d26 0%, #a84210 100%)',
                     color: '#fffaf0',
                     fontSize: 10,
                     fontWeight: 900,
                     padding: '1px 6px',
                     borderRadius: 999,
                     border: '1.5px solid #4a2e1a',
+                    boxShadow: '0 1.5px 3px rgba(0, 0, 0, 0.32)',
                     whiteSpace: 'nowrap',
                   }}
                 >
@@ -555,18 +564,22 @@ export function BattleFieldScene(props: BattleFieldSceneProps) {
                   borderRadius: 12,
                   border: `3px solid ${isTarget ? '#ffe37a' : '#a82a24'}`,
                   background: '#fff2ee',
+                  boxShadow: isTarget
+                    ? '0 0 14px rgba(255, 227, 122, 0.9), 0 4px 8px rgba(74, 46, 26, 0.4)'
+                    : '0 3px 6px rgba(74, 46, 26, 0.38)',
                 }}
               />
               <span
                 style={{
                   marginTop: -6,
-                  background: '#a82a24',
+                  background: 'linear-gradient(180deg, #cf3a32 0%, #8f1d17 100%)',
                   color: '#fffaf0',
                   fontSize: 10,
                   fontWeight: 900,
                   padding: '1px 6px',
                   borderRadius: 999,
                   border: '1.5px solid #4a2e1a',
+                  boxShadow: '0 1.5px 3px rgba(0, 0, 0, 0.32)',
                 }}
               >
                 魔物 ❤{m.hp} (あと{m.attackIn})

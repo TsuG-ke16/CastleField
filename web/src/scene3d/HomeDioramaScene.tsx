@@ -74,9 +74,15 @@ export function HomeDioramaScene({ tab, mode, quality }: { tab: AppTab; mode: Mo
         }}
       >
         <img
-          src="/assets/bg/home-castle.png"
+          src="/assets/v2/renders/home-portrait.webp"
           alt="王国の城"
-          style={{ width: 'min(92vw, 480px)', maxHeight: '55vh', objectFit: 'contain', filter: 'drop-shadow(0 12px 24px rgba(35,71,153,0.2))' }}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: '50% 42%',
+            filter: 'drop-shadow(0 12px 24px rgba(35,71,153,0.2))',
+          }}
         />
       </div>
     );
@@ -91,7 +97,7 @@ export function HomeDioramaScene({ tab, mode, quality }: { tab: AppTab; mode: Mo
       >
         <ambientLight intensity={1.15} color="#fff8ea" />
         <hemisphereLight args={['#a8dcff', '#c9a66b', 1.1]} />
-        <directionalLight position={[12, 22, 14]} intensity={2.1} color="#fff4d8" />
+        <directionalLight position={[12, 22, 14]} intensity={2.15} color="#ffefc2" />
         <directionalLight position={[-10, 8, -12]} intensity={0.8} color="#82c4ff" />
         <Suspense fallback={null}>
           <DioramaModel mode={mode} />
