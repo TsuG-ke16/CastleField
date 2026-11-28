@@ -30,6 +30,10 @@ export function DeckScreen() {
     selectedDeckId,
     setSelectedDeckId,
     customDeck,
+    customDecks,
+    activeCustomSlot,
+    selectCustomSlot,
+    renameCustomDeck,
     clonePresetToCustomDeck,
     updateCustomDeckCard,
     resetCustomDeck,
@@ -52,8 +56,9 @@ export function DeckScreen() {
   const activeCardsMap: Record<string, number> = isCustom
     ? customDeck
     : (decks[selectedDeckId] || decks[deckKeysList[0]] || { cards: {} }).cards;
+  const activeCustomName = customDecks[activeCustomSlot]?.name || `デッキ${activeCustomSlot + 1}`;
   const activeDeckName = isCustom
-    ? '★ オリジナルデッキ'
+    ? `★ ${activeCustomName}`
     : (decks[selectedDeckId] || decks[deckKeysList[0]])?.name || 'デッキ';
 
   const cardDeckCost = (typeKey: string): number => {
@@ -66,13 +71,24 @@ export function DeckScreen() {
     let total = 0;
     let totalCost = 0;
     const kinds = { soldier: 0, spell: 0, weapon: 0, defense: 0 };
+    const rarityCounts: Record<string, number> = {
+      common: 0,
+      uncommon: 0,
+      rare: 0,
+      epic: 0,
+      legendary: 0,
+    };
     for (const [k, count] of entries) {
       total += count;
       totalCost += cardDeckCost(k) * count;
       const def = cards[k];
-      if (def && def.kind in kinds) kinds[def.kind] += count;
+      if (def) {
+        if (def.kind in kinds) kinds[def.kind] += count;
+        const rk = def.rarity || 'common';
+        rarityCounts[rk] = (rarityCounts[rk] ?? 0) + count;
+      }
     }
-    return { entries, total, totalCost, kinds };
+    return { entries, total, totalCost, kinds, rarityCounts };
   }, [activeCardsMap, cards, rarities]);
 
   const filteredCatalog = useMemo(() => {
@@ -147,7 +163,7 @@ export function DeckScreen() {
               variant={isCustom ? 'selected-royal' : 'normal-stone'}
               onClick={() => setSelectedDeckId('custom')}
             >
-              ★オリジナル
+              ★ {activeCustomName}
             </GameButton>
             {Object.entries(decks).map(([id, d]) => (
               <GameButton
@@ -161,11 +177,37 @@ export function DeckScreen() {
             ))}
           </div>
 
+          {isCustom && (
+            <div className={styles.slotStrip} aria-label="マイデッキ枠">
+              {customDecks.map((slot, i) => (
+                <GameButton
+                  key={i}
+                  size="sm"
+                  variant={activeCustomSlot === i ? 'selected-royal' : 'normal-stone'}
+                  onClick={() => selectCustomSlot(i)}
+                >
+                  {slot.name || `デッキ${i + 1}`}
+                </GameButton>
+              ))}
+            </div>
+          )}
+
           <div className={styles.layout}>
             <ParchmentSheet className={styles.summaryCol}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <strong style={{ fontSize: 15 }}>{activeDeckName}</strong>
-                <span className="tabular" style={{ fontWeight: 900, fontSize: 13 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                {isCustom ? (
+                  <input
+                    type="text"
+                    className={styles.renameInput}
+                    value={activeCustomName}
+                    maxLength={14}
+                    aria-label="デッキ名を変更"
+                    onChange={(e) => renameCustomDeck(activeCustomSlot, e.target.value)}
+                  />
+                ) : (
+                  <strong style={{ fontSize: 15 }}>{activeDeckName}</strong>
+                )}
+                <span className="tabular" style={{ fontWeight: 900, fontSize: 13, flexShrink: 0 }}>
                   {stats.total}枚 / コスト {stats.totalCost}
                 </span>
               </div>
@@ -184,26 +226,56 @@ export function DeckScreen() {
                   </div>
                   <span className="tabular">{stats.totalCost}/100</span>
                 </div>
-                {[
-                  { label: '兵士', val: stats.kinds.soldier, color: '#3465cc' },
-                  { label: '魔法', val: stats.kinds.spell, color: '#de4f46' },
-                  { label: '武器', val: stats.kinds.weapon, color: '#e4881a' },
-                  { label: '防御', val: stats.kinds.defense, color: '#4ea85f' },
-                ].map((row) => (
-                  <div key={row.label} className={styles.barRow}>
-                    <span>{row.label}</span>
-                    <div className={styles.barTrack}>
-                      <div
-                        className={styles.barFill}
-                        style={{
-                          width: `${stats.total ? Math.round((row.val / stats.total) * 100) : 0}%`,
-                          background: row.color,
-                        }}
-                      />
-                    </div>
-                    <span className="tabular">{row.val}</span>
-                  </div>
-                ))}
+
+                {/* デッキ構成グラフ（種別比率＋レアリティ別分布） */}
+                <div className={styles.stackedBar} title="種別比率">
+                  {[
+                    { key: 'soldier', val: stats.kinds.soldier, color: '#3465cc' },
+                    { key: 'spell', val: stats.kinds.spell, color: '#de4f46' },
+                    { key: 'weapon', val: stats.kinds.weapon, color: '#e4881a' },
+                    { key: 'defense', val: stats.kinds.defense, color: '#4ea85f' },
+                  ].map((seg) => (
+                    <div
+                      key={seg.key}
+                      className={styles.stackedSeg}
+                      style={{
+                        width: `${stats.total ? (seg.val / stats.total) * 100 : 0}%`,
+                        background: seg.color,
+                      }}
+                    />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, fontWeight: 800 }}>
+                  <span style={{ color: '#3465cc' }}>■兵士 {stats.kinds.soldier}</span>
+                  <span style={{ color: '#de4f46' }}>■魔法 {stats.kinds.spell}</span>
+                  <span style={{ color: '#e4881a' }}>■武器 {stats.kinds.weapon}</span>
+                  <span style={{ color: '#4ea85f' }}>■防御 {stats.kinds.defense}</span>
+                </div>
+
+                <div className={styles.rarityDistRow} aria-label="レアリティ別枚数グラフ">
+                  {[
+                    { id: 'common', label: 'C' },
+                    { id: 'uncommon', label: 'UC' },
+                    { id: 'rare', label: 'R' },
+                    { id: 'epic', label: 'SR' },
+                    { id: 'legendary', label: 'UR' },
+                  ].map((rk) => {
+                    const cnt = stats.rarityCounts[rk.id] ?? 0;
+                    const maxR = Math.max(1, ...Object.values(stats.rarityCounts));
+                    return (
+                      <div key={rk.id} className={styles.rarityBarCol}>
+                        <span className="tabular">{cnt}</span>
+                        <div className={styles.rarityBarTrack}>
+                          <div
+                            className={styles.rarityBarFill}
+                            style={{ height: `${Math.round((cnt / maxR) * 100)}%` }}
+                          />
+                        </div>
+                        <span>{rk.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -414,7 +486,9 @@ export function DeckScreen() {
                   {inspectedDef.kind === 'soldier' && (
                     <div>
                       攻撃 {inspectedDef.attack ?? 0} / HP {inspectedDef.hp ?? 0}
-                      {inspectedDef.range ? ` / 射程 ${inspectedDef.range}` : ` / 速度 ${inspectedDef.speed ?? 1}`}
+                      {inspectedDef.range && inspectedDef.range > 1
+                        ? ` / 射程 ${inspectedDef.range}`
+                        : ` / 速度 ${inspectedDef.speed ?? 1}`}
                     </div>
                   )}
                 </div>

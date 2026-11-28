@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { motion } from 'motion/react';
 import { useAppStore } from '../stores/useAppStore';
 import { getSkinFilter, getSkinPreviewImage } from '../engine/skinUtils';
@@ -8,12 +8,28 @@ import { PaintedIcon } from '../components/ui/PaintedIcon';
 import { ParchmentSheet, RibbonBanner } from '../components/ui/Surfaces';
 import styles from './GachaScreen.module.css';
 
+type GachaRewardItem = { id: string; name: string; rarity: string; isNew: boolean };
+
 export function GachaScreen() {
   const { data, coins, points, pityCount, quality, gachaHistory, rollGacha, walletMode } = useAppStore();
   const [busy, setBusy] = useState(false);
   const [opening, setOpening] = useState(false);
-  const [rewards, setRewards] = useState<Array<{ id: string; name: string; rarity: string; isNew: boolean }> | null>(null);
-  const [subModal, setSubModal] = useState<'none' | 'rates' | 'history'>('none');
+  const [rewards, setRewards] = useState<GachaRewardItem[] | null>(null);
+  const [subModal, setSubModal] = useState<'none' | 'showcase' | 'rates' | 'history'>('none');
+  const openTimerRef = useRef<number | null>(null);
+  const pendingRewardsRef = useRef<GachaRewardItem[] | null>(null);
+
+  const finishOpening = () => {
+    if (openTimerRef.current !== null) {
+      window.clearTimeout(openTimerRef.current);
+      openTimerRef.current = null;
+    }
+    if (pendingRewardsRef.current) {
+      setRewards(pendingRewardsRef.current);
+      pendingRewardsRef.current = null;
+    }
+    setOpening(false);
+  };
 
   const triggerRoll = async (count: 1 | 10) => {
     if (busy) return;
@@ -21,11 +37,9 @@ export function GachaScreen() {
     const rolled = await rollGacha(count);
     setBusy(false);
     if (!rolled) return;
+    pendingRewardsRef.current = rolled;
     setOpening(true);
-    setTimeout(() => {
-      setRewards(rolled);
-      setOpening(false);
-    }, 680);
+    openTimerRef.current = window.setTimeout(finishOpening, 680);
   };
 
   const remainingPity = Math.max(1, 40 - pityCount);
@@ -42,6 +56,9 @@ export function GachaScreen() {
           </div>
         </div>
         <div className={styles.utilIcons}>
+          <RoundButton onClick={() => setSubModal('showcase')} aria-label="見本">
+            <PaintedIcon name="catalog" size={20} />
+          </RoundButton>
           <RoundButton onClick={() => setSubModal('rates')} aria-label="排出率">
             <PaintedIcon name="help" size={20} />
           </RoundButton>
@@ -51,8 +68,29 @@ export function GachaScreen() {
         </div>
       </div>
 
-      <div className={styles.stageBox}>
+      <div
+        className={styles.stageBox}
+        onClick={() => opening && finishOpening()}
+        style={{ cursor: opening ? 'pointer' : 'default' }}
+      >
         <GachaChestView opening={opening} quality={quality} />
+        {opening && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 10,
+              padding: '3px 12px',
+              borderRadius: 999,
+              background: 'rgba(74, 46, 26, 0.86)',
+              color: '#ffe37a',
+              fontSize: 11,
+              fontWeight: 900,
+              pointerEvents: 'none',
+            }}
+          >
+            タップでスキップ
+          </div>
+        )}
       </div>
 
       <div className={styles.pityBox}>
@@ -144,13 +182,39 @@ export function GachaScreen() {
             <ParchmentSheet style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div className={styles.headerRow}>
                 <h2 style={{ margin: 0, fontSize: 17, fontWeight: 900 }}>
-                  {subModal === 'rates' ? '提供割合' : '最近の獲得履歴'}
+                  {subModal === 'showcase' ? '排出スキン見本' : subModal === 'rates' ? '提供割合' : '最近の獲得履歴'}
                 </h2>
                 <RoundButton onClick={() => setSubModal('none')} aria-label="閉じる">
                   <PaintedIcon name="close" size={18} />
                 </RoundButton>
               </div>
-              {subModal === 'rates' ? (
+              {subModal === 'showcase' ? (
+                <div style={{ maxHeight: 320, overflowY: 'auto', display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                  {Object.entries((data?.shop as { items?: Record<string, { name?: string; rarity?: string; rankReward?: unknown }> })?.items || {})
+                    .filter(([, it]) => !it.rankReward)
+                    .slice(0, 18)
+                    .map(([id, it]) => (
+                      <div
+                        key={id}
+                        className={`${styles.rewardTile} ${styles[`rarity-${it.rarity || 'common'}`] || ''}`}
+                        style={{ padding: 6 }}
+                      >
+                        <img
+                          src={getSkinPreviewImage(id)}
+                          alt={it.name || id}
+                          style={{
+                            width: 38,
+                            height: 38,
+                            objectFit: 'contain',
+                            filter: getSkinFilter(data, id, 'blue'),
+                          }}
+                        />
+                        <span style={{ fontSize: 11 }}>{it.name || id}</span>
+                        <span style={{ fontSize: 9, opacity: 0.75 }}>{(it.rarity || 'common').toUpperCase()}</span>
+                      </div>
+                    ))}
+                </div>
+              ) : subModal === 'rates' ? (
                 <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.7 }}>
                   <div>レジェンド：3% / エピック：12% / レア：35% / コモン：50%</div>
                   <div>10連はレア以上1つ確定。40回エピック以上未排出で次回確定。</div>

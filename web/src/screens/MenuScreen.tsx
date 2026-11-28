@@ -17,6 +17,8 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
     toggleBgmMute,
     mulliganEnabled,
     toggleMulliganEnabled,
+    reducedMotion,
+    toggleReducedMotion,
     engineMode,
     setEngineMode,
     data,
@@ -541,6 +543,22 @@ export function MenuScreen({ onOpenSkillTree }: { onOpenSkillTree: () => void })
               onClick={toggleMulliganEnabled}
             >
               {mulliganEnabled ? 'ON' : 'OFF'}
+            </GameButton>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 900 }}>動きを減らす（酔い・省エネ）</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--cf-ink-muted)' }}>
+                画面揺れや強い点滅演出を抑えます
+              </div>
+            </div>
+            <GameButton
+              size="sm"
+              variant={reducedMotion ? 'selected-royal' : 'normal-stone'}
+              onClick={toggleReducedMotion}
+            >
+              {reducedMotion ? 'ON' : 'OFF'}
             </GameButton>
           </div>
 

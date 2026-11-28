@@ -48,6 +48,10 @@ function summarizeEvent(ev: GameEvent): string | null {
       return `カード合成成功！上位カードへ進化`;
     case 'spellReflected':
       return `反射で魔法を跳ね返した！(${ev.amount})`;
+    case 'diceRolled': {
+      const val = ev.roll ?? ev.value ?? ev.result ?? '';
+      return `🎲 ダイス結果: ${val}`;
+    }
     case 'gameOver':
       return ev.winner ? `決着！ ${ev.winner === 'p1' ? 'P1' : 'P2'} の勝利` : '引き分け';
     default:
@@ -77,6 +81,7 @@ export function BattleScreen() {
     selectedSoldierSkin,
     quality,
     mulliganEnabled,
+    reducedMotion,
     exitBattle,
     reportMatchReward,
     recordMatchResult,
@@ -117,7 +122,10 @@ export function BattleScreen() {
   const [discardSelected, setDiscardSelected] = useState<string[]>([]);
   const [mulliganSelected, setMulliganSelected] = useState<string[]>([]);
   const [cutIn, setCutIn] = useState<{ id: number; name: string; typeKey: string; rarity: string } | null>(null);
+  const [dicePop, setDicePop] = useState<{ id: number; text: string } | null>(null);
   const [battleLog, setBattleLog] = useState<string[]>([]);
+  const reducedRef = useRef(reducedMotion);
+  reducedRef.current = reducedMotion;
   const [summary, setSummary] = useState<MatchSummary>({
     winner: null,
     turns: 1,
@@ -257,8 +265,10 @@ export function BattleScreen() {
           if (ev.playerId !== myS) statsAccRef.current.damageDealt += amt;
           soundManager.play('hit');
           fxRef.current?.burst('fire');
-          setShakePower(Math.min(1.6, 0.5 + amt * 0.08));
-          setTimeout(() => setShakePower(0), 220);
+          if (!reducedRef.current) {
+            setShakePower(Math.min(1.6, 0.5 + amt * 0.08));
+            setTimeout(() => setShakePower(0), 220);
+          }
           setDamagePop({ id: ++popCounterRef.current, text: `-${amt}` });
           setTimeout(() => setDamagePop(null), 650);
         } else if (ev.type === 'soldierDeployed') {
@@ -284,6 +294,12 @@ export function BattleScreen() {
           }
         } else if (ev.type === 'monsterDefeated' && ev.playerId === myS) {
           statsAccRef.current.monstersDefeated += 1;
+        } else if (ev.type === 'diceRolled') {
+          const val = ev.roll ?? ev.value ?? ev.result ?? '';
+          const did = ++popCounterRef.current;
+          soundManager.play('tap');
+          setDicePop({ id: did, text: `🎲 ダイス結果: ${val}` });
+          setTimeout(() => setDicePop((cur) => (cur?.id === did ? null : cur)), 1350);
         } else if (ev.type === 'stampSent' && ev.playerId !== myS) {
           const sid = String(ev.stampId || '');
           const found = (data.stamps || []).find((s) => s.id === sid);
@@ -732,7 +748,7 @@ export function BattleScreen() {
           </div>
         )}
 
-      <div className={styles.arenaWrap}>
+      <div className={`${styles.arenaWrap} ${isDefensePrompt ? styles.defendAlert : ''}`}>
         <div className={styles.hpOverlayTop}>
           <div className={styles.castleSign}>
             {playMode === 'ranked' && rankedTicket?.opponent && (
@@ -790,6 +806,20 @@ export function BattleScreen() {
           )}
           {gameState.time === 'night' && <span className={styles.envPill}>🌙 夜</span>}
         </div>
+
+        <AnimatePresence>
+          {dicePop && (
+            <motion.div
+              key={dicePop.id}
+              initial={{ scale: 0.78, x: '-50%', y: -8, opacity: 0 }}
+              animate={{ scale: 1, x: '-50%', y: 0, opacity: 1 }}
+              exit={{ scale: 0.85, x: '-50%', opacity: 0 }}
+              className={styles.diceBanner}
+            >
+              {dicePop.text}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {damagePop && (
@@ -1121,7 +1151,7 @@ export function BattleScreen() {
                     card={def}
                     width={92}
                     selected={isSel}
-                    disabled={myTurn && gameState.phase === 'main' && !playable}
+                    disabled={(myTurn && gameState.phase === 'main' && !playable) || (isDefensePrompt && !playable)}
                     onClick={() => handleCardTap(c)}
                   />
                 </motion.div>
