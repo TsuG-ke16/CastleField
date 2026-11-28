@@ -4,9 +4,13 @@
 //   「敵城に到達した（到達済みの）味方兵士」＝ 自分の兵士が城に着いて攻撃した。着いた兵士は消えるので、「いる間」は
 //     「その自ターン開始〜次の自ターン開始の区間のうちに到達した兵士がいる間」と読む（A03）
 //   「固定兵器」＝ 武器を装備した味方兵士（A02。F系統の注記を参照）
-// A06（総攻撃）は休眠：到達済みの兵士は到達の攻撃で消えるので、追撃する兵士が残らない（docs/skilltree-200-notes/skillC3.md）。
+// A06（総攻撃）の読み替え：到達済みの兵士は到達の攻撃で消えるので、「到達済みの味方兵士」は
+//   「相手の城の前のマス（position が laneLength - 1）にいる、進む味方兵士」と読む（人間に確認して決めた）。
 
 import * as T from '../Tactics.js';
+
+/** A06：城への攻撃魔法（手札から撃つと総攻撃が起きる）の effect */
+const CASTLE_SPELLS = new Set(['damageEnemyCastle', 'armorBlast', 'drainCastle', 'sacrificeAttack', 'damageCastleAndHeal', 'damageEnemyAll']);
 
 export default {
   // 城壁破砕：敵城壁を破壊した自身の直接攻撃の解決後、敵城へ固定2ダメージ（各自ターン1回）
@@ -97,6 +101,31 @@ export default {
         if (v <= 0) return;
         ctx.pierce = (ctx.pierce ?? 0) + v;
         api.trigger({ pierce: v });
+      },
+    },
+  },
+
+  // 総攻撃（読み替え）：手札から城への攻撃魔法を撃ったあと、その相手の城の前のマスにいる進む味方兵士1体が、相手の城を攻撃力ぶん攻撃する
+  // （城に着いたときの倍率はかけない。兵士は消えない。城壁は受ける。各自ターン1回）
+  A06: {
+    on: {
+      onSpellCast(api, ev) {
+        if (ev.ownerId !== api.playerId || ev.origin !== 'hand' || ev.targetKind !== 'player' || !api.canUse()) return;
+        const game = api.game;
+        if (!CASTLE_SPELLS.has(game.cardDefs[ev.cardType]?.effect)) return;
+        if (!ev.targetPlayerId || !game.players[ev.targetPlayerId]) return;
+        const targetSide = game.side(ev.targetPlayerId);
+        if (!targetSide || targetSide === game.side(api.playerId)) return;
+        const front = game.rules.laneLength - 1;
+        const soldier = api.player.soldiers.find((s) => !s.isStationary && s.targetId === targetSide && s.position === front);
+        if (!soldier) return;
+        const enemy = game.players[targetSide];
+        if (!enemy || enemy.castle.isDestroyed || enemy.eliminated) return;
+        if (!api.spawnExtra('extraAttack').ok || !api.trigger({ targetId: targetSide, soldierId: soldier.soldierId })) return;
+        const amount = game.stageBoost(soldier, game.attackOf(soldier));
+        api.as('extraAttack', () => game.damageCastle(enemy, amount, { kind: 'soldier', soldierId: soldier.soldierId }));
+        game.checkGameOver();
+        api.consume();
       },
     },
   },

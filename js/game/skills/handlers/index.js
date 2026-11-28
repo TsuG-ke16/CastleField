@@ -39,8 +39,9 @@ import X_c2 from './X_c2.js'; // 横断（C2：X04・X05・X18・X22・X24・X44
 import X_c3 from './X_c3.js'; // 横断（C3：X10・X25・X39〜X43）
 import X_c4 from './X_c4.js'; // 横断（C4：X07 X08 X09 X20 X21 X36 X37 X38 X45 X46）
 import X_c5 from './X_c5.js'; // 横断（C5：X26〜X35）
+import X_c6 from './X_c6.js'; // 横断（罠と読み替え：X06・X23・X42）
 
-const GROUPS = { C, M, E, L, P, H, U, G, R, D, A, T, S, K, F, Q, V, I, B, X, X_c1, X_c2, X_c3, X_c4, X_c5 };
+const GROUPS = { C, M, E, L, P, H, U, G, R, D, A, T, S, K, F, Q, V, I, B, X, X_c1, X_c2, X_c3, X_c4, X_c5, X_c6 };
 
 /** @type {Record<string, object>} */
 export const HANDLERS = {};

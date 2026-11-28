@@ -584,7 +584,7 @@ export class SkillRuntime {
         this.enqueue('onMonsterKill', { ownerId: payload.playerId, targetId: payload.monsterId, reward: payload.reward });
         break;
       case 'spellCast':
-        this.enqueue('onSpellCast', { ownerId: payload.playerId, cardType: payload.type, targetId: payload.soldierId ?? payload.target ?? null, targetKind: payload.targetKind, roadId: payload.roadId ?? null });
+        this.enqueue('onSpellCast', { ownerId: payload.playerId, cardType: payload.type, targetId: payload.soldierId ?? payload.target ?? null, targetKind: payload.targetKind, targetPlayerId: payload.targetKind === 'player' ? payload.target : null, roadId: payload.roadId ?? null });
         break;
       case 'attackMissed':
         this.enqueue('onMiss', { ownerId: payload.playerId, kind: payload.kind, soldierId: payload.soldierId ?? null });
@@ -699,6 +699,8 @@ export class SkillRuntime {
       bleed: soldier.skillBleed ? { ...soldier.skillBleed } : null,
       // 段階C（S01 感染）：死亡時の毒・やけど
       poison: soldier.poison ? { ...soldier.poison } : null, burn: soldier.burn ? { ...soldier.burn } : null,
+      // X06（戦士の遺産）：倒れたときの武器（攻撃の加算の合計と、武器の属性）
+      weapon: soldier.weapon ?? null, weaponBonus: soldier.weaponBonus ?? 0, weaponElement: soldier.weapon ? soldier.element : null,
     };
     if (soldier.skillToken) {
       this.enqueue('onTokenGone', { ownerId: owner.id, targetId: soldier.soldierId, cause: reason, killerId: killer?.playerId ?? null, snapshot, origin: 'token' });

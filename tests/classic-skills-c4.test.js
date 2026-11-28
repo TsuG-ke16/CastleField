@@ -471,9 +471,9 @@ test('X45 元素病：自分由来の有害状態の敵兵士への反応ダメ�
   assert.equal(ctx.damage, 10);
 });
 
-test('休眠の確認：X23（罠が存在しない）は登録なし、担当ノードは実装済みとして数える', async () => {
+test('担当ノード（罠を作る X23 を含む）は実装済みとして数える', async () => {
   const { HANDLERS } = await import('../js/game/skills/handlers/index.js');
-  assert.equal(HANDLERS.X23, undefined);
+  assert.ok(HANDLERS.X23);
   for (const id of ['D02', 'D03', 'D04', 'D06', 'D07', 'D08', 'R02', 'R03', 'R04', 'R05', 'R06', 'R07', 'R08', 'G01', 'G02', 'G03', 'G04', 'G05', 'G06', 'G07', 'G08',
     'S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07', 'S08', 'V01', 'V02', 'V03', 'V04', 'V05', 'V06', 'V07', 'V08',
     'X07', 'X08', 'X09', 'X20', 'X21', 'X36', 'X37', 'X38', 'X45', 'X46']) assert.ok(HANDLERS[id], id);

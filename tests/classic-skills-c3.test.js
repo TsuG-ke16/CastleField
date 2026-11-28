@@ -46,11 +46,10 @@ const playSoldier = (game, roadIndex, type = INF) => {
   return game.playCard(card.cardId, { playerId: 'p2', roadId: roadOf(game, roadIndex) });
 };
 
-test('休眠のノード（罠・固有能力・成立しない戦闘）は実装済みと数えない', () => {
+test('担当のノード（罠・読み替えた K01・A06・X06 を含む）はすべて実装済みと数える', () => {
   const game = classicGame([['F01'], []]);
   const rt = game.skillRt;
-  for (const id of ['F02', 'F05', 'F06', 'F08', 'K01', 'A06', 'X06', 'X42']) assert.equal(rt.implementation(id), null, id);
-  for (const id of ['U02', 'U03', 'U05', 'U06', 'U07', 'U08', 'K02', 'K03', 'K04', 'K05', 'K06', 'K07', 'K08', 'F01', 'F03', 'F04', 'F07',
+  for (const id of ['F02', 'F05', 'F06', 'F08', 'K01', 'A06', 'X06', 'X42', 'U02', 'U03', 'U05', 'U06', 'U07', 'U08', 'K02', 'K03', 'K04', 'K05', 'K06', 'K07', 'K08', 'F01', 'F03', 'F04', 'F07',
     'A01', 'A02', 'A03', 'A04', 'A05', 'A07', 'A08', 'X10', 'X25', 'X39', 'X40', 'X41', 'X43']) assert.equal(rt.implementation(id), 'handler', id);
 });
 

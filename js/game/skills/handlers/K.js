@@ -1,6 +1,6 @@
 // 系統 K（戦術）のスキル効果。盤面のルールは skills/Tactics.js（既存のレーン・隣接・進軍の規則）。
-// K01（挟撃）は休眠：クラシックでは敵兵士に通常攻撃できるのは「同じ道（レーン）の兵士」だけ（護衛・広場がないため）なので、
-// 「異なるレーンの味方兵士が同一敵兵士へ通常攻撃する」場面が既存仕様に成り立たない（docs/skilltree-200-notes/skillC3.md）。
+// K01（挟撃）の読み替え：クラシックの通常攻撃は同じ道（レーン）の敵にしか届かないので、「異なるレーンの味方」は
+// 「同じ自ターンに、ほかの味方兵士がすでに通常攻撃した敵」と読む。「兵士防御」＝盾（人間に確認して決めた）。
 
 import * as T from '../Tactics.js';
 
@@ -16,7 +16,33 @@ function refreshColumn(api) {
   }
 }
 
+/** K01：自ターンの通常攻撃の履歴（区間ごとにリセット）。敵兵士ID → 攻撃した味方兵士IDの集合 */
+function k01State(api) {
+  const st = api.state;
+  if (st.vars.k01?.interval !== st.interval) st.vars.k01 = { interval: st.interval, hist: {} };
+  return st.vars.k01;
+}
+
 export default {
+  // 挟撃（読み替え）：同じ自ターンに、ほかの味方兵士がすでに通常攻撃した敵兵士へ、別の味方兵士が通常攻撃すると、盾を1無視（対象ごと各自ターン1回）。
+  // 盾を1無視する＝盾があるとき基礎ダメージ+1（HPに入る量は同じ。盾は1多く削れる）
+  K01: {
+    mods: {
+      hitBaseAdd(api, ctx) {
+        if ((ctx.kind !== 'fight' && ctx.kind !== 'shot') || ctx.origin !== 'normalAttack' || !ctx.enemy || !ctx.attacker || !ctx.victim) return 0;
+        if (api.game.currentPlayer !== api.playerId || !api.player.soldiers.includes(ctx.attacker)) return 0;
+        const hist = (k01State(api).hist[ctx.victim.soldierId] ??= []);
+        const earlier = hist.some((id) => id !== ctx.attacker.soldierId);
+        if (!hist.includes(ctx.attacker.soldierId)) hist.push(ctx.attacker.soldierId);
+        const key = `t:${ctx.victim.soldierId}`;
+        if (!earlier || !(ctx.victim.shield > 0) || !api.canUse(key, 1)) return 0;
+        api.consume(key);
+        api.trigger({ targetId: ctx.victim.soldierId });
+        return Math.min(api.params.ignoreDefense ?? 1, ctx.victim.shield);
+      },
+    },
+  },
+
   // 横隊：同じ進軍位置の全レーン（3本）に味方兵士が揃う間、該当兵士は直接被ダメージ-1（最低0）
   K02: {
     mods: {

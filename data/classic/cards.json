@@ -98,7 +98,7 @@
     "effect": "shieldSoldier",
     "amount": 3,
     "mpCost": 1,
-    "count": 3
+    "count": 2
   },
   "classic_king_wall": {
     "name": "城壁",
@@ -106,7 +106,15 @@
     "effect": "armorCastle",
     "amount": 5,
     "mpCost": 2,
-    "count": 3
+    "count": 2
+  },
+  "classic_king_pitfall": {
+    "name": "落とし穴",
+    "kind": "trap",
+    "damage": 4,
+    "mpCost": 2,
+    "count": 2,
+    "description": "自分の側の道（自分の城から1・2マス目）に隠して置く。相手の兵士が入ると、そこで止めて4ダメージ（盾が先に受ける）。自分のターンが3回来ると消える"
   },
   "classic_king_purify": {
     "name": "浄化",
@@ -232,7 +240,7 @@
     "effect": "armorCastle",
     "amount": 4,
     "mpCost": 1,
-    "count": 3
+    "count": 2
   },
   "classic_demon_bone_shield": {
     "name": "骨の盾",
@@ -240,7 +248,16 @@
     "effect": "shieldSoldier",
     "amount": 3,
     "mpCost": 1,
-    "count": 3
+    "count": 2
+  },
+  "classic_demon_ice_trap": {
+    "name": "氷の罠",
+    "kind": "trap",
+    "freeze": 1,
+    "element": "ice",
+    "mpCost": 2,
+    "count": 2,
+    "description": "自分の側の道（自分の城から1・2マス目）に隠して置く。相手の兵士が入ると、そこで止めて凍らせ（1回休み）、氷を付ける。自分のターンが3回来ると消える"
   },
   "classic_demon_shadow": {
     "name": "シャドウ",

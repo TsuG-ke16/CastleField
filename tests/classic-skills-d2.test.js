@@ -183,16 +183,17 @@ test('CPU：H01 を持つときだけ、撃てない重い魔法を最大2枚戻
 
 // ================= カバレッジ =================
 
-const DORMANT = ['K01', 'F02', 'F05', 'F06', 'F08', 'A06', 'X06', 'X23', 'X42'];
+// 罠（js/game/Traps.js）を入れ、K01・A06・X06 を読み替えたので、休眠のノードはなくなった
+const DORMANT = [];
 
-test('カバレッジ：200ノードの区分（休眠は既知の9ノードだけ）と docs/skilltree-200-coverage.md が最新', () => {
+test('カバレッジ：200ノードの区分（休眠なし）と docs/skilltree-200-coverage.md が最新', () => {
   const ids = tree.nodes.map((n) => n.id);
   for (const id of Object.keys(HANDLERS)) assert.ok(ids.includes(id), `ハンドラ ${id} のノードがない`);
   const dormant = ids.filter((id) => implementationOf(id) === null);
   assert.deepEqual(dormant.sort(), [...DORMANT].sort());
   const counts = {};
   for (const id of ids) counts[implementationOf(id) ?? 'dormant'] = (counts[implementationOf(id) ?? 'dormant'] ?? 0) + 1;
-  assert.deepEqual(counts, { core: 11, handler: 170, static: 10, dormant: 9 });
+  assert.deepEqual(counts, { core: 11, handler: 179, static: 10 });
   const tool = fileURLToPath(new URL('../tools/skilltree-coverage.mjs', import.meta.url));
   execFileSync(process.execPath, [tool, '--check'], { stdio: 'pipe' });
 });

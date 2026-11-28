@@ -4,9 +4,9 @@
 区分：handler＝handlers/*.js の効果ハンドラ／core＝基盤（Luck.js・Crit.js）／static＝試合開始時の数値（SkillTree.js の STATIC_HANDLERS）／**dormant＝休眠**（取得できるが戦闘で何も起きない。counters は null）。
 「部分実装・既存仕様への対応づけ」の理由は docs/skilltree-200-handoff.md のノード別の表を見ること。CPU 列：任意アクションを CPU が使う（use）／使わない（skip）／任意アクションなし（-）。
 
-合計 200：handler 170・core 11・static 10・dormant 9
+合計 200：handler 179・core 11・static 10・dormant 0
 
-休眠：K01・F02・F05・F06・F08・A06・X06・X23・X42
+休眠：なし
 
 | ID | 名称 | 系統 | 区分 | 任意アクション | CPU |
 |---|---|---|---|---|---|
@@ -130,7 +130,7 @@
 | U06 | 戦術転換 | U | handler | U06 | use |
 | U07 | 進軍の旗 | U | handler | - | - |
 | U08 | 軍団指揮 | U | handler | - | - |
-| K01 | 挟撃 | K | **dormant** | - | - |
+| K01 | 挟撃 | K | handler | - | - |
 | K02 | 横隊 | K | handler | - | - |
 | K03 | 縦隊 | K | handler | - | - |
 | K04 | 迂回 | K | handler | K04 | use |
@@ -139,19 +139,19 @@
 | K07 | 追い風 | K | handler | - | - |
 | K08 | 電撃作戦 | K | handler | K08 | use |
 | F01 | 再装填 | F | handler | - | - |
-| F02 | 再設置 | F | **dormant** | - | - |
+| F02 | 再設置 | F | handler | - | - |
 | F03 | 防衛工事 | F | handler | - | - |
 | F04 | 狙撃照準 | F | handler | - | - |
-| F05 | 連動装置 | F | **dormant** | - | - |
-| F06 | 罠の回収 | F | **dormant** | - | - |
+| F05 | 連動装置 | F | handler | - | - |
+| F06 | 罠の回収 | F | handler | - | - |
 | F07 | 工兵の知恵 | F | handler | - | - |
-| F08 | 連鎖起爆 | F | **dormant** | - | - |
+| F08 | 連鎖起爆 | F | handler | - | - |
 | A01 | 城壁破砕 | A | handler | - | - |
 | A02 | 攻城兵器 | A | handler | - | - |
 | A03 | 包囲戦 | A | handler | - | - |
 | A04 | 突破口 | A | handler | - | - |
 | A05 | 貫通攻撃 | A | handler | - | - |
-| A06 | 総攻撃 | A | **dormant** | - | - |
+| A06 | 総攻撃 | A | handler | - | - |
 | A07 | 城門の標的 | A | handler | - | - |
 | A08 | 城門突破 | A | handler | - | - |
 | L01 | 幸運の兆し | L | core | - | - |
@@ -167,7 +167,7 @@
 | X03 | 元素吸収 | X | handler | - | - |
 | X04 | 魔力の知恵 | X | handler | X04 | use |
 | X05 | 援軍要請 | X | handler | - | - |
-| X06 | 戦士の遺産 | X | **dormant** | - | - |
+| X06 | 戦士の遺産 | X | handler | - | - |
 | X07 | 再誕の祝福 | X | handler | - | - |
 | X08 | 生命障壁 | X | handler | - | - |
 | X09 | 復讐の砲火 | X | handler | - | - |
@@ -184,7 +184,7 @@
 | X20 | 不屈 | X | handler | - | - |
 | X21 | 聖なる反応 | X | handler | - | - |
 | X22 | 魔法泥棒 | X | handler | - | - |
-| X23 | 死者の地雷 | X | **dormant** | - | - |
+| X23 | 死者の地雷 | X | handler | - | - |
 | X24 | 運命改変 | X | handler | - | - |
 | X25 | 元素砲 | X | handler | - | - |
 | X26 | 鮮血の一撃 | X | handler | - | - |
@@ -203,7 +203,7 @@
 | X39 | 突破戦術 | X | handler | - | - |
 | X40 | 盾の陣形 | X | handler | - | - |
 | X41 | 機動射撃 | X | handler | - | - |
-| X42 | 伏兵配置 | X | **dormant** | - | - |
+| X42 | 伏兵配置 | X | handler | X42 | skip |
 | X43 | 魔力装填 | X | handler | X43 | use |
 | X44 | 先読み | X | handler | X44 | use |
 | X45 | 元素病 | X | handler | - | - |
