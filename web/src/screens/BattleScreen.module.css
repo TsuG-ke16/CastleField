@@ -21,6 +21,17 @@
   color: #fffaf0;
 }
 
+.hudRight {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.engineText {
+  display: inline;
+}
+
 .hudPill {
   display: inline-flex;
   align-items: center;
@@ -31,6 +42,8 @@
   border: 1.5px solid #ffd98a;
   font-size: 12px;
   font-weight: 900;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .turnBadge {
@@ -39,6 +52,30 @@
   font-size: 12px;
   font-weight: 900;
   border: 2px solid var(--cf-ink);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 440px) {
+  .topHud {
+    gap: 4px;
+    padding: calc(5px + var(--cf-safe-top)) 6px 5px;
+  }
+  .hudRight {
+    gap: 4px;
+  }
+  .turnBadge {
+    padding: 3px 8px;
+    font-size: 11px;
+  }
+  .hudPill {
+    padding: 2px 6px;
+    gap: 3px;
+    font-size: 11px;
+  }
+  .engineText {
+    display: none;
+  }
 }
 
 .turnMe {

@@ -799,7 +799,7 @@ export function BattleScreen() {
                 : '相手の番'}
         </span>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div className={styles.hudRight}>
           <span
             className={styles.hudPill}
             title={
@@ -814,26 +814,30 @@ export function BattleScreen() {
                       : 'Legacy JS エンジン稼働中'
             }
           >
-            {activeEngine === 'online'
-              ? onlineStatus === 'waiting'
-                ? '⏳ 相手待ち'
-                : '🟢 オンライン'
-              : activeEngine === 'factions'
-                ? '⚔ 4陣営'
-                : activeEngine === 'classic'
-                  ? '📜 クラシック'
-                  : activeEngine === 'rust-wasm'
-                    ? '🦀 Rust'
-                    : 'JS'}
+            {activeEngine === 'online' ? (
+              onlineStatus === 'waiting' ? (
+                <>⏳<span className={styles.engineText}> 相手待ち</span></>
+              ) : (
+                <>🟢<span className={styles.engineText}> オンライン</span></>
+              )
+            ) : activeEngine === 'factions' ? (
+              <>⚔<span className={styles.engineText}> 4陣営</span></>
+            ) : activeEngine === 'classic' ? (
+              <>📜<span className={styles.engineText}> クラシック</span></>
+            ) : activeEngine === 'rust-wasm' ? (
+              <>🦀<span className={styles.engineText}> Rust</span></>
+            ) : (
+              'JS'
+            )}
           </span>
-          <span className={`${styles.hudPill} tabular`}>{gameState.round}周目</span>
+          <span className={`${styles.hudPill} tabular`}>{gameState.round}周</span>
           {pMe.maxMp !== undefined && (
             <span className={`${styles.hudPill} tabular`}>
               <PaintedIcon name="mp" size={14} />
               {pMe.mp ?? 0}/{pMe.maxMp}
             </span>
           )}
-          <span className={`${styles.hudPill} tabular`} style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <span className={`${styles.hudPill} tabular`}>
             <img
               src="/assets/ui/card-back.png"
               alt="山札"
