@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react';
 import type { GameState } from '../engine/types';
+import { SceneErrorBoundary } from '../components/ui/ErrorBoundary';
 import { BattleFieldLite } from './BattleFieldLite';
 
 export interface BattleFieldSceneProps {
@@ -29,8 +30,10 @@ export function BattleFieldView(props: BattleFieldSceneProps) {
     return <BattleFieldLite {...props} />;
   }
   return (
-    <Suspense fallback={<BattleFieldLite {...props} />}>
-      <LazyBattleFieldScene {...props} />
-    </Suspense>
+    <SceneErrorBoundary fallback={<BattleFieldLite {...props} />}>
+      <Suspense fallback={<BattleFieldLite {...props} />}>
+        <LazyBattleFieldScene {...props} />
+      </Suspense>
+    </SceneErrorBoundary>
   );
 }

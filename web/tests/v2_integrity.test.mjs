@@ -159,3 +159,24 @@ test('soundManager provides 5-layer BGM scenes, DynamicsCompressor, delay, visib
     assert.ok(src.includes(`case '${k}':`), `Missing SFX handler: ${k}`);
   }
 });
+
+test('resilience ErrorBoundaries and vite:preloadError recovery are wired across entry and 3D views', () => {
+  const boundaryPath = path.join(WEB_DIR, 'src/components/ui/ErrorBoundary.tsx');
+  assert.ok(fs.existsSync(boundaryPath));
+  const boundarySrc = fs.readFileSync(boundaryPath, 'utf8');
+  assert.match(boundarySrc, /export class SceneErrorBoundary/);
+  assert.match(boundarySrc, /export class AppErrorBoundary/);
+
+  const mainSrc = fs.readFileSync(path.join(WEB_DIR, 'src/main.tsx'), 'utf8');
+  assert.match(mainSrc, /vite:preloadError/);
+  assert.match(mainSrc, /AppErrorBoundary/);
+
+  for (const rel of [
+    'src/scene3d/BattleFieldView.tsx',
+    'src/scene3d/HomeBackdrop.tsx',
+    'src/scene3d/GachaChestView.tsx',
+  ]) {
+    const viewSrc = fs.readFileSync(path.join(WEB_DIR, rel), 'utf8');
+    assert.match(viewSrc, /SceneErrorBoundary/, `${rel} must wrap lazy 3D scene in SceneErrorBoundary`);
+  }
+});

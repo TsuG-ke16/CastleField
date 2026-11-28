@@ -1,5 +1,6 @@
 import { Suspense, lazy } from 'react';
 import type { AppTab, ModeId } from '../engine/types';
+import { SceneErrorBoundary } from '../components/ui/ErrorBoundary';
 
 const LazyHomeDiorama = lazy(() =>
   import('./HomeDioramaScene').then((m) => ({ default: m.HomeDioramaScene }))
@@ -43,8 +44,10 @@ export function HomeBackdrop({ tab, mode, quality }: { tab: AppTab; mode: ModeId
     return <HomeLiteView />;
   }
   return (
-    <Suspense fallback={<HomeLiteView />}>
-      <LazyHomeDiorama tab={tab} mode={mode} quality={quality} />
-    </Suspense>
+    <SceneErrorBoundary fallback={<HomeLiteView />}>
+      <Suspense fallback={<HomeLiteView />}>
+        <LazyHomeDiorama tab={tab} mode={mode} quality={quality} />
+      </Suspense>
+    </SceneErrorBoundary>
   );
 }
