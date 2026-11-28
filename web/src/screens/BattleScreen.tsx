@@ -1423,11 +1423,14 @@ export function BattleScreen() {
               onClick={() => setShowStamps((v) => !v)}
               aria-label="スタンプ"
               style={{
-                background: showStamps ? '#3465cc' : 'rgba(255,246,224,0.2)',
+                background: showStamps
+                  ? 'linear-gradient(180deg, #5b8ef2 0%, #24499e 100%)'
+                  : 'linear-gradient(180deg, rgba(117, 73, 37, 0.92) 0%, rgba(74, 46, 26, 0.92) 100%)',
                 color: '#fff6e0',
                 border: '1.5px solid #ffd98a',
                 borderRadius: 10,
-                padding: '6px 8px',
+                boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 2px 0 rgba(44, 24, 10, 0.36)',
+                padding: '6px 9px',
                 fontSize: 12,
                 fontWeight: 900,
                 cursor: 'pointer',
@@ -1439,11 +1442,12 @@ export function BattleScreen() {
               type="button"
               onClick={() => setHandCollapsed((v) => !v)}
               style={{
-                background: 'rgba(255,246,224,0.2)',
+                background: 'linear-gradient(180deg, rgba(117, 73, 37, 0.92) 0%, rgba(74, 46, 26, 0.92) 100%)',
                 color: '#fff6e0',
                 border: '1.5px solid #ffd98a',
                 borderRadius: 10,
-                padding: '6px 8px',
+                boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 2px 0 rgba(44, 24, 10, 0.36)',
+                padding: '6px 9px',
                 fontSize: 12,
                 fontWeight: 900,
                 cursor: 'pointer',
@@ -1477,6 +1481,9 @@ export function BattleScreen() {
                 <motion.div
                   key={c.cardId}
                   style={{ flexShrink: 0, touchAction: 'pan-x' }}
+                  initial={reducedMotion ? false : { opacity: 0, y: 18, scale: 0.92 }}
+                  animate={{ opacity: 1, y: isSel ? -10 : 0, scale: isSel ? 1.03 : 1 }}
+                  transition={reducedMotion ? { duration: 0.01 } : { type: 'spring', stiffness: 420, damping: 28 }}
                   drag={playable && !fuseMode && gameState.phase === 'main' ? 'y' : false}
                   dragDirectionLock
                   dragConstraints={{ top: -90, bottom: 0 }}
@@ -1575,8 +1582,9 @@ export function BattleScreen() {
                       display: 'flex',
                       flexDirection: 'column',
                       gap: 4,
-                      background: '#fbf3dc',
-                      border: '1.5px solid #d4bc7d',
+                      background: 'linear-gradient(180deg, #fffef8 0%, #f7e9c8 100%)',
+                      border: '1.5px solid #c9a25e',
+                      boxShadow: 'inset 0 1.5px 0 #ffffff, 0 2px 0 rgba(74, 46, 26, 0.16)',
                       borderRadius: 10,
                       padding: 6,
                     }}
